@@ -1,4 +1,4 @@
-# ブロックごとにトークナイザを構築する[[building-a-tokenizer-block-by-block]]
+# 構成要素を組み合わせてトークナイザを構築する[[building-a-tokenizer-block-by-block]]
 
 <CourseFloatingBanner chapter={6}
   classNames="absolute z-10 right-0 top-0"
@@ -11,7 +11,7 @@
 
 - 正規化（スペースやアクセントの除去、Unicode 正規化など、必要と見なされるテキストのクリーンアップ全般）
 - 事前トークン化（入力を単語に分割すること）
-- モデルへの入力の実行（事前トークン化された単語を使ってトークンの列を生成すること）
+- トークナイザモデルによる処理（事前トークン化された単語をトークン列に変換すること）
 - 後処理（トークナイザの特殊トークンの追加、アテンションマスクとトークンタイプ ID の生成）
 
 思い出していただくために、全体のプロセスをもう一度示します。
@@ -333,7 +333,7 @@ tokenizer.pre_tokenizer.pre_tokenize_str("Let's test pre-tokenization!")
  ('tokenization', (15, 27)), ('!', (27, 28))]
 ```
 
-次はモデルです。学習が必要です。GPT-2 の場合、特殊トークンはテキスト終端トークンだけです。
+次にモデルを学習します。GPT-2 で使用する特殊トークンは、テキスト終端トークンのみです。
 
 ```python
 trainer = trainers.BpeTrainer(vocab_size=25000, special_tokens=["<|endoftext|>"])
@@ -461,7 +461,7 @@ tokenizer.pre_tokenizer.pre_tokenize_str("Let's test the pre-tokenizer!")
 [("▁Let's", (0, 5)), ('▁test', (5, 10)), ('▁the', (10, 14)), ('▁pre-tokenizer!', (14, 29))]
 ```
 
-次はモデルです。学習が必要です。XLNet にはかなり多くの特殊トークンがあります。
+次に Unigram モデルを学習します。XLNet では複数の特殊トークンを使用します。
 
 ```python
 special_tokens = ["<cls>", "<sep>", "<unk>", "<pad>", "<mask>", "<s>", "</s>"]
@@ -491,7 +491,7 @@ print(encoding.tokens)
 ['▁Let', "'", 's', '▁test', '▁this', '▁to', 'ken', 'izer', '.']
 ```
 
-XLNet の特徴は、`<cls>` トークンを文の末尾に置き、タイプ ID を 2 にする（他のトークンと区別するため）ことです。その結果、左側にパディングを行います。BERT のときのようにテンプレートですべての特殊トークンとトークンタイプ ID を処理できますが、まず `<cls>` と `<sep>` トークンの ID を取得する必要があります。
+XLNet の特徴は、`<cls>` トークンを文の末尾に置き、タイプ ID を 2 にする（他のトークンと区別するため）ことです。また、左側にパディングを行います。BERT のときのようにテンプレートですべての特殊トークンとトークンタイプ ID を処理できますが、まず `<cls>` と `<sep>` トークンの ID を取得する必要があります。
 
 ```python
 cls_token_id = tokenizer.token_to_id("<cls>")

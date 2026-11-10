@@ -28,7 +28,7 @@
 
 クラウドワーカーが Wikipedia の記事の集合に対して作成した質問からなる [SQuAD データセット](https://rajpurkar.github.io/SQuAD-explorer/) を使って、BERT モデルをファインチューニングします。これにより、次のような予測を計算できるモデルが得られます。
 
-<iframe src="https://course-demos-bert-finetuned-squad.hf.space" frameBorder="0" height="450" title="Gradio app" class="block dark:hidden container p-0 flex-grow space-iframe" allow="accelerometer; ambient-light-sensor; autoplay; battery; camera; document-domain; encrypted-media; fullscreen; geolocation; gyroscope; layout-animations; legacy-image-formats; magnetometer; microphone; midi; oversized-images; payment; picture-in-picture; publickey-credentials-get; sync-xhr; usb; vr ; wake-lock; xr-spatial-tracking" sandbox="allow-forms allow-modals allow-popups allow-popups-to-escape-sandbox allow-same-origin allow-scripts allow-downloads"></iframe>
+<iframe src="https://course-demos-bert-finetuned-squad.hf.space" frameBorder="0" height="450" title="Gradio アプリ" class="block dark:hidden container p-0 flex-grow space-iframe" allow="accelerometer; ambient-light-sensor; autoplay; battery; camera; document-domain; encrypted-media; fullscreen; geolocation; gyroscope; layout-animations; legacy-image-formats; magnetometer; microphone; midi; oversized-images; payment; picture-in-picture; publickey-credentials-get; sync-xhr; usb; vr ; wake-lock; xr-spatial-tracking" sandbox="allow-forms allow-modals allow-popups allow-popups-to-escape-sandbox allow-same-origin allow-scripts allow-downloads"></iframe>
 
 これは、このセクションで示すコードを使って実際に学習し、Hub にアップロードしたモデルを紹介するものです。[こちら](https://huggingface.co/huggingface-course/bert-finetuned-squad?context=%F0%9F%A4%97+Transformers+is+backed+by+the+three+most+popular+deep+learning+libraries+%E2%80%94+Jax%2C+PyTorch+and+TensorFlow+%E2%80%94+with+a+seamless+integration+between+them.+It%27s+straightforward+to+train+your+models+with+one+before+loading+them+for+inference+with+the+other.&question=Which+deep+learning+libraries+back+%F0%9F%A4%97+Transformers%3F) でモデルを確認し、予測を再確認できます。
 
@@ -71,15 +71,15 @@ DatasetDict({
 `context`、`question`、`answers` の各フィールドで必要なものはすべて揃っているようです。学習セットの最初の要素について、これらを表示してみましょう。
 
 ```py
-print("Context: ", raw_datasets["train"][0]["context"])
-print("Question: ", raw_datasets["train"][0]["question"])
-print("Answer: ", raw_datasets["train"][0]["answers"])
+print("コンテキスト: ", raw_datasets["train"][0]["context"])
+print("質問: ", raw_datasets["train"][0]["question"])
+print("答え: ", raw_datasets["train"][0]["answers"])
 ```
 
 ```python out
-Context: 'Architecturally, the school has a Catholic character. Atop the Main Building\'s gold dome is a golden statue of the Virgin Mary. Immediately in front of the Main Building and facing it, is a copper statue of Christ with arms upraised with the legend "Venite Ad Me Omnes". Next to the Main Building is the Basilica of the Sacred Heart. Immediately behind the basilica is the Grotto, a Marian place of prayer and reflection. It is a replica of the grotto at Lourdes, France where the Virgin Mary reputedly appeared to Saint Bernadette Soubirous in 1858. At the end of the main drive (and in a direct line that connects through 3 statues and the Gold Dome), is a simple, modern stone statue of Mary.'
-Question: 'To whom did the Virgin Mary allegedly appear in 1858 in Lourdes France?'
-Answer: {'text': ['Saint Bernadette Soubirous'], 'answer_start': [515]}
+コンテキスト: 'Architecturally, the school has a Catholic character. Atop the Main Building\'s gold dome is a golden statue of the Virgin Mary. Immediately in front of the Main Building and facing it, is a copper statue of Christ with arms upraised with the legend "Venite Ad Me Omnes". Next to the Main Building is the Basilica of the Sacred Heart. Immediately behind the basilica is the Grotto, a Marian place of prayer and reflection. It is a replica of the grotto at Lourdes, France where the Virgin Mary reputedly appeared to Saint Bernadette Soubirous in 1858. At the end of the main drive (and in a direct line that connects through 3 statues and the Gold Dome), is a simple, modern stone statue of Mary.'
+質問: 'To whom did the Virgin Mary allegedly appear in 1858 in Lourdes France?'
+答え: {'text': ['Saint Bernadette Soubirous'], 'answer_start': [515]}
 ```
 
 `context` フィールドと `question` フィールドはとても使いやすいものです。`answers` フィールドは少し扱いが難しく、どちらもリストである2つのフィールドを持つ辞書になっています。これは評価の際に `squad` メトリクスが期待する形式です。自分のデータを使う場合は、答えを同じ形式にすることに必ずしもこだわる必要はありません。`text` フィールドは自明でしょう。`answer_start` フィールドには、コンテキスト内での各答えの開始文字インデックスが含まれます。
@@ -256,13 +256,13 @@ inputs = tokenizer(
     return_offsets_mapping=True,
 )
 
-print(f"The 4 examples gave {len(inputs['input_ids'])} features.")
-print(f"Here is where each comes from: {inputs['overflow_to_sample_mapping']}.")
+print(f"4つのサンプルから {len(inputs['input_ids'])} 個の特徴量が得られました。")
+print(f"それぞれの由来は次のとおりです: {inputs['overflow_to_sample_mapping']}.")
 ```
 
 ```python out
-'The 4 examples gave 19 features.'
-'Here is where each comes from: [0, 0, 0, 0, 1, 1, 1, 1, 2, 2, 2, 2, 3, 3, 3, 3, 3, 3, 3].'
+'4つのサンプルから 19 個の特徴量が得られました。'
+'それぞれの由来は次のとおりです: [0, 0, 0, 0, 1, 1, 1, 1, 2, 2, 2, 2, 3, 3, 3, 3, 3, 3, 3].'
 ```
 
 見てのとおり、最初の3つのサンプル（学習セットのインデックス2、3、4）はそれぞれ4つの特徴量を生み、最後のサンプル（学習セットのインデックス5）は7つの特徴量を生みました。
@@ -321,7 +321,7 @@ start_positions, end_positions
  [85, 53, 21, 0, 0, 70, 33, 0, 40, 0, 0, 0, 68, 35, 0, 0, 0, 0, 0])
 ```
 
-アプローチが正しいことを確認するために、いくつかの結果を見てみましょう。最初の特徴量では `(83, 85)` がラベルとして得られたので、理論上の答えと、83から85（両端を含む）までのトークンをデコードした範囲を比較します。
+アプローチが正しいことを確認するために、いくつかの結果を見てみましょう。最初の特徴量では `(83, 85)` がラベルとして得られたので、データセットに記録された正解と、83から85（両端を含む）までのトークンをデコードした範囲を比較します。
 
 ```py
 idx = 0
@@ -332,11 +332,11 @@ start = start_positions[idx]
 end = end_positions[idx]
 labeled_answer = tokenizer.decode(inputs["input_ids"][idx][start : end + 1])
 
-print(f"Theoretical answer: {answer}, labels give: {labeled_answer}")
+print(f"正解: {answer}, ラベルによる答え: {labeled_answer}")
 ```
 
 ```python out
-'Theoretical answer: the Main Building, labels give: the Main Building'
+'正解: the Main Building, ラベルによる答え: the Main Building'
 ```
 
 一致しました！次に、ラベルを `(0, 0)` に設定したインデックス4を確認しましょう。これは、その特徴量のコンテキストチャンクに答えが含まれていないことを意味します。
@@ -347,11 +347,11 @@ sample_idx = inputs["overflow_to_sample_mapping"][idx]
 answer = answers[sample_idx]["text"][0]
 
 decoded_example = tokenizer.decode(inputs["input_ids"][idx])
-print(f"Theoretical answer: {answer}, decoded example: {decoded_example}")
+print(f"正解: {answer}, デコードした例: {decoded_example}")
 ```
 
 ```python out
-'Theoretical answer: a Marian place of prayer and reflection, decoded example: [CLS] What is the Grotto at Notre Dame? [SEP] Architecturally, the school has a Catholic character. Atop the Main Building\'s gold dome is a golden statue of the Virgin Mary. Immediately in front of the Main Building and facing it, is a copper statue of Christ with arms upraised with the legend " Venite Ad Me Omnes ". Next to the Main Building is the Basilica of the Sacred Heart. Immediately behind the basilica is the Grot [SEP]'
+'正解: a Marian place of prayer and reflection, デコードした例: [CLS] What is the Grotto at Notre Dame? [SEP] Architecturally, the school has a Catholic character. Atop the Main Building\'s gold dome is a golden statue of the Virgin Mary. Immediately in front of the Main Building and facing it, is a copper statue of Christ with arms upraised with the legend " Venite Ad Me Omnes ". Next to the Main Building is the Basilica of the Sacred Heart. Immediately behind the basilica is the Grot [SEP]'
 ```
 
 実際、コンテキストの中に答えは見当たりません。
@@ -672,7 +672,7 @@ import evaluate
 metric = evaluate.load("squad")
 ```
 
-このメトリクスは、予測された答えを上で見た形式（サンプルの ID 用のキーと予測テキスト用のキーを持つ辞書のリスト）で、理論上の答えを下の形式（サンプルの ID 用のキーと可能な答え用のキーを持つ辞書のリスト）で期待します。
+このメトリクスは、予測された答えを上で見た形式（サンプルの ID 用のキーと予測テキスト用のキーを持つ辞書のリスト）で、データセットに記録された正解を下の形式（サンプルの ID 用のキーと可能な答え用のキーを持つ辞書のリスト）で期待します。
 
 ```python
 theoretical_answers = [
@@ -1119,7 +1119,7 @@ for epoch in range(num_train_epochs):
     model.eval()
     start_logits = []
     end_logits = []
-    accelerator.print("Evaluation!")
+    accelerator.print("評価！")
     for batch in tqdm(eval_dataloader):
         with torch.no_grad():
             outputs = model(**batch)
@@ -1164,7 +1164,7 @@ unwrapped_model.save_pretrained(output_dir, save_function=accelerator.save)
 
 ## ファインチューニングしたモデルを使う[[using-the-fine-tuned-model]]
 
-Model Hub 上でファインチューニングしたモデルを推論ウィジェットで使う方法はすでに示しました。ローカルで `pipeline` の中で使うには、モデルの識別子を指定するだけです。
+Model Hub 上でファインチューニングしたモデルを推論ウィジェットで使う方法はすでに示しました。ローカルで `pipeline` を使って推論するには、モデル識別子を指定するだけです。
 
 ```py
 from transformers import pipeline

@@ -7,7 +7,7 @@
     {label: "Aws Studio", value: "https://studiolab.sagemaker.aws/import/github/huggingface/notebooks/blob/master/course/en/chapter8/section2.ipynb"},
 ]} />
 
-このセクションでは、チューニングしたての Transformer モデルで予測を生成しようとしたときに起こりうる、よくあるエラーを見ていきます。これは、学習フェーズ自体のデバッグ方法を探る[セクション4](/course/chapter8/section4)への準備になります。
+このセクションでは、ファインチューニングを終えたばかりの Transformer モデルで予測を生成しようとしたときに起こりうる、よくあるエラーを見ていきます。これは、学習フェーズ自体のデバッグ方法を探る[セクション4](/course/chapter8/section4)への準備になります。
 
 <Youtube id="DQ-CpJn6Rc4"/>
 
@@ -54,7 +54,7 @@ def copy_repository_template():
 
 ## 🤗 Transformers の pipeline をデバッグする[[debugging-the-pipeline-from-transformers]]
 
-Transformer モデルのデバッグという素晴らしい世界への旅の出発点として、次のような場面を考えてみましょう。あなたは同僚と、eコマースサイトの顧客が消費財についての答えを見つけられるよう支援する、質問応答プロジェクトに取り組んでいます。同僚から次のようなメッセージが届きます。
+Transformer モデルのデバッグを学ぶ第一歩として、次のような場面を考えてみましょう。あなたは同僚と、eコマースサイトの顧客が消費財についての答えを見つけられるよう支援する、質問応答プロジェクトに取り組んでいます。同僚から次のようなメッセージが届きます。
 
 > やあ！Hugging Face コースの [Chapter 7](/course/chapter7/7) のテクニックを使って実験してみたら、SQuAD でかなり良い結果が出たよ！このモデルをプロジェクトの出発点にできると思う。Hub 上のモデル ID は "lewtun/distillbert-base-uncased-finetuned-squad-d5716d28" だよ。気軽に試してみて :)
 
@@ -194,9 +194,7 @@ reader(question=question, context=context)
 - Python のエラーメッセージは_トレースバック_と呼ばれ、下から上へ読みます。エラーメッセージの最後の行には通常、問題の発生源を特定するのに必要な情報が含まれています。
 - 最後の行に十分な情報がない場合は、トレースバックを上にたどって、ソースコードのどこでエラーが起きているか特定できないか見てみましょう。
 - どのエラーメッセージも問題のデバッグに役立たない場合は、似た問題への解決策をオンラインで探してみましょう。
-- `huggingface_hub` 
-// 🤗 Hub?
-ライブラリには、Hub 上のリポジトリを操作したりデバッグしたりするために使えるツールが一式そろっています。
+- `huggingface_hub` ライブラリには、Hub 上のリポジトリを操作したりデバッグしたりするために使えるツールが一式そろっています。
 
 pipeline のデバッグ方法が分かったところで、モデル自体のフォワードパスという、より厄介な例を見てみましょう。
 
@@ -209,7 +207,7 @@ tokenizer = reader.tokenizer
 model = reader.model
 ```
 
-次に質問が必要なので、お気に入りのフレームワークがサポートされているか見てみましょう。
+次は質問文を用意します。お気に入りのフレームワークがサポートされているか尋ねてみましょう。
 
 ```python
 question = "Which frameworks can I use?"
@@ -232,8 +230,8 @@ answer_end = torch.argmax(answer_end_scores) + 1
 answer = tokenizer.convert_tokens_to_string(
     tokenizer.convert_ids_to_tokens(input_ids[answer_start:answer_end])
 )
-print(f"Question: {question}")
-print(f"Answer: {answer}")
+print(f"質問: {question}")
+print(f"回答: {answer}")
 ```
 
 ```python out
@@ -307,7 +305,7 @@ type(inputs["input_ids"])
 list
 ```
 
-はい、間違いなく Python の `list` です。では、何がうまくいかなかったのでしょう。[Chapter 2](/course/chapter2) で思い出すと、🤗 Transformers の `AutoModelForXxx` クラスは_テンソル_（PyTorch か TensorFlow の）を対象に動作し、よくある操作として、たとえば PyTorch では `Tensor.size()` を使ってテンソルの次元を取り出します。トレースバックをもう一度見て、例外を引き起こした行を確認しましょう。
+はい、間違いなく Python の `list` です。では、何がうまくいかなかったのでしょう。[Chapter 2](/course/chapter2) で学んだように、🤗 Transformers の `AutoModelForXxx` クラスは_テンソル_（PyTorch か TensorFlow の）を対象に動作し、よくある操作として、たとえば PyTorch では `Tensor.size()` を使ってテンソルの次元を取り出します。トレースバックをもう一度見て、例外を引き起こした行を確認しましょう。
 
 ```
 ~/miniconda3/envs/huggingface/lib/python3.8/site-packages/transformers/models/distilbert/modeling_distilbert.py in forward(self, input_ids, attention_mask, head_mask, inputs_embeds, output_attentions, output_hidden_states, return_dict)
@@ -334,22 +332,22 @@ input_ids = inputs["input_ids"][0]
 outputs = model(**inputs)
 answer_start_scores = outputs.start_logits
 answer_end_scores = outputs.end_logits
-# Get the most likely beginning of answer with the argmax of the score
+# スコアが最大になる位置を、回答の開始位置として選ぶ
 answer_start = torch.argmax(answer_start_scores)
-# Get the most likely end of answer with the argmax of the score
+# スコアが最大になる位置を基に、回答の終了位置を求める
 answer_end = torch.argmax(answer_end_scores) + 1
 answer = tokenizer.convert_tokens_to_string(
     tokenizer.convert_ids_to_tokens(input_ids[answer_start:answer_end])
 )
-print(f"Question: {question}")
-print(f"Answer: {answer}")
+print(f"質問: {question}")
+print(f"回答: {answer}")
 ```
 
 ```python out
 """
-Question: Which frameworks can I use?
-Answer: pytorch, tensorflow, and jax
+質問: Which frameworks can I use?
+回答: pytorch, tensorflow, and jax
 """
 ```
 
-よし、うまくいきました。これは、Stack Overflow がどれほど役立つかを示す良い例です。似た問題を特定できたことで、コミュニティの他の人の経験から恩恵を受けることができました。ただし、このような検索で常に関連する答えが得られるとは限りません。その場合はどうすればよいでしょう。幸い、[Hugging Face フォーラム](https://discuss.huggingface.co/)には、助けてくれる歓迎的な開発者コミュニティがあります。次のセクションでは、回答が得られやすい、よいフォーラムの質問の作り方を見ていきます。
+よし、うまくいきました。これは、Stack Overflow がどれほど役立つかを示す良い例です。似た問題を特定できたことで、コミュニティの他の人の経験から恩恵を受けることができました。ただし、このような検索で常に関連する答えが得られるとは限りません。その場合はどうすればよいでしょう。幸い、[Hugging Face フォーラム](https://discuss.huggingface.co/)には、質問や相談を温かく受け入れてくれる開発者コミュニティがあります。次のセクションでは、回答が得られやすい、よいフォーラムの質問の作り方を見ていきます。

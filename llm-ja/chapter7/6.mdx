@@ -30,7 +30,7 @@
 
 [Chapter 6](/course/chapter6) では、Python のソースコードを処理するための効率的なトークナイザを作りました。しかし、モデルの事前学習に使う大規模なデータセットはまだ用意できていません。ここでは、GitHub のリポジトリから集めた Python コードのコーパスにこのトークナイザを適用します。その後、`Trainer` API と 🤗 Accelerate を使ってモデルを学習します。さっそく始めましょう！
 
-<iframe src="https://course-demos-codeparrot-ds.hf.space" frameBorder="0" height="300" title="Gradio app" class="block dark:hidden container p-0 flex-grow space-iframe" allow="accelerometer; ambient-light-sensor; autoplay; battery; camera; document-domain; encrypted-media; fullscreen; geolocation; gyroscope; layout-animations; legacy-image-formats; magnetometer; microphone; midi; oversized-images; payment; picture-in-picture; publickey-credentials-get; sync-xhr; usb; vr ; wake-lock; xr-spatial-tracking" sandbox="allow-forms allow-modals allow-popups allow-popups-to-escape-sandbox allow-same-origin allow-scripts allow-downloads"></iframe>
+<iframe src="https://course-demos-codeparrot-ds.hf.space" frameBorder="0" height="300" title="Gradio アプリ" class="block dark:hidden container p-0 flex-grow space-iframe" allow="accelerometer; ambient-light-sensor; autoplay; battery; camera; document-domain; encrypted-media; fullscreen; geolocation; gyroscope; layout-animations; legacy-image-formats; magnetometer; microphone; midi; oversized-images; payment; picture-in-picture; publickey-credentials-get; sync-xhr; usb; vr ; wake-lock; xr-spatial-tracking" sandbox="allow-forms allow-modals allow-popups allow-popups-to-escape-sandbox allow-same-origin allow-scripts allow-downloads"></iframe>
 
 これは、このセクションで示すコードを使って実際に学習し、Hub にアップロードしたモデルを紹介するものです。[こちら](https://huggingface.co/huggingface-course/codeparrot-ds?text=plt.imshow%28) で確認できます。テキスト生成にはランダム性があるため、得られる結果は少し異なるはずです。
  
@@ -80,7 +80,7 @@ def filter_streaming_dataset(dataset, filters):
         if any_keyword_in_string(sample["content"], filters):
             for k, v in sample.items():
                 filtered_dict[k].append(v)
-    print(f"{len(filtered_dict['content'])/total:.2%} of data after filtering.")
+    print(f"フィルタリング後のデータの割合: {len(filtered_dict['content'])/total:.2%}")
     return Dataset.from_dict(filtered_dict)
 ```
 
@@ -99,7 +99,7 @@ filtered_data = filter_streaming_dataset(data, filters)
 ```
 
 ```python out
-3.26% of data after filtering.
+フィルタリング後のデータの割合: 3.26%
 ```
 
 元のデータセットの約3%が残りますが、それでもかなり大きな規模です。得られたデータセットは 6 GB で、600,000件の Python スクリプトから構成されています！
@@ -195,15 +195,15 @@ outputs = tokenizer(
     return_length=True,
 )
 
-print(f"Input IDs length: {len(outputs['input_ids'])}")
-print(f"Input chunk lengths: {(outputs['length'])}")
-print(f"Chunk mapping: {outputs['overflow_to_sample_mapping']}")
+print(f"入力 ID の長さ: {len(outputs['input_ids'])}")
+print(f"入力チャンクの長さ: {(outputs['length'])}")
+print(f"チャンクの対応関係: {outputs['overflow_to_sample_mapping']}")
 ```
 
 ```python out
-Input IDs length: 34
-Input chunk lengths: [128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 117, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 41]
-Chunk mapping: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1]
+入力 ID の長さ: 34
+入力チャンクの長さ: [128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 117, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 41]
+チャンクの対応関係: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1]
 ```
 
 この2つの例からは、合計34個のセグメントが得られたことがわかります。チャンクの長さを見ると、両ドキュメントの末尾のチャンクは128トークン未満（それぞれ117と41）です。これらは全チャンクのごく一部なので、安心して除去できます。`overflow_to_sample_mapping` フィールドを使えば、どのチャンクがどの入力サンプルに属していたかも復元できます。
@@ -276,11 +276,11 @@ config = AutoConfig.from_pretrained(
 ```py
 model = GPT2LMHeadModel(config)
 model_size = sum(t.numel() for t in model.parameters())
-print(f"GPT-2 size: {model_size/1000**2:.1f}M parameters")
+print(f"GPT-2 のサイズ: {model_size/1000**2:.1f}M パラメータ")
 ```
 
 ```python out
-GPT-2 size: 124.2M parameters
+GPT-2 のサイズ: 124.2M パラメータ
 ```
 
 {:else}
@@ -319,7 +319,7 @@ _________________________________________________________________
 
 {/if}
 
-モデルには1億2,400万個のパラメータがあり、これらを調整していきます。学習を始める前に、バッチの作成を担うデータコレータをセットアップする必要があります。言語モデリング専用に設計された（名前がさりげなく示しているとおり）`DataCollatorForLanguageModeling` コレータが使えます。このコレータは、バッチのスタックとパディングに加えて、言語モデルのラベルの作成も担います。因果言語モデリングでは、入力がそのままラベルにもなります（要素を1つずらしただけです）。このデータコレータは学習中にラベルをその場で作成するので、`input_ids` を複製する必要はありません。
+モデルには1億2,400万個のパラメータがあり、これらを調整していきます。学習を始める前に、バッチの作成を担うデータコレータをセットアップする必要があります。その名のとおり言語モデリング専用に設計された `DataCollatorForLanguageModeling` コレータが使えます。このコレータは、バッチのスタックとパディングに加えて、言語モデルのラベルの作成も担います。因果言語モデリングでは、入力がそのままラベルにもなります（要素を1つずらしただけです）。このデータコレータは学習中にラベルをその場で作成するので、`input_ids` を複製する必要はありません。
 
 `DataCollatorForLanguageModeling` は、マスク言語モデリング（MLM）と因果言語モデリング（CLM）の両方に対応している点に注意してください。デフォルトでは MLM 用のデータを準備しますが、引数 `mlm=False` を設定すると CLM に切り替えられます。
 
@@ -642,7 +642,7 @@ rf
 
 ## 🤗 Accelerate で学習する[[training-with-accelerate]]
 
-`Trainer` を使ったモデルの学習方法は見てきました。ある程度のカスタマイズは可能です。しかし、学習ループを完全に制御したい場合や、風変わりな変更を加えたい場合もあります。そのような場合には 🤗 Accelerate が最適です。このセクションでは、それを使ってモデルを学習する手順を順に追っていきます。さらに面白くするために、学習ループに一工夫も加えます。
+`Trainer` を使ったモデルの学習方法は見てきました。ある程度のカスタマイズは可能です。しかし、学習ループを完全に制御したい場合や、標準的な学習処理にはない特殊な処理を組み込みたい場合もあります。そのような場合には 🤗 Accelerate が最適です。このセクションでは、それを使ってモデルを学習する手順を順に追っていきます。さらに面白くするために、学習ループに一工夫も加えます。
 
 <Youtube id="Hm8_PgVTFuc"/>
 
@@ -667,11 +667,11 @@ for keyword in [
     if len(ids) == 1:
         keytoken_ids.append(ids[0])
     else:
-        print(f"Keyword has not single token: {keyword}")
+        print(f"単一トークンにならないキーワード: {keyword}")
 ```
 
 ```python out
-'Keyword has not single token: testtest'
+'単一トークンにならないキーワード: testtest'
 ```
 
 うまく動いているようです！入力シーケンス、ロジット、先ほど選んだキートークンを入力として受け取るカスタム損失関数を書くことができます。まず、ロジットと入力を揃える必要があります。次のトークンが現在のトークンのラベルになるため、入力シーケンスを右に1つずらしたものがラベルになります。モデルは最初のトークンについては予測を行わないので、ラベルを入力シーケンスの2番目のトークンから始めることでこれを実現できます。次に、入力シーケンス全体の後に続くトークンのラベルは存在しないため、最後のロジットを切り取ります。これで、サンプルごとの損失を計算し、各サンプル内のすべてのキーワードの出現回数を数えることができます。最後に、出現回数を重みとして、すべてのサンプルの重み付き平均を計算します。キーワードを含まないサンプルをすべて捨ててしまわないよう、重みには1を加えます。

@@ -23,13 +23,13 @@
 {/if}
 
 
-このセクションでは、Transformer モデルを使って長い文書を要約に凝縮する方法、すなわち*テキスト要約*と呼ばれるタスクを見ていきます。これは最も難しい NLP タスクの1つです。長い文章を理解し、文書の主要な話題を捉えた一貫性のあるテキストを生成するなど、幅広い能力が求められるためです。しかし、うまくできればテキスト要約は強力なツールになります。ドメインの専門家が長い文書を細部まで読む負担を軽減し、さまざまな業務プロセスを高速化できます。
+このセクションでは、Transformer モデルを使って、長い文書の要点を短い文章にまとめる方法、すなわち*テキスト要約*と呼ばれるタスクを見ていきます。これは最も難しい NLP タスクの1つです。長い文章を理解し、文書の主要な話題を捉えた一貫性のあるテキストを生成するなど、幅広い能力が求められるためです。しかし、うまくできればテキスト要約は強力なツールになります。ドメインの専門家が長い文書を細部まで読む負担を軽減し、さまざまな業務プロセスを高速化できます。
 
 <Youtube id="yHnr5Dk2zCI"/>
 
 [Hugging Face Hub](https://huggingface.co/models?pipeline_tag=summarization&sort=downloads) には要約用にファインチューニングされたモデルがすでに各種存在しますが、そのほとんどすべてが英語の文書にしか適していません。そこで、このセクションではひねりを加えて、英語とスペイン語のバイリンガルモデルを学習します。このセクションの終わりには、ここに示すような顧客レビューを要約できる[モデル](https://huggingface.co/huggingface-course/mt5-small-finetuned-amazon-en-es)が得られます。
 
-<iframe src="https://course-demos-mt5-small-finetuned-amazon-en-es.hf.space" frameBorder="0" height="400" title="Gradio app" class="block dark:hidden container p-0 flex-grow space-iframe" allow="accelerometer; ambient-light-sensor; autoplay; battery; camera; document-domain; encrypted-media; fullscreen; geolocation; gyroscope; layout-animations; legacy-image-formats; magnetometer; microphone; midi; oversized-images; payment; picture-in-picture; publickey-credentials-get; sync-xhr; usb; vr ; wake-lock; xr-spatial-tracking" sandbox="allow-forms allow-modals allow-popups allow-popups-to-escape-sandbox allow-same-origin allow-scripts allow-downloads"></iframe>
+<iframe src="https://course-demos-mt5-small-finetuned-amazon-en-es.hf.space" frameBorder="0" height="400" title="Gradio アプリ" class="block dark:hidden container p-0 flex-grow space-iframe" allow="accelerometer; ambient-light-sensor; autoplay; battery; camera; document-domain; encrypted-media; fullscreen; geolocation; gyroscope; layout-animations; legacy-image-formats; magnetometer; microphone; midi; oversized-images; payment; picture-in-picture; publickey-credentials-get; sync-xhr; usb; vr ; wake-lock; xr-spatial-tracking" sandbox="allow-forms allow-modals allow-popups allow-popups-to-escape-sandbox allow-same-origin allow-scripts allow-downloads"></iframe>
 
 見ていくように、これらの要約が簡潔なのは、顧客が製品レビューに付けるタイトルから学習しているためです。まず、このタスクに適したバイリンガルコーパスを組み立てるところから始めましょう。
 
@@ -68,22 +68,22 @@ DatasetDict({
 def show_samples(dataset, num_samples=3, seed=42):
     sample = dataset["train"].shuffle(seed=seed).select(range(num_samples))
     for example in sample:
-        print(f"\n'>> Title: {example['review_title']}'")
-        print(f"'>> Review: {example['review_body']}'")
+        print(f"\n'>> タイトル: {example['review_title']}'")
+        print(f"'>> レビュー: {example['review_body']}'")
 
 
 show_samples(english_dataset)
 ```
 
 ```python out
-'>> Title: Worked in front position, not rear'
-'>> Review: 3 stars because these are not rear brakes as stated in the item description. At least the mount adapter only worked on the front fork of the bike that I got it for.'
+'>> タイトル: Worked in front position, not rear'
+'>> レビュー: 3 stars because these are not rear brakes as stated in the item description. At least the mount adapter only worked on the front fork of the bike that I got it for.'
 
-'>> Title: meh'
-'>> Review: Does it’s job and it’s gorgeous but mine is falling apart, I had to basically put it together again with hot glue'
+'>> タイトル: meh'
+'>> レビュー: Does it’s job and it’s gorgeous but mine is falling apart, I had to basically put it together again with hot glue'
 
-'>> Title: Can\'t beat these for the money'
-'>> Review: Bought this for handling miscellaneous aircraft parts and hanger "stuff" that I needed to organize; it really fit the bill. The unit arrived quickly, was well packaged and arrived intact (always a good sign). There are five wall mounts-- three on the top and two on the bottom. I wanted to mount it on the wall, so all I had to do was to remove the top two layers of plastic drawers, as well as the bottom corner drawers, place it when I wanted and mark it; I then used some of the new plastic screw in wall anchors (the 50 pound variety) and it easily mounted to the wall. Some have remarked that they wanted dividers for the drawers, and that they made those. Good idea. My application was that I needed something that I can see the contents at about eye level, so I wanted the fuller-sized drawers. I also like that these are the new plastic that doesn\'t get brittle and split like my older plastic drawers did. I like the all-plastic construction. It\'s heavy duty enough to hold metal parts, but being made of plastic it\'s not as heavy as a metal frame, so you can easily mount it to the wall and still load it up with heavy stuff, or light stuff. No problem there. For the money, you can\'t beat it. Best one of these I\'ve bought to date-- and I\'ve been using some version of these for over forty years.'
+'>> タイトル: Can\'t beat these for the money'
+'>> レビュー: Bought this for handling miscellaneous aircraft parts and hanger "stuff" that I needed to organize; it really fit the bill. The unit arrived quickly, was well packaged and arrived intact (always a good sign). There are five wall mounts-- three on the top and two on the bottom. I wanted to mount it on the wall, so all I had to do was to remove the top two layers of plastic drawers, as well as the bottom corner drawers, place it when I wanted and mark it; I then used some of the new plastic screw in wall anchors (the 50 pound variety) and it easily mounted to the wall. Some have remarked that they wanted dividers for the drawers, and that they made those. Good idea. My application was that I needed something that I can see the contents at about eye level, so I wanted the fuller-sized drawers. I also like that these are the new plastic that doesn\'t get brittle and split like my older plastic drawers did. I like the all-plastic construction. It\'s heavy duty enough to hold metal parts, but being made of plastic it\'s not as heavy as a metal frame, so you can easily mount it to the wall and still load it up with heavy stuff, or light stuff. No problem there. For the money, you can\'t beat it. Best one of these I\'ve bought to date-- and I\'ve been using some version of these for over forty years.'
 ```
 
 > [!TIP]
@@ -147,14 +147,14 @@ show_samples(english_books)
 ```
 
 ```python out
-'>> Title: I\'m dissapointed.'
-'>> Review: I guess I had higher expectations for this book from the reviews. I really thought I\'d at least like it. The plot idea was great. I loved Ash but, it just didnt go anywhere. Most of the book was about their radio show and talking to callers. I wanted the author to dig deeper so we could really get to know the characters. All we know about Grace is that she is attractive looking, Latino and is kind of a brat. I\'m dissapointed.'
+'>> タイトル: I\'m dissapointed.'
+'>> レビュー: I guess I had higher expectations for this book from the reviews. I really thought I\'d at least like it. The plot idea was great. I loved Ash but, it just didnt go anywhere. Most of the book was about their radio show and talking to callers. I wanted the author to dig deeper so we could really get to know the characters. All we know about Grace is that she is attractive looking, Latino and is kind of a brat. I\'m dissapointed.'
 
-'>> Title: Good art, good price, poor design'
-'>> Review: I had gotten the DC Vintage calendar the past two years, but it was on backorder forever this year and I saw they had shrunk the dimensions for no good reason. This one has good art choices but the design has the fold going through the picture, so it\'s less aesthetically pleasing, especially if you want to keep a picture to hang. For the price, a good calendar'
+'>> タイトル: Good art, good price, poor design'
+'>> レビュー: I had gotten the DC Vintage calendar the past two years, but it was on backorder forever this year and I saw they had shrunk the dimensions for no good reason. This one has good art choices but the design has the fold going through the picture, so it\'s less aesthetically pleasing, especially if you want to keep a picture to hang. For the price, a good calendar'
 
-'>> Title: Helpful'
-'>> Review: Nearly all the tips useful and. I consider myself an intermediate to advanced user of OneNote. I would highly recommend.'
+'>> タイトル: Helpful'
+'>> レビュー: Nearly all the tips useful and. I consider myself an intermediate to advanced user of OneNote. I would highly recommend.'
 ```
 
 レビューは厳密には本に関するものではなく、カレンダーや OneNote のような電子アプリケーションを指している場合もあることが分かります。それでも、このドメインは要約モデルを学習するのにだいたい適切なようです。このタスクに適したさまざまなモデルを見る前に、データ準備の最後の1つを行います。英語とスペイン語のレビューを単一の `DatasetDict` オブジェクトに結合することです。🤗 Datasets は便利な `concatenate_datasets()` 関数を提供しており、（名前のとおり）2つの `Dataset` オブジェクトを積み重ねることができます。そこで、バイリンガルデータセットを作るため、各スプリットについてループし、そのスプリットのデータセットを連結し、結果をシャッフルして、モデルが単一言語に過学習しないようにします。
@@ -175,14 +175,14 @@ show_samples(books_dataset)
 ```
 
 ```python out
-'>> Title: Easy to follow!!!!'
-'>> Review: I loved The dash diet weight loss Solution. Never hungry. I would recommend this diet. Also the menus are well rounded. Try it. Has lots of the information need thanks.'
+'>> タイトル: Easy to follow!!!!'
+'>> レビュー: I loved The dash diet weight loss Solution. Never hungry. I would recommend this diet. Also the menus are well rounded. Try it. Has lots of the information need thanks.'
 
-'>> Title: PARCIALMENTE DAÑADO'
-'>> Review: Me llegó el día que tocaba, junto a otros libros que pedí, pero la caja llegó en mal estado lo cual dañó las esquinas de los libros porque venían sin protección (forro).'
+'>> タイトル: PARCIALMENTE DAÑADO'
+'>> レビュー: Me llegó el día que tocaba, junto a otros libros que pedí, pero la caja llegó en mal estado lo cual dañó las esquinas de los libros porque venían sin protección (forro).'
 
-'>> Title: no lo he podido descargar'
-'>> Review: igual que el anterior'
+'>> タイトル: no lo he podido descargar'
+'>> レビュー: igual que el anterior'
 ```
 
 確かに、英語とスペイン語のレビューが混ざっています！学習コーパスができたので、最後に確認すべきは、レビューとそのタイトルの単語の分布です。これは要約タスクで特に重要です。データ内の短い参照要約が、モデルに1〜2語しか出力しないよう偏らせる可能性があるためです。下の図は単語の分布を示しており、タイトルはわずか1〜2語に大きく偏っていることが分かります。
@@ -213,7 +213,7 @@ books_dataset = books_dataset.filter(lambda x: len(x["review_title"].split()) > 
 |    [BART](https://huggingface.co/facebook/bart-base)     | BERT と GPT-2 の事前学習方式を組み合わせ、変形した入力を復元するよう学習された、エンコーダとデコーダの両スタックを持つ新しい Transformer アーキテクチャです。                                    |      ❌       |
 |  [mBART-50](https://huggingface.co/facebook/mbart-large-50)   | BART の多言語版で、50言語で事前学習されています。                                                                                                                                                     |      ✅       |
 
-この表から分かるように、要約のための Transformer モデル（そして実際、ほとんどの NLP タスク）の大部分は単一言語用です。タスクが英語やドイツ語のような「高リソース」言語であれば便利ですが、世界中で使われている何千もの他の言語にはあまり向いていません。幸い、mT5 や mBART のような多言語 Transformer モデルのクラスが救ってくれます。これらのモデルは言語モデリングを使って事前学習されていますが、ひねりがあります。1つの言語のコーパスで学習するのではなく、50を超える言語のテキストで共同で学習されているのです！
+この表から分かるように、要約のための Transformer モデル（そして実際、ほとんどの NLP タスク）の大部分は単一言語用です。タスクが英語やドイツ語のような「高リソース」言語であれば便利ですが、世界中で使われている何千もの他の言語にはあまり向いていません。幸い、mT5 や mBART のような多言語 Transformer モデルが、この問題を解決してくれます。これらのモデルは言語モデリングを使って事前学習されていますが、ひねりがあります。1つの言語のコーパスで学習するのではなく、50を超える言語のテキストで共同で学習されているのです！
 
 ここでは mT5 に焦点を当てます。これは T5 をベースにした興味深いアーキテクチャで、text-to-text フレームワークで事前学習されています。T5 では、すべての NLP タスクが `summarize:` のようなプロンプト接頭辞で定式化され、これによりモデルは生成するテキストをプロンプトに適応させます。下の図に示すように、これにより T5 は非常に汎用的になり、単一のモデルで多くのタスクを解決できます！
 
@@ -265,7 +265,7 @@ tokenizer.convert_ids_to_tokens(inputs.input_ids)
 ['▁I', '▁', 'loved', '▁reading', '▁the', '▁Hung', 'er', '▁Games', '</s>']
 ```
 
-特殊な Unicode 文字 `▁` とシーケンス終端トークン `</s>` は、SentencePiece トークナイザを扱っていることを示しています。これは、[Chapter 6](/course/chapter6) で議論した Unigram セグメンテーションアルゴリズムに基づいています。Unigram は、SentencePiece がアクセント、句読点、そして日本語のように空白文字を持たない言語が多いという事実に依存しないため、多言語コーパスで特に有用です。
+特殊な Unicode 文字 `▁` とシーケンス終端トークン `</s>` は、SentencePiece トークナイザを扱っていることを示しています。これは、[Chapter 6](/course/chapter6) で議論した Unigram セグメンテーションアルゴリズムに基づいています。Unigram は、SentencePiece がアクセントや句読点、さらには日本語のように空白文字を持たない言語が多いという点に左右されないため、多言語コーパスで特に有用です。
 
 コーパスをトークン化するには、要約に関連する微妙な点に対処しなければなりません。ラベルもテキストであるため、モデルの最大コンテキストサイズを超える可能性があります。そのため、レビューとタイトルの両方に切り捨てを適用し、モデルに過度に長い入力を渡さないようにする必要があります。🤗 Transformers のトークナイザは便利な `text_target` 引数を提供しており、入力と並行してラベルをトークン化できます。mT5 で入力とターゲットがどのように処理されるかの例は次のとおりです。
 
@@ -357,7 +357,7 @@ scores
  'rougeLsum': AggregateScore(low=Score(precision=0.86, recall=1.0, fmeasure=0.92), mid=Score(precision=0.86, recall=1.0, fmeasure=0.92), high=Score(precision=0.86, recall=1.0, fmeasure=0.92))}
 ```
 
-うわ、その出力にはたくさんの情報があります！これはすべて何を意味するのでしょうか？まず、🤗 Datasets は実際には適合率、再現率、F1 スコアの信頼区間を計算します。これらが、ここで見られる `low`、`mid`、`high` 属性です。さらに、🤗 Datasets はさまざまな ROUGE スコアを計算します。これらは、生成された要約と参照要約を比較する際のテキストの粒度の種類に基づいています。`rouge1` バリアントはユニグラムの重複です。これは単語の重複を言うための派手な言い方で、上で議論した指標そのものです。これを検証するため、スコアの `mid` 値を取り出してみましょう。
+うわ、その出力にはたくさんの情報があります！これはすべて何を意味するのでしょうか？まず、🤗 Datasets は実際には適合率、再現率、F1 スコアの信頼区間を計算します。これらが、ここで見られる `low`、`mid`、`high` 属性です。さらに、🤗 Datasets はさまざまな ROUGE スコアを計算します。これらは、生成された要約と参照要約を比較する際のテキストの粒度の種類に基づいています。`rouge1` バリアントはユニグラムの重複、つまり生成された要約と参照要約で共通する単語の割合を表す指標で、上で議論した指標そのものです。これを検証するため、スコアの `mid` 値を取り出してみましょう。
 
 ```python
 scores["rouge1"].mid
@@ -1010,9 +1010,9 @@ def print_summary(idx):
     review = books_dataset["test"][idx]["review_body"]
     title = books_dataset["test"][idx]["review_title"]
     summary = summarizer(books_dataset["test"][idx]["review_body"])[0]["summary_text"]
-    print(f"'>>> Review: {review}'")
-    print(f"\n'>>> Title: {title}'")
-    print(f"\n'>>> Summary: {summary}'")
+    print(f"'>>> レビュー: {review}'")
+    print(f"\n'>>> タイトル: {title}'")
+    print(f"\n'>>> 要約: {summary}'")
 ```
 
 得られる英語の例の1つを見てみましょう。
@@ -1022,25 +1022,25 @@ print_summary(100)
 ```
 
 ```python out
-'>>> Review: Nothing special at all about this product... the book is too small and stiff and hard to write in. The huge sticker on the back doesn’t come off and looks super tacky. I would not purchase this again. I could have just bought a journal from the dollar store and it would be basically the same thing. It’s also really expensive for what it is.'
+'>>> レビュー: Nothing special at all about this product... the book is too small and stiff and hard to write in. The huge sticker on the back doesn’t come off and looks super tacky. I would not purchase this again. I could have just bought a journal from the dollar store and it would be basically the same thing. It’s also really expensive for what it is.'
 
-'>>> Title: Not impressed at all... buy something else'
+'>>> タイトル: Not impressed at all... buy something else'
 
-'>>> Summary: Nothing special at all about this product'
+'>>> 要約: Nothing special at all about this product'
 ```
 
-悪くありません！私たちのモデルは、レビューの一部を新しい単語で補強することにより、*抽象型*要約を実際に実行できています。そして、このモデルのおそらく最も素晴らしい側面は、バイリンガルであることです。そのため、スペイン語のレビューの要約も生成できます。
+悪くありません！私たちのモデルは、レビューの一部を新しい単語で補強することにより、*生成型要約（abstractive summarization）*を実際に実行できています。そして、このモデルのおそらく最も素晴らしい側面は、バイリンガルであることです。そのため、スペイン語のレビューの要約も生成できます。
 
 ```python
 print_summary(0)
 ```
 
 ```python out
-'>>> Review: Es una trilogia que se hace muy facil de leer. Me ha gustado, no me esperaba el final para nada'
+'>>> レビュー: Es una trilogia que se hace muy facil de leer. Me ha gustado, no me esperaba el final para nada'
 
-'>>> Title: Buena literatura para adolescentes'
+'>>> タイトル: Buena literatura para adolescentes'
 
-'>>> Summary: Muy facil de leer'
+'>>> 要約: Muy facil de leer'
 ```
 
 この要約は、英語では "Very easy to read" という意味で、このケースではレビューから直接抽出されたものであることが分かります。それでも、これは mT5 モデルの汎用性を示しており、多言語コーパスを扱うのがどのようなものか、その一端を味わうことができました！

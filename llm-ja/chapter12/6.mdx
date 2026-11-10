@@ -6,9 +6,9 @@
 
 # 実践演習： Unsloth で GRPO
 
-この演習では、モデルの推論能力を改善するために、Unsloth を使って GRPO（Group Relative Policy Optimization）でモデルをファインチューニングします。GRPO は [Chapter 3](/course/chapter3/3) で扱いました。
+この演習では、モデルの推論能力を改善するために、Unsloth を使って GRPO（Group Relative Policy Optimization）でモデルをファインチューニングします。GRPO は [第3章](/course/chapter3/3) で扱いました。
 
-Unsloth は LLM のファインチューニングを高速化するライブラリであり、より高速に、より少ない計算リソースでモデルを学習できるようにします。Unsloth は TRL に組み込まれるので、前のセクションで学んだことをもとに、Unsloth 固有の点に適応させていきます。
+Unsloth は LLM のファインチューニングを高速化するライブラリであり、より高速に、より少ない計算リソースでモデルを学習できるようにします。Unsloth は TRL と連携して動作するため、前のセクションで学んだ内容を活用できます。ここでは、Unsloth を利用する際に必要な設定や実装上の違いを中心に説明します。
 
 > [!TIP]
 > この演習は、無料の Google Colab T4 GPU で実行できます。最良の体験のためには、上記リンクのノートブックに沿って進め、自分でも試してみてください。
@@ -36,7 +36,7 @@ from unsloth import FastLanguageModel
 from unsloth import FastLanguageModel
 import torch
 
-max_seq_length = 1024  # より長い推論の跡のために増やせる
+max_seq_length = 1024  # より長い推論過程を扱う場合は値を増やす
 lora_rank = 32  # ランクが大きいほど賢くなるが、遅くなる
 
 model, tokenizer = FastLanguageModel.from_pretrained(
@@ -69,7 +69,7 @@ model = FastLanguageModel.get_peft_model(
 このコードは、メモリを節約するためにモデルを4ビット量子化で読み込み、効率的なファインチューニングのために LoRA（Low-Rank Adaptation）を適用します。`target_modules` パラメータは、モデルのどの層をファインチューニングするかを指定し、`use_gradient_checkpointing` により、より長いコンテキストでの学習が可能になります。
 
 > [!TIP]
-> この章では LoRA の詳細は扱いませんが、[Chapter 11](/course/chapter11/3)で詳細を学ぶことができます。
+> この章では LoRA の詳細は扱いませんが、[第11章](/course/chapter11/3)で詳細を学ぶことができます。
 
 ## データの準備
 
@@ -137,7 +137,7 @@ def get_gsm8k_questions(split="train") -> Dataset:
 dataset = get_gsm8k_questions()
 ```
 
-データセットは、データセットから答えを取り出し、文字列として整形することで準備されます。
+GSM8K の回答から正答部分を抽出し、文字列として整形してデータセットを準備します。
 
 ## 報酬関数を定義する
 
@@ -153,10 +153,10 @@ def correctness_reward_func(prompts, completions, answer, **kwargs) -> list[floa
     extracted_responses = [extract_xml_answer(r) for r in responses]
     print(
         "-" * 20,
-        f"Question:\n{q}",
-        f"\nAnswer:\n{answer[0]}",
-        f"\nResponse:\n{responses[0]}",
-        f"\nExtracted:\n{extracted_responses[0]}",
+        f"問題:\n{q}",
+        f"\n正解:\n{answer[0]}",
+        f"\nモデルの応答:\n{responses[0]}",
+        f"\n抽出した答え:\n{extracted_responses[0]}",
     )
     return [2.0 if r == a else 0.0 for r, a in zip(extracted_responses, answer)]
 
@@ -315,7 +315,7 @@ output = (
 print(output)
 ```
 
-モデルが、答えを出す前に推論を示す、指定された形式に今や従っていることが確認できるはずです。
+学習後のモデルが、指定された形式に従い、答えを出す前に推論過程を示すようになったか確認してください。
 
 ## モデルを保存する
 

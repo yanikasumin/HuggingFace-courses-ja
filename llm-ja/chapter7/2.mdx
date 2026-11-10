@@ -26,13 +26,13 @@
 
 - **固有表現認識（NER）**: 文中のエンティティ（人名、地名、組織名など）を見つけます。エンティティの種類ごとに1つのクラスと、「エンティティではない」場合の1つのクラスを用意することで、各トークンへのラベル割り当てとして定式化できます。
 - **品詞タグ付け（POS）**: 文中の各単語が、特定の品詞（名詞、動詞、形容詞など）のどれに対応するかを付けます。
-- **チャンキング**: 同じエンティティに属するトークンを見つけます。このタスクは（POS や NER と組み合わせることもできます）、通常、チャンクの先頭にあるトークンには1つのラベル（通常は `B-`）、チャンクの内部にあるトークンには別のラベル（通常は `I-`）、どのチャンクにも属さないトークンには3つ目のラベル（通常は `O`）を割り当てる形で定式化できます。
+- **チャンキング**: 同じエンティティに属するトークンを見つけます。このタスクは POS や NER と組み合わせて使うこともできます。通常、チャンクの先頭にあるトークンには1つのラベル（通常は `B-`）、チャンクの内部にあるトークンには別のラベル（通常は `I-`）、どのチャンクにも属さないトークンには3つ目のラベル（通常は `O`）を割り当てる形で定式化できます。
 
 <Youtube id="wVHdVlPScxA"/>
 
 もちろん、トークン分類の問題は他にも数多くの種類があり、ここに挙げたのは代表的な例の一部にすぎません。このセクションでは、NER タスクでモデル（BERT）をファインチューニングし、次のような予測ができるようにします。
 
-<iframe src="https://course-demos-bert-finetuned-ner.hf.space" frameBorder="0" height="350" title="Gradio app" class="block dark:hidden container p-0 flex-grow space-iframe" allow="accelerometer; ambient-light-sensor; autoplay; battery; camera; document-domain; encrypted-media; fullscreen; geolocation; gyroscope; layout-animations; legacy-image-formats; magnetometer; microphone; midi; oversized-images; payment; picture-in-picture; publickey-credentials-get; sync-xhr; usb; vr ; wake-lock; xr-spatial-tracking" sandbox="allow-forms allow-modals allow-popups allow-popups-to-escape-sandbox allow-same-origin allow-scripts allow-downloads"></iframe>
+<iframe src="https://course-demos-bert-finetuned-ner.hf.space" frameBorder="0" height="350" title="Gradio アプリ" class="block dark:hidden container p-0 flex-grow space-iframe" allow="accelerometer; ambient-light-sensor; autoplay; battery; camera; document-domain; encrypted-media; fullscreen; geolocation; gyroscope; layout-animations; legacy-image-formats; magnetometer; microphone; midi; oversized-images; payment; picture-in-picture; publickey-credentials-get; sync-xhr; usb; vr ; wake-lock; xr-spatial-tracking" sandbox="allow-forms allow-modals allow-popups allow-popups-to-escape-sandbox allow-same-origin allow-scripts allow-downloads"></iframe>
 
 <a class="flex justify-center" href="/huggingface-course/bert-finetuned-ner">
 <img class="block dark:hidden lg:w-3/5" src="https://huggingface.co/datasets/huggingface-course/documentation-images/resolve/main/en/chapter7/model-eval-bert-finetuned-ner.png" alt="質問応答のワンホットエンコード済みラベル"/>
@@ -182,7 +182,7 @@ model_checkpoint = "bert-base-cased"
 tokenizer = AutoTokenizer.from_pretrained(model_checkpoint)
 ```
 
-`model_checkpoint` は、[Hub](https://huggingface.co/models) にある好みのモデルに置き換えることも、事前学習済みモデルとトークナイザを保存したローカルフォルダに置き換えることもできます。唯一の制約は、トークナイザが 🤗 Tokenizers ライブラリに支えられていて、高速バージョンが利用できることです。高速バージョンを持つすべてのアーキテクチャは、[この大きな表](https://huggingface.co/transformers/#supported-frameworks)で確認できます。使用している `tokenizer` オブジェクトが本当に 🤗 Tokenizers に支えられているかどうかは、その `is_fast` 属性を見れば確認できます。
+`model_checkpoint` は、[Hub](https://huggingface.co/models) にある好みのモデルに置き換えることも、事前学習済みモデルとトークナイザを保存したローカルフォルダに置き換えることもできます。唯一の制約は、🤗 Tokenizers ライブラリを利用した高速トークナイザが使えることです。高速バージョンを持つすべてのアーキテクチャは、[この大きな表](https://huggingface.co/transformers/#supported-frameworks)で確認できます。使用している `tokenizer` オブジェクトが本当に 🤗 Tokenizers に支えられているかどうかは、その `is_fast` 属性を見れば確認できます。
 
 ```py
 tokenizer.is_fast
@@ -389,7 +389,7 @@ tf_eval_dataset = tokenized_datasets["validation"].to_tf_dataset(
 
 ### モデルの定義[[defining-the-model]]
 
-トークン分類の問題を扱っているので、`TFAutoModelForTokenClassification` クラスを使います。このモデルを定義する際に覚えておくべき主な点は、ラベルの数に関する情報を渡すことです。最も簡単な方法は、`num_labels` 引数でその数を渡すことですが、このセクションの冒頭で見たような立派な推論ウィジェットを機能させたい場合は、正しいラベルの対応を設定する方がよいでしょう。
+トークン分類の問題を扱っているので、`TFAutoModelForTokenClassification` クラスを使います。このモデルを定義する際に覚えておくべき主な点は、ラベルの数に関する情報を渡すことです。最も簡単な方法は、`num_labels` 引数でその数を渡すことですが、このセクションの冒頭で見たような紹介した推論ウィジェットを正しく動作させたい場合は、正しいラベルの対応を設定する方がよいでしょう。
 
 ラベルの対応は、2つの辞書 `id2label` と `label2id` で設定します。これらには、ID からラベルへのマッピングと、その逆のマッピングが含まれます。
 
@@ -633,7 +633,7 @@ metric.compute(predictions=[all_predictions], references=[all_labels])
 
 ### モデルの定義[[defining-the-model]]
 
-トークン分類の問題を扱っているので、`AutoModelForTokenClassification` クラスを使います。このモデルを定義する際に覚えておくべき主な点は、ラベルの数に関する情報を渡すことです。最も簡単な方法は、`num_labels` 引数でその数を渡すことですが、このセクションの冒頭で見たような立派な推論ウィジェットを機能させたい場合は、正しいラベルの対応を設定する方がよいでしょう。
+トークン分類の問題を扱っているので、`AutoModelForTokenClassification` クラスを使います。このモデルを定義する際に覚えておくべき主な点は、ラベルの数に関する情報を渡すことです。最も簡単な方法は、`num_labels` 引数でその数を渡すことですが、このセクションの冒頭で見たような紹介した推論ウィジェットを正しく動作させたい場合は、正しいラベルの対応を設定する方がよいでしょう。
 
 ラベルの対応は、2つの辞書 `id2label` と `label2id` で設定します。これらには、ID からラベルへのマッピングと、その逆のマッピングが含まれます。
 
@@ -935,7 +935,7 @@ unwrapped_model.save_pretrained(output_dir, save_function=accelerator.save)
 
 ## ファインチューニング済みモデルの使用[[using-the-fine-tuned-model]]
 
-Model Hub で推論ウィジェットを使って、私たちがファインチューニングしたモデルを使う方法はすでに紹介しました。ローカルで `pipeline` を使って使うには、適切なモデル識別子を指定するだけです。
+Model Hub で推論ウィジェットを使って、私たちがファインチューニングしたモデルを使う方法はすでに紹介しました。ローカルで `pipeline` を使ってモデルを実行するには、適切なモデル識別子を指定するだけです。
 
 ```py
 from transformers import pipeline

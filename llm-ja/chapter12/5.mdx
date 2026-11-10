@@ -57,7 +57,7 @@ print(dataset)
 
 この演習では、[`SmolLM2-135M`](https://huggingface.co/HuggingFaceTB/SmolLM2-135M) モデルを使います。
 
-これは、限られたハードウェアで動作する、パラメータ数135Mの小さなモデルです。そのため学習には理想的ですが、世の中にある最も強力なモデルではありません。より強力なハードウェアにアクセスできる場合は、[`SmolLM2-1.7B`](https://huggingface.co/HuggingFaceTB/SmolLM2-1.7B) のようなより大きなモデルのファインチューニングを試すこともできます。
+これは、限られたハードウェアで動作する、パラメータ数135Mの小さなモデルです。そのため学習には理想的ですが、高性能な大規模モデルではありません。より強力なハードウェアにアクセスできる場合は、[`SmolLM2-1.7B`](https://huggingface.co/HuggingFaceTB/SmolLM2-1.7B) のようなより大きなモデルのファインチューニングを試すこともできます。
 
 ```python
 model_id = "HuggingFaceTB/SmolLM-135M-Instruct"
@@ -74,7 +74,7 @@ tokenizer = AutoTokenizer.from_pretrained(model_id)
 
 次に、LoRA の設定を読み込みます。LoRA を活用して、学習可能なパラメータの数を減らし、ひいてはモデルのファインチューニングに必要なメモリ使用量を削減します。
 
-LoRA に馴染みがない方は、[Chapter 11](https://huggingface.co/learn/course/en/chapter11/3)で詳細を読むことができます。
+LoRA に馴染みがない方は、[第11章](https://huggingface.co/learn/course/en/chapter11/3)で詳細を読むことができます。
 
 ```python
 # LoRA を読み込む
@@ -109,7 +109,7 @@ def reward_len(completions, **kwargs):
 
 では、学習引数を定義しましょう。`GRPOConfig` クラスを使って、典型的な `transformers` スタイルで学習引数を定義します。
 
-学習引数を定義するのが初めての方は、詳細については [TrainingArguments](https://huggingface.co/docs/transformers/en/main_classes/trainer#trainingarguments) クラスを確認するか、詳しい紹介として [Chapter 2](https://huggingface.co/learn/course/en/chapter2/1)を確認できます。
+学習引数を定義するのが初めての方は、詳細については [TrainingArguments](https://huggingface.co/docs/transformers/en/main_classes/trainer#trainingarguments) クラスを確認するか、詳しい紹介として [第2章](https://huggingface.co/learn/course/en/chapter2/1)を確認できます。
 
 ```python
 # 学習引数
@@ -150,7 +150,7 @@ trainer.train()
 
 ## 学習中にモデルを Hub にプッシュする
 
-`push_to_hub` 引数を `True` に設定し、`model_id` 引数を有効なモデル名に設定すると、学習中にモデルが Hugging Face Hub にプッシュされます。モデルをすぐに感覚的にテストし始めたい場合に便利です！
+`push_to_hub` 引数を `True` に設定し、`model_id` 引数を有効なモデル名に設定すると、学習中にモデルが Hugging Face Hub にプッシュされます。学習中からモデルを気軽に試し、どのような応答を生成するか確かめたい場合に便利です！
 
 ## 学習結果を解釈する
 
@@ -162,7 +162,7 @@ trainer.train()
 
 ![報酬関数からの報酬](https://huggingface.co/reasoning-course/images/resolve/main/grpo/13.png)
 
-損失は0から始まり、学習中に増加することに気づくかもしれません。これは直感に反するように思えるかもしれません。この振る舞いは GRPO では予期されるものであり、アルゴリズムの数学的な定式化に直接関係しています。GRPO の損失は、KL ダイバージェンス（元のポリシーに対する上限）に比例します。学習が進むにつれて、モデルは報酬関数によりよく合うテキストを生成することを学び、当初のポリシーからより乖離するようになります。この増大する乖離は、損失値の上昇に反映されており、これは実際には、モデルが報酬関数への最適化に成功して適応していることを示しています。
+損失は0から始まり、学習中に増加することに気づくかもしれません。これは直感に反するように思えるかもしれません。この振る舞いは GRPO では予期されるものであり、アルゴリズムの数学的な定式化に直接関係しています。GRPO の損失は、KL ダイバージェンス（元の方策に対する上限）に比例します。学習が進むにつれて、モデルは報酬関数によりよく合うテキストを生成することを学び、当初の方策からより乖離するようになります。この増大する乖離は、損失値の上昇に反映されており、これは実際には、モデルが報酬関数への最適化に成功して適応していることを示しています。
 
 ![損失](https://huggingface.co/reasoning-course/images/resolve/main/grpo/14.png)
 

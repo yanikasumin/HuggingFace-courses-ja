@@ -1,6 +1,6 @@
 # DeepSeek R1 論文を理解する
 
-この章は、論文の読み方を学ぶ速習コースです。論文を平易な言葉で読み進め、その後、重要な概念とポイントを分解していきます。
+このセクションでは、DeepSeek R1 の論文を短時間で読み解きます。まず論文の内容を平易な言葉で説明し、その後、重要な概念とポイントを詳しく見ていきます。
 
 DeepSeek R1 は、言語モデルの学習における大きな進歩を表しており、特に強化学習を通じた推論能力の開発で顕著です。この論文は、Group Relative Policy Optimization（GRPO）と呼ばれる新しい強化学習アルゴリズムを導入しています。
 
@@ -24,7 +24,7 @@ R1-Zero の学習における最も注目すべき発見の一つは、「Aha �
 3. 自己修正： この気づきに基づいてアプローチを調整する
 4. 説明： 新しいアプローチがなぜ優れているかを説明できる
 
-このブレークスルーは学習者の共感を呼び、「ユーレカ（分かった！）」の瞬間のように感じられます。これは単なる暗記ではなく学習が起きていることを示しています。少し立ち止まって、「Aha」モーメントを持つとはどんな感覚か、想像してみましょう。
+この現象は、人間が問題を解くときに突然答えをひらめく「ユーレカ！」の瞬間を思い起こさせます。単に学習データを暗記しているのではなく、モデルが学習を通じて新たな問題解決の振る舞いを獲得していることを示す例として注目されています。少し立ち止まって、「Aha」モーメントを持つとはどんな感覚か、想像してみましょう。
 
 たとえば、パズルを解こうとしていると想像してください。
 - 最初の試み： 「色からすると、このピースはここに入るはず」
@@ -108,7 +108,7 @@ Rejection Sampling フェーズでは、モデルがサンプルを生成し、�
 
 ![GRPO のプロセス](https://huggingface.co/reasoning-course/images/resolve/main/grpo/10.png)
 
-GRPO の新規性は、「選好の修正のために直接最適化する」能力にあります。これは、PPO のような従来の強化学習アルゴリズムと比べて、より直接的で効率的な、モデルを望ましい出力に合わせるための経路を意味します。GRPO の仕組みを、その3つの主要な構成要素に分解してみましょう。
+GRPO の新規性は、「選好を修正するために直接最適化できる」点にあります。これは、PPO のような従来の強化学習アルゴリズムと比べて、より直接的で効率的な、モデルを望ましい出力に合わせるための経路を意味します。GRPO の仕組みを、その3つの主要な構成要素に分解してみましょう。
 
 ### グループの形成： 複数の解を作る
 
@@ -166,28 +166,28 @@ Advantage = (reward - mean(group_rewards)) / std(group_rewards)
 GRPO の主要な構成要素を理解したところで、アルゴリズムを疑似コードで見てみましょう。これは簡略化したバージョンですが、重要な考え方は捉えています。
 
 ```
-Input: 
-- initial_policy: Starting model to be trained
-- reward_function: Function that evaluates outputs
-- training_prompts: Set of training examples
-- group_size: Number of outputs per prompt (typically 4-16)
+入力:
+- initial_policy: 学習対象となる初期モデル
+- reward_function: 出力を評価する関数
+- training_prompts: 学習用プロンプトの集合
+- group_size: プロンプトごとの生成数（通常 4〜16）
 
-Algorithm GRPO:
-1. For each training iteration:
-   a. Set reference_policy = initial_policy (snapshot current policy)
-   b. For each prompt in batch:
-      i. Generate group_size different outputs using initial_policy
-      ii. Compute rewards for each output using reward_function
-      iii. Normalize rewards within group:
+アルゴリズム GRPO:
+1. 学習の各反復について:
+   a. reference_policy = initial_policy とする（現在の方策のスナップショット）
+   b. バッチ内の各プロンプトについて:
+      i. initial_policy を使って group_size 件の異なる出力を生成する
+      ii. reward_function を使って各出力の報酬を計算する
+      iii. グループ内で報酬を正規化する:
            normalized_advantage = (reward - mean(rewards)) / std(rewards)
-      iv. Update policy by maximizing the clipped ratio:
-          min(prob_ratio * normalized_advantage, 
+      iv. クリップした比を最大化するように方策を更新する:
+          min(prob_ratio * normalized_advantage,
               clip(prob_ratio, 1-epsilon, 1+epsilon) * normalized_advantage)
           - kl_weight * KL(initial_policy || reference_policy)
-          
-          where prob_ratio is current_prob / reference_prob
 
-Output: Optimized policy model
+          ここで prob_ratio は current_prob / reference_prob
+
+出力: 最適化された方策モデル
 ```
 
 このアルゴリズムは、GRPO がグループベースのアドバンテージ推定と方策最適化を組み合わせ、クリッピングと KL ダイバージェンスの制約によって安定性を維持する様子を示しています。
@@ -233,7 +233,7 @@ DeepSeek R1 論文は、言語モデルの開発における重要なマイル�
     choices={[
         {
             text: "報酬モデルの有無にかかわらず、選好から学習できる GRPO アルゴリズム",
-            explain: "正解です！GRPO の主要な革新は、選好の修正のために直接最適化できる能力であり、従来の RL 手法より効率的です。",
+            explain: "正解です！GRPO の主要な革新は、選好を修正するために直接最適化できる点であり、従来の RL 手法より効率的です。",
             correct: true
         },
         {

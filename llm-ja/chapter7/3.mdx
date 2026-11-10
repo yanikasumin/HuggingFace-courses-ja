@@ -35,7 +35,7 @@ Transformer モデルを使う多くの NLP アプリケーションでは、Hug
 
 このセクションの終わりには、下に示すように文を自動補完できる[マスク言語モデル](https://huggingface.co/huggingface-course/distilbert-base-uncased-finetuned-imdb?text=This+is+a+great+%5BMASK%5D.)が Hub 上にできあがります。
 
-<iframe src="https://course-demos-distilbert-base-uncased-finetuned-imdb.hf.space" frameBorder="0" height="300" title="Gradio app" class="block dark:hidden container p-0 flex-grow space-iframe" allow="accelerometer; ambient-light-sensor; autoplay; battery; camera; document-domain; encrypted-media; fullscreen; geolocation; gyroscope; layout-animations; legacy-image-formats; magnetometer; microphone; midi; oversized-images; payment; picture-in-picture; publickey-credentials-get; sync-xhr; usb; vr ; wake-lock; xr-spatial-tracking" sandbox="allow-forms allow-modals allow-popups allow-popups-to-escape-sandbox allow-same-origin allow-scripts allow-downloads"></iframe>
+<iframe src="https://course-demos-distilbert-base-uncased-finetuned-imdb.hf.space" frameBorder="0" height="300" title="Gradio アプリ" class="block dark:hidden container p-0 flex-grow space-iframe" allow="accelerometer; ambient-light-sensor; autoplay; battery; camera; document-domain; encrypted-media; fullscreen; geolocation; gyroscope; layout-animations; legacy-image-formats; magnetometer; microphone; midi; oversized-images; payment; picture-in-picture; publickey-credentials-get; sync-xhr; usb; vr ; wake-lock; xr-spatial-tracking" sandbox="allow-forms allow-modals allow-popups allow-popups-to-escape-sandbox allow-same-origin allow-scripts allow-downloads"></iframe>
 
 さっそく始めましょう！
 
@@ -70,13 +70,13 @@ model = AutoModelForMaskedLM.from_pretrained(model_checkpoint)
 
 ```python
 distilbert_num_parameters = model.num_parameters() / 1_000_000
-print(f"'>>> DistilBERT number of parameters: {round(distilbert_num_parameters)}M'")
-print(f"'>>> BERT number of parameters: 110M'")
+print(f"'>>> DistilBERT のパラメータ数: {round(distilbert_num_parameters)}M'")
+print(f"'>>> BERT のパラメータ数: 110M'")
 ```
 
 ```python out
-'>>> DistilBERT number of parameters: 67M'
-'>>> BERT number of parameters: 110M'
+'>>> DistilBERT のパラメータ数: 67M'
+'>>> BERT のパラメータ数: 110M'
 ```
 
 {:else}
@@ -216,20 +216,20 @@ DatasetDict({
 sample = imdb_dataset["train"].shuffle(seed=42).select(range(3))
 
 for row in sample:
-    print(f"\n'>>> Review: {row['text']}'")
-    print(f"'>>> Label: {row['label']}'")
+    print(f"\n'>>> レビュー: {row['text']}'")
+    print(f"'>>> ラベル: {row['label']}'")
 ```
 
 ```python out
 
-'>>> Review: This is your typical Priyadarshan movie--a bunch of loony characters out on some silly mission. His signature climax has the entire cast of the film coming together and fighting each other in some crazy moshpit over hidden money. Whether it is a winning lottery ticket in Malamaal Weekly, black money in Hera Pheri, "kodokoo" in Phir Hera Pheri, etc., etc., the director is becoming ridiculously predictable. Don\'t get me wrong; as clichéd and preposterous his movies may be, I usually end up enjoying the comedy. However, in most his previous movies there has actually been some good humor, (Hungama and Hera Pheri being noteworthy ones). Now, the hilarity of his films is fading as he is using the same formula over and over again.<br /><br />Songs are good. Tanushree Datta looks awesome. Rajpal Yadav is irritating, and Tusshar is not a whole lot better. Kunal Khemu is OK, and Sharman Joshi is the best.'
-'>>> Label: 0'
+'>>> レビュー: This is your typical Priyadarshan movie--a bunch of loony characters out on some silly mission. His signature climax has the entire cast of the film coming together and fighting each other in some crazy moshpit over hidden money. Whether it is a winning lottery ticket in Malamaal Weekly, black money in Hera Pheri, "kodokoo" in Phir Hera Pheri, etc., etc., the director is becoming ridiculously predictable. Don\'t get me wrong; as clichéd and preposterous his movies may be, I usually end up enjoying the comedy. However, in most his previous movies there has actually been some good humor, (Hungama and Hera Pheri being noteworthy ones). Now, the hilarity of his films is fading as he is using the same formula over and over again.<br /><br />Songs are good. Tanushree Datta looks awesome. Rajpal Yadav is irritating, and Tusshar is not a whole lot better. Kunal Khemu is OK, and Sharman Joshi is the best.'
+'>>> ラベル: 0'
 
-'>>> Review: Okay, the story makes no sense, the characters lack any dimensionally, the best dialogue is ad-libs about the low quality of movie, the cinematography is dismal, and only editing saves a bit of the muddle, but Sam" Peckinpah directed the film. Somehow, his direction is not enough. For those who appreciate Peckinpah and his great work, this movie is a disappointment. Even a great cast cannot redeem the time the viewer wastes with this minimal effort.<br /><br />The proper response to the movie is the contempt that the director San Peckinpah, James Caan, Robert Duvall, Burt Young, Bo Hopkins, Arthur Hill, and even Gig Young bring to their work. Watch the great Peckinpah films. Skip this mess.'
-'>>> Label: 0'
+'>>> レビュー: Okay, the story makes no sense, the characters lack any dimensionally, the best dialogue is ad-libs about the low quality of movie, the cinematography is dismal, and only editing saves a bit of the muddle, but Sam" Peckinpah directed the film. Somehow, his direction is not enough. For those who appreciate Peckinpah and his great work, this movie is a disappointment. Even a great cast cannot redeem the time the viewer wastes with this minimal effort.<br /><br />The proper response to the movie is the contempt that the director San Peckinpah, James Caan, Robert Duvall, Burt Young, Bo Hopkins, Arthur Hill, and even Gig Young bring to their work. Watch the great Peckinpah films. Skip this mess.'
+'>>> ラベル: 0'
 
-'>>> Review: I saw this movie at the theaters when I was about 6 or 7 years old. I loved it then, and have recently come to own a VHS version. <br /><br />My 4 and 6 year old children love this movie and have been asking again and again to watch it. <br /><br />I have enjoyed watching it again too. Though I have to admit it is not as good on a little TV.<br /><br />I do not have older children so I do not know what they would think of it. <br /><br />The songs are very cute. My daughter keeps singing them over and over.<br /><br />Hope this helps.'
-'>>> Label: 1'
+'>>> レビュー: I saw this movie at the theaters when I was about 6 or 7 years old. I loved it then, and have recently come to own a VHS version. <br /><br />My 4 and 6 year old children love this movie and have been asking again and again to watch it. <br /><br />I have enjoyed watching it again too. Though I have to admit it is not as good on a little TV.<br /><br />I do not have older children so I do not know what they would think of it. <br /><br />The songs are very cute. My daughter keeps singing them over and over.<br /><br />Hope this helps.'
+'>>> ラベル: 1'
 ```
 
 はい、確かに映画レビューです。年齢が十分な方なら、最後のレビューにある VHS 版を所有しているというコメントも理解できるでしょう 😜！言語モデリングにはラベルは必要ありませんが、`0` がネガティブなレビューを、`1` がポジティブなレビューを表すことはすでに見て取れます。
@@ -243,7 +243,7 @@ for row in sample:
 
 <Youtube id="8PmhEIXhBvI"/>
 
-自己回帰型と言語マスキング型のどちらの言語モデリングでも、一般的な前処理のステップは、すべてのサンプルを連結してから、コーパス全体を等しいサイズのチャンクに分割することです。これは、個々のサンプルを単にトークン化する通常のアプローチとはかなり異なります。なぜすべてを連結するのでしょうか？個々のサンプルが長すぎると切り捨てられる可能性があり、言語モデリングタスクに役立つかもしれない情報が失われてしまうためです！
+因果言語モデリングとマスク言語モデリングのどちらでも、一般的な前処理のステップは、すべてのサンプルを連結してから、コーパス全体を等しいサイズのチャンクに分割することです。これは、個々のサンプルを単にトークン化する通常のアプローチとはかなり異なります。なぜすべてを連結するのでしょうか？個々のサンプルが長すぎると切り捨てられる可能性があり、言語モデリングタスクに役立つかもしれない情報が失われてしまうためです！
 
 そこでまず、通常どおりコーパスをトークン化しますが、トークナイザで `truncation=True` オプションを*設定しません*。また、単語 ID が利用可能であれば（[Chapter 6](/course/chapter6/3) で説明したように、高速トークナイザを使っていれば利用可能です）取得しておきます。後で全単語マスキングを行う際に必要になるためです。これをシンプルな関数にまとめ、ついでに、もう必要のない `text` 列と `label` 列を取り除きます。
 
@@ -316,9 +316,9 @@ for idx, sample in enumerate(tokenized_samples["input_ids"]):
 ```
 
 ```python out
-'>>> Review 0 length: 200'
-'>>> Review 1 length: 559'
-'>>> Review 2 length: 192'
+'>>> レビュー 0 の長さ: 200'
+'>>> レビュー 1 の長さ: 559'
+'>>> レビュー 2 の長さ: 192'
 ```
 
 次に、単純な辞書内包表記で、これらすべてのサンプルを連結できます。
@@ -328,14 +328,14 @@ concatenated_examples = {
     k: sum(tokenized_samples[k], []) for k in tokenized_samples.keys()
 }
 total_length = len(concatenated_examples["input_ids"])
-print(f"'>>> Concatenated reviews length: {total_length}'")
+print(f"'>>> 連結したレビューの長さ: {total_length}'")
 ```
 
 ```python out
-'>>> Concatenated reviews length: 951'
+'>>> 連結したレビューの長さ: 951'
 ```
 
-素晴らしい。合計の長さが一致しました。では、連結したレビューを `chunk_size` で指定されたサイズのチャンクに分割しましょう。そのために、`concatenated_examples` の特徴をイテレーションし、リスト内包表記を使って各特徴のスライスを作成します。結果は、各特徴についてのチャンクの辞書です。
+素晴らしい。合計の長さが一致しました。では、連結したレビューを `chunk_size` で指定されたサイズのチャンクに分割しましょう。そのために、`concatenated_examples` の各フィールドを順に処理し、リスト内包表記を使って各フィールドのスライスを作成して、チャンク単位に分割します。結果は、各フィールドについてのチャンクの辞書です。
 
 ```python
 chunks = {
@@ -344,18 +344,18 @@ chunks = {
 }
 
 for chunk in chunks["input_ids"]:
-    print(f"'>>> Chunk length: {len(chunk)}'")
+    print(f"'>>> チャンクの長さ: {len(chunk)}'")
 ```
 
 ```python out
-'>>> Chunk length: 128'
-'>>> Chunk length: 128'
-'>>> Chunk length: 128'
-'>>> Chunk length: 128'
-'>>> Chunk length: 128'
-'>>> Chunk length: 128'
-'>>> Chunk length: 128'
-'>>> Chunk length: 55'
+'>>> チャンクの長さ: 128'
+'>>> チャンクの長さ: 128'
+'>>> チャンクの長さ: 128'
+'>>> チャンクの長さ: 128'
+'>>> チャンクの長さ: 128'
+'>>> チャンクの長さ: 128'
+'>>> チャンクの長さ: 128'
+'>>> チャンクの長さ: 55'
 ```
 
 この例で分かるように、最後のチャンクは一般に最大のチャンクサイズより小さくなります。これに対処する主な戦略は2つあります。
@@ -574,7 +574,7 @@ for chunk in batch["input_ids"]:
 > [!TIP]
 > ✏️ **試してみましょう！** 上のコードスニペットを何度か実行して、ランダムマスキングが目の前で起こるのを見てください！また、`tokenizer.decode()` メソッドを `tokenizer.convert_ids_to_tokens()` に置き換えると、ある単語のトークンが常に対象の単語と一緒にマスクされることが分かります。
 
-2つのデータコレータが揃ったので、ファインチューニングの残りのステップは標準的なものです。神話的な P100 GPU を引き当てる幸運に恵まれない限り、Google Colab での学習にはしばらく時間がかかるため 😭、まず学習セットのサイズを数千件のサンプルにダウンサンプリングします。心配いりません。それでもかなりまともな言語モデルが得られます！🤗 Datasets でデータセットを手早くダウンサンプリングする方法は、[Chapter 5](/course/chapter5) で見た `Dataset.train_test_split()` 関数を使うことです。
+2つのデータコレータが揃ったので、ファインチューニングの残りのステップは標準的なものです。幻の P100 GPU を引き当てる幸運に恵まれない限り、Google Colab での学習にはしばらく時間がかかるため 😭、まず学習セットのサイズを数千件のサンプルにダウンサンプリングします。心配いりません。それでもかなりまともな言語モデルが得られます！🤗 Datasets でデータセットを手早くダウンサンプリングする方法は、[Chapter 5](/course/chapter5) で見た `Dataset.train_test_split()` 関数を使うことです。
 
 ```python
 train_size = 10_000
@@ -727,7 +727,7 @@ trainer = Trainer(
 import math
 
 eval_results = trainer.evaluate()
-print(f">>> Perplexity: {math.exp(eval_results['eval_loss']):.2f}")
+print(f">>> パープレキシティ: {math.exp(eval_results['eval_loss']):.2f}")
 ```
 
 {:else}
@@ -738,13 +738,13 @@ print(f">>> Perplexity: {math.exp(eval_results['eval_loss']):.2f}")
 import math
 
 eval_loss = model.evaluate(tf_eval_dataset)
-print(f"Perplexity: {math.exp(eval_loss):.2f}")
+print(f"パープレキシティ: {math.exp(eval_loss):.2f}")
 ```
 
 {/if}
 
 ```python out
->>> Perplexity: 21.75
+>>> パープレキシティ: 21.75
 ```
 
 パープレキシティのスコアが低いほど、言語モデルは優れています。ここでは、開始時のモデルの値がやや大きいことが分かります。ファインチューニングでこれを下げられるか見てみましょう！そのために、まず学習ループを実行します。
@@ -769,20 +769,20 @@ model.fit(tf_train_dataset, validation_data=tf_eval_dataset, callbacks=[callback
 
 ```python
 eval_results = trainer.evaluate()
-print(f">>> Perplexity: {math.exp(eval_results['eval_loss']):.2f}")
+print(f">>> パープレキシティ: {math.exp(eval_results['eval_loss']):.2f}")
 ```
 
 {:else}
 
 ```python
 eval_loss = model.evaluate(tf_eval_dataset)
-print(f"Perplexity: {math.exp(eval_loss):.2f}")
+print(f"パープレキシティ: {math.exp(eval_loss):.2f}")
 ```
 
 {/if}
 
 ```python out
->>> Perplexity: 11.32
+>>> パープレキシティ: 11.32
 ```
 
 素晴らしい！パープレキシティがかなり下がりました。これは、モデルが映画レビューというドメインについて何かを学習したことを示しています！
@@ -958,7 +958,7 @@ for epoch in range(num_train_epochs):
     except OverflowError:
         perplexity = float("inf")
 
-    print(f">>> Epoch {epoch}: Perplexity: {perplexity}")
+    print(f">>> エポック {epoch}: パープレキシティ: {perplexity}")
 
     # 保存とアップロード
     accelerator.wait_for_everyone()
@@ -972,9 +972,9 @@ for epoch in range(num_train_epochs):
 ```
 
 ```python out
->>> Epoch 0: Perplexity: 11.397545307900472
->>> Epoch 1: Perplexity: 10.904909330983092
->>> Epoch 2: Perplexity: 10.729503505340409
+>>> エポック 0: パープレキシティ: 11.397545307900472
+>>> エポック 1: パープレキシティ: 10.904909330983092
+>>> エポック 2: パープレキシティ: 10.729503505340409
 ```
 
 素晴らしい！エポックごとにパープレキシティを評価でき、複数回の学習実行の再現性を保証できました！
@@ -1014,7 +1014,7 @@ for pred in preds:
 
 <Youtube id="0Oxphw4Q9fo"/>
 
-これで、言語モデルを学習する最初の実験は終わりです。[section 6](/course/en/chapter7/6) では、GPT-2 のような自己回帰型モデルをゼロから学習する方法を学びます。自作の Transformer モデルを事前学習する方法を見たい場合は、そちらへ進んでください！
+これで、言語モデルを学習する最初の実験は終わりです。[セクション6](/course/en/chapter7/6) では、GPT-2 のような自己回帰型モデルをゼロから学習する方法を学びます。自作の Transformer モデルを事前学習する方法を見たい場合は、そちらへ進んでください！
 
 > [!TIP]
 > ✏️ **試してみましょう！** ドメイン適応の効果を定量化するため、事前学習済みの DistilBERT チェックポイントとファインチューニング済みの DistilBERT チェックポイントの両方について、IMDb のラベルで分類器をファインチューニングしてください。テキスト分類の復習が必要な場合は、[Chapter 3](/course/chapter3)をチェックしてください。
