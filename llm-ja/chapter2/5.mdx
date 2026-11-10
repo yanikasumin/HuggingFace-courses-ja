@@ -1,0 +1,200 @@
+<FrameworkSwitchCourse {fw} />
+
+# 複数のシーケンスを扱う[[handling-multiple-sequences]]
+
+<CourseFloatingBanner chapter={2}
+  classNames="absolute z-10 right-0 top-0"
+  notebooks={[
+    {label: "Google Colab", value: "https://colab.research.google.com/github/huggingface/notebooks/blob/master/course/en/chapter2/section5_pt.ipynb"},
+    {label: "Aws Studio", value: "https://studiolab.sagemaker.aws/import/github/huggingface/notebooks/blob/master/course/en/chapter2/section5_pt.ipynb"},
+]} />
+
+<Youtube id="M6adb1j2jPI"/>
+
+前のセクションでは、最もシンプルなユースケース、つまり短い単一のシーケンスで推論を行うケースを見てきました。しかし、すでにいくつか疑問が浮かびます。
+
+- 複数のシーケンスをどう扱えばよいのでしょうか？
+- 長さの *異なる* 複数のシーケンスをどう扱えばよいのでしょうか？
+- モデルがうまく動作するための入力は、語彙のインデックスだけでしょうか？
+- 長すぎるシーケンスというものはあるのでしょうか？
+
+これらの疑問がどのような問題を引き起こすのか、そして 🤗 Transformers API を使ってどう解決できるのかを見ていきましょう。
+
+## モデルはバッチ入力を想定している[[models-expect-a-batch-of-inputs]]
+
+前の演習では、シーケンスが数値のリストに変換される様子を見ました。この数値のリストをテンソルに変換して、モデルに送ってみましょう。
+
+```py
+import torch
+from transformers import AutoTokenizer, AutoModelForSequenceClassification
+
+checkpoint = "distilbert-base-uncased-finetuned-sst-2-english"
+tokenizer = AutoTokenizer.from_pretrained(checkpoint)
+model = AutoModelForSequenceClassification.from_pretrained(checkpoint)
+
+sequence = "I've been waiting for a HuggingFace course my whole life."
+
+tokens = tokenizer.tokenize(sequence)
+ids = tokenizer.convert_tokens_to_ids(tokens)
+input_ids = torch.tensor(ids)
+# この行は失敗します。
+model(input_ids)
+```
+
+```python out
+IndexError: Dimension out of range (expected to be in range of [-1, 0], but got 1)
+```
+
+失敗してしまいました。なぜでしょうか？セクション2のパイプラインの手順に従ったはずなのに。
+
+問題は、単一のシーケンスをモデルに送ったことです。🤗 Transformers のモデルは、デフォルトで複数の文を想定しています。ここでは、トークナイザを `sequence` に適用したとき、裏側で行われていたことをすべて再現しようとしました。しかしよく見ると、トークナイザは入力 ID のリストをテンソルに変換しただけでなく、その上に次元を1つ追加していたことがわかります。
+
+```py
+tokenized_inputs = tokenizer(sequence, return_tensors="pt")
+print(tokenized_inputs["input_ids"])
+```
+
+```python out
+tensor([[  101,  1045,  1005,  2310,  2042,  3403,  2005,  1037, 17662, 12172,
+          2607,  2026,  2878,  2166,  1012,   102]])
+```
+
+新しい次元を追加して、もう一度試してみましょう。
+
+```py
+import torch
+from transformers import AutoTokenizer, AutoModelForSequenceClassification
+
+checkpoint = "distilbert-base-uncased-finetuned-sst-2-english"
+tokenizer = AutoTokenizer.from_pretrained(checkpoint)
+model = AutoModelForSequenceClassification.from_pretrained(checkpoint)
+
+sequence = "I've been waiting for a HuggingFace course my whole life."
+
+tokens = tokenizer.tokenize(sequence)
+ids = tokenizer.convert_tokens_to_ids(tokens)
+
+input_ids = torch.tensor([ids])
+print("Input IDs:", input_ids)
+
+output = model(input_ids)
+print("Logits:", output.logits)
+```
+
+入力 ID と、結果のロジットを表示します。出力は次のとおりです。
+
+```python out
+Input IDs: [[ 1045,  1005,  2310,  2042,  3403,  2005,  1037, 17662, 12172,  2607, 2026,  2878,  2166,  1012]]
+Logits: [[-2.7276,  2.8789]]
+```
+
+*バッチ処理* とは、複数の文を一度にモデルに通すことです。文が1つしかない場合は、単一のシーケンスでバッチを構築できます。
+
+```
+batched_ids = [ids, ids]
+```
+
+これは、同一のシーケンス2つからなるバッチです！
+
+> [!TIP]
+> ✏️ **試してみましょう！** この `batched_ids` リストをテンソルに変換して、モデルに通してみてください。前に得たのと同じロジットが（ただし2つ分）得られることを確認しましょう！
+
+バッチ処理により、複数の文を入力してもモデルが動作するようになります。複数のシーケンスを使うのは、単一のシーケンスでバッチを構築するのと同じくらい簡単です。ただし、2つ目の問題があります。2つ（以上）の文をまとめてバッチ化しようとすると、文の長さが異なる場合があります。テンソルを扱ったことがある人なら知っているとおり、テンソルは長方形の形状でなければならず、入力 ID のリストをそのままテンソルに変換することはできません。この問題を回避するために、通常は入力を *パディング* します。
+
+## 入力をパディングする[[padding-the-inputs]]
+
+次のリストのリストは、テンソルに変換できません。
+
+```py no-format
+batched_ids = [
+    [200, 200, 200],
+    [200, 200]
+]
+```
+
+これを回避するために、*パディング* を使ってテンソルを長方形の形状にします。パディングは、値の少ない文に *パディングトークン* と呼ばれる特殊な単語を追加することで、すべての文の長さが同じになるようにします。たとえば、10ワードの文が10個と20ワードの文が1個ある場合、パディングによりすべての文が20ワードになります。この例では、結果のテンソルは次のようになります。
+
+```py no-format
+padding_id = 100
+
+batched_ids = [
+    [200, 200, 200],
+    [200, 200, padding_id],
+]
+```
+
+パディングトークンの ID は `tokenizer.pad_token_id` で取得できます。これを使って、2つの文を個別にモデルに通し、さらにバッチにまとめて通してみましょう。
+
+```py no-format
+model = AutoModelForSequenceClassification.from_pretrained(checkpoint)
+
+sequence1_ids = [[200, 200, 200]]
+sequence2_ids = [[200, 200]]
+batched_ids = [
+    [200, 200, 200],
+    [200, 200, tokenizer.pad_token_id],
+]
+
+print(model(torch.tensor(sequence1_ids)).logits)
+print(model(torch.tensor(sequence2_ids)).logits)
+print(model(torch.tensor(batched_ids)).logits)
+```
+
+```python out
+tensor([[ 1.5694, -1.3895]], grad_fn=<AddmmBackward>)
+tensor([[ 0.5803, -0.4125]], grad_fn=<AddmmBackward>)
+tensor([[ 1.5694, -1.3895],
+        [ 1.3373, -1.2163]], grad_fn=<AddmmBackward>)
+```
+
+バッチ化した予測のロジットに問題があります。2行目は2番目の文のロジットと同じになるはずなのに、まったく異なる値になってしまいました！
+
+これは、Transformer モデルの重要な特徴であるアテンション層が、各トークンを *文脈化* するためです。アテンション層はシーケンスのすべてのトークンに注意を向けるため、パディングトークンも考慮に入れてしまいます。長さの異なる文を個別にモデルに通した場合と、同じ文をパディングしてバッチで通した場合で同じ結果を得るには、パディングトークンを無視するようアテンション層に伝える必要があります。これを行うのがアテンションマスクです。
+
+## アテンションマスク[[attention-masks]]
+
+*アテンションマスク* は、入力 ID テンソルとまったく同じ形状で、0 と 1 で埋められたテンソルです。1 は対応するトークンに注意を向けるべきことを示し、0 は対応するトークンに注意を向けるべきでないこと（つまり、モデルのアテンション層に無視されるべきこと）を示します。
+
+アテンションマスクを使って、前の例を完成させましょう。
+
+```py no-format
+batched_ids = [
+    [200, 200, 200],
+    [200, 200, tokenizer.pad_token_id],
+]
+
+attention_mask = [
+    [1, 1, 1],
+    [1, 1, 0],
+]
+
+outputs = model(torch.tensor(batched_ids), attention_mask=torch.tensor(attention_mask))
+print(outputs.logits)
+```
+
+```python out
+tensor([[ 1.5694, -1.3895],
+        [ 0.5803, -0.4125]], grad_fn=<AddmmBackward>)
+```
+
+今度は、バッチ内の2番目の文についても同じロジットが得られました。
+
+2番目のシーケンスの最後の値はパディング ID で、アテンションマスクでは 0 になっていることに注目してください。
+
+> [!TIP]
+> ✏️ **試してみましょう！** セクション2で使った2つの文（"I've been waiting for a HuggingFace course my whole life." と "I hate this so much!"）に対して、手動でトークン化を適用してみてください。モデルに通して、セクション2と同じロジットが得られることを確認しましょう。次に、パディングトークンを使って2つをバッチにまとめ、適切なアテンションマスクを作成してください。モデルに通したときに同じ結果が得られることを確認しましょう！
+
+## より長いシーケンス[[longer-sequences]]
+
+Transformer モデルでは、モデルに渡せるシーケンスの長さに制限があります。ほとんどのモデルは 512 または 1024 トークンまでのシーケンスを処理でき、それより長いシーケンスを処理しようとするとクラッシュします。この問題への解決策は2つあります。
+
+- サポートされるシーケンス長がより長いモデルを使う。
+- シーケンスを切り捨てる。
+
+モデルによってサポートされるシーケンス長は異なり、非常に長いシーケンスの処理に特化したものもあります。[Longformer](https://huggingface.co/docs/transformers/model_doc/longformer) はその一例で、[LED](https://huggingface.co/docs/transformers/model_doc/led) も同様です。非常に長いシーケンスを必要とするタスクに取り組んでいる場合は、それらのモデルを確認することをおすすめします。
+
+それ以外の場合は、`max_sequence_length` パラメータを指定してシーケンスを切り捨てることをおすすめします。
+
+```py
+sequence = sequence[:max_sequence_length]
+```

@@ -1,0 +1,857 @@
+# 推論デプロイメントの最適化
+
+このセクションでは、LLM のデプロイメントを最適化するための高度なフレームワーク、Text Generation Inference（TGI）、vLLM、llama.cpp を取り上げます。これらのアプリケーションは主に本番環境で使われ、LLM をユーザーに提供する役割を担います。ここでは、1台のマシンで推論を実行する方法ではなく、本番環境へこれらのフレームワークをデプロイする方法に焦点を当てます。
+
+これらのツールが、推論の効率をどう最大化し、大規模言語モデルの本番デプロイをどう簡素化するのかを見ていきます。
+
+## フレームワークの選び方
+
+TGI、vLLM、llama.cpp は似た目的を持ちますが、それぞれ異なる特徴があり、用途によって向き不向きがあります。性能と連携の観点から、主な違いを見ていきます。
+
+### メモリ管理と性能
+
+**TGI** は本番環境で安定して予測可能に動作するよう設計されており、固定したシーケンス長を使うことでメモリ使用量を一定に保ちます。メモリ管理には Flash Attention 2 と継続的バッチングの手法を使います。これにより、アテンションの計算を非常に効率よく処理でき、GPU に絶えず仕事を与え続けることができます。必要に応じてモデルの一部を CPU と GPU の間で移動できるため、より大きなモデルも扱えます。 
+
+<img src="https://huggingface.co/datasets/huggingface/documentation-images/resolve/main/tgi/flash-attn.png" alt="Flash Attention" />
+
+<Tip title="Flash Attention の仕組み">
+
+Flash Attention は、メモリ帯域のボトルネックに対処して、Transformer モデルのアテンション機構を最適化する技術です。[Chapter 1.8](/course/chapter1/8) で見たように、アテンション機構は計算量とメモリ使用量が二乗オーダーになるため、長いシーケンスでは非効率です。
+
+鍵となる工夫は、High Bandwidth Memory（HBM）と、より高速な SRAM キャッシュの間で、メモリ転送をどう管理するかにあります。従来のアテンションは HBM と SRAM の間でデータ転送を繰り返し、GPU を待たせるボトルネックを生んでいました。Flash Attention はデータを一度だけ SRAM に読み込み、すべての計算をそこで行うため、高コストなメモリ転送を最小限に抑えられます。 
+
+効果が最も大きいのは学習時ですが、VRAM 使用量の削減と効率の向上は推論でも有効で、より高速でスケーラブルな LLM サービングを可能にします。
+
+</Tip>
+
+**vLLM** は PagedAttention を使う、異なるアプローチを取ります。コンピュータがメモリをページ単位で管理するのと同じように、vLLM はモデルのメモリを小さなブロックに分割します。この巧みな仕組みにより、サイズの異なるリクエストを柔軟に扱え、メモリ空間を無駄にしません。異なるリクエスト間でのメモリ共有が特に得意で、メモリの断片化も減らせるため、システム全体の効率が上がります。
+
+<Tip title="PagedAttention の仕組み">
+
+PagedAttention は、LLM 推論におけるもう1つの重要なボトルネック、KVキャッシュのメモリ管理に対処する技術です。[Chapter 1.8](/course/chapter1/8) で見たように、テキスト生成の際、モデルは冗長な計算を減らすため、生成したトークンごとにアテンションのキーとバリュー（KVキャッシュ）を保存します。KVキャッシュは、特に長いシーケンスや複数のリクエストを同時に処理する場合に、膨大な大きさになることがあります。
+
+vLLM の鍵となる工夫は、このキャッシュの管理方法にあります。
+
+1. **メモリページング**: KVキャッシュを1つの大きなブロックとして扱うのではなく、固定サイズの「ページ」に分割します（オペレーティングシステムの仮想メモリと似た考え方です）。
+2. **非連続な配置**: ページは GPU メモリ上に連続して配置する必要がないため、メモリの割り当てを柔軟に行えます。
+3. **ページテーブルの管理**: ページテーブルが、どのページがどのシーケンスに属するかを記録し、効率的な検索とアクセスを可能にします。
+4. **メモリ共有**: 並列サンプリングのような処理では、プロンプトの KVキャッシュを保存したページを、複数のシーケンスで共有できます。
+
+PagedAttention のアプローチは、従来の手法と比べて最大で24倍のスループットを実現でき、本番環境への LLM デプロイを大きく変えるものです。PagedAttention の仕組みをさらに深く知りたい場合は、[vLLM ドキュメントのガイド](https://docs.vllm.ai/en/latest/design/kernel/paged_attention.html) を読んでみてください。
+
+</Tip>
+
+**llama.cpp** は、もともとコンシューマー向けハードウェアで LLaMA モデルを動かすために設計された、高度に最適化された C/C++ 実装です。CPU の効率を重視し、任意で GPU アクセラレーションも使えます。リソースに制約のある環境に最適です。llama.cpp は量子化の手法を使って、良好な性能を保ちながらモデルのサイズとメモリ要件を削減します。各種 CPU アーキテクチャ向けに最適化されたカーネルを実装し、効率的なトークン生成のための基本的な KVキャッシュ管理も備えています。
+
+<Tip title="llama.cpp の量子化の仕組み">
+
+llama.cpp の量子化は、モデルの重みの精度を 32 ビットや 16 ビットの浮動小数点から、8 ビット整数（INT8）や 4 ビット、あるいはそれ以下の低精度フォーマットに落とします。これにより、品質の低下を最小限に抑えながら、メモリ使用量を大幅に削減し、推論速度を向上させます。
+
+llama.cpp の量子化の主な特徴は次のとおりです。
+1. **複数の量子化レベル**: 8 ビット、4 ビット、3 ビット、さらには 2 ビットの量子化に対応します
+2. **GGML/GGUF フォーマット**: 量子化した推論向けに最適化された独自のテンソルフォーマットを使います
+3. **混合精度**: モデルの部位ごとに異なる量子化レベルを適用できます
+4. **ハードウェア固有の最適化**: 各種 CPU アーキテクチャ（AVX2、AVX-512、NEON）向けに最適化されたコードパスを含みます
+
+このアプローチにより、メモリの限られたコンシューマー向けハードウェアでも数十億パラメータのモデルを動かせるため、ローカルデプロイやエッジデバイスに最適です。
+
+</Tip>
+
+### デプロイと連携
+
+次に、フレームワーク間のデプロイと連携の違いを見ていきます。
+
+**TGI** は、本番運用に対応した機能を備え、エンタープライズレベルのデプロイに優れています。Kubernetes のサポートが組み込まれており、Prometheus や Grafana による監視、自動スケーリング、包括的な安全機能など、本番運用に必要なものが一通りそろっています。エンタープライズグレードのロギングに加え、コンテンツフィルタリングやレート制限といった各種の保護機能も備えており、デプロイを安全かつ安定した状態に保てます。
+
+**vLLM** は、デプロイに対してより柔軟で開発者に優しいアプローチを取ります。中核は Python で構築されており、既存のアプリケーションで OpenAI の API を簡単に置き換えられます。純粋な性能の追求に焦点を当て、具体的なニーズに合わせてカスタマイズできます。クラスタ管理では Ray との相性が特に良く、高い性能と適応性が必要な場合に適した選択肢です。
+
+**llama.cpp** はシンプルさと移植性を優先します。サーバー実装は軽量で、高性能なサーバーからコンシューマー向けノートパソコン、さらには一部のハイエンドモバイルデバイスまで、幅広いハードウェアで動作します。依存関係が最小限で、中核はシンプルな C/C++ なので、Python フレームワークのインストールが難しい環境でもデプロイしやすいのが特徴です。サーバーは OpenAI 互換の API を提供しつつ、他のソリューションよりもはるかに小さいリソースフットプリントを維持します。
+
+## はじめ方
+
+これらのフレームワークを使って LLM をデプロイする方法を、インストールと基本設定から見ていきます。
+
+### インストールと基本設定
+
+<hfoptions id="inference-frameworks" >
+
+<hfoption value="tgi" label="TGI">
+
+TGI はインストールも使い方も簡単で、Hugging Face のエコシステムと深く統合されています。
+
+まず、Docker を使って TGI サーバーを起動します。
+
+```sh
+docker run --gpus all \
+    --shm-size 1g \
+    -p 8080:80 \
+    -v ~/.cache/huggingface:/data \
+    ghcr.io/huggingface/text-generation-inference:latest \
+    --model-id HuggingFaceTB/SmolLM2-360M-Instruct
+```
+
+次に、Hugging Face の InferenceClient を使ってアクセスします。
+
+```python
+from huggingface_hub import InferenceClient
+
+# TGI エンドポイントを指すクライアントを初期化
+client = InferenceClient(
+    model="http://localhost:8080",  # TGI サーバーへの URL
+)
+
+# テキスト生成
+response = client.text_generation(
+    "Tell me a story",
+    max_new_tokens=100,
+    temperature=0.7,
+    top_p=0.95,
+    details=True,
+    stop_sequences=[],
+)
+print(response.generated_text)
+
+# チャット形式の場合
+response = client.chat_completion(
+    messages=[
+        {"role": "system", "content": "You are a helpful assistant."},
+        {"role": "user", "content": "Tell me a story"},
+    ],
+    max_tokens=100,
+    temperature=0.7,
+    top_p=0.95,
+)
+print(response.choices[0].message.content)
+```
+
+代わりに、OpenAI クライアントを使うこともできます。
+
+```python
+from openai import OpenAI
+
+# TGI エンドポイントを指すクライアントを初期化
+client = OpenAI(
+    base_url="http://localhost:8080/v1",  # /v1 を必ず含める
+    api_key="not-needed",  # TGI はデフォルトでは API キーを必要としない
+)
+
+# チャット補完
+response = client.chat.completions.create(
+    model="HuggingFaceTB/SmolLM2-360M-Instruct",
+    messages=[
+        {"role": "system", "content": "You are a helpful assistant."},
+        {"role": "user", "content": "Tell me a story"},
+    ],
+    max_tokens=100,
+    temperature=0.7,
+    top_p=0.95,
+)
+print(response.choices[0].message.content)
+```
+
+</hfoption>
+
+<hfoption value="llama.cpp" label="llama.cpp">
+
+llama.cpp はインストールも使い方も簡単です。依存関係は最小限で、CPU 推論と GPU 推論の両方に対応します。
+
+まず、llama.cpp をインストールしてビルドします。
+
+```sh
+# リポジトリをクローン
+git clone https://github.com/ggerganov/llama.cpp
+cd llama.cpp
+
+# プロジェクトをビルド
+make
+
+# SmolLM2-1.7B-Instruct-GGUF モデルをダウンロード
+curl -L -O https://huggingface.co/HuggingFaceTB/SmolLM2-1.7B-Instruct-GGUF/resolve/main/smollm2-1.7b-instruct.Q4_K_M.gguf
+```
+
+次に、サーバーを起動します（OpenAI API 互換）。
+
+```sh
+# サーバーを起動
+./server \
+    -m smollm2-1.7b-instruct.Q4_K_M.gguf \
+    --host 0.0.0.0 \
+    --port 8080 \
+    -c 4096 \
+    --n-gpu-layers 0  # GPU を使う場合は大きな値に設定
+```
+
+Hugging Face の InferenceClient を使ってサーバーにアクセスします。
+
+```python
+from huggingface_hub import InferenceClient
+
+# llama.cpp サーバーを指すクライアントを初期化
+client = InferenceClient(
+    model="http://localhost:8080/v1",  # llama.cpp サーバーへの URL
+    token="sk-no-key-required",  # llama.cpp サーバーではこのプレースホルダが必要
+)
+
+# テキスト生成
+response = client.text_generation(
+    "Tell me a story",
+    max_new_tokens=100,
+    temperature=0.7,
+    top_p=0.95,
+    details=True,
+)
+print(response.generated_text)
+
+# チャット形式の場合
+response = client.chat_completion(
+    messages=[
+        {"role": "system", "content": "You are a helpful assistant."},
+        {"role": "user", "content": "Tell me a story"},
+    ],
+    max_tokens=100,
+    temperature=0.7,
+    top_p=0.95,
+)
+print(response.choices[0].message.content)
+```
+
+代わりに、OpenAI クライアントを使うこともできます。
+
+```python
+from openai import OpenAI
+
+# llama.cpp サーバーを指すクライアントを初期化
+client = OpenAI(
+    base_url="http://localhost:8080/v1",
+    api_key="sk-no-key-required",  # llama.cpp サーバーではこのプレースホルダが必要
+)
+
+# チャット補完
+response = client.chat.completions.create(
+    model="smollm2-1.7b-instruct",  # サーバーは1つのモデルしか読み込まないため、モデル識別子は何でもよい
+    messages=[
+        {"role": "system", "content": "You are a helpful assistant."},
+        {"role": "user", "content": "Tell me a story"},
+    ],
+    max_tokens=100,
+    temperature=0.7,
+    top_p=0.95,
+)
+print(response.choices[0].message.content)
+```
+
+</hfoption>
+
+<hfoption value="vllm" label="vLLM">
+
+vLLM はインストールも使い方も簡単で、OpenAI API 互換とネイティブな Python インターフェースの両方を備えています。
+
+まず、vLLM の OpenAI 互換サーバーを起動します。
+
+```sh
+python -m vllm.entrypoints.openai.api_server \
+    --model HuggingFaceTB/SmolLM2-360M-Instruct \
+    --host 0.0.0.0 \
+    --port 8000
+```
+
+次に、Hugging Face の InferenceClient を使ってアクセスします。
+
+```python
+from huggingface_hub import InferenceClient
+
+# vLLM エンドポイントを指すクライアントを初期化
+client = InferenceClient(
+    model="http://localhost:8000/v1",  # vLLM サーバーへの URL
+)
+
+# テキスト生成
+response = client.text_generation(
+    "Tell me a story",
+    max_new_tokens=100,
+    temperature=0.7,
+    top_p=0.95,
+    details=True,
+)
+print(response.generated_text)
+
+# チャット形式の場合
+response = client.chat_completion(
+    messages=[
+        {"role": "system", "content": "You are a helpful assistant."},
+        {"role": "user", "content": "Tell me a story"},
+    ],
+    max_tokens=100,
+    temperature=0.7,
+    top_p=0.95,
+)
+print(response.choices[0].message.content)
+```
+
+代わりに、OpenAI クライアントを使うこともできます。
+
+```python
+from openai import OpenAI
+
+# vLLM エンドポイントを指すクライアントを初期化
+client = OpenAI(
+    base_url="http://localhost:8000/v1",
+    api_key="not-needed",  # vLLM はデフォルトでは API キーを必要としない
+)
+
+# チャット補完
+response = client.chat.completions.create(
+    model="HuggingFaceTB/SmolLM2-360M-Instruct",
+    messages=[
+        {"role": "system", "content": "You are a helpful assistant."},
+        {"role": "user", "content": "Tell me a story"},
+    ],
+    max_tokens=100,
+    temperature=0.7,
+    top_p=0.95,
+)
+print(response.choices[0].message.content)
+```
+
+</hfoption>
+
+</hfoptions>
+
+### 基本的なテキスト生成
+
+各フレームワークでのテキスト生成の例を見ていきます。
+
+<hfoptions id="inference-frameworks" >
+
+<hfoption value="tgi" label="TGI">
+
+まず、詳細なパラメータを指定して TGI をデプロイします。
+```sh
+docker run --gpus all \
+    --shm-size 1g \
+    -p 8080:80 \
+    -v ~/.cache/huggingface:/data \
+    ghcr.io/huggingface/text-generation-inference:latest \
+    --model-id HuggingFaceTB/SmolLM2-360M-Instruct \
+    --max-total-tokens 4096 \
+    --max-input-length 3072 \
+    --max-batch-total-tokens 8192 \
+    --waiting-served-ratio 1.2
+```
+
+InferenceClient を使うと、柔軟なテキスト生成ができます。
+
+```python
+from huggingface_hub import InferenceClient
+
+client = InferenceClient(model="http://localhost:8080")
+
+# 詳細パラメータの例
+response = client.chat_completion(
+    messages=[
+        {"role": "system", "content": "You are a creative storyteller."},
+        {"role": "user", "content": "Write a creative story"},
+    ],
+    temperature=0.8,
+    max_tokens=200,
+    top_p=0.95,
+)
+print(response.choices[0].message.content)
+
+# 生のテキスト生成
+response = client.text_generation(
+    "Write a creative story about space exploration",
+    max_new_tokens=200,
+    temperature=0.8,
+    top_p=0.95,
+    repetition_penalty=1.1,
+    do_sample=True,
+    details=True,
+)
+print(response.generated_text)
+```
+
+OpenAI クライアントを使う方法もあります。
+```python
+from openai import OpenAI
+
+client = OpenAI(base_url="http://localhost:8080/v1", api_key="not-needed")
+
+# 詳細パラメータの例
+response = client.chat.completions.create(
+    model="HuggingFaceTB/SmolLM2-360M-Instruct",
+    messages=[
+        {"role": "system", "content": "You are a creative storyteller."},
+        {"role": "user", "content": "Write a creative story"},
+    ],
+    temperature=0.8,  # 高いほど創造的になる
+)
+print(response.choices[0].message.content)
+```
+
+</hfoption>
+
+<hfoption value="llama.cpp" label="llama.cpp">
+
+llama.cpp では、サーバーの起動時に詳細なパラメータを設定できます。
+
+```sh
+./server \
+    -m smollm2-1.7b-instruct.Q4_K_M.gguf \
+    --host 0.0.0.0 \
+    --port 8080 \
+    -c 4096 \            # コンテキストサイズ
+    --threads 8 \        # 使用する CPU スレッド数
+    --batch-size 512 \   # プロンプト評価のバッチサイズ
+    --n-gpu-layers 0     # GPU レイヤー数（0 = CPU のみ）
+```
+
+InferenceClient を使います。
+
+```python
+from huggingface_hub import InferenceClient
+
+client = InferenceClient(model="http://localhost:8080/v1", token="sk-no-key-required")
+
+# 詳細パラメータの例
+response = client.chat_completion(
+    messages=[
+        {"role": "system", "content": "You are a creative storyteller."},
+        {"role": "user", "content": "Write a creative story"},
+    ],
+    temperature=0.8,
+    max_tokens=200,
+    top_p=0.95,
+)
+print(response.choices[0].message.content)
+
+# 直接テキストを生成する場合
+response = client.text_generation(
+    "Write a creative story about space exploration",
+    max_new_tokens=200,
+    temperature=0.8,
+    top_p=0.95,
+    repetition_penalty=1.1,
+    details=True,
+)
+print(response.generated_text)
+```
+
+サンプリングパラメータを細かく制御して生成したい場合は、OpenAI クライアントも使えます。
+
+```python
+from openai import OpenAI
+
+client = OpenAI(base_url="http://localhost:8080/v1", api_key="sk-no-key-required")
+
+# 詳細パラメータの例
+response = client.chat.completions.create(
+    model="smollm2-1.7b-instruct",
+    messages=[
+        {"role": "system", "content": "You are a creative storyteller."},
+        {"role": "user", "content": "Write a creative story"},
+    ],
+    temperature=0.8,  # 高いほど創造的になる
+    top_p=0.95,  # 核サンプリングの確率
+    frequency_penalty=0.5,  # 頻出トークンの繰り返しを抑える
+    presence_penalty=0.5,  # すでに出現したトークンにペナルティを与えて繰り返しを抑える
+    max_tokens=200,  # 生成する最大長
+)
+print(response.choices[0].message.content)
+```
+
+さらに細かく制御したい場合は、llama.cpp のネイティブライブラリも使えます。
+
+```python
+# llama-cpp-python パッケージでモデルに直接アクセス
+from llama_cpp import Llama
+
+# モデルを読み込む
+llm = Llama(
+    model_path="smollm2-1.7b-instruct.Q4_K_M.gguf",
+    n_ctx=4096,  # コンテキストウィンドウのサイズ
+    n_threads=8,  # CPU スレッド数
+    n_gpu_layers=0,  # GPU レイヤー数（0 = CPU のみ）
+)
+
+# モデルが想定する形式に合わせてプロンプトを整形
+prompt = """<|im_start|>system
+You are a creative storyteller.
+<|im_end|>
+<|im_start|>user
+Write a creative story
+<|im_end|>
+<|im_start|>assistant
+"""
+
+# パラメータを細かく制御して応答を生成
+output = llm(
+    prompt,
+    max_tokens=200,
+    temperature=0.8,
+    top_p=0.95,
+    frequency_penalty=0.5,
+    presence_penalty=0.5,
+    stop=["<|im_end|>"],
+)
+
+print(output["choices"][0]["text"])
+```
+
+</hfoption>
+
+<hfoption value="vllm" label="vLLM">
+
+vLLM の高度な使い方として、InferenceClient を使う方法があります。
+
+```python
+from huggingface_hub import InferenceClient
+
+client = InferenceClient(model="http://localhost:8000/v1")
+
+# 詳細パラメータの例
+response = client.chat_completion(
+    messages=[
+        {"role": "system", "content": "You are a creative storyteller."},
+        {"role": "user", "content": "Write a creative story"},
+    ],
+    temperature=0.8,
+    max_tokens=200,
+    top_p=0.95,
+)
+print(response.choices[0].message.content)
+
+# 直接テキストを生成する場合
+response = client.text_generation(
+    "Write a creative story about space exploration",
+    max_new_tokens=200,
+    temperature=0.8,
+    top_p=0.95,
+    details=True,
+)
+print(response.generated_text)
+```
+
+OpenAI クライアントを使うこともできます。
+
+```python
+from openai import OpenAI
+
+client = OpenAI(base_url="http://localhost:8000/v1", api_key="not-needed")
+
+# 詳細パラメータの例
+response = client.chat.completions.create(
+    model="HuggingFaceTB/SmolLM2-360M-Instruct",
+    messages=[
+        {"role": "system", "content": "You are a creative storyteller."},
+        {"role": "user", "content": "Write a creative story"},
+    ],
+    temperature=0.8,
+    top_p=0.95,
+    max_tokens=200,
+)
+print(response.choices[0].message.content)
+```
+
+vLLM には、細かな制御ができるネイティブな Python インターフェースもあります。
+
+```python
+from vllm import LLM, SamplingParams
+
+# 詳細パラメータを指定してモデルを初期化
+llm = LLM(
+    model="HuggingFaceTB/SmolLM2-360M-Instruct",
+    gpu_memory_utilization=0.85,
+    max_num_batched_tokens=8192,
+    max_num_seqs=256,
+    block_size=16,
+)
+
+# サンプリングパラメータを設定
+sampling_params = SamplingParams(
+    temperature=0.8,  # 高いほど創造的になる
+    top_p=0.95,  # 確率の累積が上位 95% までのトークンを対象にする
+    max_tokens=100,  # 最大長
+    presence_penalty=1.1,  # 繰り返しを抑える
+    frequency_penalty=1.1,  # 繰り返しを抑える
+    stop=["\n\n", "###"],  # 停止シーケンス
+)
+
+# テキストを生成
+prompt = "Write a creative story"
+outputs = llm.generate(prompt, sampling_params)
+print(outputs[0].outputs[0].text)
+
+# チャット形式のやり取りの場合
+chat_prompt = [
+    {"role": "system", "content": "You are a creative storyteller."},
+    {"role": "user", "content": "Write a creative story"},
+]
+formatted_prompt = llm.get_chat_template()(chat_prompt)  # モデルのチャットテンプレートを使う
+outputs = llm.generate(formatted_prompt, sampling_params)
+print(outputs[0].outputs[0].text)
+```
+
+</hfoption>
+
+</hfoptions>
+
+## 生成の高度な制御
+
+### トークンの選択とサンプリング
+
+テキストの生成は、各ステップで次のトークンを選択する処理の繰り返しです。この選択の処理は、さまざまなパラメータで制御できます。
+
+1. **生のロジット**: 各トークンについて最初に出力される確率
+2. **温度（Temperature）**: 選択のランダムさを制御します（高いほど創造的になります）
+3. **Top-p（核）サンプリング**: 確率の累積が X% に達するまでの上位トークンに絞り込みます
+4. **Top-k フィルタリング**: 選択肢を最も確率の高い k 個のトークンに制限します
+
+これらのパラメータの設定方法は次のとおりです。
+
+<hfoptions id="inference-frameworks" >
+
+<hfoption value="tgi" label="TGI">
+
+```python
+client.generate(
+    "Write a creative story",
+    temperature=0.8,  # 高いほど創造的になる
+    top_p=0.95,  # 確率の累積が上位 95% までのトークンを対象にする
+    top_k=50,  # 上位 50 トークンを対象にする
+    max_new_tokens=100,  # 最大長
+    repetition_penalty=1.1,  # 繰り返しを抑える
+)
+```
+
+</hfoption>
+
+<hfoption value="llama.cpp" label="llama.cpp">
+
+```python
+# OpenAI API 互換経由
+response = client.completions.create(
+    model="smollm2-1.7b-instruct",  # モデル名（llama.cpp サーバーでは任意の文字列でよい）
+    prompt="Write a creative story",
+    temperature=0.8,  # 高いほど創造的になる
+    top_p=0.95,  # 確率の累積が上位 95% までのトークンを対象にする
+    frequency_penalty=1.1,  # 繰り返しを抑える
+    presence_penalty=0.1,  # 繰り返しを抑える
+    max_tokens=100,  # 最大長
+)
+
+# llama-cpp-python で直接アクセス
+output = llm(
+    "Write a creative story",
+    temperature=0.8,
+    top_p=0.95,
+    top_k=50,
+    max_tokens=100,
+    repeat_penalty=1.1,
+)
+```
+
+</hfoption>
+
+<hfoption value="vllm" label="vLLM">
+
+```python
+params = SamplingParams(
+    temperature=0.8,  # 高いほど創造的になる
+    top_p=0.95,  # 確率の累積が上位 95% までのトークンを対象にする
+    top_k=50,  # 上位 50 トークンを対象にする
+    max_tokens=100,  # 最大長
+    presence_penalty=0.1,  # 繰り返しを抑える
+)
+llm.generate("Write a creative story", sampling_params=params)
+```
+
+</hfoption>
+
+</hfoptions>
+
+### 繰り返しの制御
+
+各フレームワークには、繰り返しのあるテキスト生成を防ぐ方法が用意されています。
+
+<hfoptions id="inference-frameworks" >
+
+<hfoption value="tgi" label="TGI">
+
+```python
+client.generate(
+    "Write a varied text",
+    repetition_penalty=1.1,  # 繰り返されたトークンにペナルティを与える
+    no_repeat_ngram_size=3,  # 3-gram の繰り返しを防ぐ
+)
+```
+
+</hfoption>
+
+<hfoption value="llama.cpp" label="llama.cpp">
+
+```python
+# OpenAI API 経由
+response = client.completions.create(
+    model="smollm2-1.7b-instruct",
+    prompt="Write a varied text",
+    frequency_penalty=1.1,  # 頻出トークンにペナルティを与える
+    presence_penalty=0.8,  # すでに出現したトークンにペナルティを与える
+)
+
+# ライブラリで直接アクセス
+output = llm(
+    "Write a varied text",
+    repeat_penalty=1.1,  # 繰り返されたトークンにペナルティを与える
+    frequency_penalty=0.5,  # 追加の頻出ペナルティ
+    presence_penalty=0.5,  # 追加の出現ペナルティ
+)
+```
+
+</hfoption>
+
+<hfoption value="vllm" label="vLLM">
+
+```python
+params = SamplingParams(
+    presence_penalty=0.1,  # トークンの出現にペナルティを与える
+    frequency_penalty=0.1,  # トークンの頻出にペナルティを与える
+)
+```
+
+</hfoption>
+
+</hfoptions>
+
+### 長さの制御と停止シーケンス
+
+生成の長さを制御したり、停止するタイミングを指定したりできます。
+
+<hfoptions id="inference-frameworks" >
+
+<hfoption value="tgi" label="TGI">
+
+```python
+client.generate(
+    "Generate a short paragraph",
+    max_new_tokens=100,
+    min_new_tokens=10,
+    stop_sequences=["\n\n", "###"],
+)
+```
+
+</hfoption>
+
+<hfoption value="llama.cpp" label="llama.cpp">
+
+```python
+# OpenAI API 経由
+response = client.completions.create(
+    model="smollm2-1.7b-instruct",
+    prompt="Generate a short paragraph",
+    max_tokens=100,
+    stop=["\n\n", "###"],
+)
+
+# ライブラリで直接アクセス
+output = llm("Generate a short paragraph", max_tokens=100, stop=["\n\n", "###"])
+```
+
+</hfoption>
+
+<hfoption value="vllm" label="vLLM">
+
+```python
+params = SamplingParams(
+    max_tokens=100,
+    min_tokens=10,
+    stop=["###", "\n\n"],
+    ignore_eos=False,
+    skip_special_tokens=True,
+)
+```
+
+</hfoption>
+
+</hfoptions>
+
+## メモリ管理
+
+各フレームワークは、効率的な推論のために高度なメモリ管理の手法を実装しています。
+
+<hfoptions id="inference-frameworks" >
+
+<hfoption value="tgi" label="TGI">
+
+TGI は Flash Attention 2 と継続的バッチングを使います。
+
+```sh
+# メモリ最適化を施した Docker デプロイ
+docker run --gpus all -p 8080:80 \
+    --shm-size 1g \
+    ghcr.io/huggingface/text-generation-inference:latest \
+    --model-id HuggingFaceTB/SmolLM2-1.7B-Instruct \
+    --max-batch-total-tokens 8192 \
+    --max-input-length 4096
+```
+
+</hfoption>
+
+<hfoption value="llama.cpp" label="llama.cpp">
+
+llama.cpp は量子化と最適化されたメモリレイアウトを使います。
+
+```sh
+# メモリ最適化を施したサーバー
+./server \
+    -m smollm2-1.7b-instruct.Q4_K_M.gguf \
+    --host 0.0.0.0 \
+    --port 8080 \
+    -c 2048 \               # コンテキストサイズ
+    --threads 4 \           # CPU スレッド数
+    --n-gpu-layers 32 \     # 大きなモデルでは GPU レイヤーを増やす
+    --mlock \               # メモリをロックしてスワップを防ぐ
+    --cont-batching         # 継続的バッチングを有効化
+```
+
+GPU に収まらない大きなモデルには、CPU オフロードが使えます。
+
+```sh
+./server \
+    -m smollm2-1.7b-instruct.Q4_K_M.gguf \
+    --n-gpu-layers 20 \     # 最初の 20 層を GPU に置く
+    --threads 8             # CPU レイヤーには CPU スレッドを多めに使う
+```
+
+</hfoption>
+
+<hfoption value="vllm" label="vLLM">
+
+vLLM は最適なメモリ管理のために PagedAttention を使います。
+
+```python
+from vllm.engine.arg_utils import AsyncEngineArgs
+
+engine_args = AsyncEngineArgs(
+    model="HuggingFaceTB/SmolLM2-1.7B-Instruct",
+    gpu_memory_utilization=0.85,
+    max_num_batched_tokens=8192,
+    block_size=16,
+)
+
+llm = LLM(engine_args=engine_args)
+```
+
+</hfoption>
+
+</hfoptions>
+
+## 参考資料
+
+- [Text Generation Inference ドキュメント](https://huggingface.co/docs/text-generation-inference)
+- [TGI の GitHub リポジトリ](https://github.com/huggingface/text-generation-inference)
+- [vLLM ドキュメント](https://vllm.readthedocs.io/)
+- [vLLM の GitHub リポジトリ](https://github.com/vllm-project/vllm)
+- [PagedAttention の論文](https://arxiv.org/abs/2309.06180)
+- [llama.cpp の GitHub リポジトリ](https://github.com/ggerganov/llama.cpp)
+- [llama-cpp-python のリポジトリ](https://github.com/abetlen/llama-cpp-python)

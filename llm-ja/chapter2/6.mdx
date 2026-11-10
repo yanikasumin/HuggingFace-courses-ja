@@ -1,0 +1,133 @@
+<FrameworkSwitchCourse {fw} />
+
+# すべてを組み合わせる[[putting-it-all-together]]
+
+<CourseFloatingBanner chapter={2}
+  classNames="absolute z-10 right-0 top-0"
+  notebooks={[
+    {label: "Google Colab", value: "https://colab.research.google.com/github/huggingface/notebooks/blob/master/course/en/chapter2/section6_pt.ipynb"},
+    {label: "Aws Studio", value: "https://studiolab.sagemaker.aws/import/github/huggingface/notebooks/blob/master/course/en/chapter2/section6_pt.ipynb"},
+]} />
+
+ここ数セクションでは、ほとんどの作業を手作業で行ってきました。トークナイザの仕組みを探り、トークン化、入力 ID への変換、パディング、切り捨て、アテンションマスクを見てきました。
+
+しかし、セクション2で見たように、🤗 Transformers API にはこれらすべてを処理できる高レベルな関数があり、ここで詳しく見ていきます。文に対して直接 `tokenizer` を呼び出すと、モデルにそのまま渡せる入力が返ってきます。
+
+```py
+from transformers import AutoTokenizer
+
+checkpoint = "distilbert-base-uncased-finetuned-sst-2-english"
+tokenizer = AutoTokenizer.from_pretrained(checkpoint)
+
+sequence = "I've been waiting for a HuggingFace course my whole life."
+
+model_inputs = tokenizer(sequence)
+```
+
+ここでは、`model_inputs` 変数に、モデルがうまく動作するために必要なものがすべて含まれています。DistilBERT の場合、それは入力 ID とアテンションマスクです。追加の入力を受け取る他のモデルでは、それらも `tokenizer` オブジェクトによって出力されます。
+
+以下の例でわかるように、この方法は非常に強力です。まず、単一のシーケンスをトークン化できます。
+
+```py
+sequence = "I've been waiting for a HuggingFace course my whole life."
+
+model_inputs = tokenizer(sequence)
+```
+
+API を変更することなく、複数のシーケンスを一度に処理することもできます。
+
+```py
+sequences = ["I've been waiting for a HuggingFace course my whole life.", "So have I!"]
+
+model_inputs = tokenizer(sequences)
+```
+
+いくつかの目的に応じてパディングできます。
+
+```py
+# シーケンスを最大のシーケンス長までパディングします
+model_inputs = tokenizer(sequences, padding="longest")
+
+# シーケンスをモデルの最大長までパディングします
+# (BERT や DistilBERT では 512)
+model_inputs = tokenizer(sequences, padding="max_length")
+
+# シーケンスを指定した最大長までパディングします
+model_inputs = tokenizer(sequences, padding="max_length", max_length=8)
+```
+
+シーケンスを切り捨てることもできます。
+
+```py
+sequences = ["I've been waiting for a HuggingFace course my whole life.", "So have I!"]
+
+# モデルの最大長より長いシーケンスを切り捨てます
+# (BERT や DistilBERT では 512)
+model_inputs = tokenizer(sequences, truncation=True)
+
+# 指定した最大長より長いシーケンスを切り捨てます
+model_inputs = tokenizer(sequences, max_length=8, truncation=True)
+```
+
+`tokenizer` オブジェクトは、特定のフレームワークのテンソルへの変換も処理でき、変換したテンソルをモデルに直接送ることができます。たとえば、次のコードサンプルでは、トークナイザにさまざまなフレームワークのテンソルを返すよう指示しています。`"pt"` は PyTorch テンソルを返し、`"np"` は NumPy 配列を返します。
+
+```py
+sequences = ["I've been waiting for a HuggingFace course my whole life.", "So have I!"]
+
+# PyTorch テンソルを返します
+model_inputs = tokenizer(sequences, padding=True, return_tensors="pt")
+
+# NumPy 配列を返します
+model_inputs = tokenizer(sequences, padding=True, return_tensors="np")
+```
+
+## 特殊トークン[[special-tokens]]
+
+トークナイザが返した入力 ID を見ると、前に得たものとはわずかに異なることがわかります。
+
+```py
+sequence = "I've been waiting for a HuggingFace course my whole life."
+
+model_inputs = tokenizer(sequence)
+print(model_inputs["input_ids"])
+
+tokens = tokenizer.tokenize(sequence)
+ids = tokenizer.convert_tokens_to_ids(tokens)
+print(ids)
+```
+
+```python out
+[101, 1045, 1005, 2310, 2042, 3403, 2005, 1037, 17662, 12172, 2607, 2026, 2878, 2166, 1012, 102]
+[1045, 1005, 2310, 2042, 3403, 2005, 1037, 17662, 12172, 2607, 2026, 2878, 2166, 1012]
+```
+
+先頭に1つ、末尾に1つ、トークン ID が追加されています。上の2つの ID シーケンスをデコードして、これが何なのか確認しましょう。
+
+```py
+print(tokenizer.decode(model_inputs["input_ids"]))
+print(tokenizer.decode(ids))
+```
+
+```python out
+"[CLS] i've been waiting for a huggingface course my whole life. [SEP]"
+"i've been waiting for a huggingface course my whole life."
+```
+
+トークナイザは、先頭に特殊な単語 `[CLS]` を、末尾に特殊な単語 `[SEP]` を追加しました。これは、モデルがそれらを使って事前学習されているためで、推論でも同じ結果を得るには、それらを追加する必要があるからです。モデルによっては特殊な単語を追加しないものもあれば、異なるものを追加するものもあります。また、先頭だけ、あるいは末尾だけに追加するモデルもあります。いずれにしても、トークナイザはどれが想定されているかを知っており、これらを処理してくれます。
+
+## まとめ: トークナイザからモデルへ[[wrapping-up-from-tokenizer-to-model]]
+
+`tokenizer` オブジェクトがテキストに適用されたときに使う個別のステップをすべて見てきたので、最後に、その主要な API で、複数のシーケンス（パディング！）、非常に長いシーケンス（切り捨て！）、複数の種類のテンソルをどのように処理できるのかをもう一度確認しましょう。
+
+```py
+import torch
+from transformers import AutoTokenizer, AutoModelForSequenceClassification
+
+checkpoint = "distilbert-base-uncased-finetuned-sst-2-english"
+tokenizer = AutoTokenizer.from_pretrained(checkpoint)
+model = AutoModelForSequenceClassification.from_pretrained(checkpoint)
+sequences = ["I've been waiting for a HuggingFace course my whole life.", "So have I!"]
+
+tokens = tokenizer(sequences, padding=True, truncation=True, return_tensors="pt")
+output = model(**tokens)
+```

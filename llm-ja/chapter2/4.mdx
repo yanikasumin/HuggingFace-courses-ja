@@ -1,0 +1,218 @@
+<FrameworkSwitchCourse {fw} />
+
+# トークナイザ[[tokenizers]]
+
+<CourseFloatingBanner chapter={2}
+  classNames="absolute z-10 right-0 top-0"
+  notebooks={[
+    {label: "Google Colab", value: "https://colab.research.google.com/github/huggingface/notebooks/blob/master/course/en/chapter2/section4_pt.ipynb"},
+    {label: "Aws Studio", value: "https://studiolab.sagemaker.aws/import/github/huggingface/notebooks/blob/master/course/en/chapter2/section4_pt.ipynb"},
+]} />
+
+<Youtube id="VFp38yj8h3A"/>
+
+トークナイザは、NLP パイプラインの中核をなすコンポーネントの1つです。役割はただ1つ、テキストをモデルが処理できるデータに変換することです。モデルが扱えるのは数値だけなので、トークナイザはテキストの入力を数値データに変換しなければなりません。このセクションでは、トークン化のパイプラインで実際に何が起きているのかを詳しく見ていきます。
+
+NLP タスクで一般に処理されるデータは、生のテキストです。たとえば次のようなテキストです。
+
+```
+Jim Henson was a puppeteer
+```
+
+ただし、モデルが処理できるのは数値だけです。生のテキストを数値に変換する方法が必要になります。それを行うのがトークナイザで、方法はたくさんあります。目標は、最も意味のある表現、つまりモデルにとって最も理にかなった表現を見つけること、そして可能であれば最も小さい表現を見つけることです。
+
+トークン化のアルゴリズムの例をいくつか見て、トークン化について浮かぶ疑問に答えていきましょう。
+
+## 単語ベース[[word-based]]
+
+<Youtube id="nhJxYji1aho"/>
+
+最初に思い浮かぶトークナイザは、_単語ベース_ のものです。数少ないルールだけで構築でき、使いやすく、そこそこ良い結果が得られることが多い手法です。たとえば下の図では、生のテキストを単語に分割し、それぞれに数値表現を割り当てることを目指しています。
+
+<div class="flex justify-center">
+  <img class="block dark:hidden" src="https://huggingface.co/datasets/huggingface-course/documentation-images/resolve/main/en/chapter2/word_based_tokenization.svg" alt="単語ベースのトークン化の例。"/>
+  <img class="hidden dark:block" src="https://huggingface.co/datasets/huggingface-course/documentation-images/resolve/main/en/chapter2/word_based_tokenization-dark.svg" alt="単語ベースのトークン化の例。"/>
+</div>
+
+テキストの分割方法はいくつかあります。たとえば、Python の `split()` 関数を使って、空白でテキストを単語にトークン化できます。
+
+```py
+tokenized_text = "Jim Henson was a puppeteer".split()
+print(tokenized_text)
+```
+
+```python out
+['Jim', 'Henson', 'was', 'a', 'puppeteer']
+```
+
+句読点に関する追加のルールを持つ、単語トークナイザのバリエーションもあります。この種のトークナイザでは、かなり大きな「語彙」になることがあります。語彙とは、コーパスに含まれる独立したトークンの総数のことです。
+
+各単語には、0 から語彙のサイズまでの ID が割り当てられます。モデルはこれらの ID を使って各単語を識別します。
+
+単語ベースのトークナイザで1つの言語を完全にカバーしようとすると、その言語のすべての単語に識別子が必要になり、膨大な数のトークンが発生します。たとえば英語には 500,000 語以上の単語があるため、各単語を入力 ID に対応づけるには、それだけの数の ID を管理しなければなりません。さらに、"dog" と "dogs" のような単語は別々に表現されるため、モデルは最初、"dog" と "dogs" が似ていることを知る手段がありません。2つの単語は無関係なものとして識別されます。"run" と "running" のような似た単語についても同様で、モデルは最初は似ているとは見なしません。
+
+最後に、語彙に含まれていない単語を表すための専用トークンが必要です。これは「未知」トークンと呼ばれ、"[UNK]" や "&lt;unk&gt;" と表されることが多いものです。トークナイザがこのトークンを大量に生成しているのは、一般に良くない兆候です。単語の妥当な表現を取り出せず、情報が失われていることを意味するからです。語彙を作るときの目標は、未知トークンにトークン化される単語をできるだけ少なくなるようにすることです。
+
+未知トークンの量を減らす方法の1つは、もう1段階深く進んで、_文字ベース_ のトークナイザを使うことです。
+
+## 文字ベース[[character-based]]
+
+<Youtube id="ssLq_EK2jLE"/>
+
+文字ベースのトークナイザは、テキストを単語ではなく文字に分割します。主な利点は2つあります。
+
+- 語彙がはるかに小さくなります。
+- すべての単語を文字から組み立てられるため、語彙外（未知）のトークンがはるかに少なくなります。
+
+ただし、ここでも空白や句読点に関して疑問が生じます。
+
+<div class="flex justify-center">
+  <img class="block dark:hidden" src="https://huggingface.co/datasets/huggingface-course/documentation-images/resolve/main/en/chapter2/character_based_tokenization.svg" alt="文字ベースのトークン化の例。"/>
+  <img class="hidden dark:block" src="https://huggingface.co/datasets/huggingface-course/documentation-images/resolve/main/en/chapter2/character_based_tokenization-dark.svg" alt="文字ベースのトークン化の例。"/>
+</div>
+
+このアプローチも完璧ではありません。表現が単語ではなく文字に基づくようになるため、直感的には意味が薄くなるとも言えます。各文字は単独ではあまり意味を持ちませんが、単語はそうではありません。ただし、これも言語によって異なります。たとえば中国語では、各文字がラテン系言語の文字よりも多くの情報を持っています。
+
+もう1つ考慮すべき点は、モデルが処理するトークンの量が非常に多くなることです。単語ベースのトークナイザでは1単語が1トークンで済みますが、文字に変換すると簡単に10トークン以上になってしまいます。
+
+両方の良いところを取るために、2つのアプローチを組み合わせた3つ目の手法、*サブワードトークン化* を使うことができます。
+
+## サブワードトークン化[[subword-tokenization]]
+
+<Youtube id="zHvTiHr506c"/>
+
+サブワードトークン化アルゴリズムは、頻繁に使われる単語はより小さいサブワードに分割せず、まれな単語は意味のあるサブワードに分解する、という原則に基づいています。
+
+たとえば "annoyingly" はまれな単語と見なされ、"annoying" と "ly" に分解できます。どちらも独立したサブワードとしては頻繁に現れる一方で、"annoying" と "ly" の組み合わせによって "annoyingly" の意味も保たれます。
+
+サブワードトークン化アルゴリズムが "Let's do tokenization!" というシーケンスをどのようにトークン化するか、例を示します。
+
+<div class="flex justify-center">
+  <img class="block dark:hidden" src="https://huggingface.co/datasets/huggingface-course/documentation-images/resolve/main/en/chapter2/bpe_subword.svg" alt="サブワードトークン化アルゴリズム。"/>
+  <img class="hidden dark:block" src="https://huggingface.co/datasets/huggingface-course/documentation-images/resolve/main/en/chapter2/bpe_subword-dark.svg" alt="サブワードトークン化アルゴリズム。"/>
+</div>
+
+これらのサブワードは、結果として多くの意味情報を提供します。たとえば上の例では、"tokenization" が "token" と "ization" に分割されています。どちらも意味を持ちながら、場所を取らない（長い単語を2つのトークンで表現できる）トークンです。これにより、小さい語彙で比較的良いカバー率が得られ、未知トークンもほぼゼロにできます。
+
+このアプローチは、トルコ語のような膠着語で特に役立ちます。サブワードをつなぎ合わせることで、（ほぼ）任意の長さの複雑な単語を形成できるからです。
+
+### そのほかの手法も！[[and-more]]
+
+当然ながら、手法はほかにもたくさんあります。いくつか挙げると次のとおりです。
+
+- バイトレベル BPE（GPT-2 で使用）
+- WordPiece（BERT で使用）
+- SentencePiece や Unigram（いくつかの多言語モデルで使用）
+
+トークナイザの仕組みについて、API を使い始めるのに十分な知識が身についたはずです。
+
+## 読み込みと保存[[loading-and-saving]]
+
+トークナイザの読み込みと保存は、モデルの場合と同じくらい簡単です。実際、同じ2つのメソッド、`from_pretrained()` と `save_pretrained()` が使われます。これらのメソッドは、トークナイザが使うアルゴリズム（モデルの *アーキテクチャ* のようなもの）と、その語彙（モデルの *重み* のようなもの）を読み込んだり保存したりします。
+
+BERT と同じチェックポイントで訓練された BERT トークナイザの読み込みは、モデルの読み込みと同じ方法で行います。ただし `BertTokenizer` クラスを使います。
+
+```py
+from transformers import BertTokenizer
+
+tokenizer = BertTokenizer.from_pretrained("bert-base-cased")
+```
+
+`AutoModel` と同様に、`AutoTokenizer` クラスはチェックポイント名に基づいてライブラリから適切なトークナイザクラスを取得し、任意のチェックポイントで直接使うことができます。
+
+```py
+from transformers import AutoTokenizer
+
+tokenizer = AutoTokenizer.from_pretrained("bert-base-cased")
+```
+
+前のセクションで示したように、トークナイザを使うことができます。
+
+```python
+tokenizer("Using a Transformer network is simple")
+```
+
+```python out
+{'input_ids': [101, 7993, 170, 11303, 1200, 2443, 1110, 3014, 102],
+ 'token_type_ids': [0, 0, 0, 0, 0, 0, 0, 0, 0],
+ 'attention_mask': [1, 1, 1, 1, 1, 1, 1, 1, 1]}
+```
+
+トークナイザの保存は、モデルの保存とまったく同じです。
+
+```py
+tokenizer.save_pretrained("directory_on_my_computer")
+```
+
+`token_type_ids` については[第3章](/course/chapter3)で詳しく取り上げ、`attention_mask` キーについてはこの後すぐ説明します。まず、`input_ids` がどのように生成されるのかを見ていきましょう。そのために、トークナイザの中間的なメソッドを確認します。
+
+## エンコーディング[[encoding]]
+
+<Youtube id="Yffk5aydLzg"/>
+
+テキストを数値に変換することは、_エンコーディング_ と呼ばれます。エンコーディングは2段階のプロセスで行われます。まずトークン化し、次に入力 ID へ変換します。
+
+見てきたように、最初のステップは、テキストを単語（または単語の一部、句読点記号など）に分割することです。これらは通常 *トークン* と呼ばれます。このプロセスを決めるルールは複数あるため、モデルの事前学習時に使われたのと同じルールを使うよう、モデル名を使ってトークナイザをインスタンス化する必要があります。
+
+2つ目のステップは、それらのトークンを数値に変換することです。そうすることでテンソルを構築し、モデルに入力できます。そのためにトークナイザは *語彙* を持っています。語彙は、`from_pretrained()` メソッドでインスタンス化するときにダウンロードされる部分です。ここでも、モデルが事前学習されたときに使われたのと同じ語彙を使う必要があります。
+
+この2つのステップをよりよく理解するために、それぞれを分けて見ていきます。ここでは、ステップの中間結果を示すため、トークン化パイプラインの一部を個別に実行するメソッドを使いますが、実際には、入力に対してトークナイザを直接呼び出すべきです（セクション2で示したとおりです）。
+
+### トークン化[[tokenization]]
+
+トークン化のプロセスは、トークナイザの `tokenize()` メソッドで行われます。
+
+```py
+from transformers import AutoTokenizer
+
+tokenizer = AutoTokenizer.from_pretrained("bert-base-cased")
+
+sequence = "Using a Transformer network is simple"
+tokens = tokenizer.tokenize(sequence)
+
+print(tokens)
+```
+
+このメソッドの出力は、文字列、つまりトークンのリストです。
+
+```python out
+['Using', 'a', 'transform', '##er', 'network', 'is', 'simple']
+```
+
+このトークナイザはサブワードトークナイザです。語彙で表現できるトークンが得られるまで、単語を分割します。ここでは `transformer` がそれにあたり、`transform` と `##er` の2つのトークンに分割されています。
+
+### トークンから入力 ID へ[[from-tokens-to-input-ids]]
+
+入力 ID への変換は、トークナイザの `convert_tokens_to_ids()` メソッドが担います。
+
+```py
+ids = tokenizer.convert_tokens_to_ids(tokens)
+
+print(ids)
+```
+
+```python out
+[7993, 170, 11303, 1200, 2443, 1110, 3014]
+```
+
+これらの出力は、適切なフレームワークのテンソルに変換すれば、この章の前半で見たように、モデルへの入力として使うことができます。
+
+> [!TIP]
+> ✏️ **試してみましょう！** 最後の2つのステップ（トークン化と入力 ID への変換）を、セクション2で使った入力文（"I've been waiting for a HuggingFace course my whole life." と "I hate this so much!"）に対して再現してみてください。前に得たのと同じ入力 ID が得られることを確認しましょう！
+
+## デコーディング[[decoding]]
+
+*デコーディング* はその逆で、語彙のインデックスから文字列を得ることです。これは `decode()` メソッドで次のように行えます。
+
+```py
+decoded_string = tokenizer.decode([7993, 170, 11303, 1200, 2443, 1110, 3014])
+print(decoded_string)
+```
+
+```python out
+'Using a Transformer network is simple'
+```
+
+`decode` メソッドは、インデックスをトークンに戻すだけでなく、同じ単語の一部だったトークン同士をまとめ直して、読みやすい文を生成することに注意してください。この振る舞いは、新しいテキストを予測するモデル（プロンプトから生成されるテキストや、翻訳・要約のようなシーケンス・ツー・シーケンスの問題）を使うときに非常に役立ちます。
+
+ここまでで、トークナイザが扱える基本的な操作、つまりトークン化、ID への変換、ID から文字列への変換が理解できたはずです。ただし、これはまだ氷山の一角にすぎません。次のセクションでは、このアプローチを限界まで進め、それをどう克服するかを見ていきます。

@@ -1,0 +1,232 @@
+<FrameworkSwitchCourse {fw} />
+
+# パイプラインの裏側[[behind-the-pipeline]]
+
+<CourseFloatingBanner chapter={2}
+  classNames="absolute z-10 right-0 top-0"
+  notebooks={[
+    {label: "Google Colab", value: "https://colab.research.google.com/github/huggingface/notebooks/blob/master/course/en/chapter2/section2_pt.ipynb"},
+    {label: "Aws Studio", value: "https://studiolab.sagemaker.aws/import/github/huggingface/notebooks/blob/master/course/en/chapter2/section2_pt.ipynb"},
+]} />
+
+<Youtube id="1pedAIvTWXk"/>
+
+まずは完全な例から始めましょう。[Chapter 1](/course/chapter1) で次のコードを実行したとき、裏側で何が起きていたのかを見ていきます。
+
+```python
+from transformers import pipeline
+
+classifier = pipeline("sentiment-analysis")
+classifier(
+    [
+        "I've been waiting for a HuggingFace course my whole life.",
+        "I hate this so much!",
+    ]
+)
+```
+
+得られた結果は次のとおりです。
+
+```python out
+[{'label': 'POSITIVE', 'score': 0.9598047137260437},
+ {'label': 'NEGATIVE', 'score': 0.9994558095932007}]
+```
+
+[Chapter 1](/course/chapter1) で見たように、このパイプラインは3つのステップをひとまとめにしています。前処理、入力をモデルに通すこと、そして後処理です。
+
+<div class="flex justify-center">
+<img class="block dark:hidden" src="https://huggingface.co/datasets/huggingface-course/documentation-images/resolve/main/en/chapter2/full_nlp_pipeline.svg" alt="NLP パイプライン全体の流れ：テキストのトークン化、ID への変換、Transformer モデルとモデルヘッドによる推論"/>
+<img class="hidden dark:block" src="https://huggingface.co/datasets/huggingface-course/documentation-images/resolve/main/en/chapter2/full_nlp_pipeline-dark.svg" alt="NLP パイプライン全体の流れ：テキストのトークン化、ID への変換、Transformer モデルとモデルヘッドによる推論"/>
+</div>
+
+それぞれを順に確認していきます。
+
+## トークナイザによる前処理[[preprocessing-with-a-tokenizer]]
+
+他のニューラルネットワークと同様、Transformer モデルは生のテキストを直接処理できません。そのため、パイプラインの最初のステップは、テキスト入力をモデルが理解できる数値に変換することです。この変換を担うのが *トークナイザ* で、次の役割を持ちます。
+
+- 入力を、*トークン* と呼ばれる単語、サブワード、記号（句読点など）に分割する
+- 各トークンを整数に対応づける
+- モデルに役立つ追加の入力を加える
+
+この前処理はすべて、モデルの事前学習時とまったく同じ方法で行う必要があります。そのため、まずその情報を [Model Hub](https://huggingface.co/models) からダウンロードします。ここで使うのが `AutoTokenizer` クラスとその `from_pretrained()` メソッドです。モデルのチェックポイント名を指定すると、そのモデルのトークナイザに関連するデータが自動的に取得され、キャッシュされます（そのため、ダウンロードが行われるのは、以下のコードを最初に実行するときだけです）。
+
+`sentiment-analysis` パイプラインのデフォルトのチェックポイントは `distilbert-base-uncased-finetuned-sst-2-english` です。モデルカードは[このページ](https://huggingface.co/distilbert-base-uncased-finetuned-sst-2-english)で確認できます。これを使って、次のコードを実行します。
+
+```python
+from transformers import AutoTokenizer
+
+checkpoint = "distilbert-base-uncased-finetuned-sst-2-english"
+tokenizer = AutoTokenizer.from_pretrained(checkpoint)
+```
+
+トークナイザが用意できたら、文を直接渡すだけで、モデルにそのまま入力できる辞書が返ってきます！あとは、入力 ID のリストをテンソルに変換するだけです。
+
+🤗 Transformers を使うとき、バックエンドとしてどの ML フレームワークが使われているかは気にしなくて構いません。モデルによっては PyTorch のことも Flax のこともあります。ただし、Transformer モデルが入力として受け付けるのは *テンソル* だけです。テンソルという言葉を初めて聞いた場合は、NumPy の配列だと思ってください。NumPy の配列には、スカラー（0次元）、ベクトル（1次元）、行列（2次元）、それ以上の次元のものがあります。実質的にはテンソルであり、他の ML フレームワークのテンソルも同じように振る舞い、通常は NumPy の配列と同じくらい簡単に作成できます。
+
+返してほしいテンソルの種類（PyTorch か通常の NumPy か）を指定するには、`return_tensors` 引数を使います。
+
+```python
+raw_inputs = [
+    "I've been waiting for a HuggingFace course my whole life.",
+    "I hate this so much!",
+]
+inputs = tokenizer(raw_inputs, padding=True, truncation=True, return_tensors="pt")
+print(inputs)
+```
+
+パディングと切り捨てについては、まだ気にしなくて大丈夫です。後ほど説明します。ここで押さえておきたいのは、文を1つ渡すことも文のリストを渡すこともできる点と、返してほしいテンソルの種類を指定できる点です（種類を指定しない場合、結果はリストのリストになります）。
+
+PyTorch のテンソルとしての結果は次のようになります。
+
+```python out
+{
+    'input_ids': tensor([
+        [  101,  1045,  1005,  2310,  2042,  3403,  2005,  1037, 17662, 12172, 2607,  2026,  2878,  2166,  1012,   102],
+        [  101,  1045,  5223,  2023,  2061,  2172,   999,   102,     0,     0,     0,     0,     0,     0,     0,     0]
+    ]), 
+    'attention_mask': tensor([
+        [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
+        [1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0]
+    ])
+}
+```
+
+出力自体は、`input_ids` と `attention_mask` の2つのキーを持つ辞書です。`input_ids` には整数の行が2行（文ごとに1行）含まれており、各文のトークンの一意な識別子となっています。`attention_mask` については、この章の後半で説明します。
+
+## モデルに通す[[going-through-the-model]]
+
+事前学習済みモデルは、トークナイザと同じ方法でダウンロードできます。🤗 Transformers には `AutoModel` クラスが用意されており、`AutoModel` にも `from_pretrained()` メソッドがあります。
+
+```python
+from transformers import AutoModel
+
+checkpoint = "distilbert-base-uncased-finetuned-sst-2-english"
+model = AutoModel.from_pretrained(checkpoint)
+```
+
+このコードスニペットでは、先ほどパイプラインで使ったのと同じチェックポイントをダウンロードし（実際には既にキャッシュされているはずです）、モデルをインスタンス化しています。
+
+このアーキテクチャに含まれるのは、基本となる Transformer モジュールだけです。入力を与えると、*隠れ状態*（*特徴* とも呼ばれます）を出力します。モデルの入力ごとに、**Transformer モデルによるその入力の文脈的な理解**を表す高次元ベクトルが得られます。
+
+これが何を意味するのかわからなくても、心配はいりません。後ほどすべて説明します。
+
+隠れ状態はそれ自体でも有用ですが、通常はモデルの別の部分である *ヘッド* への入力となります。[Chapter 1](/course/chapter1) では、さまざまなタスクを同じアーキテクチャで実行できましたが、タスクごとに異なるヘッドが関連づけられます。
+
+### 高次元のベクトル？[[a-high-dimensional-vector]]
+
+Transformer モジュールが出力するベクトルは、通常大きなものです。一般に、次の3つの次元を持ちます。
+
+- **バッチサイズ**: 一度に処理されるシーケンスの数（この例では2）
+- **シーケンス長**: シーケンスの数値表現の長さ（この例では16）
+- **隠れサイズ**: モデルの入力ごとのベクトルの次元
+
+「高次元」と呼ばれるのは、最後の値のためです。隠れサイズは非常に大きくなることがあります。小さめのモデルでは768が一般的で、より大きなモデルでは3072以上に達することもあります。
+
+前処理した入力をモデルに渡すと、これが確認できます。
+
+```python
+outputs = model(**inputs)
+print(outputs.last_hidden_state.shape)
+```
+
+```python out
+torch.Size([2, 16, 768])
+```
+
+🤗 Transformers モデルの出力は、`namedtuple` や辞書のように振る舞う点に注意してください。要素には、先ほど行ったように属性でアクセスすることも、キーでアクセスすることも（`outputs["last_hidden_state"]`）、探しているものが正確にどこにあるかわかっている場合はインデックスでも（`outputs[0]`）アクセスできます。
+
+### モデルヘッド：数値に意味を持たせる[[model-heads-making-sense-out-of-numbers]]
+
+モデルヘッドは、隠れ状態の高次元ベクトルを入力として受け取り、別の次元へ射影します。通常は、1つまたは数個の線形層で構成されます。
+
+<div class="flex justify-center">
+<img class="block dark:hidden" src="https://huggingface.co/datasets/huggingface-course/documentation-images/resolve/main/en/chapter2/transformer_and_head.svg" alt="Transformer ネットワークとそのヘッド"/>
+<img class="hidden dark:block" src="https://huggingface.co/datasets/huggingface-course/documentation-images/resolve/main/en/chapter2/transformer_and_head-dark.svg" alt="Transformer ネットワークとそのヘッド"/>
+</div>
+
+Transformer モデルの出力は、処理のためにモデルヘッドへ直接送られます。
+
+この図では、モデルは埋め込み層とそれに続く層で表されています。埋め込み層は、トークン化された入力の各入力 ID を、対応するトークンを表すベクトルに変換します。続く層は、アテンション機構を使ってこれらのベクトルを操作し、文の最終的な表現を作り出します。
+
+🤗 Transformers には多種多様なアーキテクチャがあり、それぞれが特定のタスクに取り組むよう設計されています。以下はその一部です。
+
+- `*Model`（隠れ状態を取得する）
+- `*ForCausalLM`
+- `*ForMaskedLM`
+- `*ForMultipleChoice`
+- `*ForQuestionAnswering`
+- `*ForSequenceClassification`
+- `*ForTokenClassification`
+- ほかにも多数 🤗
+
+この例では、文を肯定的か否定的かに分類できるよう、シーケンス分類ヘッドを持つモデルが必要です。そのため、実際には `AutoModel` クラスではなく、`AutoModelForSequenceClassification` を使います。
+
+```python
+from transformers import AutoModelForSequenceClassification
+
+checkpoint = "distilbert-base-uncased-finetuned-sst-2-english"
+model = AutoModelForSequenceClassification.from_pretrained(checkpoint)
+outputs = model(**inputs)
+```
+
+出力の形状を見ると、次元がずっと低くなっています。モデルヘッドは、先ほど見た高次元ベクトルを入力として受け取り、2つの値（ラベルごとに1つ）を含むベクトルを出力します。
+
+```python
+print(outputs.logits.shape)
+```
+
+```python out
+torch.Size([2, 2])
+```
+
+文が2つでラベルが2つだけなので、モデルから得られる結果は 2 x 2 の形状になります。
+
+## 出力の後処理[[postprocessing-the-output]]
+
+モデルから出力として得られる値は、そのままでは必ずしも意味を成しません。見てみましょう。
+
+```python
+print(outputs.logits)
+```
+
+```python out
+tensor([[-1.5607,  1.6123],
+        [ 4.1692, -3.3464]], grad_fn=<AddmmBackward>)
+```
+
+モデルは、1つ目の文に対して `[-1.5607, 1.6123]` を、2つ目の文に対して `[ 4.1692, -3.3464]` を予測しました。これらは確率ではなく *ロジット*、つまりモデルの最終層が出力する、正規化されていない生のスコアです。確率に変換するには、[SoftMax](https://en.wikipedia.org/wiki/Softmax_function) 層を通す必要があります（すべての 🤗 Transformers モデルはロジットを出力します。学習用の損失関数は通常、SoftMax のような最後の活性化関数と、交差エントロピーのような実際の損失関数を組み合わせるためです）。
+
+```py
+import torch
+
+predictions = torch.nn.functional.softmax(outputs.logits, dim=-1)
+print(predictions)
+```
+
+```python out
+tensor([[4.0195e-02, 9.5980e-01],
+        [9.9946e-01, 5.4418e-04]], grad_fn=<SoftmaxBackward>)
+```
+
+これで、モデルが1つ目の文に対して `[0.0402, 0.9598]` を、2つ目の文に対して `[0.9995,  0.0005]` を予測したことがわかります。これらは確率スコアとして判読できます。
+
+各位置に対応するラベルを取得するには、モデルの設定にある `id2label` 属性を確認します（詳しくは次のセクションで説明します）。
+
+```python
+model.config.id2label
+```
+
+```python out
+{0: 'NEGATIVE', 1: 'POSITIVE'}
+```
+
+以上から、モデルが次のように予測したことがわかります。
+
+- 1つ目の文: NEGATIVE: 0.0402, POSITIVE: 0.9598
+- 2つ目の文: NEGATIVE: 0.9995, POSITIVE: 0.0005
+
+これで、パイプラインの3つのステップ、つまりトークナイザによる前処理、入力をモデルに通すこと、後処理を、無事に再現できました！ここからは、それぞれのステップをもう少し深く掘り下げていきます。
+
+> [!TIP]
+> ✏️ **試してみましょう！** 自分で選んだ2つ（以上）のテキストを `sentiment-analysis` パイプラインに通してみてください。そのうえで、ここで見たステップを自分で再現し、同じ結果が得られるかどうか確認してみましょう。

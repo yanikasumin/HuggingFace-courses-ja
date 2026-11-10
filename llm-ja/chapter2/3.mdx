@@ -1,0 +1,298 @@
+<FrameworkSwitchCourse {fw} />
+
+# モデル[[the-models]]
+
+<CourseFloatingBanner chapter={2}
+  classNames="absolute z-10 right-0 top-0"
+  notebooks={[
+    {label: "Google Colab", value: "https://colab.research.google.com/github/huggingface/notebooks/blob/master/course/en/chapter2/section3_pt.ipynb"},
+    {label: "Aws Studio", value: "https://studiolab.sagemaker.aws/import/github/huggingface/notebooks/blob/master/course/en/chapter2/section3_pt.ipynb"},
+]} />
+
+<Youtube id="AhChOFRegn4"/>
+
+このセクションでは、モデルの作成と使い方を詳しく見ていきます。チェックポイントから任意のモデルをインスタンス化したいときに便利な `AutoModel` クラスを使います。
+
+## Transformer を作成する[[creating-a-transformer]]
+
+まず、`AutoModel` をインスタンス化すると何が起きるのかを確認します。
+
+```py
+from transformers import AutoModel
+
+model = AutoModel.from_pretrained("bert-base-cased")
+```
+
+トークナイザと同様に、`from_pretrained()` メソッドはモデルのデータを Hugging Face Hub からダウンロードし、キャッシュします。前述のとおり、チェックポイント名は特定のモデルアーキテクチャと重みに対応しています。このケースは、基本的なアーキテクチャ（12層、隠れサイズ768、アテンションヘッド12個）を持ち、大文字と小文字の区別が重要になる cased な入力に対応した BERT モデルです。Hub には多数のチェックポイントがあり、[このページ](https://huggingface.co/models)で探すことができます。
+
+`AutoModel` クラスとその仲間は、実際にはシンプルなラッパーであり、指定されたチェックポイントに対して適切なモデルアーキテクチャを取得するよう設計されています。「auto（自動）」クラスというのは、適切なモデルアーキテクチャを推測し、正しいモデルクラスをインスタンス化してくれるという意味です。ただし、使いたいモデルの種類がわかっている場合は、そのアーキテクチャを定義するクラスを直接使うこともできます。
+
+```py
+from transformers import BertModel
+
+model = BertModel.from_pretrained("bert-base-cased")
+```
+
+## 読み込みと保存[[loading-and-saving]]
+
+モデルの保存は、トークナイザの保存と同じくらい簡単です。実際、モデルにも同じ `save_pretrained()` メソッドがあり、モデルの重みとアーキテクチャの設定を保存します。
+
+```py
+model.save_pretrained("directory_on_my_computer")
+```
+
+これにより、ディスクに2つのファイルが保存されます。
+
+```
+ls directory_on_my_computer
+
+config.json model.safetensors
+```
+
+*config.json* ファイルの中を見ると、モデルアーキテクチャを構築するために必要な属性がすべてそろっています。このファイルには、チェックポイントの由来や、そのチェックポイントを最後に保存したときに使っていた 🤗 Transformers のバージョンといったメタデータも含まれています。
+
+*pytorch_model.safetensors* ファイルは state dictionary（状態辞書）として知られており、モデルのすべての重みが含まれています。この2つのファイルは連携して動作します。設定ファイルはモデルアーキテクチャを知るために必要で、モデルの重みはモデルのパラメータです。
+
+保存したモデルを再利用するには、もう一度 `from_pretrained()` メソッドを使います。
+
+```py
+from transformers import AutoModel
+
+model = AutoModel.from_pretrained("directory_on_my_computer")
+```
+
+🤗 Transformers ライブラリの素晴らしい機能の1つは、モデルとトークナイザをコミュニティと簡単に共有できることです。そのためには、[Hugging Face](https://huggingface.co) のアカウントが必要です。ノートブックを使っている場合は、次で簡単にログインできます。
+
+```python
+from huggingface_hub import notebook_login
+
+notebook_login()
+```
+
+それ以外の場合は、ターミナルで次を実行します。
+
+```bash
+huggingface-cli login
+```
+
+その後、`push_to_hub()` メソッドを使って、モデルを Hub にプッシュできます。
+
+```py
+model.push_to_hub("my-awesome-model")
+```
+
+これにより、モデルファイルが Hub にアップロードされ、あなたの名前空間の下に *my-awesome-model* という名前のリポジトリが作られます。あとは誰でも、`from_pretrained()` メソッドであなたのモデルを読み込めます！
+
+```py
+from transformers import AutoModel
+
+model = AutoModel.from_pretrained("your-username/my-awesome-model")
+```
+
+Hub API では、ほかにもさまざまなことができます。
+
+- ローカルのリポジトリからモデルをプッシュする
+- すべてを再アップロードすることなく、特定のファイルを更新する
+- モデルカードを追加して、モデルの能力、制限、既知のバイアスなどを文書化する
+
+詳しいチュートリアルについては[ドキュメント](https://huggingface.co/docs/huggingface_hub/how-to-upstream)を参照してください。発展的な内容は [Chapter 4](/course/chapter4) でも扱います。
+
+## テキストをエンコードする[[encoding-text]]
+
+Transformer モデルは、入力を数値に変換することでテキストを処理します。ここでは、テキストがトークナイザで処理されるときに何が起きているのかを、具体的に見ていきます。[Chapter 1](/course/chapter1) で既に見たように、トークナイザはテキストをトークンに分割し、それらのトークンを数値に変換します。この変換は、シンプルなトークナイザで確認できます。
+
+```py
+from transformers import AutoTokenizer
+
+tokenizer = AutoTokenizer.from_pretrained("bert-base-cased")
+
+encoded_input = tokenizer("Hello, I'm a single sentence!")
+print(encoded_input)
+```
+
+```python out
+{'input_ids': [101, 8667, 117, 1000, 1045, 1005, 1049, 2235, 17662, 12172, 1012, 102], 
+ 'token_type_ids': [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], 
+ 'attention_mask': [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1]}
+```
+
+次のフィールドを持つ辞書が得られます。
+
+- input_ids: トークンの数値表現
+- token_type_ids: 入力のどの部分が文 A で、どの部分が文 B かをモデルに伝えるもの（次のセクションで詳しく説明します）
+- attention_mask: どのトークンに注意を向けるべきで、どのトークンには向けるべきでないかを示すもの（この後すぐに詳しく説明します）
+
+入力 ID をデコードすれば、元のテキストを取り戻せます。
+
+```py
+tokenizer.decode(encoded_input["input_ids"])
+```
+
+```python out
+"[CLS] Hello, I'm a single sentence! [SEP]"
+```
+
+トークナイザが、モデルに必要な特殊トークン `[CLS]` と `[SEP]` を追加していることに気づくでしょう。すべてのモデルが特殊トークンを必要とするわけではありません。特殊トークンは、モデルがそれらを使って事前学習された場合に利用されます。その場合、モデルがそれらのトークンを想定しているため、トークナイザが追加する必要があります。
+
+複数の文を一度にエンコードすることもできます。バッチとしてまとめる（間もなく説明します）か、リストとして渡します。
+
+```py
+encoded_input = tokenizer("How are you?", "I'm fine, thank you!")
+print(encoded_input)
+```
+
+```python out
+{'input_ids': [[101, 1731, 1132, 1128, 136, 102], [101, 1045, 1005, 1049, 2503, 117, 5763, 1128, 136, 102]], 
+ 'token_type_ids': [[0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0, 0, 0]], 
+ 'attention_mask': [[1, 1, 1, 1, 1, 1], [1, 1, 1, 1, 1, 1, 1, 1, 1, 1]]}
+```
+
+複数の文を渡すと、トークナイザは辞書の値ごとに、文ごとのリストを返す点に注意してください。トークナイザに、PyTorch のテンソルを直接返すよう求めることもできます。
+
+```py
+encoded_input = tokenizer("How are you?", "I'm fine, thank you!", return_tensors="pt")
+print(encoded_input)
+```
+
+```python out
+{'input_ids': tensor([[  101,  1731,  1132,  1128,   136,   102],
+         [  101,  1045,  1005,  1049,  2503,   117,  5763,  1128,   136,   102]]), 
+ 'token_type_ids': tensor([[0, 0, 0, 0, 0, 0],
+         [0, 0, 0, 0, 0, 0, 0, 0, 0, 0]]), 
+ 'attention_mask': tensor([[1, 1, 1, 1, 1, 1],
+         [1, 1, 1, 1, 1, 1, 1, 1, 1, 1]])}
+```
+
+しかし、ここで問題があります。2つのリストの長さが同じではないのです！配列とテンソルは長方形（矩形）でなければならないため、これらのリストをそのまま PyTorch テンソル（や NumPy 配列）に変換することはできません。そのためにトークナイザが用意しているオプションが、パディングです。
+
+### 入力をパディングする[[padding-inputs]]
+
+トークナイザに入力をパディングするよう求めると、最も長い文よりも短い文に特殊なパディングトークンを追加して、すべての文の長さを揃えてくれます。
+
+```py
+encoded_input = tokenizer(
+    ["How are you?", "I'm fine, thank you!"], padding=True, return_tensors="pt"
+)
+print(encoded_input)
+```
+
+```python out
+{'input_ids': tensor([[  101,  1731,  1132,  1128,   136,   102,     0,     0,     0,     0],
+         [  101,  1045,  1005,  1049,  2503,   117,  5763,  1128,   136,   102]]), 
+ 'token_type_ids': tensor([[0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+         [0, 0, 0, 0, 0, 0, 0, 0, 0, 0]]), 
+ 'attention_mask': tensor([[1, 1, 1, 1, 1, 1, 0, 0, 0, 0],
+         [1, 1, 1, 1, 1, 1, 1, 1, 1, 1]])}
+```
+
+これで長方形のテンソルが得られました！パディングトークンは、入力 ID では ID 0 としてエンコードされ、アテンションマスクの値も 0 になっている点に注意してください。これは、パディングトークンをモデルが分析すべきではないためです。実際の文の一部ではないからです。
+
+### 入力を切り捨てる[[truncating-inputs]]
+
+テンソルが大きくなりすぎて、モデルが処理できなくなることもあります。たとえば BERT は、最大で512トークンまでのシーケンスでしか事前学習されていないため、それより長いシーケンスは処理できません。モデルが処理できる長さを超えたシーケンスがある場合は、`truncation` パラメータを使って切り捨てる必要があります。
+
+```py
+encoded_input = tokenizer(
+    "This is a very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very long sentence.",
+    truncation=True,
+)
+print(encoded_input["input_ids"])
+```
+
+```python out
+[101, 1188, 1110, 170, 1505, 1505, 1505, 1505, 1505, 1505, 1505, 1505, 1505, 1505, 1505, 1505, 1505, 1505, 1505, 1505, 1505, 1505, 1505, 1505, 1505, 1505, 1505, 1505, 1505, 1505, 1505, 1505, 1505, 1505, 1505, 1505, 1505, 1505, 1505, 1505, 1505, 1505, 1505, 1505, 1505, 1505, 1505, 1505, 1505, 1505, 1505, 1505, 1505, 1505, 1505, 1505, 1505, 1505, 1505, 1505, 1505, 1505, 1505, 1505, 1505, 1505, 1505, 1505, 1505, 1505, 1505, 1505, 1505, 1505, 1505, 1505, 1505, 1505, 1505, 1505, 1505, 1505, 1505, 1505, 1505, 1505, 1505, 1505, 1505, 1505, 1505, 1505, 1505, 1505, 1505, 1505, 1505, 1505, 1505, 1505, 1505, 1505, 1505, 1505, 1505, 1505, 1505, 1505, 1505, 1505, 1505, 1505, 1505, 1505, 1505, 1505, 1505, 1505, 1505, 1505, 1505, 1505, 1505, 1505, 1505, 1505, 1505, 1505, 1179, 5650, 119, 102]
+```
+
+パディングと切り捨ての引数を組み合わせれば、テンソルを必要な正確なサイズにできます。
+
+```py
+encoded_input = tokenizer(
+    ["How are you?", "I'm fine, thank you!"],
+    padding=True,
+    truncation=True,
+    max_length=5,
+    return_tensors="pt",
+)
+print(encoded_input)
+```
+
+```python out
+{'input_ids': tensor([[  101,  1731,  1132,  1128,   102],
+         [  101,  1045,  1005,  1049,   102]]), 
+ 'token_type_ids': tensor([[0, 0, 0, 0, 0],
+         [0, 0, 0, 0, 0]]), 
+ 'attention_mask': tensor([[1, 1, 1, 1, 1],
+         [1, 1, 1, 1, 1]])}
+```
+
+### 特殊トークンの追加
+
+特殊トークン（あるいは少なくともその概念）は、BERT とその派生モデルにとって特に重要です。これらのトークンは、文の開始（`[CLS]`）や文同士の区切り（`[SEP]`）など、文の境界をよりよく表すために追加されます。シンプルな例を見てみましょう。
+
+```py
+encoded_input = tokenizer("How are you?")
+print(encoded_input["input_ids"])
+tokenizer.decode(encoded_input["input_ids"])
+```
+
+```python out
+[101, 1731, 1132, 1128, 136, 102]
+'[CLS] How are you? [SEP]'
+```
+
+これらの特殊トークンは、トークナイザが自動的に追加します。すべてのモデルが特殊トークンを必要とするわけではありません。主に、モデルがそれらを使って事前学習された場合に使われます。その場合、モデルが想定しているため、トークナイザが特殊トークンを追加します。
+
+### なぜこれらすべてが必要なのか？
+
+具体例を見てみましょう。エンコードされた次のシーケンスを考えます。
+
+```py
+sequences = [
+    "I've been waiting for a HuggingFace course my whole life.",
+    "I hate this so much!",
+]
+```
+
+トークン化すると、次のようになります。
+
+```python
+encoded_sequences = [
+    [
+        101,
+        1045,
+        1005,
+        2310,
+        2042,
+        3403,
+        2005,
+        1037,
+        17662,
+        12172,
+        2607,
+        2026,
+        2878,
+        2166,
+        1012,
+        102,
+    ],
+    [101, 1045, 5223, 2023, 2061, 2172, 999, 102],
+]
+```
+
+これは、エンコードされたシーケンスのリスト、つまりリストのリストです。テンソルが受け付けるのは長方形の形状（行列を思い浮かべてください）だけです。この「配列」はすでに長方形の形状になっているため、テンソルへの変換は簡単です。
+
+```py
+import torch
+
+model_inputs = torch.tensor(encoded_sequences)
+```
+
+### テンソルをモデルの入力として使う[[using-the-tensors-as-inputs-to-the-model]]
+
+モデルでテンソルを使うのは、非常に簡単です。入力を使ってモデルを呼び出すだけです。
+
+```py
+output = model(model_inputs)
+```
+
+モデルはさまざまな引数を受け付けますが、必要なのは入力 ID だけです。他の引数が何をするもので、いつ必要になるのかは後ほど説明します。まずは、Transformer モデルが理解できる入力を構築するトークナイザを、詳しく見ていく必要があります。
