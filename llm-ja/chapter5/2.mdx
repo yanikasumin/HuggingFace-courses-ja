@@ -1,0 +1,156 @@
+# データセットが Hub にない場合は？[[what-if-my-dataset-isnt-on-the-hub]]
+
+<CourseFloatingBanner chapter={5}
+  classNames="absolute z-10 right-0 top-0"
+  notebooks={[
+    {label: "Google Colab", value: "https://colab.research.google.com/github/huggingface/notebooks/blob/master/course/en/chapter5/section2.ipynb"},
+    {label: "Aws Studio", value: "https://studiolab.sagemaker.aws/import/github/huggingface/notebooks/blob/master/course/en/chapter5/section2.ipynb"},
+]} />
+
+[Hugging Face Hub](https://huggingface.co/datasets) からデータセットをダウンロードする方法はすでに知っていると思いますが、実際に扱うデータは、自分のノートパソコンやリモートサーバーに置かれていることも多いはずです。このセクションでは、Hugging Face Hub にないデータセットを 🤗 Datasets で読み込む方法を紹介します。
+
+<Youtube id="HyQgpJTkRdE"/>
+
+## ローカルおよびリモートのデータセットを扱う[[working-with-local-and-remote-datasets]]
+
+🤗 Datasets には、ローカルおよびリモートのデータセットを読み込むためのローディングスクリプトが用意されています。次のような一般的なデータ形式に対応しています。
+
+|    データ形式     | ローディングスクリプト |                         例                         |
+| :----------------: | :------------: | :-----------------------------------------------------: |
+|     CSV & TSV      |     `csv`      |     `load_dataset("csv", data_files="my_file.csv")`     |
+|     テキストファイル     |     `text`     |    `load_dataset("text", data_files="my_file.txt")`     |
+| JSON & JSON Lines  |     `json`     |   `load_dataset("json", data_files="my_file.jsonl")`    |
+| Pickle 化された DataFrame |    `pandas`    | `load_dataset("pandas", data_files="my_dataframe.pkl")` |
+
+表のとおり、データ形式ごとに `load_dataset()` 関数でローディングスクリプトの種類を指定し、1つ以上のファイルへのパスを指定する `data_files` 引数を渡すだけです。まずはローカルファイルからデータセットを読み込み、後でリモートファイルでも同じことができることを見ていきます。
+
+## ローカルデータセットの読み込み[[loading-a-local-dataset]]
+
+この例では、イタリア語の質問応答用の大規模データセットである [SQuAD-it データセット](https://github.com/crux82/squad-it/) を使います。
+
+訓練用とテスト用の分割（split）は GitHub で公開されているので、簡単な `wget` コマンドでダウンロードできます。
+
+```python
+!wget https://github.com/crux82/squad-it/raw/master/SQuAD_it-train.json.gz
+!wget https://github.com/crux82/squad-it/raw/master/SQuAD_it-test.json.gz
+```
+
+これで *SQuAD_it-train.json.gz* と *SQuAD_it-test.json.gz* という2つの圧縮ファイルがダウンロードされます。Linux の `gzip` コマンドで解凍しましょう。
+
+```python
+!gzip -dkv SQuAD_it-*.json.gz
+```
+
+```bash
+SQuAD_it-test.json.gz:	   87.4% -- replaced with SQuAD_it-test.json
+SQuAD_it-train.json.gz:	   82.2% -- replaced with SQuAD_it-train.json
+```
+
+圧縮ファイルが _SQuAD_it-train.json_ と _SQuAD_it-test.json_ に置き換わり、データが JSON 形式で保存されていることが分かります。
+
+> [!TIP]
+> ✎ 上のシェルコマンドに `!` という文字があるのはなぜか気になるかもしれません。これは Jupyter ノートブックの中で実行しているためです。ターミナルでデータセットをダウンロード・解凍したい場合は、この接頭辞を取り除いてください。
+
+JSON ファイルを `load_dataset()` 関数で読み込むには、それが通常の JSON（ネストした辞書のような形式）なのか、JSON Lines（行ごとに区切られた JSON）なのかを知る必要があります。多くの質問応答データセットと同様、SQuAD-it はネスト形式を使っており、すべてのテキストが `data` フィールドに格納されています。つまり、次のように `field` 引数を指定すればデータセットを読み込めます。
+
+```py
+from datasets import load_dataset
+
+squad_it_dataset = load_dataset("json", data_files="SQuAD_it-train.json", field="data")
+```
+
+デフォルトでは、ローカルファイルを読み込むと `train` 分割を持つ `DatasetDict` オブジェクトが作られます。`squad_it_dataset` オブジェクトを確認してみましょう。
+
+```py
+squad_it_dataset
+```
+
+```python out
+DatasetDict({
+    train: Dataset({
+        features: ['title', 'paragraphs'],
+        num_rows: 442
+    })
+})
+```
+
+訓練セットの行数と列名が表示されています。次のように `train` 分割にインデックスでアクセスすれば、サンプルの1つを見ることができます。
+
+```py
+squad_it_dataset["train"][0]
+```
+
+```python out
+{
+    "title": "Terremoto del Sichuan del 2008",
+    "paragraphs": [
+        {
+            "context": "Il terremoto del Sichuan del 2008 o il terremoto...",
+            "qas": [
+                {
+                    "answers": [{"answer_start": 29, "text": "2008"}],
+                    "id": "56cdca7862d2951400fa6826",
+                    "question": "In quale anno si è verificato il terremoto nel Sichuan?",
+                },
+                ...
+            ],
+        },
+        ...
+    ],
+}
+```
+
+これで、初めてのローカルデータセットが読み込めました！ただし、訓練セットについてはうまくいきましたが、本当に欲しいのは `train` と `test` の両方の分割を1つの `DatasetDict` オブジェクトにまとめ、両方の分割に対してまとめて `Dataset.map()` 関数を適用できるようにすることです。そのためには、`data_files` 引数に、各分割名とその分割に対応するファイルを対応づける辞書を渡します。
+
+```py
+data_files = {"train": "SQuAD_it-train.json", "test": "SQuAD_it-test.json"}
+squad_it_dataset = load_dataset("json", data_files=data_files, field="data")
+squad_it_dataset
+```
+
+```python out
+DatasetDict({
+    train: Dataset({
+        features: ['title', 'paragraphs'],
+        num_rows: 442
+    })
+    test: Dataset({
+        features: ['title', 'paragraphs'],
+        num_rows: 48
+    })
+})
+```
+
+まさに望んでいた形になりました。これで、データのクリーニングやレビューのトークナイズなど、さまざまな前処理を適用できます。
+
+> [!TIP]
+> `load_dataset()` 関数の `data_files` 引数はかなり柔軟で、単一のファイルパス、ファイルパスのリスト、分割名とファイルパスを対応づける辞書のいずれでも渡せます。Unix シェルのルールに従ったパターンでファイルを glob することもできます（たとえば `data_files="*.json"` と指定すれば、ディレクトリ内のすべての JSON ファイルを1つの分割として読み込めます）。詳細は 🤗 Datasets の[ドキュメント](https://huggingface.co/docs/datasets/loading#local-and-remote-files)を参照してください。
+
+🤗 Datasets のローディングスクリプトは入力ファイルの自動解凍にも対応しているので、`data_files` 引数を圧縮ファイルに直接向ければ、`gzip` を使う手順は省略できました。
+
+```py
+data_files = {"train": "SQuAD_it-train.json.gz", "test": "SQuAD_it-test.json.gz"}
+squad_it_dataset = load_dataset("json", data_files=data_files, field="data")
+```
+
+多数の GZIP ファイルを手作業で解凍したくない場合に便利です。自動解凍は ZIP や TAR など他の一般的な形式にも適用されるので、`data_files` を圧縮ファイルに向けるだけで済みます！
+
+ノートパソコンやデスクトップ上のローカルファイルを読み込む方法が分かったところで、次はリモートファイルの読み込みを見ていきます。
+
+## リモートデータセットの読み込み[[loading-a-remote-dataset]]
+
+企業でデータサイエンティストやプログラマーとして働いている場合、分析したいデータセットはリモートサーバーに保存されていることが多いでしょう。幸い、リモートファイルの読み込みはローカルファイルと同じくらい簡単です！ローカルファイルへのパスを与える代わりに、`load_dataset()` の `data_files` 引数を、リモートファイルが置かれている1つ以上の URL に向けます。たとえば、GitHub で公開されている SQuAD-it データセットなら、次のように `data_files` を _SQuAD_it-*.json.gz_ の URL に向けるだけです。
+
+```py
+url = "https://github.com/crux82/squad-it/raw/master/"
+data_files = {
+    "train": url + "SQuAD_it-train.json.gz",
+    "test": url + "SQuAD_it-test.json.gz",
+}
+squad_it_dataset = load_dataset("json", data_files=data_files, field="data")
+```
+
+これにより、上で得たのと同じ `DatasetDict` オブジェクトが返ってきますが、_SQuAD_it-*.json.gz_ ファイルを手作業でダウンロード・解凍する手間が省けます。以上で、Hugging Face Hub にホストされていないデータセットのさまざまな読み込み方法を見てきました。手元にデータセットが用意できたので、次はさまざまなデータ加工テクニックに手を動かして取り組んでいきましょう！
+
+> [!TIP]
+> ✏️ **やってみよう！** GitHub や [UCI Machine Learning Repository](https://archive.ics.uci.edu/ml/index.php) で公開されている別のデータセットを選んで、上で紹介したテクニックを使ってローカルとリモートの両方で読み込んでみましょう。おまけとして、CSV やテキスト形式で保存されたデータセットの読み込みにも挑戦してみてください（これらの形式の詳細は[ドキュメント](https://huggingface.co/docs/datasets/loading#local-and-remote-files)を参照）。

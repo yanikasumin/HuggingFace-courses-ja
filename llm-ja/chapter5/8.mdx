@@ -1,0 +1,231 @@
+<!-- DISABLE-FRONTMATTER-SECTIONS -->
+
+# 章末クイズ[[end-of-chapter-quiz]]
+
+<CourseFloatingBanner
+    chapter={5}
+    classNames="absolute z-10 right-0 top-0"
+/>
+
+この章ではたくさんの内容を扱いました！細部まで全部を把握できていなくても心配いりません。これからの章で、裏側の仕組みがどう動いているかが分かるようになります。
+
+とはいえ、先に進む前に、この章で学んだことをテストしてみましょう。
+
+### 1. 🤗 Datasets の `load_dataset()` 関数では、次のうちどの場所からデータセットを読み込めますか？ 
+
+<Question
+	choices={[
+		{
+			text: "ローカル、たとえば自分のノートパソコン上",
+			explain: "正解です！<code>load_dataset()</code> の <code>data_files</code> 引数にローカルファイルのパスを渡せば、ローカルデータセットを読み込めます。",
+			correct: true
+		},
+		{
+			text: "Hugging Face Hub",
+			explain: "正解です！データセット ID を指定すれば、Hub 上のデータセットを読み込めます。例: <code>load_dataset('emotion')</code>。",
+			correct: true
+		},
+		{
+			text: "リモートサーバー",
+			explain: "正解です！<code>load_dataset()</code> の <code>data_files</code> 引数に URL を渡せば、リモートファイルを読み込めます。",
+			correct: true
+		},
+	]}
+/>
+
+### 2. 次のように GLUE タスクの1つを読み込んだとします。
+
+```py
+from datasets import load_dataset
+
+dataset = load_dataset("glue", "mrpc", split="train")
+```
+
+次のうち、`dataset` からランダムに50件のサンプルを取り出すコマンドはどれですか？
+
+<Question
+	choices={[
+		{
+			text: "<code>dataset.sample(50)</code>",
+			explain: "これは不正解です。<code>Dataset.sample()</code> というメソッドは存在しません。"
+		},
+		{
+			text: "<code>dataset.shuffle().select(range(50))</code>",
+			explain: "正解です！この章で見たとおり、まずデータセットをシャッフルしてから、そこからサンプルを選択します。",
+			correct: true
+		},
+		{
+			text: "<code>dataset.select(range(50)).shuffle()</code>",
+			explain: "これは不正解です。コードは実行できますが、シャッフルされるのはデータセットの最初の50件だけです。"
+		}
+	]}
+/>
+
+### 3. 家庭のペットに関する `pets_dataset` というデータセットがあり、各ペットの名前を示す `name` 列があるとします。名前が文字「L」で始まるペットだけにデータセットをフィルタリングできる方法は、次のうちどれですか？
+
+<Question
+	choices={[
+		{
+			text: "<code>pets_dataset.filter(lambda x : x['name'].startswith('L'))</code>",
+			explain: "正解です！このような手早いフィルタには Python のラムダ関数を使うのがおすすめです。ほかにどんな解法が考えられますか？",
+			correct: true
+		},
+		{
+			text: "<code>pets_dataset.filter(lambda x['name'].startswith('L'))</code>",
+			explain: "これは不正解です。ラムダ関数は <code>lambda *arguments* : *expression*</code> という一般形を取るため、この場合は引数を指定する必要があります。"
+		},
+		{
+			text: "<code>def filter_names(x): return x['name'].startswith('L')</code> のような関数を作って、<code>pets_dataset.filter(filter_names)</code> を実行する。",
+			explain: "正解です！<code>Dataset.map()</code> と同じように、明示的な関数を <code>Dataset.filter()</code> に渡せます。短いラムダ関数では収まらない複雑なロジックがある場合に便利です。他の選択肢では、どれがうまくいきますか？",
+			correct: true
+		}
+	]}
+/>
+
+### 4. メモリマッピングとは何ですか？
+
+<Question
+	choices={[
+		{
+			text: "CPU と GPU の RAM の間のマッピング",
+			explain: "違います。もう一度考えてみましょう！",
+		},
+		{
+			text: "RAM とファイルシステムストレージの間のマッピング",
+			explain: "正解です！🤗 Datasets は各データセットをメモリマップドファイルとして扱います。これにより、データセット全体をメモリに読み込まなくても、その要素にアクセスして操作できます。",
+			correct: true
+		},
+		{
+			text: "🤗 Datasets キャッシュ内の2つのファイルの間のマッピング",
+			explain: "これは正しくありません。もう一度考えてみましょう！"
+		}
+	]}
+/>
+
+### 5. メモリマッピングの主な利点は、次のうちどれですか？
+
+<Question
+	choices={[
+		{
+			text: "メモリマップドファイルへのアクセスは、ディスクへの読み書きよりも高速である。",
+			explain: "正解です！おかげで 🤗 Datasets は非常に高速に動作します。ただし、利点はそれだけではありません。",
+			correct: true
+		},
+		{
+			text: "アプリケーションが巨大なファイル全体を RAM に読み込まなくても、その一部のデータにアクセスできる。",
+			explain: "正解です！おかげで、ノートパソコン上でも CPU を爆発させることなく、数ギガバイト規模のデータセットを読み込めます。メモリマッピングには他にどんな利点がありますか？",
+			correct: true
+		},
+		{
+			text: "消費エネルギーが少なく、バッテリーが長持ちする。",
+			explain: "これは正しくありません。もう一度考えてみましょう！"
+		}
+	]}
+/>
+
+### 6. 次のコードが失敗するのはなぜですか？
+
+```py
+from datasets import load_dataset
+
+dataset = load_dataset("allocine", streaming=True, split="train")
+dataset[0]
+```
+
+<Question
+	choices={[
+		{
+			text: "RAM に収まらないほど大きなデータセットをストリーミングしようとしているから。",
+			explain: "これは正しくありません。ストリーミングデータセットはその場で解凍されるため、ごくわずかな RAM でテラバイト級のデータセットも処理できます！",
+		},
+		{
+			text: "<code>IterableDataset</code> にアクセスしようとしているから。",
+			explain: "正解です！<code>IterableDataset</code> はコンテナではなくジェネレータなので、その要素には <code>next(iter(dataset))</code> を使ってアクセスする必要があります。",
+			correct: true
+		},
+		{
+			text: "<code>allocine</code> データセットに <code>train</code> 分割が存在しないから。",
+			explain: "これは不正解です。Hub の [<code>allocine</code> データセットカード](https://huggingface.co/datasets/allocine) で、どの分割が含まれているか確認してみてください。"
+		}
+	]}
+/>
+
+### 7. データセットカードを作成する主な利点は、次のうちどれですか？
+
+<Question
+	choices={[
+		{
+			text: "データセットの想定用途や対応タスクについての情報を提供し、コミュニティの他の人が利用するかどうかを十分な情報に基づいて判断できる。",
+			explain: "正解です！ドキュメントのないデータセットは、作成者の意図を反映しないモデルの訓練に使われたり、プライバシーやライセンスの制限に反するデータで訓練された場合に法的地位が曖昧なモデルを生んだりする恐れがあります。ただし、利点はそれだけではありません！",
+			correct : true
+		},
+		{
+			text: "コーパスに存在するバイアスに注意を向ける助けになる。",
+			explain: "正解です！ほぼすべてのデータセットには何らかのバイアスがあり、下流で悪影響を及ぼす可能性があります。それを認識しておくことで、モデル開発者は内在するバイアスへの対処法を理解できます。データセットカードは他に何の役に立ちますか？",
+			correct : true
+		},
+		{
+			text: "コミュニティの他の人が自分のデータセットを使ってくれる可能性が高まる。",
+			explain: "正解です！よく書かれたデータセットカードは、大切なデータセットの利用率を高める傾向があります。他にどんな利点がありますか？",
+			correct: true
+		},
+	]}
+/>
+
+
+### 8. セマンティック検索とは何ですか？
+
+<Question
+	choices={[
+		{
+			text: "クエリ内の単語とコーパス内のドキュメントとの完全一致を探す方法",
+			explain: "これは不正解です。この種の検索は *語彙検索（lexical search）* と呼ばれ、従来の検索エンジンで一般的に見られるものです。"
+		},
+		{
+			text: "クエリの文脈的な意味を理解して、一致するドキュメントを探す方法",
+			explain: "正解です！セマンティック検索は埋め込みベクトルでクエリとドキュメントを表現し、類似度指標で両者の重なりの度合いを測ります。他にどう説明できますか？",
+			correct: true
+		},
+		{
+			text: "検索精度を向上させる方法",
+			explain: "正解です！セマンティック検索エンジンはキーワードマッチングよりもクエリの意図をよく捉えることができ、通常はより精度の高いドキュメントを取得できます。ただし、正しい答えはそれだけではありません。セマンティック検索は他に何を提供しますか？",
+			correct: true
+		}
+	]}
+/>
+
+### 9. 非対称セマンティック検索では、通常は次のどれがありますか？
+
+<Question
+	choices={[
+		{
+			text: "短いクエリと、そのクエリに答える長めの段落",
+			explain: "正解です！",
+			correct : true
+		},
+		{
+			text: "ほぼ同じ長さのクエリと段落",
+			explain: "これは実際には対称セマンティック検索の例です。もう一度考えてみましょう！"
+		},
+		{
+			text: "長いクエリと、そのクエリに答える短めの段落",
+			explain: "これは不正解です。もう一度考えてみましょう！"
+		}
+	]}
+/>
+
+### 10. 音声処理のような他分野のデータを読み込むのに 🤗 Datasets を使えますか？
+
+<Question
+	choices={[
+		{
+			text: "いいえ",
+			explain: "これは不正解です。🤗 Datasets は現在、表形式データ、音声、コンピュータビジョンに対応しています。コンピュータビジョンの例として、Hub の <a  href='https://huggingface.co/datasets/mnist'>MNIST データセット</a> を見てみてください。"
+		},
+		{
+			text: "はい",
+			explain: "正解です！🤗 Transformers ライブラリにおける音声とビジョンのわくわくするような発展を見て、これらの分野で 🤗 Datasets がどう使われているか確認してみてください。",
+			correct : true
+		},
+	]}
+/>

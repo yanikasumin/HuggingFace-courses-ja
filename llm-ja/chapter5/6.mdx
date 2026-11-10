@@ -1,0 +1,512 @@
+<FrameworkSwitchCourse {fw} />
+
+# FAISS によるセマンティック検索[[semantic-search-with-faiss]]
+
+{#if fw === 'pt'}
+
+<CourseFloatingBanner chapter={5}
+  classNames="absolute z-10 right-0 top-0"
+  notebooks={[
+    {label: "Google Colab", value: "https://colab.research.google.com/github/huggingface/notebooks/blob/master/course/en/chapter5/section6_pt.ipynb"},
+    {label: "Aws Studio", value: "https://studiolab.sagemaker.aws/import/github/huggingface/notebooks/blob/master/course/en/chapter5/section6_pt.ipynb"},
+]} />
+
+{:else}
+
+<CourseFloatingBanner chapter={5}
+  classNames="absolute z-10 right-0 top-0"
+  notebooks={[
+    {label: "Google Colab", value: "https://colab.research.google.com/github/huggingface/notebooks/blob/master/course/en/chapter5/section6_tf.ipynb"},
+    {label: "Aws Studio", value: "https://studiolab.sagemaker.aws/import/github/huggingface/notebooks/blob/master/course/en/chapter5/section6_tf.ipynb"},
+]} />
+
+{/if}
+
+[セクション5](/course/chapter5/5) では、🤗 Datasets リポジトリの GitHub issues とコメントのデータセットを作成しました。このセクションでは、この情報を使って、ライブラリに関する差し迫った疑問への答えを見つけるのに役立つ検索エンジンを構築します！
+
+<Youtube id="OATCgQtNX2o"/>
+
+## セマンティック検索への埋め込みの利用[[using-embeddings-for-semantic-search]]
+
+[Chapter 1](/course/chapter1) で見たように、Transformer ベースの言語モデルは、テキストの範囲内の各トークンを埋め込みベクトルとして表現します。個々の埋め込みを「プーリング」することで、文全体、段落、あるいは（場合によっては）ドキュメント全体のベクトル表現を作れることが分かっています。これらの埋め込みを使えば、各埋め込みとの内積類似度（または他の類似度指標）を計算し、重なりが最も大きいドキュメントを返すことで、コーパス内の類似ドキュメントを見つけることができます。
+
+このセクションでは、埋め込みを使ってセマンティック検索エンジンを開発します。これらの検索エンジンには、クエリ内のキーワードとドキュメントをマッチさせる従来のアプローチに比べていくつかの利点があります。
+
+<div class="flex justify-center">
+<img class="block dark:hidden" src="https://huggingface.co/datasets/huggingface-course/documentation-images/resolve/main/en/chapter5/semantic-search.svg" alt="セマンティック検索。"/>
+<img class="hidden dark:block" src="https://huggingface.co/datasets/huggingface-course/documentation-images/resolve/main/en/chapter5/semantic-search-dark.svg" alt="セマンティック検索。"/>
+</div>
+
+## データセットの読み込みと準備[[loading-and-preparing-the-dataset]]
+
+まず必要なのは、GitHub issues のデータセットをダウンロードすることです。いつものように `load_dataset()` 関数を使いましょう。
+
+```py
+from datasets import load_dataset
+
+issues_dataset = load_dataset("lewtun/github-issues", split="train")
+issues_dataset
+```
+
+```python out
+Dataset({
+    features: ['url', 'repository_url', 'labels_url', 'comments_url', 'events_url', 'html_url', 'id', 'node_id', 'number', 'title', 'user', 'labels', 'state', 'locked', 'assignee', 'assignees', 'milestone', 'comments', 'created_at', 'updated_at', 'closed_at', 'author_association', 'active_lock_reason', 'pull_request', 'body', 'performed_via_github_app', 'is_pull_request'],
+    num_rows: 2855
+})
+```
+
+ここでは `load_dataset()` でデフォルトの `train` 分割を指定したため、`DatasetDict` ではなく `Dataset` が返ります。最初に行うべきことは、プルリクエストを除外することです。プルリクエストはユーザーのクエリへの回答にはあまり使われず、検索エンジンにノイズを持ち込む傾向があるためです。既におなじみのはずですが、`Dataset.filter()` 関数を使えば、データセット内のこれらの行を除外できます。ついでに、コメントのない行も除外しましょう。これらはユーザーのクエリへの回答を提供しないためです。
+
+```py
+issues_dataset = issues_dataset.filter(
+    lambda x: (x["is_pull_request"] == False and len(x["comments"]) > 0)
+)
+issues_dataset
+```
+
+```python out
+Dataset({
+    features: ['url', 'repository_url', 'labels_url', 'comments_url', 'events_url', 'html_url', 'id', 'node_id', 'number', 'title', 'user', 'labels', 'state', 'locked', 'assignee', 'assignees', 'milestone', 'comments', 'created_at', 'updated_at', 'closed_at', 'author_association', 'active_lock_reason', 'pull_request', 'body', 'performed_via_github_app', 'is_pull_request'],
+    num_rows: 771
+})
+```
+
+データセットには多数の列があることが分かりますが、検索エンジンの構築に必要なのはそのほとんどではありません。検索の観点からは、最も情報量が多い列は `title`、`body`、`comments` で、`html_url` は元の issue へのリンクを提供します。`Dataset.remove_columns()` 関数を使って、残りを削除しましょう。
+
+```py
+columns = issues_dataset.column_names
+columns_to_keep = ["title", "body", "html_url", "comments"]
+columns_to_remove = set(columns_to_keep).symmetric_difference(columns)
+issues_dataset = issues_dataset.remove_columns(columns_to_remove)
+issues_dataset
+```
+
+```python out
+Dataset({
+    features: ['html_url', 'title', 'comments', 'body'],
+    num_rows: 771
+})
+```
+
+埋め込みを作成するために、各コメントに issue のタイトルと本文を付け加えます。これらのフィールドには有用な文脈情報が含まれていることが多いためです。`comments` 列は現在、各 issue に対するコメントのリストになっているため、各行が `(html_url, title, body, comment)` のタプルから構成されるよう、この列を「爆発（explode）」させる必要があります。Pandas では [`DataFrame.explode()` 関数](https://pandas.pydata.org/pandas-docs/stable/reference/api/pandas.DataFrame.explode.html)でこれを行うことができ、リスト形式の列の各要素について新しい行を作成し、他のすべての列の値を複製します。実際に見てみるために、まず Pandas の `DataFrame` 形式に切り替えましょう。
+
+```py
+issues_dataset.set_format("pandas")
+df = issues_dataset[:]
+```
+
+この `DataFrame` の最初の行を確認すると、この issue には4つのコメントが関連付けられていることが分かります。
+
+```py
+df["comments"][0].tolist()
+```
+
+```python out
+['the bug code locate in ：\r\n    if data_args.task_name is not None:\r\n        # Downloading and loading a dataset from the hub.\r\n        datasets = load_dataset("glue", data_args.task_name, cache_dir=model_args.cache_dir)',
+ 'Hi @jinec,\r\n\r\nFrom time to time we get this kind of `ConnectionError` coming from the github.com website: https://raw.githubusercontent.com\r\n\r\nNormally, it should work if you wait a little and then retry.\r\n\r\nCould you please confirm if the problem persists?',
+ 'cannot connect，even by Web browser，please check that  there is some  problems。',
+ 'I can access https://raw.githubusercontent.com/huggingface/datasets/1.7.0/datasets/glue/glue.py without problem...']
+```
+
+`df` を explode すると、これらのコメント1つにつき1行が得られるはずです。実際にそうなるか確認しましょう。
+
+```py
+comments_df = df.explode("comments", ignore_index=True)
+comments_df.head(4)
+```
+
+<table border="1" class="dataframe" style="table-layout: fixed; word-wrap:break-word; width: 100%;">
+  <thead>
+    <tr style="text-align: right;">
+      <th></th>
+      <th>html_url</th>
+      <th>title</th>
+      <th>comments</th>
+      <th>body</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <th>0</th>
+      <td>https://github.com/huggingface/datasets/issues/2787</td>
+      <td>ConnectionError: Couldn't reach https://raw.githubusercontent.com</td>
+      <td>the bug code locate in ：\r\n    if data_args.task_name is not None...</td>
+      <td>Hello,\r\nI am trying to run run_glue.py and it gives me this error...</td>
+    </tr>
+    <tr>
+      <th>1</th>
+      <td>https://github.com/huggingface/datasets/issues/2787</td>
+      <td>ConnectionError: Couldn't reach https://raw.githubusercontent.com</td>
+      <td>Hi @jinec,\r\n\r\nFrom time to time we get this kind of `ConnectionError` coming from the github.com website: https://raw.githubusercontent.com...</td>
+      <td>Hello,\r\nI am trying to run run_glue.py and it gives me this error...</td>
+    </tr>
+    <tr>
+      <th>2</th>
+      <td>https://github.com/huggingface/datasets/issues/2787</td>
+      <td>ConnectionError: Couldn't reach https://raw.githubusercontent.com</td>
+      <td>cannot connect，even by Web browser，please check that  there is some  problems。</td>
+      <td>Hello,\r\nI am trying to run run_glue.py and it gives me this error...</td>
+    </tr>
+    <tr>
+      <th>3</th>
+      <td>https://github.com/huggingface/datasets/issues/2787</td>
+      <td>ConnectionError: Couldn't reach https://raw.githubusercontent.com</td>
+      <td>I can access https://raw.githubusercontent.com/huggingface/datasets/1.7.0/datasets/glue/glue.py without problem...</td>
+      <td>Hello,\r\nI am trying to run run_glue.py and it gives me this error...</td>
+    </tr>
+  </tbody>
+</table>
+
+素晴らしい。行が複製され、`comments` 列に個々のコメントが入っていることが分かります！Pandas での作業は終わったので、`DataFrame` をメモリから読み込むことで、すばやく `Dataset` に戻すことができます。
+
+```py
+from datasets import Dataset
+
+comments_dataset = Dataset.from_pandas(comments_df)
+comments_dataset
+```
+
+```python out
+Dataset({
+    features: ['html_url', 'title', 'comments', 'body'],
+    num_rows: 2842
+})
+```
+
+これで、数千件のコメントを扱えるようになりました！
+
+
+> [!TIP]
+> ✏️ **やってみよう！** Pandas を使わずに、`Dataset.map()` を使って `issues_dataset` の `comments` 列を explode できるか試してみましょう。少し手強い課題です。🤗 Datasets ドキュメントの[「Batch mapping」](https://huggingface.co/docs/datasets/about_map_batch#batch-mapping)のセクションが役立つかもしれません。
+
+1行に1つのコメントが入ったので、コメントごとの単語数を含む新しい `comments_length` 列を作成しましょう。
+
+```py
+comments_dataset = comments_dataset.map(
+    lambda x: {"comment_length": len(x["comments"].split())}
+)
+```
+
+この新しい列を使って、短いコメントを除外できます。短いコメントには通常、"cc @lewtun" や "Thanks!" のような、検索エンジンには関係のないものが含まれます。フィルタに選ぶ正確な数値はありませんが、15語あたりが良い出発点のようです。
+
+```py
+comments_dataset = comments_dataset.filter(lambda x: x["comment_length"] > 15)
+comments_dataset
+```
+
+```python out
+Dataset({
+    features: ['html_url', 'title', 'comments', 'body', 'comment_length'],
+    num_rows: 2098
+})
+```
+
+データセットを少し整えたところで、issue のタイトル、説明、コメントを連結して、新しい `text` 列にまとめましょう。いつものように、`Dataset.map()` に渡せる単純な関数を書きます。
+
+```py
+def concatenate_text(examples):
+    return {
+        "text": examples["title"]
+        + " \n "
+        + examples["body"]
+        + " \n "
+        + examples["comments"]
+    }
+
+
+comments_dataset = comments_dataset.map(concatenate_text)
+```
+
+これでようやく、埋め込みを作成する準備が整いました！見ていきましょう。
+
+## テキスト埋め込みの作成[[creating-text-embeddings]]
+
+[Chapter 2](/course/chapter2) で見たように、`AutoModel` クラスを使えばトークン埋め込みを取得できます。必要なのは、モデルを読み込むのに適したチェックポイントを選ぶことだけです。幸い、埋め込みの作成に特化した `sentence-transformers` というライブラリがあります。ライブラリの[ドキュメント](https://www.sbert.net/examples/applications/semantic-search/README.html#symmetric-vs-asymmetric-semantic-search)に記載されているように、私たちのユースケースは非対称セマンティック検索の例です。短いクエリがあり、その答えを issue のコメントのような長めのドキュメントの中から見つけたいためです。ドキュメントの便利な[モデル概要表](https://www.sbert.net/docs/pretrained_models.html#model-overview)によれば、`multi-qa-mpnet-base-dot-v1` チェックポイントがセマンティック検索で最良の性能を持つため、アプリケーションにはこれを使います。同じチェックポイントを使ってトークナイザも読み込みます。
+
+{#if fw === 'pt'}
+
+```py
+from transformers import AutoTokenizer, AutoModel
+
+model_ckpt = "sentence-transformers/multi-qa-mpnet-base-dot-v1"
+tokenizer = AutoTokenizer.from_pretrained(model_ckpt)
+model = AutoModel.from_pretrained(model_ckpt)
+```
+
+埋め込み処理を高速化するには、モデルと入力を GPU デバイスに配置するとよいので、ここで行っておきましょう。
+
+```py
+import torch
+
+device = torch.device("cuda")
+model.to(device)
+```
+
+{:else}
+
+```py
+from transformers import AutoTokenizer, TFAutoModel
+
+model_ckpt = "sentence-transformers/multi-qa-mpnet-base-dot-v1"
+tokenizer = AutoTokenizer.from_pretrained(model_ckpt)
+model = TFAutoModel.from_pretrained(model_ckpt, from_pt=True)
+```
+
+`from_pretrained()` メソッドの引数として `from_pt=True` を設定していることに注目してください。これは、`multi-qa-mpnet-base-dot-v1` チェックポイントには PyTorch の重みしかないためで、`from_pt=True` を設定すれば自動的に TensorFlow 形式に変換してくれます。見てのとおり、🤗 Transformers ではフレームワーク間の切り替えが非常に簡単です！
+
+{/if}
+
+前に述べたように、GitHub issues コーパスの各エントリを1つのベクトルとして表現したいので、トークン埋め込みを何らかの方法で「プーリング」つまり平均化する必要があります。人気のあるアプローチの1つは、モデルの出力に対して *CLS プーリング* を行うものです。これは、特殊トークン `[CLS]` の最後の隠れ状態を単に集める方法です。次の関数がその処理を行ってくれます。
+
+```py
+def cls_pooling(model_output):
+    return model_output.last_hidden_state[:, 0]
+```
+
+次に、ドキュメントのリストをトークナイズし、テンソルを GPU に配置して、モデルに入力し、最後に出力に CLS プーリングを適用するヘルパー関数を作成します。
+
+{#if fw === 'pt'}
+
+```py
+def get_embeddings(text_list):
+    encoded_input = tokenizer(
+        text_list, padding=True, truncation=True, return_tensors="pt"
+    )
+    encoded_input = {k: v.to(device) for k, v in encoded_input.items()}
+    model_output = model(**encoded_input)
+    return cls_pooling(model_output)
+```
+
+コーパスの最初のテキストエントリを入力して関数の動作をテストし、出力の形状を確認してみましょう。
+
+```py
+embedding = get_embeddings(comments_dataset["text"][0])
+embedding.shape
+```
+
+```python out
+torch.Size([1, 768])
+```
+
+素晴らしい。コーパスの最初のエントリを768次元のベクトルに変換できました！`Dataset.map()` を使って `get_embeddings()` 関数をコーパスの各行に適用できるので、次のように新しい `embeddings` 列を作成しましょう。
+
+```py
+embeddings_dataset = comments_dataset.map(
+    lambda x: {"embeddings": get_embeddings(x["text"]).detach().cpu().numpy()[0]}
+)
+```
+
+{:else}
+
+```py
+def get_embeddings(text_list):
+    encoded_input = tokenizer(
+        text_list, padding=True, truncation=True, return_tensors="tf"
+    )
+    encoded_input = {k: v for k, v in encoded_input.items()}
+    model_output = model(**encoded_input)
+    return cls_pooling(model_output)
+```
+
+コーパスの最初のテキストエントリを入力して関数の動作をテストし、出力の形状を確認してみましょう。
+
+```py
+embedding = get_embeddings(comments_dataset["text"][0])
+embedding.shape
+```
+
+```python out
+TensorShape([1, 768])
+```
+
+素晴らしい。コーパスの最初のエントリを768次元のベクトルに変換できました！`Dataset.map()` を使って `get_embeddings()` 関数をコーパスの各行に適用できるので、次のように新しい `embeddings` 列を作成しましょう。
+
+```py
+embeddings_dataset = comments_dataset.map(
+    lambda x: {"embeddings": get_embeddings(x["text"]).numpy()[0]}
+)
+```
+
+{/if}
+
+埋め込みを NumPy 配列に変換していることに注目してください。これは、次に行う FAISS によるインデックス化の際に、🤗 Datasets がこの形式を要求するためです。
+
+
+## 効率的な類似検索への FAISS の利用[[using-faiss-for-efficient-similarity-search]]
+
+埋め込みのデータセットが用意できたので、それらを検索する方法が必要です。そのために、🤗 Datasets の FAISS インデックスと呼ばれる特殊なデータ構造を使います。[FAISS](https://faiss.ai/)（Facebook AI Similarity Search の略）は、埋め込みベクトルをすばやく検索・クラスタリングするための効率的なアルゴリズムを提供するライブラリです。
+
+FAISS の基本的な考え方は、インデックスと呼ばれる特殊なデータ構造を作成し、入力した埋め込みに類似する埋め込みを見つけられるようにすることです。🤗 Datasets で FAISS インデックスを作成するのは簡単です。`Dataset.add_faiss_index()` 関数を使い、データセットのどの列をインデックス化するかを指定します。
+
+```py
+embeddings_dataset.add_faiss_index(column="embeddings")
+```
+
+これで、`Dataset.get_nearest_examples()` 関数による最近傍検索で、このインデックスに対してクエリを実行できます。まず、次のように質問を埋め込みにしてテストしてみましょう。
+
+{#if fw === 'pt'}
+
+```py
+question = "How can I load a dataset offline?"
+question_embedding = get_embeddings([question]).cpu().detach().numpy()
+question_embedding.shape
+```
+
+```python out
+torch.Size([1, 768])
+```
+
+{:else}
+
+```py
+question = "How can I load a dataset offline?"
+question_embedding = get_embeddings([question]).numpy()
+question_embedding.shape
+```
+
+```python out
+(1, 768)
+```
+
+{/if}
+
+ドキュメントと同様に、クエリを表す768次元のベクトルが得られました。これをコーパス全体と比較して、最も類似する埋め込みを見つけることができます。
+
+```py
+scores, samples = embeddings_dataset.get_nearest_examples(
+    "embeddings", question_embedding, k=5
+)
+```
+
+`Dataset.get_nearest_examples()` 関数は、クエリとドキュメントの重なりを順位付けするスコアのタプルと、対応するサンプルの集合（ここでは上位5件のマッチ）を返します。これらを `pandas.DataFrame` に集めて、簡単に並べ替えられるようにしましょう。
+
+```py
+import pandas as pd
+
+samples_df = pd.DataFrame.from_dict(samples)
+samples_df["scores"] = scores
+samples_df.sort_values("scores", ascending=False, inplace=True)
+```
+
+では、最初の数行を反復処理して、クエリが利用可能なコメントにどれだけうまくマッチしたか見てみましょう。
+
+```py
+for _, row in samples_df.iterrows():
+    print(f"COMMENT: {row.comments}")
+    print(f"SCORE: {row.scores}")
+    print(f"TITLE: {row.title}")
+    print(f"URL: {row.html_url}")
+    print("=" * 50)
+    print()
+```
+
+```python out
+"""
+COMMENT: Requiring online connection is a deal breaker in some cases unfortunately so it'd be great if offline mode is added similar to how `transformers` loads models offline fine.
+
+@mandubian's second bullet point suggests that there's a workaround allowing you to use your offline (custom?) dataset with `datasets`. Could you please elaborate on how that should look like?
+SCORE: 25.505046844482422
+TITLE: Discussion using datasets in offline mode
+URL: https://github.com/huggingface/datasets/issues/824
+==================================================
+
+COMMENT: The local dataset builders (csv, text , json and pandas) are now part of the `datasets` package since #1726 :)
+You can now use them offline
+\`\`\`python
+datasets = load_dataset("text", data_files=data_files)
+\`\`\`
+
+We'll do a new release soon
+SCORE: 24.555509567260742
+TITLE: Discussion using datasets in offline mode
+URL: https://github.com/huggingface/datasets/issues/824
+==================================================
+
+COMMENT: I opened a PR that allows to reload modules that have already been loaded once even if there's no internet.
+
+Let me know if you know other ways that can make the offline mode experience better. I'd be happy to add them :)
+
+I already note the "freeze" modules option, to prevent local modules updates. It would be a cool feature.
+
+----------
+
+> @mandubian's second bullet point suggests that there's a workaround allowing you to use your offline (custom?) dataset with `datasets`. Could you please elaborate on how that should look like?
+
+Indeed `load_dataset` allows to load remote dataset script (squad, glue, etc.) but also you own local ones.
+For example if you have a dataset script at `./my_dataset/my_dataset.py` then you can do
+\`\`\`python
+load_dataset("./my_dataset")
+\`\`\`
+and the dataset script will generate your dataset once and for all.
+
+----------
+
+About I'm looking into having `csv`, `json`, `text`, `pandas` dataset builders already included in the `datasets` package, so that they are available offline by default, as opposed to the other datasets that require the script to be downloaded.
+cf #1724
+SCORE: 24.14896583557129
+TITLE: Discussion using datasets in offline mode
+URL: https://github.com/huggingface/datasets/issues/824
+==================================================
+
+COMMENT: > here is my way to load a dataset offline, but it **requires** an online machine
+>
+> 1. (online machine)
+>
+> ```
+>
+> import datasets
+>
+> data = datasets.load_dataset(...)
+>
+> data.save_to_disk(/YOUR/DATASET/DIR)
+>
+> ```
+>
+> 2. copy the dir from online to the offline machine
+>
+> 3. (offline machine)
+>
+> ```
+>
+> import datasets
+>
+> data = datasets.load_from_disk(/SAVED/DATA/DIR)
+>
+> ```
+>
+>
+>
+> HTH.
+
+
+SCORE: 22.893993377685547
+TITLE: Discussion using datasets in offline mode
+URL: https://github.com/huggingface/datasets/issues/824
+==================================================
+
+COMMENT: here is my way to load a dataset offline, but it **requires** an online machine
+1. (online machine)
+\`\`\`
+import datasets
+data = datasets.load_dataset(...)
+data.save_to_disk(/YOUR/DATASET/DIR)
+\`\`\`
+2. copy the dir from online to the offline machine
+3. (offline machine)
+\`\`\`
+import datasets
+data = datasets.load_from_disk(/SAVED/DATA/DIR)
+\`\`\`
+
+HTH.
+SCORE: 22.406635284423828
+TITLE: Discussion using datasets in offline mode
+URL: https://github.com/huggingface/datasets/issues/824
+==================================================
+"""
+```
+
+悪くありません！2番目のヒットがクエリに一致しているようです。
+
+> [!TIP]
+> ✏️ **やってみよう！** 自分のクエリを作成し、取得されたドキュメントの中に答えが見つかるかどうか確認してみましょう。検索範囲を広げるために、`Dataset.get_nearest_examples()` の `k` パラメータを増やす必要があるかもしれません。
