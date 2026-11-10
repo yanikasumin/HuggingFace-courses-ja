@@ -1,0 +1,55 @@
+# Argilla インスタンスをセットアップする[[set-up-your-argilla-instance]]
+
+<CourseFloatingBanner chapter={10}
+  classNames="absolute z-10 right-0 top-0"
+  notebooks={[
+    {label: "Google Colab", value: "https://colab.research.google.com/github/huggingface/notebooks/blob/master/course/en/chapter10/section2.ipynb"},
+    {label: "Aws Studio", value: "https://studiolab.sagemaker.aws/import/github/huggingface/notebooks/blob/master/course/en/chapter10/section2.ipynb"},
+]} />
+
+Argilla を使い始めるには、まず自分専用の Argilla インスタンスをセットアップする必要があります。次に、Python コードで Argilla を操作できるよう、Python SDK をインストールします。
+
+## Argilla UI をデプロイする
+
+Argilla インスタンスをセットアップする最も簡単な方法は、Hugging Face Spaces を使うことです。Argilla の Space を作成するには、[このフォーム](https://huggingface.co/new-space?template=argilla%2Fargilla-template-space) の指示に従うだけです。さらに詳しい案内が必要な場合は、[Argilla クイックスタート](https://docs.argilla.io/latest/getting_started/quickstart/) を確認してください。
+<img src="https://huggingface.co/datasets/huggingface-course/documentation-images/resolve/main/en/chapter10/space_config.png" alt="Space の設定フォーム。"/>
+
+>[!WARNING]
+> ⚠️ Space が一時停止または再起動したときにデータが失われないよう、**永続ストレージ（Persistent storage）** を有効にしておくとよいでしょう。
+> これは Space の Settings から設定できます。
+
+Argilla が起動したら、認証情報でログインできます。
+
+## Python SDK をインストールして接続する
+
+次に、Python 環境またはノートブックで argilla ライブラリをインストールします。
+
+`!pip install argilla`
+
+Argilla インスタンスに接続しましょう。接続には次の情報が必要です。
+
+- **API URL**: Argilla が動作している URL です。Space を使っている場合は、Space を開いて右上の3点メニューをクリックし、「Embed this Space」を選んで **Direct URL** をコピーします。`https://<your-username>.<space-name>.hf.space` のような形式のはずです。
+- **API キー**: キーを取得するには、Argilla インスタンスにログインし、「My Settings」を開いて API キーをコピーします。
+- **HF トークン**: Space が非公開（プライベート）の場合は、書き込み権限を持つ Hugging Face Hub アカウントのアクセストークンが必要です。
+
+```python
+import argilla as rg
+
+HF_TOKEN = "..."  # プライベートな Space の場合のみ
+
+client = rg.Argilla(
+    api_url="...",
+    api_key="...",
+    headers={"Authorization": f"Bearer {HF_TOKEN}"},  # プライベートな Space の場合のみ
+)
+```
+
+すべてが正しく動作しているか確認するために、`me` を呼び出します。自分のユーザー情報が返ってくるはずです。
+
+```python
+client.me
+```
+
+これがうまくいけば、Argilla インスタンスが起動し、接続できています。おめでとうございます！
+
+これで、最初のデータセットを Argilla に読み込む準備ができました。

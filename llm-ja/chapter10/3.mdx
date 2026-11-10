@@ -1,0 +1,108 @@
+# データセットを Argilla に読み込む[[load-your-dataset-to-argilla]]
+
+<CourseFloatingBanner chapter={10}
+  classNames="absolute z-10 right-0 top-0"
+  notebooks={[
+    {label: "Google Colab", value: "https://colab.research.google.com/github/huggingface/notebooks/blob/master/course/en/chapter10/section3.ipynb"},
+    {label: "Aws Studio", value: "https://studiolab.sagemaker.aws/import/github/huggingface/notebooks/blob/master/course/en/chapter10/section3.ipynb"},
+]} />
+
+取り組んでいる NLP タスクや具体的なユースケース・アプリケーションによって、データやアノテーションタスクの形は変わります。このセクションでは、[ニュースを集めたデータセット](https://huggingface.co/datasets/SetFit/ag_news) を使って、2つのタスクを行います。各テキストのトピックを判定するテキスト分類と、言及されている固有表現を特定するトークン分類です。
+
+<iframe
+  src="https://huggingface.co/datasets/SetFit/ag_news/embed/viewer/default/train"
+  frameborder="0"
+  width="100%"
+  height="560px"
+></iframe>
+
+Hub からデータセットをインポートすることは Argilla の UI からも直接できますが、ここでは SDK を使います。必要に応じてデータにさらに手を加える方法も学べるためです。
+
+## データセットを設定する
+
+最初のステップは、前のセクションで行ったように Argilla インスタンスに接続することです。
+
+```python
+import argilla as rg
+
+HF_TOKEN = "..."  # プライベートな Space の場合のみ
+
+client = rg.Argilla(
+    api_url="...",
+    api_key="...",
+    headers={"Authorization": f"Bearer {HF_TOKEN}"},  # プライベートな Space の場合のみ
+)
+```
+
+次に、Argilla におけるデータセットの設定を考えます。これは、データに対して行うアノテーションタスクを表すものです。まず Hub からデータセットを読み込んでその特徴（features）を調べ、データセットを正しく設定できるようにします。
+
+```python
+from datasets import load_dataset
+
+data = load_dataset("SetFit/ag_news", split="train")
+data.features
+```
+
+データセットの特徴は次のとおりです。
+
+```python out
+{'text': Value(dtype='string', id=None),
+ 'label': Value(dtype='int64', id=None),
+ 'label_text': Value(dtype='string', id=None)}
+```
+
+データセットには `text` と、テキスト分類用の初期ラベルが含まれています。これらを、固有表現用の `spans` 質問と一緒にデータセットの設定に追加します。
+
+```python
+settings = rg.Settings(
+    fields=[rg.TextField(name="text")],
+    questions=[
+        rg.LabelQuestion(
+            name="label", title="Classify the text:", labels=data.unique("label_text")
+        ),
+        rg.SpanQuestion(
+            name="entities",
+            title="Highlight all the entities in the text:",
+            labels=["PERSON", "ORG", "LOC", "EVENT"],
+            field="text",
+        ),
+    ],
+)
+```
+
+これらの設定が何を意味するのか、もう少し詳しく見ていきましょう。まず **fields（フィールド）** を定義しました。これには、アノテーション対象の情報が含まれます。今回はフィールドが1つだけであり、それがテキストの形をしているため、`TextField` を選びました。
+
+次に、データに対して行いたいタスクを表す **questions（質問）** を定義します。
+
+- テキスト分類タスクには `LabelQuestion` を選び、ラベルには `label_text` 列のユニークな値を使いました。データセットに既にあるラベルと質問が互換になるようにするためです。
+- トークン分類タスクには `SpanQuestion` が必要です。そのタスクで使うラベルの集合と、スパンを描画する対象のフィールドを定義しました。
+
+利用できるフィールドや質問の種類、その他の高度な設定（メタデータやベクトルなど）について詳しくは、[Argilla のドキュメント](https://docs.argilla.io/latest/how_to_guides/dataset/#define-dataset-settings) を参照してください。
+
+## データセットをアップロードする
+
+設定を定義できたので、データセットを作成します。
+
+```python
+dataset = rg.Dataset(name="ag_news", settings=settings)
+
+dataset.create()
+```
+
+データセットが Argilla インスタンスに表示されるようになりましたが、まだ空です。
+
+<img src="https://huggingface.co/datasets/huggingface-course/documentation-images/resolve/main/en/chapter10/empty_dataset.png" alt="空のデータセットのスクリーンショット。"/>
+
+次に、アノテーション対象のレコード、つまりデータセットの行を追加する必要があります。そのためには、データをレコードとして記録（log）し、Hub のデータセットと Argilla のデータセットで名前が異なる要素についてはマッピングを指定します。
+
+```python
+dataset.records.log(data, mapping={"label_text": "label"})
+```
+
+このマッピングでは、データセットの `label_text` 列を、名前が `label` の質問に対応付けています。こうすることで、データセットに既にあるラベルを事前アノテーションとして使い、より速くアノテーションできます。
+
+レコードの記録が続いている間も、Argilla の UI でデータセットの作業を始められます。この時点では、次のような表示になっているはずです。
+
+<img src="https://huggingface.co/datasets/huggingface-course/documentation-images/resolve/main/en/chapter10/argilla_initial_dataset.png" alt="Argilla 上のデータセットのスクリーンショット。"/>
+
+これで、データセットのアノテーションを始める準備ができました！

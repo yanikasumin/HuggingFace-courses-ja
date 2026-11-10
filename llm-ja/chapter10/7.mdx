@@ -1,0 +1,186 @@
+<!-- DISABLE-FRONTMATTER-SECTIONS -->
+
+# 章末クイズ[[end-of-chapter-quiz]]
+
+<CourseFloatingBanner
+    chapter={10}
+    classNames="absolute z-10 right-0 top-0"
+/>
+
+この章で学んだことをテストしましょう！
+
+### 1. Argilla は何に使えますか？
+
+<Question
+	choices={[
+		{
+			text: "構造化されていないデータを、NLP タスク向けの構造化データに変換する",
+			explain: "Argilla を使ってデータセットにアノテーションを追加し、NLP タスクに利用できます。",
+            correct: true
+		},
+		{
+			text: "公開ウェブサイトをスクレイピングしてデータセットを構築する",
+			explain: "これは Argilla の機能ではありません。ただし、公開ウェブサイトをスクレイピングし、Python SDK を使ってアノテーション用の Argilla データセットに変換することはできます。"
+		},
+		{
+			text: "既存のデータセットの質を向上させる",
+			explain: "以前のアノテーションを提案として使い、それを修正することでデータセットの質を向上させられます。",
+			correct: true
+		},
+		{
+			text: "既存のデータセットを自分のユースケースに適応させる",
+			explain: "Argilla のさまざまな質問タイプを使って、既存のデータセットを自分のユースケースに適応させられます。",
+			correct: true
+		},
+		{
+			text: "モデルを学習させる",
+			explain: "Argilla の中で直接モデルを学習させることはできませんが、Argilla で整備したデータを使って自分のモデルを学習させることはできます。",
+		},
+		{
+			text: "Generate synthetic datasets",
+			explain: "To generate synthetic datasets, you can use the distilabel package and then use Argilla to review and curate the generated data.",
+		}
+	]}
+/>
+
+### 2. Argilla は Hugging Face Spaces と Hugging Face Datasets でのみ動作します。
+
+<Question
+	choices={[
+        {
+			text: "正しい",
+			explain: "Argilla は Docker を使ってローカルにデプロイすることもできますし、Python SDK を使えば Hugging Face Datasets を含むあらゆる種類のデータをアップロードできます。"
+        },
+        {
+			text: "誤り",
+			explain: "Argilla は Docker を使ってローカルにデプロイすることもできますし、Python SDK を使えば Hugging Face Datasets を含むあらゆる種類のデータをアップロードできます。",
+			correct: true
+        }
+	]}
+/>
+
+### 3. Python SDK を Argilla サーバーに接続するには、Hugging Face のトークンが必要です。
+
+<Question
+	choices={[
+        {
+			text: "正しい",
+			explain: "これは、Argilla Space が非公開（プライベート）の場合にのみ必要です！",
+        },
+        {
+			text: "誤り",
+			explain: "公開されている Argilla Space や、Docker によるローカルデプロイを使っている場合は、トークンは不要です。",
+			correct: true
+        }
+	]}
+/>
+
+### 4. Argilla における **fields（フィールド）** とは何ですか？フィールドはいくつ使えますか？
+
+<Question
+	choices={[
+        {
+			text: "フィールドはアノテーション対象のデータを表示します。これらすべての情報は、1つのフィールドに集める必要があります。",
+			explain: "必要に応じて、情報を複数のフィールドに分けることができます。"
+        },
+		{
+			text: "フィールドはアノテーション対象のデータを表示します。これらすべての情報は、複数のフィールドに分けることができます。",
+			explain: "はい、複数のフィールドを持つことができ、アノテーションするデータの種類に応じて、異なるタイプ（text、chat、image など）のフィールドも使えます。",
+			correct: true
+        },
+        {
+			text: "フィールドにはレコードのメタデータが含まれます。必要なだけいくつでも使えます。",
+			explain: "データセットにはフィールドとメタデータの両方を持てますが、それぞれ目的が異なります。メタデータは追加情報としてフィルタリングや並べ替えに使われ、フィールドはアノテーション対象のデータを表示します。"
+        }
+	]}
+/>
+
+### 5. トークン分類タスクに最適な質問タイプはどれですか？
+
+<Question
+	choices={[
+        {
+			text: "A SpanQuestion",
+			explain: "SpanQuestion では、テキストの一部をハイライトしてラベルを付けることができます。トークン分類タスクに最適なタイプです。",
+            correct: true
+        },
+        {
+			text: "A LabelQuestion",
+			explain: "このタイプの質問では、レコード全体に適用されるラベルを選択できます。テキスト分類タスクに最適なタイプです。"
+        },
+        {
+			text: "A TextQuestion",
+			explain: "このタイプの質問では、テキストを記述できます。トークン分類タスクには適していません。"
+        },
+        {
+			text: "上記のどれでもない",
+			explain: "SpanQuestion では、テキストの一部をハイライトしてラベルを付けることができます。トークン分類タスクに最適なタイプです。"
+        }
+	]}
+/>
+
+### 6. 「Save as draft」ボタンの目的は何ですか？
+
+<Question
+	choices={[
+        {
+			text: "レスポンスを送信する",
+			explain: "このボタンはレスポンスを保存しますが、送信はしません。",
+        },
+        {
+			text: "レスポンスを送信せずに保存する",
+			explain: "これは、Hub から Hugging Face モデルを読み込むための正しい方法です。",
+			correct: true
+        },
+        {
+			text: "レコードを破棄する",
+			explain: "もう一度考えてみましょう。'demos' プレフィックスを使ってもモデルは読み込めません。"
+        }
+	]}
+/>
+
+### 7. Argilla は提案ラベルを自動では提供しません。そのデータは自分で用意する必要があります。
+
+<Question
+	choices={[
+        {
+			text: "正しい",
+			explain: "プロジェクトのどの時点でも、レコードに提案を追加（または更新）できます。",
+            correct: true
+        },
+        {
+			text: "誤り",
+			explain: "提案ラベルを表示したい場合は、レコード作成時か、それ以降の時点で自分で記録する必要があります。"
+        }
+	]}
+/>
+
+### 8. Argilla データセット全体を Hub にエクスポートするために必要なステップをすべて選んでください。
+
+<Question
+	choices={[
+        {
+			text: "Argilla サーバーに接続している必要があります: <code>client= rg.Argilla(api_url='...', api_key='...')</code>",
+			explain: "はい、サーバーを操作するには、まずインスタンス化する必要があります。",
+            correct: true
+        },
+		{
+			text: "Hub からデータセットをインポートします: <code>dataset = rg.Dataset.from_hub(repo_id='argilla/ag_news_annotated')</code>",
+			explain: "いいえ。これは、Hub から自分の Argilla インスタンスにデータセットをインポートするためのものです。",
+        },
+        {
+			text: "データセットを読み込みます: <code>dataset = client.datasets(name='my_dataset')</code>",
+			explain: "はい、その後の操作にはこれが必要です。",
+			correct: true
+        },
+        {
+			text: "Argilla データセットを Datasets のデータセットに変換します: <code>dataset = dataset.to_datasets()</code>",
+			explain: "データセット全体をエクスポートする場合は、これは不要です。Argilla が代わりに処理してくれます。ただし、レコードの一部だけを扱う場合は必要になるかもしれません。"
+        },
+        {
+			text: "データセットのエクスポートには </code>to_hub</code> メソッドを使います: <code>dataset.to_hub(repo_id='my_username/dataset_name')</code>",
+			explain: "これにより、指定したリポジトリ ID にデータセットがプッシュされます。リポジトリが存在しない場合は新規に作成されます。",
+            correct: true
+        },
+	]}
+/>

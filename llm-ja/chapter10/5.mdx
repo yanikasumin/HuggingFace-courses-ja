@@ -1,0 +1,69 @@
+# アノテーション済みデータセットを使う[[use-your-annotated-dataset]]
+
+<CourseFloatingBanner chapter={10}
+  classNames="absolute z-10 right-0 top-0"
+  notebooks={[
+    {label: "Google Colab", value: "https://colab.research.google.com/github/huggingface/notebooks/blob/master/course/en/chapter10/section5.ipynb"},
+    {label: "Aws Studio", value: "https://studiolab.sagemaker.aws/import/github/huggingface/notebooks/blob/master/course/en/chapter10/section5.ipynb"},
+]} />
+
+ここでは、Argilla にあるアノテーション済みデータをエクスポートして使う方法を学びます。 
+
+## データセットを読み込む
+
+まず、これまでのステップと同様に Argilla インスタンスに接続していることを確認します。
+
+```python
+import argilla as rg
+
+HF_TOKEN = "..."  # プライベートな Space の場合のみ
+
+client = rg.Argilla(
+    api_url="...",
+    api_key="...",
+    headers={"Authorization": f"Bearer {HF_TOKEN}"},  # プライベートな Space の場合のみ
+)
+```
+
+次に、作業対象のデータセットを読み込みます。
+
+```python
+dataset = client.datasets(name="ag_news")
+```
+
+データセットを読み込んで `dataset.records` でそのレコードを取得すれば、自分の目的やパイプラインでデータセットとレコードを使い始めるには十分です。ただしここでは、レコードのフィルタリングや、データセットの Hugging Face Hub へのエクスポートといった任意の操作もいくつか学びます。
+
+## データセットをフィルタリングする
+
+完了したレコードだけを使いたい場合もあります。そこでまず、ステータスに基づいてデータセット内のレコードをフィルタリングします。
+
+```python
+status_filter = rg.Query(filter=rg.Filter([("status", "==", "completed")]))
+
+filtered_records = dataset.records(status_filter)
+```
+
+>[!TIP]
+>⚠️ `completed` ステータスのレコード（タスクの配信設定で設定した送信済みレスポンスの最小数を満たしたレコード）は複数のレスポンスを持つことがあり、各レスポンスのステータスは `submitted`、`draft`、`discarded` のいずれかになり得る点に注意してください。
+
+レコードのクエリとフィルタリングについて詳しくは、[Argilla のドキュメント](https://docs.argilla.io/latest/how_to_guides/query/) を参照してください。
+
+## Hub にエクスポートする
+
+アノテーションを Hugging Face Hub にエクスポートすれば、他の人と共有できます。そのためには、レコードを 🤗 Dataset に変換してから Hub にプッシュします。
+
+```python
+filtered_records.to_datasets().push_to_hub("argilla/ag_news_annotated")
+```
+
+あるいは、次のように Argilla データセット全体（保留中のレコードを含む）を直接エクスポートすることもできます。
+
+```python
+dataset.to_hub(repo_id="argilla/ag_news_annotated")
+```
+
+これは、他の人が自分の Argilla インスタンスでデータセットを開きたい場合に便利な選択肢です。設定が自動的に保存されるため、1行のコードでデータセット全体をインポートできます。
+
+```python
+dataset = rg.Dataset.from_hub(repo_id="argilla/ag_news_annotated")
+```
