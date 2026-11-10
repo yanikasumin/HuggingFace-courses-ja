@@ -1,0 +1,359 @@
+# WordPiece によるトークン化[[wordpiece-tokenization]]
+
+<CourseFloatingBanner chapter={6}
+  classNames="absolute z-10 right-0 top-0"
+  notebooks={[
+    {label: "Google Colab", value: "https://colab.research.google.com/github/huggingface/notebooks/blob/master/course/en/chapter6/section6.ipynb"},
+    {label: "Aws Studio", value: "https://studiolab.sagemaker.aws/import/github/huggingface/notebooks/blob/master/course/en/chapter6/section6.ipynb"},
+]} />
+
+WordPiece は、Google が BERT の事前学習のために開発したトークン化アルゴリズムです。その後、DistilBERT、MobileBERT、Funnel Transformers、MPNET など、BERT をベースにした数多くの Transformer モデルで再利用されてきました。学習方法の面では BPE とよく似ていますが、実際のトークン化のやり方は異なります。
+
+<Youtube id="qpv6ms_t_1A"/>
+
+> [!TIP]
+> 💡 この節では WordPiece を深く掘り下げ、完全な実装を示すところまで扱います。トークン化アルゴリズムの概要だけ知りたい場合は、最後まで読み飛ばしても構いません。
+
+## 学習アルゴリズム[[training-algorithm]]
+
+> [!WARNING]
+> ⚠️ Google は WordPiece の学習アルゴリズムの実装をオープンソース化したことがないため、以下は公開文献に基づいた私たちの最善の推測です。100% 正確ではない可能性があります。
+
+BPE と同様に、WordPiece も、モデルが使う特殊トークンと初期アルファベットを含む小さな語彙から始まります。WordPiece はプレフィックス（BERT の場合は `##` のようなもの）を付けることでサブワードを識別するため、各単語はまず、単語内のすべての文字にそのプレフィックスを付けて分割されます。たとえば `"word"` は次のように分割されます。
+
+```
+w ##o ##r ##d
+```
+
+したがって、初期アルファベットには、単語の先頭に現れるすべての文字と、WordPiece のプレフィックスを前に付けた形で単語の中に現れる文字が含まれます。
+
+次に、やはり BPE と同様に、WordPiece はマージルールを学習します。主な違いは、マージするペアの選び方です。最も頻繁なペアを選ぶ代わりに、WordPiece は次の式で各ペアのスコアを計算します。
+
+$$\mathrm{score} = (\mathrm{freq\_of\_pair}) / (\mathrm{freq\_of\_first\_element} \times \mathrm{freq\_of\_second\_element})$$
+
+ペアの頻度を、その構成要素それぞれの頻度の積で割ることで、このアルゴリズムは、個々の要素が語彙の中であまり頻繁でないペアのマージを優先します。たとえば `("un", "##able")` というペアは、コーパスの中で非常に頻繁に現れたとしても、必ずしもマージされません。`"un"` と `"##able"` はそれぞれ他の多くの単語にも現れる可能性が高く、頻度が高いためです。対照的に `("hu", "##gging")` のようなペアは、おそらくより速くマージされます（"hugging" という単語がコーパスに頻繁に現れると仮定すれば）。`"hu"` と `"##gging"` は個々にはあまり頻繁でない可能性が高いためです。
+
+BPE の学習例で使ったのと同じ語彙を見てみましょう。
+
+```
+("hug", 10), ("pug", 5), ("pun", 12), ("bun", 4), ("hugs", 5)
+```
+
+この場合の分割は次のようになります。
+
+```
+("h" "##u" "##g", 10), ("p" "##u" "##g", 5), ("p" "##u" "##n", 12), ("b" "##u" "##n", 4), ("h" "##u" "##g" "##s", 5)
+```
+
+したがって初期語彙は `["b", "h", "p", "##g", "##n", "##s", "##u"]` になります（ここでは特殊トークンのことは忘れておきます）。最も頻繁なペアは `("##u", "##g")`（20回出現）ですが、`"##u"` 自体の頻度が非常に高いため、そのスコアは最高にはなりません（1 / 36 です）。`"##u"` を含むペアはすべて同じスコア（1 / 36）になるので、最高スコアは `"##u"` を含まない唯一のペア `("##g", "##s")` の 1 / 20 となり、最初に学ぶマージは `("##g", "##s") -> ("##gs")` です。
+
+マージの際には、2つのトークンの間にある `##` を取り除く点に注意してください。そのため `"##gs"` を語彙に追加し、コーパスの単語にマージを適用します。
+
+```
+Vocabulary: ["b", "h", "p", "##g", "##n", "##s", "##u", "##gs"]
+Corpus: ("h" "##u" "##g", 10), ("p" "##u" "##g", 5), ("p" "##u" "##n", 12), ("b" "##u" "##n", 4), ("h" "##u" "##gs", 5)
+```
+
+この時点で `"##u"` は考えられるすべてのペアに含まれているため、すべてのペアが同じスコアになります。ここでは最初のペアがマージされたとして、`("h", "##u") -> "hu"` とします。すると次のようになります。
+
+```
+Vocabulary: ["b", "h", "p", "##g", "##n", "##s", "##u", "##gs", "hu"]
+Corpus: ("hu" "##g", 10), ("p" "##u" "##g", 5), ("p" "##u" "##n", 12), ("b" "##u" "##n", 4), ("hu" "##gs", 5)
+```
+
+次に良いスコアは `("hu", "##g")` と `("hu", "##gs")` が分け合います（他のすべてのペアの 1/21 に対して 1/15）。そこで、最大のスコアを持つ最初のペアがマージされます。
+
+```
+Vocabulary: ["b", "h", "p", "##g", "##n", "##s", "##u", "##gs", "hu", "hug"]
+Corpus: ("hug", 10), ("p" "##u" "##g", 5), ("p" "##u" "##n", 12), ("b" "##u" "##n", 4), ("hu" "##gs", 5)
+```
+
+この調子で、目的の語彙サイズに到達するまで続けます。
+
+> [!TIP]
+> ✏️ **やってみよう！** 次のマージルールは何になるでしょう？
+
+## トークン化アルゴリズム[[tokenization-algorithm]]
+
+トークン化の方法は WordPiece と BPE で異なります。WordPiece は、学習したマージルールではなく最終的な語彙だけを保存します。トークン化したい単語から始めて、WordPiece は語彙に含まれる最長のサブワードを見つけ、そこで分割します。たとえば、先ほどの例で学んだ語彙を使うと、単語 `"hugs"` について、先頭から始まるサブワードのうち語彙に含まれる最長のものは `"hug"` です。そこで分割すると `["hug", "##s"]` が得られます。次に `"##s"` を見ると、これも語彙に含まれているので、`"hugs"` のトークン化は `["hug", "##s"]` となります。
+
+BPE の場合、学んだマージを順番に適用して `["hu", "##gs"]` とトークン化したはずです。このように符号化の結果が異なります。
+
+別の例として、単語 `"bugs"` がどうトークン化されるか見てみましょう。`"b"` は単語の先頭から始まるサブワードのうち語彙に含まれる最長のものなので、そこで分割して `["b", "##ugs"]` を得ます。次に `"##u"` は `"##ugs"` の先頭から始まるサブワードのうち語彙に含まれる最長のものなので、そこで分割して `["b", "##u, "##gs"]` を得ます。最後に `"##gs"` が語彙に含まれているので、この最後のリストが `"bugs"` のトークン化結果となります。
+
+トークン化の途中で語彙に含まれるサブワードが見つからなくなった場合、単語全体が未知語としてトークン化されます。たとえば `"mug"` は `["[UNK]"]` とトークン化され、`"bum"` も同様です（`"b"` と `"##u"` から始められても、`"##m"` は語彙に含まれていないため、結果のトークン化は `["b", "##u", "[UNK]"]` ではなく `["[UNK]"]` になります）。これも BPE との違いの1つです。BPE は語彙に含まれていない個々の文字だけを未知語として分類します。
+
+> [!TIP]
+> ✏️ **やってみよう！** 単語 `"pugs"` はどのようにトークン化されるでしょう？
+
+## WordPiece の実装[[implementing-wordpiece]]
+
+では、WordPiece アルゴリズムの実装を見ていきましょう。BPE のときと同様、これは教育目的のもので、大きなコーパスで使うことはできません。
+
+BPE の例と同じコーパスを使います。
+
+```python
+corpus = [
+    "This is the Hugging Face Course.",
+    "This chapter is about tokenization.",
+    "This section shows several tokenizer algorithms.",
+    "Hopefully, you will be able to understand how they are trained and generate tokens.",
+]
+```
+
+まず、コーパスを単語へ事前トークン化する必要があります。BERT のような WordPiece トークナイザを再現するので、事前トークン化には `bert-base-cased` トークナイザを使います。
+
+```python
+from transformers import AutoTokenizer
+
+tokenizer = AutoTokenizer.from_pretrained("bert-base-cased")
+```
+
+次に、事前トークン化を行いながら、コーパス内の各単語の頻度を数えます。
+
+```python
+from collections import defaultdict
+
+word_freqs = defaultdict(int)
+for text in corpus:
+    words_with_offsets = tokenizer.backend_tokenizer.pre_tokenizer.pre_tokenize_str(text)
+    new_words = [word for word, offset in words_with_offsets]
+    for word in new_words:
+        word_freqs[word] += 1
+
+word_freqs
+```
+
+```python out
+defaultdict(
+    int, {'This': 3, 'is': 2, 'the': 1, 'Hugging': 1, 'Face': 1, 'Course': 1, '.': 4, 'chapter': 1, 'about': 1,
+    'tokenization': 1, 'section': 1, 'shows': 1, 'several': 1, 'tokenizer': 1, 'algorithms': 1, 'Hopefully': 1,
+    ',': 1, 'you': 1, 'will': 1, 'be': 1, 'able': 1, 'to': 1, 'understand': 1, 'how': 1, 'they': 1, 'are': 1,
+    'trained': 1, 'and': 1, 'generate': 1, 'tokens': 1})
+```
+
+前に見たとおり、アルファベットは、すべての単語の最初の文字と、`##` を前に付けた形で単語に現れる残りの文字すべてから構成される、重複なしの集合です。
+
+```python
+alphabet = []
+for word in word_freqs.keys():
+    if word[0] not in alphabet:
+        alphabet.append(word[0])
+    for letter in word[1:]:
+        if f"##{letter}" not in alphabet:
+            alphabet.append(f"##{letter}")
+
+alphabet.sort()
+alphabet
+
+print(alphabet)
+```
+
+```python out
+['##a', '##b', '##c', '##d', '##e', '##f', '##g', '##h', '##i', '##k', '##l', '##m', '##n', '##o', '##p', '##r', '##s',
+ '##t', '##u', '##v', '##w', '##y', '##z', ',', '.', 'C', 'F', 'H', 'T', 'a', 'b', 'c', 'g', 'h', 'i', 's', 't', 'u',
+ 'w', 'y']
+```
+
+さらに、その語彙の先頭に、モデルが使う特殊トークンも追加します。BERT の場合、そのリストは `["[PAD]", "[UNK]", "[CLS]", "[SEP]", "[MASK]"]` です。
+
+```python
+vocab = ["[PAD]", "[UNK]", "[CLS]", "[SEP]", "[MASK]"] + alphabet.copy()
+```
+
+次に、各単語を分割する必要があります。最初の文字以外のすべての文字には `##` を前に付けます。
+
+```python
+splits = {
+    word: [c if i == 0 else f"##{c}" for i, c in enumerate(word)]
+    for word in word_freqs.keys()
+}
+```
+
+学習の準備ができました。各ペアのスコアを計算する関数を書きましょう。学習の各ステップで必要になります。
+
+```python
+def compute_pair_scores(splits):
+    letter_freqs = defaultdict(int)
+    pair_freqs = defaultdict(int)
+    for word, freq in word_freqs.items():
+        split = splits[word]
+        if len(split) == 1:
+            letter_freqs[split[0]] += freq
+            continue
+        for i in range(len(split) - 1):
+            pair = (split[i], split[i + 1])
+            letter_freqs[split[i]] += freq
+            pair_freqs[pair] += freq
+        letter_freqs[split[-1]] += freq
+
+    scores = {
+        pair: freq / (letter_freqs[pair[0]] * letter_freqs[pair[1]])
+        for pair, freq in pair_freqs.items()
+    }
+    return scores
+```
+
+初期分割のあとで、この辞書の一部がどうなっているか見てみましょう。
+
+```python
+pair_scores = compute_pair_scores(splits)
+for i, key in enumerate(pair_scores.keys()):
+    print(f"{key}: {pair_scores[key]}")
+    if i >= 5:
+        break
+```
+
+```python out
+('T', '##h'): 0.125
+('##h', '##i'): 0.03409090909090909
+('##i', '##s'): 0.02727272727272727
+('i', '##s'): 0.1
+('t', '##h'): 0.03571428571428571
+('##h', '##e'): 0.011904761904761904
+```
+
+最もスコアの高いペアを見つけるのは、短いループで済みます。
+
+```python
+best_pair = ""
+max_score = None
+for pair, score in pair_scores.items():
+    if max_score is None or max_score < score:
+        best_pair = pair
+        max_score = score
+
+print(best_pair, max_score)
+```
+
+```python out
+('a', '##b') 0.2
+```
+
+つまり、最初に学ぶマージは `('a', '##b') -> 'ab'` で、`'ab'` を語彙に追加します。
+
+```python
+vocab.append("ab")
+```
+
+続けるには、このマージを `splits` 辞書に適用する必要があります。そのための関数も書きましょう。
+
+```python
+def merge_pair(a, b, splits):
+    for word in word_freqs:
+        split = splits[word]
+        if len(split) == 1:
+            continue
+        i = 0
+        while i < len(split) - 1:
+            if split[i] == a and split[i + 1] == b:
+                merge = a + b[2:] if b.startswith("##") else a + b
+                split = split[:i] + [merge] + split[i + 2 :]
+            else:
+                i += 1
+        splits[word] = split
+    return splits
+```
+
+最初のマージの結果も見てみます。
+
+```py
+splits = merge_pair("a", "##b", splits)
+splits["about"]
+```
+
+```python out
+['ab', '##o', '##u', '##t']
+```
+
+必要なものがすべて揃ったので、欲しいマージをすべて学ぶまでループを回せます。語彙サイズ 70 を目指しましょう。
+
+```python
+vocab_size = 70
+while len(vocab) < vocab_size:
+    scores = compute_pair_scores(splits)
+    best_pair, max_score = "", None
+    for pair, score in scores.items():
+        if max_score is None or max_score < score:
+            best_pair = pair
+            max_score = score
+    splits = merge_pair(*best_pair, splits)
+    new_token = (
+        best_pair[0] + best_pair[1][2:]
+        if best_pair[1].startswith("##")
+        else best_pair[0] + best_pair[1]
+    )
+    vocab.append(new_token)
+```
+
+生成された語彙を見てみましょう。
+
+```py
+print(vocab)
+```
+
+```python out
+['[PAD]', '[UNK]', '[CLS]', '[SEP]', '[MASK]', '##a', '##b', '##c', '##d', '##e', '##f', '##g', '##h', '##i', '##k',
+ '##l', '##m', '##n', '##o', '##p', '##r', '##s', '##t', '##u', '##v', '##w', '##y', '##z', ',', '.', 'C', 'F', 'H',
+ 'T', 'a', 'b', 'c', 'g', 'h', 'i', 's', 't', 'u', 'w', 'y', 'ab', '##fu', 'Fa', 'Fac', '##ct', '##ful', '##full', '##fully',
+ 'Th', 'ch', '##hm', 'cha', 'chap', 'chapt', '##thm', 'Hu', 'Hug', 'Hugg', 'sh', 'th', 'is', '##thms', '##za', '##zat',
+ '##ut']
+```
+
+見てのとおり、BPE と比べて、このトークナイザは単語の一部をトークンとしてやや速く学習します。
+
+> [!TIP]
+> 💡 同じコーパスに対して `train_new_from_iterator()` を使っても、まったく同じ語彙にはなりません。🤗 Tokenizers ライブラリは学習に WordPiece を実装しておらず（内部の仕組みを完全には把握できていないため）、代わりに BPE を使うためです。
+
+新しいテキストをトークン化するには、事前トークン化して分割し、各単語にトークン化アルゴリズムを適用します。つまり、最初の単語の先頭から始まる最大のサブワードを探して分割し、2番目の部分に対して同じ処理を繰り返します。これを、その単語の残りと、テキスト内の後続の単語についても続けます。
+
+```python
+def encode_word(word):
+    tokens = []
+    while len(word) > 0:
+        i = len(word)
+        while i > 0 and word[:i] not in vocab:
+            i -= 1
+        if i == 0:
+            return ["[UNK]"]
+        tokens.append(word[:i])
+        word = word[i:]
+        if len(word) > 0:
+            word = f"##{word}"
+    return tokens
+```
+
+語彙に含まれる単語と、含まれない単語で試してみましょう。
+
+```python
+print(encode_word("Hugging"))
+print(encode_word("HOgging"))
+```
+
+```python out
+['Hugg', '##i', '##n', '##g']
+['[UNK]']
+```
+
+次に、テキストをトークン化する関数を書きましょう。
+
+```python
+def tokenize(text):
+    pre_tokenize_result = tokenizer._tokenizer.pre_tokenizer.pre_tokenize_str(text)
+    pre_tokenized_text = [word for word, offset in pre_tokenize_result]
+    encoded_words = [encode_word(word) for word in pre_tokenized_text]
+    return sum(encoded_words, [])
+```
+
+任意のテキストで試すことができます。
+
+```python
+tokenize("This is the Hugging Face course!")
+```
+
+```python out
+['Th', '##i', '##s', 'is', 'th', '##e', 'Hugg', '##i', '##n', '##g', 'Fac', '##e', 'c', '##o', '##u', '##r', '##s',
+ '##e', '[UNK]']
+```
+
+WordPiece アルゴリズムについては以上です。次は Unigram を見ていきます。

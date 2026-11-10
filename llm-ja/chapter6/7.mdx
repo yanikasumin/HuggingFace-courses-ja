@@ -1,0 +1,371 @@
+# Unigram によるトークン化[[unigram-tokenization]]
+
+<CourseFloatingBanner chapter={6}
+  classNames="absolute z-10 right-0 top-0"
+  notebooks={[
+    {label: "Google Colab", value: "https://colab.research.google.com/github/huggingface/notebooks/blob/master/course/en/chapter6/section7.ipynb"},
+    {label: "Aws Studio", value: "https://studiolab.sagemaker.aws/import/github/huggingface/notebooks/blob/master/course/en/chapter6/section7.ipynb"},
+]} />
+
+Unigram アルゴリズムは [SentencePiece](https://huggingface.co/papers/1808.06226) と組み合わせて使われます。SentencePiece は、ALBERT、T5、mBART、Big Bird、XLNet などのモデルで使われているトークン化アルゴリズムです。
+
+SentencePiece は、すべての言語が単語の区切りにスペースを使うわけではないという事実に対処します。SentencePiece は入力を生の入力ストリームとして扱い、スペースも使用する文字の集合に含めます。そのうえで Unigram アルゴリズムを使い、適切な語彙を構築できます。
+
+<Youtube id="TGZfZVuF9Yc"/>
+
+> [!TIP]
+> 💡 この節では Unigram を深く掘り下げ、完全な実装を示すところまで扱います。トークン化アルゴリズムの概要だけ知りたい場合は、最後まで読み飛ばしても構いません。
+
+## 学習アルゴリズム[[training-algorithm]]
+
+BPE や WordPiece と比べると、Unigram は逆方向に動作します。大きな語彙から始めて、目的の語彙サイズに到達するまでトークンを取り除いていくのです。初期語彙の構築にはいくつかの方法があります。たとえば、事前トークン化された単語に現れる最も一般的な部分文字列を採用したり、大きな語彙サイズで初期コーパスに BPE を適用したりできます。
+
+学習の各ステップで、Unigram アルゴリズムは現在の語彙のもとでコーパス全体の損失を計算します。次に、語彙内の各記号について、その記号を取り除いた場合に全体の損失がどれだけ増えるかを計算し、増加が最も小さい記号を探します。こうした記号はコーパス全体の損失への影響が小さいため、ある意味「あまり必要とされていない」ものであり、削除の最有力候補となります。
+
+これは非常にコストの高い処理なので、損失の増加が最も小さい単一の記号だけを取り除くのではありません。損失の増加が小さい方から \(p\) パーセントの記号を取り除きます（\(p\) は制御できるハイパーパラメータで、通常は10または20です）。このプロセスを、語彙が目的のサイズに到達するまで繰り返します。
+
+なお、基本となる文字は決して取り除きません。どの単語でもトークン化できるようにするためです。
+
+もっとも、ここまでの説明はまだ少し曖昧です。アルゴリズムの要は、コーパスに対する損失を計算し、語彙からトークンを取り除いたときにそれがどう変化するかを見ることですが、その方法はまだ説明していません。このステップは Unigram モデルのトークン化アルゴリズムに依存しているので、次はそちらを掘り下げます。
+
+前の例で使ったコーパスを再利用しましょう。
+
+```
+("hug", 10), ("pug", 5), ("pun", 12), ("bun", 4), ("hugs", 5)
+```
+
+この例では、初期語彙としてすべての真部分文字列を採用します。
+
+```
+["h", "u", "g", "hu", "ug", "p", "pu", "n", "un", "b", "bu", "s", "hug", "gs", "ugs"]
+```
+
+## トークン化アルゴリズム[[tokenization-algorithm]]
+
+Unigram モデルは、各トークンがそれより前のトークンとは独立であると考えるタイプの言語モデルです。最も単純な言語モデルであり、前の文脈が与えられたときのトークン X の確率は、トークン X 自体の確率に等しくなります。つまり、Unigram 言語モデルでテキストを生成すると、常に最も一般的なトークンが予測されることになります。
+
+あるトークンの確率は、元のコーパスにおけるその頻度（現れる回数）を、語彙内のすべてのトークンの頻度の合計で割ったものです（確率の合計が1になるようにするためです）。たとえば `"ug"` は `"hug"`、`"pug"`、`"hugs"` に現れるので、このコーパスでの頻度は20です。
+
+語彙内の考えられるすべてのサブワードの頻度は次のとおりです。
+
+```
+("h", 15) ("u", 36) ("g", 20) ("hu", 15) ("ug", 20) ("p", 17) ("pu", 17) ("n", 16)
+("un", 16) ("b", 4) ("bu", 4) ("s", 5) ("hug", 15) ("gs", 5) ("ugs", 5)
+```
+
+したがって、頻度の合計は210であり、サブワード `"ug"` の確率は 20/210 となります。
+
+> [!TIP]
+> ✏️ **やってみよう！** 上記の頻度を計算するコードを書いて、表示されている結果が正しいことと、合計を確認してみましょう。
+
+次に、与えられた単語をトークン化するには、トークンへの分割方法の候補をすべて調べ、それぞれの確率を Unigram モデルに従って計算します。すべてのトークンは独立と見なされるため、この確率は各トークンの確率の積にすぎません。たとえば、`"pug"` のトークン化 `["p", "u", "g"]` の確率は次のようになります。
+
+$$P([``p", ``u", ``g"]) = P(``p") \times P(``u") \times P(``g") = \frac{5}{210} \times \frac{36}{210} \times \frac{20}{210} = 0.000389$$
+
+これに対して、トークン化 `["pu", "g"]` の確率は次のようになります。
+
+$$P([``pu", ``g"]) = P(``pu") \times P(``g") = \frac{5}{210} \times \frac{20}{210} = 0.0022676$$
+
+こちらの方がはるかに尤もらしい結果です。一般に、トークン数が最も少ないトークン化が最も高い確率を持ちます（トークンの数だけ 210 での割り算が繰り返されるため）。これは直感的に望ましいこと、つまり単語をできるだけ少ないトークン数に分割することに対応します。
+
+Unigram モデルによる単語のトークン化は、確率が最も高いトークン化です。`"pug"` の例では、可能な分割ごとに次のような確率が得られます。
+
+```
+["p", "u", "g"] : 0.000389
+["p", "ug"] : 0.0022676
+["pu", "g"] : 0.0022676
+```
+
+したがって、`"pug"` は、どちらの分割が先に見つかるかによって `["p", "ug"]` または `["pu", "g"]` とトークン化されます（より大きなコーパスでは、このような同点のケースはまれです）。
+
+この例では、可能な分割をすべて見つけて確率を計算するのは簡単でしたが、一般的にはもう少し難しくなります。そのために使われる古典的なアルゴリズムが *ビタビ（Viterbi）アルゴリズム* です。本質的には、文字 _a_ から文字 _b_ への枝を、_a_ から _b_ までのサブワードが語彙に含まれるときに張り、その枝にサブワードの確率を割り当てることで、与えられた単語の可能な分割を検出するグラフを構築できます。
+
+そのグラフの中で最良のスコアを持つ経路を見つけるために、ビタビアルゴリズムは、単語の各位置について、その位置で終わる分割のうち最良のスコアを持つものを求めます。先頭から末尾へ進むため、その最良スコアは、現在の位置で終わるすべてのサブワードを調べ、そのサブワードが始まる位置における最良のトークン化スコアを使うことで得られます。あとは、末尾にたどり着くまでにたどった経路を巻き戻すだけです。
+
+語彙と単語 `"unhug"` を使った例を見てみましょう。各位置について、そこで終わる最良スコアのサブワードは次のとおりです。
+
+```
+Character 0 (u): "u" (score 0.171429)
+Character 1 (n): "un" (score 0.076191)
+Character 2 (h): "un" "h" (score 0.005442)
+Character 3 (u): "un" "hu" (score 0.005442)
+Character 4 (g): "un" "hug" (score 0.005442)
+```
+
+したがって `"unhug"` は `["un", "hug"]` とトークン化されます。
+
+> [!TIP]
+> ✏️ **やってみよう！** 単語 `"huggun"` のトークン化とそのスコアを求めてみましょう。
+
+## 学習に戻る[[back-to-training]]
+
+トークン化の仕組みが分かったので、学習時に使われる損失をもう少し深く掘り下げます。どの段階でも、この損失は、現在の語彙と、各トークンのコーパス内での頻度から決まる Unigram モデルを使って、コーパスのすべての単語をトークン化することで計算されます（前に見たとおりです）。
+
+コーパスの各単語にはスコアがあり、損失はそれらのスコアの負の対数尤度、つまりコーパスのすべての単語に対する `-log(P(word))` の合計です。
+
+次のコーパスを使う例に戻りましょう。
+
+```
+("hug", 10), ("pug", 5), ("pun", 12), ("bun", 4), ("hugs", 5)
+```
+
+各単語のトークン化とそれぞれのスコアは次のとおりです。
+
+```
+"hug": ["hug"] (score 0.071428)
+"pug": ["pu", "g"] (score 0.007710)
+"pun": ["pu", "n"] (score 0.006168)
+"bun": ["bu", "n"] (score 0.001451)
+"hugs": ["hug", "s"] (score 0.001701)
+```
+
+したがって損失は次のようになります。
+
+```
+10 * (-log(0.071428)) + 5 * (-log(0.007710)) + 12 * (-log(0.006168)) + 4 * (-log(0.001451)) + 5 * (-log(0.001701)) = 169.8
+```
+
+次に、各トークンを取り除くことが損失にどう影響するかを計算する必要があります。これはかなり面倒な作業なので、ここでは2つのトークンについてだけ行い、全体の処理はコードの助けが得られる場面のために取っておきます。この（非常に）特殊なケースでは、すべての単語について等価なトークン化が2通りありました。前に見たとおり、たとえば `"pug"` は同じスコアで `["p", "ug"]` ともトークン化できます。したがって、語彙から `"pu"` トークンを取り除いても、損失はまったく同じになります。
+
+一方、`"hug"` を取り除くと損失は悪化します。`"hug"` と `"hugs"` のトークン化が次のようになるためです。
+
+```
+"hug": ["hu", "g"] (score 0.006802)
+"hugs": ["hu", "gs"] (score 0.001701)
+```
+
+これらの変更により、損失は次の分だけ上昇します。
+
+```
+- 10 * (-log(0.071428)) + 10 * (-log(0.006802)) = 23.5
+```
+
+したがって、トークン `"pu"` はおそらく語彙から取り除かれますが、`"hug"` は取り除かれません。
+
+## Unigram の実装[[implementing-unigram]]
+
+では、これまで見てきた内容をすべてコードで実装しましょう。BPE や WordPiece のときと同様、これは Unigram アルゴリズムの効率的な実装ではありません（むしろその逆です）。それでも、アルゴリズムをもう少しよく理解する助けになるはずです。
+
+例として、前に使ったのと同じコーパスを使います。
+
+```python
+corpus = [
+    "This is the Hugging Face Course.",
+    "This chapter is about tokenization.",
+    "This section shows several tokenizer algorithms.",
+    "Hopefully, you will be able to understand how they are trained and generate tokens.",
+]
+```
+
+今回は、モデルとして `xlnet-base-cased` を使います。
+
+```python
+from transformers import AutoTokenizer
+
+tokenizer = AutoTokenizer.from_pretrained("xlnet-base-cased")
+```
+
+BPE や WordPiece と同様に、まずコーパス内の各単語の出現回数を数えることから始めます。
+
+```python
+from collections import defaultdict
+
+word_freqs = defaultdict(int)
+for text in corpus:
+    words_with_offsets = tokenizer.backend_tokenizer.pre_tokenizer.pre_tokenize_str(text)
+    new_words = [word for word, offset in words_with_offsets]
+    for word in new_words:
+        word_freqs[word] += 1
+
+word_freqs
+```
+
+次に、最終的に欲しい語彙サイズよりも大きな初期語彙を用意する必要があります。基本となる文字はすべて含める必要があります（そうしないとすべての単語をトークン化できません）。一方、より大きな部分文字列については最も一般的なものだけを残すので、頻度順にソートします。
+
+```python
+char_freqs = defaultdict(int)
+subwords_freqs = defaultdict(int)
+for word, freq in word_freqs.items():
+    for i in range(len(word)):
+        char_freqs[word[i]] += freq
+        # 長さ2以上のサブワードを列挙する
+        for j in range(i + 2, len(word) + 1):
+            subwords_freqs[word[i:j]] += freq
+
+# サブワードを頻度順にソートする
+sorted_subwords = sorted(subwords_freqs.items(), key=lambda x: x[1], reverse=True)
+sorted_subwords[:10]
+```
+
+```python out
+[('▁t', 7), ('is', 5), ('er', 5), ('▁a', 5), ('▁to', 4), ('to', 4), ('en', 4), ('▁T', 3), ('▁Th', 3), ('▁Thi', 3)]
+```
+
+文字と最良のサブワードをまとめると、サイズ300の初期語彙が得られます。
+
+```python
+token_freqs = list(char_freqs.items()) + sorted_subwords[: 300 - len(char_freqs)]
+token_freqs = {token: freq for token, freq in token_freqs}
+```
+
+> [!TIP]
+> 💡 SentencePiece は、初期語彙を作るために Enhanced Suffix Array（ESA）と呼ばれる、より効率的なアルゴリズムを使います。
+
+次に、頻度を確率に変換するため、すべての頻度の合計を計算します。このモデルでは確率の対数を保存します。小さい数同士を掛けるよりも対数を足す方が数値的に安定し、モデルの損失の計算も簡単になるためです。
+
+```python
+from math import log
+
+total_sum = sum([freq for token, freq in token_freqs.items()])
+model = {token: -log(freq / total_sum) for token, freq in token_freqs.items()}
+```
+
+中心となる関数は、ビタビアルゴリズムを使って単語をトークン化する関数です。前に見たとおり、このアルゴリズムは単語の各部分文字列について最良の分割を計算し、それを `best_segmentations` という変数に保存します。単語の各位置（0から単語の全長まで）について辞書を1つずつ保存し、2つのキーを持たせます。最良の分割における最後のトークンの開始位置のインデックスと、最良の分割のスコアです。最後のトークンの開始位置のインデックスがあれば、リストが完全に埋まったあとで分割全体を取り出すことができます。
+
+リストへの登録は2つのループだけで行われます。メインループは各開始位置を走査し、2番目のループはその開始位置から始まるすべての部分文字列を試します。部分文字列が語彙に含まれていれば、その終了位置までの単語の新しい分割が得られるので、`best_segmentations` に入っているものと比較します。
+
+メインループが終わったら、末尾から開始し、トークンを記録しながら開始位置から開始位置へとたどっていき、単語の先頭に到達するまで続けます。
+
+```python
+def encode_word(word, model):
+    best_segmentations = [{"start": 0, "score": 1}] + [
+        {"start": None, "score": None} for _ in range(len(word))
+    ]
+    for start_idx in range(len(word)):
+        # ここはループの前段のステップで適切に埋められているはず
+        best_score_at_start = best_segmentations[start_idx]["score"]
+        for end_idx in range(start_idx + 1, len(word) + 1):
+            token = word[start_idx:end_idx]
+            if token in model and best_score_at_start is not None:
+                score = model[token] + best_score_at_start
+                # end_idx で終わるより良い分割が見つかれば更新する
+                if (
+                    best_segmentations[end_idx]["score"] is None
+                    or best_segmentations[end_idx]["score"] > score
+                ):
+                    best_segmentations[end_idx] = {"start": start_idx, "score": score}
+
+    segmentation = best_segmentations[-1]
+    if segmentation["score"] is None:
+        # 単語のトークン化が見つからなかった -> 未知語として扱う
+        return ["<unk>"], None
+
+    score = segmentation["score"]
+    start = segmentation["start"]
+    end = len(word)
+    tokens = []
+    while start != 0:
+        tokens.insert(0, word[start:end])
+        next_start = best_segmentations[start]["start"]
+        end = start
+        start = next_start
+    tokens.insert(0, word[start:end])
+    return tokens, score
+```
+
+初期モデルをいくつかの単語で早速試すことができます。
+
+```python
+print(encode_word("Hopefully", model))
+print(encode_word("This", model))
+```
+
+```python out
+(['H', 'o', 'p', 'e', 'f', 'u', 'll', 'y'], 41.5157494601402)
+(['This'], 6.288267030694535)
+```
+
+これで、コーパスに対するモデルの損失を計算するのも簡単です！
+
+```python
+def compute_loss(model):
+    loss = 0
+    for word, freq in word_freqs.items():
+        _, word_loss = encode_word(word, model)
+        loss += freq * word_loss
+    return loss
+```
+
+手元のモデルで動作を確認できます。
+
+```python
+compute_loss(model)
+```
+
+```python out
+413.10377642940875
+```
+
+各トークンのスコアを計算するのもそれほど難しくありません。各トークンを削除して得られるモデルについて損失を計算するだけです。
+
+```python
+import copy
+
+
+def compute_scores(model):
+    scores = {}
+    model_loss = compute_loss(model)
+    for token, score in model.items():
+        # 長さ1のトークンは常に保持する
+        if len(token) == 1:
+            continue
+        model_without_token = copy.deepcopy(model)
+        _ = model_without_token.pop(token)
+        scores[token] = compute_loss(model_without_token) - model_loss
+    return scores
+```
+
+あるトークンで試してみましょう。
+
+```python
+scores = compute_scores(model)
+print(scores["ll"])
+print(scores["his"])
+```
+
+`"ll"` は `"Hopefully"` のトークン化に使われており、取り除くと代わりに `"l"` トークンを2回使うことになりそうなので、正の損失になると予想できます。`"his"` は単語 `"This"` の内部でのみ使われますが、`"This"` はそれ自体としてトークン化されるので、損失はゼロになると予想できます。結果は次のとおりです。
+
+```python out
+6.376412403623874
+0.0
+```
+
+> [!TIP]
+> 💡 このアプローチは非常に非効率です。そのため SentencePiece は、トークン X を除いたモデルの損失の近似を使います。最初からやり直すのではなく、残った語彙の中でのトークン X の分割で X を置き換えるだけです。こうすれば、モデルの損失と同時にすべてのスコアを一度に計算できます。
+
+これらがすべて揃ったら、あとはモデルが使う特殊トークンを語彙に加え、目的のサイズに到達するまで語彙からトークンを間引くループを回すだけです。
+
+```python
+percent_to_remove = 0.1
+while len(model) > 100:
+    scores = compute_scores(model)
+    sorted_scores = sorted(scores.items(), key=lambda x: x[1])
+    # スコアが最も低いトークンを percent_to_remove の割合だけ削除する
+    for i in range(int(len(model) * percent_to_remove)):
+        _ = token_freqs.pop(sorted_scores[i][0])
+
+    total_sum = sum([freq for token, freq in token_freqs.items()])
+    model = {token: -log(freq / total_sum) for token, freq in token_freqs.items()}
+```
+
+テキストをトークン化するには、事前トークン化を適用し、`encode_word()` 関数を使います。
+
+```python
+def tokenize(text, model):
+    words_with_offsets = tokenizer.backend_tokenizer.pre_tokenizer.pre_tokenize_str(text)
+    pre_tokenized_text = [word for word, offset in words_with_offsets]
+    encoded_words = [encode_word(word, model)[0] for word in pre_tokenized_text]
+    return sum(encoded_words, [])
+
+
+tokenize("This is the Hugging Face course.", model)
+```
+
+```python out
+['▁This', '▁is', '▁the', '▁Hugging', '▁Face', '▁', 'c', 'ou', 'r', 's', 'e', '.']
+```
+
+> [!TIP]
+> XLNetTokenizer は SentencePiece を使っているため、`"_"` 文字が含まれています。SentencePiece でデコードするには、すべてのトークンを連結し、`"_"` をスペースに置き換えます。
+
+Unigram については以上です。ここまでで、トークナイザに関するあらゆることに精通した気分になっているのではないでしょうか。次の節では、🤗 Tokenizers ライブラリの構成要素を掘り下げ、それらを使って独自のトークナイザを構築する方法を紹介します。

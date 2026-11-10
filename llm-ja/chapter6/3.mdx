@@ -1,0 +1,463 @@
+<FrameworkSwitchCourse {fw} />
+
+# 高速トークナイザの特別な力[[fast-tokenizers-special-powers]]
+
+{#if fw === 'pt'}
+
+<CourseFloatingBanner chapter={6}
+  classNames="absolute z-10 right-0 top-0"
+  notebooks={[
+    {label: "Google Colab", value: "https://colab.research.google.com/github/huggingface/notebooks/blob/master/course/en/chapter6/section3_pt.ipynb"},
+    {label: "Aws Studio", value: "https://studiolab.sagemaker.aws/import/github/huggingface/notebooks/blob/master/course/en/chapter6/section3_pt.ipynb"},
+]} />
+
+{:else}
+
+<CourseFloatingBanner chapter={6}
+  classNames="absolute z-10 right-0 top-0"
+  notebooks={[
+    {label: "Google Colab", value: "https://colab.research.google.com/github/huggingface/notebooks/blob/master/course/en/chapter6/section3_tf.ipynb"},
+    {label: "Aws Studio", value: "https://studiolab.sagemaker.aws/import/github/huggingface/notebooks/blob/master/course/en/chapter6/section3_tf.ipynb"},
+]} />
+
+{/if}
+
+このセクションでは、🤗 Transformers のトークナイザの能力を詳しく見ていきます。これまでは入力のトークン化や ID のテキストへのデコードにしか使ってきませんでしたが、トークナイザ、特に 🤗 Tokenizers ライブラリに裏付けられたものは、もっと多くのことができます。これらの追加機能を説明するために、[Chapter 1](/course/chapter1) で初めて出会った `token-classification`（`ner` と呼んでいたもの）と `question-answering` の各パイプラインの結果を再現する方法を探ります。
+
+<Youtube id="g8quOxoqhHQ"/>
+
+以降の説明では、「低速」トークナイザと「高速」トークナイザをしばしば区別します。低速トークナイザは 🤗 Transformers ライブラリ内部で Python で書かれたもので、高速版は Rust で書かれた 🤗 Tokenizers が提供するものです。[Chapter 5](/course/chapter5/3) の、高速トークナイザと低速トークナイザが Drug Review Dataset をトークン化するのにかかった時間を示した表を覚えていれば、なぜ高速・低速と呼ぶのか分かるでしょう。
+
+|               | 高速トークナイザ | 低速トークナイザ
+:--------------:|:--------------:|:-------------:
+`batched=True`  | 10.8s          | 4min41s
+`batched=False` | 59.2s          | 5min3s
+
+> [!WARNING]
+> ⚠️ 1つの文をトークン化する場合、低速版と高速版で速度の違いが常に見られるとは限りません。実際、高速版の方が遅いこともあります！多数のテキストを同時に並列でトークン化するときに初めて、違いがはっきりと分かります。
+
+## バッチエンコーディング[[batch-encoding]]
+
+<Youtube id="3umI3tm27Vw"/>
+
+トークナイザの出力は単なる Python の辞書ではありません。実際には、特別な `BatchEncoding` オブジェクトが得られます。これは辞書のサブクラスであり（そのため、以前も問題なくその結果にインデックスでアクセスできました）、高速トークナイザで主に使われる追加のメソッドを持っています。
+
+並列化能力に加えて、高速トークナイザの重要な機能は、最終的なトークンの由来となった元のテキストの範囲を常に追跡することです。この機能を*オフセットマッピング*と呼びます。これにより、各単語をそれが生成したトークンにマッピングしたり、元のテキストの各文字をそれを含むトークンにマッピングしたり、その逆を行ったりできるようになります。
+
+例を見てみましょう。
+
+```py
+from transformers import AutoTokenizer
+
+tokenizer = AutoTokenizer.from_pretrained("bert-base-cased")
+example = "My name is Sylvain and I work at Hugging Face in Brooklyn."
+encoding = tokenizer(example)
+print(type(encoding))
+```
+
+前述のとおり、トークナイザの出力として `BatchEncoding` オブジェクトが得られます。
+
+```python out
+<class 'transformers.tokenization_utils_base.BatchEncoding'>
+```
+
+`AutoTokenizer` クラスはデフォルトで高速トークナイザを選択するため、この `BatchEncoding` オブジェクトが提供する追加のメソッドを使えます。トークナイザが高速か低速かを確認する方法は2つあります。まず、`tokenizer` の `is_fast` 属性を確認する方法です。
+
+```python
+tokenizer.is_fast
+```
+
+```python out
+True
+```
+
+もう1つは、`encoding` の同じ属性を確認する方法です。
+
+```python
+encoding.is_fast
+```
+
+```python out
+True
+```
+
+高速トークナイザで何ができるか見てみましょう。まず、ID をトークンに戻す変換をしなくても、トークンにアクセスできます。
+
+```py
+encoding.tokens()
+```
+
+```python out
+['[CLS]', 'My', 'name', 'is', 'S', '##yl', '##va', '##in', 'and', 'I', 'work', 'at', 'Hu', '##gging', 'Face', 'in',
+ 'Brooklyn', '.', '[SEP]']
+```
+
+この場合、インデックス5のトークンは `##yl` で、元の文の単語 "Sylvain" の一部です。`word_ids()` メソッドを使えば、各トークンの由来となった単語のインデックスも取得できます。
+
+```py
+encoding.word_ids()
+```
+
+```python out
+[None, 0, 1, 2, 3, 3, 3, 3, 4, 5, 6, 7, 8, 8, 9, 10, 11, 12, None]
+```
+
+トークナイザの特殊トークン `[CLS]` と `[SEP]` は `None` にマッピングされ、その後、各トークンは由来となった単語にマッピングされていることが分かります。これは、トークンが単語の先頭にあるかどうかや、2つのトークンが同じ単語内にあるかどうかを判定するのに特に役立ちます。その判定に `##` 接頭辞を使うこともできますが、それは BERT のようなトークナイザでしか機能しません。このメソッドは、高速トークナイザであればどの種類のトークナイザでも機能します。次の章では、この能力を使って、固有表現認識（NER）や品詞タグ付け（POS tagging）のようなタスクで、単語ごとのラベルをトークンに適切に適用する方法を見ます。また、マスク言語モデリングで同じ単語に由来するすべてのトークンをマスクする（_whole word masking_ と呼ばれる手法）ためにも使えます。
+
+> [!TIP]
+> 単語とは何かという概念は複雑です。たとえば、"I'll"（"I will" の短縮形）は1つの単語として数えるのでしょうか、それとも2つでしょうか。実際には、トークナイザとそれが適用する事前トークン化の操作によって異なります。空白で分割するだけのトークナイザは、これを1つの単語と見なします。空白に加えて句読点も使うトークナイザは、2つの単語と見なします。
+>
+> ✏️ **試してみましょう！** `bert-base-cased` と `roberta-base` のチェックポイントからトークナイザを作成し、"81s" をトークン化してみてください。何が観察できますか。単語 ID はどうなっていますか。
+
+同様に、`sentence_ids()` メソッドを使えば、トークンを由来となった文にマッピングできます（ただし、この場合はトークナイザが返す `token_type_ids` からも同じ情報が得られます）。
+
+最後に、`word_to_chars()` や `token_to_chars()`、`char_to_word()` や `char_to_token()` の各メソッドを使えば、任意の単語やトークンを元のテキストの文字にマッピングしたり、その逆を行ったりできます。たとえば、`word_ids()` メソッドにより `##yl` がインデックス3の単語の一部であることは分かりましたが、文中のどの単語でしょうか。次のようにすれば分かります。
+
+```py
+start, end = encoding.word_to_chars(3)
+example[start:end]
+```
+
+```python out
+Sylvain
+```
+
+前述のとおり、これはすべて、高速トークナイザが各トークンの由来となったテキストの範囲を*オフセット*のリストとして追跡していることによって実現しています。その使い方を示すために、次は `token-classification` パイプラインの結果を手動で再現する方法を紹介します。
+
+> [!TIP]
+> ✏️ **試してみましょう！** 自分で例文を作り、どのトークンがどの単語 ID に関連付けられているか、また1つの単語の文字範囲を抽出するにはどうすればよいか理解してみてください。ボーナスとして、2つの文を入力に使って、文 ID が妥当かどうか確認してみましょう。
+
+## `token-classification` パイプラインの内部[[inside-the-token-classification-pipeline]]
+
+[Chapter 1](/course/chapter1) では、🤗 Transformers の `pipeline()` 関数を使って NER（テキストのどの部分が人物・場所・組織などのエンティティに対応するかを特定するタスク）を初めて試しました。続いて [Chapter 2](/course/chapter2) では、パイプラインが生のテキストから予測を得るために必要な3つの段階、すなわちトークン化、モデルへの入力の通過、後処理をひとまとめにしていることを見ました。`token-classification` パイプラインの最初の2ステップは他のパイプラインと同じですが、後処理は少し複雑です。見ていきましょう！
+
+{#if fw === 'pt'}
+
+<Youtube id="0E7ltQB7fM8"/>
+
+{:else}
+
+<Youtube id="PrX4CjrVnNc"/>
+
+{/if}
+
+### パイプラインで基本的な結果を得る[[getting-the-base-results-with-the-pipeline]]
+
+まず、手動の結果と比較できるよう、トークン分類パイプラインを用意しましょう。デフォルトで使われるモデルは [`dbmdz/bert-large-cased-finetuned-conll03-english`](https://huggingface.co/dbmdz/bert-large-cased-finetuned-conll03-english) で、文に対して NER を実行します。
+
+```py
+from transformers import pipeline
+
+token_classifier = pipeline("token-classification")
+token_classifier("My name is Sylvain and I work at Hugging Face in Brooklyn.")
+```
+
+```python out
+[{'entity': 'I-PER', 'score': 0.9993828, 'index': 4, 'word': 'S', 'start': 11, 'end': 12},
+ {'entity': 'I-PER', 'score': 0.99815476, 'index': 5, 'word': '##yl', 'start': 12, 'end': 14},
+ {'entity': 'I-PER', 'score': 0.99590725, 'index': 6, 'word': '##va', 'start': 14, 'end': 16},
+ {'entity': 'I-PER', 'score': 0.9992327, 'index': 7, 'word': '##in', 'start': 16, 'end': 18},
+ {'entity': 'I-ORG', 'score': 0.97389334, 'index': 12, 'word': 'Hu', 'start': 33, 'end': 35},
+ {'entity': 'I-ORG', 'score': 0.976115, 'index': 13, 'word': '##gging', 'start': 35, 'end': 40},
+ {'entity': 'I-ORG', 'score': 0.98879766, 'index': 14, 'word': 'Face', 'start': 41, 'end': 45},
+ {'entity': 'I-LOC', 'score': 0.99321055, 'index': 16, 'word': 'Brooklyn', 'start': 49, 'end': 57}]
+```
+
+モデルは、"Sylvain" から生成された各トークンを人物として、"Hugging Face" から生成された各トークンを組織として、トークン "Brooklyn" を場所として正しく特定しました。同じエンティティに対応するトークンをグループ化するようパイプラインに求めることもできます。
+
+```py
+from transformers import pipeline
+
+token_classifier = pipeline("token-classification", aggregation_strategy="simple")
+token_classifier("My name is Sylvain and I work at Hugging Face in Brooklyn.")
+```
+
+```python out
+[{'entity_group': 'PER', 'score': 0.9981694, 'word': 'Sylvain', 'start': 11, 'end': 18},
+ {'entity_group': 'ORG', 'score': 0.97960204, 'word': 'Hugging Face', 'start': 33, 'end': 45},
+ {'entity_group': 'LOC', 'score': 0.99321055, 'word': 'Brooklyn', 'start': 49, 'end': 57}]
+```
+
+選択した `aggregation_strategy` によって、グループ化された各エンティティについて計算されるスコアが変わります。`"simple"` では、スコアは対象エンティティ内の各トークンのスコアの平均です。たとえば、"Sylvain" のスコアは、前の例で見たトークン `S`、`##yl`、`##va`、`##in` のスコアの平均です。他に利用できる戦略は次のとおりです。
+
+- `"first"`、各エンティティのスコアが、そのエンティティの最初のトークンのスコアになるもの（"Sylvain" の場合は、トークン `S` のスコアである 0.993828 になります）
+- `"max"`、各エンティティのスコアが、そのエンティティ内のトークンの最大スコアになるもの（"Hugging Face" の場合は、"Face" のスコアである 0.98879766 になります）
+- `"average"`、各エンティティのスコアが、そのエンティティを構成する単語のスコアの平均になるもの（"Sylvain" の場合は `"simple"` 戦略と差はありませんが、"Hugging Face" のスコアは、"Hugging" のスコア 0.975 と "Face" のスコア 0.98879 の平均である 0.9819 になります）
+
+では、`pipeline()` 関数を使わずにこれらの結果を得る方法を見てみましょう！
+
+### 入力から予測へ[[from-inputs-to-predictions]]
+
+{#if fw === 'pt'}
+
+まず、入力をトークン化してモデルに通す必要があります。これは [Chapter 2](/course/chapter2) とまったく同じ方法で行います。`AutoXxx` クラスを使ってトークナイザとモデルをインスタンス化し、例に適用します。
+
+```py
+from transformers import AutoTokenizer, AutoModelForTokenClassification
+
+model_checkpoint = "dbmdz/bert-large-cased-finetuned-conll03-english"
+tokenizer = AutoTokenizer.from_pretrained(model_checkpoint)
+model = AutoModelForTokenClassification.from_pretrained(model_checkpoint)
+
+example = "My name is Sylvain and I work at Hugging Face in Brooklyn."
+inputs = tokenizer(example, return_tensors="pt")
+outputs = model(**inputs)
+```
+
+ここでは `AutoModelForTokenClassification` を使っているため、入力シーケンスの各トークンについて1組のロジットが得られます。
+
+```py
+print(inputs["input_ids"].shape)
+print(outputs.logits.shape)
+```
+
+```python out
+torch.Size([1, 19])
+torch.Size([1, 19, 9])
+```
+
+{:else}
+
+まず、入力をトークン化してモデルに通す必要があります。これは [Chapter 2](/course/chapter2) とまったく同じ方法で行います。`TFAutoXxx` クラスを使ってトークナイザとモデルをインスタンス化し、例に適用します。
+
+```py
+from transformers import AutoTokenizer, TFAutoModelForTokenClassification
+
+model_checkpoint = "dbmdz/bert-large-cased-finetuned-conll03-english"
+tokenizer = AutoTokenizer.from_pretrained(model_checkpoint)
+model = TFAutoModelForTokenClassification.from_pretrained(model_checkpoint)
+
+example = "My name is Sylvain and I work at Hugging Face in Brooklyn."
+inputs = tokenizer(example, return_tensors="tf")
+outputs = model(**inputs)
+```
+
+ここでは `TFAutoModelForTokenClassification` を使っているため、入力シーケンスの各トークンについて1組のロジットが得られます。
+
+```py
+print(inputs["input_ids"].shape)
+print(outputs.logits.shape)
+```
+
+```python out
+(1, 19)
+(1, 19, 9)
+```
+
+{/if}
+
+19トークンのシーケンス1つからなるバッチがあり、モデルには9種類のラベルがあるため、モデルの出力の shape は 1 x 19 x 9 になります。テキスト分類パイプラインと同様に、softmax 関数を使ってロジットを確率に変換し、argmax を取って予測を得ます（softmax は順序を変えないため、ロジットに対して argmax を取ることができます）。
+
+{#if fw === 'pt'}
+
+```py
+import torch
+
+probabilities = torch.nn.functional.softmax(outputs.logits, dim=-1)[0].tolist()
+predictions = outputs.logits.argmax(dim=-1)[0].tolist()
+print(predictions)
+```
+
+{:else}
+
+```py
+import tensorflow as tf
+
+probabilities = tf.math.softmax(outputs.logits, axis=-1)[0]
+probabilities = probabilities.numpy().tolist()
+predictions = tf.math.argmax(outputs.logits, axis=-1)[0]
+predictions = predictions.numpy().tolist()
+print(predictions)
+```
+
+{/if}
+
+```python out
+[0, 0, 0, 0, 4, 4, 4, 4, 0, 0, 0, 0, 6, 6, 6, 0, 8, 0, 0]
+```
+
+`model.config.id2label` 属性には、予測を解釈するために使える、インデックスからラベルへのマッピングが含まれています。
+
+```py
+model.config.id2label
+```
+
+```python out
+{0: 'O',
+ 1: 'B-MISC',
+ 2: 'I-MISC',
+ 3: 'B-PER',
+ 4: 'I-PER',
+ 5: 'B-ORG',
+ 6: 'I-ORG',
+ 7: 'B-LOC',
+ 8: 'I-LOC'}
+```
+
+先に見たとおり、ラベルは9つあります。`O` はどの固有表現にも属さないトークン用のラベルで（"outside" の略）、エンティティの種類（その他、人物、組織、場所）ごとに2つのラベルがあります。ラベル `B-XXX` はトークンがエンティティ `XXX` の先頭にあることを示し、ラベル `I-XXX` はトークンがエンティティ `XXX` の内部にあることを示します。たとえば、現在の例では、モデルがトークン `S` を `B-PER`（人物エンティティの開始）、トークン `##yl`、`##va`、`##in` を `I-PER`（人物エンティティの内部）と分類すると予想されます。
+
+この場合、モデルが4つのトークンすべてに `I-PER` ラベルを与えたのは誤りだと思うかもしれませんが、それは完全には正しくありません。これらの `B-` と `I-` のラベルには、実は *IOB1* と *IOB2* という2つの形式があります。IOB2 形式（下図のピンク）が私たちが紹介したものですが、IOB1 形式（下図の青）では、`B-` で始まるラベルは、同じ種類の隣接する2つのエンティティを区切る場合にのみ使われます。使用しているモデルはその形式を使ったデータセットでファインチューニングされているため、`S` トークンに `I-PER` ラベルを割り当てます。
+
+<div class="flex justify-center">
+<img class="block dark:hidden" src="https://huggingface.co/datasets/huggingface-course/documentation-images/resolve/main/en/chapter6/IOB_versions.svg" alt="IOB1 形式と IOB2 形式"/>
+<img class="hidden dark:block" src="https://huggingface.co/datasets/huggingface-course/documentation-images/resolve/main/en/chapter6/IOB_versions-dark.svg" alt="IOB1 形式と IOB2 形式"/>
+</div>
+
+このマッピングがあれば、最初のパイプラインの結果を（ほぼ完全に）再現する準備ができました。`O` と分類されなかった各トークンのスコアとラベルを取得するだけです。
+
+```py
+results = []
+tokens = inputs.tokens()
+
+for idx, pred in enumerate(predictions):
+    label = model.config.id2label[pred]
+    if label != "O":
+        results.append(
+            {"entity": label, "score": probabilities[idx][pred], "word": tokens[idx]}
+        )
+
+print(results)
+```
+
+```python out
+[{'entity': 'I-PER', 'score': 0.9993828, 'index': 4, 'word': 'S'},
+ {'entity': 'I-PER', 'score': 0.99815476, 'index': 5, 'word': '##yl'},
+ {'entity': 'I-PER', 'score': 0.99590725, 'index': 6, 'word': '##va'},
+ {'entity': 'I-PER', 'score': 0.9992327, 'index': 7, 'word': '##in'},
+ {'entity': 'I-ORG', 'score': 0.97389334, 'index': 12, 'word': 'Hu'},
+ {'entity': 'I-ORG', 'score': 0.976115, 'index': 13, 'word': '##gging'},
+ {'entity': 'I-ORG', 'score': 0.98879766, 'index': 14, 'word': 'Face'},
+ {'entity': 'I-LOC', 'score': 0.99321055, 'index': 16, 'word': 'Brooklyn'}]
+```
+
+これは以前のものと非常によく似ていますが、1つだけ例外があります。パイプラインは、元の文における各エンティティの `start` と `end` の情報も返していました。ここでオフセットマッピングが活躍します。オフセットを取得するには、入力にトークナイザを適用する際に `return_offsets_mapping=True` を設定するだけです。
+
+```py
+inputs_with_offsets = tokenizer(example, return_offsets_mapping=True)
+inputs_with_offsets["offset_mapping"]
+```
+
+```python out
+[(0, 0), (0, 2), (3, 7), (8, 10), (11, 12), (12, 14), (14, 16), (16, 18), (19, 22), (23, 24), (25, 29), (30, 32),
+ (33, 35), (35, 40), (41, 45), (46, 48), (49, 57), (57, 58), (0, 0)]
+```
+
+各タプルは、各トークンに対応するテキストの範囲であり、`(0, 0)` は特殊トークン用に予約されています。先に見たとおり、インデックス5のトークンは `##yl` で、ここではオフセットが `(12, 14)` です。例の対応するスライスを取得すると次のようになります。
+
+```py
+example[12:14]
+```
+
+`##` のない正しいテキスト範囲が得られます。
+
+```python out
+yl
+```
+
+これを使えば、先ほどの結果を完成させられます。
+
+```py
+results = []
+inputs_with_offsets = tokenizer(example, return_offsets_mapping=True)
+tokens = inputs_with_offsets.tokens()
+offsets = inputs_with_offsets["offset_mapping"]
+
+for idx, pred in enumerate(predictions):
+    label = model.config.id2label[pred]
+    if label != "O":
+        start, end = offsets[idx]
+        results.append(
+            {
+                "entity": label,
+                "score": probabilities[idx][pred],
+                "word": tokens[idx],
+                "start": start,
+                "end": end,
+            }
+        )
+
+print(results)
+```
+
+```python out
+[{'entity': 'I-PER', 'score': 0.9993828, 'index': 4, 'word': 'S', 'start': 11, 'end': 12},
+ {'entity': 'I-PER', 'score': 0.99815476, 'index': 5, 'word': '##yl', 'start': 12, 'end': 14},
+ {'entity': 'I-PER', 'score': 0.99590725, 'index': 6, 'word': '##va', 'start': 14, 'end': 16},
+ {'entity': 'I-PER', 'score': 0.9992327, 'index': 7, 'word': '##in', 'start': 16, 'end': 18},
+ {'entity': 'I-ORG', 'score': 0.97389334, 'index': 12, 'word': 'Hu', 'start': 33, 'end': 35},
+ {'entity': 'I-ORG', 'score': 0.976115, 'index': 13, 'word': '##gging', 'start': 35, 'end': 40},
+ {'entity': 'I-ORG', 'score': 0.98879766, 'index': 14, 'word': 'Face', 'start': 41, 'end': 45},
+ {'entity': 'I-LOC', 'score': 0.99321055, 'index': 16, 'word': 'Brooklyn', 'start': 49, 'end': 57}]
+```
+
+これは最初のパイプラインから得たものと同じです！
+
+### エンティティのグループ化[[grouping-entities]]
+
+オフセットを使って各エンティティの start キーと end キーを決めるのは便利ですが、その情報は厳密には必須ではありません。しかし、エンティティをグループ化したい場合、オフセットがあれば煩雑なコードを大量に書かずに済みます。たとえば、トークン `Hu`、`##gging`、`Face` をグループ化したい場合、最初の2つは `##` を取り除いて連結し、`Face` は `##` で始まらないため空白を付けて追加する、といった特別なルールを作ることもできます。しかし、それはこの特定の種類のトークナイザでしか機能しません。SentencePiece や Byte-Pair-Encoding のトークナイザ（この章の後半で説明）には、別のルール一式を書かなければならなくなります。
+
+オフセットがあれば、そのようなカスタムコードはすべて不要になります。元のテキストの中で、最初のトークンから始まり最後のトークンで終わる範囲を取るだけです。トークン `Hu`、`##gging`、`Face` の場合、文字33（`Hu` の開始）から始めて文字45（`Face` の終了）の前で終わることになります。
+
+```py
+example[33:45]
+```
+
+```python out
+Hugging Face
+```
+
+エンティティをグループ化しながら予測を後処理するコードを書くために、連続していて `I-XXX` とラベル付けされたエンティティをグループ化します。ただし最初のものは `B-XXX` または `I-XXX` のどちらのラベルでも構いません（つまり、`O`、新しい種類のエンティティ、または同じ種類のエンティティの開始を示す `B-XXX` が現れたら、エンティティのグループ化を終了します）。
+
+```py
+import numpy as np
+
+results = []
+inputs_with_offsets = tokenizer(example, return_offsets_mapping=True)
+tokens = inputs_with_offsets.tokens()
+offsets = inputs_with_offsets["offset_mapping"]
+
+idx = 0
+while idx < len(predictions):
+    pred = predictions[idx]
+    label = model.config.id2label[pred]
+    if label != "O":
+        # B- または I- を取り除く
+        label = label[2:]
+        start, _ = offsets[idx]
+
+        # I-label とラベル付けされたすべてのトークンを取得する
+        all_scores = []
+        while (
+            idx < len(predictions)
+            and model.config.id2label[predictions[idx]] == f"I-{label}"
+        ):
+            all_scores.append(probabilities[idx][pred])
+            _, end = offsets[idx]
+            idx += 1
+
+        # スコアは、グループ化されたエンティティ内のすべてのトークンのスコアの平均
+        score = np.mean(all_scores).item()
+        word = example[start:end]
+        results.append(
+            {
+                "entity_group": label,
+                "score": score,
+                "word": word,
+                "start": start,
+                "end": end,
+            }
+        )
+    idx += 1
+
+print(results)
+```
+
+そして、2番目のパイプラインと同じ結果が得られます！
+
+```python out
+[{'entity_group': 'PER', 'score': 0.9981694, 'word': 'Sylvain', 'start': 11, 'end': 18},
+ {'entity_group': 'ORG', 'score': 0.97960204, 'word': 'Hugging Face', 'start': 33, 'end': 45},
+ {'entity_group': 'LOC', 'score': 0.99321055, 'word': 'Brooklyn', 'start': 49, 'end': 57}]
+```
+
+これらのオフセットが非常に役立つタスクのもう1つの例が、質問応答です。次のセクションでそのパイプラインを詳しく見ることで、🤗 Transformers ライブラリのトークナイザの最後の機能、すなわち入力を与えられた長さに切り詰める際のあふれたトークン（overflowing tokens）の処理についても見ていきます。

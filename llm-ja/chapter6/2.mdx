@@ -1,0 +1,254 @@
+# 古いトークナイザから新しいトークナイザを学習する[[training-a-new-tokenizer-from-an-old-one]]
+
+<CourseFloatingBanner chapter={6}
+  classNames="absolute z-10 right-0 top-0"
+  notebooks={[
+    {label: "Google Colab", value: "https://colab.research.google.com/github/huggingface/notebooks/blob/master/course/en/chapter6/section2.ipynb"},
+    {label: "Aws Studio", value: "https://studiolab.sagemaker.aws/import/github/huggingface/notebooks/blob/master/course/en/chapter6/section2.ipynb"},
+]} />
+
+関心のある言語で言語モデルが利用できない場合や、コーパスが言語モデルの学習に使われたものと大きく異なる場合は、データに適したトークナイザを使ってモデルをゼロから再学習したくなるでしょう。そのためには、データセットで新しいトークナイザを学習する必要があります。では、それは具体的に何を意味するのでしょうか。トークナイザを初めて見た [Chapter 2](/course/chapter2) で確認したとおり、ほとんどの Transformer モデルは*サブワードトークン化アルゴリズム*を使っています。対象のコーパスにおいて、関心のあるサブワードがどれで、最も頻繁に現れるのはどれかを特定するには、トークナイザがコーパス内のすべてのテキストを精査する必要があります。このプロセスを*学習*と呼びます。学習を支配する正確なルールは、使用するトークナイザの種類によって異なります。3つの主要なアルゴリズムについては、この章の後半で説明します。
+
+<Youtube id="DJimQynXZsQ"/>
+
+> [!WARNING]
+> ⚠️ トークナイザの学習は、モデルの学習と同じではありません！モデルの学習では確率的勾配降下法を使い、バッチごとに損失を少しずつ小さくしていきます。本質的にランダムであり（同じ学習を2回行って同じ結果を得るにはシードを設定する必要があります）。一方、トークナイザの学習は、与えられたコーパスに対してどのサブワードを選ぶのが最適かを特定しようとする統計的なプロセスであり、選定に使われる正確なルールはトークン化アルゴリズムによって決まります。決定的（deterministic）であり、同じコーパスで同じアルゴリズムを使って学習すれば、常に同じ結果が得られます。
+
+## コーパスを集める[[assembling-a-corpus]]
+
+🤗 Transformers には、既存のトークナイザと同じ特性を持つ新しいトークナイザを学習できる、とてもシンプルな API `AutoTokenizer.train_new_from_iterator()` があります。実際に動作を見てみましょう。GPT-2 をゼロから学習させたいが、英語以外の言語で、という場合を考えます。最初のタスクは、その言語のデータを大量に集めて学習コーパスを作ることです。ここでは誰にでも理解できる例として、ロシア語や中国語のような言語ではなく、特殊な英語、つまり Python コードを使います。
+
+[🤗 Datasets](https://github.com/huggingface/datasets) ライブラリを使えば、Python ソースコードのコーパスを集められます。いつもの `load_dataset()` 関数を使って、[CodeSearchNet](https://huggingface.co/datasets/code_search_net) データセットをダウンロードしてキャッシュします。このデータセットは [CodeSearchNet challenge](https://wandb.ai/github/CodeSearchNet/benchmark) のために作成されたもので、GitHub 上のオープンソースライブラリから集めた、いくつかのプログラミング言語の数百万もの関数が含まれています。ここでは、このデータセットの Python 部分を読み込みます。
+
+```py
+from datasets import load_dataset
+
+# 読み込みには数分かかることがあるので、コーヒーかお茶でも飲みながら待ってください！
+raw_datasets = load_dataset("code_search_net", "python")
+```
+
+学習用スプリットを見て、どの列にアクセスできるか確認しましょう。
+
+```py
+raw_datasets["train"]
+```
+
+```python out
+Dataset({
+    features: ['repository_name', 'func_path_in_repository', 'func_name', 'whole_func_string', 'language', 
+      'func_code_string', 'func_code_tokens', 'func_documentation_string', 'func_documentation_tokens', 'split_name', 
+      'func_code_url'
+    ],
+    num_rows: 412178
+})
+```
+
+データセットは docstring とコードを分離し、両方についてトークン化の候補も提示していることが分かります。ここでは、トークナイザの学習に `whole_func_string` 列だけを使います。`train` スプリットにインデックスを指定すれば、これらの関数の1つを例として見ることができます。
+
+```py
+print(raw_datasets["train"][123456]["whole_func_string"])
+```
+
+次のように出力されるはずです。
+
+```out
+def handle_simple_responses(
+      self, timeout_ms=None, info_cb=DEFAULT_MESSAGE_CALLBACK):
+    """Accepts normal responses from the device.
+
+    Args:
+      timeout_ms: Timeout in milliseconds to wait for each response.
+      info_cb: Optional callback for text sent from the bootloader.
+
+    Returns:
+      OKAY packet's message.
+    """
+    return self._accept_responses('OKAY', info_cb, timeout_ms=timeout_ms)
+```
+
+最初に行う必要があるのは、データセットをテキストのリストの*イテレータ*（たとえば、テキストのリストのリスト）に変換することです。テキストのリストを使うとトークナイザの処理が速くなります（テキストを1つずつ処理するのではなく、テキストのバッチで学習できるため）。また、すべてを一度にメモリに載せないためには、イテレータである必要があります。コーパスが巨大な場合、🤗 Datasets がすべてを RAM に読み込まず、データセットの要素をディスクに保存するという性質を活用したくなるはずです。
+
+次のようにすると、それぞれ1,000件のテキストを含むリストのリストが作れますが、すべてがメモリに読み込まれてしまいます。
+
+```py
+# データセットが小さい場合を除き、次の行のコメントアウトは外さないでください！
+# training_corpus = [raw_datasets["train"][i: i + 1000]["whole_func_string"] for i in range(0, len(raw_datasets["train"]), 1000)]
+```
+
+Python のジェネレータを使えば、実際に必要になるまで何もメモリに読み込ませないようにできます。そのようなジェネレータを作るには、角括弧を丸括弧に置き換えるだけです。
+
+```py
+training_corpus = (
+    raw_datasets["train"][i : i + 1000]["whole_func_string"]
+    for i in range(0, len(raw_datasets["train"]), 1000)
+)
+```
+
+このコード行は、データセットの要素を一切取得しません。Python の `for` ループで使えるオブジェクトを作るだけです。テキストは必要なとき（つまり、`for` ループがそれを必要とするステップに到達したとき）にだけ読み込まれ、一度に読み込まれるのは1,000件だけです。そのため、巨大なデータセットを処理していても、メモリを使い果たすことはありません。
+
+ジェネレータオブジェクトの問題は、一度しか使えないことです。つまり、次のコードでは最初の10個の数字のリストは2回得られません。
+
+```py
+gen = (i for i in range(10))
+print(list(gen))
+print(list(gen))
+```
+
+1回目は得られますが、2回目は空のリストになります。
+
+```python out
+[0, 1, 2, 3, 4, 5, 6, 7, 8, 9]
+[]
+```
+
+そこで、代わりにジェネレータを返す関数を定義します。
+
+```py
+def get_training_corpus():
+    return (
+        raw_datasets["train"][i : i + 1000]["whole_func_string"]
+        for i in range(0, len(raw_datasets["train"]), 1000)
+    )
+
+
+training_corpus = get_training_corpus()
+```
+
+`yield` 文を使えば、`for` ループの中でジェネレータを定義することもできます。
+
+```py
+def get_training_corpus():
+    dataset = raw_datasets["train"]
+    for start_idx in range(0, len(dataset), 1000):
+        samples = dataset[start_idx : start_idx + 1000]
+        yield samples["whole_func_string"]
+```
+
+これにより前とまったく同じジェネレータが得られますが、リスト内包表記よりも複雑なロジックを使えます。
+
+## 新しいトークナイザの学習[[training-a-new-tokenizer]]
+
+コーパスがテキストバッチのイテレータの形になったので、新しいトークナイザを学習する準備ができました。そのためにはまず、モデルと組み合わせたいトークナイザ（ここでは GPT-2）を読み込む必要があります。
+
+```py
+from transformers import AutoTokenizer
+
+old_tokenizer = AutoTokenizer.from_pretrained("gpt2")
+```
+
+新しいトークナイザを学習するとはいえ、完全なゼロから始めないために、こうしておくのが得策です。こうすれば、トークン化アルゴリズムや使いたい特殊トークンについて何も指定する必要がありません。新しいトークナイザは GPT-2 とまったく同じものになり、変わるのは語彙だけです。語彙はコーパスでの学習によって決まります。
+
+まず、このトークナイザが関数の例をどう扱うか見てみましょう。
+
+```py
+example = '''def add_numbers(a, b):
+    """Add the two numbers `a` and `b`."""
+    return a + b'''
+
+tokens = old_tokenizer.tokenize(example)
+tokens
+```
+
+```python out
+['def', 'Ġadd', '_', 'n', 'umbers', '(', 'a', ',', 'Ġb', '):', 'Ċ', 'Ġ', 'Ġ', 'Ġ', 'Ġ"""', 'Add', 'Ġthe', 'Ġtwo',
+ 'Ġnumbers', 'Ġ`', 'a', '`', 'Ġand', 'Ġ`', 'b', '`', '."', '""', 'Ċ', 'Ġ', 'Ġ', 'Ġ', 'Ġreturn', 'Ġa', 'Ġ+', 'Ġb']
+```
+
+このトークナイザには `Ġ` や `Ċ` のような特殊な記号があり、それぞれ空白と改行を表します。見てのとおり、これはあまり効率的ではありません。空白ごとに個別のトークンを返していますが、インデントのレベルをまとめることもできるはずです（コードでは4つや8つの空白の並びが非常によく現れるため）。また、`_` 文字を含む単語に慣れていないため、関数名の分割も少し奇妙です。
+
+新しいトークナイザを学習して、これらの問題が解決するか見てみましょう。そのために `train_new_from_iterator()` メソッドを使います。
+
+```py
+tokenizer = old_tokenizer.train_new_from_iterator(training_corpus, 52000)
+```
+
+コーパスが非常に大きい場合、このコマンドには少し時間がかかることがあります。しかし、1.6 GB のテキストからなるこのデータセットでは驚くほど高速です（12コアの AMD Ryzen 9 3900X CPU で1分16秒）。
+
+`AutoTokenizer.train_new_from_iterator()` は、使用しているトークナイザが「高速」トークナイザの場合にのみ機能することに注意してください。次のセクションで見るとおり、🤗 Transformers ライブラリには2種類のトークナイザが含まれています。純粋に Python で書かれたものと、[Rust](https://www.rust-lang.org) プログラミング言語で書かれた 🤗 Tokenizers ライブラリに裏付けられたもの（高速な方）です。Python はデータサイエンスや深層学習アプリケーションで最もよく使われる言語ですが、並列化して高速化する必要があるものは、別の言語で書かなければなりません。たとえば、モデル計算の中核にある行列乗算は、GPU 向けに最適化された C ライブラリである CUDA で書かれています。
+
+まったく新しいトークナイザを純粋な Python で学習するのは、耐えがたいほど遅くなります。それが 🤗 Tokenizers ライブラリを開発した理由です。GPU で入力バッチに対してモデルを実行するために CUDA 言語を学ぶ必要がなかったのと同様に、高速トークナイザを使うために Rust を学ぶ必要はありません。🤗 Tokenizers ライブラリは、内部で Rust のコードの一部を呼び出す多くのメソッドに対する Python バインディングを提供しています。たとえば、新しいトークナイザの学習を並列化したり、[Chapter 3](/course/chapter3) で見たように入力バッチをトークン化したりできます。
+
+ほとんどの Transformer モデルには高速トークナイザが用意されています（例外もあり、[こちら](https://huggingface.co/transformers/#supported-frameworks) で確認できます）。`AutoTokenizer` API は、利用可能な場合は常に高速トークナイザを自動で選択します。次のセクションでは、高速トークナイザのその他の特別な機能を見ていきます。これらはトークン分類や質問応答のようなタスクでとても役立ちます。その前に、できあがったばかりの新しいトークナイザを先ほどの例で試してみましょう。
+
+```py
+tokens = tokenizer.tokenize(example)
+tokens
+```
+
+```python out
+['def', 'Ġadd', '_', 'numbers', '(', 'a', ',', 'Ġb', '):', 'ĊĠĠĠ', 'Ġ"""', 'Add', 'Ġthe', 'Ġtwo', 'Ġnumbers', 'Ġ`',
+ 'a', '`', 'Ġand', 'Ġ`', 'b', '`."""', 'ĊĠĠĠ', 'Ġreturn', 'Ġa', 'Ġ+', 'Ġb']
+```
+
+ここでも、空白と改行を表す特殊な記号 `Ġ` と `Ċ` が見えますが、トークナイザが Python 関数のコーパスに強く特化したトークンを学習したことも分かります。たとえば、インデントを表す `ĊĠĠĠ` トークンや、docstring の開始を表す3つの引用符の `Ġ"""` トークンがあります。関数名も `_` の位置で正しく分割されました。これはかなりコンパクトな表現です。比較として、同じ例に通常の英語トークナイザを使うと、より長い文になります。
+
+```py
+print(len(tokens))
+print(len(old_tokenizer.tokenize(example)))
+```
+
+```python out
+27
+36
+```
+
+別の例を見てみましょう。
+
+```python
+example = """class LinearLayer():
+    def __init__(self, input_size, output_size):
+        self.weight = torch.randn(input_size, output_size)
+        self.bias = torch.zeros(output_size)
+
+    def __call__(self, x):
+        return x @ self.weights + self.bias
+    """
+tokenizer.tokenize(example)
+```
+
+```python out
+['class', 'ĠLinear', 'Layer', '():', 'ĊĠĠĠ', 'Ġdef', 'Ġ__', 'init', '__(', 'self', ',', 'Ġinput', '_', 'size', ',',
+ 'Ġoutput', '_', 'size', '):', 'ĊĠĠĠĠĠĠĠ', 'Ġself', '.', 'weight', 'Ġ=', 'Ġtorch', '.', 'randn', '(', 'input', '_',
+ 'size', ',', 'Ġoutput', '_', 'size', ')', 'ĊĠĠĠĠĠĠĠ', 'Ġself', '.', 'bias', 'Ġ=', 'Ġtorch', '.', 'zeros', '(',
+ 'output', '_', 'size', ')', 'ĊĊĠĠĠ', 'Ġdef', 'Ġ__', 'call', '__(', 'self', ',', 'Ġx', '):', 'ĊĠĠĠĠĠĠĠ',
+ 'Ġreturn', 'Ġx', 'Ġ@', 'Ġself', '.', 'weights', 'Ġ+', 'Ġself', '.', 'bias', 'ĊĠĠĠĠ']
+```
+
+インデントに対応するトークンに加えて、ここでは二重インデント用のトークン `ĊĠĠĠĠĠĠĠ` も見えます。`class`、`init`、`call`、`self`、`return` のような Python の特殊な単語は、それぞれ1つのトークンとしてトークン化されています。また、`_` と `.` で分割するだけでなく、キャメルケースの名前も正しく分割していることが分かります。`LinearLayer` は `["ĠLinear", "Layer"]` とトークン化されます。
+
+## トークナイザの保存[[saving-the-tokenizer]]
+
+後で使えるように、新しいトークナイザを保存する必要があります。モデルと同様に、これは `save_pretrained()` メソッドで行います。
+
+```py
+tokenizer.save_pretrained("code-search-net-tokenizer")
+```
+
+これにより、*code-search-net-tokenizer* という名前の新しいフォルダが作られ、トークナイザの再読み込みに必要なすべてのファイルが含まれます。このトークナイザを同僚や友人と共有したい場合は、アカウントにログインして Hub にアップロードできます。ノートブックで作業している場合は、そのための便利な関数があります。
+
+```python
+from huggingface_hub import notebook_login
+
+notebook_login()
+```
+
+Hugging Face のログイン認証情報を入力できるウィジェットが表示されます。ノートブックで作業していない場合は、ターミナルで次の行を入力してください。
+
+```bash
+huggingface-cli login
+```
+
+ログインしたら、次のコマンドを実行してトークナイザをプッシュできます。
+
+```py
+tokenizer.push_to_hub("code-search-net-tokenizer")
+```
+
+これにより、自分の名前空間に `code-search-net-tokenizer` という名前の新しいリポジトリが作られ、トークナイザファイルが含まれます。その後は、`from_pretrained()` メソッドでどこからでもトークナイザを読み込めます。
+
+```py
+# 自分のトークナイザを使うには、下の "huggingface-course" を実際の名前空間に置き換えてください
+tokenizer = AutoTokenizer.from_pretrained("huggingface-course/code-search-net-tokenizer")
+```
+
+これで、言語モデルをゼロから学習し、手元のタスクにファインチューニングする準備が整いました。それは [Chapter 7](/course/chapter7) で扱いますが、その前に、この章の残りでは高速トークナイザを詳しく見て、`train_new_from_iterator()` メソッドを呼び出したときに実際に何が起きるのかを詳しく探ります。

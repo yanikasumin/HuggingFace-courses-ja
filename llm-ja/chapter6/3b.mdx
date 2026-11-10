@@ -1,0 +1,630 @@
+<FrameworkSwitchCourse {fw} />
+
+# QA パイプラインにおける高速トークナイザ[[fast-tokenizers-in-the-qa-pipeline]]
+
+{#if fw === 'pt'}
+
+<CourseFloatingBanner chapter={6}
+  classNames="absolute z-10 right-0 top-0"
+  notebooks={[
+    {label: "Google Colab", value: "https://colab.research.google.com/github/huggingface/notebooks/blob/master/course/en/chapter6/section3b_pt.ipynb"},
+    {label: "Aws Studio", value: "https://studiolab.sagemaker.aws/import/github/huggingface/notebooks/blob/master/course/en/chapter6/section3b_pt.ipynb"},
+]} />
+
+{:else}
+
+<CourseFloatingBanner chapter={6}
+  classNames="absolute z-10 right-0 top-0"
+  notebooks={[
+    {label: "Google Colab", value: "https://colab.research.google.com/github/huggingface/notebooks/blob/master/course/en/chapter6/section3b_tf.ipynb"},
+    {label: "Aws Studio", value: "https://studiolab.sagemaker.aws/import/github/huggingface/notebooks/blob/master/course/en/chapter6/section3b_tf.ipynb"},
+]} />
+
+{/if}
+
+ここでは `question-answering` パイプラインを詳しく見て、前のセクションでエンティティをグループ化したときのように、オフセットを活用して文脈から手元の質問への回答を取り出す方法を見ていきます。次に、切り詰められることになる非常に長い文脈への対処方法を見ます。質問応答タスクに興味がなければ、このセクションは読み飛ばしても構いません。
+
+{#if fw === 'pt'}
+
+<Youtube id="_wxyB3j3mk4"/>
+
+{:else}
+
+<Youtube id="b3u8RzBCX9Y"/>
+
+{/if}
+
+## `question-answering` パイプラインの使用[[using-the-question-answering-pipeline]]
+
+[Chapter 1](/course/chapter1) で見たように、`question-answering` パイプラインを次のように使って質問への回答を得ることができます。
+
+```py
+from transformers import pipeline
+
+question_answerer = pipeline("question-answering")
+context = """
+🤗 Transformers is backed by the three most popular deep learning libraries — Jax, PyTorch, and TensorFlow — with a seamless integration
+between them. It's straightforward to train your models with one before loading them for inference with the other.
+"""
+question = "Which deep learning libraries back 🤗 Transformers?"
+question_answerer(question=question, context=context)
+```
+
+```python out
+{'score': 0.97773,
+ 'start': 78,
+ 'end': 105,
+ 'answer': 'Jax, PyTorch and TensorFlow'}
+```
+
+他のパイプラインは、モデルが受け付ける最大長よりも長いテキストを切り詰めたり分割したりできないため（その結果、文書の末尾の情報を見逃すことがあります）、このパイプラインは非常に長い文脈にも対処でき、回答が末尾にあっても質問への回答を返します。
+
+```py
+long_context = """
+🤗 Transformers: State of the Art NLP
+
+🤗 Transformers provides thousands of pretrained models to perform tasks on texts such as classification, information extraction,
+question answering, summarization, translation, text generation and more in over 100 languages.
+Its aim is to make cutting-edge NLP easier to use for everyone.
+
+🤗 Transformers provides APIs to quickly download and use those pretrained models on a given text, fine-tune them on your own datasets and
+then share them with the community on our model hub. At the same time, each python module defining an architecture is fully standalone and
+can be modified to enable quick research experiments.
+
+Why should I use transformers?
+
+1. Easy-to-use state-of-the-art models:
+  - High performance on NLU and NLG tasks.
+  - Low barrier to entry for educators and practitioners.
+  - Few user-facing abstractions with just three classes to learn.
+  - A unified API for using all our pretrained models.
+  - Lower compute costs, smaller carbon footprint:
+
+2. Researchers can share trained models instead of always retraining.
+  - Practitioners can reduce compute time and production costs.
+  - Dozens of architectures with over 10,000 pretrained models, some in more than 100 languages.
+
+3. Choose the right framework for every part of a model's lifetime:
+  - Train state-of-the-art models in 3 lines of code.
+  - Move a single model between TF2.0/PyTorch frameworks at will.
+  - Seamlessly pick the right framework for training, evaluation and production.
+
+4. Easily customize a model or an example to your needs:
+  - We provide examples for each architecture to reproduce the results published by its original authors.
+  - Model internals are exposed as consistently as possible.
+  - Model files can be used independently of the library for quick experiments.
+
+🤗 Transformers is backed by the three most popular deep learning libraries — Jax, PyTorch and TensorFlow — with a seamless integration
+between them. It's straightforward to train your models with one before loading them for inference with the other.
+"""
+question_answerer(question=question, context=long_context)
+```
+
+```python out
+{'score': 0.97149,
+ 'start': 1892,
+ 'end': 1919,
+ 'answer': 'Jax, PyTorch and TensorFlow'}
+```
+
+これらすべてをどのように実現しているか見てみましょう！
+
+## 質問応答にモデルを使う[[using-a-model-for-question-answering]]
+
+他のパイプラインと同様に、まず入力をトークン化してからモデルに通します。`question-answering` パイプラインでデフォルトで使われるチェックポイントは [`distilbert-base-cased-distilled-squad`](https://huggingface.co/distilbert-base-cased-distilled-squad) です（名前の "squad" は、モデルがファインチューニングされたデータセットに由来します。SQuAD データセットについては [Chapter 7](/course/chapter7/7) で詳しく説明します）。
+
+{#if fw === 'pt'}
+
+```py
+from transformers import AutoTokenizer, AutoModelForQuestionAnswering
+
+model_checkpoint = "distilbert-base-cased-distilled-squad"
+tokenizer = AutoTokenizer.from_pretrained(model_checkpoint)
+model = AutoModelForQuestionAnswering.from_pretrained(model_checkpoint)
+
+inputs = tokenizer(question, context, return_tensors="pt")
+outputs = model(**inputs)
+```
+
+{:else}
+
+```py
+from transformers import AutoTokenizer, TFAutoModelForQuestionAnswering
+
+model_checkpoint = "distilbert-base-cased-distilled-squad"
+tokenizer = AutoTokenizer.from_pretrained(model_checkpoint)
+model = TFAutoModelForQuestionAnswering.from_pretrained(model_checkpoint)
+
+inputs = tokenizer(question, context, return_tensors="tf")
+outputs = model(**inputs)
+```
+
+{/if}
+
+質問と文脈をペアとして、質問を先にしてトークン化することに注意してください。
+
+<div class="flex justify-center">
+<img class="block dark:hidden" src="https://huggingface.co/datasets/huggingface-course/documentation-images/resolve/main/en/chapter6/question_tokens.svg" alt="質問と文脈のトークン化の例"/>
+<img class="hidden dark:block" src="https://huggingface.co/datasets/huggingface-course/documentation-images/resolve/main/en/chapter6/question_tokens-dark.svg" alt="質問と文脈のトークン化の例"/>
+</div>
+
+質問応答用のモデルは、これまで見てきたモデルとは少し異なる仕組みで動作します。上の図を例にすると、モデルは回答の開始トークンのインデックス（ここでは21）と、回答が終わるトークンのインデックス（ここでは24）を予測するよう学習されています。そのため、これらのモデルはロジットのテンソルを1つではなく2つ返します。1つは回答の開始トークンに対応するロジット用、もう1つは回答の終了トークンに対応するロジット用です。この場合は66トークンを含む入力が1つだけなので、次のようになります。
+
+```py
+start_logits = outputs.start_logits
+end_logits = outputs.end_logits
+print(start_logits.shape, end_logits.shape)
+```
+
+{#if fw === 'pt'}
+
+```python out
+torch.Size([1, 66]) torch.Size([1, 66])
+```
+
+{:else}
+
+```python out
+(1, 66) (1, 66)
+```
+
+{/if}
+
+これらのロジットを確率に変換するために softmax 関数を適用しますが、その前に、文脈の一部ではないインデックスを確実にマスクする必要があります。入力は `[CLS] question [SEP] context [SEP]` なので、質問のトークンと `[SEP]` トークンをマスクする必要があります。ただし `[CLS]` トークンは保持します。一部のモデルは、回答が文脈に含まれていないことを示すためにそれを使うためです。
+
+後で softmax を適用するため、マスクしたいロジットを大きな負の数に置き換えるだけで済みます。ここでは `-10000` を使います。
+
+{#if fw === 'pt'}
+
+```py
+import torch
+
+sequence_ids = inputs.sequence_ids()
+# 文脈のトークン以外をすべてマスクする
+mask = [i != 1 for i in sequence_ids]
+# [CLS] トークンのマスクを解除する
+mask[0] = False
+mask = torch.tensor(mask)[None]
+
+start_logits[mask] = -10000
+end_logits[mask] = -10000
+```
+
+{:else}
+
+```py
+import tensorflow as tf
+
+sequence_ids = inputs.sequence_ids()
+# 文脈のトークン以外をすべてマスクする
+mask = [i != 1 for i in sequence_ids]
+# [CLS] トークンのマスクを解除する
+mask[0] = False
+mask = tf.constant(mask)[None]
+
+start_logits = tf.where(mask, -10000, start_logits)
+end_logits = tf.where(mask, -10000, end_logits)
+```
+
+{/if}
+
+予測したくない位置に対応するロジットを適切にマスクできたので、softmax を適用できます。
+
+{#if fw === 'pt'}
+
+```py
+start_probabilities = torch.nn.functional.softmax(start_logits, dim=-1)[0]
+end_probabilities = torch.nn.functional.softmax(end_logits, dim=-1)[0]
+```
+
+{:else}
+
+```py
+start_probabilities = tf.math.softmax(start_logits, axis=-1)[0].numpy()
+end_probabilities = tf.math.softmax(end_logits, axis=-1)[0].numpy()
+```
+
+{/if}
+
+この段階で、開始確率と終了確率の argmax を取ることもできますが、終了インデックスより大きい開始インデックスになってしまう可能性があるため、もう少し注意が必要です。`start_index <= end_index` を満たす各 `start_index` と `end_index` の組み合わせの確率を計算し、確率が最も高いタプル `(start_index, end_index)` を取ります。
+
+事象「回答が `start_index` から始まる」と「回答が `end_index` で終わる」が独立であると仮定すると、回答が `start_index` から始まって `end_index` で終わる確率は次のとおりです。
+
+$$\mathrm{start\_probabilities}[\mathrm{start\_index}] \times \mathrm{end\_probabilities}[\mathrm{end\_index}]$$ 
+
+したがって、すべてのスコアを計算するには、`start_index <= end_index` の範囲で積 \(\mathrm{start\_probabilities}[\mathrm{start\_index}] \times \mathrm{end\_probabilities}[\mathrm{end\_index}]\) をすべて計算するだけです。
+
+まず、可能な積をすべて計算しましょう。
+
+```py
+scores = start_probabilities[:, None] * end_probabilities[None, :]
+```
+
+{#if fw === 'pt'}
+
+次に、`start_index > end_index` の値を `0` に設定してマスクします（他の確率はすべて正の数です）。`torch.triu()` 関数は、引数として渡された2次元テンソルの上三角部分を返すため、そのマスキングを行ってくれます。
+
+```py
+scores = torch.triu(scores)
+```
+
+{:else}
+
+次に、`start_index > end_index` の値を `0` に設定してマスクします（他の確率はすべて正の数です）。`np.triu()` 関数は、引数として渡された2次元テンソルの上三角部分を返すため、そのマスキングを行ってくれます。
+
+```py
+import numpy as np
+
+scores = np.triu(scores)
+```
+
+{/if}
+
+あとは最大値のインデックスを取得するだけです。PyTorch は平坦化されたテンソルでのインデックスを返すため、`start_index` と `end_index` を得るには床除算 `//` と剰余 `%` の演算を使う必要があります。
+
+```py
+max_index = scores.argmax().item()
+start_index = max_index // scores.shape[1]
+end_index = max_index % scores.shape[1]
+print(scores[start_index, end_index])
+```
+
+まだ完全には終わっていませんが、少なくとも回答の正しいスコアはすでに得られています（前のセクションの最初の結果と比較すれば確認できます）。
+
+```python out
+0.97773
+```
+
+> [!TIP]
+> ✏️ **試してみましょう！** 最も可能性の高い5つの回答について、開始インデックスと終了インデックスを計算してください。
+
+回答の `start_index` と `end_index` がトークン単位で得られたので、あとは文脈中の文字インデックスに変換するだけです。ここでオフセットが非常に役立ちます。トークン分類タスクで行ったように、それらを取得して使えます。
+
+```py
+inputs_with_offsets = tokenizer(question, context, return_offsets_mapping=True)
+offsets = inputs_with_offsets["offset_mapping"]
+
+start_char, _ = offsets[start_index]
+_, end_char = offsets[end_index]
+answer = context[start_char:end_char]
+```
+
+あとは、結果を得るためにすべてを整形するだけです。
+
+```py
+result = {
+    "answer": answer,
+    "start": start_char,
+    "end": end_char,
+    "score": scores[start_index, end_index],
+}
+print(result)
+```
+
+```python out
+{'answer': 'Jax, PyTorch and TensorFlow',
+ 'start': 78,
+ 'end': 105,
+ 'score': 0.97773}
+```
+
+素晴らしい！最初の例と同じになりました！
+
+> [!TIP]
+> ✏️ **試してみましょう！** 先ほど計算した最良のスコアを使って、最も可能性の高い5つの回答を表示してください。結果を確認するには、最初のパイプラインに戻り、呼び出し時に `top_k=5` を渡してください。
+
+## 長い文脈の処理[[handling-long-contexts]]
+
+以前に例として使った質問と長い文脈をトークン化しようとすると、`question-answering` パイプラインで使われる最大長（384）を超えるトークン数が得られます。
+
+```py
+inputs = tokenizer(question, long_context)
+print(len(inputs["input_ids"]))
+```
+
+```python out
+461
+```
+
+そのため、入力をその最大長で切り詰める必要があります。これを行う方法はいくつかありますが、切り詰めたいのは質問ではなく文脈だけです。文脈は2番目の文なので、`"only_second"` の切り詰め戦略を使います。その場合に生じる問題は、質問への回答が切り詰められた文脈に含まれていない可能性があることです。たとえば、ここでは回答が文脈の末尾寄りにある質問を選んだため、切り詰めるとその回答が含まれなくなります。
+
+```py
+inputs = tokenizer(question, long_context, max_length=384, truncation="only_second")
+print(tokenizer.decode(inputs["input_ids"]))
+```
+
+```python out
+"""
+[CLS] Which deep learning libraries back [UNK] Transformers? [SEP] [UNK] Transformers : State of the Art NLP
+
+[UNK] Transformers provides thousands of pretrained models to perform tasks on texts such as classification, information extraction,
+question answering, summarization, translation, text generation and more in over 100 languages.
+Its aim is to make cutting-edge NLP easier to use for everyone.
+
+[UNK] Transformers provides APIs to quickly download and use those pretrained models on a given text, fine-tune them on your own datasets and
+then share them with the community on our model hub. At the same time, each python module defining an architecture is fully standalone and
+can be modified to enable quick research experiments.
+
+Why should I use transformers?
+
+1. Easy-to-use state-of-the-art models:
+  - High performance on NLU and NLG tasks.
+  - Low barrier to entry for educators and practitioners.
+  - Few user-facing abstractions with just three classes to learn.
+  - A unified API for using all our pretrained models.
+  - Lower compute costs, smaller carbon footprint:
+
+2. Researchers can share trained models instead of always retraining.
+  - Practitioners can reduce compute time and production costs.
+  - Dozens of architectures with over 10,000 pretrained models, some in more than 100 languages.
+
+3. Choose the right framework for every part of a model's lifetime:
+  - Train state-of-the-art models in 3 lines of code.
+  - Move a single model between TF2.0/PyTorch frameworks at will.
+  - Seamlessly pick the right framework for training, evaluation and production.
+
+4. Easily customize a model or an example to your needs:
+  - We provide examples for each architecture to reproduce the results published by its original authors.
+  - Model internal [SEP]
+"""
+```
+
+つまり、モデルは正しい回答を選ぶのが難しくなります。これを解決するために、`question-answering` パイプラインでは最大長を指定して文脈をより小さいチャンクに分割できます。また、回答を見つけられるよう、文脈をちょうど不適切な場所で分割しないように、チャンク間には重なり（オーバーラップ）も含まれます。
+
+`return_overflowing_tokens=True` を追加すれば、トークナイザ（高速・低速を問わず）にこの処理を行わせることができ、重なりの量は `stride` 引数で指定できます。小さい文を使った例を示します。
+
+```py
+sentence = "This sentence is not too long but we are going to split it anyway."
+inputs = tokenizer(
+    sentence, truncation=True, return_overflowing_tokens=True, max_length=6, stride=2
+)
+
+for ids in inputs["input_ids"]:
+    print(tokenizer.decode(ids))
+```
+
+```python out
+'[CLS] This sentence is not [SEP]'
+'[CLS] is not too long [SEP]'
+'[CLS] too long but we [SEP]'
+'[CLS] but we are going [SEP]'
+'[CLS] are going to split [SEP]'
+'[CLS] to split it anyway [SEP]'
+'[CLS] it anyway. [SEP]'
+```
+
+見てのとおり、文はチャンクに分割され、`inputs["input_ids"]` の各エントリは最大6トークンになっています（最後のエントリを他と同じサイズにするにはパディングを追加する必要があります）。また、各エントリ間には2トークンの重なりがあります。
+
+トークン化の結果を詳しく見てみましょう。
+
+```py
+print(inputs.keys())
+```
+
+```python out
+dict_keys(['input_ids', 'attention_mask', 'overflow_to_sample_mapping'])
+```
+
+予想通り、入力 ID とアテンションマスクが得られます。最後のキー `overflow_to_sample_mapping` は、各結果がどの文に対応するかを示すマップです。ここでは、トークナイザに渡した（唯一の）文に由来する結果が7つあります。
+
+```py
+print(inputs["overflow_to_sample_mapping"])
+```
+
+```python out
+[0, 0, 0, 0, 0, 0, 0]
+```
+
+これは、複数の文をまとめてトークン化するときにより役立ちます。たとえば、次の場合です。
+
+```py
+sentences = [
+    "This sentence is not too long but we are going to split it anyway.",
+    "This sentence is shorter but will still get split.",
+]
+inputs = tokenizer(
+    sentences, truncation=True, return_overflowing_tokens=True, max_length=6, stride=2
+)
+
+print(inputs["overflow_to_sample_mapping"])
+```
+
+次の結果が得られます。
+
+```python out
+[0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1]
+```
+
+つまり、最初の文は前と同様に7つのチャンクに分割され、次の4つのチャンクは2番目の文に由来します。
+
+さて、長い文脈に戻りましょう。デフォルトでは、`question-answering` パイプラインは前述のとおり最大長384とストライド128を使います。これらはモデルがファインチューニングされた方法に対応しています（パイプラインの呼び出し時に `max_seq_len` と `stride` 引数を渡せば、これらのパラメータを調整できます）。したがって、トークン化の際にもこれらのパラメータを使います。パディング（サンプルを同じ長さにしてテンソルを構築できるようにするため）も追加し、オフセットも要求します。
+
+```py
+inputs = tokenizer(
+    question,
+    long_context,
+    stride=128,
+    max_length=384,
+    padding="longest",
+    truncation="only_second",
+    return_overflowing_tokens=True,
+    return_offsets_mapping=True,
+)
+```
+
+その `inputs` には、モデルが想定する入力 ID とアテンションマスクに加えて、オフセットと先ほど説明した `overflow_to_sample_mapping` が含まれます。これら2つはモデルが使うパラメータではないため、テンソルに変換する前に `inputs` から取り除きます（マップはここでは役に立たないため保存しません）。
+
+{#if fw === 'pt'}
+
+```py
+_ = inputs.pop("overflow_to_sample_mapping")
+offsets = inputs.pop("offset_mapping")
+
+inputs = inputs.convert_to_tensors("pt")
+print(inputs["input_ids"].shape)
+```
+
+```python out
+torch.Size([2, 384])
+```
+
+{:else}
+
+```py
+_ = inputs.pop("overflow_to_sample_mapping")
+offsets = inputs.pop("offset_mapping")
+
+inputs = inputs.convert_to_tensors("tf")
+print(inputs["input_ids"].shape)
+```
+
+```python out
+(2, 384)
+```
+
+{/if}
+
+長い文脈は2つに分割されたため、モデルを通した後は、開始ロジットと終了ロジットが2組得られます。
+
+```py
+outputs = model(**inputs)
+
+start_logits = outputs.start_logits
+end_logits = outputs.end_logits
+print(start_logits.shape, end_logits.shape)
+```
+
+{#if fw === 'pt'}
+
+```python out
+torch.Size([2, 384]) torch.Size([2, 384])
+```
+
+{:else}
+
+```python out
+(2, 384) (2, 384)
+```
+
+{/if}
+
+前と同様に、softmax を取る前に、まず文脈の一部ではないトークンをマスクします。すべてのパディングトークン（アテンションマスクで示されるもの）もマスクします。
+
+{#if fw === 'pt'}
+
+```py
+sequence_ids = inputs.sequence_ids()
+# 文脈のトークン以外をすべてマスクする
+mask = [i != 1 for i in sequence_ids]
+# [CLS] トークンのマスクを解除する
+mask[0] = False
+# すべての [PAD] トークンをマスクする
+mask = torch.logical_or(torch.tensor(mask)[None], (inputs["attention_mask"] == 0))
+
+start_logits[mask] = -10000
+end_logits[mask] = -10000
+```
+
+{:else}
+
+```py
+sequence_ids = inputs.sequence_ids()
+# 文脈のトークン以外をすべてマスクする
+mask = [i != 1 for i in sequence_ids]
+# [CLS] トークンのマスクを解除する
+mask[0] = False
+# すべての [PAD] トークンをマスクする
+mask = tf.math.logical_or(tf.constant(mask)[None], inputs["attention_mask"] == 0)
+
+start_logits = tf.where(mask, -10000, start_logits)
+end_logits = tf.where(mask, -10000, end_logits)
+```
+
+{/if}
+
+次に、softmax を使ってロジットを確率に変換できます。
+
+{#if fw === 'pt'}
+
+```py
+start_probabilities = torch.nn.functional.softmax(start_logits, dim=-1)
+end_probabilities = torch.nn.functional.softmax(end_logits, dim=-1)
+```
+
+{:else}
+
+```py
+start_probabilities = tf.math.softmax(start_logits, axis=-1).numpy()
+end_probabilities = tf.math.softmax(end_logits, axis=-1).numpy()
+```
+
+{/if}
+
+次のステップは小さい文脈で行ったことと似ていますが、2つのチャンクそれぞれについて繰り返します。回答の可能なすべての範囲にスコアを割り当て、最もスコアの高い範囲を取ります。
+
+{#if fw === 'pt'}
+
+```py
+candidates = []
+for start_probs, end_probs in zip(start_probabilities, end_probabilities):
+    scores = start_probs[:, None] * end_probs[None, :]
+    idx = torch.triu(scores).argmax().item()
+
+    start_idx = idx // scores.shape[1]
+    end_idx = idx % scores.shape[1]
+    score = scores[start_idx, end_idx].item()
+    candidates.append((start_idx, end_idx, score))
+
+print(candidates)
+```
+
+{:else}
+
+```py
+candidates = []
+for start_probs, end_probs in zip(start_probabilities, end_probabilities):
+    scores = start_probs[:, None] * end_probs[None, :]
+    idx = np.triu(scores).argmax().item()
+
+    start_idx = idx // scores.shape[1]
+    end_idx = idx % scores.shape[1]
+    score = scores[start_idx, end_idx].item()
+    candidates.append((start_idx, end_idx, score))
+
+print(candidates)
+```
+
+{/if}
+
+```python out
+[(0, 18, 0.33867), (173, 184, 0.97149)]
+```
+
+これら2つの候補は、各チャンクでモデルが見つけられた最良の回答に対応します。モデルは、正しい回答が2番目の部分にあるとずっと確信しています（これは良い兆候です！）。あとは、これら2つのトークン範囲を文脈中の文字範囲にマッピングするだけです（回答を得るには2番目のものだけをマッピングすればよいのですが、モデルが最初のチャンクで何を選んだかを見るのも興味深いでしょう）。
+
+> [!TIP]
+> ✏️ **試してみましょう！** 上のコードを改変して、最も可能性の高い5つの回答について（チャンクごとではなく全体で）スコアと範囲を返すようにしてください。
+
+先ほど取得した `offsets` は実際にはオフセットのリストであり、テキストのチャンクごとに1つのリストがあります。
+
+```py
+for candidate, offset in zip(candidates, offsets):
+    start_token, end_token, score = candidate
+    start_char, _ = offset[start_token]
+    _, end_char = offset[end_token]
+    answer = long_context[start_char:end_char]
+    result = {"answer": answer, "start": start_char, "end": end_char, "score": score}
+    print(result)
+```
+
+```python out
+{'answer': '\n🤗 Transformers: State of the Art NLP', 'start': 0, 'end': 37, 'score': 0.33867}
+{'answer': 'Jax, PyTorch and TensorFlow', 'start': 1892, 'end': 1919, 'score': 0.97149}
+```
+
+最初の結果を無視すれば、この長い文脈に対するパイプラインと同じ結果が得られます。やりました！
+
+> [!TIP]
+> ✏️ **試してみましょう！** 先ほど計算した最良のスコアを使って、最も可能性の高い5つの回答を表示してください（各チャンクではなく、文脈全体について）。結果を確認するには、最初のパイプラインに戻り、呼び出し時に `top_k=5` を渡してください。
+
+これでトークナイザの能力についての深掘りは終わりです。次の章では、一般的な NLP タスクでモデルをファインチューニングする方法を紹介し、これらすべてを再び実践します。
