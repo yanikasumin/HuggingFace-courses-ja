@@ -26,9 +26,9 @@
 
 <Youtube id="OATCgQtNX2o"/>
 
-## セマンティック検索への埋め込みの利用[[using-embeddings-for-semantic-search]]
+## 埋め込みを用いたセマンティック検索[[using-embeddings-for-semantic-search]]
 
-[Chapter 1](/course/chapter1) で見たように、Transformer ベースの言語モデルは、テキストの範囲内の各トークンを埋め込みベクトルとして表現します。個々の埋め込みを「プーリング」することで、文全体、段落、あるいは（場合によっては）ドキュメント全体のベクトル表現を作れることが分かっています。これらの埋め込みを使えば、各埋め込みとの内積類似度（または他の類似度指標）を計算し、重なりが最も大きいドキュメントを返すことで、コーパス内の類似ドキュメントを見つけることができます。
+[Chapter 1](/course/chapter1) で見たように、Transformer ベースの言語モデルは、テキストに含まれる各トークンを埋め込みベクトルとして表現します。個々の埋め込みを「プーリング」することで、文全体、段落、あるいは（場合によっては）ドキュメント全体のベクトル表現を作れることが分かっています。これらの埋め込みを使えば、各埋め込みとの内積類似度（または他の類似度指標）を計算し、類似度が最も高いドキュメントを返すことで、コーパス内の類似ドキュメントを見つけることができます。
 
 このセクションでは、埋め込みを使ってセマンティック検索エンジンを開発します。これらの検索エンジンには、クエリ内のキーワードとドキュメントをマッチさせる従来のアプローチに比べていくつかの利点があります。
 
@@ -88,7 +88,7 @@ Dataset({
 })
 ```
 
-埋め込みを作成するために、各コメントに issue のタイトルと本文を付け加えます。これらのフィールドには有用な文脈情報が含まれていることが多いためです。`comments` 列は現在、各 issue に対するコメントのリストになっているため、各行が `(html_url, title, body, comment)` のタプルから構成されるよう、この列を「爆発（explode）」させる必要があります。Pandas では [`DataFrame.explode()` 関数](https://pandas.pydata.org/pandas-docs/stable/reference/api/pandas.DataFrame.explode.html)でこれを行うことができ、リスト形式の列の各要素について新しい行を作成し、他のすべての列の値を複製します。実際に見てみるために、まず Pandas の `DataFrame` 形式に切り替えましょう。
+埋め込みを作成するために、各コメントに issue のタイトルと本文を付け加えます。これらのフィールドには有用な文脈情報が含まれていることが多いためです。`comments` 列は現在、各 issue に対するコメントのリストになっているため、各行が `(html_url, title, body, comment)` のタプルから構成されるよう、この列を展開（explode）して、各コメントをそれぞれ独立した行にする必要があります。Pandas では [`DataFrame.explode()` 関数](https://pandas.pydata.org/pandas-docs/stable/reference/api/pandas.DataFrame.explode.html)でこれを行うことができ、リスト形式の列の各要素について新しい行を作成し、他のすべての列の値を複製します。実際に見てみるために、まず Pandas の `DataFrame` 形式に切り替えましょう。
 
 ```py
 issues_dataset.set_format("pandas")
@@ -157,7 +157,7 @@ comments_df.head(4)
   </tbody>
 </table>
 
-素晴らしい。行が複製され、`comments` 列に個々のコメントが入っていることが分かります！Pandas での作業は終わったので、`DataFrame` をメモリから読み込むことで、すばやく `Dataset` に戻すことができます。
+素晴らしい。行が複製され、`comments` 列に個々のコメントが入っていることが分かります！Pandas での作業は終わったので、メモリ上の `DataFrame` から `Dataset` を作成することで、すばやく戻すことができます。
 
 ```py
 from datasets import Dataset
@@ -177,7 +177,7 @@ Dataset({
 
 
 > [!TIP]
-> ✏️ **やってみよう！** Pandas を使わずに、`Dataset.map()` を使って `issues_dataset` の `comments` 列を explode できるか試してみましょう。少し手強い課題です。🤗 Datasets ドキュメントの[「Batch mapping」](https://huggingface.co/docs/datasets/about_map_batch#batch-mapping)のセクションが役立つかもしれません。
+> ✏️ **やってみよう！** Pandas を使わずに、`Dataset.map()` を使って `issues_dataset` の `comments` 列の各コメントを、1件につき1行となるように展開できるか試してみましょう。少し手強い課題です。🤗 Datasets ドキュメントの[「Batch mapping」](https://huggingface.co/docs/datasets/about_map_batch#batch-mapping)のセクションが役立つかもしれません。
 
 1行に1つのコメントが入ったので、コメントごとの単語数を含む新しい `comments_length` 列を作成しましょう。
 
@@ -187,7 +187,7 @@ comments_dataset = comments_dataset.map(
 )
 ```
 
-この新しい列を使って、短いコメントを除外できます。短いコメントには通常、"cc @lewtun" や "Thanks!" のような、検索エンジンには関係のないものが含まれます。フィルタに選ぶ正確な数値はありませんが、15語あたりが良い出発点のようです。
+この新しい列を使って、短いコメントを除外できます。短いコメントには通常、"cc @lewtun" や "Thanks!" のような、検索エンジンには関係のないものが含まれます。フィルタリングのしきい値に唯一の正解はありませんが、15語あたりが良い出発点のようです。
 
 ```py
 comments_dataset = comments_dataset.filter(lambda x: x["comment_length"] > 15)
@@ -256,7 +256,7 @@ model = TFAutoModel.from_pretrained(model_ckpt, from_pt=True)
 
 {/if}
 
-前に述べたように、GitHub issues コーパスの各エントリを1つのベクトルとして表現したいので、トークン埋め込みを何らかの方法で「プーリング」つまり平均化する必要があります。人気のあるアプローチの1つは、モデルの出力に対して *CLS プーリング* を行うものです。これは、特殊トークン `[CLS]` の最後の隠れ状態を単に集める方法です。次の関数がその処理を行ってくれます。
+前に述べたように、GitHub issues コーパスの各エントリを1つのベクトルとして表現したいので、トークン埋め込みを何らかの方法でプーリング（集約）する必要があります。平均化もその方法の1つです。人気のあるアプローチの1つは、モデルの出力に対して *CLS プーリング* を行うものです。これは、特殊トークン `[CLS]` の最後の隠れ状態を単に集める方法です。次の関数がその処理を行ってくれます。
 
 ```py
 def cls_pooling(model_output):
@@ -332,7 +332,7 @@ embeddings_dataset = comments_dataset.map(
 埋め込みを NumPy 配列に変換していることに注目してください。これは、次に行う FAISS によるインデックス化の際に、🤗 Datasets がこの形式を要求するためです。
 
 
-## 効率的な類似検索への FAISS の利用[[using-faiss-for-efficient-similarity-search]]
+## FAISS による効率的な類似検索[[using-faiss-for-efficient-similarity-search]]
 
 埋め込みのデータセットが用意できたので、それらを検索する方法が必要です。そのために、🤗 Datasets の FAISS インデックスと呼ばれる特殊なデータ構造を使います。[FAISS](https://faiss.ai/)（Facebook AI Similarity Search の略）は、埋め込みベクトルをすばやく検索・クラスタリングするための効率的なアルゴリズムを提供するライブラリです。
 
@@ -378,7 +378,7 @@ scores, samples = embeddings_dataset.get_nearest_examples(
 )
 ```
 
-`Dataset.get_nearest_examples()` 関数は、クエリとドキュメントの重なりを順位付けするスコアのタプルと、対応するサンプルの集合（ここでは上位5件のマッチ）を返します。これらを `pandas.DataFrame` に集めて、簡単に並べ替えられるようにしましょう。
+`Dataset.get_nearest_examples()` 関数は、クエリとドキュメントの類似度を表すスコアのタプルと、対応するサンプルの集合（ここでは上位5件のマッチ）を返します。これらを `pandas.DataFrame` に集めて、簡単に並べ替えられるようにしましょう。
 
 ```py
 import pandas as pd
@@ -392,9 +392,9 @@ samples_df.sort_values("scores", ascending=False, inplace=True)
 
 ```py
 for _, row in samples_df.iterrows():
-    print(f"COMMENT: {row.comments}")
-    print(f"SCORE: {row.scores}")
-    print(f"TITLE: {row.title}")
+    print(f"コメント: {row.comments}")
+    print(f"スコア: {row.scores}")
+    print(f"タイトル: {row.title}")
     print(f"URL: {row.html_url}")
     print("=" * 50)
     print()
@@ -402,27 +402,27 @@ for _, row in samples_df.iterrows():
 
 ```python out
 """
-COMMENT: Requiring online connection is a deal breaker in some cases unfortunately so it'd be great if offline mode is added similar to how `transformers` loads models offline fine.
+コメント: Requiring online connection is a deal breaker in some cases unfortunately so it'd be great if offline mode is added similar to how `transformers` loads models offline fine.
 
 @mandubian's second bullet point suggests that there's a workaround allowing you to use your offline (custom?) dataset with `datasets`. Could you please elaborate on how that should look like?
-SCORE: 25.505046844482422
-TITLE: Discussion using datasets in offline mode
+スコア: 25.505046844482422
+タイトル: Discussion using datasets in offline mode
 URL: https://github.com/huggingface/datasets/issues/824
 ==================================================
 
-COMMENT: The local dataset builders (csv, text , json and pandas) are now part of the `datasets` package since #1726 :)
+コメント: The local dataset builders (csv, text , json and pandas) are now part of the `datasets` package since #1726 :)
 You can now use them offline
 \`\`\`python
 datasets = load_dataset("text", data_files=data_files)
 \`\`\`
 
 We'll do a new release soon
-SCORE: 24.555509567260742
-TITLE: Discussion using datasets in offline mode
+スコア: 24.555509567260742
+タイトル: Discussion using datasets in offline mode
 URL: https://github.com/huggingface/datasets/issues/824
 ==================================================
 
-COMMENT: I opened a PR that allows to reload modules that have already been loaded once even if there's no internet.
+コメント: I opened a PR that allows to reload modules that have already been loaded once even if there's no internet.
 
 Let me know if you know other ways that can make the offline mode experience better. I'd be happy to add them :)
 
@@ -443,12 +443,12 @@ and the dataset script will generate your dataset once and for all.
 
 About I'm looking into having `csv`, `json`, `text`, `pandas` dataset builders already included in the `datasets` package, so that they are available offline by default, as opposed to the other datasets that require the script to be downloaded.
 cf #1724
-SCORE: 24.14896583557129
-TITLE: Discussion using datasets in offline mode
+スコア: 24.14896583557129
+タイトル: Discussion using datasets in offline mode
 URL: https://github.com/huggingface/datasets/issues/824
 ==================================================
 
-COMMENT: > here is my way to load a dataset offline, but it **requires** an online machine
+コメント: > here is my way to load a dataset offline, but it **requires** an online machine
 >
 > 1. (online machine)
 >
@@ -479,12 +479,12 @@ COMMENT: > here is my way to load a dataset offline, but it **requires** an onli
 > HTH.
 
 
-SCORE: 22.893993377685547
-TITLE: Discussion using datasets in offline mode
+スコア: 22.893993377685547
+タイトル: Discussion using datasets in offline mode
 URL: https://github.com/huggingface/datasets/issues/824
 ==================================================
 
-COMMENT: here is my way to load a dataset offline, but it **requires** an online machine
+コメント: here is my way to load a dataset offline, but it **requires** an online machine
 1. (online machine)
 \`\`\`
 import datasets
@@ -499,8 +499,8 @@ data = datasets.load_from_disk(/SAVED/DATA/DIR)
 \`\`\`
 
 HTH.
-SCORE: 22.406635284423828
-TITLE: Discussion using datasets in offline mode
+スコア: 22.406635284423828
+タイトル: Discussion using datasets in offline mode
 URL: https://github.com/huggingface/datasets/issues/824
 ==================================================
 """
