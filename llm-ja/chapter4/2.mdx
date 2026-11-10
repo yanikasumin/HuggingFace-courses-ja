@@ -22,15 +22,15 @@
 
 {/if}
 
-Model Hub では適切なモデルを簡単に選べるので、下流のライブラリでも数行のコードで使えます。実際にモデルの使い方と、コミュニティへ貢献する方法を見ていきましょう。
+Model Hub では適切なモデルを簡単に選べるので、さまざまなライブラリからわずか数行のコードで利用できます。実際にモデルの使い方と、コミュニティへ貢献する方法を見ていきましょう。
 
-フランス語のモデルでマスクの穴埋めができるものを探しているとします。
+フランス語の文章中で、マスクされた単語を予測できるモデルを探しているとしましょう。
 
 <div class="flex justify-center">
 <img src="https://huggingface.co/datasets/huggingface-course/documentation-images/resolve/main/en/chapter4/camembert.gif" alt="CamemBERT モデルを選択する様子。" width="80%"/>
 </div>
 
-`camembert-base` チェックポイントを選んで試してみます。使い始めるのに必要な識別子は `camembert-base` だけです。前の章で見たように、`pipeline()` 関数でインスタンス化できます。
+`camembert-base` チェックポイントを選んで試してみます。このモデルを読み込むには、モデル識別子の `camembert-base` を指定するだけです。前の章で見たように、`pipeline()` 関数でこのモデルをインスタンス化できます。
 
 ```py
 from transformers import pipeline
@@ -65,7 +65,7 @@ tokenizer = CamembertTokenizer.from_pretrained("camembert-base")
 model = CamembertForMaskedLM.from_pretrained("camembert-base")
 ```
 
-ただし、代わりに [`Auto*` クラス](https://huggingface.co/transformers/model_doc/auto?highlight=auto#auto-classes) の利用をおすすめします。これらは設計上、アーキテクチャに依存しないためです。先ほどのコード例では、CamemBERT アーキテクチャで読み込めるチェックポイントに限られますが、`Auto*` クラスを使えばチェックポイントの切り替えが簡単になります。
+ただし、代わりに [`Auto*` クラス](https://huggingface.co/transformers/model_doc/auto?highlight=auto#auto-classes) の利用をおすすめします。これらのクラスは、チェックポイントに応じて適切なアーキテクチャのクラスを自動で選択してくれるためです。先ほどのコード例では、CamemBERT アーキテクチャで読み込めるチェックポイントに限られますが、`Auto*` クラスを使えばチェックポイントの切り替えが簡単になります。
 
 ```py
 from transformers import AutoTokenizer, AutoModelForMaskedLM
@@ -81,7 +81,7 @@ tokenizer = CamembertTokenizer.from_pretrained("camembert-base")
 model = TFCamembertForMaskedLM.from_pretrained("camembert-base")
 ```
 
-ただし、代わりに [`TFAuto*` クラス](https://huggingface.co/transformers/model_doc/auto?highlight=auto#auto-classes) の利用をおすすめします。これらは設計上、アーキテクチャに依存しないためです。先ほどのコード例では、CamemBERT アーキテクチャで読み込めるチェックポイントに限られますが、`TFAuto*` クラスを使えばチェックポイントの切り替えが簡単になります。
+ただし、代わりに [`TFAuto*` クラス](https://huggingface.co/transformers/model_doc/auto?highlight=auto#auto-classes) の利用をおすすめします。これらのクラスは、チェックポイントに応じて適切なアーキテクチャのクラスを自動で選択してくれるためです。先ほどのコード例では、CamemBERT アーキテクチャで読み込めるチェックポイントに限られますが、`TFAuto*` クラスを使えばチェックポイントの切り替えが簡単になります。
 
 ```py
 from transformers import AutoTokenizer, TFAutoModelForMaskedLM
@@ -92,4 +92,4 @@ model = TFAutoModelForMaskedLM.from_pretrained("camembert-base")
 {/if}
 
 > [!TIP]
-> 事前学習済みモデルを使うときは、そのモデルがどのように学習されたか、どのデータセットを使ったか、制限やバイアスを確認してください。これらの情報はすべてモデルカードに記載されているはずです。
+> 事前学習済みモデルを使うときは、そのモデルがどのように学習されたか、どのデータセットを使ったか、制限やバイアスを確認してください。これらの情報はすべてモデルカードで確認できます。

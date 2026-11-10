@@ -34,7 +34,7 @@ client = rg.Argilla(
 )
 ```
 
-次に、Argilla におけるデータセットの設定を考えます。これは、データに対して行うアノテーションタスクを表すものです。まず Hub からデータセットを読み込んでその特徴（features）を調べ、データセットを正しく設定できるようにします。
+次に、Argilla におけるデータセットの設定を考えます。これは、データに対して行うアノテーションタスクを表すものです。まず Hub からデータセットを読み込み、列の構成やデータ型を表す features を確認して、データセットを正しく設定できるようにします。
 
 ```python
 from datasets import load_dataset
@@ -51,7 +51,7 @@ data.features
  'label_text': Value(dtype='string', id=None)}
 ```
 
-データセットには `text` と、テキスト分類用の初期ラベルが含まれています。これらを、固有表現用の `spans` 質問と一緒にデータセットの設定に追加します。
+データセットには `text` と、テキスト分類用の初期ラベルが含まれています。これらを、固有表現の範囲を指定するスパンアノテーション用の質問と一緒にデータセットの設定に追加します。
 
 ```python
 settings = rg.Settings(
@@ -74,7 +74,7 @@ settings = rg.Settings(
 
 次に、データに対して行いたいタスクを表す **questions（質問）** を定義します。
 
-- テキスト分類タスクには `LabelQuestion` を選び、ラベルには `label_text` 列のユニークな値を使いました。データセットに既にあるラベルと質問が互換になるようにするためです。
+- テキスト分類タスクには `LabelQuestion` を選び、ラベルには `label_text` 列のユニークな値を使いました。質問で使用するラベルを、データセットに既に含まれているラベルと一致させるためです。
 - トークン分類タスクには `SpanQuestion` が必要です。そのタスクで使うラベルの集合と、スパンを描画する対象のフィールドを定義しました。
 
 利用できるフィールドや質問の種類、その他の高度な設定（メタデータやベクトルなど）について詳しくは、[Argilla のドキュメント](https://docs.argilla.io/latest/how_to_guides/dataset/#define-dataset-settings) を参照してください。
@@ -93,7 +93,7 @@ dataset.create()
 
 <img src="https://huggingface.co/datasets/huggingface-course/documentation-images/resolve/main/en/chapter10/empty_dataset.png" alt="空のデータセットのスクリーンショット。"/>
 
-次に、アノテーション対象のレコード、つまりデータセットの行を追加する必要があります。そのためには、データをレコードとして記録（log）し、Hub のデータセットと Argilla のデータセットで名前が異なる要素についてはマッピングを指定します。
+次に、アノテーション対象のレコード、つまりデータセットの行を追加する必要があります。そのためには、データをレコードとして登録（log）し、Hub のデータセットと Argilla のデータセットで名前が異なる要素についてはマッピングを指定します。
 
 ```python
 dataset.records.log(data, mapping={"label_text": "label"})
@@ -101,7 +101,7 @@ dataset.records.log(data, mapping={"label_text": "label"})
 
 このマッピングでは、データセットの `label_text` 列を、名前が `label` の質問に対応付けています。こうすることで、データセットに既にあるラベルを事前アノテーションとして使い、より速くアノテーションできます。
 
-レコードの記録が続いている間も、Argilla の UI でデータセットの作業を始められます。この時点では、次のような表示になっているはずです。
+レコードの登録処理が進んでいる間でも、Argilla の UI でデータセットの作業を開始できます。この時点では、次のような表示になっているはずです。
 
 <img src="https://huggingface.co/datasets/huggingface-course/documentation-images/resolve/main/en/chapter10/argilla_initial_dataset.png" alt="Argilla 上のデータセットのスクリーンショット。"/>
 

@@ -31,7 +31,7 @@ client = rg.Argilla(
 dataset = client.datasets(name="ag_news")
 ```
 
-データセットを読み込んで `dataset.records` でそのレコードを取得すれば、自分の目的やパイプラインでデータセットとレコードを使い始めるには十分です。ただしここでは、レコードのフィルタリングや、データセットの Hugging Face Hub へのエクスポートといった任意の操作もいくつか学びます。
+データセットを読み込み、`dataset.records` でレコードを取得すれば、そのデータを独自の処理やパイプラインで利用できます。ただしここでは、レコードのフィルタリングや、データセットの Hugging Face Hub へのエクスポートといった任意の操作もいくつか学びます。
 
 ## データセットをフィルタリングする
 
@@ -44,7 +44,7 @@ filtered_records = dataset.records(status_filter)
 ```
 
 >[!TIP]
->⚠️ `completed` ステータスのレコード（タスクの配信設定で設定した送信済みレスポンスの最小数を満たしたレコード）は複数のレスポンスを持つことがあり、各レスポンスのステータスは `submitted`、`draft`、`discarded` のいずれかになり得る点に注意してください。
+>⚠️ `completed` ステータスのレコード（タスクの割り当て設定で設定した送信済みレスポンスの最小数を満たしたレコード）は複数のレスポンスを持つことがあり、各レスポンスのステータスは `submitted`、`draft`、`discarded` のいずれかになり得る点に注意してください。
 
 レコードのクエリとフィルタリングについて詳しくは、[Argilla のドキュメント](https://docs.argilla.io/latest/how_to_guides/query/) を参照してください。
 
@@ -62,7 +62,7 @@ filtered_records.to_datasets().push_to_hub("argilla/ag_news_annotated")
 dataset.to_hub(repo_id="argilla/ag_news_annotated")
 ```
 
-これは、他の人が自分の Argilla インスタンスでデータセットを開きたい場合に便利な選択肢です。設定が自動的に保存されるため、1行のコードでデータセット全体をインポートできます。
+データセット全体をエクスポートしておくと、他の人も各自の Argilla インスタンスに取り込めます。設定が自動的に保存されるため、1行のコードでデータセット全体をインポートできます。
 
 ```python
 dataset = rg.Dataset.from_hub(repo_id="argilla/ag_news_annotated")
