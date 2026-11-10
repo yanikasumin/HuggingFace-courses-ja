@@ -19,7 +19,7 @@
 
 エンコーダモデルは、Transformer モデルのエンコーダだけを使うモデルです。各ステージで、アテンション層は入力文のすべての単語にアクセスできます。これらのモデルは「双方向」のアテンションを持つとよく説明され、*オートエンコーディングモデル*とも呼ばれます。
 
-これらのモデルの事前学習は、通常、与えられた文を何らかの形で壊し（たとえばランダムな単語をマスクするなど）、元の文を見つけたり再構成したりするタスクをモデルに課す、という形で行われます。
+これらのモデルの事前学習は、通常、与えられた文を何らかの形で加工し（たとえばランダムな単語をマスクするなど）、元の文を見つけたり再構成したりするタスクをモデルに課す、という形で行われます。
 
 エンコーダモデルは、文全体の理解が必要なタスクに最も向いています。たとえば、文の分類、固有表現抽出（より一般的には単語の分類）、抽出型質問応答などです。
 
@@ -47,10 +47,10 @@
 
 この系統の代表的なモデルには次のものがあります。
 
-- [Hugging Face SmolLM Series](https://huggingface.co/HuggingFaceTB/SmolLM2-1.7B-Instruct)
-- [Meta's Llama Series](https://huggingface.co/docs/transformers/en/model_doc/llama4)
-- [Google's Gemma Series](https://huggingface.co/docs/transformers/main/en/model_doc/gemma3)
-- [DeepSeek's V3](https://huggingface.co/deepseek-ai/DeepSeek-V3)
+- [Hugging Face の SmolLM シリーズ](https://huggingface.co/HuggingFaceTB/SmolLM2-1.7B-Instruct)
+- [Meta の Llama シリーズ](https://huggingface.co/docs/transformers/en/model_doc/llama4)
+- [Google の Gemma シリーズ](https://huggingface.co/docs/transformers/main/en/model_doc/gemma3)
+- [DeepSeek V3](https://huggingface.co/deepseek-ai/DeepSeek-V3)
 
 ### 現代の大規模言語モデル（LLM）
 
@@ -161,7 +161,7 @@
 
 ### LSHアテンション
 
-[Reformer](https://huggingface.co/docs/transformers/model_doc/reformer) は LSHアテンションを使います。softmax(QK^t) において、行列 QK^t の要素のうち実際に有用な寄与をするのは（softmax の次元で）大きな要素だけです。そこで、Q の各クエリ q に対して、q に近い K のキー k だけを考えればよくなります。q と k が近いかどうかは、ハッシュ関数を使って判定します。アテンションマスクは、現在のトークンをマスクするように変更されます（先頭の位置を除く）。現在のトークンはクエリとキーが等しくなり（つまり非常によく似て）しまうためです。ハッシュには多少のランダム性があるため、実際には複数のハッシュ関数を使い（n_rounds パラメータで決まります）、その結果を平均します。
+[Reformer](https://huggingface.co/docs/transformers/model_doc/reformer) は LSHアテンションを使います。softmax(QK^t) では、行列 QK^t の要素のうち、実際に有用な寄与をするのは大きな要素だけです。そこで、Q の各クエリ q に対して、q に近い K のキー k だけを考えればよくなります。q と k が近いかどうかは、ハッシュ関数を使って判定します。アテンションマスクは、現在のトークンをマスクするように変更されます（先頭の位置を除く）。現在のトークンはクエリとキーが等しくなり（つまり非常によく似て）しまうためです。ハッシュには多少のランダム性があるため、実際には複数のハッシュ関数を使い（n_rounds パラメータで決まります）、その結果を平均します。
 
 ### ローカルアテンション
 

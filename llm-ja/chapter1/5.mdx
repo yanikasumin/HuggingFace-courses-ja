@@ -29,7 +29,7 @@ Transformer はもともと機械翻訳のために設計されましたが、�
 
 ### 言語モデルの仕組み
 
-言語モデルは、周囲の単語の文脈が与えられたときに、ある単語が現れる確率を予測するよう訓練されることで機能します。これにより、ほかのタスクにも応用できる、言語についての基礎的な理解が得られます。
+言語モデルは、周囲の単語から得られる文脈をもとに、ある単語が現れる確率を予測するように学習します。これにより、ほかのタスクにも応用できる、言語についての基礎的な理解が得られます。
 
 Transformer モデルの訓練方法には、主に2つのアプローチがあります。
 
@@ -47,7 +47,7 @@ Transformers ライブラリでは、言語モデルは一般に次の3つのア
 
 3. **エンコーダ・デコーダモデル**（T5、BART など）: これらのモデルは両方のアプローチを組み合わせたもので、エンコーダで入力を理解し、デコーダで出力を生成します。翻訳、要約、質問応答のようなシーケンス・ツー・シーケンスのタスクが得意です。
 
-![transformer-models-for-language](https://huggingface.co/datasets/huggingface-course/documentation-images/resolve/main/en/chapter1/transformers_architecture.png)
+![言語モデルに用いられる Transformer の主なアーキテクチャ](https://huggingface.co/datasets/huggingface-course/documentation-images/resolve/main/en/chapter1/transformers_architecture.png)
 
 前のセクションで触れたように、言語モデルは通常、大量のテキストデータで自己教師あり学習（人手のアノテーションなし）により事前学習され、その後、特定のタスク向けにファインチューニングされます。転移学習として知られるこのアプローチにより、モデルは比較的少量のタスク固有データで、さまざまな NLP タスクに適応できます。
 
@@ -116,9 +116,9 @@ GPT-2 の事前学習の目的は、完全に[因果言語モデリング](https
 
 ### 要約
 
-要約とは、重要な情報と意味を保ちながら、長いテキストを短い版に凝縮することです。
+要約とは、重要な情報と意味を保ちながら、長いテキストを短い文章にまとめることです。
 
-[BART](https://huggingface.co/docs/transformers/model_doc/bart) や [T5](model_doc/t5) のようなエンコーダ・デコーダモデルは、要約タスクのシーケンス・ツー・シーケンスのパターン向けに設計されています。このセクションでは BART の仕組みを説明し、最後に T5 のファインチューニングに挑戦してもらいます。
+[BART](https://huggingface.co/docs/transformers/model_doc/bart) や [T5](model_doc/t5) のようなエンコーダ・デコーダモデルは、入力された文章から要約文を生成する、シーケンス・ツー・シーケンス型のタスクに適しています。このセクションでは BART の仕組みを説明し、最後に T5 のファインチューニングに挑戦してもらいます。
 
 <div class="flex justify-center">
     <img src="https://huggingface.co/datasets/huggingface/documentation-images/resolve/main/bart_architecture.png"/>
@@ -153,7 +153,7 @@ Transformer はテキストに限ったものではありません。音声、�
 
 まず、Transformer モデルが音声データをどう扱うのかを見ていきましょう。音声には、テキストや画像とは異なる独特の難しさがあります。
 
-[Whisper](https://huggingface.co/docs/transformers/main/en/model_doc/whisper) は、68万時間分のラベル付き音声データで事前学習されたエンコーダ・デコーダ（シーケンス・ツー・シーケンス）型の Transformer です。これだけの量の事前学習データのおかげで、英語や他の多くの言語の音声タスクでゼロショットの性能を発揮できます。デコーダにより、Whisper はエンコーダが学習した音声表現を、追加のファインチューニングなしに、テキストのような有用な出力へ変換できます。Whisper はそのままの状態で動作します。
+[Whisper](https://huggingface.co/docs/transformers/main/en/model_doc/whisper) は、68万時間分のラベル付き音声データで事前学習されたエンコーダ・デコーダ（シーケンス・ツー・シーケンス）型の Transformer です。これだけの量の事前学習データのおかげで、英語や他の多くの言語の音声タスクでゼロショットの性能を発揮できます。デコーダにより、Whisper はエンコーダが学習した音声表現を、追加のファインチューニングなしに、テキストのような有用な出力へ変換できます。つまり、Whisper は追加学習なしでもすぐに利用できます。
 
 <div class="flex justify-center">
     <img src="https://huggingface.co/datasets/huggingface-course/documentation-images/resolve/main/en/chapter1/whisper_architecture.png"/>
@@ -187,7 +187,7 @@ transcriber = pipeline(
     task="automatic-speech-recognition", model="openai/whisper-base.en"
 )
 transcriber("https://huggingface.co/datasets/Narsil/asr_dummy/resolve/main/mlk.flac")
-# Output: {'text': ' I have a dream that one day this nation will rise up and live out the true meaning of its creed.'}
+# 出力: {'text': ' I have a dream that one day this nation will rise up and live out the true meaning of its creed.'}
 ```
 
 自動音声認識を試してみたくなりましたか？Whisper をファインチューニングして推論に使う方法は、[自動音声認識ガイド](https://huggingface.co/docs/transformers/tasks/asr)で詳しく解説しています！
@@ -212,7 +212,7 @@ ViT と ConvNeXT は画像分類によく使われますが、物体検出、セ
 
 ViT と ConvNeXT はどちらも画像分類に使えます。主な違いは、ViT がアテンション機構を使うのに対し、ConvNeXT は畳み込みを使う点です。
 
-[ViT](https://huggingface.co/docs/transformers/model_doc/vit) は、畳み込みを完全に排除し、純粋な Transformer アーキテクチャに置き換えたものです。オリジナルの Transformer に馴染みがあれば、ViT を理解するまでの道のりの大半はすでに終えています。
+[ViT](https://huggingface.co/docs/transformers/model_doc/vit) は、畳み込みを完全に排除し、純粋な Transformer アーキテクチャに置き換えたものです。オリジナルの Transformer に馴染みがあれば、ViT を理解する下地はほぼ整っています。
 
 <div class="flex justify-center">
     <img src="https://huggingface.co/datasets/huggingface/documentation-images/resolve/main/transformers/model_doc/vit_architecture.jpg"/>
@@ -224,7 +224,7 @@ ViT が導入した主な変更点は、画像を Transformer に入力する方
 
 2. BERT と同様に、*学習可能な埋め込み* である特別な `[CLS]` トークンが、パッチ埋め込みの先頭に追加されます。`[CLS]` トークンの最終隠れ状態が、接続された分類ヘッドへの入力として使われ、他の出力は無視されます。このトークンは、モデルが画像の表現をエンコードする方法を学習する助けになります。
 
-3. パッチ埋め込みと学習可能な埋め込みに最後に追加されるのが *位置埋め込み* です。モデルには画像パッチの順序が分からないためです。位置埋め込みも学習可能で、パッチ埋め込みと同じサイズを持ちます。最後に、すべての埋め込みが Transformer エンコーダに渡されます。
+3. 最後に、パッチ埋め込みと学習可能な埋め込みに *位置埋め込み* を加えます。モデルには画像パッチの順序が分からないためです。位置埋め込みも学習可能で、パッチ埋め込みと同じサイズを持ちます。最後に、すべての埋め込みが Transformer エンコーダに渡されます。
 
 4. 出力のうち、具体的には `[CLS]` トークンを含む出力だけが、多層パーセプトロンヘッド（MLP）に渡されます。ViT の事前学習の目的はシンプルに分類です。他の分類ヘッドと同様に、MLP ヘッドは出力をクラスラベルに対するロジットに変換し、クロスエントロピー損失を計算して、最も可能性の高いクラスを求めます。
 
