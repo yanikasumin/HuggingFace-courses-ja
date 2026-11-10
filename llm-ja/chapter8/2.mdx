@@ -1,0 +1,355 @@
+# エラーが出たときにすること[[what-to-do-when-you-get-an-error]]
+
+<CourseFloatingBanner chapter={8}
+  classNames="absolute z-10 right-0 top-0"
+  notebooks={[
+    {label: "Google Colab", value: "https://colab.research.google.com/github/huggingface/notebooks/blob/master/course/en/chapter8/section2.ipynb"},
+    {label: "Aws Studio", value: "https://studiolab.sagemaker.aws/import/github/huggingface/notebooks/blob/master/course/en/chapter8/section2.ipynb"},
+]} />
+
+このセクションでは、チューニングしたての Transformer モデルで予測を生成しようとしたときに起こりうる、よくあるエラーを見ていきます。これは、学習フェーズ自体のデバッグ方法を探る[セクション4](/course/chapter8/section4)への準備になります。
+
+<Youtube id="DQ-CpJn6Rc4"/>
+
+このセクション用に[テンプレートのモデルリポジトリ](https://huggingface.co/lewtun/distilbert-base-uncased-finetuned-squad-d5716d28)を用意しました。この章のコードを実行したい場合は、まずモデルを [Hugging Face Hub](https://huggingface.co) 上の自分のアカウントにコピーする必要があります。そのためには、まず Jupyter ノートブックで次を実行するか、
+
+```python
+from huggingface_hub import notebook_login
+
+notebook_login()
+```
+
+お好みのターミナルで次を実行してログインします。
+
+```bash
+huggingface-cli login
+```
+
+するとユーザー名とパスワードの入力を求められ、トークンが *~/.cache/huggingface/* の下に保存されます。ログインしたら、次の関数でテンプレートリポジトリをコピーできます。
+
+```python
+from distutils.dir_util import copy_tree
+from huggingface_hub import Repository, snapshot_download, create_repo, get_full_repo_name
+
+
+def copy_repository_template():
+    # リポジトリをクローンし、ローカルパスを取り出す
+    template_repo_id = "lewtun/distilbert-base-uncased-finetuned-squad-d5716d28"
+    commit_hash = "be3eaffc28669d7932492681cd5f3e8905e358b4"
+    template_repo_dir = snapshot_download(template_repo_id, revision=commit_hash)
+    # Hub 上に空のリポジトリを作成する
+    model_name = template_repo_id.split("/")[1]
+    create_repo(model_name, exist_ok=True)
+    # 空のリポジトリをクローンする
+    new_repo_id = get_full_repo_name(model_name)
+    new_repo_dir = model_name
+    repo = Repository(local_dir=new_repo_dir, clone_from=new_repo_id)
+    # ファイルをコピーする
+    copy_tree(template_repo_dir, new_repo_dir)
+    # Hub にプッシュする
+    repo.push_to_hub()
+```
+
+これで、`copy_repository_template()` を呼び出すと、テンプレートリポジトリのコピーが自分のアカウントの下に作成されます。
+
+## 🤗 Transformers の pipeline をデバッグする[[debugging-the-pipeline-from-transformers]]
+
+Transformer モデルのデバッグという素晴らしい世界への旅の出発点として、次のような場面を考えてみましょう。あなたは同僚と、eコマースサイトの顧客が消費財についての答えを見つけられるよう支援する、質問応答プロジェクトに取り組んでいます。同僚から次のようなメッセージが届きます。
+
+> やあ！Hugging Face コースの [Chapter 7](/course/chapter7/7) のテクニックを使って実験してみたら、SQuAD でかなり良い結果が出たよ！このモデルをプロジェクトの出発点にできると思う。Hub 上のモデル ID は "lewtun/distillbert-base-uncased-finetuned-squad-d5716d28" だよ。気軽に試してみて :)
+
+そして、まず思いつくのは、🤗 Transformers の `pipeline` を使ってモデルを読み込むことです。
+
+```python
+from transformers import pipeline
+
+model_checkpoint = get_full_repo_name("distillbert-base-uncased-finetuned-squad-d5716d28")
+reader = pipeline("question-answering", model=model_checkpoint)
+```
+
+```python out
+"""
+OSError: Can't load config for 'lewtun/distillbert-base-uncased-finetuned-squad-d5716d28'. Make sure that:
+
+- 'lewtun/distillbert-base-uncased-finetuned-squad-d5716d28' is a correct model identifier listed on 'https://huggingface.co/models'
+
+- or 'lewtun/distillbert-base-uncased-finetuned-squad-d5716d28' is the correct path to a directory containing a config.json file
+"""
+```
+
+ああ、何か問題が起きたようです。プログラミングの初心者にとって、この手のエラーは最初は少し不可解に見えるかもしれません（そもそも `OSError` って何でしょう？）。ここに表示されているエラーは、_Python トレースバック_（スタックトレースともいいます）と呼ばれる、はるかに大きなエラーレポートの最後の部分にすぎません。たとえば、このコードを Google Colab で実行していれば、次のスクリーンショットのようなものが表示されるはずです。
+
+<div class="flex justify-center">
+<img src="https://huggingface.co/datasets/huggingface-course/documentation-images/resolve/main/en/chapter8/traceback.png" alt="Python のトレースバック。" width="100%"/>
+</div>
+
+これらのレポートには大量の情報が含まれているので、重要な部分を一緒にたどっていきましょう。まず注意すべきは、トレースバックは_下から上へ_読むということです。英語のテキストを上から下へ読むのに慣れていると奇妙に聞こえるかもしれませんが、これは、トレースバックが `pipeline` がモデルとトークナイザをダウンロードするときに行う関数呼び出しの順序を示しているためです（`pipeline` が裏側でどう動くかの詳細は [Chapter 2](/course/chapter2) を参照してください）。
+
+> [!TIP]
+> 🚨 Google Colab のトレースバックで "6 frames" の周りにある青いボックスが見えますか？これは Colab の特殊な機能で、トレースバックを「フレーム」に圧縮します。エラーの発生源が見つからない場合は、小さな2つの矢印をクリックしてトレースバック全体を展開してください。
+
+つまり、トレースバックの最後の行が、最後のエラーメッセージを示し、発生した例外の名前を与えてくれます。今回の場合、例外の種類は `OSError` で、システム関連のエラーを示しています。付随するエラーメッセージを読むと、モデルの *config.json* ファイルに問題があるようで、修正方法として2つの提案が示されています。
+
+```python out
+"""
+Make sure that:
+
+- 'lewtun/distillbert-base-uncased-finetuned-squad-d5716d28' is a correct model identifier listed on 'https://huggingface.co/models'
+
+- or 'lewtun/distillbert-base-uncased-finetuned-squad-d5716d28' is the correct path to a directory containing a config.json file
+"""
+```
+
+> [!TIP]
+> 💡 理解しにくいエラーメッセージに遭遇したら、そのメッセージを Google や [Stack Overflow](https://stackoverflow.com/) の検索バーにコピー＆ペーストしてください（本当に、それでよいのです！）。そのエラーに遭遇した最初の人である可能性は低く、これはコミュニティの他の人が投稿した解決策を見つけるよい方法です。たとえば、Stack Overflow で `OSError: Can't load config for` を検索すると、問題解決の出発点として使えそうな[検索結果](https://stackoverflow.com/search?q=OSError%3A+Can%27t+load+config+for+)がいくつか得られます。
+
+最初の提案は、モデル ID が本当に正しいかどうかを確認することです。そこでまず、その識別子をコピーして Hub の検索バーに貼り付けます。
+
+<div class="flex justify-center">
+<img src="https://huggingface.co/datasets/huggingface-course/documentation-images/resolve/main/en/chapter8/wrong-model-id.png" alt="間違ったモデル名。" width="100%"/>
+</div>
+
+うーん、同僚のモデルはどうやら Hub にないようです……あっ、モデル名にタイプミスがあります。DistilBERT の名前には "l" は1つだけです。修正して、代わりに "lewtun/distilbert-base-uncased-finetuned-squad-d5716d28" を探してみましょう。
+
+<div class="flex justify-center">
+<img src="https://huggingface.co/datasets/huggingface-course/documentation-images/resolve/main/en/chapter8/true-model-id.png" alt="正しいモデル名。" width="100%"/>
+</div>
+
+よし、ヒットしました。今度は正しいモデル ID でモデルをもう一度ダウンロードしてみましょう。
+
+```python
+model_checkpoint = get_full_repo_name("distilbert-base-uncased-finetuned-squad-d5716d28")
+reader = pipeline("question-answering", model=model_checkpoint)
+```
+
+```python out
+"""
+OSError: Can't load config for 'lewtun/distilbert-base-uncased-finetuned-squad-d5716d28'. Make sure that:
+
+- 'lewtun/distilbert-base-uncased-finetuned-squad-d5716d28' is a correct model identifier listed on 'https://huggingface.co/models'
+
+- or 'lewtun/distilbert-base-uncased-finetuned-squad-d5716d28' is the correct path to a directory containing a config.json file
+"""
+```
+
+ああ、また失敗です。機械学習エンジニアの日常へようこそ。モデル ID は修正したので、問題はリポジトリ自体にあるはずです。🤗 Hub 上のリポジトリの内容にすばやくアクセスする方法として、`huggingface_hub` ライブラリの `list_repo_files()` 関数があります。
+
+```python
+from huggingface_hub import list_repo_files
+
+list_repo_files(repo_id=model_checkpoint)
+```
+
+```python out
+['.gitattributes', 'README.md', 'pytorch_model.bin', 'special_tokens_map.json', 'tokenizer_config.json', 'training_args.bin', 'vocab.txt']
+```
+
+興味深いことに、リポジトリには *config.json* ファイルが見当たりません。`pipeline` がモデルを読み込めなかったのも無理はありません。同僚が、ファインチューニング後にこのファイルを Hub にプッシュし忘れたのでしょう。この場合、問題の修正はかなり単純そうです。同僚にファイルを追加してもらうか、モデル ID から、使用された事前学習済みモデルが [`distilbert-base-uncased`](https://huggingface.co/distilbert-base-uncased) だと分かるので、このモデルの設定をダウンロードして自分のリポジトリにプッシュし、問題が解決するか試すことができます。やってみましょう。[Chapter 2](/course/chapter2) で学んだテクニックを使えば、`AutoConfig` クラスでモデルの設定をダウンロードできます。
+
+```python
+from transformers import AutoConfig
+
+pretrained_checkpoint = "distilbert-base-uncased"
+config = AutoConfig.from_pretrained(pretrained_checkpoint)
+```
+
+> [!WARNING]
+> 🚨 ここで取るアプローチは万全ではありません。同僚がファインチューニングの前に `distilbert-base-uncased` の設定を調整していた可能性があるからです。実際には、まず同僚に確認したいところですが、このセクションでは、デフォルトの設定を使ったものと仮定します。
+
+次に、設定の `push_to_hub()` 関数を使って、これをモデルリポジトリにプッシュできます。
+
+```python
+config.push_to_hub(model_checkpoint, commit_message="Add config.json")
+```
+
+これで、`main` ブランチの最新コミットからモデルを読み込んで、うまくいったかどうかをテストできます。
+
+```python
+reader = pipeline("question-answering", model=model_checkpoint, revision="main")
+
+context = r"""
+Extractive Question Answering is the task of extracting an answer from a text
+given a question. An example of a question answering dataset is the SQuAD
+dataset, which is entirely based on that task. If you would like to fine-tune a
+model on a SQuAD task, you may leverage the
+examples/pytorch/question-answering/run_squad.py script.
+
+🤗 Transformers is interoperable with the PyTorch, TensorFlow, and JAX
+frameworks, so you can use your favourite tools for a wide variety of tasks!
+"""
+
+question = "What is extractive question answering?"
+reader(question=question, context=context)
+```
+
+```python out
+{'score': 0.38669535517692566,
+ 'start': 34,
+ 'end': 95,
+ 'answer': 'the task of extracting an answer from a text given a question'}
+```
+
+やりました、うまくいきました。ここで学んだことをまとめましょう。
+
+- Python のエラーメッセージは_トレースバック_と呼ばれ、下から上へ読みます。エラーメッセージの最後の行には通常、問題の発生源を特定するのに必要な情報が含まれています。
+- 最後の行に十分な情報がない場合は、トレースバックを上にたどって、ソースコードのどこでエラーが起きているか特定できないか見てみましょう。
+- どのエラーメッセージも問題のデバッグに役立たない場合は、似た問題への解決策をオンラインで探してみましょう。
+- `huggingface_hub` 
+// 🤗 Hub?
+ライブラリには、Hub 上のリポジトリを操作したりデバッグしたりするために使えるツールが一式そろっています。
+
+pipeline のデバッグ方法が分かったところで、モデル自体のフォワードパスという、より厄介な例を見てみましょう。
+
+## モデルのフォワードパスをデバッグする[[debugging-the-forward-pass-of-your-model]]
+
+`pipeline` は、予測を手早く生成したいほとんどの用途には最適ですが、モデルのロジットにアクセスしたい場合もあります（たとえば、適用したいカスタムの後処理がある場合など）。この場合に何がうまくいかないかを見るために、まず `pipeline` からモデルとトークナイザを取り出しましょう。
+
+```python
+tokenizer = reader.tokenizer
+model = reader.model
+```
+
+次に質問が必要なので、お気に入りのフレームワークがサポートされているか見てみましょう。
+
+```python
+question = "Which frameworks can I use?"
+```
+
+[Chapter 7](/course/chapter7) で見たように、通常必要な手順は、入力をトークン化し、開始トークンと終了トークンのロジットを取り出し、答えの範囲をデコードすることです。
+
+```python
+import torch
+
+inputs = tokenizer(question, context, add_special_tokens=True)
+input_ids = inputs["input_ids"][0]
+outputs = model(**inputs)
+answer_start_scores = outputs.start_logits
+answer_end_scores = outputs.end_logits
+# スコアの argmax で、答えの開始位置として最も可能性の高いものを得る
+answer_start = torch.argmax(answer_start_scores)
+# スコアの argmax で、答えの終了位置として最も可能性の高いものを得る
+answer_end = torch.argmax(answer_end_scores) + 1
+answer = tokenizer.convert_tokens_to_string(
+    tokenizer.convert_ids_to_tokens(input_ids[answer_start:answer_end])
+)
+print(f"Question: {question}")
+print(f"Answer: {answer}")
+```
+
+```python out
+"""
+---------------------------------------------------------------------------
+AttributeError                            Traceback (most recent call last)
+/var/folders/28/k4cy5q7s2hs92xq7_h89_vgm0000gn/T/ipykernel_75743/2725838073.py in <module>
+      1 inputs = tokenizer(question, text, add_special_tokens=True)
+      2 input_ids = inputs["input_ids"]
+----> 3 outputs = model(**inputs)
+      4 answer_start_scores = outputs.start_logits
+      5 answer_end_scores = outputs.end_logits
+
+~/miniconda3/envs/huggingface/lib/python3.8/site-packages/torch/nn/modules/module.py in _call_impl(self, *input, **kwargs)
+   1049         if not (self._backward_hooks or self._forward_hooks or self._forward_pre_hooks or _global_backward_hooks
+   1050                 or _global_forward_hooks or _global_forward_pre_hooks):
+-> 1051             return forward_call(*input, **kwargs)
+   1052         # Do not call functions when jit is used
+   1053         full_backward_hooks, non_full_backward_hooks = [], []
+
+~/miniconda3/envs/huggingface/lib/python3.8/site-packages/transformers/models/distilbert/modeling_distilbert.py in forward(self, input_ids, attention_mask, head_mask, inputs_embeds, start_positions, end_positions, output_attentions, output_hidden_states, return_dict)
+    723         return_dict = return_dict if return_dict is not None else self.config.use_return_dict
+    724
+--> 725         distilbert_output = self.distilbert(
+    726             input_ids=input_ids,
+    727             attention_mask=attention_mask,
+
+~/miniconda3/envs/huggingface/lib/python3.8/site-packages/torch/nn/modules/module.py in _call_impl(self, *input, **kwargs)
+   1049         if not (self._backward_hooks or self._forward_hooks or self._forward_pre_hooks or _global_backward_hooks
+   1050                 or _global_forward_hooks or _global_forward_pre_hooks):
+-> 1051             return forward_call(*input, **kwargs)
+   1052         # Do not call functions when jit is used
+   1053         full_backward_hooks, non_full_backward_hooks = [], []
+
+~/miniconda3/envs/huggingface/lib/python3.8/site-packages/transformers/models/distilbert/modeling_distilbert.py in forward(self, input_ids, attention_mask, head_mask, inputs_embeds, output_attentions, output_hidden_states, return_dict)
+    471             raise ValueError("You cannot specify both input_ids and inputs_embeds at the same time")
+    472         elif input_ids is not None:
+--> 473             input_shape = input_ids.size()
+    474         elif inputs_embeds is not None:
+    475             input_shape = inputs_embeds.size()[:-1]
+
+AttributeError: 'list' object has no attribute 'size'
+"""
+```
+
+ああ、コードにバグがあるようです。でも、少しのデバッグは怖くありません。ノートブックでは Python デバッガを使うことができます。
+
+<Youtube id="rSPyvPw0p9k"/>
+
+ターミナルでも使えます。
+
+<Youtube id="5PkZ4rbHL6c"/>
+
+ここでエラーメッセージを読むと、`'list' object has no attribute 'size'` とあり、`model(**inputs)` の問題が発生した行を指す `-->` 矢印が見えます。Python デバッガを使って対話的にデバッグすることもできますが、ここでは単に `inputs` の一部を出力して、中身を見てみましょう。
+
+```python
+inputs["input_ids"][:5]
+```
+
+```python out
+[101, 2029, 7705, 2015, 2064]
+```
+
+これは確かに普通の Python の `list` のように見えますが、型を再確認しましょう。
+
+```python
+type(inputs["input_ids"])
+```
+
+```python out
+list
+```
+
+はい、間違いなく Python の `list` です。では、何がうまくいかなかったのでしょう。[Chapter 2](/course/chapter2) で思い出すと、🤗 Transformers の `AutoModelForXxx` クラスは_テンソル_（PyTorch か TensorFlow の）を対象に動作し、よくある操作として、たとえば PyTorch では `Tensor.size()` を使ってテンソルの次元を取り出します。トレースバックをもう一度見て、例外を引き起こした行を確認しましょう。
+
+```
+~/miniconda3/envs/huggingface/lib/python3.8/site-packages/transformers/models/distilbert/modeling_distilbert.py in forward(self, input_ids, attention_mask, head_mask, inputs_embeds, output_attentions, output_hidden_states, return_dict)
+    471             raise ValueError("You cannot specify both input_ids and inputs_embeds at the same time")
+    472         elif input_ids is not None:
+--> 473             input_shape = input_ids.size()
+    474         elif inputs_embeds is not None:
+    475             input_shape = inputs_embeds.size()[:-1]
+
+AttributeError: 'list' object has no attribute 'size'
+```
+
+どうやらコードは `input_ids.size()` を呼び出そうとしたようですが、これはただのコンテナである Python の `list` では明らかにうまくいきません。この問題をどう解決すればよいでしょうか。エラーメッセージを Stack Overflow で検索すると、関連する[検索結果](https://stackoverflow.com/search?q=AttributeError%3A+%27list%27+object+has+no+attribute+%27size%27&s=c15ec54c-63cb-481d-a749-408920073e8f)がかなり得られます。最初のものをクリックすると、私たちのものと似た質問が表示され、回答は下のスクリーンショットのとおりです。
+
+<div class="flex justify-center">
+<img src="https://huggingface.co/datasets/huggingface-course/documentation-images/resolve/main/en/chapter8/stack-overflow.png" alt="Stack Overflow の回答。" width="100%"/>
+</div>
+
+回答では、トークナイザに `return_tensors='pt'` を追加することが推奨されています。これがうまくいくか試してみましょう。
+
+```python out
+inputs = tokenizer(question, context, add_special_tokens=True, return_tensors="pt")
+input_ids = inputs["input_ids"][0]
+outputs = model(**inputs)
+answer_start_scores = outputs.start_logits
+answer_end_scores = outputs.end_logits
+# Get the most likely beginning of answer with the argmax of the score
+answer_start = torch.argmax(answer_start_scores)
+# Get the most likely end of answer with the argmax of the score
+answer_end = torch.argmax(answer_end_scores) + 1
+answer = tokenizer.convert_tokens_to_string(
+    tokenizer.convert_ids_to_tokens(input_ids[answer_start:answer_end])
+)
+print(f"Question: {question}")
+print(f"Answer: {answer}")
+```
+
+```python out
+"""
+Question: Which frameworks can I use?
+Answer: pytorch, tensorflow, and jax
+"""
+```
+
+よし、うまくいきました。これは、Stack Overflow がどれほど役立つかを示す良い例です。似た問題を特定できたことで、コミュニティの他の人の経験から恩恵を受けることができました。ただし、このような検索で常に関連する答えが得られるとは限りません。その場合はどうすればよいでしょう。幸い、[Hugging Face フォーラム](https://discuss.huggingface.co/)には、助けてくれる歓迎的な開発者コミュニティがあります。次のセクションでは、回答が得られやすい、よいフォーラムの質問の作り方を見ていきます。

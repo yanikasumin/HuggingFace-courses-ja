@@ -1,0 +1,204 @@
+<!-- DISABLE-FRONTMATTER-SECTIONS -->
+
+# 章末クイズ[[end-of-chapter-quiz]]
+
+<CourseFloatingBanner
+    chapter={8}
+    classNames="absolute z-10 right-0 top-0"
+/>
+
+この章で学んだことをテストしましょう。
+
+### 1. Python のトレースバックはどの順序で読むべきですか？
+
+<Question
+	choices={[
+		{
+			text: "上から下へ",
+			explain: "もう一度考えてみましょう。他の多くのプログラミング言語は例外を先頭に出力しますが、Python はこの点で特殊です。"
+		},
+		{
+			text: "下から上へ",
+			explain: "正解です。Python のトレースバックは例外が一番下に表示されるため、ターミナルで作業しているときに最後の行として目に入り、デバッグしやすいという利点があります。",
+			correct: true
+		}
+	]}
+/>
+
+### 2. 最小再現例とは何ですか？
+
+<Question
+	choices={[
+		{
+			text: "研究論文の Transformer アーキテクチャのシンプルな実装",
+			explain: "Transformer モデルを自分でゼロから実装するのはとても勉強になりますが、ここで話題にしているのはそれではありません。"
+		},
+		{
+			text: "プライベートなファイルやデータへの外部依存なしに実行できる、コンパクトで自己完結したコードブロック",
+			explain: "正解です。最小再現例は、ライブラリのメンテナがあなたの問題を再現する助けになり、解決策をより早く見つけられます。",
+			correct: true
+		},
+		{
+			text: "Python のトレースバックのスクリーンショット",
+			explain: "もう一度考えてみましょう。Issue を起票するときに、直面しているエラーのスクリーンショットを添えたくなるものですが、そうすると他の人がエラーを再現するのが非常に難しくなります。"
+		},
+		{
+			text: "エラーと関係のない部分も含め、分析全体を含むノートブック",
+			explain: "惜しいです。エラーを示す Google Colab ノートブックを共有するのは役に立つこともありますが、短く、関係するコードだけを含むものにしてください。"
+		}
+	]}
+/>
+
+### 3. 次のコードを実行しようとしたところ、エラーが発生したとします。
+
+```py
+from transformers import GPT3ForSequenceClassification
+
+# ImportError: cannot import name 'GPT3ForSequenceClassification' from 'transformers' (/Users/lewtun/miniconda3/envs/huggingface/lib/python3.8/site-packages/transformers/__init__.py)
+# ---------------------------------------------------------------------------
+# ImportError                               Traceback (most recent call last)
+# /var/folders/28/k4cy5q7s2hs92xq7_h89_vgm0000gn/T/ipykernel_30848/333858878.py in <module>
+# ----> 1 from transformers import GPT3ForSequenceClassification
+
+# ImportError: cannot import name 'GPT3ForSequenceClassification' from 'transformers' (/Users/lewtun/miniconda3/envs/huggingface/lib/python3.8/site-packages/transformers/__init__.py)
+```
+
+助けを求めるフォーラムトピックのタイトルとして、よい選択肢はどれですか？
+
+<Question
+	choices={[
+		{
+			text: "<code>ImportError: cannot import name 'GPT3ForSequenceClassification' from 'transformers' (/Users/lewtun/miniconda3/envs/huggingface/lib/python3.8/site-packages/transformers/__init__.py)</code>",
+			explain: "トレースバックの最後の行を含めるのは説明的ではありますが、これはトピックの本文に回すほうがよいでしょう。もう一度考えてみましょう！"
+		},
+		{
+			text: "Problem with <code>from transformers import GPT3ForSequenceClassification</code>",
+			explain: "もう一度考えてみましょう。これも有益な情報ではありますが、おそらく本文に回すのが最適です。",
+		},
+		{
+			text: "Why can't I import <code>GPT3ForSequenceClassification</code>?",
+			explain: "よい選択です。このタイトルは簡潔で、何が問題なのか（つまり、GPT-3 が 🤗 Transformers でサポートされていないこと）について読み手に手がかりを与えます。",
+			correct: true
+		},
+		{
+			text: "Is GPT-3 supported in 🤗 Transformers?",
+			explain: "よい選択です。質問形式のトピックタイトルは、問題をコミュニティに伝える優れた方法です。",
+			correct: true
+		}
+	]}
+/>
+
+### 4. `trainer.train()` を実行しようとしたところ、エラーの発生箇所を正確に教えてくれない不可解なエラーに直面したとします。学習パイプラインでエラーを最初に探すべき場所は次のどれですか？
+
+<Question
+	choices={[
+		{
+			text: "勾配を計算してバックプロパゲーションを実行する最適化ステップ",
+			explain: "オプティマイザにバグがある可能性はありますが、これは通常、学習パイプラインのかなり後のステップなので、まず先に確認すべきことが他にあります。もう一度考えてみましょう！"
+		},
+		{
+			text: "指標を計算する評価ステップ",
+			explain: "評価は通常、1エポック分の学習が終わった後に行うものなので、まず学習パイプラインのもっと早い場所を確認すべきです。",
+		},
+		{
+			text: "データセット",
+			explain: "正解です。データを調べることはほぼ常に最初にすべきことです。テキストが適切にエンコードされているか、期待する特徴を持っているかなどを確認します。",
+			correct: true
+		},
+		{
+			text: "データローダ",
+			explain: "もう一度考えてみましょう。これは最初に確認すべきことに非常に近いです。データローダに渡すオブジェクトは何でしたか？"
+		}
+	]}
+/>
+
+### 5. CUDA エラーをデバッグする最良の方法は何ですか？
+
+<Question
+	choices={[
+		{
+			text: "エラーメッセージをフォーラムや GitHub に投稿する。",
+			explain: "CUDA のエラーメッセージは通常あまり有益な情報を含まないので、それではだれの助けにもなりません。"
+		},
+		{
+			text: "同じコードを CPU で実行する。",
+			explain: "そのとおりです。そうすれば、よりよいエラーメッセージが得られるはずです。",
+			correct: true
+		},
+		{
+			text: "トレースバックを読んでエラーの原因を突き止める。",
+			explain: "それは他のエラーの場合にすることです。CUDA の操作のほとんどは非同期なので、CUDA エラーは通常、発生した場所では発生しません。"
+		},
+		{
+			text: "バッチサイズを減らす。",
+			explain: "バッチサイズを減らすのは、CUDA のメモリ不足エラーに対処するのには通常よい戦略ですが、この問題には当てはまりません。もう一度考えてみましょう！"
+		},
+		{
+			text: "Jupyter カーネルを再起動する。",
+			explain: "もう一度考えてみましょう。カーネルを再起動しても、エラーが魔法のように消えたりはしません。",
+		}
+	]}
+/>
+
+### 6. GitHub の Issue を修正してもらう最良の方法は何ですか？
+
+<Question
+	choices={[
+		{
+			text: "バグの再現例を完全な形で投稿する。",
+			explain: "はい、それがメンテナにあなたのバグを見つけてもらう最良の方法です。他にもすべきことはありますか？",
+			correct: true
+		},
+		{
+			text: "毎日、進捗を尋ねる。",
+			explain: "それで助けが得られる可能性は低く、むしろ無視されるようになるでしょう。",
+		},
+		{
+			text: "バグ周辺のソースコードを調べ、発生する理由を見つけようとする。その結果を Issue に投稿する。",
+			explain: "それは間違いなくメンテナの助けになります。バグの発生源と修正方法が見つかれば、プルリクエストを作成することさえできます。他にもすべきことはありますか？",
+			correct: true
+		}
+	]}
+/>
+
+### 7. 1つのバッチへの過学習が通常よいデバッグ手法なのはなぜですか？
+
+<Question
+	choices={[
+		{
+			text: "そうではありません。過学習は常に悪く、避けるべきです。",
+			explain: "データセット全体で学習する場合、過学習は確かに、モデルが新しいサンプルに汎化しない兆候になりえます。しかしデバッグでは、通常はデータセット全体で学習するわけではありません。もう一度考えてみましょう！"
+		},
+		{
+			text: "モデルが損失をゼロまで下げられることを確認できるからです。",
+			explain: "正解です。サンプルが2つしかないような小さなバッチでも、モデルに学習能力があるかどうかをすばやく確認できます。",
+			correct: true
+		},
+		{
+			text: "入力とラベルのテンソルの形状が正しいことを確認できるからです。",
+			explain: "もう一度考えてみましょう。テンソルの形状がずれていれば、1つのバッチでも学習は確実にできません。",
+		}
+	]}
+/>
+
+### 8. 🤗 Transformers リポジトリで新しい Issue を作成するとき、`transformers-cli env` で計算環境の詳細を含めるのがよい考えなのはなぜですか？
+
+<Question
+	choices={[
+		{
+			text: "メンテナが、あなたが使っているライブラリのバージョンを理解できるからです。",
+			explain: "正解です。ライブラリのメジャーバージョンごとに API に変更がある場合があるため、使っている具体的なバージョンが分かると問題の絞り込みに役立ちます。他の利点は何ですか？",
+			correct: true
+		},
+		{
+			text: "メンテナが、あなたが Windows、macOS、Linux のどれでコードを実行しているか分かるからです。",
+			explain: "正解です。エラーは使用している特定のオペレーティングシステムが原因で発生することがあり、それが分かるとメンテナがローカルで再現する助けになります。ただし、それだけが理由ではありません。",
+			correct: true
+		},
+		{
+			text: "メンテナが、GPU と CPU のどちらでコードを実行しているか分かるからです。",
+			explain: "正解です。この章で見たように、GPU や CPU で実行されるコードは異なる結果やエラーを生むことがあり、使っているハードウェアが分かるとメンテナの注意を集中させる助けになります。ただし、これだけが利点ではありません。",
+			correct: true
+		}
+	]}
+/>

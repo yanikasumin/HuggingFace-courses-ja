@@ -1,0 +1,164 @@
+# フォーラムで助けを求める[[asking-for-help-on-the-forums]]
+
+<CourseFloatingBanner chapter={8}
+  classNames="absolute z-10 right-0 top-0"
+  notebooks={[
+    {label: "Google Colab", value: "https://colab.research.google.com/github/huggingface/notebooks/blob/master/course/en/chapter8/section3.ipynb"},
+    {label: "Aws Studio", value: "https://studiolab.sagemaker.aws/import/github/huggingface/notebooks/blob/master/course/en/chapter8/section3.ipynb"},
+]} />
+
+<Youtube id="S2EEG3JIt2A"/>
+
+[Hugging Face フォーラム](https://discuss.huggingface.co)は、オープンソースチームや Hugging Face コミュニティ全体から助けを得るのに最適な場所です。メインページは、日によって多少の違いはありますが、次のような見た目をしています。
+
+<div class="flex justify-center">
+<img src="https://huggingface.co/datasets/huggingface-course/documentation-images/resolve/main/en/chapter8/forums.png" alt="Hugging Face フォーラム。" width="100%"/>
+</div>
+
+左側には、さまざまなトピックが分類されているカテゴリがすべて表示され、右側には最新のトピックが表示されます。トピックとは、タイトル、カテゴリ、説明を含む投稿のことです。[Chapter 5](/course/chapter5) で自分のデータセットを作ったときに見た GitHub の Issue の形式とよく似ています。名前のとおり、[Beginners](https://discuss.huggingface.co/c/beginners/5) カテゴリは主に、Hugging Face のライブラリやエコシステムを使い始めたばかりの人を対象としています。コードのデバッグであれ、何かのやり方を尋ねるのであれ、どのライブラリについての質問でも歓迎されます（ただし、質問が特定のライブラリに関するものであれば、フォーラムの対応するライブラリカテゴリへ行くのがよいでしょう）。
+
+同様に、[Intermediate](https://discuss.huggingface.co/c/intermediate/6) カテゴリと [Research](https://discuss.huggingface.co/c/research/7) カテゴリは、ライブラリについての高度な質問や、議論したい面白い新しい NLP 研究など、より進んだ質問のためのものです。
+
+そしてもちろん、Hugging Face コースに関する質問なら何でもできる [Course](https://discuss.huggingface.co/c/course/20) カテゴリも紹介しておきましょう。
+
+カテゴリを選んだら、最初のトピックを書く準備は完了です。書き方の[ガイドライン](https://discuss.huggingface.co/t/how-to-request-support/3128)がフォーラムにあります。このセクションでは、よいトピックを構成するいくつかの特徴を見ていきます。
+
+## よいフォーラム投稿の書き方[[writing-a-good-forum-post]]
+
+題材として、カスタムの検索エンジンを作るために、Wikipedia の記事から埋め込みを生成しようとしている場面を考えましょう。いつものように、トークナイザとモデルを次のように読み込みます。
+
+```python
+from transformers import AutoTokenizer, AutoModel
+
+model_checkpoint = "distilbert-base-uncased"
+tokenizer = AutoTokenizer.from_pretrained(model_checkpoint)
+model = AutoModel.from_pretrained(model_checkpoint)
+```
+
+ここで、Transformers（ライブラリではなくフランチャイズのほうです！）に関する [Wikipedia の記事](https://en.wikipedia.org/wiki/Transformers) のセクション全体を埋め込もうとするとします。
+
+```python
+text = """
+Generation One is a retroactive term for the Transformers characters that
+appeared between 1984 and 1993. The Transformers began with the 1980s Japanese
+toy lines Micro Change and Diaclone. They presented robots able to transform
+into everyday vehicles, electronic items or weapons. Hasbro bought the Micro
+Change and Diaclone toys, and partnered with Takara. Marvel Comics was hired by
+Hasbro to create the backstory; editor-in-chief Jim Shooter wrote an overall
+story, and gave the task of creating the characthers to writer Dennis O'Neil.
+Unhappy with O'Neil's work (although O'Neil created the name "Optimus Prime"),
+Shooter chose Bob Budiansky to create the characters.
+
+The Transformers mecha were largely designed by Shōji Kawamori, the creator of
+the Japanese mecha anime franchise Macross (which was adapted into the Robotech
+franchise in North America). Kawamori came up with the idea of transforming
+mechs while working on the Diaclone and Macross franchises in the early 1980s
+(such as the VF-1 Valkyrie in Macross and Robotech), with his Diaclone mechs
+later providing the basis for Transformers.
+
+The primary concept of Generation One is that the heroic Optimus Prime, the
+villainous Megatron, and their finest soldiers crash land on pre-historic Earth
+in the Ark and the Nemesis before awakening in 1985, Cybertron hurtling through
+the Neutral zone as an effect of the war. The Marvel comic was originally part
+of the main Marvel Universe, with appearances from Spider-Man and Nick Fury,
+plus some cameos, as well as a visit to the Savage Land.
+
+The Transformers TV series began around the same time. Produced by Sunbow
+Productions and Marvel Productions, later Hasbro Productions, from the start it
+contradicted Budiansky's backstories. The TV series shows the Autobots looking
+for new energy sources, and crash landing as the Decepticons attack. Marvel
+interpreted the Autobots as destroying a rogue asteroid approaching Cybertron.
+Shockwave is loyal to Megatron in the TV series, keeping Cybertron in a
+stalemate during his absence, but in the comic book he attempts to take command
+of the Decepticons. The TV series would also differ wildly from the origins
+Budiansky had created for the Dinobots, the Decepticon turned Autobot Jetfire
+(known as Skyfire on TV), the Constructicons (who combine to form
+Devastator),[19][20] and Omega Supreme. The Marvel comic establishes early on
+that Prime wields the Creation Matrix, which gives life to machines. In the
+second season, the two-part episode The Key to Vector Sigma introduced the
+ancient Vector Sigma computer, which served the same original purpose as the
+Creation Matrix (giving life to Transformers), and its guardian Alpha Trion.
+"""
+
+inputs = tokenizer(text, return_tensors="pt")
+logits = model(**inputs).logits
+```
+
+```python output
+IndexError: index out of range in self
+```
+
+おっと、問題が発生しました。しかもエラーメッセージは、[セクション2](/course/chapter8/section2)で見たものよりずっと不可解です。トレースバック全体を見てもさっぱり分からないので、Hugging Face フォーラムに助けを求めることにします。トピックはどう組み立てればよいでしょうか。
+
+まず、右上隅にある「New Topic」ボタンをクリックする必要があります（トピックを作成するにはログインが必要です）。
+
+<div class="flex justify-center">
+<img src="https://huggingface.co/datasets/huggingface-course/documentation-images/resolve/main/en/chapter8/forums-new-topic.png" alt="新しいフォーラムトピックを作成する。" width="100%"/>
+</div>
+
+すると、トピックのタイトルを入力し、カテゴリを選択し、内容を作成できる入力画面が表示されます。
+
+<div class="flex justify-center">
+<img src="https://huggingface.co/datasets/huggingface-course/documentation-images/resolve/main/en/chapter8/forum-topic01.png" alt="新しいフォーラムトピックを作成する画面。" width="100%"/>
+</div>
+
+エラーは 🤗 Transformers だけに関係しているようなので、カテゴリにはこれを選びます。問題を説明する最初の試みは、次のようなものになるかもしれません。
+
+<div class="flex justify-center">
+<img src="https://huggingface.co/datasets/huggingface-course/documentation-images/resolve/main/en/chapter8/forum-topic02.png" alt="新しいフォーラムトピックの内容を作成する。" width="100%"/>
+</div>
+
+このトピックには助けが必要なエラーメッセージが含まれていますが、書き方にはいくつか問題があります。
+
+1. タイトルがあまり説明的ではないため、フォーラムを眺めている人は本文も読まなければトピックの内容が分かりません。
+2. 本文には、エラーが_どこから_来ているのか、_どうすれば_再現できるのかの情報が不足しています。
+3. 何人かに直接タグ付けしていて、やや要求の強い口調になっています。
+
+このようなトピックは、速い回答が得られそうにありません（そもそも回答が得られるかどうかも怪しいものです）。では、どうすれば改善できるか見ていきましょう。最初の問題である、よいタイトル選びから始めます。
+
+### 内容の分かるタイトルを付ける[[choosing-a-descriptive-title]]
+
+コードのバグについて助けを求めるときは、タイトルに十分な情報を含めて、他の人が「自分の答えられる質問かどうか」をすばやく判断できるようにするのが、経験則としてよい方法です。今回の例では、発生している例外の名前が分かっており、モデルを呼び出す `model(**inputs)` のフォワードパスで発生しているらしいという手がかりもあります。これを伝えるタイトルとしては、たとえば次のようなものが考えられます。
+
+> Source of IndexError in the AutoModel forward pass?
+
+このタイトルは、バグがどこから来ていると思うかを読み手に伝え、`IndexError` に遭遇したことがある人なら、デバッグ方法を知っている可能性が高いでしょう。もちろんタイトルは自由に付けられますし、次のようなバリエーションでも問題ありません。
+
+> Why does my model produce an IndexError?
+
+説明的なタイトルが決まったので、次は本文の改善を見ていきましょう。
+
+### コードスニペットを整形する[[formatting-your-code-snippets]]
+
+ソースコードを読むのは IDE の中でも十分に大変ですが、プレーンテキストとしてコピー＆ペーストされたものを読むのはさらに大変です。幸い、Hugging Face フォーラムは Markdown をサポートしているので、コードブロックは常時3つのバッククォート（```）で囲んで読みやすくしてください。エラーメッセージをこの方法できれいに整形してみましょう。ついでに、本文を最初のバージョンよりも少し丁寧な文面にします。
+
+<div class="flex justify-center">
+<img src="https://huggingface.co/datasets/huggingface-course/documentation-images/resolve/main/en/chapter8/forum-topic03.png" alt="コードが適切に整形された、改訂版のフォーラムトピック。" width="100%"/>
+</div>
+
+スクリーンショットで分かるように、コードブロックをバッククォートで囲むと、生のテキストが色付けまでされた整形済みコードに変換されます。単一のバッククォートを使えば、`distilbert-base-uncased` のようにインラインの変数を整形することもできます。このトピックはずいぶんよくなりました。運がよければ、エラーの内容を推測できる人がコミュニティにいるかもしれません。ただ、運に頼るのではなく、トレースバックを残酷なほど詳細に全部含めて、相手の作業を楽にしましょう。
+
+### トレースバックを全部載せる[[including-the-full-traceback]]
+
+トレースバックの最後の行だけで自分のコードをデバッグできることが多いため、スペースを「節約」しようとしてトピックにその行だけを載せたくなるものです。善意からではありますが、トレースバックの上部にある情報も非常に役立つため、実際には他の人が問題をデバッグするのを_難しく_してしまいます。ですから、トレースバックは_全部_コピー＆ペーストし、きれいに整形しておくのがよい実践です。トレースバックはかなり長くなることがあるので、ソースコードを説明した後に載せる人もいます。ここでもそうしてみましょう。これでフォーラムトピックは次のようになります。
+
+<div class="flex justify-center">
+<img src="https://huggingface.co/datasets/huggingface-course/documentation-images/resolve/main/en/chapter8/forum-topic04.png" alt="トレースバック全体を含む、フォーラムトピックの例。" width="100%"/>
+</div>
+
+これでずっと有益な情報になりました。注意深い読み手なら、トレースバックの次の行から、問題は長い入力を渡したことが原因らしいと指摘できるかもしれません。
+
+> Token indices sequence length is longer than the specified maximum sequence length for this model (583 > 512).
+
+ただし、エラーを引き起こした実際のコードを示せば、相手はさらに楽になります。次はそれをやってみましょう。
+
+### 再現可能な例を用意する[[providing-a-reproducible-example]]
+
+他人のコードをデバッグしたことがある人なら、たいてい最初に、報告された問題を再現しようとして、トレースバックをたどってエラーの箇所を特定するところから始めたはずです。フォーラムで支援を受ける（あるいは提供する）場合も同じことなので、エラーを再現する小さな例を用意できると本当に助かります。この作業をたどるだけで、半分くらいの場合は何がうまくいっていないのか自分で気づけます。いずれにせよ、この例で欠けているのは、モデルに渡した_入力_を示すことです。それを示すと、次のような完成した例になります。
+
+<div class="flex justify-center">
+<img src="https://huggingface.co/datasets/huggingface-course/documentation-images/resolve/main/en/chapter8/forum-topic05.png" alt="フォーラムトピックの最終版。" width="100%"/>
+</div>
+
+このトピックにはかなりの量の情報が含まれるようになり、コミュニティの注目を集めて有益な回答を得られる可能性がずっと高くなる書き方になっています。これらの基本的なガイドラインがあれば、🤗 Transformers についての質問への答えを見つけるための優れたトピックを作成できます。
+
