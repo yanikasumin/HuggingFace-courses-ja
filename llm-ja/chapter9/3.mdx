@@ -1,0 +1,155 @@
+# `Interface` クラスを理解する[[understanding-the-interface-class]]
+
+<CourseFloatingBanner chapter={9}
+  classNames="absolute z-10 right-0 top-0"
+  notebooks={[
+    {label: "Google Colab", value: "https://colab.research.google.com/github/huggingface/notebooks/blob/master/course/en/chapter9/section3.ipynb"},
+    {label: "Aws Studio", value: "https://studiolab.sagemaker.aws/import/github/huggingface/notebooks/blob/master/course/en/chapter9/section3.ipynb"},
+]} />
+
+このセクションでは、`Interface` クラスを詳しく見て、それを作成するための主要なパラメータを理解します。
+
+## `Interface` の作り方[[how-to-create-an-interface]]
+
+`Interface` クラスには必須パラメータが3つあることに気づくでしょう:
+
+`Interface(fn, inputs, outputs, ...)`
+
+各パラメータは次のとおりです:
+
+  - `fn`: Gradio インターフェースでラップされる予測関数。この関数は1つ以上のパラメータを取り、1つ以上の値を返すことができます
+  - `inputs`: 入力コンポーネントの種類。Gradio には `"image"` や `"mic"` など、多くの組み込みコンポーネントが用意されています。
+  - `outputs`: 出力コンポーネントの種類。こちらも `"image"` や `"label"` など、多くの組み込みコンポーネントが用意されています。
+
+コンポーネントの完全な一覧は、[Gradio のドキュメント](https://gradio.app/docs) を参照してください。各組み込みコンポーネントは、対応するクラスをインスタンス化することでカスタマイズできます。
+
+たとえば、[前のセクション](/course/chapter9/2) で見たように、`inputs` パラメータに `"textbox"` を渡す代わりに、`Textbox(lines=7, label="Prompt")` コンポーネントを渡せば、7行のテキストボックスにラベルを付けられます。
+
+別の例として、今度は `Audio` コンポーネントを使った例を見てみましょう。
+
+## 音声を使ったシンプルな例[[a-simple-example-with-audio]]
+
+前述のとおり、Gradio にはさまざまな入出力が用意されています。
+音声を扱う `Interface` を作ってみましょう。
+
+この例では、音声ファイルを受け取って単に逆再生する、音声入力・音声出力の関数を作ります。
+
+入力には `Audio` コンポーネントを使います。`Audio` コンポーネントでは、音声の `source` として、ユーザーがアップロードするファイルか、ユーザーが声を録音するマイクかを指定できます。ここでは `"microphone"` に設定しましょう。ついでに、`Audio` に "Speak here..." というラベルも付けてみます。
+
+さらに、音声を簡単に「逆再生」できるよう、numpy 配列として受け取りたいので、`"type"` を `"numpy"` に設定します。これにより、入力データは (`sample_rate`, `data`) のタプルとして関数に渡されます。
+
+出力にも `Audio` コンポーネントを使います。これは、サンプルレートと numpy 配列のタプルを、再生可能な音声ファイルとして自動的にレンダリングしてくれます。今回はカスタマイズは不要なので、文字列ショートカットの `"audio"` を使います。
+
+
+```py
+import numpy as np
+import gradio as gr
+
+
+def reverse_audio(audio):
+    sr, data = audio
+    reversed_audio = (sr, np.flipud(data))
+    return reversed_audio
+
+
+mic = gr.Audio(source="microphone", type="numpy", label="Speak here...")
+gr.Interface(reverse_audio, mic, "audio").launch()
+```
+
+上のコードを実行すると、下のようなインターフェースが生成されます（ブラウザがマイクの許可を求めてこない場合は、<a href="https://huggingface.co/spaces/course-demos/audio-reverse" target="_blank">デモを別のタブで開いてください</a>）。
+
+<iframe src="https://course-demos-audio-reverse.hf.space" frameBorder="0" height="250" title="Gradio app" class="container p-0 flex-grow space-iframe" allow="accelerometer; ambient-light-sensor; autoplay; battery; camera; document-domain; encrypted-media; fullscreen; geolocation; gyroscope; layout-animations; legacy-image-formats; magnetometer; microphone; midi; oversized-images; payment; picture-in-picture; publickey-credentials-get; sync-xhr; usb; vr ; wake-lock; xr-spatial-tracking" sandbox="allow-forms allow-modals allow-popups allow-popups-to-escape-sandbox allow-same-origin allow-scripts allow-downloads"></iframe>
+
+これで、自分の声を録音して逆再生で聞けるようになったはずです。不気味ですね 👻！
+
+## 複数の入出力を扱う[[handling-multiple-inputs-and-outputs]]
+
+もっと複雑な、複数の入出力を持つ関数があるとします。下の例の関数は、ドロップダウンのインデックス、スライダーの値、数値を受け取り、音階の音声サンプルを返します。
+
+入力コンポーネントと出力コンポーネントのリストをどのように渡しているか見て、何が起きているか追ってみてください。
+
+ポイントは、次を渡した場合です:
+* 入力コンポーネントのリストを渡すと、各コンポーネントが順番にパラメータに対応します。
+* 出力コンポーネントのリストを渡すと、各コンポーネントが戻り値に対応します。
+
+下のコードスニペットは、3つの入力コンポーネントが `generate_tone()` 関数の3つの引数にどう対応するかを示しています:
+
+```py
+import numpy as np
+import gradio as gr
+
+notes = ["C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"]
+
+
+def generate_tone(note, octave, duration):
+    sr = 48000
+    a4_freq, tones_from_a4 = 440, 12 * (octave - 4) + (note - 9)
+    frequency = a4_freq * 2 ** (tones_from_a4 / 12)
+    duration = int(duration)
+    audio = np.linspace(0, duration, duration * sr)
+    audio = (20000 * np.sin(audio * (2 * np.pi * frequency))).astype(np.int16)
+    return (sr, audio)
+
+
+gr.Interface(
+    generate_tone,
+    [
+        gr.Dropdown(notes, type="index"),
+        gr.Slider(minimum=4, maximum=6, step=1),
+        gr.Number(value=1, label="Duration in seconds"),
+    ],
+    "audio",
+).launch()
+```
+
+<iframe src="https://course-demos-generate-tone.hf.space" frameBorder="0" height="450" title="Gradio app" class="container p-0 flex-grow space-iframe" allow="accelerometer; ambient-light-sensor; autoplay; battery; camera; document-domain; encrypted-media; fullscreen; geolocation; gyroscope; layout-animations; legacy-image-formats; magnetometer; microphone; midi; oversized-images; payment; picture-in-picture; publickey-credentials-get; sync-xhr; usb; vr ; wake-lock; xr-spatial-tracking" sandbox="allow-forms allow-modals allow-popups allow-popups-to-escape-sandbox allow-same-origin allow-scripts allow-downloads"></iframe>
+
+
+### `launch()` メソッド[[the-launch-method]]
+
+これまで `launch()` メソッドを使ってインターフェースを起動してきましたが、それが何をするのかはまだ説明していませんでした。
+
+デフォルトでは、`launch()` メソッドはローカルで動作する Web サーバー上でデモを起動します。Jupyter や Colab のノートブックでコードを実行している場合は、Gradio がデモの GUI をノートブック内に埋め込むので、簡単に使えます。
+
+`launch()` の動作は、さまざまなパラメータでカスタマイズできます:
+
+  - `inline` - Python ノートブック上にインターフェースをインライン表示するかどうか。
+  - `inbrowser` - デフォルトブラウザの新しいタブでインターフェースを自動的に開くかどうか。
+  - `share` - 自分のコンピュータからインターフェースへの公開可能な共有リンクを作成するかどうか。Google ドライブのリンクのようなものです！
+
+`share` パラメータについては、次のセクションで詳しく扱います！
+
+## ✏️ 試してみましょう！[[lets-apply-it]]
+
+**音声認識** モデルのデモができるインターフェースを作りましょう。
+面白くするために、マイク入力とアップロードされたファイルの *どちらでも* 受け付けられるようにします。
+
+いつものように、音声認識モデルは 🤗 Transformers の `pipeline()` 関数で読み込みます。手早く復習したい場合は、[Chapter 1 の該当セクション](/course/chapter1/3) に戻ってください。   次に、音声を処理して文字起こしを返す `transcribe_audio()` 関数を実装します。最後に、この関数を、入力に `Audio` コンポーネント、出力にテキストだけを使った `Interface` でラップします。このアプリケーションのコード全体は次のとおりです:
+
+```py
+from transformers import pipeline
+import gradio as gr
+
+model = pipeline("automatic-speech-recognition")
+
+
+def transcribe_audio(audio):
+    transcription = model(audio)["text"]
+    return transcription
+
+
+gr.Interface(
+    fn=transcribe_audio,
+    inputs=gr.Audio(type="filepath"),
+    outputs="text",
+).launch()
+```
+
+ブラウザがマイクの許可を求めてこない場合は、<a href="https://huggingface.co/spaces/course-demos/audio-reverse" target="_blank">デモを別のタブで開いてください</a>。
+
+<iframe src="https://course-demos-asr.hf.space" frameBorder="0" height="550" title="Gradio app" class="container p-0 flex-grow space-iframe" allow="accelerometer; ambient-light-sensor; autoplay; battery; camera; document-domain; encrypted-media; fullscreen; geolocation; gyroscope; layout-animations; legacy-image-formats; magnetometer; microphone; midi; oversized-images; payment; picture-in-picture; publickey-credentials-get; sync-xhr; usb; vr ; wake-lock; xr-spatial-tracking" sandbox="allow-forms allow-modals allow-popups allow-popups-to-escape-sandbox allow-same-origin allow-scripts allow-downloads"></iframe>
+
+
+これだけです！このインターフェースで音声を文字起こしできるようになりました。ここでは `optional` パラメータに `True` を渡すことで、ユーザーがマイクと音声ファイルのどちらかを提供できるようにしています（どちらも提供しない場合はエラーメッセージが返ります）。
+
+インターフェースを他の人と共有する方法は、このまま読み進めてください！

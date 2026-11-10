@@ -1,0 +1,235 @@
+# Gradio Blocks 入門[[introduction-to-gradio-blocks]]
+
+<CourseFloatingBanner chapter={9}
+  classNames="absolute z-10 right-0 top-0"
+  notebooks={[
+    {label: "Google Colab", value: "https://colab.research.google.com/github/huggingface/notebooks/blob/master/course/en/chapter9/section7.ipynb"},
+    {label: "Aws Studio", value: "https://studiolab.sagemaker.aws/import/github/huggingface/notebooks/blob/master/course/en/chapter9/section7.ipynb"},
+]} />
+
+これまでのセクションでは、`Interface` クラスを使ってデモを探索し、作成してきました。このセクションでは、**新しく開発された** 低レベル API、`gradio.Blocks` を紹介します。
+
+では、`Interface` と `Blocks` の違いは何でしょうか？
+
+- ⚡ `Interface`: 高レベル API。入出力のリストを与えるだけで、本格的な機械学習デモを作成できます。
+
+- 🧱 `Blocks`: 低レベル API。アプリケーションのデータフローとレイアウトを完全に制御できます。`Blocks`（「積み木」という意味）を使えば、非常に複雑な複数ステップのアプリケーションも構築できます。
+
+
+### なぜ Blocks 🧱 なのか？[[why-blocks-]]
+
+これまでのセクションで見たように、`Interface` クラスを使えば、わずか数行のコードで本格的な機械学習デモを簡単に作れます。`Interface` API は非常に使いやすい一方で、`Blocks` API のような柔軟性はありません。たとえば、次のようなことがしたくなるかもしれません:
+
+- 関連するデモを、1つの Web アプリケーション内の複数タブとしてまとめる
+- デモのレイアウトを変更する（例: 入力と出力の配置場所を指定する）
+- あるモデルの出力が次のモデルの入力になるような複数ステップのインターフェースや、より柔軟なデータフロー全般
+- ユーザーの入力に応じて、コンポーネントのプロパティ（例: ドロップダウンの選択肢）や表示/非表示を変更する
+
+これらすべての概念を、以下で探っていきます。
+
+### Blocks を使ってシンプルなデモを作る[[creating-a-simple-demo-using-blocks]]
+
+Gradio をインストールしたら、下のコードを Python スクリプト、Jupyter ノートブック、Colab ノートブックのいずれかで実行してください。
+
+```py
+import gradio as gr
+
+
+def flip_text(x):
+    return x[::-1]
+
+
+demo = gr.Blocks()
+
+with demo:
+    gr.Markdown(
+        """
+    # Flip Text!
+    Start typing below to see the output.
+    """
+    )
+    input = gr.Textbox(placeholder="Flip this text")
+    output = gr.Textbox()
+
+    input.change(fn=flip_text, inputs=input, outputs=output)
+
+demo.launch()
+```
+
+<iframe src="https://course-demos-flip-text.hf.space" frameBorder="0" height="400" title="Gradio app" class="container p-0 flex-grow space-iframe" allow="accelerometer; ambient-light-sensor; autoplay; battery; camera; document-domain; encrypted-media; fullscreen; geolocation; gyroscope; layout-animations; legacy-image-formats; magnetometer; microphone; midi; oversized-images; payment; picture-in-picture; publickey-credentials-get; sync-xhr; usb; vr ; wake-lock; xr-spatial-tracking" sandbox="allow-forms allow-modals allow-popups allow-popups-to-escape-sandbox allow-same-origin allow-scripts allow-downloads"></iframe>
+
+上のシンプルな例は、Blocks の基礎となる4つの概念を紹介しています:
+
+1. Blocks では、`with gradio.Blocks` コンテキストの中で Python のオブジェクトをインスタンス化するだけで、Markdown、HTML、ボタン、インタラクティブなコンポーネントを組み合わせた Web アプリケーションを構築できます。
+> [!TIP]
+> 🙋Python の `with` 文に慣れていない場合は、Real Python の優れた[チュートリアル](https://realpython.com/python-with-statement/)を確認することをおすすめします。読んだらここに戻ってきてください 🤗
+コンポーネントをインスタンス化する順序は重要です。各要素は作成された順序で Web アプリにレンダリングされます（より複雑なレイアウトは後述します）。
+
+2. 通常の Python 関数をコード内のどこにでも定義し、`Blocks` を使ってユーザーの入力で実行できます。例では入力テキストを「反転」するシンプルな関数を使っていますが、単純な計算から機械学習モデルの予測の処理まで、あらゆる Python 関数を書けます。
+
+3. 任意の `Blocks` コンポーネントにイベントを割り当てられます。コンポーネントがクリックされたり変更されたりしたときに、関数が実行されます。イベントを割り当てる際は、3つのパラメータを渡します: `fn`（呼び出す関数）、`inputs`（入力コンポーネントの（リスト））、`outputs`（出力コンポーネントの（リスト））です。
+
+   上の例では、`input` という名前の `Textbox` の値が変わったときに `flip_text()` 関数を実行します。イベントは `input` の値を読み取り、`flip_text()` に名前パラメータとして渡します。関数の戻り値が、2つ目の `Textbox` である `output` に代入されます。
+
+   各コンポーネントがサポートするイベントの一覧は、Gradio の[ドキュメント](https://www.gradio.app/docs/)を参照してください。
+
+4. Blocks は、定義したイベントトリガーに基づいて、コンポーネントがインタラクティブ（ユーザーの入力を受け付ける）であるべきかどうかを自動で判断します。例では、1つ目のテキストボックスはその値が `flip_text()` 関数に使われるためインタラクティブです。2つ目のテキストボックスは、その値が入力として使われることがないため、インタラクティブではありません。この判断を上書きしたい場合は、コンポーネントの `interactive` パラメータに真偽値を渡します（例: `gr.Textbox(placeholder="Flip this text", interactive=True)`）。
+
+### デモのレイアウトをカスタマイズする[[customizing-the-layout-of-your-demo]]
+
+`Blocks` を使ってデモのレイアウトをカスタマイズするにはどうすればよいでしょうか？デフォルトでは、`Blocks` は作成したコンポーネントを1列に縦に並べてレンダリングします。これを変更するには、`with gradio.Column():` で列を、`with gradio.Row():` で行を追加し、そのコンテキストの中でコンポーネントを作成します。
+
+覚えておくべき点はこちらです: `Column` の下（これがデフォルトでもあります）に作成されたコンポーネントは縦に並びます。`Row` の下に作成されたコンポーネントは、[Web 開発の flexbox モデル](https://developer.mozilla.org/en-US/docs/Web/CSS/CSS_Flexible_Box_Layout/Basic_Concepts_of_Flexbox)と同様に、横に並びます。
+
+最後に、`with gradio.Tabs()` コンテキストマネージャを使えば、デモにタブを作成することもできます。このコンテキスト内では、`with gradio.TabItem(name_of_tab):` を子として指定することで複数のタブを作成できます。`with gradio.TabItem(name_of_tab):` コンテキストの中で作成されたコンポーネントは、そのタブ内に表示されます。
+
+では、デモに `flip_image()` 関数を追加し、画像を反転する新しいタブを追加してみましょう。下は、2つのタブを持ち、Row も使った例です:
+
+```py
+import numpy as np
+import gradio as gr
+
+demo = gr.Blocks()
+
+
+def flip_text(x):
+    return x[::-1]
+
+
+def flip_image(x):
+    return np.fliplr(x)
+
+
+with demo:
+    gr.Markdown("Flip text or image files using this demo.")
+    with gr.Tabs():
+        with gr.TabItem("Flip Text"):
+            with gr.Row():
+                text_input = gr.Textbox()
+                text_output = gr.Textbox()
+            text_button = gr.Button("Flip")
+        with gr.TabItem("Flip Image"):
+            with gr.Row():
+                image_input = gr.Image()
+                image_output = gr.Image()
+            image_button = gr.Button("Flip")
+
+    text_button.click(flip_text, inputs=text_input, outputs=text_output)
+    image_button.click(flip_image, inputs=image_input, outputs=image_output)
+
+demo.launch()
+```
+
+<iframe src="https://course-demos-flip-text-image.hf.space" frameBorder="0" height="450" title="Gradio app" class="container p-0 flex-grow space-iframe" allow="accelerometer; ambient-light-sensor; autoplay; battery; camera; document-domain; encrypted-media; fullscreen; geolocation; gyroscope; layout-animations; legacy-image-formats; magnetometer; microphone; midi; oversized-images; payment; picture-in-picture; publickey-credentials-get; sync-xhr; usb; vr ; wake-lock; xr-spatial-tracking" sandbox="allow-forms allow-modals allow-popups allow-popups-to-escape-sandbox allow-same-origin allow-scripts allow-downloads"></iframe>
+
+
+この例では、各タブに `Button` コンポーネントも作成し、それぞれのボタンにクリックイベントを割り当てていることにも注目してください。これが実際に関数を実行します。
+
+### イベントと state を探る[[exploring-events-and-state]]
+
+レイアウトを制御できるのと同様に、`Blocks` では、どのイベントが関数の呼び出しをトリガーするかを細かく制御できます。各コンポーネントや多くのレイアウトには、それぞれサポートする固有のイベントがあります。
+
+たとえば、`Textbox` コンポーネントには2つのイベントがあります: `change()`（テキストボックス内の値が変わったとき）と `submit()`（テキストボックスにフォーカスした状態でユーザーが Enter キーを押したとき）です。より複雑なコンポーネントには、さらに多くのイベントがあります。たとえば `Audio` コンポーネントには、音声ファイルが再生、クリア、一時停止されたときなど、それぞれ別のイベントがあります。各コンポーネントがサポートするイベントはドキュメントを参照してください。
+
+イベントトリガーは、これらのイベントの0個、1個、または複数に付けることができます。イベントトリガーは、コンポーネントのインスタンスに対してイベント名を関数として呼び出すことで作成します（例: `textbox.change(...)` や `btn.click(...)`）。前述のとおり、この関数は3つのパラメータを取ります:
+
+- `fn`: 実行する関数
+- `inputs`: 値が関数の入力パラメータとして渡されるコンポーネント（のリスト）。各コンポーネントの値は、順番に対応する関数のパラメータに割り当てられます。関数がパラメータを取らない場合は None にできます。
+- `outputs`: 関数の戻り値に基づいて値が更新されるコンポーネント（のリスト）。各戻り値は、順番に対応するコンポーネントの値を設定します。関数が何も返さない場合は None にできます。
+
+入力コンポーネントと出力コンポーネントを同じコンポーネントにすることもできます。GPT モデルでテキスト補完を行う次の例がそれです:
+
+```py
+import gradio as gr
+
+api = gr.Interface.load("huggingface/EleutherAI/gpt-j-6B")
+
+
+def complete_with_gpt(text):
+    # テキストの最後の50文字をコンテキストとして使う
+    return text[:-50] + api(text[-50:])
+
+
+with gr.Blocks() as demo:
+    textbox = gr.Textbox(placeholder="Type here and press enter...", lines=4)
+    btn = gr.Button("Generate")
+
+    btn.click(complete_with_gpt, textbox, textbox)
+
+demo.launch()
+```
+
+<iframe src="https://course-demos-blocks-gpt.hf.space" frameBorder="0" height="300" title="Gradio app" class="container p-0 flex-grow space-iframe" allow="accelerometer; ambient-light-sensor; autoplay; battery; camera; document-domain; encrypted-media; fullscreen; geolocation; gyroscope; layout-animations; legacy-image-formats; magnetometer; microphone; midi; oversized-images; payment; picture-in-picture; publickey-credentials-get; sync-xhr; usb; vr ; wake-lock; xr-spatial-tracking" sandbox="allow-forms allow-modals allow-popups allow-popups-to-escape-sandbox allow-same-origin allow-scripts allow-downloads"></iframe>
+
+### 複数ステップのデモを作る[[creating-multi-step-demos]]
+
+場合によっては、ある関数の出力を次の関数の入力として再利用する _複数ステップのデモ_ が欲しくなるかもしれません。これは `Blocks` を使えばとても簡単です。1つのコンポーネントを、あるイベントトリガーの入力でありながら、別のイベントトリガーの出力にできるからです。下の例のテキストコンポーネントを見てください。その値は音声認識モデルの結果ですが、感情分析モデルにも渡されます:
+
+```py
+from transformers import pipeline
+
+import gradio as gr
+
+asr = pipeline("automatic-speech-recognition", "facebook/wav2vec2-base-960h")
+classifier = pipeline("text-classification")
+
+
+def speech_to_text(speech):
+    text = asr(speech)["text"]
+    return text
+
+
+def text_to_sentiment(text):
+    return classifier(text)[0]["label"]
+
+
+demo = gr.Blocks()
+
+with demo:
+    audio_file = gr.Audio(type="filepath")
+    text = gr.Textbox()
+    label = gr.Label()
+
+    b1 = gr.Button("Recognize Speech")
+    b2 = gr.Button("Classify Sentiment")
+
+    b1.click(speech_to_text, inputs=audio_file, outputs=text)
+    b2.click(text_to_sentiment, inputs=text, outputs=label)
+
+demo.launch()
+```
+
+<iframe src="https://course-demos-blocks-multi-step.hf.space" frameBorder="0" height="600" title="Gradio app" class="container p-0 flex-grow space-iframe" allow="accelerometer; ambient-light-sensor; autoplay; battery; camera; document-domain; encrypted-media; fullscreen; geolocation; gyroscope; layout-animations; legacy-image-formats; magnetometer; microphone; midi; oversized-images; payment; picture-in-picture; publickey-credentials-get; sync-xhr; usb; vr ; wake-lock; xr-spatial-tracking" sandbox="allow-forms allow-modals allow-popups allow-popups-to-escape-sandbox allow-same-origin allow-scripts allow-downloads"></iframe>
+
+### コンポーネントのプロパティを更新する[[updating-component-properties]]
+
+ここまで、イベントを作成して別のコンポーネントの値を更新する方法を見てきました。しかし、テキストボックスの表示/非表示やラジオボタングループの選択肢など、コンポーネントの他のプロパティを変更したい場合はどうすればよいでしょうか？関数から通常の戻り値の代わりに、コンポーネントクラスの `update()` メソッドを返すことで実現できます。
+
+例で見るのが一番分かりやすいでしょう:
+
+```py
+import gradio as gr
+
+
+def change_textbox(choice):
+    if choice == "short":
+        return gr.Textbox.update(lines=2, visible=True)
+    elif choice == "long":
+        return gr.Textbox.update(lines=8, visible=True)
+    else:
+        return gr.Textbox.update(visible=False)
+
+
+with gr.Blocks() as block:
+    radio = gr.Radio(
+        ["short", "long", "none"], label="What kind of essay would you like to write?"
+    )
+    text = gr.Textbox(lines=2, interactive=True)
+
+    radio.change(fn=change_textbox, inputs=radio, outputs=text)
+    block.launch()
+```
+
+<iframe src="https://course-demos-blocks-update-component-properties.hf.space" frameBorder="0" height="300" title="Gradio app" class="container p-0 flex-grow space-iframe" allow="accelerometer; ambient-light-sensor; autoplay; battery; camera; document-domain; encrypted-media; fullscreen; geolocation; gyroscope; layout-animations; legacy-image-formats; magnetometer; microphone; midi; oversized-images; payment; picture-in-picture; publickey-credentials-get; sync-xhr; usb; vr ; wake-lock; xr-spatial-tracking" sandbox="allow-forms allow-modals allow-popups allow-popups-to-escape-sandbox allow-same-origin allow-scripts allow-downloads"></iframe>
+
+これで `Blocks` の核となる概念をすべて見ました！`Interface` と同様に、`launch()` メソッドで `share=True` を使って共有したり、[Hugging Face Spaces](https://huggingface.co/spaces) にデプロイしたりできる、素敵なデモを作れます。

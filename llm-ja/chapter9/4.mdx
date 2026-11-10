@@ -1,0 +1,139 @@
+# デモを他の人と共有する[[sharing-demos-with-others]]
+
+<CourseFloatingBanner chapter={9}
+  classNames="absolute z-10 right-0 top-0"
+  notebooks={[
+    {label: "Google Colab", value: "https://colab.research.google.com/github/huggingface/notebooks/blob/master/course/en/chapter9/section4.ipynb"},
+    {label: "Aws Studio", value: "https://studiolab.sagemaker.aws/import/github/huggingface/notebooks/blob/master/course/en/chapter9/section4.ipynb"},
+]} />
+
+デモを作ったら、他の人と共有したくなるでしょう。Gradio のデモは、***一時的な共有リンク*** を使う方法と、***Spaces への永続的なホスティング*** の2通りの方法で共有できます。
+
+この2つの方法はすぐに扱います。その前に、デモを少し磨き上げておきましょう 💅。
+
+### Gradio デモを磨き上げる:[[polishing-your-gradio-demo]]
+
+<div class="flex justify-center">
+<img class="block dark:hidden" src="https://huggingface.co/datasets/huggingface-course/documentation-images/resolve/main/en/chapter9/gradio-demo-overview.png" alt="Gradio インターフェースの概要">
+<img class="hidden dark:block" src="https://huggingface.co/datasets/huggingface-course/documentation-images/resolve/main/en/chapter9/gradio-demo-overview-dark.png" alt="Gradio インターフェースの概要">
+</div>
+
+デモにコンテンツを追加するために、`Interface` クラスはいくつかの任意パラメータをサポートしています:
+    - `title`: デモにタイトルを付けられます。入出力コンポーネントの _上_ に表示されます。
+    - `description`: インターフェースの説明（テキスト、Markdown、HTML）を付けられます。入出力コンポーネントの上に、タイトルの下に表示されます。
+    - `article`: インターフェースを説明する長めの記事（テキスト、Markdown、HTML）も書けます。指定すると、入出力コンポーネントの _下_ に表示されます。
+    - `theme`: デフォルトの色が気に入らない場合は、テーマに `default`、`huggingface`、`grass`、`peach` のいずれかを設定できます。`dark-` プレフィックスを付けることもできます（例: ダークテーマの `dark-peach`。デフォルトのダークテーマは単に `dark`）。
+    - `examples`: デモを *ずっと使いやすく* するために、関数の入力例を用意できます。UI コンポーネントの下に表示され、インターフェースへの入力に使えます。ネストしたリストとして渡します。外側のリストがサンプルの集合で、内側の各リストが各入力コンポーネントに対応する入力から構成されます。
+    - `live`: デモを「ライブ」にしたい、つまり入力が変わるたびにモデルを再実行したい場合は、`live=True` に設定します。高速なモデルで使うのが向いています（例はこのセクションの最後で見ます）
+上のオプションを使うと、より完成度の高いインターフェースになります。下のコードを実行して、Rick and Morty とチャットしてみましょう:
+
+```py
+title = "Ask Rick a Question"
+description = """
+The bot was trained to answer questions based on Rick and Morty dialogues. Ask Rick anything!
+<img src="https://huggingface.co/spaces/course-demos/Rick_and_Morty_QA/resolve/main/rick.png" width=200px>
+"""
+
+article = "Check out [the original Rick and Morty Bot](https://huggingface.co/spaces/kingabzpro/Rick_and_Morty_Bot) that this demo is based off of."
+
+gr.Interface(
+    fn=predict,
+    inputs="textbox",
+    outputs="text",
+    title=title,
+    description=description,
+    article=article,
+    examples=[["What are you doing?"], ["Where should we time travel to?"]],
+).launch()
+```
+
+上のオプションを使うと、より完成度の高いインターフェースになります。下のインターフェースを試してみてください:
+
+<iframe src="https://course-demos-Rick-and-Morty-QA.hf.space" frameBorder="0" height="800" title="Gradio app" class="container p-0 flex-grow space-iframe" allow="accelerometer; ambient-light-sensor; autoplay; battery; camera; document-domain; encrypted-media; fullscreen; geolocation; gyroscope; layout-animations; legacy-image-formats; magnetometer; microphone; midi; oversized-images; payment; picture-in-picture; publickey-credentials-get; sync-xhr; usb; vr ; wake-lock; xr-spatial-tracking" sandbox="allow-forms allow-modals allow-popups allow-popups-to-escape-sandbox allow-same-origin allow-scripts allow-downloads"></iframe>
+
+### 一時リンクでデモを共有する[[sharing-your-demo-with-temporary-links]]
+機械学習モデルのデモが動作するようになったので、インターフェースへのリンクを簡単に共有する方法を学びましょう。
+インターフェースは、`launch()` メソッドで `share=True` を設定することで、簡単に公開共有できます:
+
+```python
+gr.Interface(classify_image, "image", "label").launch(share=True)
+```
+
+これにより、誰にでも送れる公開可能な共有リンクが生成されます！このリンクを送ると、受け取った人は最大72時間、ブラウザでモデルを試せます。処理は自分のデバイス上で行われるため（デバイスの電源が入っている限り！）、依存関係をパッケージ化する心配はいりません。Google Colab のノートブックで作業している場合、共有リンクは常に自動で作成されます。通常は **XXXXX.gradio.app** のような形です。リンクは Gradio のリンク経由で提供されますが、Gradio はローカルサーバーのプロキシとして動作しているだけで、インターフェースを通じて送信されたデータを保存することはありません。
+
+ただし、これらのリンクは公開アクセス可能であり、誰でもあなたのモデルで予測を行える点に注意してください。そのため、書いた関数を通じて機密情報を公開したり、デバイス上で重大な変更が起きたりしないよう注意してください。`share=False`（デフォルト）に設定すると、ローカルリンクのみが作成されます。
+
+### Hugging Face Spaces にデモをホスティングする[[hosting-your-demo-on-hugging-face-spaces]]
+
+同僚に配れる共有リンクも便利ですが、デモを永続的にホスティングして、インターネット上に独自の「スペース」を持たせるにはどうすればよいでしょうか？
+
+Hugging Face Spaces は、Gradio モデルをインターネット上に **無料で** 永続的にホスティングできるインフラを提供しています！Spaces では（公開または非公開の）リポジトリを作成して push でき、Gradio のインターフェースコードは `app.py` ファイルとして配置されます。始めるには [ステップバイステップのチュートリアル](https://huggingface.co/blog/gradio-spaces) を読むか、下のサンプル動画を見てください。
+
+<Youtube id="LS9Y2wDVI0k" />
+
+## ✏️ 試してみましょう！[[lets-apply-it]]
+
+これまでのセクションで学んだことを使って、[この章の最初のセクション](/course/chapter9/1) で見たスケッチ認識デモを作りましょう。インターフェースにカスタマイズを加え、`share=True` を設定して、配れる公開リンクを作成します。
+
+ラベルは [class_names.txt](https://huggingface.co/spaces/dawood/Sketch-Recognition/blob/main/class_names.txt) から、事前学習済みの PyTorch モデルは [pytorch_model.bin](https://huggingface.co/spaces/dawood/Sketch-Recognition/blob/main/pytorch_model.bin) から読み込めます。リンクをたどり、ファイルプレビューの左上にあるダウンロードをクリックして、これらのファイルをダウンロードしてください。これらのファイルを使ってモデルを読み込み、`predict()` 関数を作る方法を、下のコードで確認しましょう:
+```py
+from pathlib import Path
+import torch
+import gradio as gr
+from torch import nn
+
+LABELS = Path("class_names.txt").read_text().splitlines()
+
+model = nn.Sequential(
+    nn.Conv2d(1, 32, 3, padding="same"),
+    nn.ReLU(),
+    nn.MaxPool2d(2),
+    nn.Conv2d(32, 64, 3, padding="same"),
+    nn.ReLU(),
+    nn.MaxPool2d(2),
+    nn.Conv2d(64, 128, 3, padding="same"),
+    nn.ReLU(),
+    nn.MaxPool2d(2),
+    nn.Flatten(),
+    nn.Linear(1152, 256),
+    nn.ReLU(),
+    nn.Linear(256, len(LABELS)),
+)
+state_dict = torch.load("pytorch_model.bin", map_location="cpu")
+model.load_state_dict(state_dict, strict=False)
+model.eval()
+
+
+def predict(im):
+    x = torch.tensor(im, dtype=torch.float32).unsqueeze(0).unsqueeze(0) / 255.0
+    with torch.no_grad():
+        out = model(x)
+    probabilities = torch.nn.functional.softmax(out[0], dim=0)
+    values, indices = torch.topk(probabilities, 5)
+    return {LABELS[i]: v.item() for i, v in zip(indices, values)}
+```
+
+`predict()` 関数ができました。次のステップは、Gradio インターフェースを定義して起動することです:
+
+```py
+interface = gr.Interface(
+    predict,
+    inputs="sketchpad",
+    outputs="label",
+    theme="huggingface",
+    title="Sketch Recognition",
+    description="Who wants to play Pictionary? Draw a common object like a shovel or a laptop, and the algorithm will guess in real time!",
+    article="<p style='text-align: center'>Sketch Recognition | Demo Model</p>",
+    live=True,
+)
+interface.launch(share=True)
+```
+
+<iframe src="https://course-demos-Sketch-Recognition.hf.space" frameBorder="0" height="650" title="Gradio app" class="container p-0 flex-grow space-iframe" allow="accelerometer; ambient-light-sensor; autoplay; battery; camera; document-domain; encrypted-media; fullscreen; geolocation; gyroscope; layout-animations; legacy-image-formats; magnetometer; microphone; midi; oversized-images; payment; picture-in-picture; publickey-credentials-get; sync-xhr; usb; vr ; wake-lock; xr-spatial-tracking" sandbox="allow-forms allow-modals allow-popups allow-popups-to-escape-sandbox allow-same-origin allow-scripts allow-downloads"></iframe>
+
+
+`Interface` の `live=True` パラメータに注目してください。これは、スケッチデモがスケッチパッドに描くたびに予測を行うことを意味します（送信ボタンはありません！）。
+
+さらに、`launch()` メソッドで `share=True` 引数も設定しています。これにより、誰にでも送れる公開リンクが作成されます！このリンクを送ると、受け取った人はスケッチ認識モデルを試せます。繰り返しになりますが、モデルを Hugging Face Spaces にホスティングすることもできます。上のデモを埋め込めているのは、そのおかげです。
+
+次は、Gradio を Hugging Face エコシステムと組み合わせて使う他の方法を扱います！

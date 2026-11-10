@@ -1,0 +1,61 @@
+# Hugging Face Hub との連携[[integrations-with-the-hugging-face-hub]]
+
+<CourseFloatingBanner chapter={9}
+  classNames="absolute z-10 right-0 top-0"
+  notebooks={[
+    {label: "Google Colab", value: "https://colab.research.google.com/github/huggingface/notebooks/blob/master/course/en/chapter9/section5.ipynb"},
+    {label: "Aws Studio", value: "https://studiolab.sagemaker.aws/import/github/huggingface/notebooks/blob/master/course/en/chapter9/section5.ipynb"},
+]} />
+
+作業をさらに楽にするために、Gradio は Hugging Face Hub および Hugging Face Spaces と直接連携しています。Hub や Spaces のデモは、*わずか1行のコード* で読み込めます。
+
+### Hugging Face Hub からモデルを読み込む[[loading-models-from-the-hugging-face-hub]]
+まず、[Chapter 4](/course/chapter4/2) で説明したように、Hugging Face が Hub を通じて提供する何千ものモデルから1つを選びます。
+
+特別な `Interface.load()` メソッドでは、`"model/"`（または等価な `"huggingface/"`）の後にモデル名を続けます。
+たとえば、大規模言語モデル [GPT-J](https://huggingface.co/EleutherAI/gpt-j-6B) のデモを作り、入力例をいくつか加えるコードは次のとおりです:
+
+```py
+import gradio as gr
+
+title = "GPT-J-6B"
+description = "Gradio Demo for GPT-J 6B, a transformer model trained using Ben Wang's Mesh Transformer JAX. 'GPT-J' refers to the class of model, while '6B' represents the number of trainable parameters. To use it, simply add your text, or click one of the examples to load them. Read more at the links below."
+article = "<p style='text-align: center'><a href='https://github.com/kingoflolz/mesh-transformer-jax' target='_blank'>GPT-J-6B: A 6 Billion Parameter Autoregressive Language Model</a></p>"
+
+gr.Interface.load(
+    "huggingface/EleutherAI/gpt-j-6B",
+    inputs=gr.Textbox(lines=5, label="Input Text"),
+    title=title,
+    description=description,
+    article=article,
+).launch()
+```
+    
+上のコードを実行すると、下のインターフェースが生成されます:
+
+<iframe src="https://course-demos-gpt-j-6B.hf.space" frameBorder="0" height="750" title="Gradio app" class="container p-0 flex-grow space-iframe" allow="accelerometer; ambient-light-sensor; autoplay; battery; camera; document-domain; encrypted-media; fullscreen; geolocation; gyroscope; layout-animations; legacy-image-formats; magnetometer; microphone; midi; oversized-images; payment; picture-in-picture; publickey-credentials-get; sync-xhr; usb; vr ; wake-lock; xr-spatial-tracking" sandbox="allow-forms allow-modals allow-popups allow-popups-to-escape-sandbox allow-same-origin allow-scripts allow-downloads"></iframe>
+
+この方法でモデルを読み込むと、モデルをメモリに読み込む代わりに、Hugging Face の [Inference API](https://huggingface.co/inference-api) が使われます。これは、GPT-J や T0pp のような、大量の RAM を必要とする巨大なモデルに最適です。
+
+### Hugging Face Spaces から読み込む[[loading-from-hugging-face-spaces]]
+Hugging Face Hub 上の任意の Space を読み込んでローカルで再現するには、`Interface` に `spaces/` と Space の名前を続けて渡します。
+
+セクション1で見た、画像の背景を除去するデモを覚えていますか？これを Hugging Face Spaces から読み込んでみましょう:
+
+```py
+gr.Interface.load("spaces/abidlabs/remove-bg").launch()
+```
+
+<iframe src="https://course-demos-remove-bg-original.hf.space" frameBorder="0" height="650" title="Gradio app" class="container p-0 flex-grow space-iframe" allow="accelerometer; ambient-light-sensor; autoplay; battery; camera; document-domain; encrypted-media; fullscreen; geolocation; gyroscope; layout-animations; legacy-image-formats; magnetometer; microphone; midi; oversized-images; payment; picture-in-picture; publickey-credentials-get; sync-xhr; usb; vr ; wake-lock; xr-spatial-tracking" sandbox="allow-forms allow-modals allow-popups allow-popups-to-escape-sandbox allow-same-origin allow-scripts allow-downloads"></iframe>
+
+Hub や Spaces からデモを読み込む便利な点の1つは、パラメータを上書きしてカスタマイズできることです。ここではタイトルを追加し、代わりに Web カメラで動作するようにしてみます:
+
+```py
+gr.Interface.load(
+    "spaces/abidlabs/remove-bg", inputs="webcam", title="Remove your webcam background!"
+).launch()
+```
+
+<iframe src="https://course-demos-Remove-bg.hf.space" frameBorder="0" height="550" title="Gradio app" class="container p-0 flex-grow space-iframe" allow="accelerometer; ambient-light-sensor; autoplay; battery; camera; document-domain; encrypted-media; fullscreen; geolocation; gyroscope; layout-animations; legacy-image-formats; magnetometer; microphone; midi; oversized-images; payment; picture-in-picture; publickey-credentials-get; sync-xhr; usb; vr ; wake-lock; xr-spatial-tracking" sandbox="allow-forms allow-modals allow-popups allow-popups-to-escape-sandbox allow-same-origin allow-scripts allow-downloads"></iframe>
+
+Gradio と Hugging Face Hub を連携させる方法をいくつか見てきました。次は `Interface` クラスの高度な機能を見てみましょう。それが次のセクションのテーマです！

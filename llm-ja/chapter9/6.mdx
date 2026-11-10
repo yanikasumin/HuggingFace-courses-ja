@@ -1,0 +1,99 @@
+# `Interface` の高度な機能[[advanced-interface-features]]
+
+<CourseFloatingBanner chapter={9}
+  classNames="absolute z-10 right-0 top-0"
+  notebooks={[
+    {label: "Google Colab", value: "https://colab.research.google.com/github/huggingface/notebooks/blob/master/course/en/chapter9/section6.ipynb"},
+    {label: "Aws Studio", value: "https://studiolab.sagemaker.aws/import/github/huggingface/notebooks/blob/master/course/en/chapter9/section6.ipynb"},
+]} />
+
+基本的なインターフェースを作って共有できるようになったので、state や解釈（interpretation）といった、より高度な機能を見ていきましょう。
+
+### state を使ってデータを保持する[[using-state-to-persist-data]]
+
+Gradio は *セッション state* をサポートしています。これは、ページの読み込み中に複数回の送信をまたいでデータが保持される仕組みです。セッション state は、たとえば、ユーザーがモデルとやり取りする間データを保持したいチャットボットのようなデモを作るときに便利です。なお、セッション state では、モデルのユーザー間でデータが共有されることはありません。
+
+セッション state にデータを保存するには、次の3つが必要です:
+
+1. 関数に、インターフェースの state を表す *追加のパラメータ* を渡します。
+1. 関数の最後に、state の更新後の値を *追加の戻り値* として返します。
+1. `Interface` を作成する際に、'state' 入力コンポーネントと 'state' 出力コンポーネントを追加します。
+
+下のチャットボットの例を見てください:
+
+```py
+import random
+
+import gradio as gr
+
+
+def chat(message, history):
+    history = history or []
+    if message.startswith("How many"):
+        response = random.randint(1, 10)
+    elif message.startswith("How"):
+        response = random.choice(["Great", "Good", "Okay", "Bad"])
+    elif message.startswith("Where"):
+        response = random.choice(["Here", "There", "Somewhere"])
+    else:
+        response = "I don't know"
+    history.append((message, response))
+    return history, history
+
+
+iface = gr.Interface(
+    chat,
+    ["text", "state"],
+    ["chatbot", "state"],
+    allow_screenshot=False,
+    allow_flagging="never",
+)
+iface.launch()
+```
+
+<iframe src="https://course-demos-Chatbot-Demo.hf.space" frameBorder="0" height="350" title="Gradio app" class="container p-0 flex-grow space-iframe" allow="accelerometer; ambient-light-sensor; autoplay; battery; camera; document-domain; encrypted-media; fullscreen; geolocation; gyroscope; layout-animations; legacy-image-formats; magnetometer; microphone; midi; oversized-images; payment; picture-in-picture; publickey-credentials-get; sync-xhr; usb; vr ; wake-lock; xr-spatial-tracking" sandbox="allow-forms allow-modals allow-popups allow-popups-to-escape-sandbox allow-same-origin allow-scripts allow-downloads"></iframe>
+
+出力コンポーネントの state が送信をまたいで保持されていることに注目してください。
+なお、state パラメータにはデフォルト値を渡すことができ、それが state の初期値として使われます。
+
+### 解釈を使って予測を理解する[[using-interpretation-to-understand-predictions]]
+
+ほとんどの機械学習モデルはブラックボックスであり、関数の内部ロジックはエンドユーザーには見えません。透明性を高めるため、Interface クラスの interpretation キーワードを default に設定するだけで、モデルに解釈を簡単に追加できるようにしました。これにより、ユーザーは入力のどの部分が出力に影響しているかを理解できます。解釈も含まれた画像分類器のシンプルなインターフェースを、下で見てみましょう:
+
+```py
+import requests
+import tensorflow as tf
+
+import gradio as gr
+
+inception_net = tf.keras.applications.MobileNetV2()  # モデルを読み込む
+
+# 人間が読める ImageNet のラベルをダウンロードします。
+response = requests.get("https://git.io/JJkYN")
+labels = response.text.split("\n")
+
+
+def classify_image(inp):
+    inp = inp.reshape((-1, 224, 224, 3))
+    inp = tf.keras.applications.mobilenet_v2.preprocess_input(inp)
+    prediction = inception_net.predict(inp).flatten()
+    return {labels[i]: float(prediction[i]) for i in range(1000)}
+
+
+image = gr.Image(shape=(224, 224))
+label = gr.Label(num_top_classes=3)
+
+title = "Gradio Image Classifiction + Interpretation Example"
+gr.Interface(
+    fn=classify_image, inputs=image, outputs=label, interpretation="default", title=title
+).launch()
+```
+
+入力を送信し、出力コンポーネントの下にある Interpret をクリックして、解釈機能をテストしてみてください。
+
+<iframe src="https://course-demos-gradio-image-interpretation.hf.space" frameBorder="0" height="570" title="Gradio app" class="container p-0 flex-grow space-iframe" allow="accelerometer; ambient-light-sensor; autoplay; battery; camera; document-domain; encrypted-media; fullscreen; geolocation; gyroscope; layout-animations; legacy-image-formats; magnetometer; microphone; midi; oversized-images; payment; picture-in-picture; publickey-credentials-get; sync-xhr; usb; vr ; wake-lock; xr-spatial-tracking" sandbox="allow-forms allow-modals allow-popups allow-popups-to-escape-sandbox allow-same-origin allow-scripts allow-downloads"></iframe>
+
+Gradio が提供するデフォルトの解釈方法のほか、`interpretation` パラメータに `shap` を指定し、`num_shap` パラメータを設定することもできます。これは Shapley 値に基づく解釈で、詳しくは[こちら](https://christophm.github.io/interpretable-ml-book/shap.html)で読めます。
+最後に、独自の解釈関数を `interpretation` パラメータに渡すこともできます。例は Gradio の getting started ページの[こちら](https://gradio.app/getting_started/)にあります。
+
+これで Gradio の `Interface` クラスの深掘りは終わりです。見てきたように、このクラスを使えば数行の Python コードで機械学習デモを簡単に作れます。しかし、レイアウトを変更したり、複数の予測関数をつなげたりして、デモをカスタマイズしたくなることもあるでしょう。`Interface` をカスタマイズ可能な「ブロック」に分割できたら便利だと思いませんか？幸い、その方法があります！それが最終セクションのテーマです。

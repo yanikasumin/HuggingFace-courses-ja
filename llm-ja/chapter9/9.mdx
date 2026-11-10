@@ -1,0 +1,239 @@
+<!-- DISABLE-FRONTMATTER-SECTIONS -->
+
+# 章末クイズ[[end-of-chapter-quiz]]
+
+<CourseFloatingBanner
+    chapter={9}
+    classNames="absolute z-10 right-0 top-0"
+/>
+
+この章で学んだことをテストしてみましょう！
+
+### 1. Gradio を使うと何ができますか？
+
+<Question
+	choices={[
+        {
+			text: "自分の機械学習モデルのデモを作成する",
+			explain: "正解です！数行の Python コードで、組み込みコンポーネントのライブラリを使って ML モデルのデモを生成できます。",
+			correct: true
+		},
+		{
+			text: "自分の機械学習モデルを他の人と共有する",
+			explain: "正解です！launch メソッドの <code>share=True</code> パラメータを使えば、誰にでも送れる共有リンクを生成できます。",
+            correct: true
+		},
+		{
+			text: "モデルのデバッグ",
+			explain: "正解です！Gradio デモの利点の1つは、実データでモデルをテストし、データを変更しながらモデルの予測がリアルタイムに変わる様子を観察できることです。これがモデルのデバッグに役立ちます。",
+			correct: true
+		},
+		{
+			text: "モデルの学習",
+			explain: "不正解です。Gradio は、モデルの学習が終わった後の、モデル推論に使うよう設計されています。",
+		}
+	]}
+/>
+
+### 2. Gradio は PyTorch モデルでしか動作しない
+
+<Question
+	choices={[
+        {
+			text: "正しい",
+			explain: "不正解です。Gradio は PyTorch モデルでも動作しますが、あらゆる種類の機械学習モデルでも動作します！"
+        },
+        {
+			text: "誤り",
+			explain: "正解です！Gradio はモデルに依存しないため、あらゆる種類の機械学習モデルのデモを作成できます。",
+			correct: true
+        }
+	]}
+/>
+
+### 3. Gradio デモはどこから起動できますか？
+
+<Question
+	choices={[
+        {
+			text: "標準的な Python IDE",
+			explain: "正解です！Gradio はお気に入りの IDE で問題なく動作します。",
+            correct: true
+        },
+        {
+			text: "Google Colab ノートブック",
+			explain: "正解です！Google Colab ノートブック内でデモを作成して起動できます。",
+			correct: true
+        },
+        {
+			text: "Jupyter ノートブック",
+			explain: "正解です！Jupyter ノートブック内でデモを作成し、起動できます。",
+			correct: true
+        }
+	]}
+/>
+
+### 4. Gradio は主に NLP モデル向けに設計されている
+
+<Question
+	choices={[
+        {
+			text: "正しい",
+			explain: "不正解です。Gradio は NLP だけでなく、ほぼあらゆるデータ型で動作します。"
+        },
+        {
+			text: "誤り",
+			explain: "正解です！Gradio は、ほぼすべてのデータ型に対応した組み込みコンポーネントのライブラリを開発者に提供しています。",
+            correct: true
+        }
+	]}
+/>
+
+### 5. 次のうち、Gradio がサポートしている機能はどれですか？
+
+<Question
+	choices={[
+        {
+			text: "複数の入出力",
+			explain: "正解です！Gradio では複数の入出力が可能です。対応するパラメータに入力と出力のリストを渡すだけです。",
+            correct: true
+        },
+        {
+			text: "データ保持のための state",
+			explain: "正解です！Gradio ではインターフェースに state を追加できます。",
+			correct: true
+        },
+        {
+			text: "ユーザー名とパスワードによる認証",
+			explain: "正解です！launch メソッドにユーザー名/パスワードのタプルのリストを渡すことで、認証を追加できます。",
+			correct: true
+        },
+        {
+			text: "Gradio デモの利用者に関する自動分析",
+			explain: "不正解です。Gradio は、デモの利用者に関する分析を開発者に提供していません。"
+        },
+        {
+			text: "Hugging Face のモデルハブや Hugging Face Spaces からモデルを読み込む",
+			explain: "正解です！<code>gr.Interface.load()</code> メソッドを使えば、あらゆる Hugging Face モデルを読み込めます。",
+			correct: true
+        }
+	]}
+/>
+
+### 6. 次のうち、Hugging Face モデルを Hub または Spaces から読み込む正しい方法はどれですか？
+
+<Question
+	choices={[
+        {
+			text: "gr.Interface.load('huggingface/{user}/{model_name}')",
+			explain: "正解です！これは Hub から Hugging Face モデルを読み込む正しい方法です。",
+            correct: true
+        },
+        {
+			text: "gr.Interface.load('model/{user}/{model_name}')",
+			explain: "正解です！これは Hub から Hugging Face モデルを読み込む正しい方法です。",
+			correct: true
+        },
+        {
+			text: "gr.Interface.load('demos/{user}/{model_name}')",
+			explain: "不正解です。'demos' プレフィックスではモデルを読み込めません。"
+        },
+        {
+			text: "gr.Interface.load('spaces/{user}/{model_name}')",
+			explain: "正解です！これは Spaces から Hugging Face モデルを読み込む正しい方法です。",
+			correct: true
+        }
+	]}
+/>
+
+### 7. Gradio インターフェースに state を追加するために必要なステップをすべて選んでください
+
+<Question
+	choices={[
+        {
+			text: "予測関数に、インターフェースの state を表す追加のパラメータを渡す",
+			explain: "正解です！インターフェースの履歴や state を保存する追加のパラメータが必要です。",
+            correct: true
+        },
+        {
+			text: "予測関数の最後に、state の更新後の値を追加の戻り値として返す",
+			explain: "正解です！この履歴や state の値を関数から返す必要があります。",
+            correct: true
+        },
+        {
+			text: "Interface を作成する際に、state 入力コンポーネントと state 出力コンポーネントを追加する",
+			explain: "正解です！Gradio には、データを保持するための state 入力・出力コンポーネントが用意されています。",
+            correct: true
+        }
+	]}
+/>
+
+### 8. 次のうち、Gradio ライブラリに含まれるコンポーネントはどれですか？
+
+<Question
+	choices={[
+        {
+			text: "Textbox。",
+			explain: "正解です！Textbox コンポーネントでテキストボックスを作成できます。",
+            correct: true
+        },
+        {
+			text: "Graph。",
+			explain: "不正解です。現在、Graph コンポーネントは存在しません。",
+        },
+        {
+			text: "Image。",
+			explain: "正解です！Image コンポーネントで画像アップロードウィジェットを作成できます。",
+            correct: true
+        },
+        {
+			text: "Audio。",
+			explain: "正解です！Audio コンポーネントで音声アップロードウィジェットを作成できます。",
+            correct: true
+        },
+	]}
+/>
+
+### 9. Gradio の `Blocks` を使うと何ができますか？
+
+<Question
+	choices={[
+        {
+			text: "複数のデモを1つの Web アプリにまとめる",
+			explain: "正解です！`with gradio.Tabs():` を使えば、複数のデモ用のタブを追加できます。",
+			correct: true
+        },
+        {
+			text: "`Blocks` コンポーネントに、クリック/変更などのイベントトリガーを割り当てる",
+			explain: "正解です！イベントを割り当てる際は、3つのパラメータを渡します: fn（呼び出す関数）、inputs（入力コンポーネントの（リスト））、outputs（出力コンポーネントの（リスト））です。",
+			correct: true
+        },
+        {
+			text: "どの `Blocks` コンポーネントをインタラクティブにし、どれを静的にするかを自動で判断する",
+			explain: "正解です！定義したイベントトリガーに基づいて、Blocks はコンポーネントがユーザーの入力を受け付けるべきかどうかを自動で判断します。",
+			correct: true
+        },
+		 {
+			text: "複数ステップのデモを作成する（あるコンポーネントの出力を次のコンポーネントの入力として再利用できる）",
+			explain: "正解です！1つのコンポーネントを、あるイベントトリガーの入力でありながら、別のイベントトリガーの出力にできます。",
+            correct: true
+        },
+	]}
+/>
+
+### 10. `Blocks` デモへの公開リンクを共有したり、`Blocks` デモを Hugging Face Spaces にホスティングしたりできる
+
+<Question
+	choices={[
+        {
+			text: "正しい",
+			explain: "`Interface` と同様に、共有とホスティングの機能はすべて `Blocks` デモでも同じです！",
+			correct: true
+        },
+        {
+			text: "誤り",
+			explain: "`Interface` と同様に、共有とホスティングの機能はすべて `Blocks` デモでも同じです！",
+			correct: false
+        }
+	]}
+/>
