@@ -1,0 +1,234 @@
+<CourseFloatingBanner chapter={2}
+  classNames="absolute z-10 right-0 top-0"
+  notebooks={[
+    {label: "Google Colab", value: "https://colab.research.google.com/github/huggingface/notebooks/blob/main/course/en/chapter12/grpo_finetune.ipynb"},
+]} />
+
+# 実践演習： GRPO でモデルをファインチューニングする
+
+理論を見てきたところで、実践に移しましょう！この演習では、GRPO でモデルをファインチューニングします。
+
+> [!TIP]
+> この演習は、LLM ファインチューニングの専門家 [@mlabonne](https://huggingface.co/mlabonne) が執筆しました。
+
+## 依存関係をインストールする
+
+まず、この演習の依存関係をインストールしましょう。
+
+```bash
+!pip install -qqq datasets==3.2.0 transformers==4.47.1 trl==0.14.0 peft==0.14.0 accelerate==1.2.1 bitsandbytes==0.45.2 wandb==0.19.7 --progress-bar off
+!pip install -qqq flash-attn --no-build-isolation --progress-bar off
+```
+
+次に、必要なライブラリをインポートします。
+
+```python
+import torch
+from datasets import load_dataset
+from peft import LoraConfig, get_peft_model
+from transformers import AutoModelForCausalLM, AutoTokenizer
+from trl import GRPOConfig, GRPOTrainer
+```
+
+## Weights & Biases のインポートとログイン
+
+Weights & Biases は、実験を記録し、監視するためのツールです。ファインチューニングのプロセスを記録するために使います。
+
+```python
+import wandb
+
+wandb.login()
+```
+
+Weights & Biases にログインしなくてもこの演習は行えますが、実験を追跡し、結果を解釈するために、ログインすることをお勧めします。
+
+## データセットを読み込む
+
+では、データセットを読み込みましょう。この場合は、短い物語のリストを含む [`mlabonne/smoltldr`](https://huggingface.co/datasets/mlabonne/smoltldr) データセットを使います。
+
+```python
+dataset = load_dataset("mlabonne/smoltldr")
+print(dataset)
+```
+
+## モデルを読み込む
+
+次に、モデルを読み込みます。
+
+この演習では、[`SmolLM2-135M`](https://huggingface.co/HuggingFaceTB/SmolLM2-135M) モデルを使います。
+
+これは、限られたハードウェアで動作する、パラメータ数135Mの小さなモデルです。そのため学習には理想的ですが、世の中にある最も強力なモデルではありません。より強力なハードウェアにアクセスできる場合は、[`SmolLM2-1.7B`](https://huggingface.co/HuggingFaceTB/SmolLM2-1.7B) のようなより大きなモデルのファインチューニングを試すこともできます。
+
+```python
+model_id = "HuggingFaceTB/SmolLM-135M-Instruct"
+model = AutoModelForCausalLM.from_pretrained(
+    model_id,
+    torch_dtype="auto",
+    device_map="auto",
+    attn_implementation="flash_attention_2",
+)
+tokenizer = AutoTokenizer.from_pretrained(model_id)
+```
+
+## LoRA を読み込む
+
+次に、LoRA の設定を読み込みます。LoRA を活用して、学習可能なパラメータの数を減らし、ひいてはモデルのファインチューニングに必要なメモリ使用量を削減します。
+
+LoRA に馴染みがない方は、[Chapter 11](https://huggingface.co/learn/course/en/chapter11/3)で詳細を読むことができます。
+
+```python
+# LoRA を読み込む
+lora_config = LoraConfig(
+    task_type="CAUSAL_LM",
+    r=16,
+    lora_alpha=32,
+    target_modules="all-linear",
+)
+model = get_peft_model(model, lora_config)
+print(model.print_trainable_parameters())
+```
+
+```sh
+Total trainable parameters: 135M
+```
+
+## 報酬関数を定義する
+
+前のセクションで述べたとおり、GRPO は任意の報酬関数を使ってモデルを改善できます。この場合は、50トークンの長さのテキストを生成するようモデルを促す、簡単な報酬関数を使います。
+
+```python
+# 報酬関数
+ideal_length = 50
+
+
+def reward_len(completions, **kwargs):
+    return [-abs(ideal_length - len(completion)) for completion in completions]
+```
+
+## 学習引数を定義する
+
+では、学習引数を定義しましょう。`GRPOConfig` クラスを使って、典型的な `transformers` スタイルで学習引数を定義します。
+
+学習引数を定義するのが初めての方は、詳細については [TrainingArguments](https://huggingface.co/docs/transformers/en/main_classes/trainer#trainingarguments) クラスを確認するか、詳しい紹介として [Chapter 2](https://huggingface.co/learn/course/en/chapter2/1)を確認できます。
+
+```python
+# 学習引数
+training_args = GRPOConfig(
+    output_dir="GRPO",
+    learning_rate=2e-5,
+    per_device_train_batch_size=8,
+    gradient_accumulation_steps=2,
+    max_prompt_length=512,
+    max_completion_length=96,
+    num_generations=8,
+    optim="adamw_8bit",
+    num_train_epochs=1,
+    bf16=True,
+    report_to=["wandb"],
+    remove_unused_columns=False,
+    logging_steps=1,
+)
+```
+
+これで、モデル、データセット、学習引数を使ってトレーナーを初期化し、学習を開始できます。
+
+```python
+# トレーナー
+trainer = GRPOTrainer(
+    model=model,
+    reward_funcs=[reward_len],
+    args=training_args,
+    train_dataset=dataset["train"],
+)
+
+# モデルを学習する
+wandb.init(project="GRPO")
+trainer.train()
+```
+
+学習には、Google Colab や Hugging Face Spaces で利用できる単一の A10G GPU で約1時間かかります。
+
+## 学習中にモデルを Hub にプッシュする
+
+`push_to_hub` 引数を `True` に設定し、`model_id` 引数を有効なモデル名に設定すると、学習中にモデルが Hugging Face Hub にプッシュされます。モデルをすぐに感覚的にテストし始めたい場合に便利です！
+
+## 学習結果を解釈する
+
+`GRPOTrainer` は、報酬関数からの報酬、損失、その他のさまざまなメトリクスを記録します。
+
+ここでは、報酬関数からの報酬と損失に焦点を当てます。
+
+ご覧のとおり、モデルが学習するにつれて、報酬関数からの報酬は0に近づいていきます。これは、モデルが正しい長さのテキストを生成することを学んでいる良い兆候です。
+
+![報酬関数からの報酬](https://huggingface.co/reasoning-course/images/resolve/main/grpo/13.png)
+
+損失は0から始まり、学習中に増加することに気づくかもしれません。これは直感に反するように思えるかもしれません。この振る舞いは GRPO では予期されるものであり、アルゴリズムの数学的な定式化に直接関係しています。GRPO の損失は、KL ダイバージェンス（元のポリシーに対する上限）に比例します。学習が進むにつれて、モデルは報酬関数によりよく合うテキストを生成することを学び、当初のポリシーからより乖離するようになります。この増大する乖離は、損失値の上昇に反映されており、これは実際には、モデルが報酬関数への最適化に成功して適応していることを示しています。
+
+![損失](https://huggingface.co/reasoning-course/images/resolve/main/grpo/14.png)
+
+## モデルを保存して公開する
+
+モデルをコミュニティと共有しましょう！
+
+```python
+merged_model = trainer.model.merge_and_unload()
+merged_model.push_to_hub(
+    "SmolGRPO-135M", private=False, tags=["GRPO", "Reasoning-Course"]
+)
+```
+
+## テキストを生成する
+
+🎉 GRPO でモデルのファインチューニングに成功しました！では、モデルでテキストを生成してみましょう。
+
+まず、とても長い文書を定義します！
+
+```python
+prompt = """
+# A long document about the Cat
+
+The cat (Felis catus), also referred to as the domestic cat or house cat, is a small 
+domesticated carnivorous mammal. It is the only domesticated species of the family Felidae.
+Advances in archaeology and genetics have shown that the domestication of the cat occurred
+in the Near East around 7500 BC. It is commonly kept as a pet and farm cat, but also ranges
+freely as a feral cat avoiding human contact. It is valued by humans for companionship and
+its ability to kill vermin. Its retractable claws are adapted to killing small prey species
+such as mice and rats. It has a strong, flexible body, quick reflexes, and sharp teeth,
+and its night vision and sense of smell are well developed. It is a social species,
+but a solitary hunter and a crepuscular predator. Cat communication includes
+vocalizations—including meowing, purring, trilling, hissing, growling, and grunting—as
+well as body language. It can hear sounds too faint or too high in frequency for human ears,
+such as those made by small mammals. It secretes and perceives pheromones.
+"""
+
+messages = [
+    {"role": "user", "content": prompt},
+]
+```
+
+これで、モデルを使ってテキストを生成できます。
+
+```python
+# テキストを生成する
+from transformers import pipeline
+
+generator = pipeline("text-generation", model="SmolGRPO-135M")
+
+## または、先に定義したモデルとトークナイザを使う
+# generator = pipeline("text-generation", model=model, tokenizer=tokenizer)
+
+generate_kwargs = {
+    "max_new_tokens": 256,
+    "do_sample": True,
+    "temperature": 0.5,
+    "min_p": 0.1,
+}
+
+generated_text = generator(messages, generate_kwargs=generate_kwargs)
+
+print(generated_text)
+```
+
+# 結論
+
+この章では、GRPO でモデルをファインチューニングする方法を見てきました。あわせて、学習結果を解釈し、モデルでテキストを生成する方法も見てきました。

@@ -1,0 +1,367 @@
+<CourseFloatingBanner chapter={2}
+  classNames="absolute z-10 right-0 top-0"
+  notebooks={[
+    {label: "Google Colab", value: "https://colab.research.google.com/github/unslothai/notebooks/blob/main/nb/HuggingFace%20Course-Gemma3_(1B)-GRPO.ipynb"},
+]} />
+
+# 実践演習： Unsloth で GRPO
+
+この演習では、モデルの推論能力を改善するために、Unsloth を使って GRPO（Group Relative Policy Optimization）でモデルをファインチューニングします。GRPO は [Chapter 3](/course/chapter3/3) で扱いました。
+
+Unsloth は LLM のファインチューニングを高速化するライブラリであり、より高速に、より少ない計算リソースでモデルを学習できるようにします。Unsloth は TRL に組み込まれるので、前のセクションで学んだことをもとに、Unsloth 固有の点に適応させていきます。
+
+> [!TIP]
+> この演習は、無料の Google Colab T4 GPU で実行できます。最良の体験のためには、上記リンクのノートブックに沿って進め、自分でも試してみてください。
+
+## 依存関係をインストールする
+
+まず、必要なライブラリをインストールしましょう。高速化されたファインチューニングのための Unsloth と、高速な推論のための vLLM が必要です。
+
+```bash
+pip install unsloth vllm
+pip install --upgrade pillow
+```
+
+## Unsloth をセットアップする
+
+Unsloth は、Transformers と Unsloth の最適化を統合するクラス（`FastLanguageModel`）を提供します。インポートしましょう。
+
+```python
+from unsloth import FastLanguageModel
+```
+
+次に、Google の Gemma 3 1B Instruct モデルを読み込み、ファインチューニングのために設定します。
+
+```python
+from unsloth import FastLanguageModel
+import torch
+
+max_seq_length = 1024  # より長い推論の跡のために増やせる
+lora_rank = 32  # ランクが大きいほど賢くなるが、遅くなる
+
+model, tokenizer = FastLanguageModel.from_pretrained(
+    model_name="google/gemma-3-1b-it",
+    max_seq_length=max_seq_length,
+    load_in_4bit=True,  # LoRA 16bit の場合は False
+    fast_inference=True,  # vLLM の高速推論を有効にする
+    max_lora_rank=lora_rank,
+    gpu_memory_utilization=0.6,  # メモリ不足の場合は減らす
+)
+
+model = FastLanguageModel.get_peft_model(
+    model,
+    r=lora_rank,  # 0 より大きい任意の数を選ぶ。推奨は 8, 16, 32, 64, 128
+    target_modules=[
+        "q_proj",
+        "k_proj",
+        "v_proj",
+        "o_proj",
+        "gate_proj",
+        "up_proj",
+        "down_proj",
+    ],  # メモリ不足の場合は QKVO を外す
+    lora_alpha=lora_rank,
+    use_gradient_checkpointing="unsloth",  # 長いコンテキストのファインチューニングを有効にする
+    random_state=3407,
+)
+```
+
+このコードは、メモリを節約するためにモデルを4ビット量子化で読み込み、効率的なファインチューニングのために LoRA（Low-Rank Adaptation）を適用します。`target_modules` パラメータは、モデルのどの層をファインチューニングするかを指定し、`use_gradient_checkpointing` により、より長いコンテキストでの学習が可能になります。
+
+> [!TIP]
+> この章では LoRA の詳細は扱いませんが、[Chapter 11](/course/chapter11/3)で詳細を学ぶことができます。
+
+## データの準備
+
+この演習では、小学校レベルの数学の問題を含む GSM8K データセットを使います。モデルが答えを出す前に推論を示すよう促す形に、データを整形します。
+
+まず、プロンプトと答えの形式を定義します。
+
+```python
+# モデルに特定の形式を使うよう指示するシステムプロンプトを定義する
+SYSTEM_PROMPT = """
+Respond in the following format:
+<reasoning>
+...
+</reasoning>
+<answer>
+...
+</answer>
+"""
+
+XML_COT_FORMAT = """\
+<reasoning>
+{reasoning}
+</reasoning>
+<answer>
+{answer}
+</answer>
+"""
+```
+
+次に、データセットを準備しましょう。
+
+```python
+import re
+from datasets import load_dataset, Dataset
+
+
+# さまざまな形式から答えを取り出すためのヘルパー関数
+def extract_xml_answer(text: str) -> str:
+    answer = text.split("<answer>")[-1]
+    answer = answer.split("</answer>")[0]
+    return answer.strip()
+
+
+def extract_hash_answer(text: str) -> str | None:
+    if "####" not in text:
+        return None
+    return text.split("####")[1].strip()
+
+
+# GSM8K データセットを準備する関数
+def get_gsm8k_questions(split="train") -> Dataset:
+    data = load_dataset("openai/gsm8k", "main")[split]
+    data = data.map(
+        lambda x: {
+            "prompt": [
+                {"role": "system", "content": SYSTEM_PROMPT},
+                {"role": "user", "content": x["question"]},
+            ],
+            "answer": extract_hash_answer(x["answer"]),
+        }
+    )
+    return data
+
+
+dataset = get_gsm8k_questions()
+```
+
+データセットは、データセットから答えを取り出し、文字列として整形することで準備されます。
+
+## 報酬関数を定義する
+
+[前のページ](/course/chapter13/4)で議論したとおり、GRPO は報酬関数を使って、長さや形式といった検証可能な基準に基づいて、モデルの学習を導くことができます。
+
+この演習では、良い推論のさまざまな側面を促す、いくつかの報酬関数を定義します。たとえば、整数の答えを出すことや、厳密な形式に従うことに対して、モデルに報酬を与えます。
+
+```python
+# 答えが正しいかをチェックする報酬関数
+def correctness_reward_func(prompts, completions, answer, **kwargs) -> list[float]:
+    responses = [completion[0]["content"] for completion in completions]
+    q = prompts[0][-1]["content"]
+    extracted_responses = [extract_xml_answer(r) for r in responses]
+    print(
+        "-" * 20,
+        f"Question:\n{q}",
+        f"\nAnswer:\n{answer[0]}",
+        f"\nResponse:\n{responses[0]}",
+        f"\nExtracted:\n{extracted_responses[0]}",
+    )
+    return [2.0 if r == a else 0.0 for r, a in zip(extracted_responses, answer)]
+
+
+# 答えが整数であるかをチェックする報酬関数
+def int_reward_func(completions, **kwargs) -> list[float]:
+    responses = [completion[0]["content"] for completion in completions]
+    extracted_responses = [extract_xml_answer(r) for r in responses]
+    return [0.5 if r.isdigit() else 0.0 for r in extracted_responses]
+
+
+# 補完が厳密な形式に従っているかをチェックする報酬関数
+def strict_format_reward_func(completions, **kwargs) -> list[float]:
+    pattern = r"^<reasoning>\n.*?\n</reasoning>\n<answer>\n.*?\n</answer>\n$"
+    responses = [completion[0]["content"] for completion in completions]
+    matches = [re.match(pattern, r) for r in responses]
+    return [0.5 if match else 0.0 for match in matches]
+
+
+# 補完がより緩やかな形式に従っているかをチェックする報酬関数
+def soft_format_reward_func(completions, **kwargs) -> list[float]:
+    pattern = r"<reasoning>.*?</reasoning>\s*<answer>.*?</answer>"
+    responses = [completion[0]["content"] for completion in completions]
+    matches = [re.match(pattern, r) for r in responses]
+    return [0.5 if match else 0.0 for match in matches]
+
+
+# XML タグを数え、余分な内容にペナルティを与える報酬関数
+def count_xml(text) -> float:
+    count = 0.0
+    if text.count("<reasoning>\n") == 1:
+        count += 0.125
+    if text.count("\n</reasoning>\n") == 1:
+        count += 0.125
+    if text.count("\n<answer>\n") == 1:
+        count += 0.125
+        count -= len(text.split("\n</answer>\n")[-1]) * 0.001
+    if text.count("\n</answer>") == 1:
+        count += 0.125
+        count -= (len(text.split("\n</answer>")[-1]) - 1) * 0.001
+    return count
+
+
+def xmlcount_reward_func(completions, **kwargs) -> list[float]:
+    contents = [completion[0]["content"] for completion in completions]
+    return [count_xml(c) for c in contents]
+```
+
+これらの報酬関数は、それぞれ異なる目的を果たします。
+
+| 報酬関数 | 目的 |
+|-----------------|---------|
+| `correctness_reward_func` | モデルの答えが正解と一致したときに報酬を与える |
+| `int_reward_func` | 数値の答えを出したときにモデルに報酬を与える |
+| `strict_format_reward_func` と `soft_format_reward_func` | 指定された形式に従ったときにモデルに報酬を与える |
+| `xmlcount_reward_func` | 適切な XML タグの使用に報酬を与え、閉じタグの後の余分な内容にペナルティを与える |
+
+## GRPO で学習する
+
+では、モデル、トークナイザ、報酬関数を使って GRPO トレーナーをセットアップしましょう。この部分は、[前の演習](/course/chapter12/5)と同じアプローチに従います。
+
+```python
+from trl import GRPOConfig, GRPOTrainer
+
+max_prompt_length = 256
+
+training_args = GRPOConfig(
+    learning_rate=5e-6,
+    adam_beta1=0.9,
+    adam_beta2=0.99,
+    weight_decay=0.1,
+    warmup_ratio=0.1,
+    lr_scheduler_type="cosine",
+    optim="paged_adamw_8bit",
+    logging_steps=1,
+    per_device_train_batch_size=1,
+    gradient_accumulation_steps=1,  # よりスムーズな学習のためには 4 に増やす
+    num_generations=6,  # メモリ不足の場合は減らす
+    max_prompt_length=max_prompt_length,
+    max_completion_length=max_seq_length - max_prompt_length,
+    # num_train_epochs = 1, # フルの学習ランでは 1 に設定する
+    max_steps=250,
+    save_steps=250,
+    max_grad_norm=0.1,
+    report_to="none",  # Weights & Biases を使うこともできる
+    output_dir="outputs",
+)
+
+trainer = GRPOTrainer(
+    model=model,
+    processing_class=tokenizer,
+    reward_funcs=[
+        xmlcount_reward_func,
+        soft_format_reward_func,
+        strict_format_reward_func,
+        int_reward_func,
+        correctness_reward_func,
+    ],
+    args=training_args,
+    train_dataset=dataset,
+)
+```
+
+`GRPOConfig` は、学習のためのさまざまなハイパーパラメータを設定します。
+- `use_vllm`： vLLM による高速な推論を有効にします
+- `learning_rate`： モデルがどれだけ速く学ぶかを制御します
+- `num_generations`： 各プロンプトに対して生成する補完の数
+- `max_steps`： 実行する学習ステップの総数
+
+では、学習を開始しましょう。
+
+```python
+trainer.train()
+```
+
+> [!WARNING]
+> 学習にはしばらく時間がかかる場合があります。報酬がすぐに増加し始めないこともあります。改善が見られるまで150〜200ステップかかることもあります。辛抱強く待ちましょう！
+
+## モデルをテストする
+
+学習の後、モデルがどのように機能するかをテストしましょう。まず、LoRA の重みを保存します。
+
+```python
+model.save_lora("grpo_saved_lora")
+```
+
+次に、新しい質問でモデルをテストしましょう。
+
+```python
+from vllm import SamplingParams
+
+text = tokenizer.apply_chat_template(
+    [
+        {"role": "system", "content": SYSTEM_PROMPT},
+        {"role": "user", "content": "Calculate pi."},
+    ],
+    tokenize=False,
+    add_generation_prompt=True,
+)
+
+sampling_params = SamplingParams(
+    temperature=0.8,
+    top_p=0.95,
+    max_tokens=1024,
+)
+output = (
+    model.fast_generate(
+        text,
+        sampling_params=sampling_params,
+        lora_request=model.load_lora("grpo_saved_lora"),
+    )[0]
+    .outputs[0]
+    .text
+)
+
+print(output)
+```
+
+モデルが、答えを出す前に推論を示す、指定された形式に今や従っていることが確認できるはずです。
+
+## モデルを保存する
+
+Unsloth は、ファインチューニングしたモデルを保存するためのいくつかの選択肢を提供していますが、ここでは最も一般的なものに焦点を当てます。
+
+```python
+# 16ビット精度で保存する
+model.save_pretrained_merged("model", tokenizer, save_method="merged_16bit")
+```
+
+## Hugging Face Hub にプッシュする
+
+`push_to_hub_merged` メソッドを使って、モデルを Hugging Face Hub にプッシュします。このメソッドにより、モデルを複数の量子化形式でプッシュできます。
+```python
+# Hugging Face Hub にプッシュする（トークンが必要）
+model.push_to_hub_merged(
+    "your-username/model-name", tokenizer, save_method="merged_16bit", token="your-token"
+)
+```
+
+Unsloth は、llama.cpp で使うための GGUF 形式での保存もサポートしています。
+
+```python
+model.push_to_hub_gguf(
+    "your-username/model-name",
+    tokenizer,
+    quantization_method=["q4_k_m", "q8_0", "q5_k_m"],
+    token="your-token",
+)
+```
+
+GGUF ファイルは、llama.cpp や、Jan、Open WebUI のような UI ベースのシステムで使うことができます。
+
+## 結論
+
+この演習では、次の方法を学びました。
+1. 高速化されたファインチューニングのために Unsloth をセットアップする
+2. GRPO 学習のためにデータを準備する
+3. モデルの学習を導くカスタム報酬関数を定義する
+4. GRPO を使ってモデルを学習する
+5. ファインチューニングしたモデルをテストする
+6. モデルをさまざまな形式で保存する
+
+GRPO は、言語モデルを特定の振る舞いにアラインするための強力な手法であり、Unsloth により、限られたハードウェアでも利用できるようになります。複数の報酬関数を組み合わせることで、モデルが特定の形式に従うよう導くと同時に、その推論能力を改善できます。
+
+詳細とリソースについては、次をチェックしてください。
+- [Unsloth ドキュメント](https://docs.unsloth.ai/)
+- [Unsloth Discord](https://discord.gg/unsloth)
+- [Unsloth GitHub](https://github.com/unslothai/unsloth)
