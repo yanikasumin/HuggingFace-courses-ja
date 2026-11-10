@@ -1,0 +1,377 @@
+<CourseFloatingBanner chapter={2}
+  classNames="absolute z-10 right-0 top-0"
+  notebooks={[
+    {label: "Google Colab", value: "https://colab.research.google.com/github/huggingface/notebooks/blob/main/course/en/chapter11/section3.ipynb"},
+]} />
+
+# 教師ありファインチューニング
+
+教師ありファインチューニング（SFT）は、事前学習済みの言語モデルを、指示に従い、対話を行い、特定の出力形式を使うように適応させるために主に使われる工程です。事前学習済みモデルは優れた汎用能力を持っていますが、SFT によって、ユーザーのプロンプトをよりよく理解し応答できるアシスタント型のモデルへと変えることができます。通常は、人間が書いた会話や指示のデータセットで学習を行います。
+
+このページでは、[`SFTTrainer`](https://huggingface.co/docs/trl/en/sft_trainer) を使って [`deepseek-ai/DeepSeek-R1-Distill-Qwen-1.5B`](https://huggingface.co/deepseek-ai/DeepSeek-R1-Distill-Qwen-1.5B) モデルをファインチューニングする手順をステップごとに解説します。これらの手順に従えば、モデルを特定のタスクでより効果的に動作するよう適応させることができます。 
+
+## SFT を使うべき場面
+
+実装に入る前に、SFT が自分のプロジェクトにとって正しい選択なのかを理解しておくことが大切です。まず第一歩として、既存の指示チューニング済みモデルに工夫したプロンプトを与えるだけでユースケースを満たせないか検討すべきです。SFT には多大な計算リソースとエンジニアリングの労力が必要なため、既存のモデルへのプロンプトだけでは不十分だと分かった場合にのみ取り組むべきです。
+
+> [!TIP]
+> SFT を検討するのは次のような場合だけにしましょう:
+> - プロンプトで達成できる以上の性能が必要
+> - 大規模な汎用モデルを使うコストが、小規模モデルをファインチューニングするコストを上回る具体的なユースケースがある
+> - 既存のモデルが苦手とする、特殊な出力形式やドメイン固有の知識が必要
+
+SFT が必要だと判断したら、進めるかどうかは主に次の2つの要素で決まります。
+
+### テンプレートのコントロール
+SFT を使うと、モデルの出力構造を精密にコントロールできます。これは、モデルに次のことを求める場合に特に価値があります。
+1. 特定のチャットテンプレート形式で応答を生成する
+2. 厳密な出力スキーマに従う
+3. 応答全体で一貫したスタイルを保つ
+
+### ドメインへの適応
+専門的なドメインで作業する場合、SFT は次のような形でモデルをドメイン固有の要件に合わせる手助けをします。
+1. ドメインの専門用語や概念を教える
+2. 専門職としての基準を守らせる
+3. 技術的な問い合わせに適切に対応させる
+4. 業界固有のガイドラインに従わせる
+
+> [!TIP]
+> SFT を始める前に、そのユースケースが次を必要とするか評価してください:
+> - 精密な出力形式
+> - ドメイン固有の知識
+> - 一貫した応答パターン
+> - 特定のガイドラインへの準拠
+>
+> この評価により、SFT が自分のニーズに合ったアプローチかどうかを判断できます。
+
+## データセットの準備
+
+教師ありファインチューニングの工程には、入力と出力のペアで構造化された、タスク固有のデータセットが必要です。各ペアは次の要素で構成されます。
+1. 入力プロンプト
+2. 期待されるモデルの応答
+3. 追加の文脈やメタデータ
+
+学習データの品質は、ファインチューニングを成功させるうえで極めて重要です。データセットの準備と検証の方法を見てみましょう。
+
+<iframe
+  src="https://huggingface.co/datasets/HuggingFaceTB/smoltalk/embed/viewer/all/train?row=0"
+  frameborder="0"
+  width="100%"
+  height="360px"
+></iframe>
+
+## 学習の設定
+
+ファインチューニングの成功は、適切な学習パラメータの選択に大きく依存します。重要なパラメータと、それらを効果的に設定する方法を見ていきましょう。
+
+SFTTrainer の設定では、学習プロセスを制御するいくつかのパラメータを検討する必要があります。各パラメータとその目的を見ていきます。
+
+1. **学習時間のパラメータ**:
+   - `num_train_epochs`: 学習全体の時間を制御する
+   - `max_steps`: エポックの代替で、学習ステップの最大数を設定する
+   - エポック数が多いほど学習は進むが、過学習のリスクがある
+
+2. **バッチサイズのパラメータ**:
+   - `per_device_train_batch_size`: メモリ使用量と学習の安定性を左右する
+   - `gradient_accumulation_steps`: 実効的なバッチサイズを大きくできる
+   - バッチが大きいほど勾配が安定するが、より多くのメモリを必要とする
+
+3. **学習率のパラメータ**:
+   - `learning_rate`: 重みの更新の大きさを制御する
+   - `warmup_ratio`: 学習率のウォームアップに使う学習の割合
+   - 高すぎると不安定になり、低すぎると学習が遅くなる
+
+4. **モニタリングのパラメータ**:
+   - `logging_steps`: メトリクスの記録頻度
+   - `eval_steps`: 検証データで評価する頻度
+   - `save_steps`: モデルのチェックポイントを保存する頻度
+
+> [!TIP]
+> 控えめな値から始めて、モニタリングしながら調整しましょう:
+> - まずは 1〜3 エポックから始める
+> - 最初は小さめのバッチサイズを使う
+> - 検証メトリクスを注意深く監視する
+> - 学習が不安定なら学習率を調整する
+
+## TRL での実装
+
+主要な要素を理解したところで、適切な検証とモニタリングを備えた学習を実装してみましょう。`transformers` ライブラリの上に構築された Transformers Reinforcement Learning（TRL）ライブラリの `SFTTrainer` クラスを使います。TRL ライブラリを使った完全な例がこちらです。
+
+```python
+from datasets import load_dataset
+from trl import SFTConfig, SFTTrainer
+import torch
+
+# デバイスを設定
+device = "cuda" if torch.cuda.is_available() else "cpu"
+
+# データセットを読み込む
+dataset = load_dataset("HuggingFaceTB/smoltalk", "all")
+
+# モデルとトークナイザを設定
+model_name = "HuggingFaceTB/SmolLM2-135M"
+model = AutoModelForCausalLM.from_pretrained(pretrained_model_name_or_path=model_name).to(
+    device
+)
+tokenizer = AutoTokenizer.from_pretrained(pretrained_model_name_or_path=model_name)
+# チャットテンプレートをセットアップ
+model, tokenizer = setup_chat_format(model=model, tokenizer=tokenizer)
+
+# トレーナーを設定
+training_args = SFTConfig(
+    output_dir="./sft_output",
+    max_steps=1000,
+    per_device_train_batch_size=4,
+    learning_rate=5e-5,
+    logging_steps=10,
+    save_steps=100,
+    eval_strategy="steps",
+    eval_steps=50,
+)
+
+# トレーナーを初期化
+trainer = SFTTrainer(
+    model=model,
+    args=training_args,
+    train_dataset=dataset["train"],
+    eval_dataset=dataset["test"],
+    processing_class=tokenizer,
+)
+
+# 学習を開始
+trainer.train()
+```
+
+> [!TIP]
+> 上の例のように "messages" フィールドを持つデータセットを使うと、SFTTrainer はモデルのチャットテンプレートを自動的に適用します。テンプレートは Hub から取得されます。つまり、チャット形式の会話を扱うための追加の設定は不要です。トレーナーが、モデルの想定するテンプレート形式に従ってメッセージを整形してくれます。
+
+## データセットのパッキング
+
+SFTTrainer は、学習効率を最適化するためのサンプルのパッキング（example packing）に対応しています。この機能を使うと、複数の短いサンプルを同じ入力シーケンスに詰め込むことができ、学習中の GPU 使用率を最大化できます。パッキングを有効にするには、SFTConfig のコンストラクタで `packing=True` を設定するだけです。パッキングしたデータセットを `max_steps` と併用する場合、パッキングの設定によっては想定より多くのエポック学習することになる点に注意してください。サンプルの組み合わせ方は、整形用関数（formatting function）でカスタマイズできます。これは、質疑応答ペアのような複数のフィールドを持つデータセットを扱う場合に特に便利です。評価用データセットについては、SFTConfig で `eval_packing=False` を設定するとパッキングを無効化できます。パッキング設定のカスタマイズの基本的な例がこちらです。
+
+```python
+# パッキングを設定
+training_args = SFTConfig(packing=True)
+
+trainer = SFTTrainer(model=model, train_dataset=dataset, args=training_args)
+
+trainer.train()
+```
+
+複数のフィールドを持つデータセットをパッキングする場合、カスタムの整形用関数を定義して、フィールドを1つの入力シーケンスに組み合わせることができます。この関数はサンプルのリストを受け取り、パッキングされた入力シーケンスを持つ辞書を返すものであるべきです。カスタム整形用関数の例がこちらです。
+
+```python
+def formatting_func(example):
+    text = f"### Question: {example['question']}\n ### Answer: {example['answer']}"
+    return text
+
+
+training_args = SFTConfig(packing=True)
+trainer = SFTTrainer(
+    "facebook/opt-350m",
+    train_dataset=dataset,
+    args=training_args,
+    formatting_func=formatting_func,
+)
+```
+
+## 学習の進行のモニタリング
+
+効果的なモニタリングは、ファインチューニングを成功させるうえで極めて重要です。学習中に何に注目すべきかを見ていきましょう。
+
+### 損失パターンの理解
+
+学習損失は通常、次の3つの明確なフェーズをたどります。
+1. 初期の急激な低下: 新しいデータ分布への急速な適応
+2. 緩やかな安定化: モデルのファインチューニングが進むにつれて学習速度が緩やかになる
+3. 収束: 損失の値が安定し、学習の完了を示す
+
+<img src="https://huggingface.co/datasets/huggingface/documentation-images/resolve/main/nlp_course_sft_loss_graphic.png" alt="SFTTrainer の学習" />
+
+### 監視すべきメトリクス
+
+効果的なモニタリングには、定量的なメトリクスの追跡に加えて、定性的なメトリクスの評価も含まれます。利用できるメトリクスは次のとおりです。
+
+- 学習損失
+- 検証損失
+- 学習率の推移
+- 勾配ノルム
+
+> [!WARNING]
+> 学習中は次の警告サインに注意してください:
+> 1. 学習損失が下がり続けるのに検証損失が上がる（過学習）
+> 2. 損失の値に大きな改善が見られない（学習不足）
+> 3. 損失の値が極端に低い（暗記している可能性）
+> 4. 出力形式が一貫しない（テンプレートの学習に問題）
+
+### 収束への道のり
+
+学習が進むにつれて、損失曲線は徐々に安定していくはずです。健全な学習の重要な指標は、学習損失と検証損失の差が小さいことです。これは、モデルが特定のサンプルを暗記するのではなく、汎化できるパターンを学習していることを示します。損失の絶対値は、タスクやデータセットによって異なります。
+
+### 学習の進行のモニタリング
+
+上のグラフは典型的な学習の推移を示しています。学習損失と検証損失の両方が最初は急激に下がり、その後徐々に落ち着いていく様子に注目してください。このパターンは、モデルが汎化能力を維持しながら効果的に学習していることを示しています。
+
+### 注意すべき警告サイン
+
+損失曲線のいくつかのパターンは、潜在的な問題を示すことがあります。よくある警告サインと、検討できる対処法を以下に示します。
+
+<img src="https://huggingface.co/datasets/huggingface/documentation-images/resolve/main/sft_loss_1.png" alt="SFTTrainer の学習" />
+
+検証損失の下がり方が学習損失より著しく遅い場合、そのモデルは学習データに過学習している可能性が高いです。次の対処を検討してください。
+- 学習ステップを減らす
+- データセットのサイズを増やす
+- データセットの品質と多様性を検証する
+
+<img src="https://huggingface.co/datasets/huggingface/documentation-images/resolve/main/sft_loss_2.png" alt="SFTTrainer の学習" />
+
+損失に大きな改善が見られない場合、モデルは次の状態かもしれません。
+- 学習が遅すぎる（学習率を上げてみる）
+- タスクに苦戦している（データの品質とタスクの複雑さを確認する）
+- アーキテクチャの限界に当たっている（別のモデルを検討する）
+
+<img src="https://huggingface.co/datasets/huggingface/documentation-images/resolve/main/sft_loss_3.png" alt="SFTTrainer の学習" />
+
+損失の値が極端に低い場合は、学習ではなく暗記を示している可能性があります。特に次の場合は懸念されます。
+- 新しい類似のサンプルに対する性能が悪い
+- 出力に多様性がない
+- 応答が学習サンプルに似すぎている
+
+> [!WARNING]
+> 学習中は、損失の値とモデルの実際の出力の両方を監視してください。損失が良好に見えても、モデルに望ましくない振る舞いが生まれることがあります。モデルの応答を定期的に定性評価することで、メトリクスだけでは見逃しがちな問題を捉えられます。
+
+ここで概説した損失の値の解釈は、最も一般的なケースを想定したものである点に注意してください。実際には、損失の値はモデル、データセット、学習パラメータなどによってさまざまな振る舞いをします。ここで挙げたパターンについてもっと詳しく知りたい場合は、[Fast AI](https://www.fast.ai/posts/2023-09-04-learning-jumps/) の方々によるこちらのブログ記事をチェックしてみてください。
+
+## SFT 後の評価
+
+セクション [11.4](/en/chapter11/4) では、ベンチマークデータセットを使ったモデルの評価方法を学びます。ここでは、モデルの定性評価に焦点を当てます。
+
+SFT を完了したら、次のフォローアップを検討してください。
+
+1. ホールドアウトしたテストデータでモデルを十分に評価する
+2. さまざまな入力でテンプレートへの準拠を検証する
+3. ドメイン固有の知識が保持されているかをテストする
+4. 実世界での性能メトリクスを監視する
+
+> [!TIP]
+> 学習プロセスを文書化してください。含めるべき項目:
+> - データセットの特徴
+> - 学習パラメータ
+> - 性能メトリクス
+> - 既知の制限事項
+> このドキュメントは、将来のモデルのイテレーションに役立ちます。
+
+## クイズ
+
+### 1. SFT で学習時間を制御するパラメータはどれですか？
+
+<Question
+	choices={[
+		{
+			text: "num_train_epochs and max_steps",
+			explain: "正解です！これらのパラメータは、エポック数または総ステップ数によって、モデルがどれだけ長く学習するかを決めます。",
+			correct: true
+		},
+		{
+			text: "batch_size and learning_rate",
+			explain: "これらは学習に影響しますが、学習時間を直接制御するものではありません。"
+		},
+		{
+			text: "gradient_checkpointing and warmup_ratio",
+			explain: "これらのパラメータは学習の効率と安定性に影響するもので、時間ではありません。"
+		}
+	]}
+/>
+
+### 2. 損失曲線のどのパターンが過学習の可能性を示しますか？
+
+<Question
+    choices={[
+        {
+            text: "検証損失が上がる一方で、学習損失が下がり続けている",
+            explain: "正解です！学習損失と検証損失のこの乖離は、過学習の典型的なサインです。",
+            correct: true
+        },
+        {
+            text: "学習損失と検証損失の両方が着実に下がる",
+            explain: "このパターンは実際には健全な学習を示します。"
+        },
+        {
+            text: "学習損失が一定のままで、検証損失が下がる",
+            explain: "これは珍しいパターンであり、過学習を示すものではありません。"
+        }
+    ]}
+/>
+
+### 3. gradient_accumulation_steps は何に使われますか？
+
+<Question
+    choices={[
+        {
+            text: "メモリ使用量を増やさずに、実効的なバッチサイズを大きくするため",
+            explain: "正解です！複数の順伝播にわたって勾配を累積してから重みを更新します。",
+            correct: true
+        },
+        {
+            text: "学習中にチェックポイントを保存するため",
+            explain: "これは save_steps と save_strategy パラメータが担います。"
+        },
+        {
+            text: "学習率のスケジュールを制御するため",
+            explain: "学習率のスケジュールは learning_rate と warmup_ratio で制御します。"
+        }
+    ]}
+/>
+
+### 4. SFT の学習中に監視すべきなのは何ですか？
+
+<Question
+    choices={[
+        {
+            text: "定量的なメトリクスと定性的な出力の両方",
+            explain: "正解です！両方の種類のメトリクスを監視することで、潜在的な問題をすべて捉えられます。",
+            correct: true
+        },
+        {
+            text: "学習損失のみ",
+            explain: "学習損失だけでは、モデルの良好な振る舞いを保証するには不十分です。"
+        },
+        {
+            text: "モデルの出力の品質のみ",
+            explain: "重要ではありますが、定性評価だけでは学習の重要な力学を見逃します。"
+        }
+    ]}
+/>
+
+### 5. 学習中の健全な収束を示すのは何ですか？
+
+<Question
+    choices={[
+        {
+            text: "学習損失と検証損失の差が小さいこと",
+            explain: "正解です！これは、モデルが汎化できるパターンを学習していることを示します。",
+            correct: true
+        },
+        {
+            text: "学習損失がゼロに到達すること",
+            explain: "損失の値が極端に低い場合は、学習ではなく暗記を示している可能性があります。"
+        },
+        {
+            text: "検証損失が学習損失より低いこと",
+            explain: "これは珍しいことであり、検証セットに問題がある可能性を示します。"
+        }
+    ]}
+/>
+
+## 💐 お疲れさまでした！
+
+SFT を使ったモデルのファインチューニングの方法を学びました。学習を続けるには:
+1. ノートブックでパラメータを変えて試してみましょう
+2. 他のデータセットでも実験してみましょう
+3. コース教材の改善に貢献しましょう
+
+## 参考資料
+
+- [TRL Documentation](https://huggingface.co/docs/trl)
+- [SFT Examples Repository](https://github.com/huggingface/trl/blob/main/trl/scripts/sft.py)
+- [Fine-tuning Best Practices](https://huggingface.co/docs/transformers/training)

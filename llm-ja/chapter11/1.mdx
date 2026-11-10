@@ -1,0 +1,32 @@
+# 教師ありファインチューニング
+
+[Chapter 2 Section 2](/course/chapter2/2)では、生成言語モデルを要約や質問応答といった特定のタスク向けにファインチューニングする方法を見ました。しかし現在では、言語モデルを幅広いタスクに同時にファインチューニングする方がはるかに一般的になっています。この手法が教師ありファインチューニング（SFT: Supervised Fine-Tuning）です。この工程により、モデルはより汎用的になり、多様なユースケースに対応できるようになります。ChatGPT のようなプラットフォームで人々が接する LLM の大半は、SFT を経て、より役に立ち、人間の好みに合ったものになっています。この章は次の4つのセクションに分けます。
+
+## 1️⃣ チャットテンプレート
+
+チャットテンプレートは、ユーザーと AI モデルのやり取りを構造化し、一貫性のある、文脈に適した応答を保証します。システムプロンプトやロールベースのメッセージといった要素で構成されます。
+
+## 2️⃣ 教師ありファインチューニング
+
+教師ありファインチューニング（SFT）は、事前学習済みの言語モデルを特定のタスクに適応させるうえで重要な工程です。タスク固有のデータセットを使い、ラベル付きの例でモデルを学習させます。SFT の詳しいガイド（主要な手順とベストプラクティスを含む）は、[TRL ドキュメントの教師ありファインチューニングのセクション](https://huggingface.co/docs/trl/en/sft_trainer)を参照してください。
+
+## 3️⃣ 低ランク適応（LoRA）
+
+低ランク適応（LoRA: Low Rank Adaptation）は、モデルの層に低ランク行列を追加して言語モデルをファインチューニングする手法です。モデルの事前学習済みの知識を保持しながら、効率よくファインチューニングできます。LoRA の大きな利点の1つはメモリの節約効果で、リソースの限られたハードウェアでも大規模モデルをファインチューニングできます。
+
+## 4️⃣ 評価
+
+評価はファインチューニングの工程で欠かせないステップです。タスク固有のデータセットでモデルの性能を測定できます。
+
+> [!TIP]
+> ⚠️ Model Hub と 🤗 Transformers の全機能を活用するために、<a href="https://huggingface.co/join">アカウントの作成</a>をおすすめします。
+
+## 参考文献
+
+- [Transformers documentation on chat templates](https://huggingface.co/docs/transformers/main/en/chat_templating)
+- [Script for Supervised Fine-Tuning in TRL](https://github.com/huggingface/trl/blob/main/trl/scripts/sft.py)
+- [`SFTTrainer` in TRL](https://huggingface.co/docs/trl/main/en/sft_trainer)
+- [Direct Preference Optimization Paper](https://arxiv.org/abs/2305.18290)
+- [Supervised Fine-Tuning with TRL](https://huggingface.co/docs/trl/sft_trainer)
+- [How to fine-tune Google Gemma with ChatML and Hugging Face TRL](https://github.com/huggingface/alignment-handbook)  
+- [Fine-tuning LLM to Generate Persian Product Catalogs in JSON Format](https://huggingface.co/learn/cookbook/en/fine_tuning_llm_to_generate_persian_product_catalogs_in_json_format)

@@ -1,0 +1,249 @@
+<CourseFloatingBanner chapter={2}
+  classNames="absolute z-10 right-0 top-0"
+  notebooks={[
+    {label: "Google Colab", value: "https://colab.research.google.com/github/huggingface/notebooks/blob/main/course/en/chapter11/section2.ipynb"},
+]} />
+
+# チャットテンプレート
+
+## はじめに
+
+チャットテンプレートは、言語モデルとユーザーのやり取りを構造化するために欠かせません。シンプルなチャットボットを作る場合でも、複雑な AI エージェントを作る場合でも、会話の整形方法を正しく理解することは、モデルから最良の結果を引き出すうえで重要です。このガイドでは、チャットテンプレートとは何か、なぜ重要なのか、どう効果的に使うのかを解説します。
+
+> [!TIP]
+> チャットテンプレートが重要である理由:
+> - 会話の構造の一貫性を保つ
+> - ロールを正しく識別する
+> - 複数ターンにわたって文脈を管理する
+> - ツール使用のような高度な機能をサポートする
+
+## モデルの種類とテンプレート
+
+### ベースモデルとインストラクトモデル
+ベースモデルは、生のテキストデータで学習され、次のトークンを予測します。一方、インストラクトモデルは、指示に従い会話を行うように特化してファインチューニングされたモデルです。たとえば、[`SmolLM2-135M`](https://huggingface.co/HuggingFaceTB/SmolLM2-135M) はベースモデルであり、[`SmolLM2-135M-Instruct`](https://huggingface.co/HuggingFaceTB/SmolLM2-135M-Instruct) はその指示チューニング済みの派生モデルです。  
+
+指示チューニング済みモデルは、特定の会話構造に従うよう学習されているため、チャットボットの用途により適しています。さらに、インストラクトモデルはツール使用、マルチモーダル入力、関数呼び出しを含む複雑なやり取りにも対応できます。
+
+ベースモデルにインストラクトモデルのような振る舞いをさせるには、モデルが理解できる一貫した形式でプロンプトを整形する必要があります。ここでチャットテンプレートの出番です。ChatML はそのようなテンプレート形式の1つで、ロール（system、user、assistant）を明確に示して会話を構造化します。ChatML については[こちらのガイド](https://huggingface.co/HuggingFaceTB/SmolLM2-135M-Instruct/blob/e2c3f7557efbdec707ae3a336371d169783f1da1/tokenizer_config.json#L146)を参照してください。
+
+> [!WARNING]
+> インストラクトモデルを使うときは、正しいチャットテンプレート形式を使っているかを必ず確認してください。誤ったテンプレートを使うと、モデルの性能が落ちたり、予期しない振る舞いをしたりすることがあります。確実に確認するには、Hub 上のモデルのトークナイザ設定をチェックするのが最も簡単です。たとえば、`SmolLM2-135M-Instruct` モデルは<a href="https://huggingface.co/HuggingFaceTB/SmolLM2-135M-Instruct/blob/e2c3f7557efbdec707ae3a336371d169783f1da1/tokenizer_config.json#L146">この設定</a>を使用します。
+
+### 一般的なテンプレート形式
+
+具体的な実装に入る前に、モデルごとに会話の形式がどう異なるかを理解しておくことが大切です。簡単な会話例を使って、一般的なテンプレート形式をいくつか見てみましょう。
+
+以降の例ではすべて、次の会話構造を使います。
+
+```python
+messages = [
+    {"role": "system", "content": "You are a helpful assistant."},
+    {"role": "user", "content": "Hello!"},
+    {"role": "assistant", "content": "Hi! How can I help you today?"},
+    {"role": "user", "content": "What's the weather?"},
+]
+```
+
+こちらは、SmolLM2 や Qwen 2 などのモデルで使われる ChatML テンプレートです。
+
+```sh
+<|im_start|>system
+You are a helpful assistant.<|im_end|>
+<|im_start|>user
+Hello!<|im_end|>
+<|im_start|>assistant
+Hi! How can I help you today?<|im_end|>
+<|im_start|>user
+What's the weather?<|im_start|>assistant
+```
+
+こちらは `mistral` テンプレート形式を使ったものです。
+
+```sh
+<s>[INST] You are a helpful assistant. [/INST]
+Hi! How can I help you today?</s>
+[INST] Hello! [/INST]
+```
+
+これらの形式の主な違いは次のとおりです。
+1. **システムメッセージの扱い**: 
+   - Llama 2 はシステムメッセージを `<<SYS>>` タグで囲む
+   - Llama 3 は `<|system|>` タグと `</s>` の終端を使う
+   - Mistral はシステムメッセージを最初の指示に含める
+   - Qwen は `<|im_start|>` タグと明示的な `system` ロールを使う
+   - ChatGPT は `SYSTEM:` プレフィックスを使う
+
+2. **メッセージの境界**:
+   - Llama 2 は `[INST]` と `[/INST]` タグを使う
+   - Llama 3 はロール固有のタグ（`<|system|>`、`<|user|>`、`<|assistant|>`）と `</s>` の終端を使う
+   - Mistral は `[INST]` と `[/INST]` に `<s>` と `</s>` を併用する
+   - Qwen はロール固有の開始／終了トークンを使う
+
+3. **特殊トークン**:
+   - Llama 2 は会話の境界に `<s>` と `</s>` を使う
+   - Llama 3 は各メッセージの終端に `</s>` を使う
+   - Mistral はターンの境界に `<s>` と `</s>` を使う
+   - Qwen はロール固有の開始／終了トークンを使う
+
+こうした違いを理解することが、さまざまなモデルを扱ううえでの鍵です。transformers ライブラリがこれらの違いを自動的に処理してくれる様子を見てみましょう。
+
+```python
+from transformers import AutoTokenizer
+
+# それぞれ異なるテンプレートが自動的に使われます
+mistral_tokenizer = AutoTokenizer.from_pretrained("mistralai/Mistral-7B-Instruct-v0.1")
+qwen_tokenizer = AutoTokenizer.from_pretrained("Qwen/Qwen-7B-Chat")
+smol_tokenizer = AutoTokenizer.from_pretrained("HuggingFaceTB/SmolLM2-135M-Instruct")
+
+messages = [
+    {"role": "system", "content": "You are a helpful assistant."},
+    {"role": "user", "content": "Hello!"},
+]
+
+# それぞれのモデルのテンプレートに従って整形されます
+mistral_chat = mistral_tokenizer.apply_chat_template(messages, tokenize=False)
+qwen_chat = qwen_tokenizer.apply_chat_template(messages, tokenize=False)
+smol_chat = smol_tokenizer.apply_chat_template(messages, tokenize=False)
+```
+
+<details>
+<summary>クリックするとテンプレートの例が表示されます</summary>
+
+Qwen 2 と SmolLM2 の ChatML テンプレート:
+
+```sh
+<|im_start|>system
+You are a helpful assistant.<|im_end|>
+<|im_start|>user
+Hello!<|im_end|>
+<|im_start|>assistant
+Hi! How can I help you today?<|im_end|>
+<|im_start|>user
+What's the weather?<|im_start|>assistant
+```
+
+Mistral テンプレート:
+
+```sh
+<s>[INST] You are a helpful assistant. [/INST]
+Hi! How can I help you today?</s>
+[INST] Hello! [/INST]
+```
+
+</details>
+
+
+### 高度な機能
+チャットテンプレートは、単なる会話のやり取りを超えた、より複雑なシナリオにも対応できます。
+
+1. **ツール使用**: モデルが外部のツールや API と連携する必要がある場合
+2. **マルチモーダル入力**: 画像、音声、その他のメディア形式を扱う場合
+3. **関数呼び出し**: 構造化された関数の実行のため
+4. **複数ターンの文脈**: 会話履歴を保持するため
+
+> [!TIP]
+> 高度な機能を実装するときは:
+> - 使うモデルで十分にテストしてください。特に Vision やツール使用のテンプレートはバリエーションが豊富です。
+> - 機能とモデルの組み合わせごとに、トークン使用量を注意深く監視してください。
+> - 機能ごとに想定される形式を文書化してください
+
+マルチモーダルな会話では、チャットテンプレートに画像の参照や Base64 エンコードされた画像を含めることができます。
+
+```python
+messages = [
+    {
+        "role": "system",
+        "content": "You are a helpful vision assistant that can analyze images.",
+    },
+    {
+        "role": "user",
+        "content": [
+            {"type": "text", "text": "What's in this image?"},
+            {"type": "image", "image_url": "https://example.com/image.jpg"},
+        ],
+    },
+]
+```
+
+ツール使用を伴うチャットテンプレートの例がこちらです。
+
+```python
+messages = [
+    {
+        "role": "system",
+        "content": "You are an AI assistant that can use tools. Available tools: calculator, weather_api",
+    },
+    {"role": "user", "content": "What's 123 * 456 and is it raining in Paris?"},
+    {
+        "role": "assistant",
+        "content": "Let me help you with that.",
+        "tool_calls": [
+            {
+                "tool": "calculator",
+                "parameters": {"operation": "multiply", "x": 123, "y": 456},
+            },
+            {"tool": "weather_api", "parameters": {"city": "Paris", "country": "France"}},
+        ],
+    },
+    {"role": "tool", "tool_name": "calculator", "content": "56088"},
+    {
+        "role": "tool",
+        "tool_name": "weather_api",
+        "content": "{'condition': 'rain', 'temperature': 15}",
+    },
+]
+```
+
+## ベストプラクティス
+
+### 一般的なガイドライン
+チャットテンプレートを扱うときは、次の重要なプラクティスに従ってください。
+
+1. **一貫した整形**: アプリケーション全体を通して同じテンプレート形式を使う
+2. **明確なロールの定義**: 各メッセージのロール（system、user、assistant、tool）を明確に指定する
+3. **文脈の管理**: 会話履歴を保持するときはトークンの上限に注意する
+4. **エラーハンドリング**: ツール呼び出しやマルチモーダル入力に対する適切なエラーハンドリングを組み込む
+5. **検証**: モデルに送る前にメッセージ構造を検証する
+
+> [!WARNING]
+> 避けるべきよくある落とし穴:
+> - 同じアプリケーション内で異なるテンプレート形式を混在させる
+> - 長い会話履歴でトークンの上限を超える
+> - メッセージ内の特殊文字を正しくエスケープしない
+> - 入力メッセージ構造の検証を忘れる
+> - モデル固有のテンプレート要件を無視する
+
+## ハンズオン演習
+
+実際の例でチャットテンプレートの実装を練習してみましょう。
+
+> [!TIP]
+> 次の手順で `HuggingFaceTB/smoltalk` データセットを ChatML 形式に変換してみましょう。
+>
+> 1. データセットを読み込みます:
+> ```python
+> from datasets import load_dataset
+>
+> dataset = load_dataset("HuggingFaceTB/smoltalk")
+> ```
+>
+> 2. 処理関数を作成します:
+> ```python
+> def convert_to_chatml(example):
+>     return {
+>         "messages": [
+>             {"role": "user", "content": example["input"]},
+>             {"role": "assistant", "content": example["output"]},
+>         ]
+>     }
+> ```
+>
+> 3. 選んだモデルのトークナイザでチャットテンプレートを適用します
+>
+> 出力形式がターゲットモデルの要件と一致しているか、必ず検証してください。
+
+## 参考資料
+
+- [Hugging Face Chat Templating Guide](https://huggingface.co/docs/transformers/main/en/chat_templating)
+- [Transformers Documentation](https://huggingface.co/docs/transformers)
+- [Chat Templates Examples Repository](https://github.com/chujiezheng/chat_templates)

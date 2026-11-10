@@ -1,0 +1,164 @@
+<CourseFloatingBanner chapter={2}
+  classNames="absolute z-10 right-0 top-0"
+  notebooks={[
+    {label: "Google Colab", value: "https://colab.research.google.com/github/huggingface/notebooks/blob/main/course/en/chapter11/section4.ipynb"},
+]} />
+
+# LoRA（低ランク適応）
+
+大規模言語モデルのファインチューニングは、リソースを大量に消費する工程です。LoRA は、少数のパラメータで大規模言語モデルをファインチューニングできる手法です。アテンションの重みに小さな行列を追加して最適化することで、学習可能なパラメータを通常約90%削減します。
+
+## LoRA の理解
+
+LoRA（低ランク適応）は、パラメータ効率のよいファインチューニング手法です。事前学習済みモデルの重みを凍結し、学習可能なランク分解行列をモデルの層に挿入します。ファインチューニングでモデルの全パラメータを学習する代わりに、LoRA は重みの更新を低ランク分解によって小さな行列に分解し、モデルの性能を維持しながら学習可能なパラメータ数を大幅に削減します。たとえば、GPT-3 175B に適用した場合、LoRA は全パラメータのファインチューニングと比べて学習可能なパラメータを 10,000 分の 1 にし、GPU メモリ要件を 3 分の 1 にしました。LoRA の詳細は [LoRA の論文](https://arxiv.org/pdf/2106.09685)で読むことができます。
+
+LoRA は、Transformer の層、通常はアテンションの重みに、ランク分解行列のペアを追加することで動作します。推論時には、これらのアダプタの重みをベースモデルにマージできるため、レイテンシのオーバーヘッドは追加されません。LoRA は、リソース要件を扱いやすい範囲に保ちながら、大規模言語モデルを特定のタスクやドメインに適応させるのに特に役立ちます。
+
+## LoRA の主な利点
+
+1. **メモリ効率**: 
+   - GPU メモリに保存されるのはアダプタのパラメータのみ
+   - ベースモデルの重みは凍結されたままで、より低い精度で読み込める
+   - コンシューマ向け GPU でも大規模モデルのファインチューニングが可能
+
+2. **学習の機能**:
+   - 最小限のセットアップで PEFT/LoRA とネイティブに統合
+   - さらにメモリ効率のよい QLoRA（量子化 LoRA）に対応
+
+3. **アダプタの管理**:
+   - チェックポイント時にアダプタの重みを保存
+   - アダプタをベースモデルにマージし直す機能
+
+## PEFT で LoRA アダプタを読み込む
+
+[PEFT](https://github.com/huggingface/peft) は、LoRA を含む PEFT 手法の読み込みと管理に統一されたインターフェースを提供するライブラリです。異なる PEFT 手法を簡単に読み込んで切り替えられるため、さまざまなファインチューニング手法の実験がしやすくなります。 
+
+アダプタは `load_adapter()` で事前学習済みモデルに読み込むことができ、重みがマージされていないさまざまなアダプタを試すのに便利です。有効なアダプタの重みは `set_adapter()` 関数で設定します。ベースモデルに戻すには、unload() を使ってすべての LoRA モジュールをアンロードできます。これにより、タスク固有の重みを簡単に切り替えられます。  
+
+```python
+from peft import PeftModel, PeftConfig
+
+config = PeftConfig.from_pretrained("ybelkada/opt-350m-lora")
+model = AutoModelForCausalLM.from_pretrained(config.base_model_name_or_path)
+lora_model = PeftModel.from_pretrained(model, "ybelkada/opt-350m-lora")
+```
+
+![lora_load_adapter](https://github.com/huggingface/smol-course/raw/main/v1/3_parameter_efficient_finetuning/images/lora_adapter.png)
+
+## `trl` の `SFTTrainer` と LoRA で LLM をファインチューニングする
+
+`trl` の [SFTTrainer](https://huggingface.co/docs/trl/sft_trainer) は、[PEFT](https://huggingface.co/docs/peft/en/index) ライブラリを通じた LoRA アダプタとの統合を提供します。つまり、SFT と同じ方法でモデルをファインチューニングしながら、LoRA を使って学習が必要なパラメータ数を減らすことができます。
+
+この例では PEFT の `LoRAConfig` クラスを使います。セットアップは数ステップの設定だけです。
+
+1. LoRA の設定（ランク、アルファ、ドロップアウト）を定義する
+2. PEFT の設定で SFTTrainer を作成する
+3. 学習してアダプタの重みを保存する
+
+## LoRA の設定
+
+LoRA の設定と主要なパラメータを順に見ていきましょう。
+
+| パラメータ | 説明 |
+|-----------|-------------|
+| `r`（ランク） | 重みの更新に使う低ランク行列の次元。通常は 4〜32 の間。値が小さいほど圧縮率は高くなるが、表現力が落ちる可能性がある。 |
+| `lora_alpha` | LoRA 層のスケーリング係数。通常はランク値の 2 倍に設定する。値が大きいほど適応の効果が強くなる。 |
+| `lora_dropout` | LoRA 層のドロップアウト確率。通常は 0.05〜0.1。値が大きいほど学習中の過学習を防ぐのに役立つ。 |
+| `bias` | バイアス項の学習を制御する。選択肢は "none"、"all"、"lora_only"。"none" がメモリ効率の面で最も一般的。 |
+| `target_modules` | LoRA を適用するモデルのモジュールを指定する。"all-linear" や "q_proj,v_proj" のような特定のモジュールを指定できる。モジュールが多いほど適応の自由度は上がるが、メモリ使用量も増える。 |
+
+> [!TIP]
+> PEFT 手法を実装するときは、LoRA のランク値は小さい値（4〜8）から始めて、学習損失を監視してください。過学習を防ぐために検証セットを使い、可能であれば全パラメータのファインチューニングのベースラインと比較しましょう。手法の効果はタスクによって変わるため、実験が鍵です。
+
+## TRL と PEFT の併用
+
+PEFT 手法は TRL と組み合わせてファインチューニングに使え、メモリ要件を削減できます。モデルを読み込むときに `LoraConfig` を渡すことができます。  
+
+```python
+from peft import LoraConfig
+
+# r: LoRA の更新行列のランク次元（小さいほど圧縮率が高い）
+rank_dimension = 6
+# lora_alpha: LoRA 層のスケーリング係数（大きいほど適応が強い）
+lora_alpha = 8
+# lora_dropout: LoRA 層のドロップアウト確率（過学習の防止に役立つ）
+lora_dropout = 0.05
+
+peft_config = LoraConfig(
+    r=rank_dimension,  # ランク次元 - 通常は 4〜32 の間
+    lora_alpha=lora_alpha,  # LoRA のスケーリング係数 - 通常はランクの 2 倍
+    lora_dropout=lora_dropout,  # LoRA 層のドロップアウト確率
+    bias="none",  # LoRA のバイアスの種類。対応するバイアスが学習中に更新されます。
+    target_modules="all-linear",  # LoRA を適用するモジュール
+    task_type="CAUSAL_LM",  # モデルアーキテクチャのタスクの種類
+)
+```
+
+上では、`device_map="auto"` を使ってモデルを正しいデバイスに自動的に割り当てました。`device_map={"": device_index}` のようにして、モデルを特定のデバイスに手動で割り当てることもできます。 
+
+さらに、LoRA の設定で `SFTTrainer` を定義する必要があります。
+
+```python
+# LoRA の設定で SFTTrainer を作成
+trainer = SFTTrainer(
+    model=model,
+    args=args,
+    train_dataset=dataset["train"],
+    peft_config=peft_config,  # LoRA の設定
+    max_seq_length=max_seq_length,  # シーケンス長の最大値
+    processing_class=tokenizer,
+)
+```
+
+> [!TIP]
+> ✏️ **試してみましょう！** 前のセクションでファインチューニングしたモデルをベースに、今度は LoRA でファインチューニングしてみましょう。上で定義した LoRA の設定を使い、`HuggingFaceTB/smoltalk` データセットで `deepseek-ai/DeepSeek-R1-Distill-Qwen-1.5B` モデルをファインチューニングしてください。
+
+## LoRA アダプタのマージ
+
+LoRA で学習した後は、デプロイを簡単にするために、アダプタの重みをベースモデルにマージし直したい場合があります。これにより重みが統合された単一のモデルができ、推論時にアダプタを別々に読み込む必要がなくなります。
+
+マージの工程では、メモリ管理と精度に注意が必要です。ベースモデルとアダプタの重みの両方を同時に読み込む必要があるため、十分な GPU/CPU メモリが確保できるようにしてください。`transformers` で `device_map="auto"` を使うと、ハードウェアに応じてモデルに正しいデバイスが割り当てられます。 
+
+工程を通して一貫した精度（例: float16）を維持し、学習時に使った精度と合わせ、マージしたモデルをデプロイ用に同じ形式で保存してください。 
+
+## マージの実装
+
+LoRA アダプタを学習した後は、アダプタの重みをベースモデルにマージし直すことができます。その方法がこちらです。
+
+```python
+import torch
+from transformers import AutoModelForCausalLM
+from peft import PeftModel
+
+# 1. ベースモデルを読み込む
+base_model = AutoModelForCausalLM.from_pretrained(
+    "base_model_name", torch_dtype=torch.float16, device_map="auto"
+)
+
+# 2. アダプタ付きの PEFT モデルを読み込む
+peft_model = PeftModel.from_pretrained(
+    base_model, "path/to/adapter", torch_dtype=torch.float16
+)
+
+# 3. アダプタの重みをベースモデルにマージする
+merged_model = peft_model.merge_and_unload()
+```
+
+保存したモデルのサイズに不一致が生じる場合は、トークナイザも併せて保存しているか確認してください。
+
+```python
+# モデルとトークナイザの両方を保存する
+tokenizer = AutoTokenizer.from_pretrained("base_model_name")
+merged_model.save_pretrained("path/to/save/merged_model")
+tokenizer.save_pretrained("path/to/save/merged_model")
+```
+
+> [!TIP]
+> ✏️ **試してみましょう！** アダプタの重みをベースモデルにマージし直してみましょう。上で定義した LoRA の設定を使い、`HuggingFaceTB/smoltalk` データセットで `deepseek-ai/DeepSeek-R1-Distill-Qwen-1.5B` モデルをファインチューニングしてください。
+
+
+# 参考資料
+
+- [LoRA: Low-Rank Adaptation of Large Language Models](https://arxiv.org/pdf/2106.09685)
+- [PEFT Documentation](https://huggingface.co/docs/peft)
+- [Hugging Face blog post on PEFT](https://huggingface.co/blog/peft)
