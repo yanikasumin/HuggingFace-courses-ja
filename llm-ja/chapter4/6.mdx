@@ -1,0 +1,228 @@
+<FrameworkSwitchCourse {fw} />
+
+<!-- DISABLE-FRONTMATTER-SECTIONS -->
+
+# 章末クイズ[[end-of-chapter-quiz]]
+
+<CourseFloatingBanner
+    chapter={4}
+    classNames="absolute z-10 right-0 top-0"
+/>
+
+この章で学んだことをテストしましょう！
+  
+### 1. Hub のモデルにはどんな制限がありますか？
+
+<Question
+	choices={[
+		{
+			text: "🤗 Transformers ライブラリのモデル。",
+			explain: "🤗 Transformers ライブラリのモデルは Hugging Face Hub でサポートされていますが、それだけではありません！"
+		},
+		{
+			text: "🤗 Transformers と似たインターフェースを持つすべてのモデル。",
+			explain: "Hugging Face Hub にモデルをアップロードする際、インターフェースの要件は設けられていません。"
+		},
+		{
+			text: "制限はありません。",
+			explain: "そのとおりです！Hub にモデルをアップロードする際の制限はありません。",
+            correct: true
+		},
+        {
+			text: "何らかの形で NLP に関連するモデル。",
+			explain: "応用分野についての要件も設けられていません！"
+		}
+	]}
+/>
+
+### 2. Hub でモデルを管理するにはどうしますか？
+
+<Question
+	choices={[
+		{
+			text: "GCP アカウントを通じて。",
+			explain: "違います！"
+		},
+		{
+			text: "ピアツーピア配信を通じて。",
+			explain: "違います！"
+		},
+		{
+			text: "git と git-lfs を通じて。",
+			explain: "正解です！Hub のモデルはシンプルな Git リポジトリで、大きなファイルには <code>git-lfs</code> を活用します。",
+            correct: true
+		}
+	]}
+/>
+
+### 3. Hugging Face Hub の Web インターフェースで何ができますか？
+
+<Question
+	choices={[
+		{
+			text: "既存のリポジトリをフォークする。",
+			explain: "Hugging Face Hub ではリポジトリをフォークできません。"
+		},
+		{
+			text: "新しいモデルリポジトリを作成する。",
+			explain: "正解です！ただし、できることはそれだけではありません。",
+            correct: true
+		},
+		{
+			text: "ファイルを管理・編集する。",
+			explain: "正解です！ただし、正解はそれだけではありません。",
+            correct: true
+		},
+        {
+			text: "ファイルをアップロードする。",
+			explain: "そのとおりです！ただし、それだけではありません。",
+            correct: true
+		},
+        {
+			text: "バージョン間の差分を見る。",
+			explain: "正解です！ただし、できることはそれだけではありません。",
+            correct: true
+		}
+	]}
+/>
+
+### 4. モデルカードとは何ですか？
+
+<Question
+	choices={[
+		{
+			text: "モデルの大まかな説明であり、モデルファイルやトークナイザファイルより重要度は低い。",
+			explain: "確かにモデルの説明ですが、重要な要素でもあります。不完全だったり存在しなかったりすると、モデルの有用性は大きく損なわれます。"
+		},
+		{
+			text: "再現性、再利用性、公平性を確保するための手段。",
+			explain: "正解です！モデルカードに適切な情報を共有すれば、ユーザーがモデルを活用し、その制限やバイアスを把握する助けになります。",
+            correct: true
+		},
+		{
+			text: "実行するとモデルについての情報を取得できる Python ファイル。",
+			explain: "モデルカードはシンプルな Markdown ファイルです。"
+		}
+	]}
+/>
+
+### 5. 🤗 Transformers ライブラリの次のオブジェクトのうち、`push_to_hub()` で直接 Hub に共有できるものはどれですか？
+
+{#if fw === 'pt'}
+<Question
+	choices={[
+		{
+			text: "トークナイザ",
+			explain: "正解です！すべてのトークナイザには <code>push_to_hub</code> メソッドがあり、使うとトークナイザのファイル（語彙、トークナイザのアーキテクチャなど）をすべて指定したリポジトリにプッシュします。ただし、正解はそれだけではありません！",
+            correct: true
+		},
+		{
+			text: "モデルコンフィギュレーション",
+			explain: "そのとおりです！すべてのモデルコンフィギュレーションには <code>push_to_hub</code> メソッドがあり、使うと指定したリポジトリにプッシュします。他に何が共有できるでしょうか？",
+            correct: true
+		},
+		{
+			text: "モデル",
+			explain: "正解です！すべてのモデルには <code>push_to_hub</code> メソッドがあり、使うとモデルとその設定ファイルをすべて指定したリポジトリにプッシュします。ただし、共有できるのはそれだけではありません。",
+            correct: true
+		},
+        {
+			text: "Trainer",
+			explain: "そのとおりです。<code>Trainer</code> にも <code>push_to_hub</code> メソッドが実装されており、使うとモデル、その設定、トークナイザ、モデルカードの下書きを指定したリポジトリにアップロードします。別の答えも試してみてください！",
+            correct: true
+		}
+	]}
+/>
+{:else}
+<Question
+	choices={[
+		{
+			text: "トークナイザ",
+			explain: "正解です！すべてのトークナイザには <code>push_to_hub</code> メソッドがあり、使うとトークナイザのファイル（語彙、トークナイザのアーキテクチャなど）をすべて指定したリポジトリにプッシュします。ただし、正解はそれだけではありません！",
+            correct: true
+		},
+		{
+			text: "モデルコンフィギュレーション",
+			explain: "そのとおりです！すべてのモデルコンフィギュレーションには <code>push_to_hub</code> メソッドがあり、使うと指定したリポジトリにプッシュします。他に何が共有できるでしょうか？",
+            correct: true
+		},
+		{
+			text: "モデル",
+			explain: "正解です！すべてのモデルには <code>push_to_hub</code> メソッドがあり、使うとモデルとその設定ファイルをすべて指定したリポジトリにプッシュします。ただし、共有できるのはそれだけではありません。",
+            correct: true
+		},
+		{
+			text: "上記のすべて（専用のコールバックを使う）",
+			explain: "そのとおりです。<code>PushToHubCallback</code> は、学習中にこれらのオブジェクトをすべて定期的にリポジトリへ送信します。",
+            correct: true
+		}
+	]}
+/>
+{/if}
+
+### 6. `push_to_hub()` メソッドや CLI ツールを使うときの最初のステップは何ですか？
+
+<Question
+	choices={[
+		{
+			text: "Web サイトにログインする。",
+			explain: "ローカルのマシンでは役に立ちません。"
+		},
+		{
+			text: "ターミナルで 'huggingface-cli login' を実行する。",
+			explain: "正解です。これにより個人用トークンがダウンロードされ、キャッシュされます。",
+            correct: true
+		},
+		{
+			text: "ノートブックで 'notebook_login()' を実行する。",
+			explain: "正解です。認証用のウィジェットが表示されます。",
+            correct: true
+		},
+	]}
+/>
+
+### 7. モデルとトークナイザを使っています。Hub にアップロードするにはどうしますか？
+
+<Question
+	choices={[
+		{
+			text: "モデルとトークナイザに対して直接 push_to_hub メソッドを呼び出す。",
+			explain: "正解です！",
+            correct: true
+		},
+		{
+			text: "Python ランタイム内で、<code>huggingface_hub</code> ユーティリティでラップする。",
+			explain: "モデルとトークナイザはすでに <code>huggingface_hub</code> ユーティリティの恩恵を受けています。追加でラップする必要はありません！"
+		},
+		{
+			text: "ディスクに保存して <code>transformers-cli upload-model</code> を呼び出す",
+			explain: "<code>upload-model</code> というコマンドは存在しません。"
+		}
+	]}
+/>
+
+### 8. `Repository` クラスでできる git 操作はどれですか？
+
+<Question
+	choices={[
+		{
+			text: "コミット。",
+			explain: "正解です。そのための <code>git_commit()</code> メソッドがあります。",
+            correct: true
+		},
+		{
+			text: "プル",
+			explain: "それが <code>git_pull()</code> メソッドの役割です。",
+            correct: true
+		},
+		{
+			text: "プッシュ",
+			explain: "<code>git_push()</code> メソッドがこれを行います。",
+            correct: true
+		},
+		{
+			text: "マージ",
+			explain: "いいえ、その操作はこの API では決してできません。"
+		}
+	]}
+/>
