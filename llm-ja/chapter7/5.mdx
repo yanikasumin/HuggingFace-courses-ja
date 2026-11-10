@@ -1,0 +1,1048 @@
+<FrameworkSwitchCourse {fw} />
+
+# 要約[[summarization]]
+
+{#if fw === 'pt'}
+
+<CourseFloatingBanner chapter={7}
+  classNames="absolute z-10 right-0 top-0"
+  notebooks={[
+    {label: "Google Colab", value: "https://colab.research.google.com/github/huggingface/notebooks/blob/master/course/en/chapter7/section5_pt.ipynb"},
+    {label: "Aws Studio", value: "https://studiolab.sagemaker.aws/import/github/huggingface/notebooks/blob/master/course/en/chapter7/section5_pt.ipynb"},
+]} />
+
+{:else}
+
+<CourseFloatingBanner chapter={7}
+  classNames="absolute z-10 right-0 top-0"
+  notebooks={[
+    {label: "Google Colab", value: "https://colab.research.google.com/github/huggingface/notebooks/blob/master/course/en/chapter7/section5_tf.ipynb"},
+    {label: "Aws Studio", value: "https://studiolab.sagemaker.aws/import/github/huggingface/notebooks/blob/master/course/en/chapter7/section5_tf.ipynb"},
+]} />
+
+{/if}
+
+
+このセクションでは、Transformer モデルを使って長い文書を要約に凝縮する方法、すなわち*テキスト要約*と呼ばれるタスクを見ていきます。これは最も難しい NLP タスクの1つです。長い文章を理解し、文書の主要な話題を捉えた一貫性のあるテキストを生成するなど、幅広い能力が求められるためです。しかし、うまくできればテキスト要約は強力なツールになります。ドメインの専門家が長い文書を細部まで読む負担を軽減し、さまざまな業務プロセスを高速化できます。
+
+<Youtube id="yHnr5Dk2zCI"/>
+
+[Hugging Face Hub](https://huggingface.co/models?pipeline_tag=summarization&sort=downloads) には要約用にファインチューニングされたモデルがすでに各種存在しますが、そのほとんどすべてが英語の文書にしか適していません。そこで、このセクションではひねりを加えて、英語とスペイン語のバイリンガルモデルを学習します。このセクションの終わりには、ここに示すような顧客レビューを要約できる[モデル](https://huggingface.co/huggingface-course/mt5-small-finetuned-amazon-en-es)が得られます。
+
+<iframe src="https://course-demos-mt5-small-finetuned-amazon-en-es.hf.space" frameBorder="0" height="400" title="Gradio app" class="block dark:hidden container p-0 flex-grow space-iframe" allow="accelerometer; ambient-light-sensor; autoplay; battery; camera; document-domain; encrypted-media; fullscreen; geolocation; gyroscope; layout-animations; legacy-image-formats; magnetometer; microphone; midi; oversized-images; payment; picture-in-picture; publickey-credentials-get; sync-xhr; usb; vr ; wake-lock; xr-spatial-tracking" sandbox="allow-forms allow-modals allow-popups allow-popups-to-escape-sandbox allow-same-origin allow-scripts allow-downloads"></iframe>
+
+見ていくように、これらの要約が簡潔なのは、顧客が製品レビューに付けるタイトルから学習しているためです。まず、このタスクに適したバイリンガルコーパスを組み立てるところから始めましょう。
+
+## 多言語コーパスを準備する[[preparing-a-multilingual-corpus]]
+
+バイリンガルの要約器を作るため、[Multilingual Amazon Reviews Corpus](https://huggingface.co/datasets/amazon_reviews_multi) を使います。このコーパスは6言語の Amazon 製品レビューで構成され、通常は多言語分類器のベンチマークに使われます。しかし、各レビューには短いタイトルが付いているため、そのタイトルを、モデルが学習するためのターゲット要約として使うことができます！まず、英語とスペイン語のサブセットを Hugging Face Hub からダウンロードしましょう。
+
+```python
+from datasets import load_dataset
+
+spanish_dataset = load_dataset("amazon_reviews_multi", "es")
+english_dataset = load_dataset("amazon_reviews_multi", "en")
+english_dataset
+```
+
+```python out
+DatasetDict({
+    train: Dataset({
+        features: ['review_id', 'product_id', 'reviewer_id', 'stars', 'review_body', 'review_title', 'language', 'product_category'],
+        num_rows: 200000
+    })
+    validation: Dataset({
+        features: ['review_id', 'product_id', 'reviewer_id', 'stars', 'review_body', 'review_title', 'language', 'product_category'],
+        num_rows: 5000
+    })
+    test: Dataset({
+        features: ['review_id', 'product_id', 'reviewer_id', 'stars', 'review_body', 'review_title', 'language', 'product_category'],
+        num_rows: 5000
+    })
+})
+```
+
+見てのとおり、言語ごとに `train` スプリットには200,000件のレビューが、`validation` と `test` の各スプリットには5,000件のレビューがあります。関心のあるレビュー情報は、`review_body` 列と `review_title` 列に含まれています。[Chapter 5](/course/chapter5) で学んだ手法を使い、学習セットからランダムなサンプルを取る単純な関数を作って、例をいくつか見てみましょう。
+
+```python
+def show_samples(dataset, num_samples=3, seed=42):
+    sample = dataset["train"].shuffle(seed=seed).select(range(num_samples))
+    for example in sample:
+        print(f"\n'>> Title: {example['review_title']}'")
+        print(f"'>> Review: {example['review_body']}'")
+
+
+show_samples(english_dataset)
+```
+
+```python out
+'>> Title: Worked in front position, not rear'
+'>> Review: 3 stars because these are not rear brakes as stated in the item description. At least the mount adapter only worked on the front fork of the bike that I got it for.'
+
+'>> Title: meh'
+'>> Review: Does it’s job and it’s gorgeous but mine is falling apart, I had to basically put it together again with hot glue'
+
+'>> Title: Can\'t beat these for the money'
+'>> Review: Bought this for handling miscellaneous aircraft parts and hanger "stuff" that I needed to organize; it really fit the bill. The unit arrived quickly, was well packaged and arrived intact (always a good sign). There are five wall mounts-- three on the top and two on the bottom. I wanted to mount it on the wall, so all I had to do was to remove the top two layers of plastic drawers, as well as the bottom corner drawers, place it when I wanted and mark it; I then used some of the new plastic screw in wall anchors (the 50 pound variety) and it easily mounted to the wall. Some have remarked that they wanted dividers for the drawers, and that they made those. Good idea. My application was that I needed something that I can see the contents at about eye level, so I wanted the fuller-sized drawers. I also like that these are the new plastic that doesn\'t get brittle and split like my older plastic drawers did. I like the all-plastic construction. It\'s heavy duty enough to hold metal parts, but being made of plastic it\'s not as heavy as a metal frame, so you can easily mount it to the wall and still load it up with heavy stuff, or light stuff. No problem there. For the money, you can\'t beat it. Best one of these I\'ve bought to date-- and I\'ve been using some version of these for over forty years.'
+```
+
+> [!TIP]
+> ✏️ **試してみましょう！** `Dataset.shuffle()` コマンドのランダムシードを変更して、コーパス内の他のレビューを探索してみてください。スペイン語話者の方は、`spanish_dataset` のレビューもいくつか見て、タイトルが妥当な要約になっているか確認してみてください。
+
+このサンプルは、オンラインでよく見られるレビューの多様性を示しています。肯定的なものから否定的なものまで（そしてその間のすべて）さまざまです。"meh" というタイトルの例はあまり情報がありませんが、他のタイトルはレビュー自体の妥当な要約のように見えます。400,000件すべてのレビューで要約モデルを学習すると、GPU 1つでは時間がかかりすぎます。そのため代わりに、単一ドメインの製品について要約を生成することに集中します。選択できるドメインの感触をつかむため、`english_dataset` を `pandas.DataFrame` に変換し、製品カテゴリごとのレビュー数を計算しましょう。
+
+```python
+english_dataset.set_format("pandas")
+english_df = english_dataset["train"][:]
+# 上位20製品の件数を表示します
+english_df["product_category"].value_counts()[:20]
+```
+
+```python out
+home                      17679
+apparel                   15951
+wireless                  15717
+other                     13418
+beauty                    12091
+drugstore                 11730
+kitchen                   10382
+toy                        8745
+sports                     8277
+automotive                 7506
+lawn_and_garden            7327
+home_improvement           7136
+pet_products               7082
+digital_ebook_purchase     6749
+pc                         6401
+electronics                6186
+office_product             5521
+shoes                      5197
+grocery                    4730
+book                       3756
+Name: product_category, dtype: int64
+```
+
+英語データセットで最も人気のある製品は、家庭用品、衣類、ワイヤレス電子機器に関するものです。しかし、Amazon のテーマに沿うため、本のレビューの要約に集中しましょう。結局のところ、それが同社の創業事業です！当てはまる製品カテゴリが2つあることが分かります（`book` と `digital_ebook_purchase`）。そこで、両言語のデータセットをこれらの製品だけに絞り込みます。[Chapter 5](/course/chapter5) で見たように、`Dataset.filter()` 関数を使うとデータセットを非常に効率的にスライスできます。そのための単純な関数を定義しましょう。
+
+```python
+def filter_books(example):
+    return (
+        example["product_category"] == "book"
+        or example["product_category"] == "digital_ebook_purchase"
+    )
+```
+
+この関数を `english_dataset` と `spanish_dataset` に適用すると、本のカテゴリに関わる行だけが残ります。フィルタを適用する前に、`english_dataset` の形式を `"pandas"` から `"arrow"` に戻しましょう。
+
+```python
+english_dataset.reset_format()
+```
+
+その後フィルタ関数を適用し、確認のためレビューのサンプルを調べ、本当に本に関するものか見てみましょう。
+
+```python
+spanish_books = spanish_dataset.filter(filter_books)
+english_books = english_dataset.filter(filter_books)
+show_samples(english_books)
+```
+
+```python out
+'>> Title: I\'m dissapointed.'
+'>> Review: I guess I had higher expectations for this book from the reviews. I really thought I\'d at least like it. The plot idea was great. I loved Ash but, it just didnt go anywhere. Most of the book was about their radio show and talking to callers. I wanted the author to dig deeper so we could really get to know the characters. All we know about Grace is that she is attractive looking, Latino and is kind of a brat. I\'m dissapointed.'
+
+'>> Title: Good art, good price, poor design'
+'>> Review: I had gotten the DC Vintage calendar the past two years, but it was on backorder forever this year and I saw they had shrunk the dimensions for no good reason. This one has good art choices but the design has the fold going through the picture, so it\'s less aesthetically pleasing, especially if you want to keep a picture to hang. For the price, a good calendar'
+
+'>> Title: Helpful'
+'>> Review: Nearly all the tips useful and. I consider myself an intermediate to advanced user of OneNote. I would highly recommend.'
+```
+
+レビューは厳密には本に関するものではなく、カレンダーや OneNote のような電子アプリケーションを指している場合もあることが分かります。それでも、このドメインは要約モデルを学習するのにだいたい適切なようです。このタスクに適したさまざまなモデルを見る前に、データ準備の最後の1つを行います。英語とスペイン語のレビューを単一の `DatasetDict` オブジェクトに結合することです。🤗 Datasets は便利な `concatenate_datasets()` 関数を提供しており、（名前のとおり）2つの `Dataset` オブジェクトを積み重ねることができます。そこで、バイリンガルデータセットを作るため、各スプリットについてループし、そのスプリットのデータセットを連結し、結果をシャッフルして、モデルが単一言語に過学習しないようにします。
+
+```python
+from datasets import concatenate_datasets, DatasetDict
+
+books_dataset = DatasetDict()
+
+for split in english_books.keys():
+    books_dataset[split] = concatenate_datasets(
+        [english_books[split], spanish_books[split]]
+    )
+    books_dataset[split] = books_dataset[split].shuffle(seed=42)
+
+# 例をいくつか確認します
+show_samples(books_dataset)
+```
+
+```python out
+'>> Title: Easy to follow!!!!'
+'>> Review: I loved The dash diet weight loss Solution. Never hungry. I would recommend this diet. Also the menus are well rounded. Try it. Has lots of the information need thanks.'
+
+'>> Title: PARCIALMENTE DAÑADO'
+'>> Review: Me llegó el día que tocaba, junto a otros libros que pedí, pero la caja llegó en mal estado lo cual dañó las esquinas de los libros porque venían sin protección (forro).'
+
+'>> Title: no lo he podido descargar'
+'>> Review: igual que el anterior'
+```
+
+確かに、英語とスペイン語のレビューが混ざっています！学習コーパスができたので、最後に確認すべきは、レビューとそのタイトルの単語の分布です。これは要約タスクで特に重要です。データ内の短い参照要約が、モデルに1〜2語しか出力しないよう偏らせる可能性があるためです。下の図は単語の分布を示しており、タイトルはわずか1〜2語に大きく偏っていることが分かります。
+
+<div class="flex justify-center">
+<img class="block dark:hidden" src="https://huggingface.co/datasets/huggingface-course/documentation-images/resolve/main/en/chapter7/review-lengths.svg" alt="レビューのタイトルとテキストの単語数の分布。"/>
+<img class="hidden dark:block" src="https://huggingface.co/datasets/huggingface-course/documentation-images/resolve/main/en/chapter7/review-lengths-dark.svg" alt="レビューのタイトルとテキストの単語数の分布。"/>
+</div>
+
+これに対処するため、タイトルが非常に短い例を除外し、モデルがより興味深い要約を生成できるようにします。英語とスペイン語のテキストを扱っているため、大まかなヒューリスティクスとしてタイトルを空白で分割し、信頼できる `Dataset.filter()` メソッドを次のように使えます。
+
+```python
+books_dataset = books_dataset.filter(lambda x: len(x["review_title"].split()) > 2)
+```
+
+コーパスの準備ができたので、このコーパスでファインチューニングできそうな Transformer モデルをいくつか見ていきましょう！
+
+## テキスト要約のためのモデル[[models-for-text-summarization]]
+
+考えてみると、テキスト要約は機械翻訳と似た種類のタスクです。レビューのようなテキストがあり、それを入力の顕著な特徴を捉えた短い版に「翻訳」したいわけです。そのため、要約のための Transformer モデルのほとんどは、[Chapter 1](/course/chapter1) で最初に出会ったエンコーダ・デコーダアーキテクチャを採用しています。ただし、few-shot 設定でも要約に使える GPT ファミリーのモデルのような例外もあります。次の表は、要約用にファインチューニングできる人気の事前学習済みモデルの一部です。
+
+| Transformer モデル | 説明                                                                                                                                                                                                    | 多言語対応？ |
+| :---------: | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | :-----------: |
+|    [GPT-2](https://huggingface.co/gpt2-xl)    | 自己回帰型の言語モデルとして学習されていますが、入力テキストの末尾に "TL;DR" を追加することで GPT-2 に要約を生成させることができます。                                                                          |      ❌       |
+|   [PEGASUS](https://huggingface.co/google/pegasus-large)   | 複数文のテキストでマスクされた文を予測する事前学習目的を使います。この事前学習目的はバニラな言語モデリングよりも要約に近く、人気のベンチマークで高いスコアを出しています。 |      ❌       |
+|     [T5](https://huggingface.co/t5-base)      | すべてのタスクを text-to-text フレームワークで定式化する汎用的な Transformer アーキテクチャです。たとえば、モデルが文書を要約するための入力形式は `summarize: ARTICLE` です。                              |      ❌       |
+|     [mT5](https://huggingface.co/google/mt5-base)     | T5 の多言語版で、101言語をカバーする多言語 Common Crawl コーパス（mC4）で事前学習されています。                                                                                                |      ✅       |
+|    [BART](https://huggingface.co/facebook/bart-base)     | BERT と GPT-2 の事前学習方式を組み合わせ、変形した入力を復元するよう学習された、エンコーダとデコーダの両スタックを持つ新しい Transformer アーキテクチャです。                                    |      ❌       |
+|  [mBART-50](https://huggingface.co/facebook/mbart-large-50)   | BART の多言語版で、50言語で事前学習されています。                                                                                                                                                     |      ✅       |
+
+この表から分かるように、要約のための Transformer モデル（そして実際、ほとんどの NLP タスク）の大部分は単一言語用です。タスクが英語やドイツ語のような「高リソース」言語であれば便利ですが、世界中で使われている何千もの他の言語にはあまり向いていません。幸い、mT5 や mBART のような多言語 Transformer モデルのクラスが救ってくれます。これらのモデルは言語モデリングを使って事前学習されていますが、ひねりがあります。1つの言語のコーパスで学習するのではなく、50を超える言語のテキストで共同で学習されているのです！
+
+ここでは mT5 に焦点を当てます。これは T5 をベースにした興味深いアーキテクチャで、text-to-text フレームワークで事前学習されています。T5 では、すべての NLP タスクが `summarize:` のようなプロンプト接頭辞で定式化され、これによりモデルは生成するテキストをプロンプトに適応させます。下の図に示すように、これにより T5 は非常に汎用的になり、単一のモデルで多くのタスクを解決できます！
+
+<div class="flex justify-center">
+<img class="block dark:hidden" src="https://huggingface.co/datasets/huggingface-course/documentation-images/resolve/main/en/chapter7/t5.svg" alt="T5 アーキテクチャで実行されるさまざまなタスク。"/>
+<img class="hidden dark:block" src="https://huggingface.co/datasets/huggingface-course/documentation-images/resolve/main/en/chapter7/t5-dark.svg" alt="T5 アーキテクチャで実行されるさまざまなタスク。"/>
+</div>
+
+mT5 は接頭辞を使いませんが、T5 の汎用性の多くを共有し、多言語であるという利点があります。モデルを選んだので、学習用にデータを準備する方法を見ていきましょう。
+
+
+> [!TIP]
+> ✏️ **試してみましょう！** このセクションを終えた後、mBART を同じ手法でファインチューニングして、mT5 とどれだけ比較できるか確認してみてください。ボーナスポイントとして、英語のレビューだけで T5 をファインチューニングすることもできます。T5 には特殊な接頭辞プロンプトがあるため、以下の前処理ステップで入力例の先頭に `summarize:` を追加する必要があります。
+
+## データの前処理[[preprocessing-the-data]]
+
+<Youtube id="1m7BerpSq8A"/>
+
+次のタスクは、レビューとそのタイトルをトークン化してエンコードすることです。いつものように、事前学習済みモデルのチェックポイントに関連付けられたトークナイザを読み込むことから始めます。妥当な時間でモデルをファインチューニングできるよう、チェックポイントとして `mt5-small` を使います。
+
+```python
+from transformers import AutoTokenizer
+
+model_checkpoint = "google/mt5-small"
+tokenizer = AutoTokenizer.from_pretrained(model_checkpoint)
+```
+
+> [!TIP]
+> 💡 NLP プロジェクトの初期段階では、小さなデータサンプルで「小さい」モデルのクラスを学習するのが良い実践です。これにより、エンドツーエンドのワークフローに向けてより速くデバッグと反復ができます。結果に自信が持てたら、モデルのチェックポイントを変更するだけでいつでもモデルをスケールアップできます！
+
+mT5 トークナイザを小さな例で試してみましょう。
+
+```python
+inputs = tokenizer("I loved reading the Hunger Games!")
+inputs
+```
+
+```python out
+{'input_ids': [336, 259, 28387, 11807, 287, 62893, 295, 12507, 1], 'attention_mask': [1, 1, 1, 1, 1, 1, 1, 1, 1]}
+```
+
+ここでは、[Chapter 3](/course/chapter3) の最初のファインチューニング実験で出会った、お馴染みの `input_ids` と `attention_mask` が見えます。これらの入力 ID を、トークナイザの `convert_ids_to_tokens()` 関数でデコードし、どのような種類のトークナイザを扱っているか見てみましょう。
+
+```python
+tokenizer.convert_ids_to_tokens(inputs.input_ids)
+```
+
+```python out
+['▁I', '▁', 'loved', '▁reading', '▁the', '▁Hung', 'er', '▁Games', '</s>']
+```
+
+特殊な Unicode 文字 `▁` とシーケンス終端トークン `</s>` は、SentencePiece トークナイザを扱っていることを示しています。これは、[Chapter 6](/course/chapter6) で議論した Unigram セグメンテーションアルゴリズムに基づいています。Unigram は、SentencePiece がアクセント、句読点、そして日本語のように空白文字を持たない言語が多いという事実に依存しないため、多言語コーパスで特に有用です。
+
+コーパスをトークン化するには、要約に関連する微妙な点に対処しなければなりません。ラベルもテキストであるため、モデルの最大コンテキストサイズを超える可能性があります。そのため、レビューとタイトルの両方に切り捨てを適用し、モデルに過度に長い入力を渡さないようにする必要があります。🤗 Transformers のトークナイザは便利な `text_target` 引数を提供しており、入力と並行してラベルをトークン化できます。mT5 で入力とターゲットがどのように処理されるかの例は次のとおりです。
+
+```python
+max_input_length = 512
+max_target_length = 30
+
+
+def preprocess_function(examples):
+    model_inputs = tokenizer(
+        examples["review_body"],
+        max_length=max_input_length,
+        truncation=True,
+    )
+    labels = tokenizer(
+        examples["review_title"], max_length=max_target_length, truncation=True
+    )
+    model_inputs["labels"] = labels["input_ids"]
+    return model_inputs
+```
+
+このコードを順に見て、何が起きているか理解しましょう。まず行ったのは、`max_input_length` と `max_target_length` の値を定義することです。これらは、レビューとタイトルがどれだけ長くなれるかの上限を設定します。レビュー本文は通常タイトルよりずっと大きいため、それに応じてこれらの値をスケーリングしました。
+
+`preprocess_function()` を使えば、コース全体で広範に使ってきた便利な `Dataset.map()` 関数を使ってコーパス全体をトークン化するのは簡単です。
+
+```python
+tokenized_datasets = books_dataset.map(preprocess_function, batched=True)
+```
+
+コーパスの前処理が終わったので、要約によく使われる指標をいくつか見ていきましょう。見ていくように、機械生成テキストの品質を測ることに関しては、特効薬はありません。
+
+> [!TIP]
+> 💡 上の `Dataset.map()` 関数で `batched=True` を使ったことに気づいたかもしれません。これは例を1,000件（デフォルト）のバッチでエンコードし、🤗 Transformers の高速トークナイザのマルチスレッド機能を活用できるようにします。可能な場合は、前処理を最大限に活用するため `batched=True` を使うようにしてください！
+
+
+## テキスト要約の指標[[metrics-for-text-summarization]]
+
+<Youtube id="TMshhnrEXlg"/>
+
+このコースで扱った他のほとんどのタスクと比べて、要約や翻訳のようなテキスト生成タスクのパフォーマンスを測るのは、それほど単純ではありません。たとえば、"I loved reading the Hunger Games" のようなレビューに対しては、"I loved the Hunger Games" や "Hunger Games is a great read" のような、複数の妥当な要約があります。明らかに、生成された要約とラベルの間の何らかの完全一致を適用するのは良い解決策ではありません。人間でさえ、そのような指標ではうまくいかないでしょう。私たちは皆、自分の文体を持っているためです。
+
+要約で最もよく使われる指標の1つは、[ROUGE スコア](https://en.wikipedia.org/wiki/ROUGE_(metric)) です（Recall-Oriented Understudy for Gisting Evaluation の略）。この指標の背後にある基本的な考え方は、生成された要約を、通常は人間が作成した参照要約の集合と比較することです。これをより正確にするため、次の2つの要約を比較したいとします。
+
+```python
+generated_summary = "I absolutely loved reading the Hunger Games"
+reference_summary = "I loved reading the Hunger Games"
+```
+
+比較する1つの方法は、重複する単語の数を数えることです。このケースでは6になります。しかし、これは少し粗い方法です。そのため、代わりに ROUGE は重複に対する*適合率*と*再現率*のスコアを計算することに基づいています。
+
+> [!TIP]
+> 🙋 適合率と再現率を初めて聞いた場合でも心配いりません。明確な例を一緒に見て、すべてを明らかにしていきます。これらの指標は通常、分類タスクで遭遇します。その文脈で適合率と再現率がどのように定義されているかを理解したい場合は、`scikit-learn` の[ガイド](https://scikit-learn.org/stable/auto_examples/model_selection/plot_precision_recall.html)をチェックすることをお勧めします。
+
+ROUGE については、再現率は、参照要約のどれだけが生成された要約で捉えられているかを測ります。単語だけを比較する場合、再現率は次の式で計算できます。
+
+$$ \mathrm{Recall} = \frac{\mathrm{Number\,of\,overlapping\, words}}{\mathrm{Total\, number\, of\, words\, in\, reference\, summary}} $$
+
+上の単純な例では、この式は6/6 = 1という完璧な再現率を与えます。つまり、参照要約のすべての単語がモデルによって生成されています。これは素晴らしいことに聞こえるかもしれませんが、生成された要約が "I really really loved reading the Hunger Games all night" だった場合を想像してみてください。これも完璧な再現率になりますが、冗長であるため、おそらくより悪い要約です。このようなシナリオに対処するため、適合率も計算します。ROUGE の文脈では、適合率は、生成された要約のどれだけが関連していたかを測ります。
+
+$$ \mathrm{Precision} = \frac{\mathrm{Number\,of\,overlapping\, words}}{\mathrm{Total\, number\, of\, words\, in\, generated\, summary}} $$
+
+これを冗長な要約に適用すると、適合率は 6/10 = 0.6 となり、より短い要約で得られる適合率 6/7 = 0.86 よりかなり悪くなります。実際には、適合率と再現率の両方が通常計算され、その後 F1 スコア（適合率と再現率の調和平均）が報告されます。これは、`rouge_score` パッケージをまずインストールすることで、🤗 Datasets で簡単に行えます。
+
+```py
+!pip install rouge_score
+```
+
+その後、次のように ROUGE 指標を読み込みます。
+
+```python
+import evaluate
+
+rouge_score = evaluate.load("rouge")
+```
+
+その後、`rouge_score.compute()` 関数を使って、すべての指標を一度に計算できます。
+
+```python
+scores = rouge_score.compute(
+    predictions=[generated_summary], references=[reference_summary]
+)
+scores
+```
+
+```python out
+{'rouge1': AggregateScore(low=Score(precision=0.86, recall=1.0, fmeasure=0.92), mid=Score(precision=0.86, recall=1.0, fmeasure=0.92), high=Score(precision=0.86, recall=1.0, fmeasure=0.92)),
+ 'rouge2': AggregateScore(low=Score(precision=0.67, recall=0.8, fmeasure=0.73), mid=Score(precision=0.67, recall=0.8, fmeasure=0.73), high=Score(precision=0.67, recall=0.8, fmeasure=0.73)),
+ 'rougeL': AggregateScore(low=Score(precision=0.86, recall=1.0, fmeasure=0.92), mid=Score(precision=0.86, recall=1.0, fmeasure=0.92), high=Score(precision=0.86, recall=1.0, fmeasure=0.92)),
+ 'rougeLsum': AggregateScore(low=Score(precision=0.86, recall=1.0, fmeasure=0.92), mid=Score(precision=0.86, recall=1.0, fmeasure=0.92), high=Score(precision=0.86, recall=1.0, fmeasure=0.92))}
+```
+
+うわ、その出力にはたくさんの情報があります！これはすべて何を意味するのでしょうか？まず、🤗 Datasets は実際には適合率、再現率、F1 スコアの信頼区間を計算します。これらが、ここで見られる `low`、`mid`、`high` 属性です。さらに、🤗 Datasets はさまざまな ROUGE スコアを計算します。これらは、生成された要約と参照要約を比較する際のテキストの粒度の種類に基づいています。`rouge1` バリアントはユニグラムの重複です。これは単語の重複を言うための派手な言い方で、上で議論した指標そのものです。これを検証するため、スコアの `mid` 値を取り出してみましょう。
+
+```python
+scores["rouge1"].mid
+```
+
+```python out
+Score(precision=0.86, recall=1.0, fmeasure=0.92)
+```
+
+素晴らしい、適合率と再現率の数値が一致しました！では、他の ROUGE スコアはどうでしょうか？`rouge2` はバイグラム（単語のペアの重複と考えてください）の重複を測ります。一方 `rougeL` と `rougeLsum` は、生成された要約と参照要約で最長共通部分文字列を探すことにより、単語の最長一致シーケンスを測ります。`rougeLsum` の "sum" は、この指標が要約全体に対して計算されることを指します。一方 `rougeL` は個々の文に対する平均として計算されます。
+
+> [!TIP]
+> ✏️ **試してみましょう！** 独自の生成要約と参照要約の例を作成し、得られる ROUGE スコアが、適合率と再現率の式に基づく手作業の計算と一致するか確認してください。ボーナスポイントとして、テキストをバイグラムに分割し、`rouge2` 指標の適合率と再現率を比べてみてください。
+
+これらの ROUGE スコアを使ってモデルのパフォーマンスを追跡しますが、その前に、優れた NLP 実践者なら誰もが行うべきことを行いましょう。強力でありながら単純なベースラインを作ることです！
+
+### 強力なベースラインを作る[[creating-a-strong-baseline]]
+
+テキスト要約の一般的なベースラインは、記事の最初の3文をそのまま使うことです。これはしばしば *lead-3* ベースラインと呼ばれます。ピリオドを使って文の境界を追跡することもできますが、これは "U.S." や "U.N." のような頭字語で失敗します。そのため代わりに、これらのケースを扱うためのより良いアルゴリズムを含む `nltk` ライブラリを使います。パッケージは `pip` を使って次のようにインストールできます。
+
+```python
+!pip install nltk
+```
+
+その後、句読点のルールをダウンロードします。
+
+```python
+import nltk
+
+nltk.download("punkt")
+```
+
+次に、`nltk` から文トークナイザをインポートし、レビューの最初の3文を抽出する単純な関数を作成します。テキスト要約の慣例では、各要約を改行で区切るため、これも含めて学習例でテストしましょう。
+
+```python
+from nltk.tokenize import sent_tokenize
+
+
+def three_sentence_summary(text):
+    return "\n".join(sent_tokenize(text)[:3])
+
+
+print(three_sentence_summary(books_dataset["train"][1]["review_body"]))
+```
+
+```python out
+'I grew up reading Koontz, and years ago, I stopped,convinced i had "outgrown" him.'
+'Still,when a friend was looking for something suspenseful too read, I suggested Koontz.'
+'She found Strangers.'
+```
+
+これはうまくいっているように見えます。では、データセットからこれらの「要約」を抽出し、ベースラインの ROUGE スコアを計算する関数を実装しましょう。
+
+```python
+def evaluate_baseline(dataset, metric):
+    summaries = [three_sentence_summary(text) for text in dataset["review_body"]]
+    return metric.compute(predictions=summaries, references=dataset["review_title"])
+```
+
+その後、この関数を使って検証セット全体の ROUGE スコアを計算し、Pandas を使って少し整形できます。
+
+```python
+import pandas as pd
+
+score = evaluate_baseline(books_dataset["validation"], rouge_score)
+rouge_names = ["rouge1", "rouge2", "rougeL", "rougeLsum"]
+rouge_dict = dict((rn, round(score[rn].mid.fmeasure * 100, 2)) for rn in rouge_names)
+rouge_dict
+```
+
+```python out
+{'rouge1': 16.74, 'rouge2': 8.83, 'rougeL': 15.6, 'rougeLsum': 15.96}
+```
+
+`rouge2` スコアが他より大幅に低いことが分かります。これはおそらく、レビュータイトルが通常簡潔であるため、lead-3 ベースラインが冗長すぎるという事実を反映しています。良いベースラインが得られたので、mT5 のファインチューニングに注意を向けましょう！
+
+{#if fw === 'pt'}
+
+## `Trainer` API で mT5 をファインチューニングする[[fine-tuning-mt5-with-the-trainer-api]]
+
+要約のためのモデルのファインチューニングは、この章で扱った他のタスクと非常によく似ています。まず行う必要があるのは、`mt5-small` チェックポイントから事前学習済みモデルを読み込むことです。要約はシーケンス・ツー・シーケンスのタスクであるため、`AutoModelForSeq2SeqLM` クラスでモデルを読み込むことができ、重みが自動的にダウンロードされてキャッシュされます。
+
+```python
+from transformers import AutoModelForSeq2SeqLM
+
+model = AutoModelForSeq2SeqLM.from_pretrained(model_checkpoint)
+```
+
+{:else}
+
+## Keras で mT5 をファインチューニングする[[fine-tuning-mt5-with-keras]]
+
+要約のためのモデルのファインチューニングは、この章で扱った他のタスクと非常によく似ています。まず行う必要があるのは、`mt5-small` チェックポイントから事前学習済みモデルを読み込むことです。要約はシーケンス・ツー・シーケンスのタスクであるため、`TFAutoModelForSeq2SeqLM` クラスでモデルを読み込むことができ、重みが自動的にダウンロードされてキャッシュされます。
+
+```python
+from transformers import TFAutoModelForSeq2SeqLM
+
+model = TFAutoModelForSeq2SeqLM.from_pretrained(model_checkpoint)
+```
+
+{/if}
+
+> [!TIP]
+> 💡 下流タスクでモデルをファインチューニングする際の警告が表示されない理由が気になっている場合は、これはシーケンス・ツー・シーケンスのタスクではネットワークのすべての重みを保持するためです。[Chapter 3](/course/chapter3) のテキスト分類モデルと比較してください。そこでは、事前学習済みモデルのヘッドはランダムに初期化されたネットワークに置き換えられていました。
+
+次に行う必要があるのは、Hugging Face Hub にログインすることです。ノートブックでこのコードを実行している場合は、次のユーティリティ関数でログインできます。
+
+```python
+from huggingface_hub import notebook_login
+
+notebook_login()
+```
+
+これにより、認証情報を入力できるウィジェットが表示されます。あるいは、ターミナルでこのコマンドを実行して、そこでログインすることもできます。
+
+```
+huggingface-cli login
+```
+
+{#if fw === 'pt'}
+
+学習中に ROUGE スコアを計算するには、要約を生成する必要があります。幸い、🤗 Transformers は専用の `Seq2SeqTrainingArguments` と `Seq2SeqTrainer` クラスを提供しており、これらを自動的に行うことができます！仕組みを確認するため、まず実験のハイパーパラメータやその他の引数を定義しましょう。
+
+```python
+from transformers import Seq2SeqTrainingArguments
+
+batch_size = 8
+num_train_epochs = 8
+# エポックごとに学習損失を表示します
+logging_steps = len(tokenized_datasets["train"]) // batch_size
+model_name = model_checkpoint.split("/")[-1]
+
+args = Seq2SeqTrainingArguments(
+    output_dir=f"{model_name}-finetuned-amazon-en-es",
+    evaluation_strategy="epoch",
+    learning_rate=5.6e-5,
+    per_device_train_batch_size=batch_size,
+    per_device_eval_batch_size=batch_size,
+    weight_decay=0.01,
+    save_total_limit=3,
+    num_train_epochs=num_train_epochs,
+    predict_with_generate=True,
+    logging_steps=logging_steps,
+    push_to_hub=True,
+)
+```
+
+ここでは、`predict_with_generate` 引数を設定して、評価中に要約を生成し、各エポックの ROUGE スコアを計算できるようにしました。[Chapter 1](/course/chapter1) で議論したように、デコーダはトークンを1つずつ予測して推論を行い、これはモデルの `generate()` メソッドによって実装されています。`predict_with_generate=True` と設定すると、`Seq2SeqTrainer` に評価にそのメソッドを使うよう指示します。また、学習率、エポック数、ウェイト減衰のようなデフォルトのハイパーパラメータの一部を調整し、`save_total_limit` オプションを設定して、学習中に最大3つのチェックポイントだけを保存するようにしました。これは、mT5 の「小さい」版でも約1 GB のハードドライブ容量を使うため、保存するコピーの数を制限することで少し節約できるためです。
+
+`push_to_hub=True` 引数により、学習後にモデルを Hub にプッシュできます。リポジトリは、`output_dir` で定義された場所のユーザープロファイルの下にあります。プッシュ先リポジトリの名前は `hub_model_id` 引数で指定できることに注意してください（特に、組織にプッシュする場合はこの引数を使う必要があります）。たとえば、モデルを [`huggingface-course` 組織](https://huggingface.co/huggingface-course) にプッシュした際には、`Seq2SeqTrainingArguments` に `hub_model_id="huggingface-course/mt5-finetuned-amazon-en-es"` を追加しました。
+
+次に行う必要があるのは、学習中にモデルを評価できるよう、Trainer に `compute_metrics()` 関数を提供することです。要約については、モデルの予測に対して `rouge_score.compute()` を呼び出すだけよりも少し複雑です。ROUGE スコアを計算する前に、出力とラベルをテキストに*デコード*する必要があるためです。次の関数はまさにそれを行い、`nltk` の `sent_tokenize()` 関数も使って、要約の文を改行で区切ります。
+
+```python
+import numpy as np
+
+
+def compute_metrics(eval_pred):
+    predictions, labels = eval_pred
+    # 生成された要約をテキストにデコードします
+    decoded_preds = tokenizer.batch_decode(predictions, skip_special_tokens=True)
+    # ラベル内の -100 はデコードできないので置き換えます
+    labels = np.where(labels != -100, labels, tokenizer.pad_token_id)
+    # 参照要約をテキストにデコードします
+    decoded_labels = tokenizer.batch_decode(labels, skip_special_tokens=True)
+    # ROUGE は各文の後に改行を想定します
+    decoded_preds = ["\n".join(sent_tokenize(pred.strip())) for pred in decoded_preds]
+    decoded_labels = ["\n".join(sent_tokenize(label.strip())) for label in decoded_labels]
+    # ROUGE スコアを計算します
+    result = rouge_score.compute(
+        predictions=decoded_preds, references=decoded_labels, use_stemmer=True
+    )
+    # 中央値のスコアを取り出します
+    result = {key: value.mid.fmeasure * 100 for key, value in result.items()}
+    return {k: round(v, 4) for k, v in result.items()}
+```
+
+{/if}
+
+次に、シーケンス・ツー・シーケンスタスク用のデータコレータを定義する必要があります。mT5 はエンコーダ・デコーダ Transformer モデルであるため、バッチを準備する際の微妙な点の1つは、デコード中にラベルを右に1つシフトする必要があることです。これは、デコーダが以前の正解ラベルだけを見て、現在や未来のラベルは見ないようにするために必要です。現在のラベルや未来のラベルは、モデルが簡単に記憶できてしまいます。これは、[因果言語モデリング](/course/chapter7/6) のようなタスクで入力にマスク付きセルフアテンションが適用される方法と似ています。
+
+幸い、🤗 Transformers は `DataCollatorForSeq2Seq` コレータを提供しており、入力とラベルを動的にパディングしてくれます。このコレータをインスタンス化するには、`tokenizer` と `model` を提供するだけです。
+
+{#if fw === 'pt'}
+
+```python
+from transformers import DataCollatorForSeq2Seq
+
+data_collator = DataCollatorForSeq2Seq(tokenizer, model=model)
+```
+
+{:else}
+
+```python
+from transformers import DataCollatorForSeq2Seq
+
+data_collator = DataCollatorForSeq2Seq(tokenizer, model=model, return_tensors="tf")
+```
+
+{/if}
+
+このコレータに小さなバッチの例を与えると何が生成されるか見てみましょう。まず、文字列の列を削除する必要があります。コレータはこれらの要素をパディングする方法を知らないためです。
+
+```python
+tokenized_datasets = tokenized_datasets.remove_columns(
+    books_dataset["train"].column_names
+)
+```
+
+コレータは `dict` のリストを想定しており、各 `dict` がデータセット内の単一の例を表すため、データコレータに渡す前にデータを想定される形式に整える必要もあります。
+
+```python
+features = [tokenized_datasets["train"][i] for i in range(2)]
+data_collator(features)
+```
+
+```python out
+{'attention_mask': tensor([[1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
+         1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0],
+        [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
+         1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1]]), 'input_ids': tensor([[  1494,    259,   8622,    390,    259,    262,   2316,   3435,    955,
+            772,    281,    772,   1617,    263,    305,  14701,    260,   1385,
+           3031,    259,  24146,    332,   1037,    259,  43906,    305,    336,
+            260,      1,      0,      0,      0,      0,      0,      0],
+        [   259,  27531,  13483,    259,   7505,    260, 112240,  15192,    305,
+          53198,    276,    259,  74060,    263,    260,    459,  25640,    776,
+           2119,    336,    259,   2220,    259,  18896,    288,   4906,    288,
+           1037,   3931,    260,   7083, 101476,   1143,    260,      1]]), 'labels': tensor([[ 7483,   259,  2364, 15695,     1,  -100],
+        [  259, 27531, 13483,   259,  7505,     1]]), 'decoder_input_ids': tensor([[    0,  7483,   259,  2364, 15695,     1],
+        [    0,   259, 27531, 13483,   259,  7505]])}
+```
+
+ここで主に注目すべきは、最初の例が2番目の例より長いため、2番目の例の `input_ids` と `attention_mask` が右側に `[PAD]` トークン（その ID は `0`）でパディングされていることです。同様に、`labels` が `-100` でパディングされていることが分かります。これは、パディングトークンが損失関数に無視されるようにするためです。そして最後に、新しい `decoder_input_ids` が見えます。これは、ラベルの先頭に `[PAD]` トークンを挿入することでラベルを右にシフトしています。
+
+{#if fw === 'pt'}
+
+ついに、学習に必要な材料がすべてそろいました！あとは、標準引数で Trainer をインスタンス化するだけです。
+
+```python
+from transformers import Seq2SeqTrainer
+
+trainer = Seq2SeqTrainer(
+    model,
+    args,
+    train_dataset=tokenized_datasets["train"],
+    eval_dataset=tokenized_datasets["validation"],
+    data_collator=data_collator,
+    tokenizer=tokenizer,
+    compute_metrics=compute_metrics,
+)
+```
+
+そして学習を実行します。
+
+```python
+trainer.train()
+```
+
+学習中は、学習損失が減少し、ROUGE スコアがエポックごとに増加する様子が見えるはずです。学習が完了したら、`Trainer.evaluate()` を実行することで最終の ROUGE スコアを確認できます。
+
+```python
+trainer.evaluate()
+```
+
+```python out
+{'eval_loss': 3.028524398803711,
+ 'eval_rouge1': 16.9728,
+ 'eval_rouge2': 8.2969,
+ 'eval_rougeL': 16.8366,
+ 'eval_rougeLsum': 16.851,
+ 'eval_gen_len': 10.1597,
+ 'eval_runtime': 6.1054,
+ 'eval_samples_per_second': 38.982,
+ 'eval_steps_per_second': 4.914}
+```
+
+スコアから、私たちのモデルが lead-3 ベースラインを楽々上回っていることが分かります。素晴らしい！最後に行うのは、モデルの重みを Hub にプッシュすることです。次のようにします。
+
+```
+trainer.push_to_hub(commit_message="Training complete", tags="summarization")
+```
+
+```python out
+'https://huggingface.co/huggingface-course/mt5-finetuned-amazon-en-es/commit/aa0536b829b28e73e1e4b94b8a5aacec420d40e0'
+```
+
+これにより、チェックポイントと設定ファイルが `output_dir` に保存され、その後すべてのファイルが Hub にアップロードされます。`tags` 引数を指定することで、Hub のウィジェットが、mT5 アーキテクチャに関連付けられたデフォルトのテキスト生成のものではなく、要約パイプラインのものになることも保証します（モデルタグの詳細は、[🤗 Hub ドキュメント](https://huggingface.co/docs/hub/main#how-is-a-models-type-of-inference-api-and-widget-determined) を参照してください）。`trainer.push_to_hub()` からの出力は、Git コミットハッシュへの URL です。これにより、モデルリポジトリに加えられた変更を簡単に確認できます！
+
+このセクションを締めくくるため、🤗 Accelerate が提供する低レベルの機能を使って mT5 をファインチューニングする方法も見ていきましょう。
+
+{:else}
+
+ほぼ学習の準備ができました！上に定義したデータコレータを使って、データセットを `tf.data.Dataset` に変換し、その後モデルを `compile()` して `fit()` するだけです。まず、データセットです。
+
+```python
+tf_train_dataset = model.prepare_tf_dataset(
+    tokenized_datasets["train"],
+    collate_fn=data_collator,
+    shuffle=True,
+    batch_size=8,
+)
+tf_eval_dataset = model.prepare_tf_dataset(
+    tokenized_datasets["validation"],
+    collate_fn=data_collator,
+    shuffle=False,
+    batch_size=8,
+)
+```
+
+次に、学習のハイパーパラメータを定義し、コンパイルします。
+
+```python
+from transformers import create_optimizer
+import tensorflow as tf
+
+# 学習ステップ数は、データセットのサンプル数をバッチサイズで割り、総エポック数を掛けたものです。
+# ここでの tf_train_dataset はバッチ化された tf.data.Dataset であり、元の Hugging Face Dataset ではないため、
+# その len() はすでに num_samples // batch_size になっています。
+num_train_epochs = 8
+num_train_steps = len(tf_train_dataset) * num_train_epochs
+model_name = model_checkpoint.split("/")[-1]
+
+optimizer, schedule = create_optimizer(
+    init_lr=5.6e-5,
+    num_warmup_steps=0,
+    num_train_steps=num_train_steps,
+    weight_decay_rate=0.01,
+)
+
+model.compile(optimizer=optimizer)
+
+# 混合精度 float16 で学習します
+tf.keras.mixed_precision.set_global_policy("mixed_float16")
+```
+
+そして最後に、モデルを fit します。`PushToHubCallback` を使って各エポックの後にモデルを Hub に保存します。これにより、後で推論に使うことができます。
+
+```python
+from transformers.keras_callbacks import PushToHubCallback
+
+callback = PushToHubCallback(
+    output_dir=f"{model_name}-finetuned-amazon-en-es", tokenizer=tokenizer
+)
+
+model.fit(
+    tf_train_dataset, validation_data=tf_eval_dataset, callbacks=[callback], epochs=8
+)
+```
+
+学習中に損失値はいくつか得られましたが、本来見たいのは先ほど計算した ROUGE 指標です。その指標を得るには、モデルから出力を生成し、文字列に変換する必要があります。ROUGE 指標が比較するためのラベルと予測のリストを構築しましょう（このセクションでインポートエラーが出る場合は、`!pip install tqdm` が必要になるかもしれません）。さらに、劇的にパフォーマンスを高める工夫も使います。生成コードを TensorFlow の高速化線形代数コンパイラである [XLA](https://www.tensorflow.org/xla) でコンパイルします。XLA はモデルの計算グラフにさまざまな最適化を適用し、速度とメモリ使用量を大きく改善します。Hugging Face の[ブログ](https://huggingface.co/blog/tf-xla-generate)で説明されているように、XLA は入力の形状があまり変化しないときに最も効果を発揮します。これに対応するため、入力を128の倍数までパディングし、パディング用コレータで新しいデータセットを作り、生成関数に `@tf.function(jit_compile=True)` デコレータを適用して、関数全体を XLA でコンパイルするようマークします。
+
+```python
+from tqdm import tqdm
+import numpy as np
+
+generation_data_collator = DataCollatorForSeq2Seq(
+    tokenizer, model=model, return_tensors="tf", pad_to_multiple_of=320
+)
+
+tf_generate_dataset = model.prepare_tf_dataset(
+    tokenized_datasets["validation"],
+    collate_fn=generation_data_collator,
+    shuffle=False,
+    batch_size=8,
+    drop_remainder=True,
+)
+
+
+@tf.function(jit_compile=True)
+def generate_with_xla(batch):
+    return model.generate(
+        input_ids=batch["input_ids"],
+        attention_mask=batch["attention_mask"],
+        max_new_tokens=32,
+    )
+
+
+all_preds = []
+all_labels = []
+for batch, labels in tqdm(tf_generate_dataset):
+    predictions = generate_with_xla(batch)
+    decoded_preds = tokenizer.batch_decode(predictions, skip_special_tokens=True)
+    labels = labels.numpy()
+    labels = np.where(labels != -100, labels, tokenizer.pad_token_id)
+    decoded_labels = tokenizer.batch_decode(labels, skip_special_tokens=True)
+    decoded_preds = ["\n".join(sent_tokenize(pred.strip())) for pred in decoded_preds]
+    decoded_labels = ["\n".join(sent_tokenize(label.strip())) for label in decoded_labels]
+    all_preds.extend(decoded_preds)
+    all_labels.extend(decoded_labels)
+```
+
+ラベルと予測の文字列のリストが得られたら、ROUGE スコアの計算は簡単です。
+
+```python
+result = rouge_score.compute(
+    predictions=decoded_preds, references=decoded_labels, use_stemmer=True
+)
+result = {key: value.mid.fmeasure * 100 for key, value in result.items()}
+{k: round(v, 4) for k, v in result.items()}
+```
+
+```
+{'rouge1': 31.4815, 'rouge2': 25.4386, 'rougeL': 31.4815, 'rougeLsum': 31.4815}
+```
+
+
+{/if}
+
+{#if fw === 'pt'}
+
+## 🤗 Accelerate で mT5 をファインチューニングする[[fine-tuning-mt5-with-accelerate]]
+
+🤗 Accelerate でモデルをファインチューニングするのは、[Chapter 3](/course/chapter3) で出会ったテキスト分類の例と非常によく似ています。主な違いは、学習中に要約を明示的に生成する必要があることと、ROUGE スコアの計算方法を定義する必要があることです（`Seq2SeqTrainer` は生成を代わりに行ってくれたことを思い出してください）。これら2つの要件を 🤗 Accelerate の中でどのように実装できるか見ていきましょう！
+
+### 学習に必要なものをすべて準備する[[preparing-everything-for-training]]
+
+まず行う必要があるのは、各スプリットの `DataLoader` を作成することです。PyTorch のデータローダはテンソルのバッチを想定するため、データセットの形式を `"torch"` に設定する必要があります。
+
+```python
+tokenized_datasets.set_format("torch")
+```
+
+テンソルだけで構成されたデータセットが得られたので、次に行うのは `DataCollatorForSeq2Seq` を再びインスタンス化することです。そのためにはモデルの新しい版が必要なので、キャッシュから再び読み込みましょう。
+
+```python
+model = AutoModelForSeq2SeqLM.from_pretrained(model_checkpoint)
+```
+
+その後、データコレータをインスタンス化し、これを使ってデータローダを定義できます。
+
+```python
+from torch.utils.data import DataLoader
+
+batch_size = 8
+train_dataloader = DataLoader(
+    tokenized_datasets["train"],
+    shuffle=True,
+    collate_fn=data_collator,
+    batch_size=batch_size,
+)
+eval_dataloader = DataLoader(
+    tokenized_datasets["validation"], collate_fn=data_collator, batch_size=batch_size
+)
+```
+
+次に行うのは、使いたいオプティマイザを定義することです。他の例と同様に、ほとんどの問題でうまく機能する `AdamW` を使います。
+
+```python
+from torch.optim import AdamW
+
+optimizer = AdamW(model.parameters(), lr=2e-5)
+```
+
+最後に、モデル、オプティマイザ、データローダを `accelerator.prepare()` メソッドに渡します。
+
+```python
+from accelerate import Accelerator
+
+accelerator = Accelerator()
+model, optimizer, train_dataloader, eval_dataloader = accelerator.prepare(
+    model, optimizer, train_dataloader, eval_dataloader
+)
+```
+
+> [!TIP]
+> 🚨 TPU で学習する場合は、上のコードをすべて専用の学習関数の中に移動する必要があります。詳細は [Chapter 3](/course/chapter3) を参照してください。
+
+オブジェクトを準備したので、残りは3つです。
+
+* 学習率スケジュールを定義すること。
+* 評価のために要約を後処理する関数を実装すること。
+* モデルをプッシュできるリポジトリを Hub に作成すること。
+
+学習率スケジュールについては、前のセクションの標準的な線形のものを使います。
+
+```python
+from transformers import get_scheduler
+
+num_train_epochs = 10
+num_update_steps_per_epoch = len(train_dataloader)
+num_training_steps = num_train_epochs * num_update_steps_per_epoch
+
+lr_scheduler = get_scheduler(
+    "linear",
+    optimizer=optimizer,
+    num_warmup_steps=0,
+    num_training_steps=num_training_steps,
+)
+```
+
+後処理については、生成された要約を改行で区切られた文に分割する関数が必要です。これは ROUGE 指標が想定する形式であり、次のコードスニペットで実現できます。
+
+```python
+def postprocess_text(preds, labels):
+    preds = [pred.strip() for pred in preds]
+    labels = [label.strip() for label in labels]
+
+    # ROUGE は各文の後に改行を想定します
+    preds = ["\n".join(nltk.sent_tokenize(pred)) for pred in preds]
+    labels = ["\n".join(nltk.sent_tokenize(label)) for label in labels]
+
+    return preds, labels
+```
+
+`Seq2SeqTrainer` の `compute_metrics()` 関数を定義した方法を思い出せば、これはお馴染みに見えるはずです。
+
+最後に、Hugging Face Hub にモデルリポジトリを作成する必要があります。これには、適切な名前を持つ 🤗 Hub ライブラリを使うことができます。リポジトリの名前を定義するだけで、ライブラリにはリポジトリ ID とユーザープロファイルを組み合わせるユーティリティ関数があります。
+
+```python
+from huggingface_hub import get_full_repo_name
+
+model_name = "test-bert-finetuned-squad-accelerate"
+repo_name = get_full_repo_name(model_name)
+repo_name
+```
+
+```python out
+'lewtun/mt5-finetuned-amazon-en-es-accelerate'
+```
+
+このリポジトリ名を使って、学習成果物を格納する結果ディレクトリにローカル版をクローンできます。
+
+```python
+from huggingface_hub import Repository
+
+output_dir = "results-mt5-finetuned-squad-accelerate"
+repo = Repository(output_dir, clone_from=repo_name)
+```
+
+これにより、学習中に `repo.push_to_hub()` メソッドを呼び出すことで、成果物を Hub にプッシュできます！では、学習ループを書いて分析を締めくくりましょう。
+
+### 学習ループ[[training-loop]]
+
+要約の学習ループは、これまでに出会った他の 🤗 Accelerate の例とかなり似ており、大まかに4つの主要なステップに分かれています。
+
+1. 各エポックで `train_dataloader` のすべての例を反復してモデルを学習する。
+2. 各エポックの終わりにモデルの要約を生成する。まずトークンを生成し、その後それら（および参照要約）をテキストにデコードする。
+3. 先ほど見たのと同じ手法で ROUGE スコアを計算する。
+4. チェックポイントを保存し、すべてを Hub にプッシュする。ここでは `Repository` オブジェクトの便利な `blocking=False` 引数に依存し、エポックごとのチェックポイントを*非同期*にプッシュします。これにより、GB サイズのモデルに関連するやや遅いアップロードを待つことなく、学習を続けることができます！
+
+これらのステップは、次のコードブロックで確認できます。
+
+```python
+from tqdm.auto import tqdm
+import torch
+import numpy as np
+
+progress_bar = tqdm(range(num_training_steps))
+
+for epoch in range(num_train_epochs):
+    # 学習
+    model.train()
+    for step, batch in enumerate(train_dataloader):
+        outputs = model(**batch)
+        loss = outputs.loss
+        accelerator.backward(loss)
+
+        optimizer.step()
+        lr_scheduler.step()
+        optimizer.zero_grad()
+        progress_bar.update(1)
+
+    # 評価
+    model.eval()
+    for step, batch in enumerate(eval_dataloader):
+        with torch.no_grad():
+            generated_tokens = accelerator.unwrap_model(model).generate(
+                batch["input_ids"],
+                attention_mask=batch["attention_mask"],
+            )
+
+            generated_tokens = accelerator.pad_across_processes(
+                generated_tokens, dim=1, pad_index=tokenizer.pad_token_id
+            )
+            labels = batch["labels"]
+
+            # 最大長までパディングしていない場合は、ラベルもパディングする必要があります
+            labels = accelerator.pad_across_processes(
+                batch["labels"], dim=1, pad_index=tokenizer.pad_token_id
+            )
+
+            generated_tokens = accelerator.gather(generated_tokens).cpu().numpy()
+            labels = accelerator.gather(labels).cpu().numpy()
+
+            # ラベル内の -100 はデコードできないので置き換えます
+            labels = np.where(labels != -100, labels, tokenizer.pad_token_id)
+            if isinstance(generated_tokens, tuple):
+                generated_tokens = generated_tokens[0]
+            decoded_preds = tokenizer.batch_decode(
+                generated_tokens, skip_special_tokens=True
+            )
+            decoded_labels = tokenizer.batch_decode(labels, skip_special_tokens=True)
+
+            decoded_preds, decoded_labels = postprocess_text(
+                decoded_preds, decoded_labels
+            )
+
+            rouge_score.add_batch(predictions=decoded_preds, references=decoded_labels)
+
+    # 指標を計算します
+    result = rouge_score.compute()
+    # ROUGE スコアの中央値を取り出します
+    result = {key: value.mid.fmeasure * 100 for key, value in result.items()}
+    result = {k: round(v, 4) for k, v in result.items()}
+    print(f"Epoch {epoch}:", result)
+
+    # 保存とアップロード
+    accelerator.wait_for_everyone()
+    unwrapped_model = accelerator.unwrap_model(model)
+    unwrapped_model.save_pretrained(output_dir, save_function=accelerator.save)
+    if accelerator.is_main_process:
+        tokenizer.save_pretrained(output_dir)
+        repo.push_to_hub(
+            commit_message=f"Training in progress epoch {epoch}", blocking=False
+        )
+```
+
+```python out
+Epoch 0: {'rouge1': 5.6351, 'rouge2': 1.1625, 'rougeL': 5.4866, 'rougeLsum': 5.5005}
+Epoch 1: {'rouge1': 9.8646, 'rouge2': 3.4106, 'rougeL': 9.9439, 'rougeLsum': 9.9306}
+Epoch 2: {'rouge1': 11.0872, 'rouge2': 3.3273, 'rougeL': 11.0508, 'rougeLsum': 10.9468}
+Epoch 3: {'rouge1': 11.8587, 'rouge2': 4.8167, 'rougeL': 11.7986, 'rougeLsum': 11.7518}
+Epoch 4: {'rouge1': 12.9842, 'rouge2': 5.5887, 'rougeL': 12.7546, 'rougeLsum': 12.7029}
+Epoch 5: {'rouge1': 13.4628, 'rouge2': 6.4598, 'rougeL': 13.312, 'rougeLsum': 13.2913}
+Epoch 6: {'rouge1': 12.9131, 'rouge2': 5.8914, 'rougeL': 12.6896, 'rougeLsum': 12.5701}
+Epoch 7: {'rouge1': 13.3079, 'rouge2': 6.2994, 'rougeL': 13.1536, 'rougeLsum': 13.1194}
+Epoch 8: {'rouge1': 13.96, 'rouge2': 6.5998, 'rougeL': 13.9123, 'rougeLsum': 13.7744}
+Epoch 9: {'rouge1': 14.1192, 'rouge2': 7.0059, 'rougeL': 14.1172, 'rougeLsum': 13.9509}
+```
+
+以上です！これを実行すると、`Trainer` で得たものとかなり似たモデルと結果が得られるはずです。
+
+{/if}
+
+## ファインチューニングしたモデルを使う[[using-your-fine-tuned-model]]
+
+モデルを Hub にプッシュしたら、推論ウィジェットか、次のような `pipeline` オブジェクトのどちらかで遊ぶことができます。
+
+```python
+from transformers import pipeline
+
+hub_model_id = "huggingface-course/mt5-small-finetuned-amazon-en-es"
+summarizer = pipeline("summarization", model=hub_model_id)
+```
+
+テストセット（モデルが見たことのないもの）の例をパイプラインに与え、要約の品質の感触をつかむことができます。まず、レビュー、タイトル、生成された要約を一緒に表示する単純な関数を実装しましょう。
+
+```python
+def print_summary(idx):
+    review = books_dataset["test"][idx]["review_body"]
+    title = books_dataset["test"][idx]["review_title"]
+    summary = summarizer(books_dataset["test"][idx]["review_body"])[0]["summary_text"]
+    print(f"'>>> Review: {review}'")
+    print(f"\n'>>> Title: {title}'")
+    print(f"\n'>>> Summary: {summary}'")
+```
+
+得られる英語の例の1つを見てみましょう。
+
+```python
+print_summary(100)
+```
+
+```python out
+'>>> Review: Nothing special at all about this product... the book is too small and stiff and hard to write in. The huge sticker on the back doesn’t come off and looks super tacky. I would not purchase this again. I could have just bought a journal from the dollar store and it would be basically the same thing. It’s also really expensive for what it is.'
+
+'>>> Title: Not impressed at all... buy something else'
+
+'>>> Summary: Nothing special at all about this product'
+```
+
+悪くありません！私たちのモデルは、レビューの一部を新しい単語で補強することにより、*抽象型*要約を実際に実行できています。そして、このモデルのおそらく最も素晴らしい側面は、バイリンガルであることです。そのため、スペイン語のレビューの要約も生成できます。
+
+```python
+print_summary(0)
+```
+
+```python out
+'>>> Review: Es una trilogia que se hace muy facil de leer. Me ha gustado, no me esperaba el final para nada'
+
+'>>> Title: Buena literatura para adolescentes'
+
+'>>> Summary: Muy facil de leer'
+```
+
+この要約は、英語では "Very easy to read" という意味で、このケースではレビューから直接抽出されたものであることが分かります。それでも、これは mT5 モデルの汎用性を示しており、多言語コーパスを扱うのがどのようなものか、その一端を味わうことができました！
+
+次は、もう少し複雑なタスクに注意を向けます。言語モデルをゼロから学習することです。

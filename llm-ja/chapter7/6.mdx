@@ -1,0 +1,890 @@
+<FrameworkSwitchCourse {fw} />
+
+# 因果言語モデルをゼロから学習する[[training-a-causal-language-model-from-scratch]]
+
+{#if fw === 'pt'}
+
+<CourseFloatingBanner chapter={7}
+  classNames="absolute z-10 right-0 top-0"
+  notebooks={[
+    {label: "Google Colab", value: "https://colab.research.google.com/github/huggingface/notebooks/blob/master/course/en/chapter7/section6_pt.ipynb"},
+    {label: "Aws Studio", value: "https://studiolab.sagemaker.aws/import/github/huggingface/notebooks/blob/master/course/en/chapter7/section6_pt.ipynb"},
+]} />
+
+{:else}
+
+<CourseFloatingBanner chapter={7}
+  classNames="absolute z-10 right-0 top-0"
+  notebooks={[
+    {label: "Google Colab", value: "https://colab.research.google.com/github/huggingface/notebooks/blob/master/course/en/chapter7/section6_tf.ipynb"},
+    {label: "Aws Studio", value: "https://studiolab.sagemaker.aws/import/github/huggingface/notebooks/blob/master/course/en/chapter7/section6_tf.ipynb"},
+]} />
+
+{/if}
+
+これまでは主に、事前学習済みモデルを使い、事前学習の重みを再利用して新しい用途向けにファインチューニングしてきました。[Chapter 1](/course/chapter1) で見たように、これは一般に _転移学習_ と呼ばれ、ラベル付きデータが少ない現実の用途のほとんどで Transformer モデルを活用するうえで非常に有効な戦略です。この章では別のアプローチを取り、新しいモデルを完全にゼロから学習します。データが大量にあり、利用可能なモデルの事前学習データとは大きく異なる場合には、この方法が適しています。ただし、言語モデルの事前学習には、既存モデルのファインチューニングと比べてかなり多くの計算リソースが必要です。新しいモデルの学習が意味を持つ例としては、楽譜のデータ、DNA のような分子配列、プログラミング言語のデータセットなどがあります。プログラミング言語は近年、OpenAI の Codex モデルを基盤とする TabNine や GitHub の Copilot のような、長いコード列を生成できるツールによって注目を集めています。このテキスト生成のタスクに最も適しているのは、GPT-2 のような自己回帰型の言語モデル、つまり因果言語モデルです。
+
+このセクションでは、コード生成モデルの縮小版を作ります。完全な関数やクラスではなく、1行の補完に焦点を当て、Python コードの一部を使います。Python でデータを扱う作業では、`matplotlib`、`seaborn`、`pandas`、`scikit-learn` といったライブラリからなる Python のデータサイエンススタックに頻繁に触れます。これらのフレームワークを使うときは特定のコマンドを調べる必要がよくあるので、モデルにこれらの呼び出しを補完してもらえると便利です。
+
+<Youtube id="Vpjb1lu0MDk"/>
+
+[Chapter 6](/course/chapter6) では、Python のソースコードを処理するための効率的なトークナイザを作りました。しかし、モデルの事前学習に使う大規模なデータセットはまだ用意できていません。ここでは、GitHub のリポジトリから集めた Python コードのコーパスにこのトークナイザを適用します。その後、`Trainer` API と 🤗 Accelerate を使ってモデルを学習します。さっそく始めましょう！
+
+<iframe src="https://course-demos-codeparrot-ds.hf.space" frameBorder="0" height="300" title="Gradio app" class="block dark:hidden container p-0 flex-grow space-iframe" allow="accelerometer; ambient-light-sensor; autoplay; battery; camera; document-domain; encrypted-media; fullscreen; geolocation; gyroscope; layout-animations; legacy-image-formats; magnetometer; microphone; midi; oversized-images; payment; picture-in-picture; publickey-credentials-get; sync-xhr; usb; vr ; wake-lock; xr-spatial-tracking" sandbox="allow-forms allow-modals allow-popups allow-popups-to-escape-sandbox allow-same-origin allow-scripts allow-downloads"></iframe>
+
+これは、このセクションで示すコードを使って実際に学習し、Hub にアップロードしたモデルを紹介するものです。[こちら](https://huggingface.co/huggingface-course/codeparrot-ds?text=plt.imshow%28) で確認できます。テキスト生成にはランダム性があるため、得られる結果は少し異なるはずです。
+ 
+## データを集める[[gathering-the-data]]
+
+Python のコードは、GitHub のようなコードリポジトリに大量に存在します。すべての Python リポジトリをスクレイピングすれば、データセットを作ることができます。これは、大規模な GPT-2 モデルを事前学習するために [Transformers の教科書](https://learning.oreilly.com/library/view/natural-language-processing/9781098136789/) で採用されたアプローチです。著者らは、約2,000万件の Python ファイルを含む約180 GB の GitHub ダンプ `codeparrot` からデータセットを構築し、[Hugging Face Hub](https://huggingface.co/datasets/transformersbook/codeparrot) で共有しました。
+
+ただし、コーパス全体で学習すると時間と計算リソースを大量に消費します。また、必要なのは Python のデータサイエンススタックに関係するデータセットの部分だけです。そこで、まず `codeparrot` データセットを、このスタックのライブラリのいずれかを含むファイルだけに絞り込みます。データセットが大きいため、ダウンロードは避けたいところです。代わりに、ストリーミング機能を使ってその場で絞り込みます。先ほど挙げたライブラリを使っているコードサンプルを絞り込むために、次の関数を使います。
+
+```py
+def any_keyword_in_string(string, keywords):
+    for keyword in keywords:
+        if keyword in string:
+            return True
+    return False
+```
+
+2つの例で試してみましょう。
+
+```py
+filters = ["pandas", "sklearn", "matplotlib", "seaborn"]
+example_1 = "import numpy as np"
+example_2 = "import pandas as pd"
+
+print(
+    any_keyword_in_string(example_1, filters), any_keyword_in_string(example_2, filters)
+)
+```
+
+```python out
+False True
+```
+
+これを使って、データセットをストリーミングしながら目的の要素を絞り込む関数を作れます。
+
+```py
+from collections import defaultdict
+from tqdm import tqdm
+from datasets import Dataset
+
+
+def filter_streaming_dataset(dataset, filters):
+    filtered_dict = defaultdict(list)
+    total = 0
+    for sample in tqdm(iter(dataset)):
+        total += 1
+        if any_keyword_in_string(sample["content"], filters):
+            for k, v in sample.items():
+                filtered_dict[k].append(v)
+    print(f"{len(filtered_dict['content'])/total:.2%} of data after filtering.")
+    return Dataset.from_dict(filtered_dict)
+```
+
+あとは、この関数をストリーミングデータセットに適用するだけです。
+
+```py
+# このセルの実行には非常に長い時間がかかるので、スキップして
+# 次のセルに進んでください！
+from datasets import load_dataset
+
+split = "train"  # "valid"
+filters = ["pandas", "sklearn", "matplotlib", "seaborn"]
+
+data = load_dataset(f"transformersbook/codeparrot-{split}", split=split, streaming=True)
+filtered_data = filter_streaming_dataset(data, filters)
+```
+
+```python out
+3.26% of data after filtering.
+```
+
+元のデータセットの約3%が残りますが、それでもかなり大きな規模です。得られたデータセットは 6 GB で、600,000件の Python スクリプトから構成されています！
+
+データセット全体の絞り込みには、マシンや帯域によっては2〜3時間かかることがあります。この長い処理を自分で実行したくない場合は、絞り込み済みのデータセットを Hub で提供しているので、そちらをダウンロードできます。
+
+```py
+from datasets import load_dataset, DatasetDict
+
+ds_train = load_dataset("huggingface-course/codeparrot-ds-train", split="train")
+ds_valid = load_dataset("huggingface-course/codeparrot-ds-valid", split="validation")
+
+raw_datasets = DatasetDict(
+    {
+        "train": ds_train,  # .shuffle().select(range(50000)),
+        "valid": ds_valid,  # .shuffle().select(range(500))
+    }
+)
+
+raw_datasets
+```
+
+```python out
+DatasetDict({
+    train: Dataset({
+        features: ['repo_name', 'path', 'copies', 'size', 'content', 'license'],
+        num_rows: 606720
+    })
+    valid: Dataset({
+        features: ['repo_name', 'path', 'copies', 'size', 'content', 'license'],
+        num_rows: 3322
+    })
+})
+```
+
+> [!TIP]
+> 言語モデルの事前学習には時間がかかります。まず、上の2行のコメントアウトを外してデータの一部で学習ループを実行し、学習が正常に完了してモデルが保存されることを確認しておくことをおすすめします。フォルダを作り忘れたり、学習ループの最後にタイプミスがあったりして、学習の実行が最後のステップで失敗することほど悔しいことはありません！
+
+データセットの例を見てみましょう。各フィールドの最初の200文字だけを表示します。
+
+```py
+for key in raw_datasets["train"][0]:
+    print(f"{key.upper()}: {raw_datasets['train'][0][key][:200]}")
+```
+
+```python out
+'REPO_NAME: kmike/scikit-learn'
+'PATH: sklearn/utils/__init__.py'
+'COPIES: 3'
+'SIZE: 10094'
+'''CONTENT: """
+The :mod:`sklearn.utils` module includes various utilites.
+"""
+
+from collections import Sequence
+
+import numpy as np
+from scipy.sparse import issparse
+import warnings
+
+from .murmurhash import murm
+LICENSE: bsd-3-clause'''
+```
+
+`content` フィールドには、モデルに学習させたいコードが含まれていることがわかります。データセットが用意できたので、次はテキストを事前学習に適した形式に整える必要があります。
+
+## データセットを準備する[[preparing-the-dataset]]
+
+<Youtube id="ma1TrR7gE7I"/>
+
+最初のステップは、データをトークン化して学習に使えるようにすることです。主な目的は短い関数呼び出しの自動補完なので、コンテキストサイズは比較的小さくできます。そうすると、モデルをはるかに速く学習でき、必要なメモリも大幅に少なくて済みます。アプリケーションでより多くのコンテキストが必要な場合（たとえば、関数定義のあるファイルをもとにモデルにユニットテストを書かせたい場合）は、この数値を大きくしてください。ただし、その分 GPU メモリの使用量も増える点に注意してください。ここでは、GPT-2 の 1,024 や GPT-3 の 2,048 とは異なり、コンテキストサイズを128トークンに固定します。
+
+ほとんどのドキュメントは128トークンよりはるかに長いため、入力を最大長で単純に切り捨てると、データセットの大部分を失ってしまいます。代わりに、`return_overflowing_tokens` オプションを使って入力全体をトークン化し、[Chapter 6](/course/chapter6/4) で行ったように複数のチャンクに分割します。また、`return_length` オプションも使って、作成された各チャンクの長さを自動的に取得します。最後のチャンクはコンテキストサイズより小さくなることが多く、パディングの問題を避けるためにこれらの断片は除去します。データは十分にあるので、除去しても問題ありません。
+
+<div class="flex justify-center">
+<img class="block dark:hidden" src="https://huggingface.co/datasets/huggingface-course/documentation-images/resolve/main/en/chapter7/chunking_texts.svg" alt="長いテキストをいくつかのピースに分割する。"/>
+<img class="hidden dark:block" src="https://huggingface.co/datasets/huggingface-course/documentation-images/resolve/main/en/chapter7/chunking_texts-dark.svg" alt="長いテキストをいくつかのピースに分割する。"/>
+</div>
+
+最初の2つの例を見て、具体的にどう動くか確認しましょう。
+
+```py
+from transformers import AutoTokenizer
+
+context_length = 128
+tokenizer = AutoTokenizer.from_pretrained("huggingface-course/code-search-net-tokenizer")
+
+outputs = tokenizer(
+    raw_datasets["train"][:2]["content"],
+    truncation=True,
+    max_length=context_length,
+    return_overflowing_tokens=True,
+    return_length=True,
+)
+
+print(f"Input IDs length: {len(outputs['input_ids'])}")
+print(f"Input chunk lengths: {(outputs['length'])}")
+print(f"Chunk mapping: {outputs['overflow_to_sample_mapping']}")
+```
+
+```python out
+Input IDs length: 34
+Input chunk lengths: [128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 117, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 41]
+Chunk mapping: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1]
+```
+
+この2つの例からは、合計34個のセグメントが得られたことがわかります。チャンクの長さを見ると、両ドキュメントの末尾のチャンクは128トークン未満（それぞれ117と41）です。これらは全チャンクのごく一部なので、安心して除去できます。`overflow_to_sample_mapping` フィールドを使えば、どのチャンクがどの入力サンプルに属していたかも復元できます。
+
+この操作では、🤗 Datasets の `Dataset.map()` 関数の便利な特徴を使っています。1対1の対応を必要としない点です。[section 3](/course/chapter7/3) で見たように、入力バッチより多い、または少ない要素を持つバッチを作成できます。これは、データ拡張やデータの絞り込みなど、要素数を変える操作を行うときに便利です。今回のケースでは、各要素を指定したコンテキストサイズのチャンクにトークン化することで、各ドキュメントから多くのサンプルを作成しています。既存の列はサイズが競合するので、削除するのを忘れないようにしてください。保持したい場合は、適切に複製して `Dataset.map()` の呼び出しの中で返すこともできます。
+
+```py
+def tokenize(element):
+    outputs = tokenizer(
+        element["content"],
+        truncation=True,
+        max_length=context_length,
+        return_overflowing_tokens=True,
+        return_length=True,
+    )
+    input_batch = []
+    for length, input_ids in zip(outputs["length"], outputs["input_ids"]):
+        if length == context_length:
+            input_batch.append(input_ids)
+    return {"input_ids": input_batch}
+
+
+tokenized_datasets = raw_datasets.map(
+    tokenize, batched=True, remove_columns=raw_datasets["train"].column_names
+)
+tokenized_datasets
+```
+
+```python out
+DatasetDict({
+    train: Dataset({
+        features: ['input_ids'],
+        num_rows: 16702061
+    })
+    valid: Dataset({
+        features: ['input_ids'],
+        num_rows: 93164
+    })
+})
+```
+
+これで、各128トークンのサンプルが1,670万件、合計で約21億トークンになりました。参考までに、OpenAI の GPT-3 と Codex の各モデルは、それぞれ3,000億と1,000億のトークンで学習されており、Codex のモデルは GPT-3 のチェックポイントから初期化されています。このセクションの目的は、長く首尾一貫したテキストを生成できるこれらのモデルと競うことではありません。データサイエンティスト向けに素早い自動補完機能を提供する、縮小版を作ることです。
+
+データセットの準備ができたので、モデルをセットアップしましょう！
+
+> [!TIP]
+> ✏️ **試してみましょう！** ここではコンテキストウィンドウが小さいため、コンテキストサイズより小さいチャンクをすべて除去しても大きな問題にはなりませんでした。しかし、コンテキストサイズを大きくすると（あるいは短いドキュメントのコーパスの場合）、除去されるチャンクの割合も増えていきます。より効率的なデータ準備の方法は、バッチ内のトークン化されたすべてのサンプルを、`eos_token_id` トークンを挟んで連結し、連結されたシーケンスに対してチャンク分割を行うことです。演習として、そのアプローチを使うように `tokenize()` 関数を変更してみてください。その際、トークン ID の完全なシーケンスを得るために、`truncation=False` を設定し、トークナイザのほかの引数を取り除く必要があります。
+
+
+## 新しいモデルを初期化する[[initializing-a-new-model]]
+
+最初のステップは、GPT-2 モデルを新しく初期化することです。モデルには小さい GPT-2 モデルと同じ構成を使います。事前学習済みの構成を読み込み、トークナイザのサイズがモデルの語彙サイズと一致することを確認し、`bos` と `eos`（シーケンスの開始と終了）のトークン ID を渡します。
+
+{#if fw === 'pt'}
+
+```py
+from transformers import AutoTokenizer, GPT2LMHeadModel, AutoConfig
+
+config = AutoConfig.from_pretrained(
+    "gpt2",
+    vocab_size=len(tokenizer),
+    n_ctx=context_length,
+    bos_token_id=tokenizer.bos_token_id,
+    eos_token_id=tokenizer.eos_token_id,
+)
+```
+
+その構成で、新しいモデルを読み込めます。モデルを自分で初期化するため、`from_pretrained()` 関数を使わないのは今回が初めてである点に注目してください。
+
+```py
+model = GPT2LMHeadModel(config)
+model_size = sum(t.numel() for t in model.parameters())
+print(f"GPT-2 size: {model_size/1000**2:.1f}M parameters")
+```
+
+```python out
+GPT-2 size: 124.2M parameters
+```
+
+{:else}
+
+```py
+from transformers import AutoTokenizer, TFGPT2LMHeadModel, AutoConfig
+
+config = AutoConfig.from_pretrained(
+    "gpt2",
+    vocab_size=len(tokenizer),
+    n_ctx=context_length,
+    bos_token_id=tokenizer.bos_token_id,
+    eos_token_id=tokenizer.eos_token_id,
+)
+```
+
+その構成で、新しいモデルを読み込めます。モデルを自分で初期化するため、`from_pretrained()` 関数を使わないのは今回が初めてである点に注目してください。
+
+```py
+model = TFGPT2LMHeadModel(config)
+model(model.dummy_inputs)  # モデルを構築する
+model.summary()
+```
+
+```python out
+_________________________________________________________________
+Layer (type)                 Output Shape              Param #   
+=================================================================
+transformer (TFGPT2MainLayer multiple                  124242432 
+=================================================================
+Total params: 124,242,432
+Trainable params: 124,242,432
+Non-trainable params: 0
+_________________________________________________________________
+```
+
+{/if}
+
+モデルには1億2,400万個のパラメータがあり、これらを調整していきます。学習を始める前に、バッチの作成を担うデータコレータをセットアップする必要があります。言語モデリング専用に設計された（名前がさりげなく示しているとおり）`DataCollatorForLanguageModeling` コレータが使えます。このコレータは、バッチのスタックとパディングに加えて、言語モデルのラベルの作成も担います。因果言語モデリングでは、入力がそのままラベルにもなります（要素を1つずらしただけです）。このデータコレータは学習中にラベルをその場で作成するので、`input_ids` を複製する必要はありません。
+
+`DataCollatorForLanguageModeling` は、マスク言語モデリング（MLM）と因果言語モデリング（CLM）の両方に対応している点に注意してください。デフォルトでは MLM 用のデータを準備しますが、引数 `mlm=False` を設定すると CLM に切り替えられます。
+
+{#if fw === 'pt'}
+
+```py
+from transformers import DataCollatorForLanguageModeling
+
+tokenizer.pad_token = tokenizer.eos_token
+data_collator = DataCollatorForLanguageModeling(tokenizer, mlm=False)
+```
+
+{:else}
+
+```py
+from transformers import DataCollatorForLanguageModeling
+
+tokenizer.pad_token = tokenizer.eos_token
+data_collator = DataCollatorForLanguageModeling(tokenizer, mlm=False, return_tensors="tf")
+```
+
+{/if}
+
+例を見てみましょう。
+
+```py
+out = data_collator([tokenized_datasets["train"][i] for i in range(5)])
+for key in out:
+    print(f"{key} shape: {out[key].shape}")
+```
+
+{#if fw === 'pt'}
+
+```python out
+input_ids shape: torch.Size([5, 128])
+attention_mask shape: torch.Size([5, 128])
+labels shape: torch.Size([5, 128])
+```
+
+{:else}
+
+```python out
+input_ids shape: (5, 128)
+attention_mask shape: (5, 128)
+labels shape: (5, 128)
+```
+
+{/if}
+
+サンプルがスタックされ、すべてのテンソルの形状が同じになっていることがわかります。
+
+{#if fw === 'tf'}
+
+ここで `prepare_tf_dataset()` メソッドを使うと、上で作成したデータコレータでデータセットを TensorFlow のデータセットに変換できます。
+
+```python
+tf_train_dataset = model.prepare_tf_dataset(
+    tokenized_datasets["train"],
+    collate_fn=data_collator,
+    shuffle=True,
+    batch_size=32,
+)
+tf_eval_dataset = model.prepare_tf_dataset(
+    tokenized_datasets["valid"],
+    collate_fn=data_collator,
+    shuffle=False,
+    batch_size=32,
+)
+```
+
+{/if}
+
+> [!WARNING]
+> ⚠️ 入力とラベルを揃えるためのシフトはモデルの内部で行われるため、データコレータは入力をコピーしてラベルを作成するだけです。
+
+
+これで、実際にモデルを学習する準備がすべて整いました。思ったほど大変ではなかったはずです！学習を始める前に、Hugging Face にログインしておきましょう。ノートブックで作業している場合は、次のユーティリティ関数でログインできます。
+
+```python
+from huggingface_hub import notebook_login
+
+notebook_login()
+```
+
+Hugging Face のログイン認証情報を入力できるウィジェットが表示されます。
+
+ノートブックで作業していない場合は、ターミナルに次の行を入力してください。
+
+```bash
+huggingface-cli login
+```
+
+{#if fw === 'pt'}
+
+残る作業は、学習の引数を設定して `Trainer` を起動することだけです。ウォームアップ付きのコサイン学習率スケジュールを使い、実効バッチサイズは256（`per_device_train_batch_size` × `gradient_accumulation_steps`）にします。勾配累積は、単一のバッチがメモリに収まらない場合に使い、複数の順伝播・逆伝播を重ねて勾配を少しずつ蓄積します。🤗 Accelerate で学習ループを作成するときに、実際に動く様子を確認します。
+
+```py
+from transformers import Trainer, TrainingArguments
+
+args = TrainingArguments(
+    output_dir="codeparrot-ds",
+    per_device_train_batch_size=32,
+    per_device_eval_batch_size=32,
+    evaluation_strategy="steps",
+    eval_steps=5_000,
+    logging_steps=5_000,
+    gradient_accumulation_steps=8,
+    num_train_epochs=1,
+    weight_decay=0.1,
+    warmup_steps=1_000,
+    lr_scheduler_type="cosine",
+    learning_rate=5e-4,
+    save_steps=5_000,
+    fp16=True,
+    push_to_hub=True,
+)
+
+trainer = Trainer(
+    model=model,
+    tokenizer=tokenizer,
+    args=args,
+    data_collator=data_collator,
+    train_dataset=tokenized_datasets["train"],
+    eval_dataset=tokenized_datasets["valid"],
+)
+```
+
+あとは `Trainer` を起動して、学習が終わるのを待つだけです。学習セット全体で実行するか一部で実行するかにより、それぞれ20時間または2時間かかります。コーヒーを何杯かと、読むための良い本を用意しておきましょう！
+
+```py
+trainer.train()
+```
+
+学習が完了したら、モデルとトークナイザを Hub にプッシュできます。
+
+```py
+trainer.push_to_hub()
+```
+
+{:else}
+
+残る作業は、学習のハイパーパラメータを設定して `compile()` と `fit()` を呼ぶことだけです。学習の安定性を高めるため、ウォームアップ付きの学習率スケジュールを使います。
+
+```py
+from transformers import create_optimizer
+import tensorflow as tf
+
+num_train_steps = len(tf_train_dataset)
+optimizer, schedule = create_optimizer(
+    init_lr=5e-5,
+    num_warmup_steps=1_000,
+    num_train_steps=num_train_steps,
+    weight_decay_rate=0.01,
+)
+model.compile(optimizer=optimizer)
+
+# 混合精度 float16 で学習する
+tf.keras.mixed_precision.set_global_policy("mixed_float16")
+```
+
+あとは `model.fit()` を呼んで、学習が終わるのを待つだけです。学習セット全体で実行するか一部で実行するかにより、それぞれ20時間または2時間かかります。コーヒーを何杯かと、読むための良い本を用意しておきましょう！学習が完了したら、モデルとトークナイザを Hub にプッシュできます。
+
+```py
+from transformers.keras_callbacks import PushToHubCallback
+
+callback = PushToHubCallback(output_dir="codeparrot-ds", tokenizer=tokenizer)
+
+model.fit(tf_train_dataset, validation_data=tf_eval_dataset, callbacks=[callback])
+```
+
+{/if}
+
+> [!TIP]
+> ✏️ **試してみましょう！** 生のテキストから GPT-2 の学習まで、`TrainingArguments` に加えて約30行のコードで到達できました。自分のデータセットで試して、良い結果が得られるか確認してみてください！
+
+> [!TIP]
+> {#if fw === 'pt'}
+>
+> 💡 複数の GPU を備えたマシンにアクセスできる場合は、そこでコードを実行してみてください。`Trainer` は複数のマシンを自動的に管理するので、学習を大幅に高速化できます。
+>
+> {:else}
+>
+> 💡 複数の GPU を備えたマシンにアクセスできる場合は、`MirroredStrategy` コンテキストを使うと学習を大幅に高速化できます。`tf.distribute.MirroredStrategy` オブジェクトを作成し、`to_tf_dataset()` や `prepare_tf_dataset()` の各メソッド、モデルの作成、`fit()` の呼び出しがすべて、その `scope()` コンテキストの中で実行されるようにする必要があります。ドキュメントは[こちら](https://www.tensorflow.org/guide/distributed_training#use_tfdistributestrategy_with_keras_modelfit)で確認できます。
+>
+> {/if}
+
+## pipeline を使ったコード生成[[code-generation-with-a-pipeline]]
+
+今こそ真価が問われるときです。学習したモデルが実際にどれほどうまく動くか見てみましょう！ログでは損失が着実に下がっていることが確認できますが、モデルを試すために、いくつかのプロンプトに対する動作を見てみます。そのために、モデルをテキスト生成の `pipeline` でラップし、GPU が利用できる場合は高速な生成のために GPU 上に配置します。
+
+{#if fw === 'pt'}
+
+```py
+import torch
+from transformers import pipeline
+
+device = torch.device("cuda") if torch.cuda.is_available() else torch.device("cpu")
+pipe = pipeline(
+    "text-generation", model="huggingface-course/codeparrot-ds", device=device
+)
+```
+
+{:else}
+
+```py
+from transformers import pipeline
+
+course_model = TFGPT2LMHeadModel.from_pretrained("huggingface-course/codeparrot-ds")
+course_tokenizer = AutoTokenizer.from_pretrained("huggingface-course/codeparrot-ds")
+pipe = pipeline(
+    "text-generation", model=course_model, tokenizer=course_tokenizer, device=0
+)
+```
+
+{/if}
+
+まず、散布図を作るという単純なタスクから始めましょう。
+
+```py
+txt = """\
+# create some data
+x = np.random.randn(100)
+y = np.random.randn(100)
+
+# create scatter plot with x, y
+"""
+print(pipe(txt, num_return_sequences=1)[0]["generated_text"])
+```
+
+```python out
+# create some data
+x = np.random.randn(100)
+y = np.random.randn(100)
+
+# create scatter plot with x, y
+plt.scatter(x, y)
+
+# create scatter
+```
+
+結果は正しそうです。`pandas` の操作でもうまくいくでしょうか。2つの配列から `DataFrame` を作れるか見てみましょう。
+
+```py
+txt = """\
+# create some data
+x = np.random.randn(100)
+y = np.random.randn(100)
+
+# create dataframe from x and y
+"""
+print(pipe(txt, num_return_sequences=1)[0]["generated_text"])
+```
+
+```python out
+# create some data
+x = np.random.randn(100)
+y = np.random.randn(100)
+
+# create dataframe from x and y
+df = pd.DataFrame({'x': x, 'y': y})
+df.insert(0,'x', x)
+for
+```
+
+良いですね、正しい答えです。ただし、その後で列 `x` を再び挿入しています。生成されるトークン数に上限があるため、続く `for` ループは途中で切れています。もう少し複雑なことをして、モデルに `groupby` 操作の手助けをしてもらいましょう。
+
+```py
+txt = """\
+# dataframe with profession, income and name
+df = pd.DataFrame({'profession': x, 'income':y, 'name': z})
+
+# calculate the mean income per profession
+"""
+print(pipe(txt, num_return_sequences=1)[0]["generated_text"])
+```
+
+```python out
+# dataframe with profession, income and name
+df = pd.DataFrame({'profession': x, 'income':y, 'name': z})
+
+# calculate the mean income per profession
+profession = df.groupby(['profession']).mean()
+
+# compute the
+```
+
+悪くありません。正しいやり方です。最後に、`scikit-learn` でも使えるか、ランダムフォレストのモデルをセットアップできるか見てみましょう。
+
+```py
+txt = """
+# import random forest regressor from scikit-learn
+from sklearn.ensemble import RandomForestRegressor
+
+# fit random forest model with 300 estimators on X, y:
+"""
+print(pipe(txt, num_return_sequences=1)[0]["generated_text"])
+```
+
+```python out
+# import random forest regressor from scikit-learn
+from sklearn.ensemble import RandomForestRegressor
+
+# fit random forest model with 300 estimators on X, y:
+rf = RandomForestRegressor(n_estimators=300, random_state=random_state, max_depth=3)
+rf.fit(X, y)
+rf
+```
+
+{#if fw === 'tf'}
+
+これらのいくつかの例を見る限り、モデルは Python のデータサイエンススタックの構文をある程度学習できているようです。もちろん、実世界にデプロイする前にはモデルをより徹底的に評価する必要がありますが、それでも印象的なプロトタイプです。
+
+{:else}
+
+これらのいくつかの例を見る限り、モデルは Python のデータサイエンススタックの構文をある程度学習できているようです（もちろん、モデルを実世界にデプロイする前には、より徹底的な評価が必要です）。ただし、用途によっては必要な性能を得るために、モデルの学習をさらにカスタマイズしなければならないこともあります。たとえば、バッチサイズを動的に更新したい場合や、不良サンプルをその場でスキップする条件付きの学習ループが欲しい場合はどうでしょうか。`Trainer` をサブクラス化して必要な変更を加える方法もありますが、学習ループをゼロから書くほうが簡単なこともあります。そこで登場するのが 🤗 Accelerate です。
+
+{/if}
+
+{#if fw === 'pt'}
+
+## 🤗 Accelerate で学習する[[training-with-accelerate]]
+
+`Trainer` を使ったモデルの学習方法は見てきました。ある程度のカスタマイズは可能です。しかし、学習ループを完全に制御したい場合や、風変わりな変更を加えたい場合もあります。そのような場合には 🤗 Accelerate が最適です。このセクションでは、それを使ってモデルを学習する手順を順に追っていきます。さらに面白くするために、学習ループに一工夫も加えます。
+
+<Youtube id="Hm8_PgVTFuc"/>
+
+関心があるのは主にデータサイエンスライブラリに対する的確な自動補完なので、これらのライブラリを多く使う学習サンプルにより大きな重みを与えるのが理にかなっています。こうしたサンプルは、`plt`、`pd`、`sk`、`fit`、`predict` といったキーワードで簡単に識別できます。これらは `matplotlib.pyplot`、`pandas`、`sklearn` の最も頻繁なインポート名であり、後者の fit/predict パターンでもあります。これらがそれぞれ単一のトークンとして表現されるなら、入力シーケンスに含まれているかを簡単に確認できます。トークンには空白の接頭辞が付く場合もあるので、トークナイザの語彙ではそのバージョンも確認します。動作を検証するために、複数のトークンに分割されるはずのテスト用トークンを1つ追加します。
+
+```py
+keytoken_ids = []
+for keyword in [
+    "plt",
+    "pd",
+    "sk",
+    "fit",
+    "predict",
+    " plt",
+    " pd",
+    " sk",
+    " fit",
+    " predict",
+    "testtest",
+]:
+    ids = tokenizer([keyword]).input_ids[0]
+    if len(ids) == 1:
+        keytoken_ids.append(ids[0])
+    else:
+        print(f"Keyword has not single token: {keyword}")
+```
+
+```python out
+'Keyword has not single token: testtest'
+```
+
+うまく動いているようです！入力シーケンス、ロジット、先ほど選んだキートークンを入力として受け取るカスタム損失関数を書くことができます。まず、ロジットと入力を揃える必要があります。次のトークンが現在のトークンのラベルになるため、入力シーケンスを右に1つずらしたものがラベルになります。モデルは最初のトークンについては予測を行わないので、ラベルを入力シーケンスの2番目のトークンから始めることでこれを実現できます。次に、入力シーケンス全体の後に続くトークンのラベルは存在しないため、最後のロジットを切り取ります。これで、サンプルごとの損失を計算し、各サンプル内のすべてのキーワードの出現回数を数えることができます。最後に、出現回数を重みとして、すべてのサンプルの重み付き平均を計算します。キーワードを含まないサンプルをすべて捨ててしまわないよう、重みには1を加えます。
+
+```py
+from torch.nn import CrossEntropyLoss
+import torch
+
+
+def keytoken_weighted_loss(inputs, logits, keytoken_ids, alpha=1.0):
+    # トークン < n が n を予測するようにシフトする
+    shift_labels = inputs[..., 1:].contiguous()
+    shift_logits = logits[..., :-1, :].contiguous()
+    # トークンごとの損失を計算する
+    loss_fct = CrossEntropyLoss(reduce=False)
+    loss = loss_fct(shift_logits.view(-1, shift_logits.size(-1)), shift_labels.view(-1))
+    # 形状を変えて、サンプルごとに損失を平均する
+    loss_per_sample = loss.view(shift_logits.size(0), shift_logits.size(1)).mean(axis=1)
+    # 重み付けを計算してスケールする
+    weights = torch.stack([(inputs == kt).float() for kt in keytoken_ids]).sum(
+        axis=[0, 2]
+    )
+    weights = alpha * (1.0 + weights)
+    # 重み付き平均を計算する
+    weighted_loss = (loss_per_sample * weights).mean()
+    return weighted_loss
+```
+
+この素晴らしい新しい損失関数で学習を始める前に、いくつか準備が必要です。
+
+- データをバッチ単位で読み込むデータローダが必要です。
+- 重み減衰のパラメータを設定する必要があります。
+- 定期的に評価したいので、評価コードを関数にまとめておくのがよいでしょう。
+
+データローダから始めましょう。データセットの形式を `"torch"` に設定し、適切なバッチサイズで PyTorch の `DataLoader` に渡すだけです。
+
+```py
+from torch.utils.data.dataloader import DataLoader
+
+tokenized_datasets.set_format("torch")
+train_dataloader = DataLoader(tokenized_datasets["train"], batch_size=32, shuffle=True)
+eval_dataloader = DataLoader(tokenized_datasets["valid"], batch_size=32)
+```
+
+次に、オプティマイザがどのパラメータに追加の重み減衰を適用するか分かるように、パラメータをグループ化します。通常、すべてのバイアスと LayerNorm の重みはこの対象から外れます。その方法は次のとおりです。
+
+```py
+weight_decay = 0.1
+
+
+def get_grouped_params(model, no_decay=["bias", "LayerNorm.weight"]):
+    params_with_wd, params_without_wd = [], []
+    for n, p in model.named_parameters():
+        if any(nd in n for nd in no_decay):
+            params_without_wd.append(p)
+        else:
+            params_with_wd.append(p)
+    return [
+        {"params": params_with_wd, "weight_decay": weight_decay},
+        {"params": params_without_wd, "weight_decay": 0.0},
+    ]
+```
+
+学習中に検証セットでモデルを定期的に評価したいので、そのための関数も書きましょう。評価用データローダを一巡し、すべてのプロセスにわたって損失を集めるだけです。
+
+```py
+def evaluate():
+    model.eval()
+    losses = []
+    for step, batch in enumerate(eval_dataloader):
+        with torch.no_grad():
+            outputs = model(batch["input_ids"], labels=batch["input_ids"])
+
+        losses.append(accelerator.gather(outputs.loss))
+    loss = torch.mean(torch.cat(losses))
+    try:
+        perplexity = torch.exp(loss)
+    except OverflowError:
+        perplexity = float("inf")
+    return loss.item(), perplexity.item()
+```
+
+`evaluate()` 関数を使えば、損失と[パープレキシティ](/course/chapter7/3)を定期的に報告できます。次に、再びゼロから学習することを確実にするため、モデルを再定義します。
+
+```py
+model = GPT2LMHeadModel(config)
+```
+
+次に、先ほどの関数を使って重み減衰のためにパラメータを分割し、オプティマイザを定義できます。
+
+```py
+from torch.optim import AdamW
+
+optimizer = AdamW(get_grouped_params(model), lr=5e-4)
+```
+
+モデル、オプティマイザ、データローダを準備して、学習を開始できるようにしましょう。
+
+```py
+from accelerate import Accelerator
+
+accelerator = Accelerator(fp16=True)
+
+model, optimizer, train_dataloader, eval_dataloader = accelerator.prepare(
+    model, optimizer, train_dataloader, eval_dataloader
+)
+```
+
+> [!TIP]
+> 🚨 TPU で学習する場合は、上のセルから始まるすべてのコードを、専用の学習関数の中に移動する必要があります。詳しくは [Chapter 3](/course/chapter3) を参照してください。
+
+`train_dataloader` を `accelerator.prepare()` に渡したので、その長さを使って学習ステップ数を計算できます。この長さは prepare メソッドの実行後に変わるため、必ずデータローダの準備後に計算することを忘れないでください。学習率を0まで下げる古典的な線形スケジュールを使います。
+
+```py
+from transformers import get_scheduler
+
+num_train_epochs = 1
+num_update_steps_per_epoch = len(train_dataloader)
+num_training_steps = num_train_epochs * num_update_steps_per_epoch
+
+lr_scheduler = get_scheduler(
+    name="linear",
+    optimizer=optimizer,
+    num_warmup_steps=1_000,
+    num_training_steps=num_training_steps,
+)
+```
+
+最後に、モデルを Hub にプッシュするために、作業フォルダ内に `Repository` オブジェクトを作成する必要があります。まだログインしていない場合は、まず Hugging Face Hub にログインしてください。リポジトリ名は、モデルに付けたいモデル ID から決めます（`repo_name` は自由に置き換えてかまいません。ユーザー名を含む必要があり、`get_full_repo_name()` 関数はまさにそれを行います）。
+
+```py
+from huggingface_hub import Repository, get_full_repo_name
+
+model_name = "codeparrot-ds-accelerate"
+repo_name = get_full_repo_name(model_name)
+repo_name
+```
+
+```python out
+'sgugger/codeparrot-ds-accelerate'
+```
+
+次に、そのリポジトリをローカルフォルダにクローンできます。すでに存在する場合は、そのローカルフォルダは作業対象リポジトリの既存のクローンである必要があります。
+
+```py
+output_dir = "codeparrot-ds-accelerate"
+repo = Repository(output_dir, clone_from=repo_name)
+```
+
+`repo.push_to_hub()` メソッドを呼ぶことで、`output_dir` に保存したものを何でもアップロードできるようになりました。これにより、各エポックの終了時に中間モデルをアップロードできます。
+
+学習の前に、評価関数が正しく動作するか簡単にテストしましょう。
+
+```py
+evaluate()
+```
+
+```python out
+(10.934126853942871, 56057.14453125)
+```
+
+損失とパープレキシティは非常に高い値ですが、まだモデルを学習していないので驚くことではありません。これで、学習スクリプトの中核である学習ループを書く準備が整いました。学習ループでは、データローダを反復し、バッチをモデルに渡します。得られたロジットでカスタム損失関数を評価できます。ステップを集約したときに損失が大きくならないよう、損失は勾配累積のステップ数で割ってスケールします。最適化の前に、収束を良くするために勾配もクリッピングします。最後に、数ステップごとに新しい `evaluate()` 関数で評価セットに対するモデルの評価を行います。
+
+```py
+from tqdm.notebook import tqdm
+
+gradient_accumulation_steps = 8
+eval_steps = 5_000
+
+model.train()
+completed_steps = 0
+for epoch in range(num_train_epochs):
+    for step, batch in tqdm(
+        enumerate(train_dataloader, start=1), total=num_training_steps
+    ):
+        logits = model(batch["input_ids"]).logits
+        loss = keytoken_weighted_loss(batch["input_ids"], logits, keytoken_ids)
+        if step % 100 == 0:
+            accelerator.print(
+                {
+                    "samples": step * samples_per_step,
+                    "steps": completed_steps,
+                    "loss/train": loss.item() * gradient_accumulation_steps,
+                }
+            )
+        loss = loss / gradient_accumulation_steps
+        accelerator.backward(loss)
+        if step % gradient_accumulation_steps == 0:
+            accelerator.clip_grad_norm_(model.parameters(), 1.0)
+            optimizer.step()
+            lr_scheduler.step()
+            optimizer.zero_grad()
+            completed_steps += 1
+        if (step % (eval_steps * gradient_accumulation_steps)) == 0:
+            eval_loss, perplexity = evaluate()
+            accelerator.print({"loss/eval": eval_loss, "perplexity": perplexity})
+            model.train()
+            accelerator.wait_for_everyone()
+            unwrapped_model = accelerator.unwrap_model(model)
+            unwrapped_model.save_pretrained(output_dir, save_function=accelerator.save)
+            if accelerator.is_main_process:
+                tokenizer.save_pretrained(output_dir)
+                repo.push_to_hub(
+                    commit_message=f"Training in progress step {step}", blocking=False
+                )
+```
+
+これで完了です。GPT-2 のような因果言語モデル向けの、独自のカスタム学習ループが手に入りました。必要に応じてさらにカスタマイズできます。
+
+> [!TIP]
+> ✏️ **試してみましょう！** 自分の用途に合わせた独自のカスタム損失関数を作るか、学習ループに別のカスタムステップを追加してみてください。
+
+> [!TIP]
+> ✏️ **試してみましょう！** 長時間の学習実験を実行するときは、TensorBoard や Weights & Biases のようなツールで重要な指標を記録しておくのがよいでしょう。学習ループに適切なロギングを追加し、学習の進み具合をいつでも確認できるようにしてください。
+
+{/if}
