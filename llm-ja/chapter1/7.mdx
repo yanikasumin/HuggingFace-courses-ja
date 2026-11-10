@@ -1,0 +1,257 @@
+<!-- DISABLE-FRONTMATTER-SECTIONS -->
+
+# 成績対象外クイズ[[ungraded-quiz]]
+
+<CourseFloatingBanner
+    chapter={1}
+    classNames="absolute z-10 right-0 top-0"
+/>
+
+ここまで、この章ではたくさんの内容を扱ってきました。細部まで全部理解できていなくても心配いりません。クイズでここまでの学習内容を振り返ってみましょう。
+
+このクイズは成績には関係ないので、何度でも挑戦できます。難しい問題があったら、ヒントに従って教材を見直してみてください。この内容は認定試験でも改めて出題されます。
+
+### 1. Hub を探索して、`roberta-large-mnli` チェックポイントを探してみましょう。このモデルはどんなタスクを行うものでしょうか？
+
+
+<Question
+	choices={[
+		{
+			text: "要約",
+			explain: "<a href=\"https://huggingface.co/roberta-large-mnli\">roberta-large-mnli のページ</a>をもう一度見てみましょう。"
+		},
+		{
+			text: "テキスト分類",
+			explain: "より正確には、2つの文が論理的に結びついているかどうかを、3つのラベル（矛盾、中立、含意）で分類します。これは<em>自然言語推論</em>とも呼ばれるタスクです。",
+			correct: true
+		},
+		{
+			text: "テキスト生成",
+			explain: "<a href=\"https://huggingface.co/roberta-large-mnli\">roberta-large-mnli のページ</a>をもう一度見てみましょう。"
+		}
+	]}
+/>
+
+### 2. 次のコードはどんな結果を返すでしょうか？
+
+```py
+from transformers import pipeline
+
+ner = pipeline("ner", aggregation_strategy="simple")
+ner("My name is Sylvain and I work at Hugging Face in Brooklyn.")
+```
+
+<Question
+	choices={[
+		{
+			text: "この文に対する分類スコアを、「positive」または「negative」というラベルとともに返します。",
+			explain: "不正解です。これは <code>sentiment-analysis</code> pipeline の動作です。"
+		},
+		{
+			text: "この文を補完する、生成されたテキストを返します。",
+			explain: "不正解です。これは <code>text-generation</code> pipeline の動作です。",
+		},
+		{
+			text: "人物、組織、場所を表す単語を返します。",
+			explain: "さらに、<code>aggregation_strategy=&quot;simple&quot;</code> を指定すると、「Hugging Face」のように、同じエンティティに属する単語がグループ化されます。",
+			correct: true
+		}
+	]}
+/>
+
+### 3. このコードサンプルの ... には何が入るでしょうか？
+
+```py
+from transformers import pipeline
+
+filler = pipeline("fill-mask", model="bert-base-cased")
+result = filler("...")
+```
+
+<Question
+	choices={[
+		{
+			text: "This &#60;mask> has been waiting for you.",
+			explain: "不正解です。<code>bert-base-cased</code> のモデルカードを確認して、間違いに気づけるか試してみましょう。"
+		},
+		{
+			text: "This [MASK] has been waiting for you.",
+			explain: "このモデルのマスクトークンは [MASK] です。",
+			correct: true
+		},
+		{
+			text: "This man has been waiting for you.",
+			explain: "不正解です。この pipeline はマスクされた単語を埋めるものなので、どこかにマスクトークンが必要です。"
+		}
+	]}
+/>
+
+### 4. このコードが失敗するのはなぜでしょうか？
+
+```py
+from transformers import pipeline
+
+classifier = pipeline("zero-shot-classification")
+result = classifier("This is a course about the Transformers library")
+```
+
+<Question
+	choices={[
+		{
+			text: "この pipeline では、このテキストを分類するためのラベルを与える必要があります。",
+			explain: "そのとおりです。正しいコードには <code>candidate_labels=[...]</code> を含める必要があります。",
+			correct: true
+		},
+		{
+			text: "この pipeline には、1文ではなく複数の文が必要です。",
+			explain: "不正解です。ただし、正しく使えば、この pipeline は（他のすべての pipeline と同様に）文のリストを受け取って処理することもできます。"
+		},
+		{
+			text: "🤗 Transformers ライブラリが壊れている。いつものことです。",
+			explain: "この選択肢にコメントする価値はありません！"
+		},
+		{
+			text: "この pipeline にはもっと長い入力が必要です。これは短すぎます。",
+			explain: "不正解です。なお、非常に長いテキストは、この pipeline で処理される際に切り捨てられます。"
+		}
+	]}
+/>
+
+### 5. 「転移学習」とは何を意味するでしょうか？
+
+<Question
+	choices={[
+		{
+			text: "事前学習済みモデルの知識を、同じデータセットで学習させることで新しいモデルへ移すこと。",
+			explain: "いいえ、それでは同じモデルの2つのバージョンになってしまいます。"
+		},
+		{
+			text: "事前学習済みモデルの知識を、2番目のモデルを1番目のモデルの重みで初期化することで、新しいモデルへ移すこと。",
+			explain: "2番目のモデルを新しいタスクで学習させると、1番目のモデルの知識が*転移*します。",
+			correct: true
+		},
+		{
+			text: "事前学習済みモデルの知識を、2番目のモデルを1番目のモデルと同じアーキテクチャで構築することで、新しいモデルへ移すこと。",
+			explain: "アーキテクチャはモデルの構築方法にすぎません。この場合、知識が共有されたり転移したりすることはありません。"
+		}
+	]}
+/>
+
+### 6. 正しいか誤りか： 言語モデルの事前学習には、通常ラベルは必要ない。
+
+<Question
+	choices={[
+		{
+			text: "正しい",
+			explain: "事前学習は通常<em>自己教師あり</em>で行われます。つまり、ラベルは入力から自動的に作られます（次の単語を予測したり、マスクされた単語を埋めたりするなど）。",
+			correct: true
+		},
+		{
+			text: "誤り",
+			explain: "これは正しい答えではありません。"
+		}
+	]}
+/>
+
+### 7. 「モデル」「アーキテクチャ」「重み」という用語を最もよく説明している文を選んでください。
+
+<Question
+	choices={[
+		{
+			text: "モデルを建物に例えると、そのアーキテクチャは設計図で、重みはその中に住んでいる人々である。",
+			explain: "この例えでいえば、重みは建物を建てるのに使うレンガやその他の材料にあたります。"
+		},
+		{
+			text: "アーキテクチャはモデルを構築するための地図で、その重みは地図上に表された都市である。",
+			explain: "この例えの問題点は、地図は通常、実在する1つの現実を表すことです（フランスにパリという都市は1つしかありません）。あるアーキテクチャに対して、重みは複数あり得ます。"
+		},
+		{
+			text: "アーキテクチャはモデルを構築するための数学的な関数が連なったもので、その重みはそれらの関数のパラメータである。",
+			explain: "同じ関数の集合（アーキテクチャ）でも、異なるパラメータ（重み）を使うことで、異なるモデルを構築できます。",
+			correct: true
+		}
+	]}
+/>
+
+
+### 8. 生成したテキストでプロンプトを補完するには、どのタイプのモデルを使うでしょうか？
+
+<Question
+	choices={[
+		{
+			text: "エンコーダモデル",
+			explain: "エンコーダモデルは文全体の表現を生成するもので、分類のようなタスクにより向いています。"
+		},
+		{
+			text: "デコーダモデル",
+			explain: "デコーダモデルは、プロンプトからのテキスト生成に最適です。",
+			correct: true
+		},
+		{
+			text: "シーケンス・トゥ・シーケンスモデル",
+			explain: "シーケンス・トゥ・シーケンスモデルは、与えられたプロンプトではなく、入力文に関連した文を生成したいタスクにより向いています。"
+		}
+	]}
+/>
+
+### 9. テキストを要約するには、どのタイプのモデルを使うでしょうか？
+
+<Question
+	choices={[
+		{
+			text: "エンコーダモデル",
+			explain: "エンコーダモデルは文全体の表現を生成するもので、分類のようなタスクにより向いています。"
+		},
+		{
+			text: "デコーダモデル",
+			explain: "デコーダモデルは出力テキスト（要約など）の生成は得意ですが、要約対象のテキスト全体のような文脈を活用する能力はありません。"
+		},
+		{
+			text: "シーケンス・トゥ・シーケンスモデル",
+			explain: "シーケンス・トゥ・シーケンスモデルは、要約タスクに最適です。",
+			correct: true
+		}
+	]}
+/>
+
+### 10. テキスト入力を特定のラベルに分類するには、どのタイプのモデルを使うでしょうか？
+
+<Question
+	choices={[
+		{
+			text: "エンコーダモデル",
+			explain: "エンコーダモデルは文全体の表現を生成するもので、分類のようなタスクに最適です。",
+			correct: true
+		},
+		{
+			text: "デコーダモデル",
+			explain: "デコーダモデルは出力テキストの生成は得意ですが、文からラベルを抽出するのは得意ではありません。"
+		},
+		{
+			text: "シーケンス・トゥ・シーケンスモデル",
+			explain: "シーケンス・トゥ・シーケンスモデルは、ラベルではなく、入力文に基づいてテキストを生成したいタスクにより向いています。",
+		}
+	]}
+/>
+
+### 11. モデルに見られるバイアスの原因として考えられるものは何でしょうか？
+
+<Question
+	choices={[
+		{
+			text: "モデルが事前学習済みモデルのファインチューニング版であり、そのバイアスを受け継いでいる。",
+			explain: "転移学習を適用すると、使用した事前学習済みモデルのバイアスは、ファインチューニング後のモデルにも残ります。",
+			correct: true
+		},
+		{
+			text: "モデルの学習に使われたデータにバイアスがある。",
+			explain: "これは最も明白なバイアスの原因ですが、唯一の原因ではありません。",
+			correct: true
+		},
+		{
+			text: "モデルが最適化していた指標（メトリクス）にバイアスがある。",
+			explain: "あまり明白ではないバイアスの原因は、モデルの学習方法です。モデルは、選ばれた指標が何であれ、それに盲目的に最適化していきます。",
+			correct: true
+		}
+	]}
+/>

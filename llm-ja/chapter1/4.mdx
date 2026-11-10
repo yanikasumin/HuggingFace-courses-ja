@@ -1,0 +1,189 @@
+# Transformer はどのように動作するのか？[[how-do-transformers-work]]
+
+<CourseFloatingBanner
+    chapter={1}
+    classNames="absolute z-10 right-0 top-0"
+/>
+
+このセクションでは、Transformer モデルのアーキテクチャを見ていき、アテンション、エンコーダ・デコーダアーキテクチャといった概念をさらに掘り下げます。
+
+> [!WARNING]
+> 🚀 ここからは内容が一段深くなります。このセクションは詳しくて専門的なので、最初からすべて理解できなくても心配ありません。これらの概念は、コースの後半で改めて扱います。
+
+## Transformer の簡単な歴史[[a-bit-of-transformer-history]]
+
+Transformer モデルの（短い）歴史における、いくつかの節目を紹介します。
+
+<div class="flex justify-center">
+<img class="block dark:hidden" src="https://huggingface.co/datasets/huggingface-course/documentation-images/resolve/main/en/chapter1/transformers_chrono.svg" alt="Transformer モデルの簡単な年表">
+<img class="hidden dark:block" src="https://huggingface.co/datasets/huggingface-course/documentation-images/resolve/main/en/chapter1/transformers_chrono-dark.svg" alt="Transformer モデルの簡単な年表">
+</div>
+
+[Transformer アーキテクチャ](https://arxiv.org/abs/1706.03762)は2017年6月に発表されました。もとの研究の焦点は翻訳タスクでした。その後、影響力の大きなモデルがいくつも登場しました。たとえば次のようなモデルです。
+
+- **2018年6月**: [GPT](https://cdn.openai.com/research-covers/language-unsupervised/language_understanding_paper.pdf)。最初の事前学習済み Transformer モデルで、さまざまな NLP タスクへのファインチューニングに使われ、当時の最高水準の結果を得ました
+
+- **2018年10月**: [BERT](https://arxiv.org/abs/1810.04805)。こちらも大規模な事前学習済みモデルで、文の要約をより上手く生成できるよう設計されました（詳しくは次の章で！）
+
+- **2019年2月**: [GPT-2](https://cdn.openai.com/better-language-models/language_models_are_unsupervised_multitask_learners.pdf)。GPT を改良し（そして大型化し）たバージョンで、倫理的な懸念のため当初はすぐには公開されませんでした
+
+- **2019年10月**: [T5](https://huggingface.co/papers/1910.10683)。sequence-to-sequence 型 Transformer アーキテクチャを、マルチタスクに焦点を当てて実装したものです。
+
+- **2020年5月**: [GPT-3](https://huggingface.co/papers/2005.14165)。GPT-2 をさらに大型化したバージョンで、ファインチューニングなしにさまざまなタスクを上手くこなせます（_zero-shot learning_：ゼロショット学習と呼ばれます）
+
+- **2022年1月**: [InstructGPT](https://huggingface.co/papers/2203.02155)。指示によりよく従えるよう学習された GPT-3 のバージョンです。
+
+- **2023年1月**: [Llama](https://huggingface.co/papers/2302.13971)。さまざまな言語でテキストを生成できる大規模言語モデルです。
+
+- **2023年3月**: [Mistral](https://huggingface.co/papers/2310.06825)。70億パラメータの言語モデルで、評価されたすべてのベンチマークで Llama 2 13B を上回ります。推論を高速化する grouped-query attention と、任意の長さのシーケンスを扱えるスライディングウィンドウ・アテンションを活用しています。
+
+- **2024年5月**: [Gemma 2](https://huggingface.co/papers/2408.00118)。2B から 27B までのパラメータ数を持つ、軽量で最先端のオープンモデルのファミリーです。ローカルアテンションとグローバルアテンションの交互配置や group-query attention を取り入れており、小さいモデルは知識蒸留で学習され、2〜3倍大きいモデルに匹敵する性能を発揮します。
+
+- **2024年11月**: [SmolLM2](https://huggingface.co/papers/2502.02737)。最先端の小型言語モデル（1億3500万〜17億パラメータ）で、コンパクトなサイズにもかかわらず優れた性能を発揮し、モバイルデバイスやエッジデバイスに新たな可能性を開きます。
+
+このリストは網羅的なものにはほど遠く、さまざまな種類の Transformer モデルの一部を紹介したにすぎません。大まかには、次の3つのカテゴリに分けられます。
+
+- GPT 系（_auto-regressive_ Transformer モデルとも呼ばれます）
+- BERT 系（_auto-encoding_ Transformer モデルとも呼ばれます） 
+- T5 系（_sequence-to-sequence_ Transformer モデルとも呼ばれます）
+
+これらのファミリーについては、後ほどさらに詳しく見ていきます。
+
+## Transformer は言語モデル[[transformers-are-language-models]]
+
+上で挙げたすべての Transformer モデル（GPT、BERT、T5 など）は、*言語モデル*として学習されています。つまり、自己教師あり学習という方法で、大量の生テキストを使って学習されているのです。
+
+自己教師あり学習とは、学習の目標がモデルの入力から自動的に計算される学習方法です。つまり、データにラベルを付ける人間が必要ありません！
+
+この種のモデルは、学習に使われた言語に対する統計的な理解を身につけますが、特定の実用的なタスクにはあまり役立ちません。そのため、汎用的な事前学習済みモデルは次に *転移学習*、すなわち *ファインチューニング* と呼ばれるプロセスにかけられます。このプロセスではモデルは教師あり学習の方法で――つまり、人間が注釈を付けたラベルを使って――対象のタスク向けにファインチューニングされます。
+
+タスクの例の一つは、前の *n* 個の単語を読んだうえで、文の次の単語を予測することです。これは *causal language modeling*（因果的言語モデリング）と呼ばれます。出力が過去と現在の入力に依存し、未来の入力には依存しないためです。
+
+<div class="flex justify-center">
+<img class="block dark:hidden" src="https://huggingface.co/datasets/huggingface-course/documentation-images/resolve/main/en/chapter1/causal_modeling.svg" alt="文中の次の単語を予測する因果的言語モデリングの例">
+<img class="hidden dark:block" src="https://huggingface.co/datasets/huggingface-course/documentation-images/resolve/main/en/chapter1/causal_modeling-dark.svg" alt="文中の次の単語を予測する因果的言語モデリングの例">
+</div>
+
+もう一つの例は *masked language modeling*（マスク付き言語モデリング）で、モデルが文中のマスクされた単語を予測します。
+
+<div class="flex justify-center">
+<img class="block dark:hidden" src="https://huggingface.co/datasets/huggingface-course/documentation-images/resolve/main/en/chapter1/masked_modeling.svg" alt="文中のマスクされた単語を予測するマスク付き言語モデリングの例">
+<img class="hidden dark:block" src="https://huggingface.co/datasets/huggingface-course/documentation-images/resolve/main/en/chapter1/masked_modeling-dark.svg" alt="文中のマスクされた単語を予測するマスク付き言語モデリングの例">
+</div>
+
+## Transformer は巨大なモデル[[transformers-are-big-models]]
+
+いくつかの例外（DistilBERT など）を除き、より良い性能を得るための一般的な戦略は、モデルのサイズと、事前学習に使うデータの量を増やすことです。
+
+<div class="flex justify-center">
+<img src="https://huggingface.co/datasets/huggingface-course/documentation-images/resolve/main/en/chapter1/model_parameters.png" alt="最近の Transformer モデルのパラメータ数" width="90%">
+</div>
+
+残念ながら、モデルの学習、とりわけ大きなモデルの学習には大量のデータが必要です。そのため、時間と計算リソースの面で非常にコストがかかります。次のグラフから分かるように、環境への影響にもつながります。
+
+<div class="flex justify-center">
+<img class="block dark:hidden" src="https://huggingface.co/datasets/huggingface-course/documentation-images/resolve/main/en/chapter1/carbon_footprint.svg" alt="大規模言語モデルのカーボンフットプリント">
+<img class="hidden dark:block" src="https://huggingface.co/datasets/huggingface-course/documentation-images/resolve/main/en/chapter1/carbon_footprint-dark.svg" alt="大規模言語モデルのカーボンフットプリント">
+</div>
+
+<Youtube id="ftWlj4FBHTg"/>
+
+そして、これは事前学習の環境負荷を意識的に減らそうとしたチームが率いた（非常に大きな）モデルのプロジェクトの数値です。最適なハイパーパラメータを得るために多数の試行を走らせる場合の負荷は、さらに大きくなるでしょう。
+
+研究チーム、学生団体、企業のいずれかがモデルを学習させたいと思うたびに、毎回ゼロから学習していたらどうなるでしょう。世界全体で膨大な、しかも不必要なコストが発生してしまいます。
+
+だからこそ、言語モデルの共有がきわめて重要なのです。学習済みの重みを共有し、すでに学習された重みの上に構築することで、コミュニティ全体の計算コストとカーボンフットプリントを削減できます。
+
+ちなみに、自分のモデルの学習にかかるカーボンフットプリントは、いくつかのツールで評価できます。たとえば [ML CO2 Impact](https://mlco2.github.io/impact/) や、🤗 Transformers に統合されている [Code Carbon]( https://codecarbon.io/) などです。詳しく知りたい方は、学習のフットプリントの推定値を記録した `emissions.csv` ファイルの生成方法を紹介する[ブログ記事](https://huggingface.co/blog/carbon-emissions-on-the-hub)や、このトピックを扱った 🤗 Transformers の[ドキュメント](https://huggingface.co/docs/hub/model-cards-co2)をご覧ください。
+
+
+## 転移学習[[transfer-learning]]
+
+<Youtube id="BqqfQnyjmgg" />
+
+*事前学習*（Pretraining）とは、モデルをゼロから学習させることです。重みはランダムに初期化され、事前の知識がない状態から学習が始まります。
+
+<div class="flex justify-center">
+<img class="block dark:hidden" src="https://huggingface.co/datasets/huggingface-course/documentation-images/resolve/main/en/chapter1/pretraining.svg" alt="言語モデルの事前学習には、時間とコストの両面で大きな負担がかかる">
+<img class="hidden dark:block" src="https://huggingface.co/datasets/huggingface-course/documentation-images/resolve/main/en/chapter1/pretraining-dark.svg" alt="言語モデルの事前学習には、時間とコストの両面で大きな負担がかかる">
+</div>
+
+この事前学習は通常、非常に大量のデータを使って行われます。そのため、巨大なコーパスが必要となり、学習が完了するまで数週間かかることもあります。
+
+一方、*ファインチューニング* とは、モデルが事前学習を終えた**あと**に行われる学習のことです。ファインチューニングを行うには、まず事前学習済みの言語モデルを用意し、次にあなたのタスクに特化したデータセットで追加の学習を行います。――待ってください。最終的なユースケースのために、どうして最初からモデルを学習（**スクラッチ**）しないのでしょうか？理由はいくつかあります。
+
+*  事前学習済みモデルは、ファインチューニング用データセットとある程度似たデータセットで、すでに学習されています。そのためファインチューニングのプロセスでは、事前学習の間に元のモデルが獲得した知識を活用できます（たとえば NLP の課題であれば、事前学習済みモデルは、そのタスクで使う言語について何らかの統計的な理解を持っています）。 
+*  事前学習済みモデルはすでに大量のデータで学習されているため、ファインチューニングでまずまずの結果を得るのに必要なデータは、はるかに少なくて済みます。
+*  同じ理由で、良い結果を得るために必要な時間とリソースの量も、はるかに少なくて済みます。
+
+たとえば、英語で学習された事前学習済みモデルを活用し、それを arXiv コーパスでファインチューニングすれば、科学・研究分野ベースのモデルが得られます。ファインチューニングに必要なデータは、限られた量だけで済みます。事前学習済みモデルが獲得した知識が「転移」されるのです。これが *転移学習* という用語の由来です。
+
+<div class="flex justify-center">
+<img class="block dark:hidden" src="https://huggingface.co/datasets/huggingface-course/documentation-images/resolve/main/en/chapter1/finetuning.svg" alt="言語モデルのファインチューニングは、時間とコストの両面で事前学習よりも安く済む">
+<img class="hidden dark:block" src="https://huggingface.co/datasets/huggingface-course/documentation-images/resolve/main/en/chapter1/finetuning-dark.svg" alt="言語モデルのファインチューニングは、時間とコストの両面で事前学習よりも安く済む">
+</div>
+
+したがって、モデルのファインチューニングは、時間、データ、金銭、環境の面でコストが低くなります。また、学習がフルな事前学習ほど制約されないため、さまざまなファインチューニングの方式を、より速く、より簡単に繰り返し試すことができます。
+
+さらにこのプロセスは、ゼロから学習するよりも良い結果をもたらします（大量のデータを持っている場合は別です）。そのため、手元にあるタスクにできるだけ近い事前学習済みモデルを常に活用し、それをファインチューニングするよう心がけるべきなのです。
+
+## Transformer アーキテクチャの全体像[[general-transformer-architecture]]
+
+このセクションでは、Transformer モデルの一般的なアーキテクチャを見ていきます。いくつかの概念が理解できなくても心配いりません。各コンポーネントを扱う詳しいセクションが後ろにあります。
+
+<Youtube id="H39Z_720T5s" />
+
+このモデルは、主に2つのブロックで構成されています。
+
+* **エンコーダ（左）**: エンコーダは入力を受け取り、その表現（特徴）を構築します。つまりこのモデルは、入力から理解を得るように最適化されています。
+* **デコーダ（右）**: デコーダは、エンコーダの表現（特徴）とそれ以外の入力を使って、ターゲットとなるシーケンスを生成します。つまりこのモデルは、出力を生成するように最適化されています。
+
+<div class="flex justify-center">
+<img class="block dark:hidden" src="https://huggingface.co/datasets/huggingface-course/documentation-images/resolve/main/en/chapter1/transformers_blocks.svg" alt="Transformer モデルのアーキテクチャ">
+<img class="hidden dark:block" src="https://huggingface.co/datasets/huggingface-course/documentation-images/resolve/main/en/chapter1/transformers_blocks-dark.svg" alt="Transformer モデルのアーキテクチャ">
+</div>
+
+これらの部分はそれぞれ、タスクに応じて独立して使うことができます。 
+
+* **エンコーダのみのモデル**: 文分類や固有表現抽出など、入力の理解が必要なタスクに向いています。
+* **デコーダのみのモデル**: テキスト生成などの生成タスクに向いています。
+* **エンコーダ・デコーダモデル**、すなわち **sequence-to-sequence モデル**: 翻訳や要約など、入力を必要とする生成タスクに向いています。
+
+これらのアーキテクチャについては、後のセクションでそれぞれ独立に掘り下げていきます。
+
+## アテンション層[[attention-layers]]
+
+Transformer モデルの重要な特徴の一つは、*アテンション層* と呼ばれる特殊な層を使って構築されていることです。実際、Transformer アーキテクチャを提案した論文のタイトルは「[Attention Is All You Need](https://arxiv.org/abs/1706.03762)」でした！アテンション層の詳しい仕組みは、コースの後半で探っていきます。今のところ知っておくべきなのは、この層が、各単語の表現を扱う際に、渡された文の中の特定の単語に特に注意を払い（その他の単語は多かれ少なかれ無視する）ようモデルに伝える、ということだけです。
+
+これを文脈の中で考えるために、英語からフランス語へのテキスト翻訳というタスクを考えてみましょう。入力が "You like this course" の場合、翻訳モデルが単語 "like" の適切な訳を得るには、隣の単語 "You" にも注意を払う必要があります。フランス語では動詞 "like" の活用が主語によって異なるためです。しかし、文の残りの部分は、その単語の翻訳には役立ちません。同様に、"this" を翻訳する際、モデルは単語 "course" にも注意を払う必要があります。"this" の訳は、対応する名詞が男性名詞か女性名詞かによって異なるためです。繰り返しになりますが、文中の他の単語は "course" の翻訳にとって重要ではありません。もっと複雑な文（そしてもっと複雑な文法規則）では、モデルは各単語を適切に翻訳するために、文の中で遠く離れて現れる単語にも特に注意を払う必要があるでしょう。
+
+同じ概念は、自然言語に関わるあらゆるタスクに当てはまります。単語はそれ自体で意味を持ちますが、その意味は文脈によって大きく影響されます。文脈とは、注目している単語の前または後にある、他の任意の単語（あるいは複数の単語）のことです。
+
+アテンション層とは何かがおおよそつかめたところで、Transformer アーキテクチャをさらに詳しく見ていきましょう。
+
+## オリジナルのアーキテクチャ[[the-original-architecture]]
+
+Transformer アーキテクチャは、もともと翻訳のために設計されました。学習の間、エンコーダはある言語の入力（文）を受け取り、デコーダは同じ文を目的のターゲット言語で受け取ります。エンコーダでは、アテンション層は文中のすべての単語を使うことができます（先ほど見たように、ある単語の翻訳は、文中でその単語の後ろにあるものだけでなく、前にあるものにも依存し得るためです）。一方、デコーダは逐次的に動作し、すでに翻訳した文中の単語（つまり、現在生成している単語より前にある単語のみ）にしか注意を払うことができません。たとえば、翻訳されたターゲットの最初の3単語を予測したら、それらをデコーダに渡します。デコーダはエンコーダのすべての入力を使って、4番目の単語を予測しようとします。
+
+学習の速度を上げるため（モデルがターゲット文にアクセスできる場合）、デコーダにはターゲット全体が入力として与えられますが、未来の単語を使うことは許可されません（2番目の位置で単語を予測しようとしているときに、その位置の単語自体にアクセスできてしまえば、問題はまったく難しくなくなってしまいます！）。たとえば、4番目の単語を予測しようとするとき、アテンション層がアクセスできるのは、位置1から3までの単語のみです。
+
+オリジナルの Transformer アーキテクチャは、左にエンコーダ、右にデコーダを置いた、次のようなものでした。
+
+<div class="flex justify-center">
+<img class="block dark:hidden" src="https://huggingface.co/datasets/huggingface-course/documentation-images/resolve/main/en/chapter1/transformers.svg" alt="Transformer モデルのアーキテクチャ">
+<img class="hidden dark:block" src="https://huggingface.co/datasets/huggingface-course/documentation-images/resolve/main/en/chapter1/transformers-dark.svg" alt="Transformer モデルのアーキテクチャ">
+</div>
+
+デコーダブロックにある最初のアテンション層は、デコーダへのすべての（過去の）入力に注意を払いますが、2番目のアテンション層はエンコーダの出力を使います。そのため、現在の単語を最もよく予測するために、入力文全体にアクセスできます。これは非常に便利です。言語が異なれば文法規則によって単語の配置順序も異なりますし、文の後方で与えられる文脈が、ある単語の最適な翻訳を決める助けになることもあるためです。
+
+*アテンションマスク* は、モデルが一部の特殊な単語に注意を払わないようにするために、エンコーダやデコーダで使うこともできます。たとえば、文をまとめてバッチ処理する際に、すべての入力の長さをそろえるために使われる特殊なパディング単語などがそうです。
+
+##  アーキテクチャとチェックポイント[[architecture-vs-checkpoints]]
+
+このコースで Transformer のモデルを掘り下げていくと、*アーキテクチャ* や *チェックポイント*、そして *モデル* といった言及を目にするでしょう。これらの用語は、いずれも少しずつ意味が異なります。 
+
+* **アーキテクチャ**: モデルの骨格、すなわち、モデル内の各層と、各層の中で行われる各演算の定義です。 
+* **チェックポイント**: ある与えられたアーキテクチャに読み込まれる重みのことです。
+* **モデル**: 「アーキテクチャ」や「チェックポイント」ほど正確ではない総称で、どちらの意味にもなり得ます。このコースでは、曖昧さを減らすため、重要になる場面では *アーキテクチャ* または *チェックポイント* と明示します。
+
+たとえば、BERT はアーキテクチャであり、一方 `bert-base-cased` は、BERT の最初のリリースの際に Google のチームによって学習された重みの集合、つまりチェックポイントです。もっとも、「BERT モデル」と言ったり、「`bert-base-cased` モデル」と言ったりもするわけですが。

@@ -1,0 +1,110 @@
+# はじめに[[introduction]]
+
+Hugging Face コースへようこそ！このページでは、作業環境のセットアップ方法を案内します。コースを始めたばかりの方は、まず [Chapter 1](/course/chapter1) に目を通してから、ここに戻って環境をセットアップし、実際にコードを試してみるのがおすすめです。
+
+このコースで使うライブラリはすべて Python パッケージとして提供されているので、ここでは Python 環境のセットアップと、必要なライブラリのインストール方法を紹介します。
+
+作業環境のセットアップ方法は、Colab ノートブックを使う方法と、Python の仮想環境を使う方法の2つを紹介します。自分に合った方を選んでください。初心者の方は、まず Colab ノートブックから始めるのがおすすめです。
+
+なお、このコースでは Windows での環境構築は扱いません。Windows を使っている方は、Colab ノートブックで進めるのがおすすめです。Linux か macOS であれば、このページで紹介するどちらの方法でも進められます。
+
+コースの大部分では Hugging Face アカウントが必要になります。まだの方は、今のうちに[アカウントを作成](https://huggingface.co/join)しておきましょう。
+
+## Google Colab ノートブックを使う[[using-a-google-colab-notebook]]
+
+Colab ノートブックを使う方法が、いちばん手軽なセットアップです。ブラウザでノートブックを開けば、すぐにコーディングを始められます！
+
+Colab に慣れていない方は、まず[入門ノートブック](https://colab.research.google.com/notebooks/intro.ipynb)に沿って触ってみるのがおすすめです。Colab では GPU や TPU といったアクセラレータを使えますし、小規模なワークロードなら無料で利用できます。
+
+Colab の操作に慣れてきたら、新しいノートブックを作成して、セットアップを始めましょう。
+
+<div class="flex justify-center">
+<img src="https://huggingface.co/datasets/huggingface-course/documentation-images/resolve/main/en/chapter0/new_colab.png" alt="空の Colab ノートブック" width="80%"/>
+</div>
+
+次に、このコースで使うライブラリをインストールします。インストールには、Python のパッケージマネージャーである `pip` を使います。ノートブックでは、コマンドの前に `!` を付けるとシステムコマンドを実行できるので、🤗 Transformers ライブラリは次のようにインストールできます。
+
+```
+!pip install transformers
+```
+
+パッケージが正しくインストールされたかどうかは、Python ランタイムでインポートしてみれば確認できます。
+
+```
+import transformers
+```
+
+<div class="flex justify-center">
+<img src="https://huggingface.co/datasets/huggingface-course/documentation-images/resolve/main/en/chapter0/install.gif" alt="上の2つのコマンド（インストールとインポート）の実行結果を示す GIF" width="80%"/>
+</div>
+
+これでインストールされるのは、とても軽量なバージョンの 🤗 Transformers です。PyTorch や TensorFlow のような機械学習フレームワークは含まれません。このコースではライブラリのさまざまな機能を使うので、想定されるほぼすべてのユースケースに必要な依存関係がそろった開発版をインストールするのがおすすめです。
+
+```
+!pip install transformers[sentencepiece]
+```
+
+少し時間がかかりますが、これで残りのコースを進める準備が整います！
+
+## Python の仮想環境を使う[[using-a-python-virtual-environment]]
+
+Python の仮想環境を使いたい場合は、まずシステムに Python をインストールします。手始めに[このガイド](https://realpython.com/installing-python/)に沿って進めるのがおすすめです。
+
+Python をインストールしたら、ターミナルで Python のコマンドを実行できるようになっているはずです。次のステップに進む前に、正しくインストールされているか、次のコマンドで確認しておきましょう: `python --version`。システムで使える Python のバージョンが表示されるはずです。
+
+`python --version` のようにターミナルで Python コマンドを実行するとき、そのコマンドを実行しているプログラムは、システムの「メイン」の Python だと考えてください。このメインのインストールにはパッケージを入れず、作業するアプリケーションごとに別々の環境を作るために使うのがおすすめです。そうすれば、アプリケーションごとに依存関係やパッケージを分離でき、ほかのアプリケーションとの互換性の問題を心配する必要がなくなります。
+
+Python ではこれを[仮想環境](https://docs.python.org/3/tutorial/venv.html)で実現します。仮想環境は自己完結したディレクトリツリーで、その中に特定のバージョンの Python 本体と、アプリケーションに必要なすべてのパッケージが収まります。仮想環境を作るツールはいくつかありますが、ここでは Python 公式のパッケージである [`venv`](https://docs.python.org/3/library/venv.html#module-venv) を使います。
+
+まず、アプリケーションを置くディレクトリを作成します。たとえば、ホームディレクトリ直下に *transformers-course* という新しいディレクトリを作るといいでしょう。
+
+```
+mkdir ~/transformers-course
+cd ~/transformers-course
+```
+
+このディレクトリの中で、Python の `venv` モジュールを使って仮想環境を作成します。
+
+```
+python -m venv .env
+```
+
+これで、空だったフォルダの中に *.env* というディレクトリができているはずです。
+
+```
+ls -a
+```
+
+```out
+.      ..    .env
+```
+
+仮想環境への出入りは、`activate` スクリプトと `deactivate` スクリプトで行います。
+
+```
+# 仮想環境を有効化する
+source .env/bin/activate
+
+# 仮想環境を無効化する
+deactivate
+```
+
+環境が有効化されているかどうかは、`which python` コマンドで確認できます。仮想環境の中を指していれば、有効化は成功です！
+
+```
+which python
+```
+
+```out
+/home/<user>/transformers-course/.env/bin/python
+```
+
+### 依存関係のインストール[[installing-dependencies]]
+
+Google Colab を使う前のセクションと同様に、続けるために必要なパッケージをインストールします。ここでも、`pip` パッケージマネージャーで 🤗 Transformers の開発版をインストールできます。
+
+```
+pip install "transformers[sentencepiece]"
+```
+
+これでセットアップは完了です。さっそく始めましょう！
