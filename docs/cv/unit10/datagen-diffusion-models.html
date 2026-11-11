@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Synthetic Data Generation with Diffusion Models | Hugging Face コース日本語版（デモ版）</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Shippori+Mincho:wght@500;700&family=Zen+Kaku+Gothic+New:wght@400;500;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../../style.css">
+<script>
+window.MathJax = { tex: { inlineMath: [['$', '$'], ['\\(', '\\)']], displayMath: [['$$', '$$'], ['\\[', '\\]']] }, options: { skipHtmlTags: ['script','noscript','style','textarea','pre','code'] } };
+</script>
+<script async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml.js"></script>
+</head>
+<body>
+<header class="site-header">
+  <div class="header-inner">
+    <a class="site-title" href="../../index.html">Hugging Face コース日本語版</a>
+    <span class="demo-badge">デモ版</span>
+  </div>
+</header>
+<main class="container">
+<p class="course-crumb"><a href="../index.html">Community CV コース</a>
+<span class="badge badge-qa-wip">翻訳済み・QA進行中（未検証の部分を含みます）</span></p>
+<nav class="page-nav"><a class="nav-link prev" href="synthetic-lung-images.html">← 前へ: Synthetic Data Generation Using DCGAN</a><a class="nav-link toc-link" href="../index.html">目次へ</a><a class="nav-link next" href="challenges.html">次へ →: Challenges and Opportunities Associated With Using Synthetic Data</a></nav>
+<article class="content">
+<h1>Synthetic Data Generation with Diffusion Models</h1>
+<p>腫瘍のセグメンテーションのためにモデルを訓練しようとしていると想像してみてください。医療画像はデータを集めるのが難しいため、モデルを収束させるのは本当に困難でしょう。
+理想的には、シンプルなベースラインを構築するのに十分なデータが少なくとも欲しいところですが、サンプルがほんの少ししかなかったらどうでしょうか？合成データの生成手法はこのジレンマを解決しようとするものであり、生成モデルのブームによって、現在では多くの選択肢があります！</p>
+<p>前のセクションで見たように、DCGAN のような生成モデルを使って合成画像を生成することができます。このセクションでは、<a href="https://huggingface.co/docs/diffusers/index">diffusers</a> を使った拡散モデル（diffusion models）に焦点を当てます！</p>
+<h2>Recap of the Diffusion Models</h2>
+<p>拡散モデルは、高品質な画像を生成する能力のおかげで、近年大きな人気を集めている生成モデルです。現在では、画像、動画、テキストの合成に広く使われています。</p>
+<p>拡散モデルは、ランダムなガウスノイズを段階的にノイズ除去（denoise）することを学習することで動作します。訓練プロセスでは、入力サンプルにガウスノイズを加え、モデルにノイズ除去を学習させることが必要です。</p>
+<p>拡散モデルは一般に、データ分布とは別に、テキストプロンプト、画像、さらには音声といった何らかの入力で条件付けされます。さらに、<a href="https://huggingface.co/docs/diffusers/training/unconditional_training">無条件の生成器を構築する</a>ことも可能です。</p>
+<p>モデルの内部の仕組みの背後には多くの基礎概念がありますが、簡略化したバージョンは次のようなものです。</p>
+<p>まず、モデルは入力にノイズを加えて処理します。</p>
+<p><img alt="ノイズ付加" src="https://huggingface.co/datasets/hf-vision/course-assets/resolve/main/synthetic-data-creation-diffusion-models/noising.jpg?download=true" /></p>
+<p>次に、モデルは与えられたデータ分布のノイズ除去方法を学習します。</p>
+<p><img alt="ノイズ除去" src="https://huggingface.co/datasets/hf-vision/course-assets/resolve/main/synthetic-data-creation-diffusion-models/denoising.jpg?download=true" /></p>
+<p>理論に深く踏み込むことはしませんが、拡散モデルの仕組みを理解しておくと、ユースケースに合わせて合成データを生成する手法を選ぶ必要があるときに、とても役立ちます。</p>
+<h2>Text-To-Image Diffusion Model: Stable Diffusion</h2>
+<p>本質的に、Stable Diffusion（SD）の仕組みは上で述べたものと同じです。高品質な画像を生成するために、次の3つの主要コンポーネントを使います。</p>
+<ol>
+<li>
+<p><strong>拡散プロセス（The diffusion process）:</strong> 入力は複数回処理され、画像に関する有用な情報を生成します。この「有用性」はモデルの訓練中に学習されます。</p>
+</li>
+<li>
+<p><strong>画像エンコーダ・デコーダモデル（Image encoder and decoder model）:</strong> モデルが画像をピクセル空間からより小さな次元空間へ圧縮できるようにし、意味のない情報を抽象化しながら性能を高めます。</p>
+</li>
+<li>
+<p><strong>任意の条件付けエンコーダ（Optional conditional encoder）:</strong> このコンポーネントは、生成プロセスを入力で条件付けるために使われます。この追加の入力は、テキストプロンプト、画像、音声、その他の表現でありえます。当初はテキストエンコーダでした。</p>
+</li>
+</ol>
+<p>全体のワークフローは次のようになります。
+<img alt="Stable Diffusion の全体ワークフロー" src="https://huggingface.co/datasets/hf-vision/course-assets/resolve/main/synthetic-data-creation-diffusion-models/general-workflow.png?download=true" /></p>
+<p>当初は、プロンプトでモデルを条件付けるためにテキストエンコーダを使っていました。
+<img alt="元の Stable Diffusion のワークフロー" src="https://huggingface.co/datasets/hf-vision/course-assets/resolve/main/synthetic-data-creation-diffusion-models/stable-diffusion-workflow.png?download=true" /></p>
+<p>この短い概要は氷山の一角にすぎません！Stable Diffusion（あるいは拡散モデル）の背後にある理論を深く掘り下げたい場合は、<a href="#further-reading-about-stable-diffusion">参考資料のセクション</a>をご覧ください！</p>
+<p><a href="https://huggingface.co/docs/diffusers/index">diffusers</a> は、さまざまなタスクにすぐ使える pipeline を提供しています。たとえば次のようなものです。</p>
+<table>
+<thead>
+<tr>
+<th>タスク</th>
+<th>説明</th>
+<th>Pipeline</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Unconditional Image Generation</td>
+<td>ガウスノイズから画像を生成する</td>
+<td><a href="https://huggingface.co/docs/diffusers/using-diffusers/unconditional_image_generation">unconditional_image_generation</a></td>
+</tr>
+<tr>
+<td>Text-Guided Image Generation</td>
+<td>テキストプロンプトを与えて画像を生成する</td>
+<td><a href="https://huggingface.co/docs/diffusers/using-diffusers/conditional_image_generation">conditional_image_generation</a></td>
+</tr>
+<tr>
+<td>Text-Guided Image-to-Image Translation</td>
+<td>テキストプロンプトに導かれて画像を変換する</td>
+<td><a href="https://huggingface.co/docs/diffusers/using-diffusers/img2img">img2img</a></td>
+</tr>
+<tr>
+<td>Text-Guided Image-Inpainting</td>
+<td>画像、マスク、テキストプロンプトを与えて、画像のマスクされた部分を埋める</td>
+<td><a href="https://huggingface.co/docs/diffusers/using-diffusers/inpaint">inpaint</a></td>
+</tr>
+<tr>
+<td>Text-Guided Depth-to-Image Translation</td>
+<td>深度推定で構造を保持しながら、テキストプロンプトに導かれて画像の一部を変換する</td>
+<td><a href="https://huggingface.co/docs/diffusers/using-diffusers/depth2img">depth2img</a></td>
+</tr>
+</tbody>
+</table>
+<p>サポートされているタスクの完全なリストは、<a href="https://huggingface.co/docs/diffusers/api/pipelines/overview#diffusers-summary">Diffusers Summary</a> の表からも確認できます。</p>
+<p>つまり、合成データを生成するためのツールがたくさん手元にあるということです！</p>
+<h2>Approaches to Synthetic Data Generation</h2>
+<p>合成データが必要になるケースは、一般に3つあります。</p>
+<p><strong>既存のデータセットの拡張（Extending an existing dataset）:</strong></p>
+<ul>
+<li><strong>サンプルが十分でない:</strong> 良い例は、<a href="https://www.mammoimage.org/databases/">DDSM</a>（Digital Database for Screening Mammography、約2500サンプル）のような医療画像データセットです。サンプル量が少ないと、その後の分析のためのモデル構築が難しくなります。このような医療画像データセットを構築するのは、かなり費用もかかります。</li>
+</ul>
+<p><strong>データセットをゼロから作成する（Creating a Dataset from Scratch）</strong>:</p>
+<ul>
+<li><strong>サンプルがまったくない:</strong> CCTV の映像ストリームの上に武器検出システムを構築したいとしましょう。しかし、検出したい特定の武器のサンプルが存在しない場合、異なる環境での類似の観測を使ってスタイル変換を適用し、CCTV ストリームのように見せることができます！</li>
+</ul>
+<p><strong>プライバシーの保護（Preserving Privacy）</strong>:</p>
+<ul>
+<li>病院は患者に関する膨大な量のデータを収集し、監視カメラは個人の顔や活動に関する生の情報を捉えます。これらすべてが、プライバシー侵害の可能性をもたらします。拡散モデルを使えば、プライバシーを保護したデータセットを生成してソリューションを開発でき、誰のプライバシー権も放棄する必要がありません。</li>
+</ul>
+<p>テキストから画像への拡散モデルを利用してカスタマイズした出力を生成する方法はいろいろあります。たとえば、事前に訓練された拡散モデル（<a href="https://huggingface.co/docs/diffusers/api/pipelines/stable_diffusion/stable_diffusion_xl">Stable Diffusion XL</a> など）を単に利用し、良いプロンプトを構成して画像を生成しようと試みることができます。しかし、生成画像の品質は一貫しないかもしれず、特定のユースケース向けにそのようなプロンプトを構成するのは本当に難しいかもしれません。</p>
+<p>通常、望むパーソナライズされた出力を生成するには、モデルの一部を変更する必要があります。そのために使える手法をいくつか紹介します。</p>
+<p><strong><a href="https://huggingface.co/docs/diffusers/main/en/training/text_inversion">Textual Inversion</a> で訓練する:</strong></p>
+<p><img alt="Textual Inversion" src="https://huggingface.co/datasets/hf-vision/course-assets/resolve/main/synthetic-data-creation-diffusion-models/textual_inversion.png?download=true" /></p>
+<p>Textual Inversion は、モデルのアーキテクチャ内のテキスト埋め込みに干渉することで動作する手法です。語彙に新しいトークンを追加し、少数の例を使って埋め込みをファインチューニングできます。</p>
+<p>新しいトークンに対応するサンプルを与えることで、物体の特徴を捉えるよう埋め込みを最適化しようとします。</p>
+<p><strong><a href="https://huggingface.co/docs/diffusers/main/en/training/lora?installation=PyTorch">LoRA（Low-Rank Adaptation）</a> モデルを訓練する:</strong></p>
+<p>LoRA は、LLM のファインチューニングの問題に取り組んできました。重みの更新を、低ランク分解による2つの小さな更新行列で表現します。これにより、パラメータの量が大幅に少なくなります。そして、これらの行列を訓練して新しいデータに適応させることができます！</p>
+<p>ベースモデルの重みはプロセス全体を通じて凍結されたままで、新しい更新行列だけを訓練します。最後に、適応した重みを元の重みと組み合わせます。</p>
+<p>つまり、LoRA の訓練は本質的に、モデルの完全なファインチューニングよりもはるかに高速です！重要な注意点として、LoRA はモデル自体の上に付け加えることができるため、他の手法と組み合わせることも可能です。</p>
+<p><strong><a href="https://huggingface.co/docs/diffusers/main/en/training/dreambooth">DreamBooth</a> で訓練する:</strong></p>
+<p><img alt="DreamBooth" src="https://huggingface.co/datasets/hf-vision/course-assets/resolve/main/synthetic-data-creation-diffusion-models/dreambooth.png?download=true" /></p>
+<p>DreamBooth は、出力をパーソナライズするためにモデルをファインチューニングする手法です。対象の画像を数枚与えると、事前に訓練されたテキストから画像へのモデルをファインチューニングできます。主な考え方は、その特定の対象に一意な識別子を関連付けることです。</p>
+<p>訓練では、語彙内のトークンを使い、できれば希少なトークンの識別子を使ってデータセットを構築します。ありふれた識別子を選ぶと、モデルは元の意味から切り離すことも学習しなければならなくなるからです。</p>
+<p>元の論文では、著者らは語彙内の希少なトークンを見つけ、そこから識別子を選びます。これにより、識別子が強い事前分布を持つリスクが減ります。モデルのすべての層をファインチューニングすることで最良の結果が得られたとも述べられています。</p>
+<p><strong><a href="https://huggingface.co/docs/diffusers/main/en/training/custom_diffusion">Custom Diffusion</a> で訓練する:</strong></p>
+<p><img alt="Custom Diffusion" src="https://huggingface.co/datasets/hf-vision/course-assets/resolve/main/synthetic-data-creation-diffusion-models/custom_diffusion.png?download=true" /></p>
+<p>Custom Diffusion は、モデルをパーソナライズするための本当に強力な手法です。前述の方法と同様に必要なサンプルはごくわずかですが、その力は、複数の概念を同時に学習できることにあります！</p>
+<p>上で述べた拡散プロセスの一部とテキストエンコーダだけを訓練することで動作し、最適化するパラメータが少なくなります。したがって、この方法でも高速なファインチューニングが可能です！</p>
+<h2>Real-world Examples of Using Diffusion Models for Dataset Generation</h2>
+<p>拡散モデルを使って合成データセットを生成する、ユニークな事例は数多くあります！</p>
+<p>以下に挙げます。</p>
+<ul>
+<li><a href="https://arxiv.org/abs/2306.09762">Apple Images for Apple Detection in Orchards</a></li>
+<li><a href="https://arxiv.org/abs/2310.16794">Automatically Labeled Polyp Images for Medical Image Segmentation</a></li>
+<li><a href="https://www.nature.com/articles/s41598-023-34341-2.pdf">3D Medical Image Generation with DDPMs</a></li>
+<li><a href="https://ieeexplore.ieee.org/document/10281144">Generating Transmission Line Images with DDPM</a></li>
+<li><a href="https://ieeexplore.ieee.org/document/10195076">Synthetic Aerial Dataset for Unmanned Aerial Vehicle Detection</a></li>
+<li><a href="https://arxiv.org/pdf/2302.13861.pdf">Differentially Private Diffusion Models for Privacy-preserving Synthetic Image Generation</a></li>
+</ul>
+<h2>Further reading about Stable Diffusion</h2>
+<ul>
+<li><a href="https://jalammar.github.io/illustrated-stable-diffusion/">The Illustrated Stable Diffusion</a></li>
+<li><a href="https://poloclub.github.io/diffusion-explainer/">Diffusion Explainer: Stable Diffusion Explained with Visualization</a></li>
+<li><a href="https://www.assemblyai.com/blog/diffusion-models-for-machine-learning-introduction/">Introduction to Diffusion Models</a></li>
+<li><a href="https://course.fast.ai/Lessons/lesson9.html">FastAI, Practical Deep Learning for Coders - Lesson 9: Stable Diffusion</a></li>
+<li><a href="https://arxiv.org/abs/2112.10752">Original paper</a></li>
+</ul>
+</article>
+<nav class="page-nav"><a class="nav-link prev" href="synthetic-lung-images.html">← 前へ: Synthetic Data Generation Using DCGAN</a><a class="nav-link toc-link" href="../index.html">目次へ</a><a class="nav-link next" href="challenges.html">次へ →: Challenges and Opportunities Associated With Using Synthetic Data</a></nav>
+</main>
+<footer class="site-footer">
+  <p>原典: Hugging Face huggingface/computer-vision-course（<a href="https://github.com/huggingface/computer-vision-course">https://github.com/huggingface/computer-vision-course</a>）</p>
+  <p>日本語版の翻訳・公開: 霞ヶ関京 / 連絡先: GitHub <a href="https://github.com/yanikasumin">@yanikasumin</a> / YouTube <a href="https://www.youtube.com/@KASUMI_MOF">@KASUMI_MOF</a></p>
+  <p class="demo-note">このサイトはデモ版です。内容は順次更新されます。</p>
+</footer>
+<script src="../../site.js"></script>
+</body>
+</html>

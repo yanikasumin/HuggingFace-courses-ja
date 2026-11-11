@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>アクションをコードスニペットや JSON blob で書く | Hugging Face コース日本語版（デモ版）</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Shippori+Mincho:wght@500;700&family=Zen+Kaku+Gothic+New:wght@400;500;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../../../style.css">
+<script>
+window.MathJax = { tex: { inlineMath: [['$', '$'], ['\\(', '\\)']], displayMath: [['$$', '$$'], ['\\[', '\\]']] }, options: { skipHtmlTags: ['script','noscript','style','textarea','pre','code'] } };
+</script>
+<script async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml.js"></script>
+</head>
+<body>
+<header class="site-header">
+  <div class="header-inner">
+    <a class="site-title" href="../../../index.html">Hugging Face コース日本語版</a>
+    <span class="demo-badge">デモ版</span>
+  </div>
+</header>
+<main class="container">
+<p class="course-crumb"><a href="../../index.html">Agents コース</a>
+<span class="badge badge-qa-wip">翻訳済み・QA進行中（未検証の部分を含みます）</span></p>
+<nav class="page-nav"><a class="nav-link prev" href="code_agents.html">← 前へ: コードを使うエージェントを作る</a><a class="nav-link toc-link" href="../../index.html">目次へ</a><a class="nav-link next" href="tools.html">次へ →: ツール</a></nav>
+<article class="content">
+<h1>アクションをコードスニペットや JSON blob で書く</h1>
+<div class="callout callout-tip">
+<p class="callout-title">💡 ヒント</p>
+<p>コードは、Google Colab で実行できる<a href="https://huggingface.co/agents-course/notebooks/blob/main/unit2/smolagents/tool_calling_agents.ipynb" target="_blank">このノートブック</a>で追うことができます。</p>
+</div>
+<p>Tool Calling Agents は、<code>smolagents</code> で使える2つ目のエージェントタイプです。Python スニペットを使う Code Agents とは異なり、これらのエージェントは <strong>LLM プロバイダーの組み込みのツール呼び出し機能</strong>を使って、ツール呼び出しを <strong>JSON 構造</strong>として生成します。これは OpenAI、Anthropic、その他多くのプロバイダーが採用する標準的なアプローチです。</p>
+<p>例を見てみましょう。アルフレッドがケータリングサービスやパーティーのアイデアを検索したいとき、<code>CodeAgent</code> なら次のような Python コードを生成して実行します。</p>
+<div class="codehilite"><pre><span></span><code><span class="k">for</span> <span class="n">query</span> <span class="ow">in</span> <span class="p">[</span>
+    <span class="s2">"Best catering services in Gotham City"</span><span class="p">,</span> 
+    <span class="s2">"Party theme ideas for superheroes"</span>
+<span class="p">]:</span>
+    <span class="nb">print</span><span class="p">(</span><span class="n">web_search</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Search for: </span><span class="si">{</span><span class="n">query</span><span class="si">}</span><span class="s2">"</span><span class="p">))</span>
+</code></pre></div>
+
+<p>一方、<code>ToolCallingAgent</code> は JSON 構造を作ります。</p>
+<div class="codehilite"><pre><span></span><code><span class="p">[</span>
+    <span class="p">{</span><span class="s2">"name"</span><span class="p">:</span> <span class="s2">"web_search"</span><span class="p">,</span> <span class="s2">"arguments"</span><span class="p">:</span> <span class="s2">"Best catering services in Gotham City"</span><span class="p">},</span>
+    <span class="p">{</span><span class="s2">"name"</span><span class="p">:</span> <span class="s2">"web_search"</span><span class="p">,</span> <span class="s2">"arguments"</span><span class="p">:</span> <span class="s2">"Party theme ideas for superheroes"</span><span class="p">}</span>
+<span class="p">]</span>
+</code></pre></div>
+
+<p>この JSON blob を使ってツール呼び出しが実行されます。</p>
+<p><code>smolagents</code> は、<a href="https://huggingface.co/papers/2402.01030">全体として性能が高い</a>ことから主に <code>CodeAgents</code> に焦点を当てていますが、<code>ToolCallingAgents</code> は、変数の扱いや複雑なツール呼び出しを必要としないシンプルなシステムでは効果的です。</p>
+<p><img alt="コードと JSON のアクション比較" src="https://huggingface.co/datasets/huggingface/documentation-images/resolve/main/transformers/code_vs_json_actions.png" />  </p>
+<h2>Tool Calling Agents の仕組み</h2>
+<p>Tool Calling Agents は、Code Agents と同じマルチステップのワークフローに従います（詳しくは<a href="code_agents.html">前のセクション</a>を参照してください）。</p>
+<p>主な違いは、<strong>アクションの構造化の方法</strong>です。実行可能なコードの代わりに、<strong>ツール名と引数を指定する JSON オブジェクトを生成</strong>します。そしてシステムが<strong>これらの指示をパース</strong>して、適切なツールを実行します。</p>
+<h2>例: Tool Calling Agent を実行する</h2>
+<p>アルフレッドがパーティーの準備を始めた前回の例を、違いを際立たせるために今度は <code>ToolCallingAgent</code> を使って振り返りましょう。Code Agent の例と同じように、DuckDuckGo で Web を検索できるエージェントを構築します。違いはエージェントのタイプだけで、それ以外はすべてフレームワークが処理します。</p>
+<div class="codehilite"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">smolagents</span><span class="w"> </span><span class="kn">import</span> <span class="n">ToolCallingAgent</span><span class="p">,</span> <span class="n">WebSearchTool</span><span class="p">,</span> <span class="n">InferenceClientModel</span>
+
+<span class="n">agent</span> <span class="o">=</span> <span class="n">ToolCallingAgent</span><span class="p">(</span><span class="n">tools</span><span class="o">=</span><span class="p">[</span><span class="n">WebSearchTool</span><span class="p">()],</span> <span class="n">model</span><span class="o">=</span><span class="n">InferenceClientModel</span><span class="p">())</span>
+
+<span class="n">agent</span><span class="o">.</span><span class="n">run</span><span class="p">(</span><span class="s2">"Search for the best music recommendations for a party at the Wayne's mansion."</span><span class="p">)</span>
+</code></pre></div>
+
+<p>エージェントのトレースを見ると、<code>Executing parsed code:</code> の代わりに、次のような表示が見られます。</p>
+<div class="codehilite"><pre><span></span><code>╭─────────────────────────────────────────────────────────────────────────────────────────────────────────────────╮
+│ Calling tool: 'web_search' with arguments: {'query': "best music recommendations for a party at Wayne's         │
+│ mansion"}                                                                                                       │
+╰─────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
+</code></pre></div>
+
+<p>エージェントは構造化されたツール呼び出しを生成し、システムがそれを処理して出力を生みます。<code>CodeAgent</code> のようにコードを直接実行するわけではありません。</p>
+<p>両方のエージェントタイプが分かったので、ニーズに合ったものを選べます。アルフレッドのパーティーを成功させるために、<code>smolagents</code> の探索を続けましょう！ 🎉</p>
+<h2>リソース</h2>
+<ul>
+<li><a href="https://huggingface.co/docs/smolagents/v1.8.1/en/reference/agents#smolagents.ToolCallingAgent">ToolCallingAgent documentation</a> - ToolCallingAgent の公式ドキュメント</li>
+</ul>
+</article>
+<nav class="page-nav"><a class="nav-link prev" href="code_agents.html">← 前へ: コードを使うエージェントを作る</a><a class="nav-link toc-link" href="../../index.html">目次へ</a><a class="nav-link next" href="tools.html">次へ →: ツール</a></nav>
+</main>
+<footer class="site-footer">
+  <p>原典: Hugging Face huggingface/agents-course（<a href="https://github.com/huggingface/agents-course">https://github.com/huggingface/agents-course</a>）</p>
+  <p>日本語版の翻訳・公開: 霞ヶ関京 / 連絡先: GitHub <a href="https://github.com/yanikasumin">@yanikasumin</a> / YouTube <a href="https://www.youtube.com/@KASUMI_MOF">@KASUMI_MOF</a></p>
+  <p class="demo-note">このサイトはデモ版です。内容は順次更新されます。</p>
+</footer>
+<script src="../../../site.js"></script>
+</body>
+</html>

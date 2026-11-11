@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Agentic RAGのユースケース入門 | Hugging Face コース日本語版（デモ版）</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Shippori+Mincho:wght@500;700&family=Zen+Kaku+Gothic+New:wght@400;500;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../../../style.css">
+<script>
+window.MathJax = { tex: { inlineMath: [['$', '$'], ['\\(', '\\)']], displayMath: [['$$', '$$'], ['\\[', '\\]']] }, options: { skipHtmlTags: ['script','noscript','style','textarea','pre','code'] } };
+</script>
+<script async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml.js"></script>
+</head>
+<body>
+<header class="site-header">
+  <div class="header-inner">
+    <a class="site-title" href="../../../index.html">Hugging Face コース日本語版</a>
+    <span class="demo-badge">デモ版</span>
+  </div>
+</header>
+<main class="container">
+<p class="course-crumb"><a href="../../index.html">Agents コース</a>
+<span class="badge badge-qa-wip">翻訳済み・QA進行中（未検証の部分を含みます）</span></p>
+<nav class="page-nav"><a class="nav-link prev" href="../../unit2/langgraph/conclusion.html">← 前へ: まとめ</a><a class="nav-link toc-link" href="../../index.html">目次へ</a><a class="nav-link next" href="agentic-rag.html">次へ →: Agenticな検索拡張生成（RAG）</a></nav>
+<article class="content">
+<h1>Agentic RAGのユースケース入門</h1>
+<p><img alt="Agentic RAGのバナー" src="https://huggingface.co/datasets/agents-course/course-images/resolve/main/en/unit3/agentic-rag/thumbnail.jpg" /></p>
+<p>このユニットでは、ガラ（晩餐会）を主催する頼れるエージェント、Alfredを手助けします。Agentic RAGを使って、ガラのゲストに関する質問に答えられるツールを構築します。</p>
+<div class="callout callout-tip">
+<p class="callout-title">💡 ヒント</p>
+<p>これはAgentic RAGの「実世界」のユースケースで、自分のプロジェクトや職場でも使えるものです。もっと発展させたい場合は、自分のユースケースで試して、Discordでシェアしてみてはいかがでしょうか。</p>
+</div>
+<p>このユースケースには、コースで扱ったどのフレームワークを使っても構いません。各フレームワークのコードサンプルは、別々のタブで用意しています。</p>
+<h2>忘れられないガラを</h2>
+<p>さあ、実際のユースケースに手を動かして取り組みましょう。まずは舞台設定です！</p>
+<p><strong>あなたは、今世紀で最も豪華で贅沢なパーティーを開くことにしました。</strong> 豪華なごちそう、魅惑的なダンサー、有名DJ、極上のドリンク、息をのむような花火ショーなど、盛りだくさんです。</p>
+<p>あなたの頼れるご近所エージェント、Alfredは、このパーティーにおけるあなたのあらゆる要望を見守る準備を進めています。そして <strong>Alfredはすべてを自分で管理します</strong>。そのためには、メニュー、ゲスト、スケジュール、天気予報など、パーティーに関するすべての情報にアクセスできる必要があります！</p>
+<p>それだけではありません。パーティーを成功させるため、<strong>パーティーの最中にもあらゆる質問に答えられる</strong> 必要があり、同時に起こりうる予期せぬ事態にも対処しなければなりません。</p>
+<p>Alfredひとりでは無理なので、必要な情報とツールすべてにアクセスできるようにしておきましょう。</p>
+<p>まず、ガラに対する厳密な要件のリストをAlfredに渡します。</p>
+<h2>ガラの要件</h2>
+<p><strong>ルネサンス</strong> の時代にふさわしい教養ある人物には、3つの主な資質が必要でした。
+それは、<strong>スポーツ、文化、科学の知識</strong> に深く通じていることです。ですから、知識でゲストを感心させ、本当に忘れられないガラを提供できるようにしなければなりません。
+ただし、対立を避けるため、<strong>政治や宗教といった話題はガラでは避けるべき</strong> です。信条や理想をめぐる対立のない、楽しいパーティーである必要があります。</p>
+<p>作法として、<strong>良いホストはゲストの背景を把握しているべき</strong> です。興味・関心や取り組みも含みます。良いホストはまた、ゲスト同士について噂話をしたり、エピソードを共有したりもします。</p>
+<p>最後に、花火を打ち上げる完璧なタイミングを計り、最後は華々しくガラを締めくくれるよう、リアルタイムの更新を継続的に得られるように、<strong>天気に関する一般的な知識</strong> も必要です！ 🎆</p>
+<p>ご覧のとおり、Alfredがガラを主催するには大量の情報が必要です。
+幸い、<strong>検索拡張生成（Retrieval Augmented Generation、RAG）のトレーニング</strong> を与えることで、Alfredを助けて準備させることができます！</p>
+<p>まずは、Alfredがガラを主催するために必要なツールを作成しましょう！</p>
+</article>
+<nav class="page-nav"><a class="nav-link prev" href="../../unit2/langgraph/conclusion.html">← 前へ: まとめ</a><a class="nav-link toc-link" href="../../index.html">目次へ</a><a class="nav-link next" href="agentic-rag.html">次へ →: Agenticな検索拡張生成（RAG）</a></nav>
+</main>
+<footer class="site-footer">
+  <p>原典: Hugging Face huggingface/agents-course（<a href="https://github.com/huggingface/agents-course">https://github.com/huggingface/agents-course</a>）</p>
+  <p>日本語版の翻訳・公開: 霞ヶ関京 / 連絡先: GitHub <a href="https://github.com/yanikasumin">@yanikasumin</a> / YouTube <a href="https://www.youtube.com/@KASUMI_MOF">@KASUMI_MOF</a></p>
+  <p class="demo-note">このサイトはデモ版です。内容は順次更新されます。</p>
+</footer>
+<script src="../../../site.js"></script>
+</body>
+</html>

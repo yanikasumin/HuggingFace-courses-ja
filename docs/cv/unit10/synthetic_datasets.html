@@ -1,0 +1,510 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Synthetic Datasets | Hugging Face コース日本語版（デモ版）</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Shippori+Mincho:wght@500;700&family=Zen+Kaku+Gothic+New:wght@400;500;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../../style.css">
+<script>
+window.MathJax = { tex: { inlineMath: [['$', '$'], ['\\(', '\\)']], displayMath: [['$$', '$$'], ['\\[', '\\]']] }, options: { skipHtmlTags: ['script','noscript','style','textarea','pre','code'] } };
+</script>
+<script async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml.js"></script>
+</head>
+<body>
+<header class="site-header">
+  <div class="header-inner">
+    <a class="site-title" href="../../index.html">Hugging Face コース日本語版</a>
+    <span class="demo-badge">デモ版</span>
+  </div>
+</header>
+<main class="container">
+<p class="course-crumb"><a href="../index.html">Community CV コース</a>
+<span class="badge badge-qa-wip">翻訳済み・QA進行中（未検証の部分を含みます）</span></p>
+<nav class="page-nav"><a class="nav-link prev" href="introduction.html">← 前へ: Introduction</a><a class="nav-link toc-link" href="../index.html">目次へ</a><a class="nav-link next" href="blenderProc.html">次へ →: Using a 3D Renderer to Generate Synthetic Data</a></nav>
+<article class="content">
+<h1>Synthetic Datasets</h1>
+<h2>Introduction</h2>
+<p>コンピュータビジョンにおける合成データセットの魅力的な世界へようこそ！古典的な教師なし手法から高度な深層学習技術へ移行するにつれ、広範で多様なデータセットへの需要は急増しました。合成データセットは、最先端モデルの訓練において極めて重要なリソースとして登場し、現実世界では収集が現実的でないか不可能なことが多い、豊富なデータを提供しています。このセクションでは、最も影響力のある合成データセットのいくつか、その応用、そしてそれらがコンピュータビジョンの未来をどう形作っているかを探ります。</p>
+<h2>Low-Level Computer Vision Problems</h2>
+<h3>Optical Flow and Motion Analysis</h3>
+<p>光学フロー（Optical flow）とモーション分析は、画像のダイナミクスを理解するうえで重要です。この分野の進歩に大きく貢献したデータセットをいくつか紹介します。</p>
+<table>
+<thead>
+<tr>
+<th>データセット名</th>
+<th>年</th>
+<th>説明</th>
+<th>論文</th>
+<th>追加リンク</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Middlebury</td>
+<td>2021 (latest release)</td>
+<td><strong>Middlebury</strong> Stereo データセットは、複雑な形状とピクセル精度の真値視差データを持つ高解像度ステレオシーケンスで構成されます。真値の視差は、構造化照明を用い、光プロジェクタのキャリブレーションを必要としない手法で取得されます。</td>
+<td><a href="https://vision.middlebury.edu/flow/floweval-ijcv2011.pdf">A database and  evaluation method for Optical Flow</a> （執筆時点で3192件の引用）</td>
+<td><a href="https://paperswithcode.com/dataset/middlebury">Papers with Code</a> - <a href="https://vision.middlebury.edu/stereo/data/">Website</a></td>
+</tr>
+<tr>
+<td>Playing for Benchmarks</td>
+<td>2017</td>
+<td>25万を超える高解像度ビデオフレーム。すべてに、高レベルタスク向けだけでなく、光学フロー推定や視覚オドメトリのような低レベルタスク向けの真値データもアノテーションされています。</td>
+<td><a href="https://arxiv.org/abs/1709.07322">Playing for benchmarks</a></td>
+<td><a href="https://playing-for-benchmarks.org/">Website</a></td>
+</tr>
+<tr>
+<td>MPI-Sintel</td>
+<td>2012</td>
+<td>光学フローのための合成データセット。MPI-Sintel の主な特徴は、品質と複雑さの異なるレンダリング設定で同じシーンを含んでいることです。このアプローチにより、さまざまな光学フローアルゴリズムがどこで破綻するかをより深く理解できます。（論文からの引用）</td>
+<td><a href="https://link.springer.com/chapter/10.1007/978-3-642-33783-3_44">A Naturalistic Open Source Movie for Optical Flow Evaluation</a> （執筆時点で551件の引用）</td>
+<td><a href="http://sintel.is.tue.mpg.de/">Website</a></td>
+</tr>
+</tbody>
+</table>
+<h3>Stereo Image Matching</h3>
+<p>ステレオ画像マッチング（Stereo image matching）では、同じシーンの異なる画像における対応する要素を特定します。この分野で重要な役割を果たしてきたデータセットは次のとおりです。</p>
+<table>
+<thead>
+<tr>
+<th>名前</th>
+<th>年</th>
+<th>説明</th>
+<th>論文</th>
+<th>追加リンク</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Flying Chairs</td>
+<td>2015</td>
+<td>真値フロー付きの22kフレームペア</td>
+<td><a href="https://arxiv.org/abs/1504.06852">Learning optical flow with convolutional networks.</a></td>
+<td></td>
+</tr>
+<tr>
+<td>Flying Chairs 3D</td>
+<td>2015</td>
+<td>22kステレオフレーム</td>
+<td><a href="https://arxiv.org/abs/1512.02134">A large dataset to train convolutional networks for disparity, optical flow, and scene flow estimation.</a></td>
+<td></td>
+</tr>
+<tr>
+<td>Driving</td>
+<td>2015</td>
+<td>4392ステレオフレーム</td>
+<td><a href="https://arxiv.org/abs/1512.02134">A large dataset to train convolutional networks for disparity, optical flow, and scene flow estimation.</a></td>
+<td></td>
+</tr>
+<tr>
+<td>Monkaa</td>
+<td>2015</td>
+<td>8591ステレオフレーム</td>
+<td><a href="https://arxiv.org/abs/1512.02134">A large dataset to train convolutional networks for disparity, optical flow, and scene flow estimation.</a></td>
+<td></td>
+</tr>
+<tr>
+<td>Middlebury 2014</td>
+<td>2014</td>
+<td>33の高解像度ステレオデータセット</td>
+<td><a href="https://link.springer.com/chapter/10.1007/978-3-319-11752-2_3">High-resolution stereo datasets with subpixel-accurate ground truth</a></td>
+<td></td>
+</tr>
+<tr>
+<td>Tsukuba Stereo</td>
+<td>2012</td>
+<td>このデータセットには、真値の視差マップ、オクルージョンマップ、不連続マップを伴う1800のステレオペアが含まれます。</td>
+<td>Towards a simulation-driven stereo vision system</td>
+<td><a href="https://home.cvlab.cs.tsukuba.ac.jp/dataset">Project</a></td>
+</tr>
+</tbody>
+</table>
+<h2>High-Level Computer Vision Problems</h2>
+<h3>Semantic Segmentation for Autonomous Driving</h3>
+<p>セマンティックセグメンテーションは、自動運転車が周囲を解釈し、安全に走行するために不可欠です。これらのデータセットは、この目的のための豊富なアノテーション付きデータを提供します。</p>
+<table>
+<thead>
+<tr>
+<th>名前</th>
+<th>年</th>
+<th>説明</th>
+<th>論文</th>
+<th></th>
+<th>追加リンク</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Virtual KITTI 2</td>
+<td>2020</td>
+<td>複数物体追跡分析の代理としての仮想世界</td>
+<td><a href="https://arxiv.org/pdf/2001.10773.pdf">Virtual KITTI 2</a></td>
+<td></td>
+<td><a href="https://europe.naverlabs.com/Research/Computer-Vision/Proxy-Virtual-Worlds/">Website</a></td>
+</tr>
+<tr>
+<td>ApolloScape</td>
+<td>2019</td>
+<td>実シーンの既存の公開データセット、たとえば KITTI [2] や Cityscapes [3] と比べて、ApolloScape ははるかに大きく豊富なラベリングを含みます。各サイトの全体的なセマンティック密点群、ステレオ、ピクセル単位のセマンティックラベリング、レーンマークのラベリング、インスタンスセグメンテーション、3D の車インスタンス、複数のサイト・都市・時間帯のさまざまな運転動画の全フレームに対する高精度な位置情報などです。</td>
+<td><a href="https://arxiv.org/abs/1803.06184">The ApolloScape Open Dataset for Autonomous Driving and its Application</a></td>
+<td></td>
+<td><a href="https://apolloscape.auto/">Website</a></td>
+</tr>
+<tr>
+<td>Driving in the Matrix</td>
+<td>2017</td>
+<td>「Driving in the Matrix」の核となる考え方は、シミュレーションエンジンによるフォトリアリスティックなコンピュータ生成画像を使い、アノテーション付きデータを素早く生成することです。</td>
+<td><a href="https://arxiv.org/pdf/1610.01983.pdf">Driving in the Matrix: Can Virtual Worlds Replace Human-Generated Annotations for Real World Tasks?</a></td>
+<td></td>
+<td><a href="https://github.com/umautobots/driving-in-the-matrix">GitHub</a>  <img alt="GitHub stars" src="https://img.shields.io/github/stars/umautobots/driving-in-the-matrix.svg?style=social&amp;label=Star" /></td>
+</tr>
+<tr>
+<td>CARLA</td>
+<td>2017</td>
+<td><strong>CARLA</strong>（CAR Learning to Act）は都市運転のためのオープンなシミュレータで、Unreal Engine 4 の上にオープンソースの層として開発されました。技術的には、Unreal Engine 4 の上にオープンソースの層として動作するのと同様に機能し、センサーとして RGB カメラ（位置をカスタマイズ可能）、真値の深度マップ、運転向けに設計された12のセマンティッククラス（道路、レーンマーク、交通標識、歩道など）を持つ真値のセマンティックセグメンテーションマップ、環境内の動的物体のバウンディングボックス、エージェント自身の計測値（車両の位置と向き）を提供します。</td>
+<td><a href="https://arxiv.org/pdf/1711.03938v1.pdf">CARLA: An Open Urban Driving Simulator</a></td>
+<td></td>
+<td><a href="https://carla.org/">Website</a></td>
+</tr>
+<tr>
+<td>Synthia</td>
+<td>2016</td>
+<td>都市シーンのセマンティックセグメンテーションのための合成画像の大規模なコレクション。SYNTHIA は仮想都市からレンダリングされたフォトリアリスティックなフレームの集合で構成され、13クラス（misc、sky、building、road、sidewalk、fence、vegetation、pole、car、sign、pedestrian、cyclist、lane-marking）の正確なピクセル単位のセマンティックアノテーションを備えています。</td>
+<td><a href="https://www.cv-foundation.org/openaccess/content_cvpr_2016/html/Ros_The_SYNTHIA_Dataset_CVPR_2016_paper.html">The SYNTHIA Dataset: A Large Collection of Synthetic Images for Semantic Segmentation of Urban Scenes</a></td>
+<td></td>
+<td><a href="https://synthia-dataset.net/">Website</a></td>
+</tr>
+<tr>
+<td>GTA5</td>
+<td>2016</td>
+<td><strong>GTA5</strong> データセットは、ピクセル単位のセマンティックアノテーション付きの合成画像24966枚を含みます。画像はオープンワールドビデオゲーム <strong>Grand Theft Auto 5</strong> を使ってレンダリングされ、すべてアメリカ風の仮想都市の路上で車の視点から撮影されています。19のセマンティッククラスは Cityscapes データセットのものと互換性があります。</td>
+<td><a href="https://arxiv.org/abs/1608.02192v1">Playing for Data: Ground Truth from Computer Games</a></td>
+<td></td>
+<td><a href="https://bitbucket.org/visinf/projects-2016-playing-for-data/src/master/">BitBucket</a></td>
+</tr>
+<tr>
+<td>ProcSy</td>
+<td></td>
+<td>セマンティックセグメンテーションのための合成データセット。現実世界の都市環境をモデル化し、天候やライティングなど、さまざまな変動影響要因を備えています。</td>
+<td><a href="https://openaccess.thecvf.com/content_CVPRW_2019/papers/Vision%20for%20All%20Seasons%20Bad%20Weather%20and%20Nighttime/Khan_ProcSy_Procedural_Synthetic_Dataset_Generation_Towards_Influence_Factor_Studies_Of_CVPRW_2019_paper.pdf">ProcSy: Procedural Synthetic Dataset Generation Towards Influence Factor Studies Of Semantic Segmentation Networks</a></td>
+<td></td>
+<td><a href="https://uwaterloo.ca/waterloo-intelligent-systems-engineering-lab/procsy">Website</a></td>
+</tr>
+</tbody>
+</table>
+<h3>Indoor Simulation and Navigation</h3>
+<p>屋内環境のナビゲーションは、その複雑さゆえに困難な場合があります。これらのデータセットは、屋内シミュレーションとナビゲーションが可能なシステムの開発を支援します。</p>
+<table>
+<thead>
+<tr>
+<th>名前</th>
+<th>年</th>
+<th>説明</th>
+<th>論文</th>
+<th>追加リンク</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Habitat</td>
+<td>2023</td>
+<td>家庭環境における協調的な人間とロボットの相互作用タスクを研究するための Embodied AI シミュレーションプラットフォーム。</td>
+<td><a href="https://ai.meta.com/static-resource/habitat3">HABITAT 3.0: A CO-HABITAT FOR HUMANS, AVATARS AND ROBOTS</a></td>
+<td><a href="https://aihabitat.org/habitat3/">Website</a></td>
+</tr>
+<tr>
+<td>Minos</td>
+<td>2017</td>
+<td>マルチモーダル屋内シミュレータ</td>
+<td><a href="https://arxiv.org/pdf/1712.03931.pdf">MINOS: Multimodal Indoor Simulator for Navigation in Complex Environments</a></td>
+<td><a href="https://github.com/minosworld/minos">GitHub</a> <img alt="GitHub stars" src="https://img.shields.io/github/stars/minosworld/minos.svg?style=social&amp;label=Star" /></td>
+</tr>
+<tr>
+<td>House3D</td>
+<td>2017 (archived in 2021)</td>
+<td>豊かでリアルな 3D 環境</td>
+<td><a href="https://arxiv.org/pdf/1801.02209v2.pdf">Building generalisable agents with a realistic and rich 3D environment</a></td>
+<td><a href="https://github.com/facebookresearch/House3D">GitHub</a> <img alt="GitHub stars" src="https://img.shields.io/github/stars/facebookresearch/House3D.svg?style=social&amp;label=Star" /></td>
+</tr>
+</tbody>
+</table>
+<h3>Human Action Recognition and Simulation</h3>
+<p>人間の行動を認識しシミュレーションすることは複雑なタスクであり、これらのデータセットがその解決を助けます。</p>
+<table>
+<thead>
+<tr>
+<th>名前</th>
+<th>年</th>
+<th>説明</th>
+<th>論文</th>
+<th>追加リンク</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>PHAV</td>
+<td>2017</td>
+<td>手続き的に生成された人間行動認識動画の合成データセット。</td>
+<td><a href="https://openaccess.thecvf.com/content_cvpr_2017/papers/de_Souza_Procedural_Generation_of_CVPR_2017_paper.pdf">Procedural Generation of Videos to Train Deep Action Recognition Networks</a></td>
+<td><a href="http://adas.cvc.uab.es/phav/">Website</a></td>
+</tr>
+<tr>
+<td>Surreal</td>
+<td>2017</td>
+<td>（説明を変更すること - これは人間の深度推定と人体パーツセグメンテーションのためのものです）人間のモーションキャプチャデータの 3D シーケンスからレンダリングされた、合成生成でありながらリアルな人々の画像の大規模データセット。真値の姿勢、深度マップ、セグメンテーションマスクとともに、600万を超えるフレームを生成します。私たちの合成データセットで訓練された CNN が、実際の RGB 画像における正確な人間の深度推定と人体パーツセグメンテーションを可能にすることを示します。</td>
+<td><a href="https://arxiv.org/abs/1701.01370">Learning from Synthetic Humans</a></td>
+<td><a href="https://github.com/gulvarol/surreal">GitHub</a> <img alt="GitHub stars" src="https://img.shields.io/github/stars/gulvarol/surreal.svg?style=social&amp;label=Star" />- <a href="https://www.di.ens.fr/willow/research/surreal/">Website</a></td>
+</tr>
+</tbody>
+</table>
+<h3>Face Recognition</h3>
+<p>顔認識技術には、セキュリティからユーザー識別まで、数多くの応用があります。この分野のイノベーションを推進するデータセットを見てみましょう。</p>
+<table>
+<thead>
+<tr>
+<th>名前</th>
+<th>年</th>
+<th>説明</th>
+<th>論文</th>
+<th>追加リンク</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>FaceSynthetics</td>
+<td>2021</td>
+<td>Face Synthetics データセットは、真値ラベル付きの多様な合成顔画像のコレクションです。</td>
+<td><a href="https://openaccess.thecvf.com/content/ICCV2021/html/Wood_Fake_It_Till_You_Make_It_Face_Analysis_in_the_ICCV_2021_paper.html">Fake It Till You Make It: Face Analysis in the Wild Using Synthetic Data Alone</a></td>
+<td><a href="https://microsoft.github.io/FaceSynthetics/">Website</a> - <a href="https://github.com/microsoft/FaceSynthetics">GitHub</a> <img alt="GitHub stars" src="https://img.shields.io/github/stars/microsoft/FaceSynthetics.svg?style=social&amp;label=Star" /></td>
+</tr>
+<tr>
+<td>FFHQ</td>
+<td>2018</td>
+<td>1024×1024 解像度の高品質な PNG 画像70,000枚で構成され、年齢、民族、画像の背景にかなりのバリエーションを含みます。</td>
+<td><a href="https://arxiv.org/abs/1812.04948">A Style-Based Generator Architecture for Generative Adversarial Networks</a></td>
+<td><a href="https://github.com/NVlabs/ffhq-dataset?tab=readme-ov-file">GitHub</a> <img alt="GitHub stars" src="https://img.shields.io/github/stars/NVlabs/ffhq-dataset.svg?style=social&amp;label=Star" /></td>
+</tr>
+<tr>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+</tbody>
+</table>
+<h3>3D Shape Modeling from single images</h3>
+<p>単一画像から 3D モデルを作成することは、困難でありながら魅力的な分野です。これらのデータセットは、3D 形状モデリングの研究の最前線にあります。</p>
+<table>
+<thead>
+<tr>
+<th>名前</th>
+<th>年</th>
+<th>説明</th>
+<th>論文</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Pix3D</td>
+<td>2018</td>
+<td>ピクセル単位の 2D-3D アライメントを持つ多様な画像・形状ペアの大規模ベンチマーク。Pix3D は、再構成、検索、視点推定を含む形状関連タスクに幅広い応用があります。</td>
+<td><a href="http://pix3d.csail.mit.edu/papers/pix3d_cvpr.pdf">Pix3D: Dataset and Methods for Single-Image 3D Shape Modeling</a></td>
+</tr>
+<tr>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+</tbody>
+</table>
+<h3>Diverse Applications</h3>
+<p>次のデータセットは、ニッチな応用に特化したものか、複数の応用をカバーするものです。</p>
+<table>
+<thead>
+<tr>
+<th>データセット名</th>
+<th>公開年</th>
+<th>説明</th>
+<th>論文</th>
+<th>外部リンク</th>
+<th>用途</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>CIFAKE</td>
+<td>2023</td>
+<td>CIFAKE は、合成生成された画像60,000枚と実画像60,000枚（CIFAR-10 から収集）を含むデータセットです。</td>
+<td><a href="https://arxiv.org/pdf/2303.14126v1.pdf">CIFAKE: Image Classification and Explainable Identification of AI-Generated Synthetic Images</a></td>
+<td><a href="https://www.kaggle.com/datasets/birdy654/cifake-real-and-ai-generated-synthetic-images/data">Kaggle</a></td>
+<td>実画像・偽画像の分類</td>
+</tr>
+<tr>
+<td>ABO</td>
+<td>2022</td>
+<td><strong>ABO</strong> は、素材予測とマルチビュー検索の実験のために設計された大規模データセットです。このデータセットには、7,953個の 3D オブジェクトそれぞれについて30視点の Blender レンダリングと、各レンダリングのカメラ内部パラメータと外部パラメータが含まれます。</td>
+<td><a href="https://arxiv.org/pdf/2110.06199.pdf">ABO: Dataset and Benchmarks for Real-World 3D Object Understanding</a></td>
+<td><a href="https://amazon-berkeley-objects.s3.amazonaws.com/index.html">Website</a></td>
+<td>素材予測; マルチビュー検索; 3D オブジェクト理解; 3D 形状再構成;</td>
+</tr>
+<tr>
+<td>NTIRE 2021 HDR</td>
+<td>2021</td>
+<td>このデータセットは、約1500件の訓練用、60件の検証用、201件のテスト用の例で構成されます。データセットの各例は、順に3枚の入力 LDR 画像、つまり短時間、中時間、長時間の露出と、中央の中時間フレームに合わせた関連する真値 HDR 画像で構成されます。</td>
+<td><a href="https://arxiv.org/pdf/2106.01439.pdf">NTIRE 2021 Challenge on High Dynamic Range Imaging: Dataset, Methods and Results</a></td>
+<td><a href="https://paperswithcode.com/dataset/ntire-2021-hdr">Papers with Code</a></td>
+<td>画像超解像</td>
+</tr>
+<tr>
+<td>YCB-Video</td>
+<td>2017</td>
+<td>6D 物体姿勢推定のための大規模ビデオデータセット。133,827フレームを持つ92本の動画で観測された、YCB データセットの21物体の正確な 6D 姿勢を提供します。</td>
+<td><a href="PoseCNN: A Convolutional Neural Network for 6D Object Pose Estimation in Cluttered Scenes">PoseCNN: A Convolutional Neural Network for 6D Object Pose Estimation in Cluttered Scenes</a></td>
+<td><a href="https://opendatalab.com/OpenDataLab/YCB-Video">Website</a></td>
+<td>6D 姿勢推定</td>
+</tr>
+<tr>
+<td>Playing for benchmarks</td>
+<td>2017</td>
+<td>真値データがアノテーションされた、25万を超える高解像度ビデオフレーム。</td>
+<td><a href="https://arxiv.org/abs/1709.07322">Playing for benchmarks</a></td>
+<td><a href="https://playing-for-benchmarks.org/">Website</a></td>
+<td>セマンティックインスタンスセグメンテーション; 物体検出と追跡; 物体レベルの 3D シーンレイアウト;</td>
+</tr>
+<tr>
+<td>4D Light Field Dataset</td>
+<td>2016</td>
+<td>高精度な視差の真値を持つ、密にサンプリングされた合成 4D ライトフィールド24件。</td>
+<td><a href="https://lightfield-analysis.net/benchmark/paper/lightfield_benchmark_accv_2016.pdf">A Dataset and Evaluation Methodology for Depth Estimation on 4D Light Fields</a></td>
+<td><a href="https://github.com/lightfield-analysis">GitHub</a> <img alt="GitHub stars" src="https://img.shields.io/github/stars/lightfield-analysis.svg?style=social&amp;label=Star" /> -  <a href="https://lightfield-analysis.uni-konstanz.de/">Website</a></td>
+<td>4D ライトフィールドの深度推定</td>
+</tr>
+<tr>
+<td>ICL-NUIM Dataset</td>
+<td>2014</td>
+<td>ノイズモデル付きの RGB-D、2シーン。屋内環境向けです。</td>
+<td><a href="https://ieeexplore.ieee.org/document/6907054">A benchmark for rgb-d visual odometry, 3d reconstruction, and slam.</a></td>
+<td><a href="https://www.doc.ic.ac.uk/~ahanda/VaFRIC/iclnuim.html">Website</a></td>
+<td>RGB-D、視覚オドメトリ、SLAM アルゴリズム。</td>
+</tr>
+<tr>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+</tbody>
+</table>
+<h2>3D Objects datasets</h2>
+<p>物体検出やセグメンテーションのような基本的な高レベルコンピュータビジョン問題は、合成データが提供する完璧なラベリングの恩恵を存分に受けており、これらの問題に合成データを機能させるための取り組みも数多く行われています。合成データの作成には 3D モデルの開発が必要なため、データセットには通常、深度マップ、形状のラベル付き 3D パーツ、ボリューム 3D データなど、3D 関連のラベリングも含まれます。</p>
+<table>
+<thead>
+<tr>
+<th>データセット</th>
+<th>年</th>
+<th>説明</th>
+<th>論文</th>
+<th>執筆時点の引用数</th>
+<th>追加リンク</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>ADORESet</td>
+<td>2019</td>
+<td>物体認識テストのためのハイブリッドデータセット</td>
+<td><a href="https://link.springer.com/article/10.1007/s00138-018-0966-3">A hybrid image dataset toward bridging the gap between real and simulation environments for robotics.</a></td>
+<td>13</td>
+<td><a href="https://github.com/bayraktare/ADORESet">GitHub</a> <img alt="GitHub stars" src="https://img.shields.io/github/stars/bayraktare/ADORESet.svg?style=social&amp;label=Star" /></td>
+</tr>
+<tr>
+<td>Falling Things</td>
+<td>2018</td>
+<td>仮想環境における YCB 物体の画像61.5K枚</td>
+<td><a href="https://arxiv.org/abs/1804.06534">Falling things: A synthetic dataset for 3d object detection and pose estimation.</a></td>
+<td>171</td>
+<td><a href="https://research.nvidia.com/publication/2018-06_falling-things-synthetic-dataset-3d-object-detection-and-pose-estimation">Website</a></td>
+</tr>
+<tr>
+<td>PartNet</td>
+<td>2018</td>
+<td>26671モデル、573535件のアノテーション付きパーツインスタンス</td>
+<td><a href="https://arxiv.org/abs/1812.02713">Partnet: A large-scale benchmark for fine-grained and hierarchical part-level 3d object understanding.</a></td>
+<td>552</td>
+<td><a href="https://opendatalab.com/OpenDataLab/PartNet">Website</a></td>
+</tr>
+<tr>
+<td>ShapeNetCore</td>
+<td>2017</td>
+<td>55カテゴリから手作業で検証された51Kモデル</td>
+<td><a href="https://arxiv.org/abs/1710.06104">Large-scale 3d shape reconstruction and segmentation from shapenet core55.</a></td>
+<td>71</td>
+<td><a href="https://shapenet.org/">Website</a></td>
+</tr>
+<tr>
+<td>VANDAL</td>
+<td>2017</td>
+<td>深度画像4.1M枚、319カテゴリの9Kを超える物体</td>
+<td><a href="https://arxiv.org/pdf/1609.09713.pdf">A deep representation for depth images from synthetic data.</a></td>
+<td>43</td>
+<td>N/A</td>
+</tr>
+<tr>
+<td>UnrealCV</td>
+<td>2017</td>
+<td>合成データを生成するための UE4 用プラグイン</td>
+<td><a href="https://dl.acm.org/doi/pdf/10.1145/3123266.3129396">Unrealcv: Virtual worlds for computer vision.</a></td>
+<td>95</td>
+<td>N/A</td>
+</tr>
+<tr>
+<td>SceneNet RGB-D</td>
+<td>2017</td>
+<td>16K件の 3D 軌跡から得られた RGB-D 画像5M枚</td>
+<td><a href="https://openaccess.thecvf.com/content_ICCV_2017/papers/McCormac_SceneNet_RGB-D_Can_ICCV_2017_paper.pdf">Scenenet rgb-d: Can 5m synthetic images beat generic ImageNet pre-training on indoor segmentation?</a></td>
+<td>309</td>
+<td><a href="https://robotvault.bitbucket.io/scenenet-rgbd.html">Website</a></td>
+</tr>
+<tr>
+<td>DepthSynth</td>
+<td>2017</td>
+<td>深度センサーのリアルなシミュレーションのためのフレームワーク</td>
+<td><a href="https://arxiv.org/pdf/1702.08558.pdf">Real-time realistic synthetic data generation from cad models for 2.5d recognition.</a></td>
+<td>84</td>
+<td>N/A</td>
+</tr>
+<tr>
+<td>3DScan</td>
+<td>2016</td>
+<td>物体スキャンの大規模データセット</td>
+<td><a href="https://arxiv.org/abs/1602.02481">A large dataset of objects scan.</a></td>
+<td>223</td>
+<td><a href="http://redwood-data.org/3dscan/">Website</a></td>
+</tr>
+</tbody>
+</table>
+<h2>Conclusion</h2>
+<p>合成データセットの開発と活用は、コンピュータビジョンの分野におけるゲームチェンジャーとなりました。データ不足の問題に対する解決策を提供するだけでなく、実世界のデータだけでは達成が難しい水準の精度と多様性を保証します。技術が進歩するにつれ、コンピュータビジョンで可能なことの境界を押し広げ続ける、さらに洗練されリアルなデータセットが期待できます。</p>
+<h2>References</h2>
+<ul>
+<li><a href="https://github.com/unrealcv/synthetic-computer-vision">Synthetic Data for Computer Vision</a></li>
+<li><a href="https://arxiv.org/pdf/1909.11512.pdf">Overview of Synthetic Data Generation</a></li>
+</ul>
+</article>
+<nav class="page-nav"><a class="nav-link prev" href="introduction.html">← 前へ: Introduction</a><a class="nav-link toc-link" href="../index.html">目次へ</a><a class="nav-link next" href="blenderProc.html">次へ →: Using a 3D Renderer to Generate Synthetic Data</a></nav>
+</main>
+<footer class="site-footer">
+  <p>原典: Hugging Face huggingface/computer-vision-course（<a href="https://github.com/huggingface/computer-vision-course">https://github.com/huggingface/computer-vision-course</a>）</p>
+  <p>日本語版の翻訳・公開: 霞ヶ関京 / 連絡先: GitHub <a href="https://github.com/yanikasumin">@yanikasumin</a> / YouTube <a href="https://www.youtube.com/@KASUMI_MOF">@KASUMI_MOF</a></p>
+  <p class="demo-note">このサイトはデモ版です。内容は順次更新されます。</p>
+</footer>
+<script src="../../site.js"></script>
+</body>
+</html>

@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Introduction | Hugging Face コース日本語版（デモ版）</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Shippori+Mincho:wght@500;700&family=Zen+Kaku+Gothic+New:wght@400;500;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../../style.css">
+<script>
+window.MathJax = { tex: { inlineMath: [['$', '$'], ['\\(', '\\)']], displayMath: [['$$', '$$'], ['\\[', '\\]']] }, options: { skipHtmlTags: ['script','noscript','style','textarea','pre','code'] } };
+</script>
+<script async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml.js"></script>
+</head>
+<body>
+<header class="site-header">
+  <div class="header-inner">
+    <a class="site-title" href="../../index.html">Hugging Face コース日本語版</a>
+    <span class="demo-badge">デモ版</span>
+  </div>
+</header>
+<main class="container">
+<p class="course-crumb"><a href="../index.html">Community CV コース</a>
+<span class="badge badge-qa-wip">翻訳済み・QA進行中（未検証の部分を含みます）</span></p>
+<nav class="page-nav"><a class="nav-link prev" href="../unit9/tools_and_frameworks.html">← 前へ: モデル最適化のツールとフレームワーク</a><a class="nav-link toc-link" href="../index.html">目次へ</a><a class="nav-link next" href="synthetic_datasets.html">次へ →: Synthetic Datasets</a></nav>
+<article class="content">
+<h1>Introduction</h1>
+<p>機械学習の問題でも、それ以外の開発の問題でも、解きたい問題のためのデータを手に入れようとして、どうしても十分な量が集まらなかった経験はないでしょうか。データがクローズドソースで利用できないか、入手に法外なコストや時間がかかる場合があります。このような状況にはどう対処すればよいのでしょうか。</p>
+<p>その解決策の一つが合成データです。合成データとは、実データの代わりとして、あるいは実データとあわせて使うために、モデルで生成されたデータのことです。ここでいうモデルとは、機械学習や深層学習のモデルだけを指すのではありません。物理システムや経済<a href="https://link.springer.com/book/10.1007/978-3-319-56436-4">システム</a>をモデル化する（確率）微分方程式の集合のような、単純な数理モデルや統計モデルでもかまいません。少しワクワクしてきましたか？では、合成データの詳細、つまり合成データとは何か、どのように生成されるのか、そしてその利点について掘り下げていきましょう。最後の利点については、もう少し答えが見えてきているかもしれません ;)</p>
+<h2>What is synthetic data?</h2>
+<p><a href="https://arxiv.org/abs/2205.03257">Royal Society</a> の定義によると、合成データとは、データサイエンスの課題（の集合）を解くために、専用の数理モデルやアルゴリズムを用いて生成されたデータのことです。合成データは実データを模倣したものにすぎず、実際の出来事から生成されたものではない点に注意してください。理想的には、合成データは補完対象の実データと同じ統計的性質を持つべきです。合成データには、AI モデルの改善、機密データの保護、バイアスの緩和など、多くの用途があります。</p>
+<h2>Why would you use synthetic data?</h2>
+<p>この問いに答える前に、なぜ実データだけでは不十分になってきているのかを少し考えてみましょう。実データの問題点として、すべてではありませんが、次のようなものがあります。
+- 乱雑で扱いが非常に難しいことがある。
+- プライバシーの問題で、企業間のデータ共有ができない場合がある。
+- 医療データは機密情報であるため、オープンに共有できない。
+- バイアスが含まれていることがある。
+- データの収集とアノテーションにコストがかかる。</p>
+<p>上記の問題の多くは、合成データで解決できる可能性があります。
+- 合成データは構造化された形で生成されるため、扱いやすい。
+- 企業は、元のデータの分布を学習しつつ、元のデータの個別のデータポイントについては何も明かさない合成データ生成モデルを訓練できます。これによりプライバシーが保たれます。医療データについても同様のアプローチが取れます。
+- バイアスのないデータを生成するよう、データ生成モデルを訓練できる。
+- 合成データを実データで拡張することで、モデルやアプリケーションをより堅牢にできる。</p>
+<h2>How to generate synthetic data?</h2>
+<p>ここでは、合成データの生成方法をいくつか紹介します。</p>
+<ul>
+<li>CAD &amp; Blender: パラメータを制御しながら、3D シーンのフォトリアリスティックな画像データセットを作成できます。合成データと真値（生成パラメータ）を比較して指標を計算することもできます。非常に堅牢な方法ですが、生成の品質、多様性、量には限界があります。ユースケースには、<a href="https://amazon-berkeley-objects.s3.amazonaws.com/static_html/ABO_CVPR2022.pdf">商用アプリケーション</a>の利用、<a href="https://arxiv.org/abs/2109.15102">合成顔</a>の生成、<a href="https://openaccess.thecvf.com/content_CVPR_2020/papers/Mu_Learning_From_Synthetic_Animals_CVPR_2020_paper.pdf">野生動物のモニタリング</a>などがあります。</li>
+<li>深層生成モデル（Transformers/GANs/Diffusion models）: データセットの拡張、データの不均衡への対処、プライバシー問題の解決が可能です。非常に便利で強力ですが、バイアスや不整合、反復を含むデータセットを作ってしまうことがあり、過学習の大きなリスクを伴い、予測の幅も制限されます。ユースケースには、<a href="https://rdcu.be/dokei">医療画像の生成</a>、<a href="https://www.mdpi.com/2073-4395/12/10/2395">効率的な植物病害の同定</a>、<a href="https://arxiv.org/abs/2303.14828">産業廃棄物の選別</a>、<a href="https://arxiv.org/abs/2101.04927">交通標識の認識</a>、<a href="https://computer-vision-in-the-wild.github.io/eccv-2022/static/eccv2022/camera_ready/ECCV_2022_cvinw_Domain_Compatible_Synthetic_Data_Generation.pdf">自動運転車向けの緊急車両の検出</a>などがあります。</li>
+</ul>
+<p>このユニットでは、物理ベースレンダリング、点群、そして GANs という合成データの生成方法を紹介します。</p>
+<h2>Challenges with synthetic data</h2>
+<p>合成データの力と用途を見てきたところで、その課題についても時間を取って議論しましょう。
+- 合成データは本質的にプライベートなものではない: 合成データも、生成元データに関する情報を漏らす可能性があり、プライバシー攻撃に対して脆弱です。プライベートな合成データを生成するには、十分な注意が必要です。
+- 外れ値をプライベートに捉えるのは難しい: 実データによく見られる外れ値や低確率の事象は、捉えることがとりわけ難しく、合成データセットへプライバシーに配慮して含めることも困難です。
+- 単一データセットのプライバシーを経験的に評価するのは問題となりうる: 差分プライバシーなどの厳密なプライバシーの概念は、合成データセット自体ではなく、それを生成した仕組みに対する要件です。
+- ブラックボックスモデルは合成データ生成において特に不透明になりやすい: 過剰パラメータ化された生成モデルは高次元の合成データの生成に優れていますが、そうしたデータセットの精度とプライバシーの水準は推定が難しく、生成されたデータポイントごとに大きく変わることがあります。</p>
+<h2>Resources</h2>
+<ul>
+<li><a href="https://arxiv.org/abs/2302.04062">Machine Learning for Synthetic Data Generation: A Review</a></li>
+<li><a href="https://arxiv.org/abs/2205.03257">Synthetic Data -- what, why and how?</a></li>
+<li>合成データの非常に興味深い応用例: <a href="https://www.thispersondoesnotexist.com/">this person does not exist</a></li>
+</ul>
+</article>
+<nav class="page-nav"><a class="nav-link prev" href="../unit9/tools_and_frameworks.html">← 前へ: モデル最適化のツールとフレームワーク</a><a class="nav-link toc-link" href="../index.html">目次へ</a><a class="nav-link next" href="synthetic_datasets.html">次へ →: Synthetic Datasets</a></nav>
+</main>
+<footer class="site-footer">
+  <p>原典: Hugging Face huggingface/computer-vision-course（<a href="https://github.com/huggingface/computer-vision-course">https://github.com/huggingface/computer-vision-course</a>）</p>
+  <p>日本語版の翻訳・公開: 霞ヶ関京 / 連絡先: GitHub <a href="https://github.com/yanikasumin">@yanikasumin</a> / YouTube <a href="https://www.youtube.com/@KASUMI_MOF">@KASUMI_MOF</a></p>
+  <p class="demo-note">このサイトはデモ版です。内容は順次更新されます。</p>
+</footer>
+<script src="../../site.js"></script>
+</body>
+</html>

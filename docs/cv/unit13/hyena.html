@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Hyena | Hugging Face コース日本語版（デモ版）</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Shippori+Mincho:wght@500;700&family=Zen+Kaku+Gothic+New:wght@400;500;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../../style.css">
+<script>
+window.MathJax = { tex: { inlineMath: [['$', '$'], ['\\(', '\\)']], displayMath: [['$$', '$$'], ['\\[', '\\]']] }, options: { skipHtmlTags: ['script','noscript','style','textarea','pre','code'] } };
+</script>
+<script async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml.js"></script>
+</head>
+<body>
+<header class="site-header">
+  <div class="header-inner">
+    <a class="site-title" href="../../index.html">Hugging Face コース日本語版</a>
+    <span class="demo-badge">デモ版</span>
+  </div>
+</header>
+<main class="container">
+<p class="course-crumb"><a href="../index.html">Community CV コース</a>
+<span class="badge badge-qa-wip">翻訳済み・QA進行中（未検証の部分を含みます）</span></p>
+<nav class="page-nav"><a class="nav-link prev" href="hiera.html">← 前へ: Overview of Hiera</a><a class="nav-link toc-link" href="../index.html">目次へ</a><a class="nav-link next" href="i-jepa.html">次へ →: 画像ベース結合埋め込み予測アーキテクチャ（I-JEPA）</a></nav>
+<article class="content">
+<h1>Hyena</h1>
+<h2>概要</h2>
+<h3>Hyena とは</h3>
+<p>Transformer は確立された非常に有能なアーキテクチャですが、その二次関数的な計算コストは、とくに推論において高くつきます。</p>
+<p>Hyena は、アテンション機構の代替として機能する新しいタイプの演算子です。
+Hazy Research によって開発され、準二次関数的（subquadratic）な計算効率を特徴とし、暗黙的にパラメータ化された長い畳み込みと、データで制御されるゲーティングを交互に組み合わせることで構築されています。</p>
+<div class="callout callout-tip">
+<p>長い畳み込み（long convolution）は、標準的な畳み込みに似ていますが、カーネルが入力と同じサイズである点が異なります。
+これは、局所的な受容野ではなく大域的な受容野を持つことと等価です。
+畳み込みが暗黙的にパラメータ化されているとは、畳み込みフィルタの値が直接学習されるのではないということです。その代わり、それらの値を復元できる関数を学習することが好まれます。</p>
+</div>
+<div class="callout callout-tip">
+<p>ゲーティング機構は、ネットワーク内で情報が流れる経路を制御します。情報をどれだけ長く記憶すべきかを定める助けとなります。通常、それらは要素ごとの乗算から成ります。
+ゲーティングに関する興味深いブログ記事は<a href="https://medium.com/autonomous-agents/a-math-deep-dive-on-gating-in-neural-architectures-b49775810dde">こちら</a>にあります。</p>
+</div>
+<p><img alt="transformer2hyena.png" src="https://huggingface.co/datasets/hf-vision/course-assets/resolve/main/outlook_hyena_images/transformer2hyena.png" />
+Hyena 演算子は、射影が尽きるまで、一度にひとつの射影で畳み込みと乗算的な要素ごとゲーティング演算を再帰的に計算することから成ります。このアプローチは、同じ研究者たちによって開発された <a href="https://arxiv.org/abs/2212.14052">Hungry Hungry Hippo (H3)</a> 機構の上に構築されています。H3 機構は、データで制御されるパラメトリックな分解を特徴とし、代理のアテンション機構として機能します。</p>
+<p>Hyena を理解するもうひとつの方法は、任意の数の射影に対する H3 層の一般化として捉えることです。Hyena 層は、長い畳み込みのパラメータ化の選択を変えて、H3 を再帰的に拡張します。
+<img alt="hyena_recurence.png" src="https://huggingface.co/datasets/hf-vision/course-assets/resolve/main/outlook_hyena_images/hyena_recurence.png" /></p>
+<h3>アテンションから Hyena 演算子へ</h3>
+<p>アテンション機構は、2つの基本的な性質を特徴とします。
+1. 大域的な文脈の認識を持ち、系列内の視覚トークンのペア間の相互作用を評価できます。
+2. データ依存であり、アテンション方程式の動作は入力データそのもの、具体的には入力射影 \(q\)、\(k\)、\(v\) に基づいて変化します。</p>
+<p><img alt="Alt text" src="https://huggingface.co/datasets/hf-vision/course-assets/resolve/main/outlook_hyena_images/self-attention-schema.png" /></p>
+<p>アテンション機構は、query \(q\)、key \(k\)、value \(v\) という3つの射影によって定義されます。これらは、入力の視覚トークンに、訓練中に学習される3つの行列 \(W_q\)、\(W_k\)、\(W_v\) を掛けることで生成されます。</p>
+<p>与えられた視覚トークンについて、これらの射影を使ってアテンションスコアを計算できます。アテンションスコアは、入力画像の他の部分にどれだけ注目すべきかを決めます。
+アテンションについての分かりやすい詳細な解説は、この<a href="https://jalammar.github.io/illustrated-transformer/">図解ブログ記事</a>を参照してください。</p>
+<p>これらの特性を再現しようとして、Hyena 演算子は2つの重要な要素を取り入れています。
+1. 長い畳み込みを用いて、アテンション機構の1つ目の性質と同様の大域的な文脈の感覚を提供します。
+2. データ依存性については、Hyena は要素ごとのゲーティングを使います。これは本質的には入力射影の要素ごとの乗算であり、従来のアテンションのデータ依存的な性質を映し出しています。</p>
+<p>計算効率の面では、Hyena 演算子は \(O(L \times \log_2 L)\) の評価時間計算量を達成し、処理速度の顕著な向上を示しています。</p>
+<h3>Hyena 演算子</h3>
+<p>説明のために表現を簡略化した、Hyena 演算子の2次の再帰を掘り下げてみましょう。
+<img alt="hyena_mechanism.png" src="https://huggingface.co/datasets/hf-vision/course-assets/resolve/main/outlook_hyena_images/hyena-order2-schema.png" /></p>
+<p>この次数では、アテンション機構の \(q\)、\(k\)、\(v\) アテンションベクトルに類似した3つの射影を計算します。</p>
+<p>しかし、入力系列を表現へ射影するのに通常は単一の密な層を使うアテンション機構とは異なり、Hyena は密な層と、各チャンネルに対して実行される標準的な畳み込みの両方を取り入れています（図では \(T_q\)、\(T_k\)、\(T_v\) と呼ばれていますが、実際には明示的な畳み込みです）。softmax 関数も破棄されます。</p>
+<p>中核となる考え方は、入力系列 \(u \in \mathbb{R}^{L}\)（\(L\) は系列の長さ）に対して、評価の速い線形演算子を繰り返し適用することです。
+大域的な畳み込みはパラメータ数が多いため、訓練が高コストになります。注目すべき設計上の選択は、<strong>暗黙的な畳み込み（implicit convolutions）</strong>の使用です。
+標準的な畳み込み層とは異なり、畳み込みフィルタ \(h\) は、小さなニューラルネットワーク \(\gamma_{\theta}\)（Hyena フィルタとも呼ばれます）を使って暗黙的に学習されます。
+このネットワークは、位置インデックスと、場合によっては位置エンコーディングを入力として受け取ります。\(\gamma_{\theta}\) の出力から、Toeplitz 行列 \(T_h\) を構築できます。</p>
+<p>つまり、畳み込みフィルタの値を直接学習する代わりに、時間的な位置エンコーディングから値への写像を学習するということです。これは、とくに長い系列において計算効率が良くなります。</p>
+<div class="callout callout-tip">
+<p>この写像関数は、<a href="https://arxiv.org/abs/2212.14052">H3 論文</a>で議論されているニューラルフィールド（Neural Field）や状態空間モデル（S4）といった、さまざまな抽象モデルの中で概念化できることに注意してください。</p>
+</div>
+<h3>暗黙的な畳み込み</h3>
+<p>線形畳み込みは、入力のひとつが <a href="https://en.wikipedia.org/wiki/Toeplitz_matrix">Toeplitz 行列</a>に変形された行列乗算として定式化できます。</p>
+<p>この変換により、パラメータ効率が向上します。
+固定されたカーネル重みの値を直接学習する代わりに、パラメータ化された関数が用いられます。
+この関数は、ネットワークの順伝播の過程で、カーネル重みの値とその次元を巧みに推論し、リソースの使用を最適化します。</p>
+<div class="callout callout-tip">
+<p>暗黙的なパラメータ化についての直感を得る方法のひとつは、学習したいアフィン関数 \(y=f(x)= a \times x + b\) について考えることです。すべての点の位置を学ぶ代わりに、a と b を学び、必要なときに点を計算する方が効率的です。</p>
+</div>
+<p>実際には、畳み込みは Cooley-Tukey の高速フーリエ変換（FFT）アルゴリズムによって準二次関数的な時間計算量に加速されます。
+FastFFTConv のように、Monarch 分解に基づいてこの計算を高速化する研究も行われています。</p>
+<h3>すべてをまとめる</h3>
+<p><img alt="nd_hyena.png" src="https://huggingface.co/datasets/hf-vision/course-assets/resolve/main/outlook_hyena_images/nd_hyena.png" />
+本質的に、Hyena は2つのステップで実行できます。
+1. アテンションと同様に、N+1 個の線形射影の集合を計算します（3つより多くの射影も可能です）。
+2. 射影を混ぜ合わせます。行列 \(H(u)\) は行列乗算の組み合わせによって定義されます。</p>
+<h2>Hyena が重要な理由</h2>
+<p>H3 機構の提案は、マルチヘッドアテンション機構のパープレキシティに近づきましたが、パープレキシティの面では埋めるべき狭いギャップがまだ残っていました。</p>
+<p>過去数年にわたり、アテンションの代替案は数多く提案されてきましたが、探索フェーズにおける新しいアーキテクチャの品質評価は依然として困難です。
+優れた表現力を維持しながら、深層ニューラルネットワーク内で N 次元データを効果的に処理できる汎用的な層を作ることは、進行中の研究の重要な領域です。</p>
+<p>経験的には、Hyena 演算子はスケールの面でアテンションとの品質ギャップを大幅に縮めることができ、アテンションとのハイブリッド化なしに、より小さい計算予算で同等のパープレキシティと下流性能に到達しています。
+すでに <a href="https://arxiv.org/abs/2306.15794">DNA 系列モデリング</a>では最先端の地位を達成しており、Stripped-Hyena-7B による大規模言語モデルの分野でも大きな可能性を示しています。</p>
+<p>アテンションと同様に、Hyena はコンピュータビジョンのタスクにも使えます。画像分類では、Hyena は ImageNet-1k をゼロから訓練した際に、アテンションと同等の精度を達成できます。</p>
+<p><img alt="hyena_vision_benchmarks.png" src="https://huggingface.co/datasets/hf-vision/course-assets/resolve/main/outlook_hyena_images/hyena_vision_benchmarks.png" />
+Hyena は Hyena N-D 層によって N 次元データに適用されており、ViT、Swin、DeiT のバックボーン内でそのまま差し替え可能な代替として使えます。</p>
+<p><img alt="vit_vs_hyenavit.png" src="https://huggingface.co/datasets/hf-vision/course-assets/resolve/main/outlook_hyena_images/vit_vs_hyenavit.png" />
+画像パッチの数が増えるにつれて、GPU メモリ効率の顕著な向上が見られます。</p>
+<p>Hyena Hierarchy は、長い系列に対する、より大規模で効率的な畳み込みモデルの開発を可能にします。
+コンピュータビジョンにおける Hyena 型モデルの可能性は、パッチの GPU メモリ消費がより効率的になることです。それにより以下が可能になります。</p>
+<ul>
+<li>より大きく、高解像度の画像の処理</li>
+<li>より小さいパッチの使用による、きめ細かい特徴表現</li>
+</ul>
+<p>これらの特性は、医用画像（Medical Imaging）やリモートセンシングといった分野でとくに有益です。</p>
+<h2>Transformer の代替案に向けて</h2>
+<p>シンプルな設計原則から新しい層を構築することは、非常に速く進歩している新興の研究分野です。</p>
+<p>H3 機構は、多くの状態空間モデル（SSM）ベースのアーキテクチャの基盤となっており、典型的には、線形アテンションに着想を得たブロックと多層パーセプトロン（MLP）ブロックとが交互に現れる構造を特徴とします。
+Hyena は、このアプローチの改良版として、Mamba やその視覚向けの派生（Vision Mamba、VMamba など）といった、さらに効率的なアーキテクチャへの道を開きました。</p>
+<h2>さらに読む</h2>
+<ul>
+<li>Hyena の公式リポジトリ: <a href="https://github.com/HazyResearch/safari">Convolutions for Sequence Modeling</a></li>
+<li>準二次関数モデルの全体像について: <a href="https://hazyresearch.stanford.edu/blog/2023-06-08-hyena-safari">The Safari of Deep Signal Processing: Hyena and Beyond · Hazy Research (stanford.edu)</a></li>
+<li>FFT アルゴリズムの高速化について: <a href="https://hazyresearch.stanford.edu/blog/2023-11-13-flashfftconv">FlashFFTConv: Efficient Convolutions for Long Sequences with Tensor Cores · Hazy Research (stanford.edu)</a></li>
+<li>準二次関数モデルの全体像について: <a href="https://hazyresearch.stanford.edu/blog/2023-12-11-zoology1-analysis">Zoology (Blogpost 1): Measuring and Improving Recall in Efficient Language Models · Hazy Research (stanford.edu)</a></li>
+<li>コンピュータビジョンへの Hyena の適用: <a href="https://arxiv.org/abs/2309.13600">[2309.13600] Multi-Dimensional Hyena for Spatial Inductive Bias (arxiv.org)</a></li>
+<li>改良されたアプローチ: <a href="https://arxiv.org/abs/2401.09417">[2401.09417] Vision Mamba: Efficient Visual Representation Learning with Bidirectional State Space Model (arxiv.org)</a></li>
+</ul>
+</article>
+<nav class="page-nav"><a class="nav-link prev" href="hiera.html">← 前へ: Overview of Hiera</a><a class="nav-link toc-link" href="../index.html">目次へ</a><a class="nav-link next" href="i-jepa.html">次へ →: 画像ベース結合埋め込み予測アーキテクチャ（I-JEPA）</a></nav>
+</main>
+<footer class="site-footer">
+  <p>原典: Hugging Face huggingface/computer-vision-course（<a href="https://github.com/huggingface/computer-vision-course">https://github.com/huggingface/computer-vision-course</a>）</p>
+  <p>日本語版の翻訳・公開: 霞ヶ関京 / 連絡先: GitHub <a href="https://github.com/yanikasumin">@yanikasumin</a> / YouTube <a href="https://www.youtube.com/@KASUMI_MOF">@KASUMI_MOF</a></p>
+  <p class="demo-note">このサイトはデモ版です。内容は順次更新されます。</p>
+</footer>
+<script src="../../site.js"></script>
+</body>
+</html>

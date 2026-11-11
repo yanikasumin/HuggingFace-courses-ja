@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>転移学習 | Hugging Face コース日本語版（デモ版）</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Shippori+Mincho:wght@500;700&family=Zen+Kaku+Gothic+New:wght@400;500;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../../../style.css">
+<script>
+window.MathJax = { tex: { inlineMath: [['$', '$'], ['\\(', '\\)']], displayMath: [['$$', '$$'], ['\\[', '\\]']] }, options: { skipHtmlTags: ['script','noscript','style','textarea','pre','code'] } };
+</script>
+<script async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml.js"></script>
+</head>
+<body>
+<header class="site-header">
+  <div class="header-inner">
+    <a class="site-title" href="../../../index.html">Hugging Face コース日本語版</a>
+    <span class="demo-badge">デモ版</span>
+  </div>
+</header>
+<main class="container">
+<p class="course-crumb"><a href="../../index.html">Community CV コース</a>
+<span class="badge badge-qa-wip">翻訳済み・QA進行中（未検証の部分を含みます）</span></p>
+<nav class="page-nav"><a class="nav-link prev" href="convnext.html">← 前へ: ConvNeXt - 2020年代のための ConvNet（2022）</a><a class="nav-link toc-link" href="../../index.html">目次へ</a><a class="nav-link next" href="mobilenetextra.html">次へ →: 事前学習済みの MobileNet モデルを読み込む</a></nav>
+<article class="content">
+<h1>転移学習</h1>
+<p>転移学習とファインチューニングがニューラルネットワークにとって何を意味するのかを詳しく見る前に、楽器を例に取りましょう。テルミンは、不気味な音を出す電子楽器で、スリラー映画やホラー映画によく結び付けられます。2本のアンテナの間で両手を空中に動かして音程と音量を制御する必要があるため、演奏は非常に困難です。あまりに難しいので、同じような音を出しながらも演奏しやすいタナリン（スライドテルミン、エレクトリック・テルミンとも呼ばれます）という楽器が発明されました。演奏者は箱の側面のスライドを目的の周波数の位置まで動かして音程を作ります。タナリンにも習熟には時間がかかりますが、トロンボーンを演奏できる人は例外です。トロンボーンを演奏する人は、タナリンのスライドの使い方をすでに知っています。トロンボーンの伸縮式スライド機構と同じだからです。下の図は左から右へ、テルミン、タナリン、トロンボーンです。</p>
+<p><img alt="テルミン、タナリン、トロンボーン" src="https://huggingface.co/datasets/hf-vision/course-assets/resolve/d0096005da7fe2eb3bfbd3d0047e9ac7bd499cf0/transfer_learning.png" /></p>
+<p>この場合、トロンボーン奏者はトロンボーンの演奏で学んだことをタナリンの演奏に効果的に活かしています。ある楽器で学んだことを別の楽器に転移させているのです。この考え方はニューラルネットワークにも使えます。犬や猫を分類する中でニューラルネットワークが学んだことは、他の動物の認識にも使えます。これが機能する理由は、ネットワークがモデル内で特徴を学習する方法にあります。つまり、犬を分類するために学習した特徴は、馬の分類にも使えるのです。モデルがすでに知っていることを活かして、別のタスクを行います。</p>
+<p>転移学習では、以前の知識が他のタスクに「有用」であることが必要です。つまり、探索しようとする特徴は、新しい用途に対して十分に汎用的でなければなりません。楽器の例に戻ると、トロンボーンの代わりにサックスを演奏しても、タナリンの習得にはそれほど役立ちません。トロンボーン奏者が有利な出発点を持てる主な技能は、スライドがどこにあるべきかという直感的な理解です。</p>
+<p>とはいえ、サックス奏者もゼロからのスタートではありません。音楽理論、リズム、タイミングといったことに精通しています。こうした汎用的な技能は、楽器を全く演奏したことのない人に対する優位性を与えます。楽器を演奏するという行為そのものが、すべての演奏者に、楽器を越えて有用な汎用的な技能一式を与えます。ドメイン（この例では楽器）を越えたこの汎化こそが、ゼロからの訓練に比べてモデルをはるかに速く学習させます。</p>
+<h2>転移学習とファインチューニング</h2>
+<p>ここで、扱っている概念同士を区別しましょう。トロンボーン奏者はタナリンを演奏するための訓練を必要としません。本人も気づかないうちに、すでに演奏方法を知っています。サックス奏者はタナリンを演奏するために、技能をファインチューニングするための訓練が少し必要です。深層学習の言葉で言えば、トロンボーン奏者はモデルをそのまま（off-the-shelf）使っています。これが転移学習と呼ばれるものです。サックス奏者のように学習により多くの時間を必要とするモデルの訓練は、ファインチューニングと呼ばれます。</p>
+<p>モデルをファインチューニングするとき、すべての部分を訓練する必要はありません。性能が不十分な部分だけを訓練できます。3つの部分（<a href="https://huggingface.co/docs/transformers/main/main_classes/backbones">特徴抽出、特徴の強調、最終タスク</a>）からなるコンピュータビジョンのモデルを例に取りましょう。この場合、特徴抽出と特徴の強調は再訓練なしでそのまま使えます。したがって、最終タスクの再訓練だけに集中します。</p>
+<p>最終タスクをファインチューニングした後の結果が満足いくものでなければ、それでも特徴抽出部分全体を再訓練する必要はありません。良い妥協案は、上位層の重みだけを再訓練することです。畳み込みネットワークでは、層が上にあるほど、その特徴はタスクやデータセットに特有のものになります。言い換えれば、最初の畳み込み層の特徴はより汎用的で、最後の層の特徴はより特定的です。演奏者の例で言えば、これは、熟練したサックス奏者に音楽理論を説明して時間を無駄にするのではなく、タナリンで音程を変える方法だけを教えることに相当します。</p>
+<h2>転移学習における考慮事項</h2>
+<p>この例は興味深いニュアンスも与えてくれます。テルミンは演奏が難しすぎたため、同じ音を出すより簡単な楽器が発明されました。出力はほぼ同じですが、必要な訓練時間ははるかに少なくて済みます。コンピュータビジョンであれば、いきなり分類器を構築しようとするのではなく、まず物体検出で画像内の犬がどこにいるかを見つけ、次にその犬の品種を教えてくれる分類器を構築する、といったことができます。</p>
+<p>最後に、転移学習は万能の性能向上策ではありません。この例では、ある楽器の演奏が別の楽器の習得に役立つこともあれば、進歩の妨げになることもあります。ある楽器のパターンや悪癖が、別の楽器の進歩を遅らせることがあります。そうした悪癖が演奏者に深く染み付いている場合、同じ量の訓練で初心者が新しい演奏者を追い抜くこともあり得ます。演奏者が悪癖に固執するなら、新しい演奏者を雇う時期かもしれません。</p>
+<h2>転移学習と自己訓練</h2>
+<p>転移学習が特に輝くのは、モデルをゼロから再訓練するのに十分なラベル付きデータがない場合です。この例で考えると、時間が十分にあれば、数回だけレッスンを受けた演奏者は、教授の絶え間ない監督なしに楽器を演奏することで独学できます。深層学習で、部分的あるいは完全に独学で学習することは、自己訓練（self-training）と呼ばれます。これにより、ラベル付きデータ（レッスン）とラベルなしデータ（自力で取り組む演奏者）の両方を使ってタスクを学習するようにモデルを訓練できます。</p>
+<p>このセクションでは自己訓練の概念について議論しませんが、転移学習が機能せず、ラベル付きデータが乏しい場合に<a href="https://doi.org/10.48550/arXiv.2006.06882">自己訓練が非常に役立つ</a>ため、参考としてここで触れておきます。これらの概念は相互に排他的でもありません。熟練した演奏者は、新しい楽器を監督なしで自律的に訓練できるようになるのに数回のレッスンで十分な場合があり、深層学習モデルも同様であることが分かっています。</p>
+<h2>リソース</h2>
+<ul>
+<li>
+<p>転移学習がなぜ安く、速く、環境にも優しいのかを理解するには、<a href="https://huggingface.co/learn/nlp-course/chapter1/4?fw=pt#transfer-learning">コースの NLP パート 1 を確認してください</a>。</p>
+</li>
+<li>
+<p><a href="https://huggingface.co/models">利用可能な事前学習済みモデルの一覧はこちら</a></p>
+</li>
+</ul>
+</article>
+<nav class="page-nav"><a class="nav-link prev" href="convnext.html">← 前へ: ConvNeXt - 2020年代のための ConvNet（2022）</a><a class="nav-link toc-link" href="../../index.html">目次へ</a><a class="nav-link next" href="mobilenetextra.html">次へ →: 事前学習済みの MobileNet モデルを読み込む</a></nav>
+</main>
+<footer class="site-footer">
+  <p>原典: Hugging Face huggingface/computer-vision-course（<a href="https://github.com/huggingface/computer-vision-course">https://github.com/huggingface/computer-vision-course</a>）</p>
+  <p>日本語版の翻訳・公開: 霞ヶ関京 / 連絡先: GitHub <a href="https://github.com/yanikasumin">@yanikasumin</a> / YouTube <a href="https://www.youtube.com/@KASUMI_MOF">@KASUMI_MOF</a></p>
+  <p class="demo-note">このサイトはデモ版です。内容は順次更新されます。</p>
+</footer>
+<script src="../../../site.js"></script>
+</body>
+</html>

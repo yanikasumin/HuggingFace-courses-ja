@@ -1,0 +1,306 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ツール | Hugging Face コース日本語版（デモ版）</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Shippori+Mincho:wght@500;700&family=Zen+Kaku+Gothic+New:wght@400;500;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../../../style.css">
+<script>
+window.MathJax = { tex: { inlineMath: [['$', '$'], ['\\(', '\\)']], displayMath: [['$$', '$$'], ['\\[', '\\]']] }, options: { skipHtmlTags: ['script','noscript','style','textarea','pre','code'] } };
+</script>
+<script async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml.js"></script>
+</head>
+<body>
+<header class="site-header">
+  <div class="header-inner">
+    <a class="site-title" href="../../../index.html">Hugging Face コース日本語版</a>
+    <span class="demo-badge">デモ版</span>
+  </div>
+</header>
+<main class="container">
+<p class="course-crumb"><a href="../../index.html">Agents コース</a>
+<span class="badge badge-qa-wip">翻訳済み・QA進行中（未検証の部分を含みます）</span></p>
+<nav class="page-nav"><a class="nav-link prev" href="tool_calling_agents.html">← 前へ: アクションをコードスニペットや JSON blob で書く</a><a class="nav-link toc-link" href="../../index.html">目次へ</a><a class="nav-link next" href="retrieval_agents.html">次へ →: Agentic RAG システムを作る</a></nav>
+<article class="content">
+<h1>ツール</h1>
+<p><a href="https://huggingface.co/learn/agents-course/unit1/tools">Unit 1</a>で探ったように、エージェントはさまざまなアクションを実行するためにツールを使います。<code>smolagents</code> では、ツールは<strong>エージェントシステムの中で LLM が呼び出せる関数</strong>として扱われます。</p>
+<p>ツールとやり取りするために、LLM には次の主要な構成要素を持つ<strong>インターフェースの説明</strong>が必要です。</p>
+<ul>
+<li><strong>名前</strong>: ツールの呼び名</li>
+<li><strong>ツールの説明</strong>: ツールが何をするか</li>
+<li><strong>入力の型と説明</strong>: ツールが受け取る引数</li>
+<li><strong>出力の型</strong>: ツールが返すもの</li>
+</ul>
+<p>たとえば、ウェイン邸でのパーティーの準備をしながら、アルフレッドはケータリングサービスの検索からパーティーテーマのアイデア探しまで、情報を集めるためのさまざまなツールを必要とします。シンプルな検索ツールのインターフェースは、次のようになります。</p>
+<ul>
+<li><strong>名前:</strong> <code>web_search</code></li>
+<li><strong>ツールの説明:</strong> 特定のクエリで Web を検索する</li>
+<li><strong>入力:</strong> <code>query</code>（文字列）- 検索する語句</li>
+<li><strong>出力:</strong> 検索結果を含む文字列</li>
+</ul>
+<p>これらのツールを使うことで、アルフレッドは情報に基づいた判断を下し、完璧なパーティーの計画に必要な情報をすべて集めることができます。</p>
+<p>以下では、ツール呼び出しがどう管理されるかを示すアニメーションが見られます。</p>
+<p><img alt="https://huggingface.co/docs/smolagents/conceptual_guides/react の Agentic パイプライン" src="https://huggingface.co/datasets/huggingface/documentation-images/resolve/main/transformers/Agent_ManimCE.gif" /></p>
+<h2>ツールの作成方法</h2>
+<p><code>smolagents</code> では、ツールは2つの方法で定義できます。
+1. <strong>シンプルな関数ベースのツールには <code>@tool</code> デコレータを使う</strong>
+2. <strong>より複雑な機能には <code>Tool</code> のサブクラスを作成する</strong></p>
+<h3><code>@tool</code> デコレータ</h3>
+<p><code>@tool</code> デコレータは、<strong>シンプルなツールを定義する推奨の方法</strong>です。内部では、smolagents が Python から関数に関する基本情報をパースします。そのため、関数の名前を分かりやすくし、良い docstring を書けば、LLM が使いやすくなります。</p>
+<p>このアプローチでは、次の要素を持つ関数を定義します。</p>
+<ul>
+<li>LLM が目的を理解しやすい、<strong>明確で説明的な関数名</strong></li>
+<li>適切な使用を保証するための、<strong>入力と出力の両方に対する型ヒント</strong></li>
+<li>各引数を明示的に説明する <code>Args:</code> セクションを含む、<strong>詳細な説明</strong>。これらの説明は LLM に貴重なコンテキストを提供するので、丁寧に書くことが重要です</li>
+</ul>
+<h4>最高評価のケータリングを取得するツールを生成する</h4>
+<p><img src="https://huggingface.co/datasets/agents-course/course-images/resolve/main/en/unit2/smolagents/alfred-catering.jpg" alt="アルフレッドのケータリング"/></p>
+<div class="callout callout-tip">
+<p class="callout-title">💡 ヒント</p>
+<p>コードは、Google Colab で実行できる<a href="https://huggingface.co/agents-course/notebooks/blob/main/unit2/smolagents/tools.ipynb" target="_blank">このノートブック</a>で追うことができます。</p>
+</div>
+<p>アルフレッドはすでにパーティーのメニューを決めましたが、今度は大勢のゲストのために料理を用意する手助けが必要です。そのためにケータリングサービスを雇いたいと考えており、利用可能な中で最高評価の選択肢を特定する必要があります。アルフレッドは、自分の地域で最高のケータリングサービスを検索するツールを活用できます。</p>
+<p>以下は、アルフレッドが <code>@tool</code> デコレータを使ってこれを実現する例です。</p>
+<div class="codehilite"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">smolagents</span><span class="w"> </span><span class="kn">import</span> <span class="n">CodeAgent</span><span class="p">,</span> <span class="n">InferenceClientModel</span><span class="p">,</span> <span class="n">tool</span>
+
+<span class="c1"># 最高評価のケータリングサービスを取得する関数があると仮定します</span>
+<span class="nd">@tool</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">catering_service_tool</span><span class="p">(</span><span class="n">query</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""</span>
+<span class="sd">    This tool returns the highest-rated catering service in Gotham City.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        query: A search term for finding catering services.</span>
+<span class="sd">    """</span>
+    <span class="c1"># ケータリングサービスとその評価の例</span>
+    <span class="n">services</span> <span class="o">=</span> <span class="p">{</span>
+        <span class="s2">"Gotham Catering Co."</span><span class="p">:</span> <span class="mf">4.9</span><span class="p">,</span>
+        <span class="s2">"Wayne Manor Catering"</span><span class="p">:</span> <span class="mf">4.8</span><span class="p">,</span>
+        <span class="s2">"Gotham City Events"</span><span class="p">:</span> <span class="mf">4.7</span><span class="p">,</span>
+    <span class="p">}</span>
+
+    <span class="c1"># 最も評価の高いケータリングサービスを探す（検索クエリによるフィルタリングをシミュレーション）</span>
+    <span class="n">best_service</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="n">services</span><span class="p">,</span> <span class="n">key</span><span class="o">=</span><span class="n">services</span><span class="o">.</span><span class="n">get</span><span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">best_service</span>
+
+
+<span class="n">agent</span> <span class="o">=</span> <span class="n">CodeAgent</span><span class="p">(</span><span class="n">tools</span><span class="o">=</span><span class="p">[</span><span class="n">catering_service_tool</span><span class="p">],</span> <span class="n">model</span><span class="o">=</span><span class="n">InferenceClientModel</span><span class="p">())</span>
+
+<span class="c1"># 最高のケータリングサービスを見つけるためにエージェントを実行する</span>
+<span class="n">result</span> <span class="o">=</span> <span class="n">agent</span><span class="o">.</span><span class="n">run</span><span class="p">(</span>
+    <span class="s2">"Can you give me the name of the highest-rated catering service in Gotham City?"</span>
+<span class="p">)</span>
+
+<span class="nb">print</span><span class="p">(</span><span class="n">result</span><span class="p">)</span>   <span class="c1"># 出力: Gotham Catering Co.</span>
+</code></pre></div>
+
+<h3>ツールを Python クラスとして定義する</h3>
+<p>このアプローチでは、<a href="https://huggingface.co/docs/smolagents/v1.8.1/en/reference/tools#smolagents.Tool"><code>Tool</code></a> のサブクラスを作成します。複雑なツールについては、Python 関数の代わりにクラスを実装できます。このクラスは、LLM が効果的に使えるよう助けるメタデータで関数をラップします。このクラスでは次を定義します。</p>
+<ul>
+<li><code>name</code>: ツールの名前。</li>
+<li><code>description</code>: エージェントのシステムプロンプトに組み込まれる説明。</li>
+<li><code>inputs</code>: <code>type</code> と <code>description</code> をキーに持つ辞書で、Python インタープリターが入力を処理するための情報を提供します。</li>
+<li><code>output_type</code>: 期待される出力の型を指定します。</li>
+<li><code>forward</code>: 実行する推論ロジックを含むメソッド。</li>
+</ul>
+<p>以下では、<code>Tool</code> を使って構築したツールの例と、それを <code>CodeAgent</code> に統合する方法が見られます。</p>
+<h4>スーパーヒーローをテーマにしたパーティーのアイデアを生成するツールを作る</h4>
+<p>邸宅でのアルフレッドのパーティーは<strong>スーパーヒーローがテーマのイベント</strong>ですが、本当に特別なものにするには独創的なアイデアが必要です。素晴らしいホストとして、彼はユニークなテーマでゲストを驚かせたいと考えています。</p>
+<p>そのために、与えられたカテゴリに基づいてスーパーヒーローをテーマにしたパーティーのアイデアを生成するエージェントを使えます。こうすれば、アルフレッドはゲストを感動させる完璧なパーティーテーマを見つけられます。</p>
+<div class="codehilite"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">smolagents</span><span class="w"> </span><span class="kn">import</span> <span class="n">Tool</span><span class="p">,</span> <span class="n">CodeAgent</span><span class="p">,</span> <span class="n">InferenceClientModel</span>
+
+<span class="k">class</span><span class="w"> </span><span class="nc">SuperheroPartyThemeTool</span><span class="p">(</span><span class="n">Tool</span><span class="p">):</span>
+    <span class="n">name</span> <span class="o">=</span> <span class="s2">"superhero_party_theme_generator"</span>
+    <span class="n">description</span> <span class="o">=</span> <span class="s2">"""</span>
+<span class="s2">    This tool suggests creative superhero-themed party ideas based on a category.</span>
+<span class="s2">    It returns a unique party theme idea."""</span>
+
+    <span class="n">inputs</span> <span class="o">=</span> <span class="p">{</span>
+        <span class="s2">"category"</span><span class="p">:</span> <span class="p">{</span>
+            <span class="s2">"type"</span><span class="p">:</span> <span class="s2">"string"</span><span class="p">,</span>
+            <span class="s2">"description"</span><span class="p">:</span> <span class="s2">"The type of superhero party (e.g., 'classic heroes', 'villain masquerade', 'futuristic Gotham')."</span><span class="p">,</span>
+        <span class="p">}</span>
+    <span class="p">}</span>
+
+    <span class="n">output_type</span> <span class="o">=</span> <span class="s2">"string"</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">forward</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">category</span><span class="p">:</span> <span class="nb">str</span><span class="p">):</span>
+        <span class="n">themes</span> <span class="o">=</span> <span class="p">{</span>
+            <span class="s2">"classic heroes"</span><span class="p">:</span> <span class="s2">"Justice League Gala: Guests come dressed as their favorite DC heroes with themed cocktails like 'The Kryptonite Punch'."</span><span class="p">,</span>
+            <span class="s2">"villain masquerade"</span><span class="p">:</span> <span class="s2">"Gotham Rogues' Ball: A mysterious masquerade where guests dress as classic Batman villains."</span><span class="p">,</span>
+            <span class="s2">"futuristic Gotham"</span><span class="p">:</span> <span class="s2">"Neo-Gotham Night: A cyberpunk-style party inspired by Batman Beyond, with neon decorations and futuristic gadgets."</span>
+        <span class="p">}</span>
+
+        <span class="k">return</span> <span class="n">themes</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">category</span><span class="o">.</span><span class="n">lower</span><span class="p">(),</span> <span class="s2">"Themed party idea not found. Try 'classic heroes', 'villain masquerade', or 'futuristic Gotham'."</span><span class="p">)</span>
+
+<span class="c1"># ツールをインスタンス化する</span>
+<span class="n">party_theme_tool</span> <span class="o">=</span> <span class="n">SuperheroPartyThemeTool</span><span class="p">()</span>
+<span class="n">agent</span> <span class="o">=</span> <span class="n">CodeAgent</span><span class="p">(</span><span class="n">tools</span><span class="o">=</span><span class="p">[</span><span class="n">party_theme_tool</span><span class="p">],</span> <span class="n">model</span><span class="o">=</span><span class="n">InferenceClientModel</span><span class="p">())</span>
+
+<span class="c1"># パーティーテーマのアイデアを生成するためにエージェントを実行する</span>
+<span class="n">result</span> <span class="o">=</span> <span class="n">agent</span><span class="o">.</span><span class="n">run</span><span class="p">(</span>
+    <span class="s2">"What would be a good superhero party idea for a 'villain masquerade' theme?"</span>
+<span class="p">)</span>
+
+<span class="nb">print</span><span class="p">(</span><span class="n">result</span><span class="p">)</span>  <span class="c1"># 出力: "Gotham Rogues' Ball: A mysterious masquerade where guests dress as classic Batman villains."</span>
+</code></pre></div>
+
+<p>このツールがあれば、アルフレッドは究極のスーパーホストとなり、忘れられないスーパーヒーローをテーマにしたパーティーでゲストを感動させるでしょう！ 🦸‍♂️🦸‍♀️</p>
+<h2>デフォルトのツールボックス</h2>
+<p><code>smolagents</code> には、エージェントに直接注入できる事前に構築されたツール一式が付属しています。<a href="https://huggingface.co/docs/smolagents/guided_tour?build-a-tool=Decorate+a+function+with+%40tool#default-toolbox">デフォルトのツールボックス</a>には次のものが含まれます。</p>
+<ul>
+<li><strong>PythonInterpreterTool</strong></li>
+<li><strong>FinalAnswerTool</strong></li>
+<li><strong>UserInputTool</strong></li>
+<li><strong>DuckDuckGoSearchTool</strong></li>
+<li><strong>GoogleSearchTool</strong></li>
+<li><strong>VisitWebpageTool</strong></li>
+</ul>
+<p>アルフレッドは、ウェイン邸での完璧なパーティーのためにさまざまなツールを使えます。</p>
+<ul>
+<li>
+<p>まず、<code>DuckDuckGoSearchTool</code> を使って、独創的なスーパーヒーローをテーマにしたパーティーのアイデアを探せます。</p>
+</li>
+<li>
+<p>ケータリングについては、<code>GoogleSearchTool</code> を頼りにゴッサムで最高評価のサービスを探せます。</p>
+</li>
+<li>
+<p>座席の配置を管理するために、アルフレッドは <code>PythonInterpreterTool</code> で計算を実行できます。</p>
+</li>
+<li>
+<p>すべてが集まったら、<code>FinalAnswerTool</code> を使って計画をまとめます。</p>
+</li>
+</ul>
+<p>これらのツールにより、アルフレッドはパーティーが格別で、かつ滞りないものになることを保証します。🦇💡</p>
+<h2>ツールの共有とインポート</h2>
+<p><strong>smolagents</strong> の最も強力な機能のひとつは、カスタムツールを Hub で共有し、コミュニティが作成したツールをシームレスに統合できることです。これには <strong>HF Spaces</strong> や <strong>LangChain ツール</strong> との接続も含まれ、ウェイン邸で忘れられないパーティーを演出するアルフレッドの能力を大きく高めます。🎭</p>
+<p>これらの統合により、アルフレッドは高度なイベント企画ツールを利用できます。完璧な雰囲気のための照明の調整、パーティーに理想的なプレイリストの選定、ゴッサム最高のケータリング業者との調整などです。</p>
+<p>ここでは、これらの機能がパーティー体験をどう引き上げるかを示す例を紹介します。</p>
+<h3>ツールを Hub に共有する</h3>
+<p>カスタムツールをコミュニティと共有するのは簡単です。<code>push_to_hub()</code> メソッドを使って、自分の Hugging Face アカウントにアップロードするだけです。</p>
+<p>たとえば、アルフレッドは <code>party_theme_tool</code> を共有して、他の人がゴッサムで最高のケータリングサービスを見つけられるよう支援できます。方法は次のとおりです。</p>
+<div class="codehilite"><pre><span></span><code><span class="n">party_theme_tool</span><span class="o">.</span><span class="n">push_to_hub</span><span class="p">(</span><span class="s2">"</span><span class="si">{your_username}</span><span class="s2">/party_theme_tool"</span><span class="p">,</span> <span class="n">token</span><span class="o">=</span><span class="s2">"&lt;YOUR_HUGGINGFACEHUB_API_TOKEN&gt;"</span><span class="p">)</span>
+</code></pre></div>
+
+<h3>ツールを Hub からインポートする</h3>
+<p><code>load_tool()</code> 関数を使えば、他のユーザーが作成したツールを簡単にインポートできます。たとえば、アルフレッドが AI を使ってパーティーの宣伝画像を生成したいとします。ツールをゼロから構築する代わりに、コミュニティの事前定義されたツールを利用できます。</p>
+<div class="codehilite"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">smolagents</span><span class="w"> </span><span class="kn">import</span> <span class="n">load_tool</span><span class="p">,</span> <span class="n">CodeAgent</span><span class="p">,</span> <span class="n">InferenceClientModel</span>
+
+<span class="n">image_generation_tool</span> <span class="o">=</span> <span class="n">load_tool</span><span class="p">(</span>
+    <span class="s2">"m-ric/text-to-image"</span><span class="p">,</span>
+    <span class="n">trust_remote_code</span><span class="o">=</span><span class="kc">True</span>
+<span class="p">)</span>
+
+<span class="n">agent</span> <span class="o">=</span> <span class="n">CodeAgent</span><span class="p">(</span>
+    <span class="n">tools</span><span class="o">=</span><span class="p">[</span><span class="n">image_generation_tool</span><span class="p">],</span>
+    <span class="n">model</span><span class="o">=</span><span class="n">InferenceClientModel</span><span class="p">()</span>
+<span class="p">)</span>
+
+<span class="n">agent</span><span class="o">.</span><span class="n">run</span><span class="p">(</span><span class="s2">"Generate an image of a luxurious superhero-themed party at Wayne Manor with made-up superheros."</span><span class="p">)</span>
+</code></pre></div>
+
+<h3>Hugging Face Space をツールとしてインポートする</h3>
+<p><code>Tool.from_space()</code> を使って、HF Space をツールとしてインポートすることもできます。これにより、画像生成からデータ分析まで、さまざまなタスクのためにコミュニティの何千もの Space と連携できる可能性が開けます。</p>
+<p>このツールは <code>gradio_client</code> を使って Space の Gradio バックエンドに接続するので、まだインストールしていない場合は <code>pip</code> でインストールしてください。</p>
+<p>パーティーのために、アルフレッドは既存の HF Space を使って、告知に使う AI 生成画像を生成できます（前に触れた事前構築ツールを使う代わりに）。作ってみましょう！</p>
+<div class="codehilite"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">smolagents</span><span class="w"> </span><span class="kn">import</span> <span class="n">CodeAgent</span><span class="p">,</span> <span class="n">InferenceClientModel</span><span class="p">,</span> <span class="n">Tool</span>
+
+<span class="n">image_generation_tool</span> <span class="o">=</span> <span class="n">Tool</span><span class="o">.</span><span class="n">from_space</span><span class="p">(</span>
+    <span class="s2">"black-forest-labs/FLUX.1-schnell"</span><span class="p">,</span>
+    <span class="n">name</span><span class="o">=</span><span class="s2">"image_generator"</span><span class="p">,</span>
+    <span class="n">description</span><span class="o">=</span><span class="s2">"Generate an image from a prompt"</span>
+<span class="p">)</span>
+
+<span class="n">model</span> <span class="o">=</span> <span class="n">InferenceClientModel</span><span class="p">(</span><span class="s2">"Qwen/Qwen2.5-Coder-32B-Instruct"</span><span class="p">)</span>
+
+<span class="n">agent</span> <span class="o">=</span> <span class="n">CodeAgent</span><span class="p">(</span><span class="n">tools</span><span class="o">=</span><span class="p">[</span><span class="n">image_generation_tool</span><span class="p">],</span> <span class="n">model</span><span class="o">=</span><span class="n">model</span><span class="p">)</span>
+
+<span class="n">agent</span><span class="o">.</span><span class="n">run</span><span class="p">(</span>
+    <span class="s2">"Improve this prompt, then generate an image of it."</span><span class="p">,</span>
+    <span class="n">additional_args</span><span class="o">=</span><span class="p">{</span><span class="s1">'user_prompt'</span><span class="p">:</span> <span class="s1">'A grand superhero-themed party at Wayne Manor, with Alfred overseeing a luxurious gala'</span><span class="p">}</span>
+<span class="p">)</span>
+</code></pre></div>
+
+<h3>LangChain ツールをインポートする</h3>
+<p><code>LangChain</code> フレームワークについては、今後のセクションで取り上げます。ここでは、smolagents のワークフローで LangChain ツールを再利用できることだけ述べておきます！</p>
+<p><code>Tool.from_langchain()</code> メソッドを使えば、LangChain ツールを簡単に読み込めます。完璧主義者のアルフレッドは、ウェイン家が留守のあいだウェイン邸で壮大なスーパーヒーローの夜を用意しています。すべての細部が期待を超えるよう、彼は LangChain ツールを利用して一流のエンターテイメントのアイデアを探します。</p>
+<p><code>Tool.from_langchain()</code> を使うことで、アルフレッドは高度な検索機能を自分の smolagent に手軽に追加でき、数個のコマンドだけで限定のパーティーのアイデアやサービスを見つけられます。</p>
+<p>方法は次のとおりです。</p>
+<p>まず、<code>smolagents</code> 用の <code>langchain</code> 統合をインストールする必要があります。</p>
+<div class="codehilite"><pre><span></span><code>pip<span class="w"> </span>install<span class="w"> </span>-U<span class="w"> </span>langchain-community
+</code></pre></div>
+
+<p>langchain 統合をインストールしたあと、SerpAPI キーを設定してください。
+これは <code>SerpAPITool</code> のような検索ベースのツールに必要です。</p>
+<div class="codehilite"><pre><span></span><code><span class="n">os</span><span class="o">.</span><span class="n">environ</span><span class="p">[</span><span class="s1">'SERPAPI_API_KEY'</span><span class="p">]</span> <span class="o">=</span> <span class="s1">'...'</span>
+</code></pre></div>
+
+<p>SerpAPI キーは<a href="https://serpapi.com/">こちら</a>で作成できます。</p>
+<div class="codehilite"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">langchain.agents</span><span class="w"> </span><span class="kn">import</span> <span class="n">load_tools</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">smolagents</span><span class="w"> </span><span class="kn">import</span> <span class="n">CodeAgent</span><span class="p">,</span> <span class="n">InferenceClientModel</span><span class="p">,</span> <span class="n">Tool</span>
+
+<span class="n">search_tool</span> <span class="o">=</span> <span class="n">Tool</span><span class="o">.</span><span class="n">from_langchain</span><span class="p">(</span><span class="n">load_tools</span><span class="p">([</span><span class="s2">"serpapi"</span><span class="p">])[</span><span class="mi">0</span><span class="p">])</span>
+
+<span class="n">agent</span> <span class="o">=</span> <span class="n">CodeAgent</span><span class="p">(</span><span class="n">tools</span><span class="o">=</span><span class="p">[</span><span class="n">search_tool</span><span class="p">],</span> <span class="n">model</span><span class="o">=</span><span class="n">model</span><span class="p">)</span>
+
+<span class="n">agent</span><span class="o">.</span><span class="n">run</span><span class="p">(</span><span class="s2">"Search for luxury entertainment ideas for a superhero-themed event, such as live performances and interactive experiences."</span><span class="p">)</span>
+</code></pre></div>
+
+<h3>あらゆる MCP サーバーからツールコレクションをインポートする</h3>
+<p><code>smolagents</code> では、<a href="https://glama.ai/mcp/servers">glama.ai</a> や <a href="https://smithery.ai">smithery.ai</a> で利用できる何百もの MCP サーバーからツールをインポートすることもできます。MCP についてもっと深く知りたい場合は、<a href="https://huggingface.co/learn/mcp-course/">無料の MCP コース</a>をご覧ください。</p>
+<details>
+<summary>MCP クライアントをインストールする</summary>
+
+まず、`smolagents` 用の `mcp` 統合をインストールする必要があります。
+
+
+<div class="codehilite"><pre><span></span><code>pip<span class="w"> </span>install<span class="w"> </span><span class="s2">"smolagents[mcp]"</span>
+</code></pre></div>
+
+
+</details>
+
+<p>MCP サーバーのツールは、次のように ToolCollection オブジェクトに読み込めます。</p>
+<div class="codehilite"><pre><span></span><code><span class="kn">import</span><span class="w"> </span><span class="nn">os</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">smolagents</span><span class="w"> </span><span class="kn">import</span> <span class="n">ToolCollection</span><span class="p">,</span> <span class="n">CodeAgent</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">mcp</span><span class="w"> </span><span class="kn">import</span> <span class="n">StdioServerParameters</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">smolagents</span><span class="w"> </span><span class="kn">import</span> <span class="n">InferenceClientModel</span>
+
+
+<span class="n">model</span> <span class="o">=</span> <span class="n">InferenceClientModel</span><span class="p">(</span><span class="s2">"Qwen/Qwen2.5-Coder-32B-Instruct"</span><span class="p">)</span>
+
+
+<span class="n">server_parameters</span> <span class="o">=</span> <span class="n">StdioServerParameters</span><span class="p">(</span>
+    <span class="n">command</span><span class="o">=</span><span class="s2">"uvx"</span><span class="p">,</span>
+    <span class="n">args</span><span class="o">=</span><span class="p">[</span><span class="s2">"--quiet"</span><span class="p">,</span> <span class="s2">"pubmedmcp@0.1.3"</span><span class="p">],</span>
+    <span class="n">env</span><span class="o">=</span><span class="p">{</span><span class="s2">"UV_PYTHON"</span><span class="p">:</span> <span class="s2">"3.12"</span><span class="p">,</span> <span class="o">**</span><span class="n">os</span><span class="o">.</span><span class="n">environ</span><span class="p">},</span>
+<span class="p">)</span>
+
+<span class="k">with</span> <span class="n">ToolCollection</span><span class="o">.</span><span class="n">from_mcp</span><span class="p">(</span><span class="n">server_parameters</span><span class="p">,</span> <span class="n">trust_remote_code</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span> <span class="k">as</span> <span class="n">tool_collection</span><span class="p">:</span>
+    <span class="n">agent</span> <span class="o">=</span> <span class="n">CodeAgent</span><span class="p">(</span><span class="n">tools</span><span class="o">=</span><span class="p">[</span><span class="o">*</span><span class="n">tool_collection</span><span class="o">.</span><span class="n">tools</span><span class="p">],</span> <span class="n">model</span><span class="o">=</span><span class="n">model</span><span class="p">,</span> <span class="n">add_base_tools</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+    <span class="n">agent</span><span class="o">.</span><span class="n">run</span><span class="p">(</span><span class="s2">"Please find a remedy for hangover."</span><span class="p">)</span>
+</code></pre></div>
+
+<p>このセットアップにより、アルフレッドは豪華なエンターテイメントの選択肢を素早く見つけることができ、ゴッサムの上流階級のゲストに忘れられない体験を保証します。このツールは、ウェイン邸での完璧なスーパーヒーローをテーマにしたイベントの企画を助けてくれます！ 🎉</p>
+<h2>リソース</h2>
+<ul>
+<li><a href="https://huggingface.co/docs/smolagents/tutorials/tools">Tools Tutorial</a> - ツールを効果的に扱う方法を学べるチュートリアル。</li>
+<li><a href="https://huggingface.co/docs/smolagents/v1.8.1/en/reference/tools">Tools Documentation</a> - ツールに関する包括的なリファレンスドキュメント。</li>
+<li><a href="https://huggingface.co/docs/smolagents/v1.8.1/en/guided_tour#tools">Tools Guided Tour</a> - ツールを効率よく構築・活用するためのステップバイステップのガイドツアー。</li>
+<li><a href="https://huggingface.co/docs/smolagents/tutorials/building_good_agents">Building Effective Agents</a> - 信頼性と高性能を備えたカスタム関数エージェントを開発するためのベストプラクティスの詳細なガイド。</li>
+</ul>
+</article>
+<nav class="page-nav"><a class="nav-link prev" href="tool_calling_agents.html">← 前へ: アクションをコードスニペットや JSON blob で書く</a><a class="nav-link toc-link" href="../../index.html">目次へ</a><a class="nav-link next" href="retrieval_agents.html">次へ →: Agentic RAG システムを作る</a></nav>
+</main>
+<footer class="site-footer">
+  <p>原典: Hugging Face huggingface/agents-course（<a href="https://github.com/huggingface/agents-course">https://github.com/huggingface/agents-course</a>）</p>
+  <p>日本語版の翻訳・公開: 霞ヶ関京 / 連絡先: GitHub <a href="https://github.com/yanikasumin">@yanikasumin</a> / YouTube <a href="https://www.youtube.com/@KASUMI_MOF">@KASUMI_MOF</a></p>
+  <p class="demo-note">このサイトはデモ版です。内容は順次更新されます。</p>
+</footer>
+<script src="../../../site.js"></script>
+</body>
+</html>

@@ -1,0 +1,224 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>DEtection TRansformer (DETR) | Hugging Face コース日本語版（デモ版）</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Shippori+Mincho:wght@500;700&family=Zen+Kaku+Gothic+New:wght@400;500;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../../../style.css">
+<script>
+window.MathJax = { tex: { inlineMath: [['$', '$'], ['\\(', '\\)']], displayMath: [['$$', '$$'], ['\\[', '\\]']] }, options: { skipHtmlTags: ['script','noscript','style','textarea','pre','code'] } };
+</script>
+<script async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml.js"></script>
+</head>
+<body>
+<header class="site-header">
+  <div class="header-inner">
+    <a class="site-title" href="../../../index.html">Hugging Face コース日本語版</a>
+    <span class="demo-badge">デモ版</span>
+  </div>
+</header>
+<main class="container">
+<p class="course-crumb"><a href="../../index.html">Community CV コース</a>
+<span class="badge badge-qa-wip">翻訳済み・QA進行中（未検証の部分を含みます）</span></p>
+<nav class="page-nav"><a class="nav-link prev" href="vision-transformer-for-object-detection.html">← 前へ: Vision Transformers を使った物体検出</a><a class="nav-link toc-link" href="../../index.html">目次へ</a><a class="nav-link next" href="vision-transformers-for-image-segmentation.html">次へ →: Transformer ベースの画像セグメンテーション</a></nav>
+<article class="content">
+<h1>DEtection TRansformer (DETR)</h1>
+<h2>アーキテクチャの概要</h2>
+<p>DETR は主に物体検出タスクに使われます。物体検出とは、画像の中の物体を検出する処理です。たとえば、モデルの入力は道路の画像で、出力は <code>[('car',X1,Y1,W1,H1),('pedestrian',X2,Y2,W2,H2)]</code> のようになります。ここで X、Y、W、H は、バウンディングボックスの位置を示す x、y 座標と、ボックスの幅と高さを表します。
+YOLO のような従来の物体検出モデルは、anchor box の事前分布のような手作業で作られた特徴で構成されます。これには物体の位置と形状の初期推測が必要で、下流の訓練に影響します。その後、重なり合うバウンディングボックスを取り除くための後処理が行われますが、そのフィルタリングのヒューリスティクスは慎重に選ぶ必要があります。
+DEtection TRansformer、略して DETR は、特徴抽出のバックボーンの後に encoder-decoder Transformer を使ってバウンディングボックスを並列に直接予測することで検出器を簡素化し、後処理を最小限に抑えます。</p>
+<p><img alt="DETR のアーキテクチャ図" src="https://huggingface.co/datasets/hf-vision/course-assets/resolve/main/DETR.png" />
+DETR のモデルアーキテクチャは、他の画像ベースのネットワークと同様に CNN バックボーンから始まります。その出力を処理して Transformer encoder に入力すると、N 個の埋め込みが得られます。encoder の埋め込みは、学習された位置埋め込み（object queries と呼ばれます）に加えられ、Transformer decoder で使われて、さらに N 個の埋め込みが生成されます。最後のステップとして、N 個の埋め込みはそれぞれ個別の feed forward 層に通され、バウンディングボックスの幅、高さ、座標と、物体のクラス（または物体が存在するかどうか）を予測します。</p>
+<h2>主な特徴</h2>
+<h3>Encoder-Decoder</h3>
+<p>他の Transformer と同様に、Transformer encoder は CNN バックボーンの出力が列であることを想定しています。そのため、<code>[dimension, height, width]</code> サイズの特徴マップは縮小され、<code>[dimension, less than height x width]</code> に平坦化されます。
+<img alt="Encoder の特徴マップ" src="https://huggingface.co/datasets/hf-vision/course-assets/resolve/main/DETR_FeatureMaps.png" />
+<em><strong>左</strong>: 特徴マップの 256 次元のうち 12 次元を可視化したものです。各次元は、元の画像を縮小しながら、元の猫の画像の何らかの特徴を抽出しています。猫の模様に強く注目している次元もあれば、ベッドシーツに強く注目している次元もあります。</em>
+<em><strong>右</strong>: 元の特徴次元である 256 というサイズを保ったまま、幅と高さはさらに縮小され、850 というサイズに平坦化されています。</em>
+Transformer は順序に対して不変であるため、埋め込みが画像のどこに由来するかをモデルに思い出させるために、encoder と decoder の両方に位置埋め込みが加えられます。encoder では固定の位置エンコーディングが使われ、decoder では学習された位置エンコーディング（object queries）が使われます。固定エンコーディングは、元の Transformer 論文で使われたものと似ており、エンコーディングは異なる特徴次元で異なる周波数の正弦波関数によって定義されます。学習されるパラメータを持たず、画像上の位置でインデックスされることで、位置の感覚を与えます。学習されるエンコーディングも位置でインデックスされますが、各位置は個別のエンコーディングを持ち、それが訓練を通じて学習され、モデルが理解できる方法で位置を示します。</p>
+<h3>集合ベースの大域損失関数</h3>
+<p>人気のある物体検出モデルである YOLO では、損失関数はバウンディングボックス、objectness（すなわち、注目領域に物体が存在する確率）、クラスの損失から構成されます。損失は各グリッドセルに対する複数のバウンディングボックスについて計算され、その数は固定です。一方 DETR では、アーキテクチャは順序不変な方法で一意なバウンディングボックスを生成することが求められます（すなわち、出力における検出の順序は重要ではなく、バウンディングボックスは互いに異ならなければならず、すべて同じではいけません）。そのため、予測がどれほど良いかを評価するにはマッチングが必要です。</p>
+<p><strong>Bipartite Matching</strong>
+二部マッチングは、正解のバウンディングボックスと予測されたボックスとの間で 1 対 1 のマッチングを計算する方法です。正解と予測されたバウンディングボックス、およびクラスとの間で最も類似度が高いマッチを見つけます。これにより、最も近い予測が対応する正解とマッチし、損失関数の中でボックスとクラスを適切に調整できます。マッチングを行わないと、正解の順序と揃っていない予測は、正しくても誤りとして扱われてしまいます。</p>
+<h2>DETR を使って物体を検出する</h2>
+<p>Hugging Face transformers を使って DETR で推論を行う例については、<code>DETR.ipynb</code> を参照してください。</p>
+<h2>DETR の進化</h2>
+<h3>Deformable DETR</h3>
+<p>DETR の主な問題の 2 つは、収束までの過程が長く遅いことと、小さい物体の検出が最適でないことです。
+<strong>Deformable Attention</strong>
+1 つ目の問題は、注目するサンプリング点の量を減らす deformable attention を使うことで解決されます。従来のアテンションは大域的なアテンションのために非効率で、画像が持てる解像度を大きく制限します。このモデルは、各参照点の周囲にある固定された量のサンプリング点にのみ注目し、参照点は入力に基づいてモデルが学習します。たとえば犬の画像では、参照点は犬の中心にあり、サンプリング点は耳、口、尻尾などの近くにある、といった具合です。</p>
+<p><strong>Multi-scale Deformable Attention Module</strong>
+2 つ目の問題は、マルチスケールの特徴マップを導入した YOLOv3 と同様の方法で解決されます。畳み込みニューラルネットワークでは、早い層はより小さい詳細（例: 線）を抽出し、後の層はより大きい詳細（例: 車輪、耳）を抽出します。同様に、deformable attention の異なる層は異なるレベルの解像度をもたらします。これらの層のうちのいくつかの出力を encoder から decoder へつなぐことで、モデルは多種多様なサイズの物体を検出できます。</p>
+<h3>Conditional DETR</h3>
+<p>Conditional DETR も、元の DETR の訓練の収束が遅い問題の解決を目指しており、6.7 倍を超える速さの収束を実現します。著者らは、object queries が一般的であり、入力画像に固有ではないことを発見しました。decoder で <strong>Conditional Cross-Attention</strong> を使うことで、クエリはバウンディングボックス回帰のための領域をより良く特定できます。
+<img alt="Conditional DETR の decoder 層" src="https://huggingface.co/datasets/hf-vision/course-assets/resolve/main/DETR_DecoderLayer.png" />
+<em>左: DETR の Decoder 層。右: Conditional DETR の Decoder 層</em>
+上の図では、元の DETR と Conditional DETR の decoder 層が比較されており、主な違いは cross-attention ブロックのクエリ入力です。著者らは、content query c<sub>q</sub>（decoder の self attention の出力）と spatial query p<sub>q</sub> を区別しています。元の DETR は単に両者を足し合わせます。Conditional DETR では両者は連結され、c<sub>q</sub> は物体の内容に注目し、p<sub>q</sub> はバウンディングボックスの領域に注目します。
+spatial query p<sub>q</sub> は、decoder の埋め込みと object queries の両方が同じ空間に射影され（それぞれ T と p<sub>s</sub> になります）、互いに掛け合わされた結果です。前の層の decoder の埋め込みにはバウンディングボックス領域のための情報が含まれ、object queries には各バウンディングボックスについて学習された参照点の情報が含まれます。そのため、それらの射影が組み合わさって、cross-attention が encoder 入力および正弦波の位置埋め込みとの類似度を測れる表現となります。これは、object queries と固定の参照点だけを使う DETR よりも効果的です。</p>
+<h2>DETR の推論</h2>
+<p>Hugging Face Hub にある既存の DETR モデルを使って、次のように推論できます。</p>
+<div class="codehilite"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">transformers</span><span class="w"> </span><span class="kn">import</span> <span class="n">DetrImageProcessor</span><span class="p">,</span> <span class="n">DetrForObjectDetection</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">torch</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">PIL</span><span class="w"> </span><span class="kn">import</span> <span class="n">Image</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">requests</span>
+
+<span class="n">url</span> <span class="o">=</span> <span class="s2">"http://images.cocodataset.org/val2017/000000039769.jpg"</span>
+<span class="n">image</span> <span class="o">=</span> <span class="n">Image</span><span class="o">.</span><span class="n">open</span><span class="p">(</span><span class="n">requests</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">url</span><span class="p">,</span> <span class="n">stream</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span><span class="o">.</span><span class="n">raw</span><span class="p">)</span>
+
+<span class="c1"># モデルを初期化します</span>
+<span class="n">processor</span> <span class="o">=</span> <span class="n">DetrImageProcessor</span><span class="o">.</span><span class="n">from_pretrained</span><span class="p">(</span>
+    <span class="s2">"facebook/detr-resnet-101"</span><span class="p">,</span> <span class="n">revision</span><span class="o">=</span><span class="s2">"no_timm"</span>
+<span class="p">)</span>
+<span class="n">model</span> <span class="o">=</span> <span class="n">DetrForObjectDetection</span><span class="o">.</span><span class="n">from_pretrained</span><span class="p">(</span>
+    <span class="s2">"facebook/detr-resnet-101"</span><span class="p">,</span> <span class="n">revision</span><span class="o">=</span><span class="s2">"no_timm"</span>
+<span class="p">)</span>
+
+<span class="c1"># 入力を前処理して推論します</span>
+<span class="n">inputs</span> <span class="o">=</span> <span class="n">processor</span><span class="p">(</span><span class="n">images</span><span class="o">=</span><span class="n">image</span><span class="p">,</span> <span class="n">return_tensors</span><span class="o">=</span><span class="s2">"pt"</span><span class="p">)</span>
+<span class="n">outputs</span> <span class="o">=</span> <span class="n">model</span><span class="p">(</span><span class="o">**</span><span class="n">inputs</span><span class="p">)</span>
+
+<span class="c1"># 出力（バウンディングボックスとクラスのロジット）を COCO API 形式に変換します</span>
+<span class="c1"># 0.9 超に対する non-max suppression</span>
+<span class="n">target_sizes</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">tensor</span><span class="p">([</span><span class="n">image</span><span class="o">.</span><span class="n">size</span><span class="p">[::</span><span class="o">-</span><span class="mi">1</span><span class="p">]])</span>
+<span class="n">results</span> <span class="o">=</span> <span class="n">processor</span><span class="o">.</span><span class="n">post_process_object_detection</span><span class="p">(</span>
+    <span class="n">outputs</span><span class="p">,</span> <span class="n">target_sizes</span><span class="o">=</span><span class="n">target_sizes</span><span class="p">,</span> <span class="n">threshold</span><span class="o">=</span><span class="mf">0.9</span>
+<span class="p">)[</span><span class="mi">0</span><span class="p">]</span>
+
+<span class="k">for</span> <span class="n">score</span><span class="p">,</span> <span class="n">label</span><span class="p">,</span> <span class="n">box</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="n">results</span><span class="p">[</span><span class="s2">"scores"</span><span class="p">],</span> <span class="n">results</span><span class="p">[</span><span class="s2">"labels"</span><span class="p">],</span> <span class="n">results</span><span class="p">[</span><span class="s2">"boxes"</span><span class="p">]):</span>
+    <span class="n">box</span> <span class="o">=</span> <span class="p">[</span><span class="nb">round</span><span class="p">(</span><span class="n">i</span><span class="p">,</span> <span class="mi">2</span><span class="p">)</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">box</span><span class="o">.</span><span class="n">tolist</span><span class="p">()]</span>
+    <span class="nb">print</span><span class="p">(</span>
+        <span class="sa">f</span><span class="s2">"検出: </span><span class="si">{</span><span class="n">model</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">id2label</span><span class="p">[</span><span class="n">label</span><span class="o">.</span><span class="n">item</span><span class="p">()]</span><span class="si">}</span><span class="s2">、信頼度: "</span>
+        <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="nb">round</span><span class="p">(</span><span class="n">score</span><span class="o">.</span><span class="n">item</span><span class="p">(),</span><span class="w"> </span><span class="mi">3</span><span class="p">)</span><span class="si">}</span><span class="s2">、位置: </span><span class="si">{</span><span class="n">box</span><span class="si">}</span><span class="s2">"</span>
+    <span class="p">)</span>
+</code></pre></div>
+
+<p>出力は次のとおりです。</p>
+<div class="codehilite"><pre><span></span><code>検出:<span class="w"> </span>cat、信頼度:<span class="w"> </span><span class="m">0</span>.998、位置:<span class="w"> </span><span class="o">[</span><span class="m">344</span>.06,<span class="w"> </span><span class="m">24</span>.85,<span class="w"> </span><span class="m">640</span>.34,<span class="w"> </span><span class="m">373</span>.74<span class="o">]</span>
+検出:<span class="w"> </span>remote、信頼度:<span class="w"> </span><span class="m">0</span>.997、位置:<span class="w"> </span><span class="o">[</span><span class="m">328</span>.13,<span class="w"> </span><span class="m">75</span>.93,<span class="w"> </span><span class="m">372</span>.81,<span class="w"> </span><span class="m">187</span>.66<span class="o">]</span>
+検出:<span class="w"> </span>remote、信頼度:<span class="w"> </span><span class="m">0</span>.997、位置:<span class="w"> </span><span class="o">[</span><span class="m">39</span>.34,<span class="w"> </span><span class="m">70</span>.13,<span class="w"> </span><span class="m">175</span>.56,<span class="w"> </span><span class="m">118</span>.78<span class="o">]</span>
+検出:<span class="w"> </span>cat、信頼度:<span class="w"> </span><span class="m">0</span>.998、位置:<span class="w"> </span><span class="o">[</span><span class="m">15</span>.36,<span class="w"> </span><span class="m">51</span>.75,<span class="w"> </span><span class="m">316</span>.89,<span class="w"> </span><span class="m">471</span>.16<span class="o">]</span>
+検出:<span class="w"> </span>couch、信頼度:<span class="w"> </span><span class="m">0</span>.995、位置:<span class="w"> </span><span class="o">[</span>-0.19,<span class="w"> </span><span class="m">0</span>.71,<span class="w"> </span><span class="m">639</span>.73,<span class="w"> </span><span class="m">474</span>.17<span class="o">]</span>
+</code></pre></div>
+
+<h2>DETR の PyTorch 実装</h2>
+<p>元の論文の DETR の実装は次のとおりです。</p>
+<div class="codehilite"><pre><span></span><code><span class="kn">import</span><span class="w"> </span><span class="nn">torch</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">torch</span><span class="w"> </span><span class="kn">import</span> <span class="n">nn</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">torchvision.models</span><span class="w"> </span><span class="kn">import</span> <span class="n">resnet50</span>
+
+
+<span class="k">class</span><span class="w"> </span><span class="nc">DETR</span><span class="p">(</span><span class="n">nn</span><span class="o">.</span><span class="n">Module</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span> <span class="n">num_classes</span><span class="p">,</span> <span class="n">hidden_dim</span><span class="p">,</span> <span class="n">nheads</span><span class="p">,</span> <span class="n">num_encoder_layers</span><span class="p">,</span> <span class="n">num_decoder_layers</span>
+    <span class="p">):</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">backbone</span> <span class="o">=</span> <span class="n">nn</span><span class="o">.</span><span class="n">Sequential</span><span class="p">(</span><span class="o">*</span><span class="nb">list</span><span class="p">(</span><span class="n">resnet50</span><span class="p">(</span><span class="n">pretrained</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span><span class="o">.</span><span class="n">children</span><span class="p">())[:</span><span class="o">-</span><span class="mi">2</span><span class="p">])</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">conv</span> <span class="o">=</span> <span class="n">nn</span><span class="o">.</span><span class="n">Conv2d</span><span class="p">(</span><span class="mi">2048</span><span class="p">,</span> <span class="n">hidden_dim</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">transformer</span> <span class="o">=</span> <span class="n">nn</span><span class="o">.</span><span class="n">Transformer</span><span class="p">(</span>
+            <span class="n">hidden_dim</span><span class="p">,</span> <span class="n">nheads</span><span class="p">,</span> <span class="n">num_encoder_layers</span><span class="p">,</span> <span class="n">num_decoder_layers</span>
+        <span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">linear_class</span> <span class="o">=</span> <span class="n">nn</span><span class="o">.</span><span class="n">Linear</span><span class="p">(</span><span class="n">hidden_dim</span><span class="p">,</span> <span class="n">num_classes</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">linear_bbox</span> <span class="o">=</span> <span class="n">nn</span><span class="o">.</span><span class="n">Linear</span><span class="p">(</span><span class="n">hidden_dim</span><span class="p">,</span> <span class="mi">4</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">query_pos</span> <span class="o">=</span> <span class="n">nn</span><span class="o">.</span><span class="n">Parameter</span><span class="p">(</span><span class="n">torch</span><span class="o">.</span><span class="n">rand</span><span class="p">(</span><span class="mi">100</span><span class="p">,</span> <span class="n">hidden_dim</span><span class="p">))</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">row_embed</span> <span class="o">=</span> <span class="n">nn</span><span class="o">.</span><span class="n">Parameter</span><span class="p">(</span><span class="n">torch</span><span class="o">.</span><span class="n">rand</span><span class="p">(</span><span class="mi">50</span><span class="p">,</span> <span class="n">hidden_dim</span> <span class="o">//</span> <span class="mi">2</span><span class="p">))</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">col_embed</span> <span class="o">=</span> <span class="n">nn</span><span class="o">.</span><span class="n">Parameter</span><span class="p">(</span><span class="n">torch</span><span class="o">.</span><span class="n">rand</span><span class="p">(</span><span class="mi">50</span><span class="p">,</span> <span class="n">hidden_dim</span> <span class="o">//</span> <span class="mi">2</span><span class="p">))</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">forward</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">inputs</span><span class="p">):</span>
+        <span class="n">x</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">backbone</span><span class="p">(</span><span class="n">inputs</span><span class="p">)</span>
+        <span class="n">h</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">conv</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
+        <span class="n">H</span><span class="p">,</span> <span class="n">W</span> <span class="o">=</span> <span class="n">h</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="o">-</span><span class="mi">2</span><span class="p">:]</span>
+        <span class="n">pos</span> <span class="o">=</span> <span class="p">(</span>
+            <span class="n">torch</span><span class="o">.</span><span class="n">cat</span><span class="p">(</span>
+                <span class="p">[</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">col_embed</span><span class="p">[:</span><span class="n">W</span><span class="p">]</span><span class="o">.</span><span class="n">unsqueeze</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span><span class="o">.</span><span class="n">repeat</span><span class="p">(</span><span class="n">H</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">),</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">row_embed</span><span class="p">[:</span><span class="n">H</span><span class="p">]</span><span class="o">.</span><span class="n">unsqueeze</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span><span class="o">.</span><span class="n">repeat</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="n">W</span><span class="p">,</span> <span class="mi">1</span><span class="p">),</span>
+                <span class="p">],</span>
+                <span class="n">dim</span><span class="o">=-</span><span class="mi">1</span><span class="p">,</span>
+            <span class="p">)</span>
+            <span class="o">.</span><span class="n">flatten</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
+            <span class="o">.</span><span class="n">unsqueeze</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
+        <span class="p">)</span>
+        <span class="n">h</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">transformer</span><span class="p">(</span>
+            <span class="n">pos</span> <span class="o">+</span> <span class="n">h</span><span class="o">.</span><span class="n">flatten</span><span class="p">(</span><span class="mi">2</span><span class="p">)</span><span class="o">.</span><span class="n">permute</span><span class="p">(</span><span class="mi">2</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">),</span> <span class="bp">self</span><span class="o">.</span><span class="n">query_pos</span><span class="o">.</span><span class="n">unsqueeze</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
+        <span class="p">)</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">linear_class</span><span class="p">(</span><span class="n">h</span><span class="p">),</span> <span class="bp">self</span><span class="o">.</span><span class="n">linear_bbox</span><span class="p">(</span><span class="n">h</span><span class="p">)</span><span class="o">.</span><span class="n">sigmoid</span><span class="p">()</span>
+</code></pre></div>
+
+<h3><code>forward</code> 関数を 1 行ずつ見ていく</h3>
+<p><strong>Backbone</strong>
+入力画像はまず ResNet バックボーンに通され、次に畳み込み層に通されます。これにより次元が <code>hidden_dim</code> に削減されます。</p>
+<div class="codehilite"><pre><span></span><code><span class="n">x</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">backbone</span><span class="p">(</span><span class="n">inputs</span><span class="p">)</span>
+<span class="n">h</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">conv</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
+</code></pre></div>
+
+<p>これらは <code>__init__</code> 関数で宣言されています。</p>
+<div class="codehilite"><pre><span></span><code><span class="bp">self</span><span class="o">.</span><span class="n">backbone</span> <span class="o">=</span> <span class="n">nn</span><span class="o">.</span><span class="n">Sequential</span><span class="p">(</span><span class="o">*</span><span class="nb">list</span><span class="p">(</span><span class="n">resnet50</span><span class="p">(</span><span class="n">pretrained</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span><span class="o">.</span><span class="n">children</span><span class="p">())[:</span><span class="o">-</span><span class="mi">2</span><span class="p">])</span>
+<span class="bp">self</span><span class="o">.</span><span class="n">conv</span> <span class="o">=</span> <span class="n">nn</span><span class="o">.</span><span class="n">Conv2d</span><span class="p">(</span><span class="mi">2048</span><span class="p">,</span> <span class="n">hidden_dim</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
+</code></pre></div>
+
+<p><strong>位置埋め込み</strong></p>
+<p>論文では encoder と decoder でそれぞれ固定の埋め込みと訓練される埋め込みが使われていますが、実装では著者らは簡単のために両方に訓練される埋め込みを使いました。</p>
+<div class="codehilite"><pre><span></span><code><span class="n">pos</span> <span class="o">=</span> <span class="p">(</span>
+    <span class="n">torch</span><span class="o">.</span><span class="n">cat</span><span class="p">(</span>
+        <span class="p">[</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">col_embed</span><span class="p">[:</span><span class="n">W</span><span class="p">]</span><span class="o">.</span><span class="n">unsqueeze</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span><span class="o">.</span><span class="n">repeat</span><span class="p">(</span><span class="n">H</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">),</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">row_embed</span><span class="p">[:</span><span class="n">H</span><span class="p">]</span><span class="o">.</span><span class="n">unsqueeze</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span><span class="o">.</span><span class="n">repeat</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="n">W</span><span class="p">,</span> <span class="mi">1</span><span class="p">),</span>
+        <span class="p">],</span>
+        <span class="n">dim</span><span class="o">=-</span><span class="mi">1</span><span class="p">,</span>
+    <span class="p">)</span>
+    <span class="o">.</span><span class="n">flatten</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
+    <span class="o">.</span><span class="n">unsqueeze</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
+<span class="p">)</span>
+</code></pre></div>
+
+<p>これらはここで <code>nn.Parameter</code> として宣言されています。行と列の埋め込みの組み合わせが、画像内の位置を示します。</p>
+<div class="codehilite"><pre><span></span><code><span class="bp">self</span><span class="o">.</span><span class="n">row_embed</span> <span class="o">=</span> <span class="n">nn</span><span class="o">.</span><span class="n">Parameter</span><span class="p">(</span><span class="n">torch</span><span class="o">.</span><span class="n">rand</span><span class="p">(</span><span class="mi">50</span><span class="p">,</span> <span class="n">hidden_dim</span> <span class="o">//</span> <span class="mi">2</span><span class="p">))</span>
+<span class="bp">self</span><span class="o">.</span><span class="n">col_embed</span> <span class="o">=</span> <span class="n">nn</span><span class="o">.</span><span class="n">Parameter</span><span class="p">(</span><span class="n">torch</span><span class="o">.</span><span class="n">rand</span><span class="p">(</span><span class="mi">50</span><span class="p">,</span> <span class="n">hidden_dim</span> <span class="o">//</span> <span class="mi">2</span><span class="p">))</span>
+</code></pre></div>
+
+<p><strong>Resize</strong>
+Transformer に入る前に、サイズ <code>(batch size, hidden_dim, H, W)</code> の特徴は <code>(hidden_dim, batch size, H*W)</code> に変形されます。これにより、Transformer への逐次入力となります。</p>
+<div class="codehilite"><pre><span></span><code><span class="n">h</span><span class="o">.</span><span class="n">flatten</span><span class="p">(</span><span class="mi">2</span><span class="p">)</span><span class="o">.</span><span class="n">permute</span><span class="p">(</span><span class="mi">2</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
+</code></pre></div>
+
+<p><strong>Transformer</strong>
+<code>nn.Transformer</code> 関数は、第 1 引数を encoder への入力として受け取り、第 2 引数を encoder の入力として受け取ります。見て分かるように、encoder は位置埋め込みに加えられた変形済みの特徴を受け取り、decoder は decoder の位置埋め込みである <code>query_pos</code> を受け取ります。</p>
+<div class="codehilite"><pre><span></span><code><span class="n">h</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">transformer</span><span class="p">(</span><span class="n">pos</span> <span class="o">+</span> <span class="n">h</span><span class="o">.</span><span class="n">flatten</span><span class="p">(</span><span class="mi">2</span><span class="p">)</span><span class="o">.</span><span class="n">permute</span><span class="p">(</span><span class="mi">2</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">),</span> <span class="bp">self</span><span class="o">.</span><span class="n">query_pos</span><span class="o">.</span><span class="n">unsqueeze</span><span class="p">(</span><span class="mi">1</span><span class="p">))</span>
+</code></pre></div>
+
+<p><strong>Feed-Forward Network</strong>
+最後に、サイズ <code>(query_pos_dim, batch size, hidden_dim)</code> のテンソルである出力は、2 つの線形層に通されます。</p>
+<div class="codehilite"><pre><span></span><code><span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">linear_class</span><span class="p">(</span><span class="n">h</span><span class="p">),</span> <span class="bp">self</span><span class="o">.</span><span class="n">linear_bbox</span><span class="p">(</span><span class="n">h</span><span class="p">)</span><span class="o">.</span><span class="n">sigmoid</span><span class="p">()</span>
+</code></pre></div>
+
+<p>1 つ目はクラスを予測します。<code>No Object</code> クラスのために追加のクラスが加えられます。</p>
+<div class="codehilite"><pre><span></span><code><span class="bp">self</span><span class="o">.</span><span class="n">linear_class</span> <span class="o">=</span> <span class="n">nn</span><span class="o">.</span><span class="n">Linear</span><span class="p">(</span><span class="n">hidden_dim</span><span class="p">,</span> <span class="n">num_classes</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)</span>
+</code></pre></div>
+
+<p>2 つ目の線形層は、xy 座標、高さ、幅のための出力サイズ 4 でバウンディングボックスを予測します。</p>
+<div class="codehilite"><pre><span></span><code><span class="bp">self</span><span class="o">.</span><span class="n">linear_bbox</span> <span class="o">=</span> <span class="n">nn</span><span class="o">.</span><span class="n">Linear</span><span class="p">(</span><span class="n">hidden_dim</span><span class="p">,</span> <span class="mi">4</span><span class="p">)</span>
+</code></pre></div>
+
+<h2>参考文献</h2>
+<ul>
+<li><a href="https://arxiv.org/abs/2005.12872">DETR</a> </li>
+<li><a href="https://arxiv.org/abs/1506.02640">YOLO</a> </li>
+<li><a href="https://arxiv.org/abs/1804.02767">YOLOv3</a> </li>
+<li><a href="https://arxiv.org/abs/2108.06152">Conditional DETR</a> </li>
+<li><a href="https://arxiv.org/abs/2010.04159">Deformable DETR</a> </li>
+<li><a href="https://huggingface.co/facebook/detr-resnet-50"><code>facebook/detr-resnet-50</code></a></li>
+</ul>
+</article>
+<nav class="page-nav"><a class="nav-link prev" href="vision-transformer-for-object-detection.html">← 前へ: Vision Transformers を使った物体検出</a><a class="nav-link toc-link" href="../../index.html">目次へ</a><a class="nav-link next" href="vision-transformers-for-image-segmentation.html">次へ →: Transformer ベースの画像セグメンテーション</a></nav>
+</main>
+<footer class="site-footer">
+  <p>原典: Hugging Face huggingface/computer-vision-course（<a href="https://github.com/huggingface/computer-vision-course">https://github.com/huggingface/computer-vision-course</a>）</p>
+  <p>日本語版の翻訳・公開: 霞ヶ関京 / 連絡先: GitHub <a href="https://github.com/yanikasumin">@yanikasumin</a> / YouTube <a href="https://www.youtube.com/@KASUMI_MOF">@KASUMI_MOF</a></p>
+  <p class="demo-note">このサイトはデモ版です。内容は順次更新されます。</p>
+</footer>
+<script src="../../../site.js"></script>
+</body>
+</html>

@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>コンピュータビジョンタスクのための前処理 | Hugging Face コース日本語版（デモ版）</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Shippori+Mincho:wght@500;700&family=Zen+Kaku+Gothic+New:wght@400;500;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../../../style.css">
+<script>
+window.MathJax = { tex: { inlineMath: [['$', '$'], ['\\(', '\\)']], displayMath: [['$$', '$$'], ['\\[', '\\]']] }, options: { skipHtmlTags: ['script','noscript','style','textarea','pre','code'] } };
+</script>
+<script async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml.js"></script>
+</head>
+<body>
+<header class="site-header">
+  <div class="header-inner">
+    <a class="site-title" href="../../../index.html">Hugging Face コース日本語版</a>
+    <span class="demo-badge">デモ版</span>
+  </div>
+</header>
+<main class="container">
+<p class="course-crumb"><a href="../../index.html">Community CV コース</a>
+<span class="badge badge-qa-wip">翻訳済み・QA進行中（未検証の部分を含みます）</span></p>
+<nav class="page-nav"><a class="nav-link prev" href="../chapter1/applications.html">← 前へ: コンピュータビジョンの応用</a><a class="nav-link toc-link" href="../../index.html">目次へ</a><a class="nav-link next" href="../feature-extraction/feature_description.html">次へ →: Feature Description</a></nav>
+<article class="content">
+<h1>コンピュータビジョンタスクのための前処理</h1>
+<p>画像とは何か、どのように取得されるか、その影響を見てきたので、次はどのような操作ができて、それらがモデル構築プロセスでどう使われるかを理解しましょう。</p>
+<h2>デジタル画像処理における操作</h2>
+<p>デジタル画像処理における画像への操作は多様で、次のように分類できます。</p>
+<ul>
+<li>論理演算</li>
+<li>統計演算</li>
+<li>幾何演算</li>
+<li>数学演算</li>
+<li>変換操作</li>
+</ul>
+<p>各カテゴリにはさまざまなテクニックが含まれます。たとえば、論理演算に分類されるモルフォロジー演算や、変換に分類されるフーリエ変換や主成分分析（PCA）などです。ここでモルフォロジーとは、ピクセルの近傍の値を見ることで、構造化要素を使って同じサイズの画像を生成する操作の総称を指します。画像操作においては、要素ごとの操作と行列操作の区別を理解することが重要です。要素ごとの操作、たとえば画像を累乗したり、別の画像で割ったりする操作は、各ピクセルを個別に処理します。このピクセルベースのアプローチは、画像操作に行列理論を利用する行列操作とは対照的です。とはいえ、画像は数値を含む行列なので、画像に対して何をしても構いません！</p>
+<h2>画像処理における数学的ツール</h2>
+<p>数学的ツールはデジタル画像処理に不可欠です。たとえば集合論は、画像、特に二値画像に対する操作を理解し実行するために重要です。これらの画像では、ピクセルは通常、前景（1）か背景（0）のいずれかに分類されます。集合論では、和集合や共通部分といった操作が、ピクセル座標で表された特徴の間の関係を決定します。強度変換と空間フィルタリングも他の数学的ツールです。これらは画像内のピクセル値の操作に焦点を当て、ノイズ除去などさまざまな目的で、単一の画像や画像の集合に演算子が適用されます。</p>
+<h2>空間フィルタリングのテクニックと画像強調</h2>
+<p>空間フィルタリングは、画像処理における幅広い応用を含み、主には各ピクセルの値を近傍ピクセルの値に基づいて変更することで画像を修正します。テクニックには、画像をぼかす（ローパスフィルター）かシャープにする（ハイパスフィルター）線形空間フィルターが含まれます。ガウシアンフィルターやボックスフィルターなど、さまざまなフィルターカーネルの性質と応用が対比されます。シャープ化フィルターは強度の遷移を強調し、多くの場合、ラプラシアンのようなデジタル微分のテクニックで実装され、画像のエッジや不連続性を浮き彫りにします。</p>
+<h2>データ拡張</h2>
+<p>データ拡張は、画像分類に使われる畳み込みニューラルネットワーク（CNN）の性能と汎化を高める上で重要な役割を果たします。このプロセスでは、小さな変更を加えるか、深層学習のテクニックで新しいデータを生成することにより、データポイントの変更版を作成して訓練データセットを人工的に拡張します。</p>
+<p>拡張されたデータは、幾何学的変換や色空間変換といった変更を既存のデータに適用することで作成され、元のデータセットに多様な形式を加えて豊かにします。逆に、合成データは完全に新規のもので、深層ニューラルネットワーク（DNN）や敵対的生成ネットワーク（GAN）のような高度なテクニックを使ってゼロから生成され、データセットにさらなる多様性と量を加えます。どちらの手法も、機械学習モデルの訓練に利用できるデータの量と多様性を大幅に広げます。データ拡張は画像だけでなく、音声、動画、テキスト、その他のデータタイプにも適用できます。これは訓練データが限られたシナリオに適しています。モデルの精度を高め、過学習を防ぎ、データのラベリングとクリーニングにかかるコストを削減します。ただし、元のデータセットのバイアスが持続することや、品質保証のコストが高いことといった課題は残ります。</p>
+<p>実際には、データ拡張のテクニックはデータタイプによって異なります。音声ではノイズ注入やピッチ調整、テキストでは単語のシャッフルや構文木の操作といった手法が使われます。画像拡張には、反転、切り抜き、カーネルフィルターの適用といった変換が含まれます。ニューラルスタイル変換や、新しいデータポイント生成のための GAN の使用といった高度なテクニックにより、その能力はさらに広がります。これらの手法は、医療画像のためのヘルスケア、合成データを使う自動運転車、特に低リソース言語のシナリオにおける自然言語処理といった分野で役立っています。ランダムな回転、明るさの調整、シフト、反転、ズームといった具体的な画像拡張の実践は、Pytorch、Augmentor、Albumentations、Imgaug、OpenCV のようなツールを使って実装されます。これらのツールは、ガウスノイズから遠近法の歪みまで、さまざまな拡張を可能にし、多様な機械学習のニーズに応えます。</p>
+<p>データ拡張の重要性は、CNN による画像分類の文脈で特に明らかになります。CNN の初期訓練によく使われる標準化されたデータセットは、サンプル数が豊富で、その結果のモデルの精度も高いことから、高い期待を設定します。しかし、これらのモデルを現実世界の問題に適用すると、性能のギャップがしばしば観察され、より広範で多様なデータの必要性が浮き彫りになります。データ拡張は、追加のデータ収集を必要とせずに、データセット内の画像数を大幅に増やすことでこのギャップに対処します。これによりデータセットのサイズが増えるだけでなく、ばらつきも導入され、訓練プロセスの頑健性が高まります。モデル訓練中にバッチ単位の拡張を実装することで、変換した画像を保存する必要がないため、ディスク容量も節約できます。</p>
+<p>全体として、データ拡張は単なるデータセット拡張の方法ではありません。画像分類タスクのための効果的で実用的な CNN モデルを開発する上で不可欠な要素です。モデルの性能と、訓練データから現実世界の応用へ汎化する能力を向上させることで、データ拡張は深層学習の分野における基盤技術として立っており、より包括的で多様なデータへの絶え間ない需要に応えています。</p>
+</article>
+<nav class="page-nav"><a class="nav-link prev" href="../chapter1/applications.html">← 前へ: コンピュータビジョンの応用</a><a class="nav-link toc-link" href="../../index.html">目次へ</a><a class="nav-link next" href="../feature-extraction/feature_description.html">次へ →: Feature Description</a></nav>
+</main>
+<footer class="site-footer">
+  <p>原典: Hugging Face huggingface/computer-vision-course（<a href="https://github.com/huggingface/computer-vision-course">https://github.com/huggingface/computer-vision-course</a>）</p>
+  <p>日本語版の翻訳・公開: 霞ヶ関京 / 連絡先: GitHub <a href="https://github.com/yanikasumin">@yanikasumin</a> / YouTube <a href="https://www.youtube.com/@KASUMI_MOF">@KASUMI_MOF</a></p>
+  <p class="demo-note">このサイトはデモ版です。内容は順次更新されます。</p>
+</footer>
+<script src="../../../site.js"></script>
+</body>
+</html>

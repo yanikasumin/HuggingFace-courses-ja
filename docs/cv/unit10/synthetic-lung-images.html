@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Synthetic Data Generation Using DCGAN | Hugging Face コース日本語版（デモ版）</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Shippori+Mincho:wght@500;700&family=Zen+Kaku+Gothic+New:wght@400;500;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../../style.css">
+<script>
+window.MathJax = { tex: { inlineMath: [['$', '$'], ['\\(', '\\)']], displayMath: [['$$', '$$'], ['\\[', '\\]']] }, options: { skipHtmlTags: ['script','noscript','style','textarea','pre','code'] } };
+</script>
+<script async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml.js"></script>
+</head>
+<body>
+<header class="site-header">
+  <div class="header-inner">
+    <a class="site-title" href="../../index.html">Hugging Face コース日本語版</a>
+    <span class="demo-badge">デモ版</span>
+  </div>
+</header>
+<main class="container">
+<p class="course-crumb"><a href="../index.html">Community CV コース</a>
+<span class="badge badge-qa-wip">翻訳済み・QA進行中（未検証の部分を含みます）</span></p>
+<nav class="page-nav"><a class="nav-link prev" href="blenderProc.html">← 前へ: Using a 3D Renderer to Generate Synthetic Data</a><a class="nav-link toc-link" href="../index.html">目次へ</a><a class="nav-link next" href="datagen-diffusion-models.html">次へ →: Synthetic Data Generation with Diffusion Models</a></nav>
+<article class="content">
+<h1>Synthetic Data Generation Using DCGAN</h1>
+<p>Unit 5 で学んだように、GAN は、生成器（Generator）と識別器（Discriminator）という2つのニューラルネットワークが絶えず対決する機械学習のフレームワークです。生成器は合成画像を作り、識別器は実画像と偽画像を区別しようとします。両者はこの敵対的なプロセスを通じて改善を続け、生成器はリアルな画像を作るのが上手くなり、識別器は偽物と本物の区別が上手くなります。</p>
+<p>ここでは、GAN を使って医療画像を生成する方法を見ていきます。医療は、小規模なデータセット、プライバシーの懸念、限られた量のアノテーション付きサンプルといった課題を抱える領域です。研究者らは GAN を使って、肺の X 線画像、網膜画像、脳スキャン、肝臓画像などの合成画像を生成してきました。<a href="https://braininformatics.springeropen.com/counter/pdf/10.1186/s40708-020-00104-2.pdf">GAN-based synthetic brain PET image generation</a> では、著者らがアルツハイマー病の3つの異なる段階について脳の PET 画像を作成しました。<a href="https://arxiv.org/abs/1803.01229">GAN-based Synthetic Medical Image Augmentation for increased CNN Performance in Liver Lesion Classification</a> は合成肝臓画像を生成しました。<a href="https://www.mdpi.com/1424-8220/22/11/4297">BrainGAN: Brain MRI Image Generation and Classification Framework Using GAN Architectures and CNN Models</a> は、複数の GAN アーキテクチャを使って脳 MRI 画像を生成するフレームワークを開発し、<a href="https://www.sciencedirect.com/science/article/pii/S1877050922007463">A Novel COVID-19 Detection Model Based on DCGAN and Deep Transfer Learning</a> は、COVID-19 の検出を支援するために DCGAN を使って合成肺 X 線画像を生成しました。</p>
+<h2>DCGAN (Deep Convolutional Generative Adversarial Network)</h2>
+<p>DCGAN は、Radford らによって <a href="https://arxiv.org/abs/1511.06434">Unsupervised Representation Learning With Deep Convolutional Generative Adversarial Networks</a> で提案されたもので、多くの研究者が合成医療画像の生成に使ってきたモデルです。これを使って合成肺画像を生成していきます。DCGAN を使ってモデルを訓練する前に、そのアーキテクチャを簡単に復習しましょう。生成器ネットワークはランダムノイズを入力として受け取り、合成肺画像を生成します。一方、識別器ネットワークは実画像と合成画像を区別しようとします。生成器と識別器の両方に畳み込み層を使い、空間的な特徴を効果的に捉えます。また DCGAN は、最大プーリングをストライド付き畳み込みに置き換え、空間次元をダウンサンプリングします。</p>
+<p>生成器は次のモデルアーキテクチャを持ちます。</p>
+<ul>
+<li>入力は100個のランダムな数からなるベクトルで、出力はサイズ 128<em>128</em>3 の画像です。</li>
+<li>モデルは4つの畳み込み層を持ちます。</li>
+<li>Conv2D 層</li>
+<li>Batch Normalization 層</li>
+<li>ReLU 活性化</li>
+<li>Tanh 活性化を伴う Conv2D 層。</li>
+</ul>
+<p>識別器は次のモデルアーキテクチャを持ちます。</p>
+<ul>
+<li>入力は画像で、出力は画像が偽物か本物かを示す確率です。</li>
+<li>モデルは1つの畳み込み層を持ちます。</li>
+<li>Conv2D 層</li>
+<li>Leaky ReLU 活性化</li>
+<li>以下を伴う3つの畳み込み層:</li>
+<li>Conv2D 層</li>
+<li>Batch Normalization 層</li>
+<li>Leaky ReLU 活性化</li>
+<li>Sigmoid を伴う Conv2D 層。</li>
+</ul>
+<p><strong>Data Collection</strong></p>
+<p>まず、実際の肺画像の<a href="https://data.mendeley.com/datasets/rscbjbr9sj/2">データセット</a>を取得する必要があります。Hugging Face Hub から <a href="https://huggingface.co/datasets/hf-vision/chest-xray-pneumonia">Chest X-Ray Images (Pneumonia)</a> データセットをダウンロードします。</p>
+<p>このデータセットに関する情報は次のとおりです。</p>
+<div class="codehilite"><pre><span></span><code>* [Identifying Medical Diagnoses and Treatable Diseases by Image-Based Deep Learning](https://www.cell.com/cell/fulltext/S0092-8674(18)30154-5?_returnURL=https%3A%2F%2Flinkinghub.elsevier.com%2Fretrieve%2Fpii%2FS0092867418301545%3Fshowall%3Dtrue) より:
+
+* このデータセットは3つのフォルダ（train、test、val）に整理されており、各画像カテゴリ（Pneumonia/Normal）のサブフォルダを含みます。5,863枚の X 線画像（JPEG）と2つのカテゴリ（Pneumonia/Normal）があります。
+
+* 胸部 X 線画像（前後方向）は、広州婦女児童医療センター（Guangzhou Women and Children’s Medical Center, Guangzhou）の1歳から5歳の小児患者の後ろ向きコホートから選択されました。すべての胸部 X 線撮影は、患者の通常の臨床ケアの一環として行われました。
+
+* 胸部 X 線画像の分析では、すべての胸部レントゲン写真は最初に品質管理のためにスクリーニングされ、低品質または判読不能なスキャンはすべて除去されました。画像の診断はその後、AI システムの訓練用に承認される前に、2人の専門医によって等級付けされました。等級付けの誤りを考慮するため、評価セットも3人目の専門家によってチェックされました。
+</code></pre></div>
+
+<p>まず、Hugging Face Hub にログインすることから始めます。</p>
+<div class="codehilite"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">huggingface_hub</span><span class="w"> </span><span class="kn">import</span> <span class="n">notebook_login</span>
+
+<span class="n">notebook_login</span><span class="p">()</span>
+</code></pre></div>
+
+<p>次に、データセットを読み込みます。</p>
+<div class="codehilite"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">datasets</span><span class="w"> </span><span class="kn">import</span> <span class="n">load_dataset</span>
+
+<span class="n">dataset</span> <span class="o">=</span> <span class="n">load_dataset</span><span class="p">(</span><span class="s2">"hf-vision/chest-xray-pneumonia"</span><span class="p">)</span>
+</code></pre></div>
+
+<p>肺画像をリサイズし、ピクセル値を正規化して前処理します。</p>
+<div class="codehilite"><pre><span></span><code><span class="kn">import</span><span class="w"> </span><span class="nn">torchvision.transforms</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">transforms</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">torchvision.transforms</span><span class="w"> </span><span class="kn">import</span> <span class="n">CenterCrop</span><span class="p">,</span> <span class="n">Compose</span><span class="p">,</span> <span class="n">Normalize</span><span class="p">,</span> <span class="n">Resize</span><span class="p">,</span> <span class="n">ToTensor</span>
+
+<span class="n">transform</span> <span class="o">=</span> <span class="n">Compose</span><span class="p">(</span>
+    <span class="p">[</span>
+        <span class="n">transforms</span><span class="o">.</span><span class="n">Resize</span><span class="p">(</span><span class="n">image_size</span><span class="p">),</span>
+        <span class="n">transforms</span><span class="o">.</span><span class="n">CenterCrop</span><span class="p">(</span><span class="n">image_size</span><span class="p">),</span>
+        <span class="n">transforms</span><span class="o">.</span><span class="n">ToTensor</span><span class="p">(),</span>
+    <span class="p">]</span>
+<span class="p">)</span>
+</code></pre></div>
+
+<p>訓練中、生成器は実画像と区別できない合成肺画像を生成することを目指し、識別器は画像を実物か合成か正しく分類することを学習します。生成器をランダムノイズで初期化することから始め、100エポック訓練します。</p>
+<p>進捗を可視化してみましょう。</p>
+<p><img alt="学習アニメーション" src="https://huggingface.co/datasets/hf-vision/course-assets/resolve/main/dcgan_training_animation.gif" /></p>
+<h2>How did we do?</h2>
+<p>「良い」合成画像64枚がこちらです。識別器から70%の確率で「本物」というラベルを受けたものと定義します。</p>
+<p><img alt="肺の画像" src="https://huggingface.co/datasets/hf-vision/course-assets/resolve/main/good_images.png" /></p>
+<p>合成肺画像の中には良く見えるものもあれば、かすんでいるものもあることが分かります。言及すべき重要な点がいくつかあります。第一に、合成医療画像を生成する研究者は通常、「人間の介在（human in the middle）」、この場合は専門の放射線科医を用いて合成画像を評価します。その後、専門家を欺いた画像だけが、実データとともにモデルの訓練に含まれます。第二に、（少なくとも素人には）問題なさそうに見える生成画像は、互いに非常によく似ています。これは GAN のもう一つの既知の問題で、「モード崩壊（mode collapse）」を起こすことがあります。本質的には、生成器が同じ種類の出力を生成し始めることで起こります。チョコレートチップクッキーを作って多くの称賛を受けた人が、そのためクッキーを作るのが_本当に、本当に_上手くなるけれど、他の種類のクッキーは作れなくなるようなものだと考えてください。</p>
+<p>高品質な医療画像の訓練に GAN を使うことに伴う既知の課題を踏まえ、一部の研究者は肺画像の生成に拡散モデルの使用を検討してきました。医療画像用の条件付き潜在 DDPM である Medfusion は、<a href="https://arxiv.org/pdf/2212.07501.pdf">Diffusion Probabilistic Models Beat GAN On Medical 2D Images</a> で提案されました。<a href="https://arxiv.org/pdf/2311.09402.pdf">Synthetically Enhanced: Unveiling Synthetic Data's Potential In Medical Imaging Research</a> において、Khosravi らは、拡散プロセスで生成された合成肺画像と実画像を混ぜて使うことで、モデルの性能が向上したことを見出しました。</p>
+<h2>Resources and Further Reading</h2>
+<ul>
+<li><a href="https://www.sciencedirect.com/science/article/pii/S1877050922007463">A Novel COVID-19 Detection Model Based on DCGAN and Deep Transfer Learning</a></li>
+<li><a href="https://github.com/rossettisimone/AUGMENTATION_GAN">Augmentation_Gan</a></li>
+<li><a href="https://www.mdpi.com/1424-8220/22/11/4297">BrainGAN: Brain MRI Image Generation and Classification Framework Using GAN Architectures and CNN Models</a></li>
+<li><a href="https://www.cell.com/action/showPdf?pii=S0092-8674%2818%2930154-5">dentifying Medical Diagnoses and Treatable Diseases by Image-Based Deep Learning</a></li>
+<li><a href="https://arxiv.org/abs/2212.07501">Diffusion Probabilistic Models beat GANs on Medical Images</a></li>
+<li><a href="https://www.webology.org/data-cms/articles/20220204053948pmwebology%2019%20(2)%20-%2077%20.pdf">DR-DCGAN: A Deep Convolutional Generative Adversarial Network (DC-GAN) for Diabetic Retinopathy Image Synthesis</a></li>
+<li><a href="https://aps.arxiv.org/abs/2307.14273">Deepfake Image Generation for Improved Brain Tumor Segmentation</a></li>
+<li><a href="https://poloclub.github.io/ganlab/">GAN Lab</a></li>
+<li><a href="https://arxiv.org/abs/2105.05318">GANs for Medical Image Synthesis: An Empirical Study</a></li>
+<li><a href="https://github.com/mueller-franzes/medfusion">Medfusion Github repo</a></li>
+<li><a href="https://www.sciencedirect.com/science/article/pii/S2666521221000168?ref=pdf_download&amp;fr=RR-2&amp;rr=833e48fa5e777142">Medical image editing in the latent space of Generative Adversarial Networks</a></li>
+<li><a href="https://arxiv.org/abs/1612.05362">Medical Image Synthesis with Context-Aware Generative Adversarial Networks</a></li>
+<li><a href="https://github.com/ayanglab/MedSynAnalyzer">MedSynAnalyzer</a><a href="https://pytorch.org/tutorials/beginner/dcgan_faces_tutorial.html">dcgan_faces_tutorial</a></li>
+<li><a href="https://github.com/mseitzer/pytorch-fid/blob/master/src/pytorch_fid/fid_score.py">pytorch-fid</a></li>
+<li><a href="https://arxiv.org/abs/2206.09479">StudioGAN: A Taxonomy and Benchmark of GANs for Image Synthesis</a></li>
+<li><a href="https://github.com/POSTECH-CVLab/PyTorch-StudioGAN">PyTorch-StudioGAN</a></li>
+<li><a href="https://arxiv.org/abs/1511.06434">Unsupervised Representation Learning with Deep Convolutional Generative Adversarial Networks</a></li>
+</ul>
+</article>
+<nav class="page-nav"><a class="nav-link prev" href="blenderProc.html">← 前へ: Using a 3D Renderer to Generate Synthetic Data</a><a class="nav-link toc-link" href="../index.html">目次へ</a><a class="nav-link next" href="datagen-diffusion-models.html">次へ →: Synthetic Data Generation with Diffusion Models</a></nav>
+</main>
+<footer class="site-footer">
+  <p>原典: Hugging Face huggingface/computer-vision-course（<a href="https://github.com/huggingface/computer-vision-course">https://github.com/huggingface/computer-vision-course</a>）</p>
+  <p>日本語版の翻訳・公開: 霞ヶ関京 / 連絡先: GitHub <a href="https://github.com/yanikasumin">@yanikasumin</a> / YouTube <a href="https://www.youtube.com/@KASUMI_MOF">@KASUMI_MOF</a></p>
+  <p class="demo-note">このサイトはデモ版です。内容は順次更新されます。</p>
+</footer>
+<script src="../../site.js"></script>
+</body>
+</html>

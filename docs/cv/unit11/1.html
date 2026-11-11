@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Introduction | Hugging Face コース日本語版（デモ版）</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Shippori+Mincho:wght@500;700&family=Zen+Kaku+Gothic+New:wght@400;500;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../../style.css">
+<script>
+window.MathJax = { tex: { inlineMath: [['$', '$'], ['\\(', '\\)']], displayMath: [['$$', '$$'], ['\\[', '\\]']] }, options: { skipHtmlTags: ['script','noscript','style','textarea','pre','code'] } };
+</script>
+<script async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml.js"></script>
+</head>
+<body>
+<header class="site-header">
+  <div class="header-inner">
+    <a class="site-title" href="../../index.html">Hugging Face コース日本語版</a>
+    <span class="demo-badge">デモ版</span>
+  </div>
+</header>
+<main class="container">
+<p class="course-crumb"><a href="../index.html">Community CV コース</a>
+<span class="badge badge-qa-wip">翻訳済み・QA進行中（未検証の部分を含みます）</span></p>
+<nav class="page-nav"><a class="nav-link prev" href="../unit10/point_clouds.html">← 前へ: Introduction</a><a class="nav-link toc-link" href="../index.html">目次へ</a><a class="nav-link next" href="2.html">次へ →: Zero-shot Learning</a></nav>
+<article class="content">
+<h1>Introduction</h1>
+<div class="callout callout-tip">
+<p>基礎に加えて、このユニットでは転移学習とマルチモーダル学習の概念に慣れていることを前提としています。提供された順序どおりにコースを順番に見ていない場合は、少なくとも unit 2 の転移学習のセクションと、unit 4 の全体に目を通すことをお勧めします。</p>
+</div>
+<h2>On Generalization</h2>
+<p>モデルを、試験に向けて全エポックを詰め込む学生のように訓練し終えたところで、本当のテストが始まります！モデルが訓練中に獲得した知識が、学習に使った特定の写真（たとえば猫の写真）を超えて活かされ、Alice や Ted のふわふわした友達のような、見たことのない猫も認識できるようになることを期待します。猫の特定の顔を覚えるのではなく、猫らしさの本質をモデルが学習するようなものだと考えてください。知識を新しい状況に適用するこの能力は<strong>汎化（generalization）</strong>と呼ばれ、優れた猫モデルと単なる猫写真の暗記者を分けるものです。汎化のない別の宇宙を想像できますか？ええ、実はとても単純です。世界中のすべての猫の画像（地球上にしか存在しないと仮定して）で、Alice や Ted の猫も含めてモデルを訓練し、あとは現在の猫の個体数が繁殖しないようにする方法を見つけるだけです。そう、大したことではありません。</p>
+<p>実際、モデルが見たことのないすべての猫の写真に汎化することが期待されている、というのは正しくありませんでした。モデルが汎化するのは、訓練に使った画像データと同じ分布から来た猫の写真に対してです。簡単に言うと、猫の自撮り写真でモデルを訓練してから漫画の猫の絵を見せても、おそらく認識できません。この2枚の写真は、まったく異なる分布、つまりドメインから来ています。猫の自撮りモデルが漫画の猫を認識できるようにすることは、<strong>ドメイン適応（domain adaptation）</strong>と呼ばれます（後で簡単に触れます）。モデルが実在の猫について学んだすべての知識を取り、それをアニメのいとこたちを認識するよう教えるようなものです。</p>
+<p>というわけで、汎化、つまり見たことのない Alice や Ted の猫の写真の認識から、ドメイン適応、つまりアニメの猫の写真の認識まで来ました。しかし私たちはもっと欲張りです。モデルには、自分の猫の写真だけでなく、Alice や Ted のものでも、漫画の猫でもなく、それ以上を認識できるようになってほしいのです。猫の写真で訓練されたモデルが、リャマやハヤブサの写真も認識できるようになってほしいのです。</p>
+<p>さあ、ここからがゼロショット学習（zero-shot learning、ZSL）の領域です。</p>
+<h2>What is Zero-shot Learning?</h2>
+<p>定義でウォームアップしましょう。ゼロショット学習は、テスト時に、訓練中に触れたことのないクラスに属する画像<strong>だけ</strong>がモデルに提示される設定です。言い換えれば、訓練セットとテストセットは<strong>互いに素（disjoint）</strong>です。
+少し注意しておくと、古典的な ZSL の設定では、テストセットにはモデルが見たことのないクラスの写真だけが含まれ、訓練時代のものは1枚も含まれません。これは少し非現実的に思えるかもしれません。勉強したことのない教材だけの試験で高得点を取るよう学生に求めるようなものです。 
+幸いなことに、この厳格なルールを持たない、より実用的なバージョンの ZSL があり、一般化ゼロショット学習（generalized zero-shot learning）、略して GZSL と呼ばれます。このより柔軟なアプローチでは、テストセットに既知のクラスと未知のクラスの両方を含めることができます。現実世界の物事の進み方を反映した、より現実的なシナリオです。</p>
+<h2>History of Zero-shot Learning</h2>
+<p>明示的に訓練されていないタスクで優れた性能を発揮するモデルを作れるのか、という問いは、深層学習が実現可能に見え始めてすぐに生まれました。2008年、ZSL の種は、人工知能の推進協会（AAAI）の会議で発表された2つの独立した論文によってまかれました。最初の論文は <strong>Dataless Classification</strong> という題名で、自然言語処理（NLP）の文脈でゼロショット学習の概念を探求しました。2つ目は <strong>Zero-Data Learning</strong> という題名で、ZSL をコンピュータビジョンのタスクに応用することに焦点を当てました。ゼロショット学習という用語自体は、2009年に NeurIPS で、共著者がなんと…Geoffrey Hinton の論文で初めて登場しました！</p>
+<p>ZSL における最も重要な瞬間を、以下にまとめましょう。</p>
+<table>
+<thead>
+<tr>
+<th></th>
+<th></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>2008</td>
+<td>ゼロショット学習の（問いかけの）最初のきっかけ</td>
+</tr>
+<tr>
+<td>2009</td>
+<td>ゼロショット学習という用語が生まれた</td>
+</tr>
+<tr>
+<td>2013</td>
+<td>一般化 ZSL の概念が導入された</td>
+</tr>
+<tr>
+<td>2017</td>
+<td>エンコーダ・デコーダパラダイムの ZSL への最初の応用</td>
+</tr>
+<tr>
+<td>2020</td>
+<td>OpenAI の GPT-3 がゼロショット NLP で目覚ましい性能を達成</td>
+</tr>
+<tr>
+<td>2021</td>
+<td>OpenAI の CLIP がゼロショットコンピュータビジョンをまったく新しい水準に引き上げた</td>
+</tr>
+</tbody>
+</table>
+<p>CLIP の影響は大きく、ゼロショットコンピュータビジョン研究の新時代を切り開きました。その汎用性と性能は、刺激的な新しい可能性を開きました。ゼロショットコンピュータビジョンの歴史は、<strong>CLIP 以前</strong>と <strong>CLIP 以後</strong>の2つの時代に分けられると言ってもよいでしょう。</p>
+<h2>How Does Zero-shot Learning Work In Computer Vision?</h2>
+<p>ゼロショット学習とは何かが分かったところで、それがコンピュータビジョンにどう応用されるかを知りたくなりますよね？この部分は後の章でより詳しく扱いますが、ここではまず大まかな全体像を描いて、取っ掛かりにしましょう。</p>
+<p>NLP では、ゼロショット学習は（かつては必ずしもそうではありませんでしたが）かなり単純です。多くの言語モデルは大規模なテキストデータセットで訓練され、与えられた系列の次の単語を予測することを学習します。言語の根底にあるパターンや意味関係を捉えるこの能力により、これらのモデルは、明示的に訓練されていないタスクでも驚くほど優れた性能を発揮します。良い例は、プロンプトに TL;DR を付け加えると GPT-2 が文章を要約できることです。ゼロショットコンピュータビジョンは別の話です。</p>
+<p>簡単な問いに答えることから始めましょう。<em>私たち人間はどうやってそれを行っているのでしょうか？見たことのない物体を、どうやって認識できるのでしょうか？</em></p>
+<p>そうです、まったくそのとおりです！その物体に関する<strong>他の情報</strong>が必要です。ライオンがどんな姿かを知っていれば、トラを見たことがなくても、トラを簡単に識別できます。トラは、縞模様があり、たてがみのないライオンです。シマウマは、白黒の縞模様の馬です。デッドプールは、赤と黒のスパイダーマンです。</p>
+<p>この他の情報があるおかげで、ゼロショットコンピュータビジョンは本質的にマルチモーダルです。汎化が、本を読んだり人と話したりして言語を学ぶようなものだとすれば、ゼロショットコンピュータビジョンは、辞書を読んだり、誰かにその響きを説明してもらったりして言語を学ぶようなものです。</p>
+<div class="callout callout-tip">
+<p>ゼロショット学習を教師なし学習の問題と考えることはできるでしょうか？いいえ、これは依然として教師あり学習です。教師なし学習では、モデルはラベルなしデータから学習します。ゼロショット学習では、モデルはラベルのないデータではなく、データのないラベルから学習します。その幼少期には dataless classification と呼ばれていたことを思い出してください。</p>
+</div>
+<h3>What Other Information?</h3>
+<p>ゼロショットコンピュータビジョンを機能させるには、訓練時に視覚的特徴以外の情報をモデルに提供する必要があります。この他の情報は、<strong>意味情報（Semantic）または補助情報（Auxiliary Information）</strong>と呼ばれます。これは視覚的特徴と未知のクラスの間の意味的な橋渡しをします。このマルチモーダル情報（テキストと画像）を取り入れることで、ゼロショットコンピュータビジョンモデルは、物体を視覚的に見たことがなくても認識することを学習できます。言い換えれば、意味情報は既知と未知の<strong>両方の</strong>クラスを高次元ベクトルに埋め込み、さまざまな形を取ります。</p>
+<ol>
+<li><strong>属性ベクトル（Attribute vectors）</strong>: 属性は、物体の異なる特徴を表形式で表現したものだと考えてください。 </li>
+<li><strong>テキスト記述（Textual Descriptions）</strong>: 画像キャプションに似た、画像に含まれる物体を記述するテキストです。</li>
+<li><strong>クラスラベルベクトル（Class label vectors）</strong>: クラスラベル自体の埋め込みです。</li>
+</ol>
+<p>この意味情報を使って、画像の特徴と意味的特徴の間のマッピング関数を学習するようモデルを訓練します。推論時には、モデルは、たとえば k 近傍法を使って意味空間で最も近いラベルを探すことで、クラスラベルを予測します。意味情報の助けを借りて、既知のクラスから得た知識を転移していると言えます。</p>
+<p>ゼロショットコンピュータビジョンの手法ごとに、使用する<strong>意味情報</strong>と、推論時に利用する<strong>埋め込み空間</strong>が異なります。</p>
+<h3>How Is This Different from Transfer Learning?</h3>
+<p>良い質問です！ゼロショット学習（ZSL）は、転移学習のより広いカテゴリに含まれ、特に<strong>異種転移学習（heterogeneous transfer learning）</strong>の傘下にあります。これは、ZSL が、<strong>ソースドメイン</strong>（既知のクラス）から得た知識を、<strong>異なるターゲットドメイン</strong>（未知のクラス）へ転移することに依拠していることを意味します。 </p>
+<p>ソースドメインとターゲットドメインの間の隔たりにより、ZSL は転移学習における特有の課題に直面します。これには、データ分布が大きく異なるドメインシフトの克服や、ターゲットドメインにおけるラベル付きデータの欠如への対処が含まれます。しかし、こうした課題については後で詳しく話しますので、今は心配しないでください。今のところは、ゼロショットコンピュータビジョンのさまざまな手法について少し話しましょう。</p>
+<h2>Methods of Zero-shot Computer Vision</h2>
+<p>ゼロショットコンピュータビジョンの手法の景色は広大で多様であり、数多くのアプローチが提案され、分類のフレームワークも複数あります。その中で私が魅力的だと感じるフレームワークの一つは、これらの手法を大まかに<strong>埋め込みベースの手法（Embedding-based methods）</strong>と<strong>生成ベースの手法（Generative-based methods）</strong>に分類するものです。このフレームワークは、さまざまなゼロショットコンピュータビジョンのアプローチを理解し比較するための有用な視点を提供します。</p>
+<ul>
+<li><strong>埋め込みベースの手法（Embedding-based methods）</strong>: モデルは、画像とその意味的特徴・表現の両方が射影される共通の埋め込み空間を学習します。新しい未知のクラスは、その空間における類似度の尺度を使って予測されます。たとえば CLIP です。</li>
+<li><strong>生成ベースの手法（Generative-based methods）</strong>: これらの手法は生成モデルを利用して、既知のクラスのサンプルと両クラスの意味表現に基づき、未知のクラスの合成画像や視覚的特徴を作成します。これにより、実データがなくても、こうした未知のクラスでモデルを訓練できます。このようにして、私たちは少しずるをして、ゼロショットの問題を教師あり学習の問題に変換しました。たとえば CVAE[^6] です。</li>
+</ul>
+<p>埋め込みベースと生成ベースのどちらのアプローチを選ぶかは、機械学習でしなければならない他のすべての選択と同様、手元のタスクの具体的な内容と利用可能なリソースに<em>依存</em>します。埋め込みベースの手法は、その効率とスケーラビリティから好まれることが多く、生成ベースの手法は、より大きな柔軟性と複雑なデータを扱える可能性を提供します。</p>
+<p>いずれにせよ、このユニットでは埋め込みベースの手法<em>のみ</em>を扱い、<strong>アテンションベースの埋め込みベースの手法</strong>も含めます。ゼロショット学習は大きなトピックであり、包括的にカバーするには独立したコースが必要になるかもしれません。興味のある読者は、提供された追加の資料をチェックして楽しんでください。</p>
+<h2>Attack Of The Clones: How ZSL Is Different From X?</h2>
+<p>長い道のりでした！これで、ゼロショット学習、その歴史、コンピュータビジョンへの応用、そして一般的な仕組みについて、かなりの考えが得られました。この入門を締めくくるにあたり、最初は似ているように見えるかもしれない他のさまざまな手法と ZSL を比較していきます。</p>
+<ul>
+<li><strong>ドメイン適応（Domain Adaptation, DA）</strong>: これはもうおなじみのはずです。ゼロショット学習は、ドメイン適応の極端なケースと考えることができます（欲張り、欲張り）。データがまったくない未知のクラスを認識することを学習する問題を扱います。ドメイン適応は、分布の異なる2つの関連したドメイン（データセット）の間のギャップを埋めることに焦点を当て、ラベル付きデータを必要とします。</li>
+<li><strong>オープンセット認識（Open Set Recognition, OSR）</strong>: これはブール値のゼロショット学習だと考えてください。ZSL と同様、OSR の問題でも、モデルは既知のクラスと未知のクラスの両方を扱います。しかし ZSL とは異なり、モデルはテスト時に、インスタンスが既知のクラスに属するかどうかを分類するだけで済みます。それだけです。凝ったラベルは不要です。それでも、これは大きな課題です。</li>
+<li><strong>分布外（Out of Distribution, OOD）検出</strong>: この問題は、オープンセット認識の連続的なバリアントだと考えてください。ここでは、訓練プロセスに含まれていなかったインスタンスを検出したいのではなく、訓練データの分布から大きく逸脱するインスタンスを検出したいのです。予期しないデータを効果的に認識し処理することで、OOD 検出は、予測不可能な環境に適応できる、より信頼性が高く堅牢な AI システムへの道を開くことができます。</li>
+<li><strong>オープンボキャブラリ学習（Open Vocabulary Learning, OVL）</strong>: これこそが、ゼロショット学習が目指す姿です。いわば、ステロイドを打った ZSL です。全体として、OVL は ZSL の拡張と考えることができ、未知のクラスの限られたデータから学習する能力に加え、既知のクラスや、潜在的に無限の新しいクラスとタスクも扱えるよう拡張されています。 </li>
+</ul>
+<h2>References</h2>
+<ul>
+<li><a href="https://dl.acm.org/doi/10.1162/neco.2006.18.7.1527">A fast learning algorithm for deep belief nets</a></li>
+<li><a href="https://arxiv.org/abs/1301.3666">Zero-Shot Learning Through Cross-Modal Transfer</a></li>
+<li><a href="https://arxiv.org/abs/1704.08345">Semantic Autoencoder for Zero-Shot Learning</a></li>
+<li><a href="https://arxiv.org/abs/2005.14165">Language Models are Few-Shot Learners</a></li>
+<li><a href="https://arxiv.org/abs/2103.00020">Learning Transferable Visual Models From Natural Language Supervision</a></li>
+<li><a href="https://papers.nips.cc/paper_files/paper/2015/hash/8d55a249e6baa5c06772297520da2051-Abstract.html">Learning Structured Output Representation using Deep Conditional Generative Models</a></li>
+</ul>
+</article>
+<nav class="page-nav"><a class="nav-link prev" href="../unit10/point_clouds.html">← 前へ: Introduction</a><a class="nav-link toc-link" href="../index.html">目次へ</a><a class="nav-link next" href="2.html">次へ →: Zero-shot Learning</a></nav>
+</main>
+<footer class="site-footer">
+  <p>原典: Hugging Face huggingface/computer-vision-course（<a href="https://github.com/huggingface/computer-vision-course">https://github.com/huggingface/computer-vision-course</a>）</p>
+  <p>日本語版の翻訳・公開: 霞ヶ関京 / 連絡先: GitHub <a href="https://github.com/yanikasumin">@yanikasumin</a> / YouTube <a href="https://www.youtube.com/@KASUMI_MOF">@KASUMI_MOF</a></p>
+  <p class="demo-note">このサイトはデモ版です。内容は順次更新されます。</p>
+</footer>
+<script src="../../site.js"></script>
+</body>
+</html>

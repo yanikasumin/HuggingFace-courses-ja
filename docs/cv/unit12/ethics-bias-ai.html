@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>AI における倫理とバイアス 🧑‍🤝‍🧑 | Hugging Face コース日本語版（デモ版）</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Shippori+Mincho:wght@500;700&family=Zen+Kaku+Gothic+New:wght@400;500;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../../style.css">
+<script>
+window.MathJax = { tex: { inlineMath: [['$', '$'], ['\\(', '\\)']], displayMath: [['$$', '$$'], ['\\[', '\\]']] }, options: { skipHtmlTags: ['script','noscript','style','textarea','pre','code'] } };
+</script>
+<script async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml.js"></script>
+</head>
+<body>
+<header class="site-header">
+  <div class="header-inner">
+    <a class="site-title" href="../../index.html">Hugging Face コース日本語版</a>
+    <span class="demo-badge">デモ版</span>
+  </div>
+</header>
+<main class="container">
+<p class="course-crumb"><a href="../index.html">Community CV コース</a>
+<span class="badge badge-qa-wip">翻訳済み・QA進行中（未検証の部分を含みます）</span></p>
+<nav class="page-nav"><a class="nav-link prev" href="introduction.html">← 前へ: 導入</a><a class="nav-link toc-link" href="../index.html">目次へ</a><a class="nav-link next" href="conclusion.html">次へ →: Hugging Face の取り組み: 倫理と社会 🤗🌎</a></nav>
+<article class="content">
+<h1>AI における倫理とバイアス 🧑‍🤝‍🧑</h1>
+<p>ImageNet Roulette のケーススタディが興味深く、AI モデル全般で何が誤りうるかを学んでいただけたなら幸いです。この章では、強力なテクノロジーのもうひとつの例を取り上げます。素晴らしい応用が可能な一方で、歯止めが効かなければ倫理的な懸念も生じさせるものです。まず、ImageNet Roulette のケーススタディとその余波を簡単にまとめましょう。</p>
+<ul>
+<li>ImageNet Roulette は、内在するバイアスと、ラベル付けやデータ前処理の段階の見落としによって、AI モデルが誤った方向へ進んだ好例です。</li>
+<li>この実験は、歯止めが効かないと何が誤りうるかを示すためだけに作られました。</li>
+<li>このプロジェクトは、ImageNet チームによるデータセットの多くの修正や、顔の難読化、有害で刺激的な synset の除去、対応する画像の除去といった問題軽減策の実施につながりました。</li>
+<li>そして最後に、リスク軽減に向けた継続的な議論を切り開き、研究を後押ししました。</li>
+</ul>
+<p>もうひとつの強力なテクノロジーの例を見る前に、一歩引いて、いくつかの問いを振り返ってみましょう。一般に、テクノロジーは良いものでしょうか、悪いものでしょうか。電気は良いものでしょうか、悪いものでしょうか。インターネットは一般に安全でしょうか、有害でしょうか。私たちの旅を始めるにあたって、これらの問いを心に留めておいてください。</p>
+<h2>ディープフェイク 🎥</h2>
+<p>深層学習について学びたいと思っている、卒業したばかりの人を想像してみてください。MIT の「Introduction to Deep Learning (MIT 6.S191)」というコースに登録します。さらに面白いことに、コースのチームは深層学習でできることを紹介する非常に面白い動画を公開しました。こちらの動画をご覧ください。</p>
+<div class="youtube-embed"><iframe src="https://www.youtube-nocookie.com/embed/l82PxsKHxYc" title="YouTube video" loading="lazy" allowfullscreen referrerpolicy="strict-origin-when-cross-origin"></iframe></div>
+<p>MIT 6.S191 のコース紹介。ディープフェイクを使って、バラク・オバマが歓迎の挨拶をしているような印象を与えています。</p>
+<p>そうなのです。この導入セッションは、他でもないバラク・オバマ自身が学生たちを歓迎しているような印象を与える作りになっています。深層学習のコースで、深層生成モデルのユースケースのひとつを紹介するために手の込んだ導入を用意するとは、本当に面白い応用です。初めて見る人にとっては本当に引き込まれるもので、テクノロジーに興味を持ち、誰もが試してみたくなるでしょう。実際、まともな GPU があれば数分でこのような動画や画像を簡単に作れて、ミームや投稿などを投稿し始めることができます。
+同じテクノロジーの別の例を、異なる余波とともに見てみましょう。選挙や戦争の最中に、影響力のある政治指導者や俳優について同じディープフェイクを作れたとしたらどうでしょう。同じ偽動画が、憎悪や誤情報を広め、さまざまな人々を周縁化するために使われかねません。本人が誤情報を広めたわけでなくても、動画そのものが大規模な怒りを引き起こすことがあります。これは恐ろしいことです。しかし、主な問題は、誤情報が一度広まってしまえば、すでに害が生じてしまい、後になって動画が操作されたものだと明らかになっても、人々は分断されてしまうという事実にあります。つまり、害を避けられるのは、操作された動画がそもそも公開されない場合だけなのです。このため、このテクノロジーは危険なものとなります。しかし、テクノロジーそのものは安全なのでしょうか、有害なのでしょうか。テクノロジーそのものが良い・悪いということは決してなく、その使われ方（誰が何の目的で使うか）が良い影響も悪い影響も持ちえます。</p>
+<p>ディープフェイクは、深層生成 CV モデルの助けを借りて作られる合成メディアです。画像を別の人物の画像で操作することもでき、それを通じて動画を生成することもできます。音声ディープフェイクは、対象となる人物の声をそのまま模倣することで、CV 側の技術を補完できるもうひとつのテクノロジーです。これはディープフェイクが混乱を引き起こしうる例のひとつにすぎませんが、実際には、その影響ははるかに危険で、被害者の人生に生涯にわたる影響を与えかねません。</p>
+<h2>AI における倫理とバイアスとは？</h2>
+<p>前述の例から、このテクノロジーについて心に留めておくべき側面をいくつか挙げます。</p>
+<ul>
+<li>新しいメディアを操作して作る前に、画像や動画を使う対象者本人の同意を得ること。</li>
+<li>操作に使われうる合成メディアの作成を容易にするアルゴリズム。</li>
+<li>そうした合成メディアを検出するために使えるアルゴリズム。</li>
+<li>これらのアルゴリズムとその余波についての認識。</li>
+</ul>
+<div class="callout callout-tip">
+<p>💡The Consentful Tech Project については<a href="https://www.consentfultech.io/">こちら</a>をご覧ください。このプロジェクトは、人々が同意を大切にしながらテクノロジーを作り、使えるよう、意識を高め、戦略を練り、スキルを共有しています。</p>
+</div>
+<p>これらの例をもとに、いくつかの定義を定式化してみましょう。では、倫理とバイアスとは何でしょうか。倫理とは、善悪を区別する助けとなる道徳的原則の集合としてシンプルに定義できます。では、AI 倫理とは、AI の開発と利用における道徳的な振る舞いを導くために、広く受け入れられた善悪の基準を用いる価値観、原則、手法の集合として定義できます。AI 倫理は、リスクと悪影響を減らしながら AI の有益な影響を最適化する方法を研究する学際的な分野です。この分野には、さまざまなステークホルダーが関わります。</p>
+<ul>
+<li><strong>研究者、エンジニア、開発者、AI 倫理学者：</strong> モデル、アルゴリズム、データセットの開発とキュレーションを担う人々。</li>
+<li><strong>政府機関、法的機関（弁護士など）：</strong> 倫理的な AI 開発の規制的側面を担う機関と人々。</li>
+<li><strong>企業と組織：</strong> AI 製品やサービスの提供の最前線にいるステークホルダー。</li>
+<li><strong>市民：</strong> 日常生活で AI のサービスや製品を使い、このテクノロジーから大きな影響を受ける人々。</li>
+</ul>
+<p>AI におけるバイアスとは、アルゴリズムの出力における偏りを指し、モデルの開発や訓練データにおける前提が原因で生じることがあります。こうした前提は、開発を担った人間の中に内在するバイアスに由来します。その結果、AI モデルやアルゴリズムはこうしたバイアスを反映し始めます。これらのバイアスは倫理的な開発や原則を乱すおそれがあるため、注意と軽減の手立てが必要です。バイアスについては、それがさまざまな AI モデルにどう入り込むのか、その種類、評価、軽減（CV モデルを中心に）を、このユニットの今後の章で詳しく扱います。AI における倫理をさらに理解するため、倫理的 AI の原則を詳しく見ていきましょう。</p>
+<h2>倫理的 AI の原則 🤗 🌎</h2>
+<h3>アシモフのロボット工学三原則 🤖</h3>
+<p>テクノロジーのための倫理の発展を映し出す歴史的な作品は数多くあります。最も初期のものは、有名な SF 作家アイザック・アシモフにまで遡ります。彼は、自律的な AI エージェントの潜在的なリスクを念頭に置いて、ロボット工学の三原則を考案しました。その原則は以下のとおりです。</p>
+<ul>
+<li>第一条: ロボットは人間を傷つけてはならない。また、不作為によって人間が危害を受けることを許してもならない。</li>
+<li>第二条: ロボットは人間から与えられた命令に従わなければならない。ただし、その命令が第一条に反する場合は除く。</li>
+<li>第三条: ロボットは自らの存在を守らなければならない。ただし、その保護が第一条または第二条に反しない限りにおいて。</li>
+</ul>
+<h3>アシロマ AI 原則 🧑🏻‍⚖️🧑🏻‍🎓🧑🏻‍💻</h3>
+<p>アシモフのロボット工学の法則は、テクノロジーのための倫理における最初期の作品のひとつでした。2017年、カリフォルニア州のアシロマ会議場で会議が開かれました。この会議は、AI が社会に与える影響を議論するために開催されました。この会議の成果として、責任ある AI 開発のためのガイドラインが作られました。このガイドラインには23の原則があり、AI とロボティクスの研究者844人を含む約5,000人の個人が署名しました。</p>
+<p><img alt="アシロマ AI 原則" src="https://huggingface.co/datasets/hf-vision/course-assets/resolve/main/asilomar-ai.png" />
+責任ある AI 開発のための23のアシロマ AI 原則</p>
+<div class="callout callout-tip">
+<p>💡23のアシロマ AI 原則の完全なリストと署名者は<a href="https://futureoflife.org/open-letter/ai-principles/">こちら</a>で確認できます。</p>
+</div>
+<p>これらの原則は、AI モデル全般の倫理的な開発と実装のための指針です。次に、UNESCO による倫理的 AI ガイドラインに関する最近の成果を見ていきましょう。</p>
+<h3>UNESCO の報告書: 人工知能の倫理に関する勧告 🧑🏼‍🤝‍🧑🏼🌐</h3>
+<p>UNESCO は、<strong>「人工知能の倫理に関する勧告（Recommendation on the Ethics of Artificial Intelligence）」</strong>という報告書の形で AI 倫理の世界標準を打ち出しました。この勧告は2021年11月に193の加盟国によって採択されました。従来の倫理的 AI のガイドラインには、実行可能な政策という点で不足がありました。しかし、UNESCO の最近の報告書により、政策立案者は中核となる原則を、データガバナンス、環境、ジェンダー、健康といったさまざまな領域に関する行動へとつなげることができます。AI システムの基盤を築く、この勧告の4つの中核的価値は以下のとおりです。</p>
+<ul>
+<li><strong>人権と人間の尊厳</strong> 人権と基本的自由、そして人間の尊厳を尊重し、保護し、促進すること。</li>
+<li><strong>平和で</strong> 公正な、相互につながった社会で暮らすこと。</li>
+<li><strong>多様性と包摂性を確保すること。</strong></li>
+<li><strong>環境と生態系が栄えること。</strong></li>
+</ul>
+<p><img alt="AI 政策分野" src="https://huggingface.co/datasets/hf-vision/course-assets/resolve/main/ai_policy.png" />
+責任ある AI 開発のための11の主要な政策分野。</p>
+<p>UNESCO が示す、人権を中心に据えた AI 倫理へのアプローチを定める10の中核原則は以下のとおりです。</p>
+<ul>
+<li><strong>比例性と危害を加えないこと：</strong> AI システムの利用は、正当な目的を達成するために必要な範囲を超えてはなりません。そのような利用から生じうる危害を防ぐために、リスク評価を用いるべきです。</li>
+<li><strong>安全とセキュリティ：</strong> 望ましくない危害（安全性のリスク）や、攻撃に対する脆弱性（セキュリティのリスク）は、AI 関係者によって回避され、対処されるべきです。</li>
+<li><strong>プライバシーの権利とデータ保護：</strong> プライバシーは AI のライフサイクルを通じて保護され、促進されなければなりません。適切なデータ保護の枠組みも整備されるべきです。</li>
+<li><strong>多様なステークホルダーによる適応的なガバナンスと協働：</strong> データの利用においては、国際法と国家主権が尊重されなければなりません。加えて、AI ガバナンスへの包摂的なアプローチには、多様なステークホルダーの参加が必要です。</li>
+<li><strong>責任と説明責任：</strong> AI システムは監査可能で追跡可能であるべきです。人権の規範との抵触や環境の健全性への脅威を避けるために、監督、影響評価、監査、デューデリジェンスの仕組みが整っているべきです。</li>
+<li><strong>透明性と説明可能性：</strong> AI システムの倫理的なデプロイは、その透明性と説明可能性（T&amp;E）に依存します。プライバシー、安全性、セキュリティといった他の原則と T&amp;E の間には緊張関係が生じる場合があるため、T&amp;E の水準は文脈に適したものであるべきです。</li>
+<li><strong>人間の監督と決定：</strong> 加盟国は、AI システムが最終的な人間の責任と説明責任を肩代わりすることのないよう確保すべきです。</li>
+<li><strong>持続可能性：</strong> AI 技術は、「持続可能性」への影響に照らして評価されるべきです。持続可能性とは、国連の持続可能な開発目標（SDGs）に定められたものを含む、絶えず進化する目標の集合として理解されます。</li>
+<li><strong>認識とリテラシー：</strong> AI とデータに対する公衆の理解は、開かれたアクセスしやすい教育、市民参加、デジタルスキルと AI 倫理の研修、メディア・情報リテラシーを通じて促進されるべきです。</li>
+<li><strong>公平性と無差別：</strong> AI 関係者は、AI の恩恵がすべての人に届くよう包摂的なアプローチを取りながら、社会正義、公平性、無差別を促進すべきです。</li>
+</ul>
+<div class="callout callout-tip">
+<p>💡UNESCO の「人工知能の倫理に関する勧告」の完全な報告書は、<a href="https://unesdoc.unesco.org/ark:/48223/pf0000381137">こちら</a>で読めます。</p>
+</div>
+<p>このユニットの締めくくりとして、倫理的な AI の実践を確保する Hugging Face の取り組みも見ていきます。次の章では、バイアスについて、その種類と、さまざまな AI モデルへの入り込み方をさらに学びます。</p>
+</article>
+<nav class="page-nav"><a class="nav-link prev" href="introduction.html">← 前へ: 導入</a><a class="nav-link toc-link" href="../index.html">目次へ</a><a class="nav-link next" href="conclusion.html">次へ →: Hugging Face の取り組み: 倫理と社会 🤗🌎</a></nav>
+</main>
+<footer class="site-footer">
+  <p>原典: Hugging Face huggingface/computer-vision-course（<a href="https://github.com/huggingface/computer-vision-course">https://github.com/huggingface/computer-vision-course</a>）</p>
+  <p>日本語版の翻訳・公開: 霞ヶ関京 / 連絡先: GitHub <a href="https://github.com/yanikasumin">@yanikasumin</a> / YouTube <a href="https://www.youtube.com/@KASUMI_MOF">@KASUMI_MOF</a></p>
+  <p class="demo-note">このサイトはデモ版です。内容は順次更新されます。</p>
+</footer>
+<script src="../../site.js"></script>
+</body>
+</html>

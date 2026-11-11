@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>画像ベース結合埋め込み予測アーキテクチャ（I-JEPA） | Hugging Face コース日本語版（デモ版）</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Shippori+Mincho:wght@500;700&family=Zen+Kaku+Gothic+New:wght@400;500;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../../style.css">
+<script>
+window.MathJax = { tex: { inlineMath: [['$', '$'], ['\\(', '\\)']], displayMath: [['$$', '$$'], ['\\[', '\\]']] }, options: { skipHtmlTags: ['script','noscript','style','textarea','pre','code'] } };
+</script>
+<script async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml.js"></script>
+</head>
+<body>
+<header class="site-header">
+  <div class="header-inner">
+    <a class="site-title" href="../../index.html">Hugging Face コース日本語版</a>
+    <span class="demo-badge">デモ版</span>
+  </div>
+</header>
+<main class="container">
+<p class="course-crumb"><a href="../index.html">Community CV コース</a>
+<span class="badge badge-qa-wip">翻訳済み・QA進行中（未検証の部分を含みます）</span></p>
+<nav class="page-nav"><a class="nav-link prev" href="hyena.html">← 前へ: Hyena</a><a class="nav-link toc-link" href="../index.html">目次へ</a><span class="nav-link next disabled"></span></nav>
+<article class="content">
+<h1>画像ベース結合埋め込み予測アーキテクチャ（I-JEPA）</h1>
+<h2>概要</h2>
+<p>画像ベース結合埋め込み予測アーキテクチャ（Image-based Joint-Embedding Predictive Architecture、I-JEPA）は、<a href="https://ai.meta.com/blog/yann-lecun-ai-model-i-jepa/">2023年に Meta AI が発表した</a>、画期的な自己教師あり学習モデルです。従来のラベルや人手で作られたデータ拡張に依存することなく画像を理解するという課題に取り組みます。
+I-JEPA をよりよく知るために、まずいくつかの概念を議論しましょう。</p>
+<h3>不変性ベースの事前学習手法と生成的な事前学習手法</h3>
+<p>画像からの自己教師あり学習には、大きく分けて不変性ベースの手法と生成的手法の2つのアプローチがあると言えます。どちらのアプローチにも長所と短所があります。</p>
+<ul>
+<li>
+<p><strong>不変性ベースの手法</strong>: これらの手法では、モデルは同じ画像の異なるビューに対して似た埋め込みを再現しようとします。そしてもちろん、こうした異なるビューは人手で作られたもので、おなじみの画像拡張（回転、拡大縮小、切り抜きなど）です。これらの手法は高い意味水準の表現を生み出すのが得意ですが、問題は、特定の下流タスクに有害となりうる強いバイアスを導入することです。たとえば、画像分類やインスタンスセグメンテーションにはデータ拡張は必要ありません。</p>
+</li>
+<li>
+<p><strong>生成的手法</strong>: これらの手法を使うと、モデルは入力画像を再構成しようとします。そのため、これらの手法は再構成ベースの自己教師あり学習と呼ばれることもあります。マスクが入力画像のパッチを隠し、モデルは画素レベルまたはトークンレベルで、壊れたパッチを再構成しようとします（この点は覚えておきましょう）。このマスク付きアプローチは画像モダリティを超えて容易に一般化できますが、不変性ベースの手法ほどの品質の表現は生み出せません。また、これらの手法は計算コストが高く、堅牢な訓練には大規模なデータセットが必要です。</p>
+</li>
+</ul>
+<p>次に、結合埋め込みアーキテクチャ（Joint-Embedding Architectures）について話しましょう。</p>
+<h3>結合埋め込みアーキテクチャ</h3>
+<p>これは画像からの自己教師あり学習における最近の人気のアプローチで、2つのネットワークを訓練し、同じ画像の異なるビューに対して似た埋め込みを生成させます。基本的には、同じ画像の異なるビューについて「同じ言語を話す」よう2つのネットワークを訓練するのです。一般的な選択肢は、2つのネットワークが同じ重みを共有するシャムネットワーク（Siamese network）のアーキテクチャです。しかし、何事にも問題はつきものです。</p>
+<ul>
+<li>
+<p><strong>表現の崩壊</strong>: 入力によらずモデルが同じ表現を生成してしまうケース。</p>
+</li>
+<li>
+<p><strong>入力の適合性基準</strong>: 適切で良好な適合性の尺度を見つけるのが時に難しいこと。</p>
+</li>
+</ul>
+<p>結合埋め込みアーキテクチャの例として <a href="https://arxiv.org/abs/2105.04906">VICReg</a> があります。</p>
+<div class="callout callout-tip">
+<p>結合埋め込みアーキテクチャの訓練には、さまざまな訓練手法が使えます。たとえば:</p>
+<ul>
+<li>対照学習（Contrastive）手法</li>
+<li>非対照学習（Non-Contrastive）手法</li>
+<li>クラスタリング手法</li>
+</ul>
+</div>
+<p>ここまで順調です。では I-JEPA に進みましょう。まず、I-JEPA 論文の下の図が、結合埋め込み手法、生成的手法、I-JEPA の違いを示しています。</p>
+<p><img alt="I-JEPA の比較" src="https://huggingface.co/datasets/hf-vision/course-assets/resolve/main/i-jepa-1.png" /></p>
+<h3>画像ベース結合埋め込み予測アーキテクチャ（I-JEPA）</h3>
+<p>I-JEPA は、生成的手法と結合埋め込み手法の両方を改良しようとしています。概念的には生成的手法に似ていますが、以下の重要な違いがあります。</p>
+<ol>
+<li>
+<p><strong>抽象的な予測</strong>: これは私見では I-JEPA の最も魅力的な側面です。生成的手法について述べた際、それらが壊れた入力を画素レベルで再構成しようとすることを思い出してください。I-JEPA は生成的手法とは異なり、導入した予測器（predictor）を使って表現空間で予測しようとします。そのため「抽象的な予測」と呼ばれます。これにより、モデルはより強力な意味的特徴を学習します。</p>
+</li>
+<li>
+<p><strong>マルチブロックマスキング</strong>: I-JEPA が生成する意味的特徴を改善するもうひとつの設計上の選択は、入力画像の十分に大きなブロックをマスクすることです。</p>
+</li>
+</ol>
+<h3>I-JEPA のコンポーネント</h3>
+<p>前の図が I-JEPA アーキテクチャを示し比較しています。以下は、その主なコンポーネントの簡単な説明です。</p>
+<ol>
+<li>
+<p><strong>ターゲットエンコーダ（y-encoder）</strong>: ターゲット画像をエンコードし、その出力をマスクすることでターゲットブロックを生成します。</p>
+</li>
+<li>
+<p><strong>コンテキストエンコーダ（x-encoder）</strong>: 画像からランダムにサンプリングされたコンテキストブロックをエンコードし、対応するパッチレベルの表現を得ます。</p>
+</li>
+<li>
+<p><strong>予測器（Predictor）</strong>: コンテキストエンコーダの出力と、予測したい各パッチのマスクトークンを入力として受け取り、マスクされたターゲットブロックを予測しようとします。</p>
+</li>
+</ol>
+<p>ターゲットエンコーダ、コンテキストエンコーダ、予測器はいずれも Vision Transformer（ViT）アーキテクチャを使います。このコースの Unit 3 でそれらについて復習できます。</p>
+<p>論文の下の図は、I-JEPA の仕組みを示しています。</p>
+<p><img alt="I-JEPA の手法" src="https://huggingface.co/datasets/hf-vision/course-assets/resolve/main/i-jepa-2.png" /></p>
+<h2>なぜ重要なのか</h2>
+<p>では、なぜ I-JEPA なのでしょうか。I-JEPA は、人手で作られたデータ拡張に依存することなく意味的な画像表現を学習するための、シンプルで効率的な手法でありながら、多くの新しい設計上の特徴を導入しました。簡単にまとめます。</p>
+<ol>
+<li>
+<p>I-JEPA は、ImageNet-1K の線形プロービング、半教師ありの1% ImageNet-1K、意味的転移タスクにおいて、マスク付きオートエンコーダ（MAE）のような画素再構成手法を上回ります。</p>
+</li>
+<li>
+<p>I-JEPA は、意味的なタスクにおいてビュー不変の事前学習アプローチと競合し、物体の数え上げや深度予測といった低水準の視覚タスクではより良い性能を達成します。</p>
+</li>
+<li>
+<p>より硬直した帰納バイアスの少ない、よりシンプルなモデルを使うことで、I-JEPA はより広範なタスクに適用できます。</p>
+</li>
+<li>
+<p>I-JEPA はスケーラブルで効率的でもあります。ImageNet での事前学習に必要な計算量は <em>1200 GPU 時間未満</em> です。</p>
+</li>
+</ol>
+<h2>参考文献</h2>
+<ul>
+<li>
+<p><a href="https://arxiv.org/abs/2301.08243">I-JEPA 論文</a></p>
+</li>
+<li>
+<p><a href="https://ai.meta.com/blog/yann-lecun-ai-model-i-jepa/">I-JEPA に関する Meta のブログ記事</a></p>
+</li>
+<li>
+<p><a href="https://github.com/facebookresearch/ijepa">I-JEPA 公式 GitHub リポジトリ</a></p>
+</li>
+</ul>
+</article>
+<nav class="page-nav"><a class="nav-link prev" href="hyena.html">← 前へ: Hyena</a><a class="nav-link toc-link" href="../index.html">目次へ</a><span class="nav-link next disabled"></span></nav>
+</main>
+<footer class="site-footer">
+  <p>原典: Hugging Face huggingface/computer-vision-course（<a href="https://github.com/huggingface/computer-vision-course">https://github.com/huggingface/computer-vision-course</a>）</p>
+  <p>日本語版の翻訳・公開: 霞ヶ関京 / 連絡先: GitHub <a href="https://github.com/yanikasumin">@yanikasumin</a> / YouTube <a href="https://www.youtube.com/@KASUMI_MOF">@KASUMI_MOF</a></p>
+  <p class="demo-note">このサイトはデモ版です。内容は順次更新されます。</p>
+</footer>
+<script src="../../site.js"></script>
+</body>
+</html>

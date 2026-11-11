@@ -1,0 +1,220 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>smolagents の Vision エージェント | Hugging Face コース日本語版（デモ版）</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Shippori+Mincho:wght@500;700&family=Zen+Kaku+Gothic+New:wght@400;500;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../../../style.css">
+<script>
+window.MathJax = { tex: { inlineMath: [['$', '$'], ['\\(', '\\)']], displayMath: [['$$', '$$'], ['\\[', '\\]']] }, options: { skipHtmlTags: ['script','noscript','style','textarea','pre','code'] } };
+</script>
+<script async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml.js"></script>
+</head>
+<body>
+<header class="site-header">
+  <div class="header-inner">
+    <a class="site-title" href="../../../index.html">Hugging Face コース日本語版</a>
+    <span class="demo-badge">デモ版</span>
+  </div>
+</header>
+<main class="container">
+<p class="course-crumb"><a href="../../index.html">Agents コース</a>
+<span class="badge badge-qa-wip">翻訳済み・QA進行中（未検証の部分を含みます）</span></p>
+<nav class="page-nav"><a class="nav-link prev" href="multi_agent_systems.html">← 前へ: マルチエージェントシステム</a><a class="nav-link toc-link" href="../../index.html">目次へ</a><a class="nav-link next" href="final_quiz.html">次へ →: テストの時間です！</a></nav>
+<article class="content">
+<h1>smolagents の Vision エージェント</h1>
+<div class="callout callout-warning">
+<p class="callout-title">⚠️ 注意</p>
+<p>このセクションの例は、強力な VLM モデルへのアクセスを必要とします。私たちは GPT-4o API を使ってテストしました。<br />
+ただし、<a href="why_use_smolagents.html">smolagents を使う理由</a> では、smolagents と Hugging Face がサポートする代替のソリューションについて述べています。他の選択肢を探りたい場合は、そのセクションを必ず確認してください。</p>
+</div>
+<p>エージェントに視覚機能を持たせることは、テキスト処理を超えたタスクを解くうえで重要です。Web ブラウジングやドキュメント理解など、現実世界の多くの課題は、豊かな視覚コンテンツの分析を必要とします。幸い、<code>smolagents</code> は Vision-Language Models (VLMs) の組み込みサポートを提供しており、エージェントが画像を効果的に処理・解釈できます。</p>
+<p>この例では、ウェイン邸の執事であるアルフレッドが、パーティーに出席するゲストの身元を確認する任務を負っている場面を想像してください。想像できるとおり、アルフレッドは到着する全員に詳しいわけではないかもしれません。手助けとして、VLM を使って容姿に関する視覚情報を検索し、身元を確認するエージェントが使えます。これにより、アルフレッドは誰を入れるべきか、情報に基づいて判断できます。この例を作ってみましょう！</p>
+<h2>エージェントの実行開始時に画像を与える</h2>
+<div class="callout callout-tip">
+<p class="callout-title">💡 ヒント</p>
+<p>コードは、Google Colab で実行できる<a href="https://huggingface.co/agents-course/notebooks/blob/main/unit2/smolagents/vision_agents.ipynb" target="_blank">このノートブック</a>で追うことができます。</p>
+</div>
+<p>このアプローチでは、画像は開始時にエージェントに渡され、タスクプロンプトとともに <code>task_images</code> として保存されます。エージェントは実行を通してこれらの画像を処理します。</p>
+<p>アルフレッドが、パーティーに出席するスーパーヒーローたちの身元を確認したい場合を考えてみましょう。彼には、ゲストの名前付きで、過去のパーティーの画像データセットがすでにあります。新しい訪問者の画像が与えられれば、エージェントはそれを既存のデータセットと比較し、入場を許可するか判断できます。</p>
+<p>このケースでは、あるゲストが入ろうとしていて、アルフレッドはこの訪問者がワンダーウーマンのふりをしたジョーカーではないかと疑っています。アルフレッドは、望まない人物の入場を防ぐために身元を確認する必要があります。</p>
+<p>例を作ってみましょう。まず、画像を読み込みます。このケースでは、例を最小限に保つために Wikipedia の画像を使いますが、考えられるユースケースを想像してみてください！</p>
+<div class="codehilite"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">PIL</span><span class="w"> </span><span class="kn">import</span> <span class="n">Image</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">requests</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">io</span><span class="w"> </span><span class="kn">import</span> <span class="n">BytesIO</span>
+
+<span class="n">image_urls</span> <span class="o">=</span> <span class="p">[</span>
+    <span class="s2">"https://upload.wikimedia.org/wikipedia/commons/e/e8/The_Joker_at_Wax_Museum_Plus.jpg"</span><span class="p">,</span> <span class="c1"># ジョーカーの画像</span>
+    <span class="s2">"https://upload.wikimedia.org/wikipedia/en/9/98/Joker_%28DC_Comics_character%29.jpg"</span> <span class="c1"># ジョーカーの画像</span>
+<span class="p">]</span>
+
+<span class="n">images</span> <span class="o">=</span> <span class="p">[]</span>
+<span class="k">for</span> <span class="n">url</span> <span class="ow">in</span> <span class="n">image_urls</span><span class="p">:</span>
+    <span class="n">headers</span> <span class="o">=</span> <span class="p">{</span>
+        <span class="s2">"User-Agent"</span><span class="p">:</span> <span class="s2">"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/114.0.0.0 Safari/537.36"</span> 
+    <span class="p">}</span>
+    <span class="n">response</span> <span class="o">=</span> <span class="n">requests</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">url</span><span class="p">,</span><span class="n">headers</span><span class="o">=</span><span class="n">headers</span><span class="p">)</span>
+    <span class="n">image</span> <span class="o">=</span> <span class="n">Image</span><span class="o">.</span><span class="n">open</span><span class="p">(</span><span class="n">BytesIO</span><span class="p">(</span><span class="n">response</span><span class="o">.</span><span class="n">content</span><span class="p">))</span><span class="o">.</span><span class="n">convert</span><span class="p">(</span><span class="s2">"RGB"</span><span class="p">)</span>
+    <span class="n">images</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">image</span><span class="p">)</span>
+</code></pre></div>
+
+<p>画像が用意できたので、エージェントは、あるゲストが実際にスーパーヒーロー（ワンダーウーマン）なのか、それともヴィラン（ジョーカー）なのかを教えてくれます。</p>
+<div class="codehilite"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">smolagents</span><span class="w"> </span><span class="kn">import</span> <span class="n">CodeAgent</span><span class="p">,</span> <span class="n">OpenAIServerModel</span>
+
+<span class="n">model</span> <span class="o">=</span> <span class="n">OpenAIServerModel</span><span class="p">(</span><span class="n">model_id</span><span class="o">=</span><span class="s2">"gpt-4o"</span><span class="p">)</span>
+
+<span class="c1"># エージェントをインスタンス化する</span>
+<span class="n">agent</span> <span class="o">=</span> <span class="n">CodeAgent</span><span class="p">(</span>
+    <span class="n">tools</span><span class="o">=</span><span class="p">[],</span>
+    <span class="n">model</span><span class="o">=</span><span class="n">model</span><span class="p">,</span>
+    <span class="n">max_steps</span><span class="o">=</span><span class="mi">20</span><span class="p">,</span>
+    <span class="n">verbosity_level</span><span class="o">=</span><span class="mi">2</span>
+<span class="p">)</span>
+
+<span class="n">response</span> <span class="o">=</span> <span class="n">agent</span><span class="o">.</span><span class="n">run</span><span class="p">(</span>
+<span class="w">    </span><span class="sd">"""</span>
+<span class="sd">    Describe the costume and makeup that the comic character in these photos is wearing and return the description.</span>
+<span class="sd">    Tell me if the guest is The Joker or Wonder Woman.</span>
+<span class="sd">    """</span><span class="p">,</span>
+    <span class="n">images</span><span class="o">=</span><span class="n">images</span>
+<span class="p">)</span>
+</code></pre></div>
+
+<p>私の実行のケースでは、出力は次のようになりました。ただし、すでに述べたように、皆さんのケースでは変わる可能性があります。</p>
+<div class="codehilite"><pre><span></span><code>    <span class="p">{</span>
+        <span class="s1">'Costume and Makeup - First Image'</span><span class="p">:</span> <span class="p">(</span>
+            <span class="s1">'Purple coat and a purple silk-like cravat or tie over a mustard-yellow shirt.'</span><span class="p">,</span>
+            <span class="s1">'White face paint with exaggerated features, dark eyebrows, blue eye makeup, red lips forming a wide smile.'</span>
+        <span class="p">),</span>
+        <span class="s1">'Costume and Makeup - Second Image'</span><span class="p">:</span> <span class="p">(</span>
+            <span class="s1">'Dark suit with a flower on the lapel, holding a playing card.'</span><span class="p">,</span>
+            <span class="s1">'Pale skin, green hair, very red lips with an exaggerated grin.'</span>
+        <span class="p">),</span>
+        <span class="s1">'Character Identity'</span><span class="p">:</span> <span class="s1">'This character resembles known depictions of The Joker from comic book media.'</span>
+    <span class="p">}</span>
+</code></pre></div>
+
+<p>このケースでは、出力により、その人物が別人のふりをしていることが分かり、ジョーカーのパーティーへの入場を防ぐことができます！</p>
+<h2>動的な取得により画像を与える</h2>
+<div class="callout callout-tip">
+<p class="callout-title">💡 ヒント</p>
+<p>コードは<a href="https://huggingface.co/agents-course/notebooks/blob/main/unit2/smolagents/vision_web_browser.py" target="_blank">この Python ファイル</a>で追うことができます</p>
+</div>
+<p>前のアプローチは貴重で、多くの潜在的なユースケースがあります。しかし、ゲストがデータベースにない状況では、身元を特定する他の方法を探る必要があります。考えられる解決策のひとつは、Web を閲覧して詳細を探すなど、外部ソースから画像と情報を動的に取得することです。</p>
+<p>このアプローチでは、画像は実行中にエージェントのメモリへ動的に追加されます。周知のとおり、<code>smolagents</code> のエージェントは <code>MultiStepAgent</code> クラスに基づいており、これは ReAct フレームワークの抽象化です。このクラスは構造化されたサイクルで動作し、さまざまな変数や知識が各段階で記録されます。</p>
+<ol>
+<li><strong>SystemPromptStep:</strong> システムプロンプトを格納します。</li>
+<li><strong>TaskStep:</strong> ユーザーのクエリと、提供された入力を記録します。</li>
+<li><strong>ActionStep:</strong> エージェントのアクションと結果のログを記録します。</li>
+</ol>
+<p>この構造化されたアプローチにより、エージェントは視覚情報を動的に取り入れ、進化するタスクに適応して応答できます。以下は、すでに見た図で、動的なワークフローのプロセスと、エージェントのライフサイクルの中で異なるステップがどう統合されるかを示しています。ブラウジングの際、エージェントはスクリーンショットを撮り、<code>ActionStep</code> の中の <code>observation_images</code> として保存できます。</p>
+<p><img alt="動的な画像の取得" src="https://huggingface.co/datasets/huggingface/documentation-images/resolve/main/blog/smolagents-can-see/diagram_adding_vlms_smolagents.png" /></p>
+<p>必要性が分かったところで、完全な例を作りましょう。このケースでは、アルフレッドはゲスト確認プロセスを完全に管理したいと考えているため、詳細を閲覧で探すことが有効な解決策となります。この例を完成させるには、エージェント用の新しいツール一式が必要です。さらに、ブラウザ自動化ツールの Selenium と Helium を使います。これらにより、Web を探索し、潜在的なゲストについての詳細を検索し、確認情報を取得するエージェントを作ることができます。必要なツールをインストールしましょう。</p>
+<div class="codehilite"><pre><span></span><code>pip<span class="w"> </span>install<span class="w"> </span><span class="s2">"smolagents[all]"</span><span class="w"> </span>helium<span class="w"> </span>selenium<span class="w"> </span>python-dotenv
+</code></pre></div>
+
+<p><code>search_item_ctrl_f</code>、<code>go_back</code>、<code>close_popups</code> のように、ブラウジング専用に設計されたエージェントツール一式が必要です。これらのツールにより、エージェントは Web を移動する人のように振る舞えます。</p>
+<div class="codehilite"><pre><span></span><code><span class="nd">@tool</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">search_item_ctrl_f</span><span class="p">(</span><span class="n">text</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">nth_result</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">1</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""</span>
+<span class="sd">    Searches for text on the current page via Ctrl + F and jumps to the nth occurrence.</span>
+<span class="sd">    Args:</span>
+<span class="sd">        text: The text to search for</span>
+<span class="sd">        nth_result: Which occurrence to jump to (default: 1)</span>
+<span class="sd">    """</span>
+    <span class="n">elements</span> <span class="o">=</span> <span class="n">driver</span><span class="o">.</span><span class="n">find_elements</span><span class="p">(</span><span class="n">By</span><span class="o">.</span><span class="n">XPATH</span><span class="p">,</span> <span class="sa">f</span><span class="s2">"//*[contains(text(), '</span><span class="si">{</span><span class="n">text</span><span class="si">}</span><span class="s2">')]"</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">nth_result</span> <span class="o">&gt;</span> <span class="nb">len</span><span class="p">(</span><span class="n">elements</span><span class="p">):</span>
+        <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Match n°</span><span class="si">{</span><span class="n">nth_result</span><span class="si">}</span><span class="s2"> not found (only </span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">elements</span><span class="p">)</span><span class="si">}</span><span class="s2"> matches found)"</span><span class="p">)</span>
+    <span class="n">result</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">"Found </span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">elements</span><span class="p">)</span><span class="si">}</span><span class="s2"> matches for '</span><span class="si">{</span><span class="n">text</span><span class="si">}</span><span class="s2">'."</span>
+    <span class="n">elem</span> <span class="o">=</span> <span class="n">elements</span><span class="p">[</span><span class="n">nth_result</span> <span class="o">-</span> <span class="mi">1</span><span class="p">]</span>
+    <span class="n">driver</span><span class="o">.</span><span class="n">execute_script</span><span class="p">(</span><span class="s2">"arguments[0].scrollIntoView(true);"</span><span class="p">,</span> <span class="n">elem</span><span class="p">)</span>
+    <span class="n">result</span> <span class="o">+=</span> <span class="sa">f</span><span class="s2">"Focused on element </span><span class="si">{</span><span class="n">nth_result</span><span class="si">}</span><span class="s2"> of </span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">elements</span><span class="p">)</span><span class="si">}</span><span class="s2">"</span>
+    <span class="k">return</span> <span class="n">result</span>
+
+
+<span class="nd">@tool</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">go_back</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""Goes back to previous page."""</span>
+    <span class="n">driver</span><span class="o">.</span><span class="n">back</span><span class="p">()</span>
+
+
+<span class="nd">@tool</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">close_popups</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""</span>
+<span class="sd">    Closes any visible modal or pop-up on the page. Use this to dismiss pop-up windows! This does not work on cookie consent banners.</span>
+<span class="sd">    """</span>
+    <span class="n">webdriver</span><span class="o">.</span><span class="n">ActionChains</span><span class="p">(</span><span class="n">driver</span><span class="p">)</span><span class="o">.</span><span class="n">send_keys</span><span class="p">(</span><span class="n">Keys</span><span class="o">.</span><span class="n">ESCAPE</span><span class="p">)</span><span class="o">.</span><span class="n">perform</span><span class="p">()</span>
+</code></pre></div>
+
+<p>スクリーンショットを保存する機能も必要です。これは、私たちの VLM エージェントがタスクを完了するために使う必須の要素となります。この機能はスクリーンショットを撮影し、<code>step_log.observations_images = [image.copy()]</code> に保存することで、エージェントがナビゲーションしながら画像を動的に保存・処理できるようにします。</p>
+<div class="codehilite"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">save_screenshot</span><span class="p">(</span><span class="n">step_log</span><span class="p">:</span> <span class="n">ActionStep</span><span class="p">,</span> <span class="n">agent</span><span class="p">:</span> <span class="n">CodeAgent</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+    <span class="n">sleep</span><span class="p">(</span><span class="mf">1.0</span><span class="p">)</span>  <span class="c1"># スクリーンショットを撮る前に、JavaScript のアニメーションが起こるのを待つ</span>
+    <span class="n">driver</span> <span class="o">=</span> <span class="n">helium</span><span class="o">.</span><span class="n">get_driver</span><span class="p">()</span>
+    <span class="n">current_step</span> <span class="o">=</span> <span class="n">step_log</span><span class="o">.</span><span class="n">step_number</span>
+    <span class="k">if</span> <span class="n">driver</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="k">for</span> <span class="n">step_logs</span> <span class="ow">in</span> <span class="n">agent</span><span class="o">.</span><span class="n">logs</span><span class="p">:</span>  <span class="c1"># 無駄のない処理のために、以前のスクリーンショットをログから取り除く</span>
+            <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">step_log</span><span class="p">,</span> <span class="n">ActionStep</span><span class="p">)</span> <span class="ow">and</span> <span class="n">step_log</span><span class="o">.</span><span class="n">step_number</span> <span class="o">&lt;=</span> <span class="n">current_step</span> <span class="o">-</span> <span class="mi">2</span><span class="p">:</span>
+                <span class="n">step_logs</span><span class="o">.</span><span class="n">observations_images</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="n">png_bytes</span> <span class="o">=</span> <span class="n">driver</span><span class="o">.</span><span class="n">get_screenshot_as_png</span><span class="p">()</span>
+        <span class="n">image</span> <span class="o">=</span> <span class="n">Image</span><span class="o">.</span><span class="n">open</span><span class="p">(</span><span class="n">BytesIO</span><span class="p">(</span><span class="n">png_bytes</span><span class="p">))</span>
+        <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Captured a browser screenshot: </span><span class="si">{</span><span class="n">image</span><span class="o">.</span><span class="n">size</span><span class="si">}</span><span class="s2"> pixels"</span><span class="p">)</span>
+        <span class="n">step_log</span><span class="o">.</span><span class="n">observations_images</span> <span class="o">=</span> <span class="p">[</span><span class="n">image</span><span class="o">.</span><span class="n">copy</span><span class="p">()]</span>  <span class="c1"># 永続化されるよう、コピーを作ることが重要！</span>
+
+    <span class="c1"># 現在の URL で observation を更新する</span>
+    <span class="n">url_info</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">"Current url: </span><span class="si">{</span><span class="n">driver</span><span class="o">.</span><span class="n">current_url</span><span class="si">}</span><span class="s2">"</span>
+    <span class="n">step_log</span><span class="o">.</span><span class="n">observations</span> <span class="o">=</span> <span class="n">url_info</span> <span class="k">if</span> <span class="n">step_logs</span><span class="o">.</span><span class="n">observations</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">step_log</span><span class="o">.</span><span class="n">observations</span> <span class="o">+</span> <span class="s2">"</span><span class="se">\n</span><span class="s2">"</span> <span class="o">+</span> <span class="n">url_info</span>
+    <span class="k">return</span>
+</code></pre></div>
+
+<p>この関数は、エージェントの実行中に各ステップの終わりにトリガーされるため、<code>step_callback</code> としてエージェントに渡されます。これにより、エージェントはプロセスを通してスクリーンショットを動的に撮影し、保存できます。</p>
+<p>これで、作成したツールに加え、Web を探索する <code>DuckDuckGoSearchTool</code> を与えて、Web ブラウジング用の Vision エージェントを生成できます。このツールは、視覚的な手がかりに基づいてゲストの身元を確認するために必要な情報を、エージェントが取得する助けとなります。</p>
+<div class="codehilite"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">smolagents</span><span class="w"> </span><span class="kn">import</span> <span class="n">CodeAgent</span><span class="p">,</span> <span class="n">OpenAIServerModel</span><span class="p">,</span> <span class="n">DuckDuckGoSearchTool</span>
+<span class="n">model</span> <span class="o">=</span> <span class="n">OpenAIServerModel</span><span class="p">(</span><span class="n">model_id</span><span class="o">=</span><span class="s2">"gpt-4o"</span><span class="p">)</span>
+
+<span class="n">agent</span> <span class="o">=</span> <span class="n">CodeAgent</span><span class="p">(</span>
+    <span class="n">tools</span><span class="o">=</span><span class="p">[</span><span class="n">DuckDuckGoSearchTool</span><span class="p">(),</span> <span class="n">go_back</span><span class="p">,</span> <span class="n">close_popups</span><span class="p">,</span> <span class="n">search_item_ctrl_f</span><span class="p">],</span>
+    <span class="n">model</span><span class="o">=</span><span class="n">model</span><span class="p">,</span>
+    <span class="n">additional_authorized_imports</span><span class="o">=</span><span class="p">[</span><span class="s2">"helium"</span><span class="p">],</span>
+    <span class="n">step_callbacks</span><span class="o">=</span><span class="p">[</span><span class="n">save_screenshot</span><span class="p">],</span>
+    <span class="n">max_steps</span><span class="o">=</span><span class="mi">20</span><span class="p">,</span>
+    <span class="n">verbosity_level</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span>
+<span class="p">)</span>
+</code></pre></div>
+
+<p>これで、アルフレッドはゲストの身元を確認し、パーティーに入れるかどうかについて情報に基づいた判断を下す準備が整いました。</p>
+<div class="codehilite"><pre><span></span><code><span class="n">agent</span><span class="o">.</span><span class="n">run</span><span class="p">(</span><span class="s2">"""</span>
+<span class="s2">I am Alfred, the butler of Wayne Manor, responsible for verifying the identity of guests at party. A superhero has arrived at the entrance claiming to be Wonder Woman, but I need to confirm if she is who she says she is.</span>
+
+<span class="s2">Please search for images of Wonder Woman and generate a detailed visual description based on those images. Additionally, navigate to Wikipedia to gather key details about her appearance. With this information, I can determine whether to grant her access to the event.</span>
+<span class="s2">"""</span> <span class="o">+</span> <span class="n">helium_instructions</span><span class="p">)</span>
+</code></pre></div>
+
+<p>ご覧のとおり、タスクの一部として <code>helium_instructions</code> を含めています。この特別なプロンプトは、エージェントのナビゲーションを制御し、Web を閲覧する際に正しいステップに従うことを目的としています。</p>
+<p>これがどう動くかは、以下のビデオで見られます。</p>
+<iframe width="560" height="315" src="https://www.youtube.com/embed/rObJel7-OLc?si=TnNwQ8rqXqun_pqE" title="YouTube 動画プレーヤー" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe>
+
+<p>これが最終的な出力です。</p>
+<div class="codehilite"><pre><span></span><code><span class="n">Final</span> <span class="n">answer</span><span class="p">:</span> <span class="n">Wonder</span> <span class="n">Woman</span> <span class="ow">is</span> <span class="n">typically</span> <span class="n">depicted</span> <span class="n">wearing</span> <span class="n">a</span> <span class="n">red</span> <span class="ow">and</span> <span class="n">gold</span> <span class="n">bustier</span><span class="p">,</span> <span class="n">blue</span> <span class="n">shorts</span> <span class="ow">or</span> <span class="n">skirt</span> <span class="k">with</span> <span class="n">white</span> <span class="n">stars</span><span class="p">,</span> <span class="n">a</span> <span class="n">golden</span> <span class="n">tiara</span><span class="p">,</span> <span class="n">silver</span> <span class="n">bracelets</span><span class="p">,</span> <span class="ow">and</span> <span class="n">a</span> <span class="n">golden</span> <span class="n">Lasso</span> <span class="n">of</span> <span class="n">Truth</span><span class="o">.</span> <span class="n">She</span> <span class="ow">is</span> <span class="n">Princess</span> <span class="n">Diana</span> <span class="n">of</span> <span class="n">Themyscira</span><span class="p">,</span> <span class="n">known</span> <span class="k">as</span> <span class="n">Diana</span> <span class="n">Prince</span> <span class="ow">in</span> <span class="n">the</span> <span class="n">world</span> <span class="n">of</span> <span class="n">men</span><span class="o">.</span>
+</code></pre></div>
+
+<p>以上で、パーティーのための身元確認システムの作成に成功しました！ アルフレッドは今や、正しいゲストだけが入口を通れるようにするための必要なツールを手にしています。ウェイン邸で楽しい時間を過ごす準備がすべて整いました！</p>
+<h2>さらに読む</h2>
+<ul>
+<li><a href="https://huggingface.co/blog/smolagents-can-see">We just gave sight to smolagents</a> - Vision エージェントの機能を説明するブログ。</li>
+<li><a href="https://huggingface.co/docs/smolagents/examples/web_browser">Web Browser Automation with Agents 🤖🌐</a> - Vision エージェントを使った Web ブラウジングの例。</li>
+<li><a href="https://github.com/huggingface/smolagents/blob/main/src/smolagents/vision_web_browser.py">Web Browser Vision Agent Example</a> - Vision エージェントを使った Web ブラウジングの例。</li>
+</ul>
+</article>
+<nav class="page-nav"><a class="nav-link prev" href="multi_agent_systems.html">← 前へ: マルチエージェントシステム</a><a class="nav-link toc-link" href="../../index.html">目次へ</a><a class="nav-link next" href="final_quiz.html">次へ →: テストの時間です！</a></nav>
+</main>
+<footer class="site-footer">
+  <p>原典: Hugging Face huggingface/agents-course（<a href="https://github.com/huggingface/agents-course">https://github.com/huggingface/agents-course</a>）</p>
+  <p>日本語版の翻訳・公開: 霞ヶ関京 / 連絡先: GitHub <a href="https://github.com/yanikasumin">@yanikasumin</a> / YouTube <a href="https://www.youtube.com/@KASUMI_MOF">@KASUMI_MOF</a></p>
+  <p class="demo-note">このサイトはデモ版です。内容は順次更新されます。</p>
+</footer>
+<script src="../../../site.js"></script>
+</body>
+</html>

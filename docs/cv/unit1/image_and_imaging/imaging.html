@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>デジタル処理における画像取得の基礎 | Hugging Face コース日本語版（デモ版）</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Shippori+Mincho:wght@500;700&family=Zen+Kaku+Gothic+New:wght@400;500;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../../../style.css">
+<script>
+window.MathJax = { tex: { inlineMath: [['$', '$'], ['\\(', '\\)']], displayMath: [['$$', '$$'], ['\\[', '\\]']] }, options: { skipHtmlTags: ['script','noscript','style','textarea','pre','code'] } };
+</script>
+<script async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml.js"></script>
+</head>
+<body>
+<header class="site-header">
+  <div class="header-inner">
+    <a class="site-title" href="../../../index.html">Hugging Face コース日本語版</a>
+    <span class="demo-badge">デモ版</span>
+  </div>
+</header>
+<main class="container">
+<p class="course-crumb"><a href="../../index.html">Community CV コース</a>
+<span class="badge badge-qa-wip">翻訳済み・QA進行中（未検証の部分を含みます）</span></p>
+<nav class="page-nav"><a class="nav-link prev" href="image.html">← 前へ: 画像</a><a class="nav-link toc-link" href="../../index.html">目次へ</a><a class="nav-link next" href="extension-image.html">次へ →: 実生活におけるイメージング</a></nav>
+<article class="content">
+<h1>デジタル処理における画像取得の基礎</h1>
+<p>デジタル処理における画像取得は、物理現象（現実の生活で私たちが見ているもの）をデジタル表現（コンピュータで私たちが見ているもの）に変換する最初のステップです。それは、光源と撮影対象との相互作用から始まります。この照射は、従来の光源から、電磁エネルギーや超音波エネルギーのようなより高度な形態まで、さまざまなタイプがありえます。この相互作用の結果、シーン内の物体からエネルギーが反射するか、物体を透過します。このエネルギーはセンサーによって捉えられ、ある形態のエネルギーが別の形態へ変換されます（入射エネルギーを電圧に変換するトランスデューサなど）。電圧信号はその後デジタル化され、デジタル画像が得られます。そのためには、物理シーンの正確な表現を確保するための先端技術と精密なキャリブレーションが必要です。次のセクションでは、これらの技術のいくつかを探ります。</p>
+<p><img alt=" 1964年に Ranger 7 が撮影した最初の月の写真（Courtesy of NASA）" src="https://huggingface.co/datasets/hf-vision/course-assets/resolve/4def8c412ee6b08f4522e818a0474d155363d87b/pic_3.png" /></p>
+<h2>センサー技術と画像取得における役割</h2>
+<p>前に述べたように、デジタルイメージングの最初のステップはセンサーです。2次元画像を作成するために、単一の感知素子（フォトダイオードなど）を x 軸と y 軸に沿って移動させます。対照的に、より一般的なセンサーストリップは、一方向に線形に画像を捉えます。そのため、完全な2D画像を得るには、これらのストリップを垂直方向に移動させます。この技術は、フラットベッドスキャナのようなデバイスでよく見られ、航空イメージングシステムでも使われています。医療画像（CAT スキャンなど）のようなより専門的な応用では、リング状に配置されたセンサーストリップが使われます。これらのセットアップでは、捉えたデータを意味のある画像に変換するために、複雑な再構成の高度なアルゴリズムが関わります。</p>
+<p>デジタルカメラの CCD のようなセンサーアレイは、感知素子の2Dアレイで構成されます。各素子がシーンの一部を検出するため、動きなしに完全な画像を捉えます。これらのアレイは、単一の感知素子やセンサーストリップとは異なり、画像を捉えるのに動きを必要としない点で有利です。捉えたエネルギーはセンサーアレイに焦点を合わせられ、アナログ信号に変換されたうえで、デジタル化されてデジタル画像を形成します。</p>
+<h2>デジタル画像の形成と表現</h2>
+<p>デジタル画像形成の核心は関数 \(f(x,y)\) です。これは、光源 \(i(x,y)\) と、シーンからの反射率 \(r(x,y)\) によって決まります。</p>
+<div class="flex justify-center">
+    <img src="https://huggingface.co/datasets/hf-vision/course-assets/resolve/4def8c412ee6b08f4522e818a0474d155363d87b/pic_6.png" alt="シーンから反射した光を集めることによる画像取得">
+</div>
+
+<p>X 線のような透過ベースのイメージングでは、反射率の代わりに透過率が使われます。画像のデジタル表現は本質的に数値の行列または配列であり、それぞれがピクセルに対応します。連続した画像データをデジタル形式に変換するプロセスは2段階です。
+- サンプリング: 座標値をデジタル化します。
+- 量子化: 振幅値を離散的な量に変換します。</p>
+<p>デジタル画像の解像度と品質は、次の要素に大きく依存します。
+- 使われるサンプル数と離散的な強度レベルの数。
+- イメージングシステムのダイナミックレンジ: 測定可能な最大の強度と検出可能な最小の強度との比です。これは画像の見た目とコントラストにも重要な役割を果たします。</p>
+<div class="flex justify-center">
+    <img src="https://huggingface.co/datasets/hf-vision/course-assets/resolve/4def8c412ee6b08f4522e818a0474d155363d87b/pic_5.png" alt="1957年に Russell A. Kirsch が撮影した最初のデジタル写真">
+</div>
+
+<h2>デジタルイメージングにおける解像度の理解</h2>
+<p>空間解像度は、画像で識別可能な最小の詳細を指し、単位距離あたりの線対数や単位距離あたりのピクセル数で測定されることがよくあります。空間解像度の意味合いは文脈に依存し、使われる空間単位によって変わります。たとえば、20 メガピクセルのカメラは、通常、8 メガピクセルのカメラよりも高い詳細解像度を提供します。
+強度解像度は、強度レベルにおける検出可能な最小の変化を指し、ハードウェアの能力によって制限されることがよくあります。これは2進数の増分で量子化されます。8 ビットや256レベルなどです。これらの強度変化の知覚は、ノイズ、飽和、人間の視覚の能力など、さまざまな要因に影響されます。</p>
+<div class="flex justify-center">
+    <img src="https://huggingface.co/datasets/hf-vision/course-assets/resolve/4def8c412ee6b08f4522e818a0474d155363d87b/pic_7.png" alt="画像解像度の図解">
+</div>
+
+<h2>画像の復元と再構成のテクニック</h2>
+<p>画像復元は、劣化現象についての知識を使って劣化した画像を回復することに焦点を当てます。多くの場合、劣化プロセスをモデル化し、逆のプロセスを適用して元の画像を取り戻すことが含まれます。</p>
+<div class="flex justify-center">
+    <img src="https://huggingface.co/datasets/hf-vision/course-assets/resolve/4def8c412ee6b08f4522e818a0474d155363d87b/pic_8.jpg" alt="画像が復元されカラー化された画像復元の例">
+</div>
+
+<p>対照的に、画像強調はより主観的です。画像の視覚的な見た目を改善することを目的とします。復元のテクニックには、ノイズのような問題への対処が含まれます。ノイズは画像取得や伝送の過程でさまざまな発生源から生じます。この場合、ノイズ除去能力のために、適応型と非適応型の高度なフィルターが使われます。医療画像、特にコンピュータ断層撮影（CT）では、投影からの画像再構成が重要な応用です。</p>
+<p><img alt="人の最初の写真 Louis Daguerre、1838年、パリの Boulevard du Temple" src="https://huggingface.co/datasets/hf-vision/course-assets/resolve/4def8c412ee6b08f4522e818a0474d155363d87b/pic_2.png" /></p>
+<h2>画像処理における色</h2>
+<p>色は画像処理における強力な記述子です。物体の識別と認識に役割を果たします。カラー画像処理には、疑似カラー処理とフルカラー処理の両方が含まれます。</p>
+<div class="flex justify-center">
+    <img src="https://huggingface.co/datasets/hf-vision/course-assets/resolve/4def8c412ee6b08f4522e818a0474d155363d87b/pic_4.png" alt="1861年に James Clerk Maxwell が3色フィルターを使って撮影した最初のカラー写真">
+</div>
+
+<p>疑似カラー処理はグレースケールの強度に色を割り当て、フルカラー処理はセンサーからの実際の色データを使います。人間の色知覚、色スペクトル、分光光の属性を含む、色の基礎を理解することが鍵です。色の基礎には、赤、緑、青を知覚する人間の視覚の三色性が関わります。一方、色知覚とは、私たちの目にある3種類の錐体がどのように刺激されるかです。最後に、色スペクトルは、電磁スペクトルのうち異なる視覚感覚を引き起こす波長の範囲です。</p>
+<p>モニターやカメラ向けの RGB、印刷向けの CMY/CMYK など、さまざまな色モデルが、デジタルイメージングにおける色表現を標準化しています。RGB 色モデルでは、画像は赤、緑、青の3つの要素（チャンネル）を持ちます。RGB 画像のピクセル深度が可能な色の数を決定し、典型的なフルカラー画像は24ビットの深度（色成分ごとに8ビット）を持ちます。これにより、1600万色以上の色が可能になります！RGB カラーキューブは、このモデルで実現可能な色の範囲を表し、グレースケールは黒から白まで広がります。</p>
+<div class="flex justify-center">
+    <img src="https://huggingface.co/datasets/hf-vision/course-assets/resolve/4def8c412ee6b08f4522e818a0474d155363d87b/pic_9.png" alt="図9: 画像のカラーチャンネル">
+</div>
+
+<h2>画像圧縮</h2>
+<p>データ圧縮は、情報を表すのに必要なデータを削減します。データ（情報を伝達する手段）と情報そのものを区別します。その対象は冗長性、つまり無関係か重複しているデータです。たとえば、10:1 の圧縮率は90%のデータ冗長性を示します。</p>
+<p>デジタル画像圧縮、特に2次元の強度配列においては、主な冗長性は3種類あります。
+- <strong>符号化冗長性:</strong> 符号化冗長性は、強度値の分布がすべての可能な値に均等に広がっていない画像、つまり不均一なヒストグラムとして描かれる画像に特によく見られます。そのような画像では、ある強度値は他の値よりも頻繁に現れるのに、自然な二進符号化は頻度に関わらず各強度値の表現に同じビット数を割り当てます。つまり、一般的な値が珍しい値よりも効率的に符号化されず、ビットの非効率な使用、ひいては符号化冗長性につながります。理想的には、より頻繁な値には短い符号を、より頻繁でない値には長い符号を割り当てて、使用ビット数を最小化すべきですが、不均一なヒストグラムにおける自然な二進符号化はそうなっていません。
+- <strong>空間的・時間的冗長性:</strong> 空間的・時間的冗長性は、画像内や動画フレーム間で相関するピクセル値に現れます。
+- <strong>無関係な情報:</strong> 無関係な情報には、人間の視覚系に無視されるデータや、画像の目的にとって不要なデータが含まれます。</p>
+<p>効率的な符号化は、画像における強度値のような事象の確率を考慮します。ランレングス符号化のようなテクニックは、一定の強度を持つラインの画像における空間的冗長性を減らし、データを大幅に圧縮します。同様に、動画シーケンスの時間的冗長性にも対処できます。ただし、無関係な情報を除去すると量子化につながり、定量情報の不可逆的な喪失を引き起こします。エントロピーのような概念を持つ情報理論は、正確な画像表現に必要な最小のデータ量を決定するのに役立ちます。圧縮後の画質は、客観的な忠実度基準（入出力の数学的関数）と主観的な忠実度基準（人間の評価）を使って評価されます。</p>
+<p>画像圧縮システムはエンコーダーとデコーダーを使います。エンコーダーは、マッピング（空間的・時間的冗長性の削減）、量子化（無関係な情報の破棄）、シンボル符号化（量子化器の出力への符号割り当て）を通じて冗長性を取り除きます。デコーダーは、量子化を除いて、これらのプロセスを逆転させます。JPEG や MPEG のような画像ファイル形式、コンテナ、規格は、データの整理と保存に使われます。ハフマン符号化は、符号化冗長性を取り除く代表的な手法で、最も出現確率の低いソースシンボルから先に符号化することで、効率的な表現を作り出します。</p>
+</article>
+<nav class="page-nav"><a class="nav-link prev" href="image.html">← 前へ: 画像</a><a class="nav-link toc-link" href="../../index.html">目次へ</a><a class="nav-link next" href="extension-image.html">次へ →: 実生活におけるイメージング</a></nav>
+</main>
+<footer class="site-footer">
+  <p>原典: Hugging Face huggingface/computer-vision-course（<a href="https://github.com/huggingface/computer-vision-course">https://github.com/huggingface/computer-vision-course</a>）</p>
+  <p>日本語版の翻訳・公開: 霞ヶ関京 / 連絡先: GitHub <a href="https://github.com/yanikasumin">@yanikasumin</a> / YouTube <a href="https://www.youtube.com/@KASUMI_MOF">@KASUMI_MOF</a></p>
+  <p class="demo-note">このサイトはデモ版です。内容は順次更新されます。</p>
+</footer>
+<script src="../../../site.js"></script>
+</body>
+</html>

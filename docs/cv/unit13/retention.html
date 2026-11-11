@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>視覚におけるリテンション（Retention） | Hugging Face コース日本語版（デモ版）</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Shippori+Mincho:wght@500;700&family=Zen+Kaku+Gothic+New:wght@400;500;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../../style.css">
+<script>
+window.MathJax = { tex: { inlineMath: [['$', '$'], ['\\(', '\\)']], displayMath: [['$$', '$$'], ['\\[', '\\]']] }, options: { skipHtmlTags: ['script','noscript','style','textarea','pre','code'] } };
+</script>
+<script async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml.js"></script>
+</head>
+<body>
+<header class="site-header">
+  <div class="header-inner">
+    <a class="site-title" href="../../index.html">Hugging Face コース日本語版</a>
+    <span class="demo-badge">デモ版</span>
+  </div>
+</header>
+<main class="container">
+<p class="course-crumb"><a href="../index.html">Community CV コース</a>
+<span class="badge badge-qa-wip">翻訳済み・QA進行中（未検証の部分を含みます）</span></p>
+<nav class="page-nav"><a class="nav-link prev" href="../unit12/supplementary-material.html">← 前へ: 参考文献とリソース 🤗🌎</a><a class="nav-link toc-link" href="../index.html">目次へ</a><a class="nav-link next" href="hiera.html">次へ →: Overview of Hiera</a></nav>
+<article class="content">
+<h1>視覚におけるリテンション（Retention）</h1>
+<h2>リテンションネットワークとは</h2>
+<p>リテンションネットワーク（Retentive Network、RetNet）は、論文 <a href="https://arxiv.org/abs/2307.08621">Retentive Network: A Successor to Transformer for Large Language Models</a> で大規模言語モデルのために提案された基盤アーキテクチャです。このアーキテクチャは、大規模言語モデリングの領域における主要な課題、すなわち訓練の並列性、低コストな推論、優れた性能に対処するために設計されました。</p>
+<p><img alt="LLM Challenges" src="https://huggingface.co/datasets/hf-vision/course-assets/resolve/main/LLM%20Challenges.png" />
+RetNet は、Transformer モデルで一般的に使われるマルチヘッドアテンション機構の代替であるマルチスケールリテンション（Multi-Scale Retention、MSR）機構を導入することで、これらの課題に取り組むことができます。
+MSR は再帰と並列の二重の形態を持つため、モデルを並列に訓練しながら、推論を再帰的に実行できます。RetNet の詳細は後の章で探ります。</p>
+<p>マルチスケールリテンション機構は、3つの計算パラダイムのもとで動作します。</p>
+<ul>
+<li>
+<p><strong>並列表現（Parallel Representation）:</strong> RetNet のこの側面は、Transformer のセルフアテンションと似た設計で、GPU を使ってモデルを効率よく訓練できます。</p>
+</li>
+<li>
+<p><strong>再帰表現（Recurrent Representation）:</strong> この表現は、メモリと計算量の面で O(1) の複雑さで効率的な推論を可能にします。デプロイのコストとレイテンシを大幅に削減し、従来のモデルでよく使われる key-value キャッシュ戦略が不要になることで実装も簡素化されます。</p>
+</li>
+<li>
+<p><strong>チャンク単位の再帰表現（Chunkwise Recurrent Representation）:</strong> この3つ目のパラダイムは、長系列モデリングの課題に対処します。各局所ブロックを計算速度のために並列にエンコードしながら、同時に大域ブロックを再帰的にエンコードして GPU メモリの使用を最適化することで、これを達成します。</p>
+</li>
+</ul>
+<p>訓練フェーズでは、このアプローチは並列表現とチャンク単位の再帰表現の両方を取り入れ、高速な計算のために GPU の使用を最適化し、計算効率とメモリ使用の面で長系列に特に効果的です。
+推論フェーズでは、再帰表現が使われ、自己回帰デコーディングが優先されます。この手法は、同等の性能を維持しながら、メモリ使用量とレイテンシを効率よく削減します。</p>
+<h2>言語から画像へ</h2>
+<h3>RMT</h3>
+<p>論文 <a href="https://arxiv.org/abs/2309.11523">RMT: Retentive Networks Meet Vision Transformers</a> は、RetNet アーキテクチャに着想を得た新しい視覚バックボーンを提案しています。著者らは、RetNet の並列表現から着想を得て、明示的な空間事前情報を導入し計算量を削減することで Vision Transformer（ViT）を強化する RMT を提案しています。
+これには、RetNet の時間的な減衰を空間領域に適応させ、<a href="https://en.wikipedia.org/wiki/Taxicab_geometry">マンハッタン距離に基づく</a>空間減衰行列をアテンション分解の形とともに使うことで、視覚タスクにおける効率とスケーラビリティを改善することが含まれます。</p>
+<ul>
+<li>
+<p><strong>マンハッタン・セルフアテンション（Manhattan Self-Attention、MaSA）</strong>
+<img alt="Attention の比較" src="https://huggingface.co/datasets/hf-vision/course-assets/resolve/main/Attention%20Comparison.png" />
+MaSA は、トークン間のマンハッタン距離に基づく二次元の双方向空間減衰行列をセルフアテンション機構に組み込んでいます。この行列は、対象トークンから遠いトークンほどアテンションスコアを下げるため、大域的な情報を知覚しながら、距離に応じてアテンションを変えることができます。</p>
+</li>
+<li>
+<p><strong>分解マンハッタン・セルフアテンション（Decomposed Manhattan Self-Attention、MaSAD）</strong>
+<img alt="MaSAD" src="https://huggingface.co/datasets/hf-vision/course-assets/resolve/main/MaSAD.png" />
+この機構は、画像のセルフアテンションを画像の水平軸と垂直軸に沿って分解し、事前情報を失うことなく空間減衰行列を維持します。この分解により、マンハッタン・セルフアテンション（MaSA）は、元の MaSA の受容野の形状を保ちながら、線形の計算量で大域的な情報を効率よくモデル化できます。</p>
+</li>
+</ul>
+<p>しかし、並列表現で訓練し再帰表現で推論する元の RetNet とは異なり、RMT は両方のプロセスを MaSA 機構で行います。著者らは MaSA と RetNet の他の表現との比較を行っており、MaSA が最も高い精度で最良のスループットを持つことを示しています。
+<img alt="MaSA vs Retention" src="https://huggingface.co/datasets/hf-vision/course-assets/resolve/main/MaSA%20vs%20Retention.png" /></p>
+<h3>ViR</h3>
+<p><img alt="ViR" src="https://huggingface.co/datasets/hf-vision/course-assets/resolve/main/ViR.png" /></p>
+<p>RetNet アーキテクチャに着想を得たもうひとつの取り組みが、論文 <a href="http://arxiv.org/abs/2310.19731">ViR: Vision Retention Networks</a> で議論されている ViR です。このアーキテクチャで著者らは、再設計されたリテンション機構を持つ汎用的な視覚バックボーンを提案しています。彼らは、リテンションネットワークの並列と再帰の二重の性質を活かすことで、ViR が画像のスループットとメモリ消費の面でより大きな画像解像度へ有利にスケールできることを示しています。</p>
+<p>ViR の全体アーキテクチャは ViT とかなり似ていますが、マルチヘッドアテンション（MHA）をマルチヘッドリテンション（Multi-Head Retention、MHR）に置き換えている点が異なります。この MHR 機構はゲーティング関数を一切持たず、並列、再帰、チャンク単位（並列と再帰のハイブリッド）のモードを切り替えることができます。ViR のもうひとつの違いは、位置埋め込みがまずパッチ埋め込みに加えられ、その後で [class] トークンが追加される点です。</p>
+<h2>さらに読む</h2>
+<ul>
+<li><a href="https://github.com/microsoft/torchscale/blob/main/torchscale/architecture/retnet.py">RetNet の公式リポジトリ</a></li>
+<li><a href="https://github.com/microsoft/torchscale/blob/main/torchscale/component/multiscale_retention.py">RetNet のマルチスケールリテンションの公式リポジトリ</a></li>
+<li><a href="https://medium.com/ai-fusion-labs/retentive-networks-retnet-explained-the-much-awaited-transformers-killer-is-here-6c17e3e8add8">Retentive Networks (RetNet) Explained: The much-awaited Transformers-killer is here</a></li>
+<li><a href="https://www.youtube.com/watch?v=ec56a8wmfRk">Retentive Network: A Successor to Transformer for Large Language Models (Paper Explained)</a></li>
+<li><a href="https://github.com/qhfan/RMT">RMT の公式リポジトリ</a></li>
+<li><a href="https://github.com/NVlabs/ViR">ViR の公式リポジトリ</a></li>
+</ul>
+</article>
+<nav class="page-nav"><a class="nav-link prev" href="../unit12/supplementary-material.html">← 前へ: 参考文献とリソース 🤗🌎</a><a class="nav-link toc-link" href="../index.html">目次へ</a><a class="nav-link next" href="hiera.html">次へ →: Overview of Hiera</a></nav>
+</main>
+<footer class="site-footer">
+  <p>原典: Hugging Face huggingface/computer-vision-course（<a href="https://github.com/huggingface/computer-vision-course">https://github.com/huggingface/computer-vision-course</a>）</p>
+  <p>日本語版の翻訳・公開: 霞ヶ関京 / 連絡先: GitHub <a href="https://github.com/yanikasumin">@yanikasumin</a> / YouTube <a href="https://www.youtube.com/@KASUMI_MOF">@KASUMI_MOF</a></p>
+  <p class="demo-note">このサイトはデモ版です。内容は順次更新されます。</p>
+</footer>
+<script src="../../site.js"></script>
+</body>
+</html>

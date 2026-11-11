@@ -1,0 +1,619 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ガラ用エージェントの作成 | Hugging Face コース日本語版（デモ版）</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Shippori+Mincho:wght@500;700&family=Zen+Kaku+Gothic+New:wght@400;500;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../../../style.css">
+<script>
+window.MathJax = { tex: { inlineMath: [['$', '$'], ['\\(', '\\)']], displayMath: [['$$', '$$'], ['\\[', '\\]']] }, options: { skipHtmlTags: ['script','noscript','style','textarea','pre','code'] } };
+</script>
+<script async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml.js"></script>
+</head>
+<body>
+<header class="site-header">
+  <div class="header-inner">
+    <a class="site-title" href="../../../index.html">Hugging Face コース日本語版</a>
+    <span class="demo-badge">デモ版</span>
+  </div>
+</header>
+<main class="container">
+<p class="course-crumb"><a href="../../index.html">Agents コース</a>
+<span class="badge badge-qa-wip">翻訳済み・QA進行中（未検証の部分を含みます）</span></p>
+<nav class="page-nav"><a class="nav-link prev" href="tools.html">← 前へ: エージェントのためのツールの構築と統合</a><a class="nav-link toc-link" href="../../index.html">目次へ</a><a class="nav-link next" href="conclusion.html">次へ →: まとめ</a></nav>
+<article class="content">
+<h1>ガラ用エージェントの作成</h1>
+<p>Alfredに必要なコンポーネントをすべて構築しました。ここでは、それらをすべてまとめ、豪華なガラの開催を手伝う完全なエージェントに仕上げます。</p>
+<p>このセクションでは、ゲスト情報の検索、Web検索、天気情報、Hub統計のツールを、1つの強力なエージェントに統合します。</p>
+<h2>Alfredの組み立て： 完成形のエージェント</h2>
+<p>前のセクションで作成したツールをすべて再実装する代わりに、それぞれのモジュールからインポートします。モジュールは <code>tools.py</code> と <code>retriever.py</code> ファイルに保存しました。</p>
+<div class="callout callout-tip">
+<p class="callout-title">💡 ヒント</p>
+<p>まだツールを実装していない場合は、<a href="tools.html">ツール</a> と <a href="invitees.html">リトリーバー</a> のセクションに戻って実装し、<code>tools.py</code> と <code>retriever.py</code> ファイルに追加してください。</p>
+</div>
+<p>前のセクションから、必要なライブラリとツールをインポートしましょう。</p>
+<div class="hfoptions">
+<section class="hfoption" markdown="block">
+<p class="hfoption-label">smolagents</p>
+
+
+
+<div class="codehilite"><pre><span></span><code><span class="c1"># 必要なライブラリをインポートする</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">random</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">smolagents</span><span class="w"> </span><span class="kn">import</span> <span class="n">CodeAgent</span><span class="p">,</span> <span class="n">InferenceClientModel</span>
+
+<span class="c1"># モジュールからカスタムツールをインポートする</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">tools</span><span class="w"> </span><span class="kn">import</span> <span class="n">DuckDuckGoSearchTool</span><span class="p">,</span> <span class="n">WeatherInfoTool</span><span class="p">,</span> <span class="n">HubStatsTool</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">retriever</span><span class="w"> </span><span class="kn">import</span> <span class="n">load_guest_dataset</span>
+</code></pre></div>
+
+
+
+では、すべてのツールを1つのエージェントにまとめましょう。
+
+
+<div class="codehilite"><pre><span></span><code><span class="c1"># Hugging Faceモデルを初期化する</span>
+<span class="n">model</span> <span class="o">=</span> <span class="n">InferenceClientModel</span><span class="p">()</span>
+
+<span class="c1"># Web検索ツールを初期化する</span>
+<span class="n">search_tool</span> <span class="o">=</span> <span class="n">DuckDuckGoSearchTool</span><span class="p">()</span>
+
+<span class="c1"># 天気ツールを初期化する</span>
+<span class="n">weather_info_tool</span> <span class="o">=</span> <span class="n">WeatherInfoTool</span><span class="p">()</span>
+
+<span class="c1"># Hub統計ツールを初期化する</span>
+<span class="n">hub_stats_tool</span> <span class="o">=</span> <span class="n">HubStatsTool</span><span class="p">()</span>
+
+<span class="c1"># ゲストのデータセットを読み込み、ゲスト情報ツールを初期化する</span>
+<span class="n">guest_info_tool</span> <span class="o">=</span> <span class="n">load_guest_dataset</span><span class="p">()</span>
+
+<span class="c1"># すべてのツールを持ったAlfredを作成する</span>
+<span class="n">alfred</span> <span class="o">=</span> <span class="n">CodeAgent</span><span class="p">(</span>
+    <span class="n">tools</span><span class="o">=</span><span class="p">[</span><span class="n">guest_info_tool</span><span class="p">,</span> <span class="n">weather_info_tool</span><span class="p">,</span> <span class="n">hub_stats_tool</span><span class="p">,</span> <span class="n">search_tool</span><span class="p">],</span>
+    <span class="n">model</span><span class="o">=</span><span class="n">model</span><span class="p">,</span>
+    <span class="n">add_base_tools</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>  <span class="c1"># 追加の基本ツールがあれば加える</span>
+    <span class="n">planning_interval</span><span class="o">=</span><span class="mi">3</span>   <span class="c1"># 3ステップごとに計画を有効化する</span>
+<span class="p">)</span>
+</code></pre></div>
+
+
+
+</section>
+<section class="hfoption" markdown="block">
+<p class="hfoption-label">llama-index</p>
+
+
+
+<div class="codehilite"><pre><span></span><code><span class="c1"># 必要なライブラリをインポートする</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">llama_index.core.agent.workflow</span><span class="w"> </span><span class="kn">import</span> <span class="n">AgentWorkflow</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">llama_index.llms.huggingface_api</span><span class="w"> </span><span class="kn">import</span> <span class="n">HuggingFaceInferenceAPI</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">tools</span><span class="w"> </span><span class="kn">import</span> <span class="n">search_tool</span><span class="p">,</span> <span class="n">weather_info_tool</span><span class="p">,</span> <span class="n">hub_stats_tool</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">retriever</span><span class="w"> </span><span class="kn">import</span> <span class="n">guest_info_tool</span>
+</code></pre></div>
+
+
+
+では、すべてのツールを1つのエージェントにまとめましょう。
+
+
+<div class="codehilite"><pre><span></span><code><span class="c1"># Hugging Faceモデルを初期化する</span>
+<span class="n">llm</span> <span class="o">=</span> <span class="n">HuggingFaceInferenceAPI</span><span class="p">(</span><span class="n">model_name</span><span class="o">=</span><span class="s2">"Qwen/Qwen2.5-Coder-32B-Instruct"</span><span class="p">)</span>
+
+<span class="c1"># すべてのツールを持ったAlfredを作成する</span>
+<span class="n">alfred</span> <span class="o">=</span> <span class="n">AgentWorkflow</span><span class="o">.</span><span class="n">from_tools_or_functions</span><span class="p">(</span>
+    <span class="p">[</span><span class="n">guest_info_tool</span><span class="p">,</span> <span class="n">search_tool</span><span class="p">,</span> <span class="n">weather_info_tool</span><span class="p">,</span> <span class="n">hub_stats_tool</span><span class="p">],</span>
+    <span class="n">llm</span><span class="o">=</span><span class="n">llm</span><span class="p">,</span>
+<span class="p">)</span>
+</code></pre></div>
+
+
+
+</section>
+<section class="hfoption" markdown="block">
+<p class="hfoption-label">langgraph</p>
+
+
+
+<div class="codehilite"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">TypedDict</span><span class="p">,</span> <span class="n">Annotated</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">langgraph.graph.message</span><span class="w"> </span><span class="kn">import</span> <span class="n">add_messages</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">langchain_core.messages</span><span class="w"> </span><span class="kn">import</span> <span class="n">AnyMessage</span><span class="p">,</span> <span class="n">HumanMessage</span><span class="p">,</span> <span class="n">AIMessage</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">langgraph.prebuilt</span><span class="w"> </span><span class="kn">import</span> <span class="n">ToolNode</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">langgraph.graph</span><span class="w"> </span><span class="kn">import</span> <span class="n">START</span><span class="p">,</span> <span class="n">StateGraph</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">langgraph.prebuilt</span><span class="w"> </span><span class="kn">import</span> <span class="n">tools_condition</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">langchain_huggingface</span><span class="w"> </span><span class="kn">import</span> <span class="n">HuggingFaceEndpoint</span><span class="p">,</span> <span class="n">ChatHuggingFace</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">tools</span><span class="w"> </span><span class="kn">import</span> <span class="n">DuckDuckGoSearchRun</span><span class="p">,</span> <span class="n">weather_info_tool</span><span class="p">,</span> <span class="n">hub_stats_tool</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">retriever</span><span class="w"> </span><span class="kn">import</span> <span class="n">guest_info_tool</span>
+</code></pre></div>
+
+
+
+では、すべてのツールを1つのエージェントにまとめましょう。
+
+
+<div class="codehilite"><pre><span></span><code><span class="c1"># Web検索ツールを初期化する</span>
+<span class="n">search_tool</span> <span class="o">=</span> <span class="n">DuckDuckGoSearchRun</span><span class="p">()</span>
+
+<span class="c1"># ツールを含むチャットインターフェースを生成する</span>
+<span class="n">llm</span> <span class="o">=</span> <span class="n">HuggingFaceEndpoint</span><span class="p">(</span>
+    <span class="n">repo_id</span><span class="o">=</span><span class="s2">"Qwen/Qwen2.5-Coder-32B-Instruct"</span><span class="p">,</span>
+    <span class="n">huggingfacehub_api_token</span><span class="o">=</span><span class="n">HUGGINGFACEHUB_API_TOKEN</span><span class="p">,</span>
+<span class="p">)</span>
+
+<span class="n">chat</span> <span class="o">=</span> <span class="n">ChatHuggingFace</span><span class="p">(</span><span class="n">llm</span><span class="o">=</span><span class="n">llm</span><span class="p">,</span> <span class="n">verbose</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+<span class="n">tools</span> <span class="o">=</span> <span class="p">[</span><span class="n">guest_info_tool</span><span class="p">,</span> <span class="n">search_tool</span><span class="p">,</span> <span class="n">weather_info_tool</span><span class="p">,</span> <span class="n">hub_stats_tool</span><span class="p">]</span>
+<span class="n">chat_with_tools</span> <span class="o">=</span> <span class="n">chat</span><span class="o">.</span><span class="n">bind_tools</span><span class="p">(</span><span class="n">tools</span><span class="p">)</span>
+
+<span class="c1"># AgentStateとエージェントのグラフを生成する</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">AgentState</span><span class="p">(</span><span class="n">TypedDict</span><span class="p">):</span>
+    <span class="n">messages</span><span class="p">:</span> <span class="n">Annotated</span><span class="p">[</span><span class="nb">list</span><span class="p">[</span><span class="n">AnyMessage</span><span class="p">],</span> <span class="n">add_messages</span><span class="p">]</span>
+
+<span class="k">def</span><span class="w"> </span><span class="nf">assistant</span><span class="p">(</span><span class="n">state</span><span class="p">:</span> <span class="n">AgentState</span><span class="p">):</span>
+    <span class="k">return</span> <span class="p">{</span>
+        <span class="s2">"messages"</span><span class="p">:</span> <span class="p">[</span><span class="n">chat_with_tools</span><span class="o">.</span><span class="n">invoke</span><span class="p">(</span><span class="n">state</span><span class="p">[</span><span class="s2">"messages"</span><span class="p">])],</span>
+    <span class="p">}</span>
+
+<span class="c1">## グラフ</span>
+<span class="n">builder</span> <span class="o">=</span> <span class="n">StateGraph</span><span class="p">(</span><span class="n">AgentState</span><span class="p">)</span>
+
+<span class="c1"># ノードを定義する: 実際の処理を行う</span>
+<span class="n">builder</span><span class="o">.</span><span class="n">add_node</span><span class="p">(</span><span class="s2">"assistant"</span><span class="p">,</span> <span class="n">assistant</span><span class="p">)</span>
+<span class="n">builder</span><span class="o">.</span><span class="n">add_node</span><span class="p">(</span><span class="s2">"tools"</span><span class="p">,</span> <span class="n">ToolNode</span><span class="p">(</span><span class="n">tools</span><span class="p">))</span>
+
+<span class="c1"># エッジを定義する: 制御フローの動きを決める</span>
+<span class="n">builder</span><span class="o">.</span><span class="n">add_edge</span><span class="p">(</span><span class="n">START</span><span class="p">,</span> <span class="s2">"assistant"</span><span class="p">)</span>
+<span class="n">builder</span><span class="o">.</span><span class="n">add_conditional_edges</span><span class="p">(</span>
+    <span class="s2">"assistant"</span><span class="p">,</span>
+    <span class="c1"># 最新のメッセージがツールを必要とする場合は、ツールへルーティングする</span>
+    <span class="c1"># それ以外の場合は、直接応答する</span>
+    <span class="n">tools_condition</span><span class="p">,</span>
+<span class="p">)</span>
+<span class="n">builder</span><span class="o">.</span><span class="n">add_edge</span><span class="p">(</span><span class="s2">"tools"</span><span class="p">,</span> <span class="s2">"assistant"</span><span class="p">)</span>
+<span class="n">alfred</span> <span class="o">=</span> <span class="n">builder</span><span class="o">.</span><span class="n">compile</span><span class="p">()</span>
+</code></pre></div>
+
+
+</section>
+</div>
+
+<p>これでエージェントが使えるようになりました！</p>
+<h2>Alfredの使用： エンドツーエンドの例</h2>
+<p>Alfredが必要なツールをすべて備えたので、ガラの最中にさまざまなタスクをどう手伝えるか見ていきましょう。</p>
+<h3>例1: ゲスト情報の検索</h3>
+<p>Alfredがゲスト情報をどう手伝えるか見てみましょう。</p>
+<div class="hfoptions">
+<section class="hfoption" markdown="block">
+<p class="hfoption-label">smolagents</p>
+
+
+
+<div class="codehilite"><pre><span></span><code><span class="n">query</span> <span class="o">=</span> <span class="s2">"Tell me about 'Lady Ada Lovelace'"</span>
+<span class="n">response</span> <span class="o">=</span> <span class="n">alfred</span><span class="o">.</span><span class="n">run</span><span class="p">(</span><span class="n">query</span><span class="p">)</span>
+
+<span class="nb">print</span><span class="p">(</span><span class="s2">"🎩 Alfredの応答："</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">response</span><span class="p">)</span>
+</code></pre></div>
+
+
+
+期待される出力：
+
+
+<div class="codehilite"><pre><span></span><code>🎩 Alfredの応答：
+Based on the information I retrieved, Lady Ada Lovelace is an esteemed mathematician and friend. She is renowned for her pioneering work in mathematics and computing, often celebrated as the first computer programmer due to her work on Charles Babbage's Analytical Engine. Her email address is ada.lovelace@example.com.
+</code></pre></div>
+
+
+
+</section>
+<section class="hfoption" markdown="block">
+<p class="hfoption-label">llama-index</p>
+
+
+
+<div class="codehilite"><pre><span></span><code><span class="n">query</span> <span class="o">=</span> <span class="s2">"Tell me about Lady Ada Lovelace. What's her background?"</span>
+<span class="n">response</span> <span class="o">=</span> <span class="k">await</span> <span class="n">alfred</span><span class="o">.</span><span class="n">run</span><span class="p">(</span><span class="n">query</span><span class="p">)</span>
+
+<span class="nb">print</span><span class="p">(</span><span class="s2">"🎩 Alfredの応答："</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">response</span><span class="o">.</span><span class="n">response</span><span class="o">.</span><span class="n">blocks</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">text</span><span class="p">)</span>
+</code></pre></div>
+
+
+
+期待される出力：
+
+
+<div class="codehilite"><pre><span></span><code>🎩 Alfredの応答：
+Lady Ada Lovelace was an English mathematician and writer, best known for her work on Charles Babbage's Analytical Engine. She was the first to recognize that the machine had applications beyond pure calculation.
+</code></pre></div>
+
+
+
+</section>
+<section class="hfoption" markdown="block">
+<p class="hfoption-label">langgraph</p>
+
+
+
+<div class="codehilite"><pre><span></span><code><span class="n">response</span> <span class="o">=</span> <span class="n">alfred</span><span class="o">.</span><span class="n">invoke</span><span class="p">({</span><span class="s2">"messages"</span><span class="p">:</span> <span class="s2">"Tell me about 'Lady Ada Lovelace'"</span><span class="p">})</span>
+
+<span class="nb">print</span><span class="p">(</span><span class="s2">"🎩 Alfredの応答："</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">response</span><span class="p">[</span><span class="s1">'messages'</span><span class="p">][</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">content</span><span class="p">)</span>
+</code></pre></div>
+
+
+
+期待される出力：
+
+
+<div class="codehilite"><pre><span></span><code>🎩 Alfredの応答：
+Ada Lovelace, also known as Augusta Ada King, Countess of Lovelace, was an English mathematician and writer. Born on December 10, 1815, and passing away on November 27, 1852, she is renowned for her work on Charles Babbage's Analytical Engine, a proposed mechanical general-purpose computer. Ada Lovelace is celebrated as one of the first computer programmers because she created a program for the Analytical Engine in 1843. She recognized that the machine could be used for more than mere calculation, envisioning its potential in a way that few did at the time. Her contributions to the field of computer science laid the groundwork for future developments. A day in October, designated as Ada Lovelace Day, honors women's contributions to science and technology, inspired by Lovelace's pioneering work.
+</code></pre></div>
+
+
+
+</section>
+</div>
+
+<h3>例2: 花火のための天気の確認</h3>
+<p>Alfredが天気についてどう手伝えるか見てみましょう。</p>
+<div class="hfoptions">
+<section class="hfoption" markdown="block">
+<p class="hfoption-label">smolagents</p>
+
+
+
+<div class="codehilite"><pre><span></span><code><span class="n">query</span> <span class="o">=</span> <span class="s2">"What's the weather like in Paris tonight? Will it be suitable for our fireworks display?"</span>
+<span class="n">response</span> <span class="o">=</span> <span class="n">alfred</span><span class="o">.</span><span class="n">run</span><span class="p">(</span><span class="n">query</span><span class="p">)</span>
+
+<span class="nb">print</span><span class="p">(</span><span class="s2">"🎩 Alfredの応答："</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">response</span><span class="p">)</span>
+</code></pre></div>
+
+
+
+期待される出力（ランダム性のため変動します）：
+
+<div class="codehilite"><pre><span></span><code>🎩 Alfredの応答：
+I've checked the weather in Paris for you. Currently, it's clear with a temperature of 25°C. These conditions are perfect for the fireworks display tonight. The clear skies will provide excellent visibility for the spectacular show, and the comfortable temperature will ensure the guests can enjoy the outdoor event without discomfort.
+</code></pre></div>
+
+
+
+</section>
+<section class="hfoption" markdown="block">
+<p class="hfoption-label">llama-index</p>
+
+
+
+<div class="codehilite"><pre><span></span><code><span class="n">query</span> <span class="o">=</span> <span class="s2">"What's the weather like in Paris tonight? Will it be suitable for our fireworks display?"</span>
+<span class="n">response</span> <span class="o">=</span> <span class="k">await</span> <span class="n">alfred</span><span class="o">.</span><span class="n">run</span><span class="p">(</span><span class="n">query</span><span class="p">)</span>
+
+<span class="nb">print</span><span class="p">(</span><span class="s2">"🎩 Alfredの応答："</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">response</span><span class="p">)</span>
+</code></pre></div>
+
+
+
+期待される出力：
+
+
+<div class="codehilite"><pre><span></span><code>🎩 Alfredの応答：
+The weather in Paris tonight is rainy with a temperature of 15°C. Given the rain, it may not be suitable for a fireworks display.
+</code></pre></div>
+
+
+
+</section>
+<section class="hfoption" markdown="block">
+<p class="hfoption-label">langgraph</p>
+
+
+
+<div class="codehilite"><pre><span></span><code><span class="n">response</span> <span class="o">=</span> <span class="n">alfred</span><span class="o">.</span><span class="n">invoke</span><span class="p">({</span><span class="s2">"messages"</span><span class="p">:</span> <span class="s2">"What's the weather like in Paris tonight? Will it be suitable for our fireworks display?"</span><span class="p">})</span>
+
+<span class="nb">print</span><span class="p">(</span><span class="s2">"🎩 Alfredの応答："</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">response</span><span class="p">[</span><span class="s1">'messages'</span><span class="p">][</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">content</span><span class="p">)</span>
+</code></pre></div>
+
+
+
+期待される出力：
+
+
+<div class="codehilite"><pre><span></span><code>🎩 Alfredの応答：
+The weather in Paris tonight is rainy with a temperature of 15°C, which may not be suitable for your fireworks display.
+</code></pre></div>
+
+
+</section>
+</div>
+
+<h3>例3: AI研究者を感心させる</h3>
+<p>AlfredがAI研究者を感心させる手伝いをどうできるか見てみましょう。</p>
+<div class="hfoptions">
+<section class="hfoption" markdown="block">
+<p class="hfoption-label">smolagents</p>
+
+
+
+<div class="codehilite"><pre><span></span><code><span class="n">query</span> <span class="o">=</span> <span class="s2">"One of our guests is from Qwen. What can you tell me about their most popular model?"</span>
+<span class="n">response</span> <span class="o">=</span> <span class="n">alfred</span><span class="o">.</span><span class="n">run</span><span class="p">(</span><span class="n">query</span><span class="p">)</span>
+
+<span class="nb">print</span><span class="p">(</span><span class="s2">"🎩 Alfredの応答："</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">response</span><span class="p">)</span>
+</code></pre></div>
+
+
+
+期待される出力：
+
+
+<div class="codehilite"><pre><span></span><code>🎩 Alfredの応答：
+The most popular Qwen model is Qwen/Qwen2.5-VL-7B-Instruct with 3,313,345 downloads.
+</code></pre></div>
+
+
+</section>
+<section class="hfoption" markdown="block">
+<p class="hfoption-label">llama-index</p>
+
+
+
+<div class="codehilite"><pre><span></span><code><span class="n">query</span> <span class="o">=</span> <span class="s2">"One of our guests is from Google. What can you tell me about their most popular model?"</span>
+<span class="n">response</span> <span class="o">=</span> <span class="k">await</span> <span class="n">alfred</span><span class="o">.</span><span class="n">run</span><span class="p">(</span><span class="n">query</span><span class="p">)</span>
+
+<span class="nb">print</span><span class="p">(</span><span class="s2">"🎩 Alfredの応答："</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">response</span><span class="p">)</span>
+</code></pre></div>
+
+
+
+期待される出力：
+
+
+<div class="codehilite"><pre><span></span><code>🎩 Alfredの応答：
+The most popular model by Google on the Hugging Face Hub is google/electra-base-discriminator, with 28,546,752 downloads.
+</code></pre></div>
+
+
+
+</section>
+<section class="hfoption" markdown="block">
+<p class="hfoption-label">langgraph</p>
+
+
+
+<div class="codehilite"><pre><span></span><code><span class="n">response</span> <span class="o">=</span> <span class="n">alfred</span><span class="o">.</span><span class="n">invoke</span><span class="p">({</span><span class="s2">"messages"</span><span class="p">:</span> <span class="s2">"One of our guests is from Qwen. What can you tell me about their most popular model?"</span><span class="p">})</span>
+
+<span class="nb">print</span><span class="p">(</span><span class="s2">"🎩 Alfredの応答："</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">response</span><span class="p">[</span><span class="s1">'messages'</span><span class="p">][</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">content</span><span class="p">)</span>
+</code></pre></div>
+
+
+
+期待される出力：
+
+
+<div class="codehilite"><pre><span></span><code>🎩 Alfredの応答：
+The most downloaded model by Qwen is Qwen/Qwen2.5-VL-7B-Instruct with 3,313,345 downloads.
+</code></pre></div>
+
+
+</section>
+</div>
+
+<h3>例4: 複数のツールの組み合わせ</h3>
+<p>Dr. Nikola Teslaとの会話の準備を、Alfredがどう手伝えるか見てみましょう。</p>
+<div class="hfoptions">
+<section class="hfoption" markdown="block">
+<p class="hfoption-label">smolagents</p>
+
+
+
+<div class="codehilite"><pre><span></span><code><span class="n">query</span> <span class="o">=</span> <span class="s2">"I need to speak with Dr. Nikola Tesla about recent advancements in wireless energy. Can you help me prepare for this conversation?"</span>
+<span class="n">response</span> <span class="o">=</span> <span class="n">alfred</span><span class="o">.</span><span class="n">run</span><span class="p">(</span><span class="n">query</span><span class="p">)</span>
+
+<span class="nb">print</span><span class="p">(</span><span class="s2">"🎩 Alfredの応答："</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">response</span><span class="p">)</span>
+</code></pre></div>
+
+
+
+期待される出力：
+
+
+<div class="codehilite"><pre><span></span><code>🎩 Alfredの応答：
+I've gathered information to help you prepare for your conversation with Dr. Nikola Tesla.
+
+Guest Information:
+Name: Dr. Nikola Tesla
+Relation: old friend from university days
+Description: Dr. Nikola Tesla is an old friend from your university days. He's recently patented a new wireless energy transmission system and would be delighted to discuss it with you. Just remember he's passionate about pigeons, so that might make for good small talk.
+Email: nikola.tesla@gmail.com
+
+Recent Advancements in Wireless Energy:
+Based on my web search, here are some recent developments in wireless energy transmission:
+1. Researchers have made progress in long-range wireless power transmission using focused electromagnetic waves
+2. Several companies are developing resonant inductive coupling technologies for consumer electronics
+3. There are new applications in electric vehicle charging without physical connections
+
+Conversation Starters:
+1. "I'd love to hear about your new patent on wireless energy transmission. How does it compare to your original concepts from our university days?"
+2. "Have you seen the recent developments in resonant inductive coupling for consumer electronics? What do you think of their approach?"
+3. "How are your pigeons doing? I remember your fascination with them."
+
+This should give you plenty to discuss with Dr. Tesla while demonstrating your knowledge of his interests and recent developments in his field.
+</code></pre></div>
+
+
+
+</section>
+<section class="hfoption" markdown="block">
+<p class="hfoption-label">llama-index</p>
+
+
+
+<div class="codehilite"><pre><span></span><code><span class="n">query</span> <span class="o">=</span> <span class="s2">"I need to speak with Dr. Nikola Tesla about recent advancements in wireless energy. Can you help me prepare for this conversation?"</span>
+<span class="n">response</span> <span class="o">=</span> <span class="k">await</span> <span class="n">alfred</span><span class="o">.</span><span class="n">run</span><span class="p">(</span><span class="n">query</span><span class="p">)</span>
+
+<span class="nb">print</span><span class="p">(</span><span class="s2">"🎩 Alfredの応答："</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">response</span><span class="p">)</span>
+</code></pre></div>
+
+
+
+期待される出力：
+
+
+<div class="codehilite"><pre><span></span><code>🎩 Alfredの応答：
+Here are some recent advancements in wireless energy that you might find useful for your conversation with Dr. Nikola Tesla:
+
+1. **Advancements and Challenges in Wireless Power Transfer**: This article discusses the evolution of wireless power transfer (WPT) from conventional wired methods to modern applications, including solar space power stations. It highlights the initial focus on microwave technology and the current demand for WPT due to the rise of electric devices.
+
+2. **Recent Advances in Wireless Energy Transfer Technologies for Body-Interfaced Electronics**: This article explores wireless energy transfer (WET) as a solution for powering body-interfaced electronics without the need for batteries or lead wires. It discusses the advantages and potential applications of WET in this context.
+
+3. **Wireless Power Transfer and Energy Harvesting: Current Status and Future Trends**: This article provides an overview of recent advances in wireless power supply methods, including energy harvesting and wireless power transfer. It presents several promising applications and discusses future trends in the field.
+
+4. **Wireless Power Transfer: Applications, Challenges, Barriers, and the
+</code></pre></div>
+
+
+
+</section>
+<section class="hfoption" markdown="block">
+<p class="hfoption-label">langgraph</p>
+
+
+
+<div class="codehilite"><pre><span></span><code><span class="n">response</span> <span class="o">=</span> <span class="n">alfred</span><span class="o">.</span><span class="n">invoke</span><span class="p">({</span><span class="s2">"messages"</span><span class="p">:</span><span class="s2">"I need to speak with 'Dr. Nikola Tesla' about recent advancements in wireless energy. Can you help me prepare for this conversation?"</span><span class="p">})</span>
+
+<span class="nb">print</span><span class="p">(</span><span class="s2">"🎩 Alfredの応答："</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">response</span><span class="p">[</span><span class="s1">'messages'</span><span class="p">][</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">content</span><span class="p">)</span>
+</code></pre></div>
+
+
+
+期待される出力：
+
+
+<div class="codehilite"><pre><span></span><code>Based on the provided information, here are key points to prepare for the conversation with 'Dr. Nikola Tesla' about recent advancements in wireless energy:\n1. **Wireless Power Transmission (WPT):** Discuss how WPT revolutionizes energy transfer by eliminating the need for cords and leveraging mechanisms like inductive and resonant coupling.\n2. **Advancements in Wireless Charging:** Highlight improvements in efficiency, faster charging speeds, and the rise of Qi/Qi2 certified wireless charging solutions.\n3. **5G-Advanced Innovations and NearLink Wireless Protocol:** Mention these as developments that enhance speed, security, and efficiency in wireless networks, which can support advanced wireless energy technologies.\n4. **AI and ML at the Edge:** Talk about how AI and machine learning will rely on wireless networks to bring intelligence to the edge, enhancing automation and intelligence in smart homes and buildings.\n5. **Matter, Thread, and Security Advancements:** Discuss these as key innovations that drive connectivity, efficiency, and security in IoT devices and systems.\n6. **Breakthroughs in Wireless Charging Technology:** Include any recent breakthroughs or studies, such as the one from Incheon National University, to substantiate the advancements in wireless charging.
+</code></pre></div>
+
+
+</section>
+</div>
+
+<h2>高度な機能： 会話メモリ</h2>
+<p>ガラの最中にAlfredをさらに役立つ存在にするため、会話メモリを有効にして、以前のやり取りを覚えさせられます。</p>
+<div class="hfoptions">
+<section class="hfoption" markdown="block">
+<p class="hfoption-label">smolagents</p>
+
+
+
+<div class="codehilite"><pre><span></span><code><span class="c1"># 会話メモリを持つAlfredを作成する</span>
+<span class="n">alfred_with_memory</span> <span class="o">=</span> <span class="n">CodeAgent</span><span class="p">(</span>
+    <span class="n">tools</span><span class="o">=</span><span class="p">[</span><span class="n">guest_info_tool</span><span class="p">,</span> <span class="n">weather_info_tool</span><span class="p">,</span> <span class="n">hub_stats_tool</span><span class="p">,</span> <span class="n">search_tool</span><span class="p">],</span>
+    <span class="n">model</span><span class="o">=</span><span class="n">model</span><span class="p">,</span>
+    <span class="n">add_base_tools</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+    <span class="n">planning_interval</span><span class="o">=</span><span class="mi">3</span>
+<span class="p">)</span>
+
+<span class="c1"># 1回目のやり取り</span>
+<span class="n">response1</span> <span class="o">=</span> <span class="n">alfred_with_memory</span><span class="o">.</span><span class="n">run</span><span class="p">(</span><span class="s2">"Tell me about Lady Ada Lovelace."</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="s2">"🎩 Alfredの最初の応答："</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">response1</span><span class="p">)</span>
+
+<span class="c1"># 2回目のやり取り（1回目を参照）</span>
+<span class="n">response2</span> <span class="o">=</span> <span class="n">alfred_with_memory</span><span class="o">.</span><span class="n">run</span><span class="p">(</span><span class="s2">"What projects is she currently working on?"</span><span class="p">,</span> <span class="n">reset</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="s2">"🎩 Alfredの2番目の応答："</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">response2</span><span class="p">)</span>
+</code></pre></div>
+
+
+
+</section>
+<section class="hfoption" markdown="block">
+<p class="hfoption-label">llama-index</p>
+
+
+
+<div class="codehilite"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">llama_index.core.workflow</span><span class="w"> </span><span class="kn">import</span> <span class="n">Context</span>
+
+<span class="n">alfred</span> <span class="o">=</span> <span class="n">AgentWorkflow</span><span class="o">.</span><span class="n">from_tools_or_functions</span><span class="p">(</span>
+    <span class="p">[</span><span class="n">guest_info_tool</span><span class="p">,</span> <span class="n">search_tool</span><span class="p">,</span> <span class="n">weather_info_tool</span><span class="p">,</span> <span class="n">hub_stats_tool</span><span class="p">],</span>
+    <span class="n">llm</span><span class="o">=</span><span class="n">llm</span>
+<span class="p">)</span>
+
+<span class="c1"># 状態を記憶する</span>
+<span class="n">ctx</span> <span class="o">=</span> <span class="n">Context</span><span class="p">(</span><span class="n">alfred</span><span class="p">)</span>
+
+<span class="c1"># 1回目のやり取り</span>
+<span class="n">response1</span> <span class="o">=</span> <span class="k">await</span> <span class="n">alfred</span><span class="o">.</span><span class="n">run</span><span class="p">(</span><span class="s2">"Tell me about Lady Ada Lovelace."</span><span class="p">,</span> <span class="n">ctx</span><span class="o">=</span><span class="n">ctx</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="s2">"🎩 Alfredの最初の応答："</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">response1</span><span class="p">)</span>
+
+<span class="c1"># 2回目のやり取り（1回目を参照）</span>
+<span class="n">response2</span> <span class="o">=</span> <span class="k">await</span> <span class="n">alfred</span><span class="o">.</span><span class="n">run</span><span class="p">(</span><span class="s2">"What projects is she currently working on?"</span><span class="p">,</span> <span class="n">ctx</span><span class="o">=</span><span class="n">ctx</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="s2">"🎩 Alfredの2番目の応答："</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">response2</span><span class="p">)</span>
+</code></pre></div>
+
+
+
+</section>
+<section class="hfoption" markdown="block">
+<p class="hfoption-label">langgraph</p>
+
+
+
+<div class="codehilite"><pre><span></span><code><span class="c1"># 1回目のやり取り</span>
+<span class="n">response</span> <span class="o">=</span> <span class="n">alfred</span><span class="o">.</span><span class="n">invoke</span><span class="p">({</span><span class="s2">"messages"</span><span class="p">:</span> <span class="p">[</span><span class="n">HumanMessage</span><span class="p">(</span><span class="n">content</span><span class="o">=</span><span class="s2">"Tell me about 'Lady Ada Lovelace'. What's her background and how is she related to me?"</span><span class="p">)]})</span>
+
+
+<span class="nb">print</span><span class="p">(</span><span class="s2">"🎩 Alfredの応答："</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">response</span><span class="p">[</span><span class="s1">'messages'</span><span class="p">][</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">content</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">()</span>
+
+<span class="c1"># 2回目のやり取り（1回目を参照）</span>
+<span class="n">response</span> <span class="o">=</span> <span class="n">alfred</span><span class="o">.</span><span class="n">invoke</span><span class="p">({</span><span class="s2">"messages"</span><span class="p">:</span> <span class="n">response</span><span class="p">[</span><span class="s2">"messages"</span><span class="p">]</span> <span class="o">+</span> <span class="p">[</span><span class="n">HumanMessage</span><span class="p">(</span><span class="n">content</span><span class="o">=</span><span class="s2">"What projects is she currently working on?"</span><span class="p">)]})</span>
+
+<span class="nb">print</span><span class="p">(</span><span class="s2">"🎩 Alfredの応答："</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">response</span><span class="p">[</span><span class="s1">'messages'</span><span class="p">][</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">content</span><span class="p">)</span>
+</code></pre></div>
+
+
+
+</section>
+</div>
+
+<p>これら3つのエージェントアプローチのいずれも、メモリをエージェントに直接結びつけていないことに注目してください。この設計選択には、何か具体的な理由があるのでしょうか 🧐？
+* smolagents: メモリは実行をまたいで保持されません。<code>reset=False</code> を使って明示的に指定する必要があります。
+* LlamaIndex: 実行内でのメモリ管理には、コンテキストオブジェクトを明示的に追加する必要があります。
+* LangGraph: 以前のメッセージを取得する選択肢や、専用の <a href="https://langchain-ai.github.io/langgraph/tutorials/introduction/#part-3-adding-memory-to-the-chatbot">MemorySaver</a> コンポーネントを利用する選択肢があります。</p>
+<h2>まとめ</h2>
+<p>おめでとうございます！ 今世紀で最も豪華なガラの開催を手伝う、複数のツールを備えた洗練されたエージェント、Alfredの構築に成功しました。Alfredは次のことができるようになりました。</p>
+<ol>
+<li>ゲストに関する詳細情報を取得する</li>
+<li>屋外アクティビティの計画のために天気を確認する</li>
+<li>影響力のあるAIビルダーとそのモデルに関する知見を提供する</li>
+<li>最新情報を求めてWebを検索する</li>
+<li>メモリで会話のコンテキストを維持する</li>
+</ol>
+<p>これらの能力により、Alfredは、パーソナライズされた心配りと最新の情報でゲストを感心させ、あなたのガラを大成功に導く準備が整いました。</p>
+</article>
+<nav class="page-nav"><a class="nav-link prev" href="tools.html">← 前へ: エージェントのためのツールの構築と統合</a><a class="nav-link toc-link" href="../../index.html">目次へ</a><a class="nav-link next" href="conclusion.html">次へ →: まとめ</a></nav>
+</main>
+<footer class="site-footer">
+  <p>原典: Hugging Face huggingface/agents-course（<a href="https://github.com/huggingface/agents-course">https://github.com/huggingface/agents-course</a>）</p>
+  <p>日本語版の翻訳・公開: 霞ヶ関京 / 連絡先: GitHub <a href="https://github.com/yanikasumin">@yanikasumin</a> / YouTube <a href="https://www.youtube.com/@KASUMI_MOF">@KASUMI_MOF</a></p>
+  <p class="demo-note">このサイトはデモ版です。内容は順次更新されます。</p>
+</footer>
+<script src="../../../site.js"></script>
+</body>
+</html>

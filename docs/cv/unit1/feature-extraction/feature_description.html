@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Feature Description | Hugging Face コース日本語版（デモ版）</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Shippori+Mincho:wght@500;700&family=Zen+Kaku+Gothic+New:wght@400;500;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../../../style.css">
+<script>
+window.MathJax = { tex: { inlineMath: [['$', '$'], ['\\(', '\\)']], displayMath: [['$$', '$$'], ['\\[', '\\]']] }, options: { skipHtmlTags: ['script','noscript','style','textarea','pre','code'] } };
+</script>
+<script async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml.js"></script>
+</head>
+<body>
+<header class="site-header">
+  <div class="header-inner">
+    <a class="site-title" href="../../../index.html">Hugging Face コース日本語版</a>
+    <span class="demo-badge">デモ版</span>
+  </div>
+</header>
+<main class="container">
+<p class="course-crumb"><a href="../../index.html">Community CV コース</a>
+<span class="badge badge-qa-wip">翻訳済み・QA進行中（未検証の部分を含みます）</span></p>
+<nav class="page-nav"><a class="nav-link prev" href="../image_and_imaging/examples-preprocess.html">← 前へ: コンピュータビジョンタスクのための前処理</a><a class="nav-link toc-link" href="../../index.html">目次へ</a><a class="nav-link next" href="feature-matching.html">次へ →: 特徴マッチング（Feature Matching）</a></nav>
+<article class="content">
+<p>﻿# 特徴記述（Feature Description）</p>
+<p>特徴は、モデルがインスタンスから学習した属性であり、後で新しいインスタンスを認識するために使われます。</p>
+<h2>データ構造で特徴をどう表現するか？</h2>
+<p>データにおける特徴の表現は、データを効果的に整理し操作するために重要です。特徴、つまり属性や変数は、数値やカテゴリから、画像やテキストのようなより複雑な構造まで、多様でありえます。コンピュータビジョンタスクで特徴を表現する方法には、次のようなものがあります。</p>
+<ul>
+<li>
+<p><strong>数値特徴</strong></p>
+</li>
+<li>
+<p>配列/リスト: 数値を格納する最も単純な形式。配列の各要素が特徴に対応します。</p>
+</li>
+<li>
+<p>テンソル: 多次元配列。機械学習フレームワークで大量の数値データを効率的に処理するためによく使われます。</p>
+</li>
+<li>
+<p><strong>カテゴリ特徴</strong></p>
+</li>
+<li>
+<p>辞書/リスト: カテゴリを数値ラベルに割り当てたり、カテゴリ値を直接格納したりします。</p>
+</li>
+<li>
+<p>ワンホットエンコーディング: カテゴリ変数を、各ビットがカテゴリを表すバイナリベクトルに変換します。</p>
+</li>
+<li>
+<p><strong>画像特徴</strong></p>
+</li>
+<li>
+<p>ピクセル値: ピクセル値の行列、または多次元配列。</p>
+</li>
+<li>畳み込みニューラルネットワーク特徴（CNN）: 事前学習済み CNN モデルを使って特徴を抽出します。</li>
+</ul>
+<h2>良い記述子とは</h2>
+<p>画像処理やコンピュータビジョンにおける良い記述子とは、画像内の物体やシーンについての重要な情報を効果的に表す、一連の特性や特徴のことです。良い記述子の条件には、次のような側面があります。</p>
+<ul>
+<li><strong>変換に対する不変性:</strong> 記述子は理想的には、回転、平行移動、スケーリング、照明の変化といった変動に対してロバストであるべきです。つまり、物体がどう配置されても、画像がどう変更されても、記述子は比較的変わらず、元のものと同じ記述を含むべきです。</li>
+<li><strong>識別性:</strong> 良い記述子は、物体についての固有の情報を捉えます。異なる物体や画像の部分を識別でき、似た要素と区別できるだけの識別性を持つべきです。</li>
+<li><strong>次元数:</strong> 良い記述子は扱いやすいサイズであることが多く、過度に大きくなることなく十分な情報を伝えます。次元数のバランスは、処理と保存の効率に不可欠です。</li>
+<li><strong>局所性:</strong> 記述子はしばしば画像内の局所的な特徴を特定します。局所記述子は特定の領域やキーポイントに焦点を当て、その領域の特性を記述することで、異なる画像間で類似した領域のマッチングと認識を可能にします。</li>
+<li><strong>再現性:</strong> 記述子は、ノイズや小さな変動がある場合でも、同じ物体やシーンの複数のインスタンスにわたって一貫し、再現可能であるべきです。</li>
+<li><strong>マッチングアルゴリズムとの互換性:</strong> 記述子は、異なる画像間の対応を見つけるためにマッチングアルゴリズムと併用されることがよくあります。良い記述子は、距離指標、機械学習モデル、その他のテクニックに基づくか否かを問わず、使用するマッチングアルゴリズムに適しているべきです。</li>
+<li><strong>計算効率:</strong> 効率は記述子にとって本当に重要な要素であり、特にリアルタイムアプリケーションにおいてそうです。記述子は、ロボティクスや自動運転車のように速度が重要なシナリオでは特に、素早い処理のために計算上実現可能であるべきです。</li>
+<li><strong>適応性:</strong> 処理しているデータから適応したり学習したりできる記述子は、特に物体やシーンの特性が時間とともに変化しうる状況で、非常に効果的です。これにより、記述子の使いやすさが高まります。</li>
+<li><strong>ノイズへのロバスト性:</strong> 記述子は、根底にある特徴を正確に表す能力を大きく損なうことなく、画像データのノイズを扱えるべきです。</li>
+</ul>
+<h2>特徴記述子で使われるテクニックの例</h2>
+<h3>SIFT</h3>
+<p><img alt="SIFT の基本的な動作" src="https://huggingface.co/datasets/hf-vision/course-assets/resolve/main/feature-extraction-feature-matching/Original-SIFT-algorithm-flow.png" /></p>
+<p>Scale Invariant Feature Transform の略です。画像内の局所的な特徴を検出・記述するために、コンピュータビジョンと画像処理で広く使われているアルゴリズムです。</p>
+<p>SIFT の動作は以下のとおりです。</p>
+<ul>
+<li><strong>スケールスペースの極値検出:</strong> 複数のスケールにわたって画像内の潜在的な注目点を検出することから始めます。ガウス関数の差が空間とスケールに対して最大または最小に達する画像内の位置を探します。これらのキーポイントの位置は、さまざまなスケール変化の下で安定しているとみなされます。</li>
+<li><strong>キーポイントの局所化:</strong> 潜在的なキーポイントが特定されると、SIFT はその位置をサブピクセル精度に改良し、低コントラストのキーポイントとエッジ上のキーポイントを除外して、正確な局所化を保証します。</li>
+<li><strong>方向の割り当て:</strong> SIFT は、局所的な画像の勾配方向に基づいて、各キーポイントの支配的な方向を計算します。このステップにより、記述子は画像の回転に対して不変になります。</li>
+<li><strong>記述子の生成:</strong> 各キーポイント領域に対して記述子が計算され、キーポイント付近の局所的な画像勾配についての情報を捉えます。この記述子は、キーポイントを囲む画像パッチの主要な特性を凝縮したコンパクトな表現です。</li>
+<li><strong>記述子のマッチング:</strong> 最後に、これらの記述子は異なる画像間のキーポイントのマッチングに使われます。ある画像の記述子を別の画像のものと比較して、対応を見つけます。</li>
+</ul>
+<p>SIFT は、さまざまな画像変換に対するロバスト性と、画像内の識別的な特徴を見つける能力により、物体認識、画像スティッチング、3D 再構成などの応用で価値があります。</p>
+<p>SIFT については、次の参考文献で詳しく学べます。</p>
+<ul>
+<li>
+<p><a href="https://docs.opencv.org/4.x/da/df5/tutorial_py_sift_intro.html">Introduction to SIFT (Scale-Invariant Feature Transform)</a></p>
+</li>
+<li>
+<p><a href="https://www.educative.io/answers/what-is-sift">What is SIFT</a></p>
+</li>
+<li>
+<p><a href="https://www.cse.iitb.ac.in/~ajitvr/CS763/SIFT.pdf">SIFT</a></p>
+</li>
+</ul>
+<h3>SURF</h3>
+<p><img alt="SURF の基本的な動作" src="https://huggingface.co/datasets/hf-vision/course-assets/resolve/main/feature-extraction-feature-matching/Flow-Chart-for-SURF-Feature-Detection.png" /></p>
+<p>Speeded Up Robust Features の略です。コンピュータビジョンと画像処理におけるもう1つの人気アルゴリズムです。局所的な画像特徴を検出・記述する際の速度とロバスト性で特に知られています。</p>
+<p>SURF の基本的なワークフローは以下のとおりです。</p>
+<ul>
+<li>
+<p><strong>積分画像:</strong> SURF は、元の画像の事前計算された表現である積分画像を利用します。これにより画像内の矩形領域の合計を高速に計算でき、より速い特徴計算が可能になります。</p>
+</li>
+<li>
+<p><strong>ブロブ検出:</strong> 他の特徴検出アルゴリズムと同様に、SURF は画像内の潜在的な注目点やキーポイントを特定することから始めます。ヘッセ行列を使って、複数の方向とスケールで強度に大きな変動を示すブロブや領域を検出します。これらの領域が潜在的なキーポイントです。</p>
+</li>
+<li>
+<p><strong>スケール選択</strong>: スケールスペースで大きな変化のある領域を特定することで、キーポイントのスケールを決定します。異なるスケールにわたるヘッセ行列の行列式を分析し、複数のスケールでロバストなキーポイントを見つけます。</p>
+</li>
+<li>
+<p><strong>方向の割り当て:</strong> 検出された各キーポイントについて、SURF は支配的な方向を割り当てます。これは、キーポイントの近傍の周りで異なる方向の Haar ウェーブレット応答を計算することで行います。SIFT とは異なり、SURF はキーポイントの近傍のサブ領域に適用される矩形フィルター（Haar ウェーブレット）の集合を使います。これらのフィルターの応答を使って、キーポイントを表す特徴ベクトルを作成します。</p>
+</li>
+<li>
+<p><strong>記述子のマッチング:</strong> 生成された記述子は、異なる画像間のキーポイントのマッチングに使われます。マッチングでは、ある画像のキーポイントの特徴ベクトルを別の画像のものと比較して、対応を見つけます。</p>
+</li>
+</ul>
+<p>SURF の主要な強みは、積分画像と Haar ウェーブレット近似の使用で達成される計算効率にあり、スケール、回転、照明の変化に対するロバスト性を維持します。これにより SURF は、物体検出、追跡、画像スティッチングなど、速度が重要な役割を果たすリアルタイムアプリケーションに適しています。</p>
+<p>SURF については、次の参考文献で詳しく学べます。</p>
+<ul>
+<li>
+<p><a href="https://docs.opencv.org/3.4/df/dd2/tutorial_py_surf_intro.html">OpenCV Tutorial - Introduction to SURF (Speeded-Up Robust Features)</a></p>
+</li>
+<li>
+<p><a href="https://www.ijtra.com/view/feature-extraction-using-surf-algorithm-for-object-recognition.pdf">Journal Paper - Feature Extraction Using SURF Algorithm for Object Recognition</a></p>
+</li>
+</ul>
+</article>
+<nav class="page-nav"><a class="nav-link prev" href="../image_and_imaging/examples-preprocess.html">← 前へ: コンピュータビジョンタスクのための前処理</a><a class="nav-link toc-link" href="../../index.html">目次へ</a><a class="nav-link next" href="feature-matching.html">次へ →: 特徴マッチング（Feature Matching）</a></nav>
+</main>
+<footer class="site-footer">
+  <p>原典: Hugging Face huggingface/computer-vision-course（<a href="https://github.com/huggingface/computer-vision-course">https://github.com/huggingface/computer-vision-course</a>）</p>
+  <p>日本語版の翻訳・公開: 霞ヶ関京 / 連絡先: GitHub <a href="https://github.com/yanikasumin">@yanikasumin</a> / YouTube <a href="https://www.youtube.com/@KASUMI_MOF">@KASUMI_MOF</a></p>
+  <p class="demo-note">このサイトはデモ版です。内容は順次更新されます。</p>
+</footer>
+<script src="../../../site.js"></script>
+</body>
+</html>

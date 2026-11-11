@@ -1,0 +1,238 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>YOLO | Hugging Face コース日本語版（デモ版）</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Shippori+Mincho:wght@500;700&family=Zen+Kaku+Gothic+New:wght@400;500;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../../../style.css">
+<script>
+window.MathJax = { tex: { inlineMath: [['$', '$'], ['\\(', '\\)']], displayMath: [['$$', '$$'], ['\\[', '\\]']] }, options: { skipHtmlTags: ['script','noscript','style','textarea','pre','code'] } };
+</script>
+<script async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml.js"></script>
+</head>
+<body>
+<header class="site-header">
+  <div class="header-inner">
+    <a class="site-title" href="../../../index.html">Hugging Face コース日本語版</a>
+    <span class="demo-badge">デモ版</span>
+  </div>
+</header>
+<main class="container">
+<p class="course-crumb"><a href="../../index.html">Community CV コース</a>
+<span class="badge badge-qa-wip">翻訳済み・QA進行中（未検証の部分を含みます）</span></p>
+<nav class="page-nav"><a class="nav-link prev" href="resnet.html">← 前へ: ResNet（残差ネットワーク）</a><a class="nav-link toc-link" href="../../index.html">目次へ</a><a class="nav-link next" href="../../unit3/vision-transformers/vision-transformers-for-image-classification.html">次へ →: 画像分類のための Vision Transformer の転移学習とファインチューニング</a></nav>
+<article class="content">
+<h1>YOLO</h1>
+<h2>物体検出の簡単な紹介</h2>
+<p>畳み込みニューラルネットワークは、画像分類問題の解決に向けて大きな一歩を踏み出しました。
+しかし、解決すべき別の大きなタスクが残っています。物体検出です。物体検出では、画像から物体を分類するだけでなく、画像内での物体の位置（この場合は物体のバウンディングボックスの座標）を正確に予測することも必要です。ここで YOLO の大きなブレークスルーが登場しました。YOLO を深く掘り下げる前に、CNN を使った物体検出アルゴリズムの歴史をたどりましょう。</p>
+<h3>RCNN、Fast RCNN、Faster RCNN</h3>
+<h4>R-CNN（Region-based Convolutional Neural Networks）</h4>
+<p>RCNN は、物体検出に畳み込みニューラルネットワークを使う最も単純な方法の1つです。簡単に言えば、基本的なアイデアは「領域」を検出し、その領域を CNN で分類するというものです。つまり、これは複数ステップのプロセスです。このアイデアに基づき、RCNN の論文が2012年に公開されました[1]。</p>
+<p>RCNN は以下のステップを使います。</p>
+<ol>
+<li>Selective Search アルゴリズムを使って領域を選択します。 </li>
+<li>CNN ベースの分類器を使って、その領域から物体を分類します。 </li>
+</ol>
+<p>訓練のために、論文は以下のステップを提案しました。</p>
+<ol>
+<li>物体検出データセットから検出された領域のデータセットを作ります。 </li>
+<li>領域データセットで AlexNet モデルをファインチューニングします。 </li>
+<li>その後、ファインチューニングしたモデルを物体検出データセットで使います。 </li>
+</ol>
+<p>以下が RCNN の基本的なパイプラインです。 
+<img alt="R-CNN" src="https://huggingface.co/datasets/hf-vision/course-assets/resolve/main/RCNN.png" /></p>
+<h4>Fast RCNN</h4>
+<p>Fast RCNN は、元の RCNN の改良に焦点を当てています。次の4つの改良が加えられました。</p>
+<ul>
+<li>RCNN のような複数ステージではなく、単一ステージで訓練します。マルチタスク損失を使います。</li>
+<li>ディスクストレージが不要です。</li>
+<li>ROI プーリング層を導入し、関心領域（Region of Interests）からのみ特徴を取得します。</li>
+<li>マルチタスク損失を使い、RCNN / SPPnet のような複数ステップのモデルとは対照的に、エンドツーエンドのモデルを訓練します。</li>
+</ul>
+<p><img alt="Fast R-CNN" src="https://huggingface.co/datasets/hf-vision/course-assets/resolve/main/Fast%20R-CNN.png" /></p>
+<h4>Faster RCNN</h4>
+<p>Faster R-CNN は、Selective Search アルゴリズムの必要性を完全に取り除きました！これらの特徴により、Fast R-CNN と比べて推論時間が90%改善されました。
+- RPN（Regional Proposal Network）を導入します。RPN は注意（attention）ベースのモデルで、物体を含む画像の領域に「注意」を向けるようモデルを訓練します。 
+- RPN と Fast RCNN を統合し、エンドツーエンドの物体検出モデルにします。 </p>
+<p><img alt="Faster R-CNN" src="https://cdn-uploads.huggingface.co/production/uploads/6141a88b3a0ec78603c9e784/n8eDqnlEvDS5SIKGoSUpz.png" /></p>
+<h4>Feature Pyramid Network（FPN）</h4>
+<ul>
+<li>Feature Pyramid Network は、物体検出のための一種の Inception モデルです。</li>
+<li>まず画像を低次元の埋め込みにダウンスケールします。</li>
+<li>その後、それらを再びアップスケールします。 </li>
+<li>アップスケールされた各画像から、出力（この場合はカテゴリ）を予測しようとします。</li>
+<li>ただし、似た次元の特徴同士の間にはスキップ接続もあります！ </li>
+</ul>
+<p>以下の画像は論文から取ったものです。[20]</p>
+<p><a href="https://huggingface.co/datasets/hf-vision/course-assets/blob/main/FPN.png">FPN</a>
+   <a href="https://huggingface.co/datasets/hf-vision/course-assets/blob/main/FPN_2.png">FPN2</a></p>
+<h2>YOLO のアーキテクチャ</h2>
+<p>YOLO は当時画期的な革新でした。単一のネットワークでエンドツーエンドに訓練できる、リアルタイムの物体検出器です。 </p>
+<h3>YOLO 以前</h3>
+<p>それまでの検出システムは、画像のパッチに対して画像分類器を使うものでした。Deformable Parts Model（DPM）のようなシステムは、画像全体の等間隔の位置で分類器を実行するスライディングウィンドウ方式を使っていました。</p>
+<p>RCNN のような他の研究は、2ステップの検出を使っていました。まず、Region Proposal Network によってバウンディングボックスとして生成された、多数の候補となる関心領域を検出します。次に、提案されたすべての領域に分類器を実行して最終的な予測を行います。バウンディングボックスの調整、重複した検出の除去、シーン内の他の物体に基づくボックスの再スコアリングといった後処理を行う必要があります。</p>
+<p>これらの複雑なパイプラインは遅く、最適化も困難です。各コンポーネントを別々に訓練しなければならないからです。</p>
+<h3>YOLO</h3>
+<p>YOLO はシングルステップの検出器で、バウンディングボックスと物体のクラスを同じパスで同時に予測します。これによりシステムは非常に高速になります。毎秒45フレームという速さです。</p>
+<h4>物体検出の再定式化</h4>
+<p>YOLO は、物体検出タスクを、バウンディングボックスの座標とクラス確率を予測する単一の回帰問題として再定式化します。 </p>
+<p>この設計では、画像を $S \times S$ のグリッドに分割します。物体の中心がグリッドセル内に入る場合、そのグリッドセルがその物体の検出を担います。各セルで検出する物体の最大数を $B$ と定義できます。したがって、各グリッドセルは、各ボックスの信頼度スコアを含む $B$ 個のバウンディングボックスを予測します。 </p>
+<h4>信頼度</h4>
+<p>バウンディングボックスの信頼度スコアは、そのボックスがどれだけ正確に予測されたかを反映すべきものです。正解ボックスと予測ボックスの IOU（Intersection over Union）に近い値であるべきです。グリッドがボックスを予測するはずでなかった場合は、ゼロであるべきです。したがって、これはボックスの中心がグリッド内に存在する確率と、バウンディングボックスの正確さを符号化すべきものです。</p>
+<p>形式的には、</p>
+<p>$$\text{confidence} := P(\text{Object}) \times \text{IOU}_{\text{pred}}^{\text{truth}}$$</p>
+<h4>座標</h4>
+<p>バウンディングボックスの座標は、4つの数 $(x, y, w, h)$ で符号化されます。$(x, y)$ 座標は、グリッドセルの境界に対するボックスの中心を表します。幅と高さは画像の寸法に正規化されます。</p>
+<h4>クラス</h4>
+<p>クラス確率は長さ $C$ のベクトルで、セル内に物体が存在したという条件のもとでの各クラスの条件付きクラス確率を表します。各グリッドセルは1つのベクトルだけを予測します。つまり、各グリッドセルには単一のクラスが割り当てられるため、そのグリッドセルが予測する $B$ 個のバウンディングボックスはすべて同じクラスを持ちます。</p>
+<p>形式的には、
+$$C_i = P(\text{class}_i \mid \text{Object})$$</p>
+<p>テスト時には、条件付きクラス確率と個々のボックスの信頼度予測を掛け合わせることで、ボックスごとのクラス固有の信頼度スコアが得られます。これらのスコアは、そのクラスがボックスに現れる確率と、予測されたボックスが物体にどれだけよく当てはまるかの両方を符号化しています。</p>
+<p>$$\begin{align}
+C_i \times \text{confidence} &amp;= P(\text{class}<em _text_pred>i \mid \text{Object}) \times P(\text{Object}) \times \text{IOU}</em>\
+&amp;=P(\text{class}}}^{\text{truth}<em _text_pred>i) \times \text{IOU}</em>
+\end{align}
+$$}}^{\text{truth}</p>
+<p>まとめると、画像が $S \times S$ グリッドに分割されます。各グリッドセルには、5つの値（信頼度 + 4つの座標）からなる $B$ 個のバウンディングボックスと、各クラスの条件付き確率を含む長さ $C$ のベクトルが含まれます。したがって、各グリッドセルは長さ $B \times 5 + C$ のベクトルです。グリッド全体は $S \times S \times (B \times 5 + C)$ です。</p>
+<p>したがって、画像を $S \times S \times (B \times 5 + C)$ の特徴マップに変換する学習可能なシステムがあれば、このタスクに一歩近づけます。</p>
+<h4>ネットワークアーキテクチャ</h4>
+<p>元の YOLOv1 の設計では、入力は $448 \times 448$ サイズの RGB 画像です。画像は $S \times S = 7 \times 7$ のグリッドに分割され、各グリッドセルは $B=2$ 個のバウンディングボックスと $C=20$ 個のクラスの検出を担います。 </p>
+<p>ネットワークアーキテクチャはシンプルな畳み込みニューラルネットワークです。入力画像は一連の畳み込み層を通り、続いて全結合層を通ります。最終層の出力は $7 \times 7 \times (2 \times 5 + 20) = 7 \times 7 \times 30$ に変形（reshape）されます。</p>
+<p>YOLOv1 の設計は、特徴マップの深さを減らすために 1x1 畳み込みを使った GoogLeNet から着想を得ています。これは、ネットワークのパラメータ数と計算量を減らすために行われました。このネットワークには24個の畳み込み層と、それに続く2つの全結合層があります。最終層には線形活性化関数を使い、それ以外のすべての層は Leaky ReLU 活性化を使います。</p>
+<p>$$\text{LeakyReLU}(x) = \begin{cases}
+x &amp; \text{if } x &gt; 0\
+0.1x &amp; \text{otherwise}
+\end{cases}$$</p>
+<p>YOLOv1 のアーキテクチャは下の図をご覧ください。</p>
+<p><img alt="YOLOv1 のアーキテクチャ" src="https://huggingface.co/datasets/hf-vision/course-assets/resolve/main/yolov1_arch.png" /></p>
+<h4>訓練</h4>
+<p>ネットワークは、画像と正解バウンディングボックスでエンドツーエンドに訓練されます。損失関数は二乗誤差損失の和です。この損失関数は、バウンディングボックスの座標、信頼度、クラス確率の誤った予測に対してネットワークにペナルティを与えるよう設計されています。損失関数については次のセクションで説明します。</p>
+<p>YOLO はグリッドセルごとに複数のバウンディングボックスを予測します。訓練時には、各物体に対して責任を持つバウンディングボックス予測器が1つだけであることが望ましいです。正解との現在の IOU が最も高い予測に基づいて、物体の予測に「責任を持つ」予測器を1つ割り当てます。これにより、バウンディングボックス予測器の間で専門化が進みます。各予測器は、特定の大きさ、アスペクト比、物体のクラスの予測がうまくなり、全体の再現率（recall）が向上します。この情報は、グリッドセル $i$ とバウンディングボックス $b$ に対する損失関数の中で $\mathbb{1}{ib}^{\text{obj}}$ を使って符号化します。$\mathbb{1}{ib}^{\text{noobj}}$ は $\mathbb{1}_{ib}^{\text{obj}}$ の反対です。</p>
+<h5>損失関数</h5>
+<p>画像を $S \times S \times (B\times5 + C)$ の特徴マップに変換する学習可能なシステムができたので、次はそれを訓練する必要があります。</p>
+<p>こうしたシステムを訓練する単純な関数は、二乗誤差損失の和を使うことです。バウンディングボックスの座標、信頼度、クラス確率について、予測値と真の値との間の二乗誤差を使うことができます。 </p>
+<p>各グリッドセル $(i)$ の損失は次のようになります。</p>
+<p>$$
+\mathcal{L}^{i} = \mathcal{L}^{i}<em _text_conf>{\text{coord}} + \mathcal{L}^{i}</em>\
+$$}} + \mathcal{L}^{i}_{\text{class}</p>
+<p>$$\begin{align<em>}
+\mathcal{L}^{i}<em b="0">{\text{coord}} &amp;= \sum</em>}^{B} \mathbb{1<em ib>{ib}^{\text{obj}} \left[ \left( \hat{x}</em>} - x_{ib} \right)^2 + \left( \hat{y<em ib>{ib} - y</em> \right)^2 + 
+\left( 
+    \hat{w}<em ib>{ib} - w</em>
+\right)^2 + 
+\left( 
+    \hat{h}<em ib>{ib} - h</em>
+    \right)^2
+\right]\
+\mathcal{L}^{i}<em b="0">{\text{conf}} &amp;= \sum</em>}^{B} (\hat{\text{conf}<em i>{i} - \text{conf}</em>)^2\
+\mathcal{L}^{i}<em i>{\text{class}} &amp;= \mathbb{1}<em c="0">i^\text{obj}\sum</em>}^{C} (\hat{P</em>)^2
+\end{align} - P_{i</em>}
+$$</p>
+<p>ここで、
+- $\mathbb{1}_{ib}^{\text{obj}}$ は、$i$ 番目のグリッドセルの $b$ 番目のバウンディングボックスが物体の検出に責任を持つ場合は1、そうでない場合は0です。
+- $\mathbb{1}_i^\text{obj}$ は、$i$ 番目のグリッドセルに物体が含まれる場合は1、そうでない場合は0です。</p>
+<p>しかし、この損失関数は物体検出のタスクとうまく整合するとは限りません。両方のタスク（分類と位置特定）の損失を単純に加えることは、損失に等しい重みを与えてしまいます。 </p>
+<p>これを正すために、YOLOv1 は重み付き二乗誤差損失の和を使います。まず、位置特定誤差に $\lambda_{\text{coord}}$ という別の重みを割り当てます。通常は5に設定されます。</p>
+<p>したがって、各グリッドセル $(i)$ の損失は次のようになります。
+$$
+\mathcal{L}^{i} = \lambda_{\text{coord}}
+    \mathcal{L}^{i}<em _text_conf>{\text{coord}} + \mathcal{L}^{i}</em>\
+$$}} + \mathcal{L}^{i}_{\text{class}</p>
+<p>加えて、多くのグリッドセルには物体が含まれていません。信頼度はゼロに近く、そのため物体を含むグリッドセルが勾配を支配してしまうことがよくあります。これにより、訓練中のネットワークが不安定になります。</p>
+<p>これを正すために、物体を含まないグリッドセルでの信頼度予測の損失には、物体を含むグリッドセルよりも小さい重みを与えます。信頼度損失には $\lambda_{\text{noobj}}$ という別の重みを使い、通常は0.5に設定されます。</p>
+<p>したがって、各グリッドセル $(i)$ の信頼度損失は次のようになります。
+$$
+\mathcal{L}^{i}<em b="0">{\text{conf}} = \sum</em> \left[
+    \mathbb{1}}^{B<em i>{ib}^{\text{obj}} \left( \hat{\text{conf}}</em>} - \text{conf<em _text_noobj>{i} \right)^2 +
+    \lambda</em>}} \mathbb{1<em i>{ib}^{\text{noobj}} \left( \hat{\text{conf}}</em> \right)^2
+\right]
+$$} - \text{conf}_{i</p>
+<p>バウンディングボックス座標の二乗誤差和には問題があり得ます。大きなボックスの誤差と小さなボックスの誤差に等しい重みを与えてしまうのです。大きなボックスの小さなずれは、小さなボックスの小さなずれほどペナルティを受けるべきではありません。</p>
+<p>これを正すために、YOLOv1 はバウンディングボックスの幅と高さの<strong>平方根</strong>に対する二乗誤差損失を使います。これにより、損失関数はスケールに対して不変になります。</p>
+<p>したがって、各グリッドセル $(i)$ の位置特定損失は次のようになります。</p>
+<p>$$
+\mathcal{L}^{i}<em b="0">{\text{coord}} = \sum</em>}^{B} \mathbb{1<em ib>{ib}^{\text{obj}} \left[ \left( \hat{x}</em>} - x_{ib} \right)^2 + \left( \hat{y<em ib>{ib} - y</em> \right)^2 +
+\left(
+    \sqrt{\hat{w}<em ib>{ib}} - \sqrt{w</em>
+\right)^2 +
+\left(
+    \sqrt{\hat{h}}<em ib>{ib}} - \sqrt{h</em>
+\right)^2
+\right]
+$$}</p>
+<h4>推論</h4>
+<p>推論はシンプルです。画像をネットワークに通し、$S \times S \times (B \times 5 + C)$ の特徴マップを取得します。その後、信頼度スコアがしきい値未満のボックスを取り除きます。 </p>
+<h5>非最大値抑制</h5>
+<p>まれなケースですが、大きな物体については、ネットワークが複数のグリッドセルから複数のボックスを予測する傾向があります。重複した検出を除去するために、非最大値抑制（Non-Maximum Suppression、NMS）と呼ばれる手法を使います。NMS は、最も高い信頼度スコアを持つボックスを選択し、IOU がしきい値より大きい他のすべてのボックスを除去することで機能します。これは、重なり合うボックスがなくなるまで繰り返し行われます。</p>
+<p>エンドツーエンドの流れは次のようになります。
+<img alt="非最大値抑制" src="https://huggingface.co/datasets/hf-vision/course-assets/resolve/main/object-detection-gif.gif" /></p>
+<h2>YOLO の進化</h2>
+<p>ここまで、YOLO の基本的な特性と、それによって非常に正確で高速な予測がどのように可能になるかを見てきました。これは実は YOLO の最初のバージョン、YOLOv1 でした。YOLOv1 は2015年にリリースされ、それ以来、複数のバージョンがリリースされてきました。画像全体を一度に処理し、S × S グリッドに分割する単一の畳み込みニューラルネットワーク（CNN）を使うという概念を導入したことで、精度と速度の面で画期的でした。各グリッドセルはバウンディングボックスとクラス確率を直接予測します。しかし、位置特定の精度が低く、画像の小さな領域にある複数の物体の検出が苦手でした。その後の数年間で、精度、速度、堅牢性を徐々に改善するために、さまざまなチームから多くの新しいバージョンがリリースされました。</p>
+<h3><strong>YOLOv2 (2016)</strong></h3>
+<p>最初のバージョンのリリースから1年後、YOLOv2[5] が登場しました。改良は精度と速度の両方に焦点を当てましたが、位置特定の問題にも対処しました。まず、YOLOv2 は YOLOv1 のバックボーンアーキテクチャを Darknet-19 に置き換えました。これは Darknet アーキテクチャのバリエーションです。Darknet-19 は前バージョンのバックボーンより軽量で、19個の畳み込み層とそれに続く最大プーリング層で構成されています。これにより YOLOv2 はより多くの情報を捉えられるようになりました。また、すべての畳み込み層にバッチ正規化を適用し、ドロップアウト層を取り除くことで、過学習の問題に対処し、mAP を向上させました。さらに、検出されたボックスの幅と高さに事前知識を与えるアンカーボックスの概念を導入しました（具体的にはアンカーボックスを使いました）。加えて、位置特定の精度の低さに対処するため、YOLOv2 はすべてのアンカーボックスとグリッドセル（このとき 13x13）についてクラスと物体を予測しました。したがって、最大で（アンカーボックス5個の場合）13x13x5 = 845 個のボックスがあります。</p>
+<h3><strong>YOLOv3 (2018)</strong></h3>
+<p>YOLOv3[6] は、Darknet-19 アーキテクチャをより複雑ですが効率的な Darknet-53 に置き換えることで、検出速度と精度を再び大幅に改善しました。また、物体検出に3つの異なるスケール（13x13、26x26、52x52 のグリッド）を使うことで、位置特定の問題により良く対処しました。これにより、同じ領域にある異なる大きさの物体を見つけやすくなりました。バウンディングボックスは 13 x 13 x 3 + 26 x 26 x 3 + 52 x 52 x 3 = 10,647 個に増えました。非最大値抑制（NMS）は、冗長な重なり合うボックスを取り除くために引き続き使われました。</p>
+<h3><strong>YOLOv4 (2020)</strong></h3>
+<p>2020年に、YOLOv4[7] は速度と精度の面で最良の検出モデルの1つとなり、物体検出ベンチマークで最先端の結果を達成しました。著者たちはバックボーンアーキテクチャを再び変更し、より高速で正確な CSPDarknet53[8] を採用しました。このバージョンの重要な改良は、リソース利用の効率化の最適化であり、エッジデバイスを含むさまざまなハードウェアプラットフォームへのデプロイに適したものになりました。また、訓練前に多数のデータ拡張を含めることで、モデルの汎化をさらに改善しました。著者たちはこの改良を、bag-of-freebies と呼ばれる一連の手法に含めました。Bag-of-freebies は、訓練プロセスにコストを伴うものの、推論時間を増やすことなくリアルタイム検出におけるモデルの精度の向上を目指す最適化手法です。</p>
+<h3><strong>YOLOv5 (2020)</strong></h3>
+<p>YOLOv5[9] は、Darknet フレームワーク（C で書かれていました）を、より柔軟で使いやすい PyTorch フレームワークに移植したものです。このバージョンは、従来のアンカー検出の仕組みを自動化し、auto-anchor を導入しました。Auto-anchor は、データに合わせるようモデルのアンカーを自動的に訓練します。訓練中、YOLO はまず k-means を使い、遺伝的手法でより良く適合する新しいアンカーを進化させ、それらを YOLO モデルに戻します。また、現在の YOLOv8 モデルと似た名前で、ハードウェアの制約に応じた異なるタイプのモデルを提供しています。YOLOv5s、YOLOv5m、YOLOv5l、YOLOv5x です。</p>
+<h3><strong>YOLOv6 (2022)</strong></h3>
+<p>次のバージョン YOLOv6[10][11] は、Meituan Vision AI Department から「YOLOv6: A Single-Stage Object Detection Framework for Industry」という記事タイトルでリリースされました。このチームは、次の5つの側面に焦点を当てて、速度と精度のさらなる改良を行いました。
+1) RepVGG 手法を使った再パラメータ化。RepVGG は、スキップ接続を備えた VGG の改良版です。推論時には、これらの接続が融合され、速度が向上します。
+2) 再パラメータ化ベースの検出器の量子化。これにより、Rep-PAN と呼ばれるブロックが追加されました。
+3) モデルのデプロイにおいて、異なるハードウェアのコストと能力を考慮することの重要性の認識。具体的には、著者たちは低消費電力 GPU（Tesla T4 など）でのレイテンシをテストしましたが、以前の研究のほとんどは高コストのマシン（V100 など）を使っていました。
+4) 分類のための Varifocal Loss、バウンディングボックス回帰のための IoU Series Loss、Distribution Focal Loss といった新しい種類の損失関数の導入。
+5) 知識蒸留を使った訓練中の精度の改良。
+2023年には、「YOLOv6 v3.0: A Full-Scale Reload」というタイトルで YOLOv6 v3[12] がリリースされ、ネットワークアーキテクチャと訓練方式の改良が導入され、以前にリリースされたバージョンと比べて（COCO データセットで評価して）速度と精度が再び前進しました。</p>
+<h3><strong>YOLOv7 (2022)</strong></h3>
+<p>YOLOv7 は、YOLOv4 の著者たちによる「YOLOv7: Trainable bag-of-freebies sets new state-of-the-art for real-time object detectors」[13][14] というタイトルの論文とともにリリースされました。具体的には、このバージョンの bag-of-freebies には、coarse-to-fine lead-guided label assignment と呼ばれる新しいラベル割り当て手法が含まれ、再パラメータ化された畳み込みを異なるネットワークとどのように組み合わせるべきかを分析するために、勾配フローの伝播経路を使います。著者たちはまた、パラメータと計算を効果的に活用できる、リアルタイム物体検出器のための「extend」および「compound scaling」手法を提案しました。やはり、これらの改良はすべてリアルタイム物体検出を新たな最先端へ押し上げ、以前のリリースを上回りました。</p>
+<h3><strong>YOLOv8 (2023)</strong></h3>
+<p>2023年に Ultralytics が開発した YOLOv8[15] は、再び新たな最先端となりました。バックボーンとネックの改良に加えて、アンカーフリーのアプローチを導入し、事前に定義されたアンカーボックスの必要性をなくしました。代わりに、予測は直接行われます。このバージョンは、分類、セグメンテーション、姿勢推定を含む幅広いビジョンタスクをサポートします。加えて、YOLOv8 にはスケーリング機能があり、nano、small、medium、large、extra-large のさまざまなサイズの事前学習済みモデルが利用可能で、カスタムデータセットで簡単にファインチューニングできます。</p>
+<h3><strong>YOLOv9 (2024)</strong></h3>
+<p>YOLOv9 は、YOLOv7 や YOLOv4 と同じ著者たちによる「YOLOv9: Learning What You Want to Learn Using Programmable Gradient Information」[16][17] というタイトルの論文とともにリリースされました。この論文は、既存の手法やアーキテクチャが、層ごとの特徴抽出や空間変換の過程で抱える情報損失の問題を浮き彫りにします。この問題に対処するために、著者たちは次のものを提案しました。</p>
+<ul>
+<li>深いネットワークが複数の目的を達成するために必要とするさまざまな変化に対応するための、プログラマブル勾配情報（PGI）の概念。</li>
+<li>Generalized Efficient Layer Aggregation Network（GELAN）。計算効率を犠牲にすることなく、現在の手法よりも優れたパラメータ利用を達成する、新しい軽量ネットワークアーキテクチャ。</li>
+</ul>
+<p>これらの変更により、YOLOv9 は MS COCO チャレンジで新たなベンチマークを打ち立てました。</p>
+<p>ライセンスの異なるモデル群のタイムラインを考慮すると、次の図を作成できます。
+<img alt="YOLO の進化" src="https://huggingface.co/datasets/hf-vision/course-assets/resolve/main/yolo_evolution.png" /></p>
+<h3><strong>異なるバージョンについての注意</strong></h3>
+<p>この短い章では、YOLO の歴史・進化を線形に紹介しました。しかし、実際はそうではありません。多くの他の YOLO バージョンが並行してリリースされました。同年にリリースされた YOLOv4 と YOLOv5 がその例です。取り上げなかった他のバージョンには、YOLOv3（2018）に基づく YOLOvX（2021）や、YOLOv4（2020）に基づく YOLOR（2021）など、他にも多くあります。
+また、「最良の」モデルバージョンの選択は、速度、精度、ハードウェアの制限、使いやすさといったユーザーの要件に依存することを理解しておくことが重要です。たとえば、YOLOv2 は速度が非常に優れています。YOLOv3 は精度と速度のバランスを提供します。YOLOv4 は、異なるハードウェアへの適応性・互換性が最も優れています。</p>
+<h2>参照</h2>
+<p>[1] <a href="https://arxiv.org/abs/1311.2524v5">Rich feature hierarchies for accurate object detection and semantic segmentation</a> <br />
+[2] <a href="https://arxiv.org/abs/1504.08083">Fast R-CNN</a> <br />
+[3] <a href="https://arxiv.org/pdf/1506.01497.pdf">Faster R-CNN</a> <br />
+[4] <a href="https://arxiv.org/pdf/1612.03144.pdf">Feature Pyramid Network</a> <br />
+[5] <a href="https://arxiv.org/abs/1612.08242">YOLO9000: Better, Faster, Stronger</a> <br />
+[6] <a href="https://arxiv.org/abs/1804.02767">YOLOv3: An Incremental Improvement</a> <br />
+[7] <a href="https://arxiv.org/abs/2004.10934">YOLOv4: Optimal Speed and Accuracy of Object Detection</a> <br />
+[8] <a href="https://github.com/AlexeyAB/darknet">YOLOv4 GitHub repo</a> <br />
+[9] <a href="https://docs.ultralytics.com/models/yolov5/">Ultralytics YOLOv5</a> <br />
+[10] <a href="https://arxiv.org/abs/2209.02976">YOLOv6: A Single-Stage Object Detection Framework for Industrial Applications</a> <br />
+[11] <a href="https://github.com/meituan/YOLOv6">YOLOv6 GitHub repo</a> <br />
+[12] <a href="https://arxiv.org/abs/2301.05586">YOLOv6 v3.0: A Full-Scale Reloading</a> <br />
+[13] <a href="https://arxiv.org/abs/2207.02696">YOLOv7: Trainable bag-of-freebies sets new state-of-the-art for real-time object detectors</a> <br />
+[14] <a href="https://github.com/WongKinYiu/yolov7">YOLOv7 GitHub repo</a> <br />
+[15] <a href="https://github.com/ultralytics/ultralytics">Ultralytics YOLOv8</a> <br />
+[16] <a href="https://arxiv.org/abs/2402.13616">YOLOv9: Learning What You Want to Learn Using Programmable Gradient Information</a> <br />
+[17] <a href="https://github.com/WongKinYiu/yolov9">YOLOv9 GitHub repo</a> <br />
+[18] <a href="https://yolovx.com/">YOLOvX</a> <br />
+[19] <a href="https://arxiv.org/abs/2105.04206">You Only Learn One Representation: Unified Network for Multiple Tasks</a>
+[20] <a href="https://arxiv.org/abs/1612.03144">Feature Pyramid network Paper</a></p>
+</article>
+<nav class="page-nav"><a class="nav-link prev" href="resnet.html">← 前へ: ResNet（残差ネットワーク）</a><a class="nav-link toc-link" href="../../index.html">目次へ</a><a class="nav-link next" href="../../unit3/vision-transformers/vision-transformers-for-image-classification.html">次へ →: 画像分類のための Vision Transformer の転移学習とファインチューニング</a></nav>
+</main>
+<footer class="site-footer">
+  <p>原典: Hugging Face huggingface/computer-vision-course（<a href="https://github.com/huggingface/computer-vision-course">https://github.com/huggingface/computer-vision-course</a>）</p>
+  <p>日本語版の翻訳・公開: 霞ヶ関京 / 連絡先: GitHub <a href="https://github.com/yanikasumin">@yanikasumin</a> / YouTube <a href="https://www.youtube.com/@KASUMI_MOF">@KASUMI_MOF</a></p>
+  <p class="demo-note">このサイトはデモ版です。内容は順次更新されます。</p>
+</footer>
+<script src="../../../site.js"></script>
+</body>
+</html>

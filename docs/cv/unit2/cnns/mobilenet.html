@@ -1,0 +1,225 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>MobileNet | Hugging Face コース日本語版（デモ版）</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Shippori+Mincho:wght@500;700&family=Zen+Kaku+Gothic+New:wght@400;500;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../../../style.css">
+<script>
+window.MathJax = { tex: { inlineMath: [['$', '$'], ['\\(', '\\)']], displayMath: [['$$', '$$'], ['\\[', '\\]']] }, options: { skipHtmlTags: ['script','noscript','style','textarea','pre','code'] } };
+</script>
+<script async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml.js"></script>
+</head>
+<body>
+<header class="site-header">
+  <div class="header-inner">
+    <a class="site-title" href="../../../index.html">Hugging Face コース日本語版</a>
+    <span class="demo-badge">デモ版</span>
+  </div>
+</header>
+<main class="container">
+<p class="course-crumb"><a href="../../index.html">Community CV コース</a>
+<span class="badge badge-qa-wip">翻訳済み・QA進行中（未検証の部分を含みます）</span></p>
+<nav class="page-nav"><a class="nav-link prev" href="googlenet.html">← 前へ: GoogLeNet</a><a class="nav-link toc-link" href="../../index.html">目次へ</a><a class="nav-link next" href="convnext.html">次へ →: ConvNeXt - 2020年代のための ConvNet（2022）</a></nav>
+<article class="content">
+<h1>MobileNet</h1>
+<p>MobileNet は、モバイルデバイス向けに設計されたニューラルネットワークアーキテクチャの一種です。Google の研究チームによって開発され、2017年に初めて導入されました。MobileNet の主な目標は、スマートフォン、タブレット、その他のリソースに制約のあるデバイス上で、高性能かつ低レイテンシの画像分類と物体検出を提供することです。  </p>
+<p>MobileNet は、深さ方向分離可能畳み込み（depthwise separable convolution）を使うことでこれを達成します。これは標準的な畳み込みのより効率的な代替手段です。深さ方向分離可能畳み込みは、計算を深さ方向畳み込みとポイントワイズ畳み込みという2つの別々のステップに分解します。これによりパラメータ数と計算の複雑さが大幅に削減され、MobileNet がモバイルデバイス上で効率的に動作できるようになります。  </p>
+<h2>MobileNet の畳み込みの種類</h2>
+<p>通常の畳み込み層をこれらの深さ方向分離可能畳み込みとポイントワイズ畳み込みに置き換えることで、MobileNet は計算オーバーヘッドを最小限に抑えながら高い精度を達成し、モバイルデバイスやその他のリソースに制約のあるプラットフォームに適したものになります。MobileNet で使われる畳み込みは2種類あります。</p>
+<h3>深さ方向分離可能畳み込み</h3>
+<p>従来の畳み込み層では、各フィルタが入力のすべてのチャンネルに同時に重みを適用します。深さ方向分離可能畳み込みは、これを深さ方向畳み込みとポイントワイズ畳み込みという2つのステップに分解します。  </p>
+<p>このステップでは、入力画像のチャンネル（単一の色や特徴）ごとに、小さなフィルタ（通常は 3x3）を使って別々に畳み込みを行います。このステップの出力は入力と同じ大きさですが、チャンネル数は少なくなります。</p>
+<h3>ポイントワイズ分離可能畳み込み</h3>
+<p>この種の畳み込みは、入力層と出力層の両方で、すべてのチャンネルに対して単一のフィルタ（通常は 1x1）を適用します。通常の畳み込みよりパラメータが少なく、全結合層の代替と見ることができるため、計算リソースが限られたモバイルデバイスに適しています。</p>
+<p>深さ方向畳み込みの後、このステップでは別の 1x1 畳み込み層を使って、前のステップでフィルタリングされた出力を組み合わせます。この演算は、深さ方向畳み込みで学習した特徴をより小さな特徴の集合へ効果的に集約し、重要な情報を保持しながら全体の複雑さを下げます。</p>
+<h3>なぜ通常の畳み込みではなくこれらの畳み込みを使うのか？</h3>
+<p>よりよく理解するために、単純化して説明しましょう。</p>
+<h4>通常の畳み込み（大きくてオールインワンのフィルタ）</h4>
+<p>大きくて厚いフィルタ（何層もあるスポンジのようなもの）を想像してください。このフィルタは画像全体に適用されます。画像のすべての部分と、そのすべての特徴（色など）を一度に処理します。これには多くの作業（計算）と大きなフィルタ（メモリ）が必要です。</p>
+<h4>深さ方向分離可能畳み込み（2ステップで軽い処理）：</h4>
+<p>MobileNet はこの処理を基本に立ち返って行います。大きなフィルタを、より小さく単純な2つのステップに分割します。</p>
+<ul>
+<li>
+<p><strong>ステップ1 - 深さ方向畳み込み：</strong> まず、画像の特徴ごとに薄いフィルタ（スポンジの単層のようなもの）を別々に使います（色を個別に処理するようなものです）。各フィルタが小さく単純なため、作業量は少なくなります。</p>
+</li>
+<li>
+<p><strong>ステップ2 - ポイントワイズ畳み込み：</strong> 次に、もう1つの小さなフィルタ（単なる小さな点）を使って、これらの特徴を再び混ぜ合わせます。このステップは、最初のフィルタが見つけたものの要約を作るようなものです。</p>
+</li>
+</ul>
+<h4>これらのステップは何をするものか？</h4>
+<p>MobileNet は、1つの大きなステップの代わりにこの2つの小さなステップを使うことで、通常の畳み込みで必要な作業の軽量版を行うようなものになります。特にスマートフォンのような強力でないデバイスでは、より効率的です。</p>
+<p>フィルタが小さいため、MobileNet はそれほど多くのメモリを必要としません。すべての道具を収めるのにより小さな箱で済むようなもので、小さなデバイスに収めやすくなります。</p>
+<h3>1x1 畳み込みは通常の畳み込みと比べてどう機能するか？</h3>
+<h4>通常の畳み込み</h4>
+<ul>
+<li>通常の畳み込みは、大きなカーネル（3x3 や 5x5 など）を使って画像内のピクセルの集まりを一度に見ます。場面の一部を理解するために絵の小さな一区画を観察するようなものです。</li>
+<li>これらの畳み込みは、ピクセル同士の並び方を分析することで、エッジ、角、テクスチャなどの特徴を理解するのに向いています。</li>
+</ul>
+<h4>1x1 畳み込み</h4>
+<ul>
+<li>1x1 畳み込みは、一度に1ピクセルだけを見ます。隣り合うピクセルの並びを理解しようとはしません。</li>
+<li>1ピクセルしか見ていなくても、異なるチャンネル（カラー画像の RGB チャンネルなど）のすべての情報を考慮します。これらのチャンネルを組み合わせて、そのピクセルの新しいバージョンを作ります。</li>
+<li>1x1 畳み込みは、チャンネル数を増やすことも減らすこともできます。つまり、（チャンネルを減らして）情報を単純化することも、（チャンネルを増やして）より複雑な情報を作ることもできます。</li>
+</ul>
+<h4>主な違い</h4>
+<ul>
+<li><strong>焦点の範囲：</strong> 通常の畳み込みはピクセルの集合をまとめて分析してパターンを理解しますが、1x1 畳み込みは個々のピクセルに焦点を当て、異なるチャンネルの情報を組み合わせます。</li>
+<li><strong>目的：</strong> 通常の畳み込みは、画像内のパターンや特徴の検出に使われます。対照的に、1x1 畳み込みは主にチャンネルの深さを変更するために使われ、性能の弱いデバイスでの効率のために、ニューラルネットワークの後段の層に向けて情報の複雑さを調整する助けになります。</li>
+</ul>
+<p>MobileNet は、チャンネルごとの線形ボトルネック層などの手法も採用しており、パラメータ数を削減しながらモデルの精度を向上させています。このアーキテクチャは、CPU、GPU、さらには Google の Tensor Processing Unit（TPU）のような特殊なハードウェアを含む、さまざまなハードウェアプラットフォーム向けの最適化を備えて設計されています。</p>
+<h3>チャンネルごとの線形ボトルネック層</h3>
+<p>チャンネルごとの線形ボトルネック層は、画像分類タスクで高い精度を維持しながら、パラメータ数と計算コストをさらに削減する助けになります。</p>
+<p>チャンネルごとの線形ボトルネック層は、順に適用される3つの主な演算から構成されます。<br />
+1. <strong>深さ方向畳み込み：</strong> このステップでは、入力画像のチャンネル（単一の色や特徴）ごとに、小さなフィルタ（通常は 3x3）を使って別々に畳み込みを行います。このステップの出力は入力と同じ大きさですが、チャンネル数は少なくなります。<br />
+2. <strong>バッチ正規化：</strong> この演算は、各チャンネルにわたって活性化値を正規化し、訓練プロセスの安定化と汎化性能の向上を助けます。<br />
+3. <strong>活性化関数：</strong> 通常、バッチ正規化の後に ReLU（Rectified Linear Unit）活性化関数が使われ、ネットワークに非線形性を導入します。</p>
+<h3>ReLU は何をするのか？</h3>
+<p>訓練中にはいくつかの問題が起こり得ます。まずそれらを説明し、次に ReLU がこれらの問題に対して何をするかを説明します。</p>
+<h4>勾配消失問題</h4>
+<p>深いニューラルネットワークでは、特にバックプロパゲーション中に、勾配消失問題が起こり得ます。これは、勾配（ネットワークの重みを更新するために使われます）がネットワークの層を逆方向に伝わるにつれて非常に小さくなるときに発生します。これらの勾配が小さくなりすぎると「消失」し、ネットワークが重みを効果的に学習・調整することが難しくなります。</p>
+<p>ReLU は、正の値に対して線形で飽和しない形（正の入力はそのまま出力されます）であるため、勾配が小さくなりすぎることがなく、ネットワークでのより速い学習とより効果的な重みの調整が可能になります。</p>
+<h4>非線形性</h4>
+<p>非線形性がなければ、ニューラルネットワークは、たとえ何層あっても線形モデルとして機能し、複雑なパターンを学習できません。</p>
+<p>ReLU のような非線形関数により、ニューラルネットワークはデータ中の複雑な関係を捉えて学習できます。</p>
+<h3>推論</h3>
+<p>以下に示すように、Hugging Face transformers を使って transformers モデルのバリエーションで推論できます。</p>
+<div class="codehilite"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">transformers</span><span class="w"> </span><span class="kn">import</span> <span class="n">AutoImageProcessor</span><span class="p">,</span> <span class="n">AutoModelForImageClassification</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">PIL</span><span class="w"> </span><span class="kn">import</span> <span class="n">Image</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">requests</span>
+
+<span class="n">url</span> <span class="o">=</span> <span class="s2">"http://images.cocodataset.org/val2017/000000039769.jpg"</span>
+<span class="n">image</span> <span class="o">=</span> <span class="n">Image</span><span class="o">.</span><span class="n">open</span><span class="p">(</span><span class="n">requests</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">url</span><span class="p">,</span> <span class="n">stream</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span><span class="o">.</span><span class="n">raw</span><span class="p">)</span>
+
+<span class="c1"># プロセッサとモデルを初期化する</span>
+<span class="n">preprocessor</span> <span class="o">=</span> <span class="n">AutoImageProcessor</span><span class="o">.</span><span class="n">from_pretrained</span><span class="p">(</span><span class="s2">"google/mobilenet_v2_1.0_224"</span><span class="p">)</span>
+<span class="n">model</span> <span class="o">=</span> <span class="n">AutoModelForImageClassification</span><span class="o">.</span><span class="n">from_pretrained</span><span class="p">(</span><span class="s2">"google/mobilenet_v2_1.0_224"</span><span class="p">)</span>
+
+<span class="c1"># 入力を前処理する</span>
+<span class="n">inputs</span> <span class="o">=</span> <span class="n">preprocessor</span><span class="p">(</span><span class="n">images</span><span class="o">=</span><span class="n">image</span><span class="p">,</span> <span class="n">return_tensors</span><span class="o">=</span><span class="s2">"pt"</span><span class="p">)</span>
+
+<span class="c1"># 出力とクラスラベルを取得する</span>
+<span class="n">outputs</span> <span class="o">=</span> <span class="n">model</span><span class="p">(</span><span class="o">**</span><span class="n">inputs</span><span class="p">)</span>
+<span class="n">logits</span> <span class="o">=</span> <span class="n">outputs</span><span class="o">.</span><span class="n">logits</span>
+
+<span class="n">predicted_class_idx</span> <span class="o">=</span> <span class="n">logits</span><span class="o">.</span><span class="n">argmax</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">)</span><span class="o">.</span><span class="n">item</span><span class="p">()</span>
+<span class="nb">print</span><span class="p">(</span><span class="s2">"予測クラス:"</span><span class="p">,</span> <span class="n">model</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">id2label</span><span class="p">[</span><span class="n">predicted_class_idx</span><span class="p">])</span>
+</code></pre></div>
+
+<div class="codehilite"><pre><span></span><code>予測クラス: tabby, tabby cat
+</code></pre></div>
+
+<h3>PyTorch を使った実装例</h3>
+<p>以下は PyTorch 向けの MobileNet の実装例です。</p>
+<div class="codehilite"><pre><span></span><code><span class="kn">import</span><span class="w"> </span><span class="nn">torch</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">torch.nn</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">nn</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">torch.nn.functional</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">F</span>
+
+
+<span class="k">class</span><span class="w"> </span><span class="nc">DepthwiseSeparableConv</span><span class="p">(</span><span class="n">nn</span><span class="o">.</span><span class="n">Module</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">in_channels</span><span class="p">,</span> <span class="n">out_channels</span><span class="p">,</span> <span class="n">stride</span><span class="p">):</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">depthwise</span> <span class="o">=</span> <span class="n">nn</span><span class="o">.</span><span class="n">Conv2d</span><span class="p">(</span>
+            <span class="n">in_channels</span><span class="p">,</span>
+            <span class="n">in_channels</span><span class="p">,</span>
+            <span class="n">kernel_size</span><span class="o">=</span><span class="mi">3</span><span class="p">,</span>
+            <span class="n">stride</span><span class="o">=</span><span class="n">stride</span><span class="p">,</span>
+            <span class="n">padding</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span>
+            <span class="n">groups</span><span class="o">=</span><span class="n">in_channels</span><span class="p">,</span>
+        <span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">pointwise</span> <span class="o">=</span> <span class="n">nn</span><span class="o">.</span><span class="n">Conv2d</span><span class="p">(</span>
+            <span class="n">in_channels</span><span class="p">,</span> <span class="n">out_channels</span><span class="p">,</span> <span class="n">kernel_size</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">stride</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">padding</span><span class="o">=</span><span class="mi">0</span>
+        <span class="p">)</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">forward</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">x</span><span class="p">):</span>
+        <span class="n">x</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">depthwise</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
+        <span class="n">x</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">pointwise</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">x</span>
+
+
+<span class="k">class</span><span class="w"> </span><span class="nc">MobileNet</span><span class="p">(</span><span class="n">nn</span><span class="o">.</span><span class="n">Module</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">num_classes</span><span class="o">=</span><span class="mi">1000</span><span class="p">):</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">conv1</span> <span class="o">=</span> <span class="n">nn</span><span class="o">.</span><span class="n">Conv2d</span><span class="p">(</span><span class="mi">3</span><span class="p">,</span> <span class="mi">32</span><span class="p">,</span> <span class="n">kernel_size</span><span class="o">=</span><span class="mi">3</span><span class="p">,</span> <span class="n">stride</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span> <span class="n">padding</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+
+        <span class="c1"># MobileNet の本体</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">dw_conv2</span> <span class="o">=</span> <span class="n">DepthwiseSeparableConv</span><span class="p">(</span><span class="mi">32</span><span class="p">,</span> <span class="mi">64</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">dw_conv3</span> <span class="o">=</span> <span class="n">DepthwiseSeparableConv</span><span class="p">(</span><span class="mi">64</span><span class="p">,</span> <span class="mi">128</span><span class="p">,</span> <span class="mi">2</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">dw_conv4</span> <span class="o">=</span> <span class="n">DepthwiseSeparableConv</span><span class="p">(</span><span class="mi">128</span><span class="p">,</span> <span class="mi">128</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">dw_conv5</span> <span class="o">=</span> <span class="n">DepthwiseSeparableConv</span><span class="p">(</span><span class="mi">128</span><span class="p">,</span> <span class="mi">256</span><span class="p">,</span> <span class="mi">2</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">dw_conv6</span> <span class="o">=</span> <span class="n">DepthwiseSeparableConv</span><span class="p">(</span><span class="mi">256</span><span class="p">,</span> <span class="mi">256</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">dw_conv7</span> <span class="o">=</span> <span class="n">DepthwiseSeparableConv</span><span class="p">(</span><span class="mi">256</span><span class="p">,</span> <span class="mi">512</span><span class="p">,</span> <span class="mi">2</span><span class="p">)</span>
+
+        <span class="c1"># ストライド1の深さ方向分離可能畳み込みが5つ</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">dw_conv8</span> <span class="o">=</span> <span class="n">DepthwiseSeparableConv</span><span class="p">(</span><span class="mi">512</span><span class="p">,</span> <span class="mi">512</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">dw_conv9</span> <span class="o">=</span> <span class="n">DepthwiseSeparableConv</span><span class="p">(</span><span class="mi">512</span><span class="p">,</span> <span class="mi">512</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">dw_conv10</span> <span class="o">=</span> <span class="n">DepthwiseSeparableConv</span><span class="p">(</span><span class="mi">512</span><span class="p">,</span> <span class="mi">512</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">dw_conv11</span> <span class="o">=</span> <span class="n">DepthwiseSeparableConv</span><span class="p">(</span><span class="mi">512</span><span class="p">,</span> <span class="mi">512</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">dw_conv12</span> <span class="o">=</span> <span class="n">DepthwiseSeparableConv</span><span class="p">(</span><span class="mi">512</span><span class="p">,</span> <span class="mi">512</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">dw_conv13</span> <span class="o">=</span> <span class="n">DepthwiseSeparableConv</span><span class="p">(</span><span class="mi">512</span><span class="p">,</span> <span class="mi">1024</span><span class="p">,</span> <span class="mi">2</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">dw_conv14</span> <span class="o">=</span> <span class="n">DepthwiseSeparableConv</span><span class="p">(</span><span class="mi">1024</span><span class="p">,</span> <span class="mi">1024</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">avg_pool</span> <span class="o">=</span> <span class="n">nn</span><span class="o">.</span><span class="n">AdaptiveAvgPool2d</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">fc</span> <span class="o">=</span> <span class="n">nn</span><span class="o">.</span><span class="n">Linear</span><span class="p">(</span><span class="mi">1024</span><span class="p">,</span> <span class="n">num_classes</span><span class="p">)</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">forward</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">x</span><span class="p">):</span>
+        <span class="n">x</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">conv1</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
+        <span class="n">x</span> <span class="o">=</span> <span class="n">F</span><span class="o">.</span><span class="n">relu</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
+
+        <span class="n">x</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">dw_conv2</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
+        <span class="n">x</span> <span class="o">=</span> <span class="n">F</span><span class="o">.</span><span class="n">relu</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
+        <span class="n">x</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">dw_conv3</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
+        <span class="n">x</span> <span class="o">=</span> <span class="n">F</span><span class="o">.</span><span class="n">relu</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
+        <span class="n">x</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">dw_conv4</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
+        <span class="n">x</span> <span class="o">=</span> <span class="n">F</span><span class="o">.</span><span class="n">relu</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
+        <span class="n">x</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">dw_conv5</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
+        <span class="n">x</span> <span class="o">=</span> <span class="n">F</span><span class="o">.</span><span class="n">relu</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
+        <span class="n">x</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">dw_conv6</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
+        <span class="n">x</span> <span class="o">=</span> <span class="n">F</span><span class="o">.</span><span class="n">relu</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
+        <span class="n">x</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">dw_conv7</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
+        <span class="n">x</span> <span class="o">=</span> <span class="n">F</span><span class="o">.</span><span class="n">relu</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
+
+        <span class="n">x</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">dw_conv8</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
+        <span class="n">x</span> <span class="o">=</span> <span class="n">F</span><span class="o">.</span><span class="n">relu</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
+        <span class="n">x</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">dw_conv9</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
+        <span class="n">x</span> <span class="o">=</span> <span class="n">F</span><span class="o">.</span><span class="n">relu</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
+        <span class="n">x</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">dw_conv10</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
+        <span class="n">x</span> <span class="o">=</span> <span class="n">F</span><span class="o">.</span><span class="n">relu</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
+        <span class="n">x</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">dw_conv11</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
+        <span class="n">x</span> <span class="o">=</span> <span class="n">F</span><span class="o">.</span><span class="n">relu</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
+        <span class="n">x</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">dw_conv12</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
+        <span class="n">x</span> <span class="o">=</span> <span class="n">F</span><span class="o">.</span><span class="n">relu</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
+
+        <span class="n">x</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">dw_conv13</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
+        <span class="n">x</span> <span class="o">=</span> <span class="n">F</span><span class="o">.</span><span class="n">relu</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
+        <span class="n">x</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">dw_conv14</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
+        <span class="n">x</span> <span class="o">=</span> <span class="n">F</span><span class="o">.</span><span class="n">relu</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
+
+        <span class="n">x</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">avg_pool</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
+        <span class="n">x</span> <span class="o">=</span> <span class="n">x</span><span class="o">.</span><span class="n">view</span><span class="p">(</span><span class="n">x</span><span class="o">.</span><span class="n">size</span><span class="p">(</span><span class="mi">0</span><span class="p">),</span> <span class="o">-</span><span class="mi">1</span><span class="p">)</span>
+        <span class="n">x</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">fc</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">x</span>
+
+
+<span class="c1"># モデルを作成する</span>
+<span class="n">mobilenet</span> <span class="o">=</span> <span class="n">MobileNet</span><span class="p">(</span><span class="n">num_classes</span><span class="o">=</span><span class="mi">1000</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">mobilenet</span><span class="p">)</span>
+</code></pre></div>
+
+<p>事前学習済みの MobileNet モデルのチェックポイントは、この Hugging Face <a href="https://huggingface.co/google/mobilenet_v2_1.0_224">リンク</a>でも見つかります。</p>
+</article>
+<nav class="page-nav"><a class="nav-link prev" href="googlenet.html">← 前へ: GoogLeNet</a><a class="nav-link toc-link" href="../../index.html">目次へ</a><a class="nav-link next" href="convnext.html">次へ →: ConvNeXt - 2020年代のための ConvNet（2022）</a></nav>
+</main>
+<footer class="site-footer">
+  <p>原典: Hugging Face huggingface/computer-vision-course（<a href="https://github.com/huggingface/computer-vision-course">https://github.com/huggingface/computer-vision-course</a>）</p>
+  <p>日本語版の翻訳・公開: 霞ヶ関京 / 連絡先: GitHub <a href="https://github.com/yanikasumin">@yanikasumin</a> / YouTube <a href="https://www.youtube.com/@KASUMI_MOF">@KASUMI_MOF</a></p>
+  <p class="demo-note">このサイトはデモ版です。内容は順次更新されます。</p>
+</footer>
+<script src="../../../site.js"></script>
+</body>
+</html>

@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Vision Transformer における知識蒸留 | Hugging Face コース日本語版（デモ版）</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Shippori+Mincho:wght@500;700&family=Zen+Kaku+Gothic+New:wght@400;500;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../../../style.css">
+<script>
+window.MathJax = { tex: { inlineMath: [['$', '$'], ['\\(', '\\)']], displayMath: [['$$', '$$'], ['\\[', '\\]']] }, options: { skipHtmlTags: ['script','noscript','style','textarea','pre','code'] } };
+</script>
+<script async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml.js"></script>
+</head>
+<body>
+<header class="site-header">
+  <div class="header-inner">
+    <a class="site-title" href="../../../index.html">Hugging Face コース日本語版</a>
+    <span class="demo-badge">デモ版</span>
+  </div>
+</header>
+<main class="container">
+<p class="course-crumb"><a href="../../index.html">Community CV コース</a>
+<span class="badge badge-qa-wip">翻訳済み・QA進行中（未検証の部分を含みます）</span></p>
+<nav class="page-nav"><a class="nav-link prev" href="oneformer.html">← 前へ: OneFormer: 汎用画像セグメンテーションを統べる1つの Transformer</a><a class="nav-link toc-link" href="../../index.html">目次へ</a><a class="nav-link next" href="../../unit4/multimodal-models/pre-intro.html">次へ →: マルチモーダルなテキスト・視覚モデルを探る: AI の中で感覚を結びつける</a></nav>
+<article class="content">
+<h1>Vision Transformer における知識蒸留</h1>
+<p>ここでは知識蒸留（Knowledge Distillation）について学びます。<a href="https://huggingface.co/distilgpt2">distilGPT</a> や <a href="https://huggingface.co/distilbert-base-uncased-finetuned-sst-2-english">distilbert</a> の背後にある手法です。この2つは、<em>Hugging Face Hub で最もダウンロードされているモデルの一部です！</em></p>
+<p>正解だけを教えて、あとは見たことのない問題でテストする、そんな先生を思い浮かべてみてください。これは、ラベル付きデータセットを与えて訓練する、機械学習モデルの教師あり学習に似ています。ただし、モデルをラベルで訓練する代わりに、<a href="https://arxiv.org/abs/1503.02531">知識蒸留</a>という別の道を選ぶこともできます。大きなモデルに匹敵する性能を持ちながら、はるかに小さく、しかも高速なモデルを得るための方法です。</p>
+<h2>知識蒸留の直感的な理解</h2>
+<p>次のような選択式の問題を出されたとします。</p>
+<p><img alt="選択式の問題" src="https://huggingface.co/datasets/hf-vision/course-assets/resolve/main/multiple-choice-question.png" /></p>
+<p>「答えは Draco Malfoy です」とだけ言われても、各キャラクターと Harry Potter との関係については、あまり学べません。</p>
+<p>一方で、「Ron Weasley でないことはかなり確信があります。Neville Longbottom でないことにもある程度確信があります。そして Draco Malfoy であることはかなり確信があります」と言われれば、これらのキャラクターと Harry Potter との関係について情報が得られます。知識蒸留の枠組みで生徒モデルへ受け渡されるのは、まさにこの種類の情報です。</p>
+<h2>ニューラルネットワークの知識を蒸留する</h2>
+<p>論文 <a href="https://arxiv.org/abs/1503.02531"><em>Distilling the Knowledge in a Neural Network</em></a> で、Hinton らは知識蒸留と呼ばれる訓練手法を提案しました。着想を得たのは、意外にも_昆虫_からです。昆虫が、異なるタスクに最適化された幼虫の姿から成虫の姿へ移行するように、大規模な機械学習モデルも、最初は幼虫のように扱いにくい形でデータから構造を取り出す段階を経て、その知識を、デプロイ向けのより小さく効率的なモデルへ蒸留できます。</p>
+<p>知識蒸留の本質は、教師ネットワークが予測した logits を使って、より小さく効率的な生徒モデルへ情報を伝えることです。そのために損失関数を書き換え、_蒸留損失（distillation loss）_を含めます。この損失により、生徒モデルの出力空間上の分布が、教師の分布に近づくよう促されます。</p>
+<p>蒸留損失は次のように定式化されます。</p>
+<p><img alt="蒸留損失" src="https://huggingface.co/datasets/hf-vision/course-assets/resolve/main/KL-Loss.png" /></p>
+<p>KL 損失は、教師と生徒の出力分布の間の <a href="https://en.wikipedia.org/wiki/Kullback–Leibler_divergence">Kullback-Leibler Divergence</a> を指します。生徒モデルの全体の損失は、この蒸留損失と、正解ラベルに対する通常の交差エントロピー損失の和として定式化されます。</p>
+<p>この損失関数を Python で実装した例と、Python で完結する具体例は、このセクションの <a href="https://github.com/huggingface/computer-vision-course/blob/main/notebooks/Unit%203%20-%20Vision%20Transformers/KnowledgeDistillation.ipynb">ノートブック</a> で確認できます。</p>
+<p>&lt;a
+  target="_blank"
+  href="https://colab.research.google.com/github/huggingface/computer-vision-course/blob/main/notebooks/Unit%203%20-%20Vision%20Transformers/KnowledgeDistillation.ipynb"</p>
+<blockquote>
+<p><img
+    src="https://colab.research.google.com/assets/colab-badge.svg"
+    alt="Open In Colab"
+  />
+</a></p>
+</blockquote>
+<h1>エッジデバイス向けに知識蒸留を活用する</h1>
+<p>AI モデルがエッジデバイスにデプロイされるようになるにつれ、知識蒸留の重要性は高まっています。たとえばサイズが 1 GB でレイテンシが 1 秒のモデルを大規模モデルとしてデプロイするのは、計算量とメモリの要求が高いため、リアルタイム用途では現実的ではありません。こうした制約は、主にモデルのサイズに起因します。その結果、この分野では知識蒸留が広く使われるようになりました。性能の低下を最小限に抑えながら、モデルのパラメータを 90% 以上削減できる手法です。</p>
+<h2>知識蒸留がもたらすもの（良い面と悪い面）</h2>
+<h3>1. エントロピーの増加</h3>
+<p>情報理論におけるエントロピーは、物理学における対応概念と同様に、系の中の「混沌」や無秩序の度合いを測るものです。ここでの文脈では、分布が含む情報量を定量化します。次の例を考えてみてください。</p>
+<ul>
+<li>覚えやすいのはどちらでしょうか: <code>[0, 1, 0, 0]</code> と <code>[0.2, 0.5, 0.2, 0.1]</code> のどちらですか？</li>
+</ul>
+<p>最初のベクトル <code>[0, 1, 0, 0]</code> は、含む情報が少ないため、覚えやすく、圧縮もしやすいベクトルです。2番目の位置に「1」がある、と表せます。一方、<code>[0.2, 0.5, 0.2, 0.1]</code> はより多くの情報を含んでいます。
+これを踏まえて、たとえばパラメータ数 80M のネットワークを ImageNet で訓練し、先ほど説明したようにパラメータ数 5M の生徒モデルへ蒸留したとします。この場合、教師モデルの出力に含まれるエントロピーは、生徒モデルの出力よりもはるかに低いことが分かります。つまり、生徒モデルの出力は、正しくても、教師の出力より混沌としているということです。これは単純な事実に帰着します。教師はパラメータが多い分、より多くの特徴を取り出せるため、クラス同士を見分けやすいのです。知識蒸留に対するこの見方は非常に興味深く、生徒のエントロピーを下げる研究が活発に行われています。エントロピーを損失関数として使う方法や、物理学に着想を得た類似の指標（エネルギーなど）を適用する方法が検討されています。</p>
+<h3>2. 一貫した勾配更新</h3>
+<p>モデルは、損失関数を最小化し、勾配降下法でパラメータを更新しながら、反復的に学習します。教師モデルにおいて、クラス A のサンプルを検出したときに活性化する役割を持つパラメータの集合 <code>P = {w1, w2, w3, ..., wn}</code> を考えてみてください。クラス A に似ているものの実際はクラス B に属する曖昧なサンプルがあると、誤分類のあとでモデルの勾配更新は激しくなり、不安定さにつながります。これに対して蒸留のプロセスでは、教師モデルのソフトなターゲットにより、訓練中の勾配更新はより安定し、一貫したものになります。その結果、生徒モデルの学習プロセスはより滑らかになります。</p>
+<h3>3. ラベルなしデータで訓練できる</h3>
+<p>教師モデルがあることで、生徒モデルはラベルなしデータでも訓練できます。教師モデルがラベルなしサンプルに対して疑似ラベルを生成し、生徒モデルはそれを訓練に使えます。この方法により、使える訓練データの量を大きく増やせます。</p>
+<h3>4. 視点の転換</h3>
+<p>深層学習モデルは通常、十分なデータを与えれば、背後にある現象を正確に表す関数 <code>F</code> を近似できる、という前提で訓練されます。しかし現実には、データ不足のためにこの前提が成り立たない場合が多くあります。従来のアプローチでは、より大きなモデルを作り、最適な結果が得られるまで反復的にファインチューニングします。これに対して知識蒸留は視点を転換します。すでに十分に訓練された教師モデル <code>F</code> があるなら、目標はより小さなモデル <code>f</code> で <code>F</code> を近似することになる、という考え方です。</p>
+</article>
+<nav class="page-nav"><a class="nav-link prev" href="oneformer.html">← 前へ: OneFormer: 汎用画像セグメンテーションを統べる1つの Transformer</a><a class="nav-link toc-link" href="../../index.html">目次へ</a><a class="nav-link next" href="../../unit4/multimodal-models/pre-intro.html">次へ →: マルチモーダルなテキスト・視覚モデルを探る: AI の中で感覚を結びつける</a></nav>
+</main>
+<footer class="site-footer">
+  <p>原典: Hugging Face huggingface/computer-vision-course（<a href="https://github.com/huggingface/computer-vision-course">https://github.com/huggingface/computer-vision-course</a>）</p>
+  <p>日本語版の翻訳・公開: 霞ヶ関京 / 連絡先: GitHub <a href="https://github.com/yanikasumin">@yanikasumin</a> / YouTube <a href="https://www.youtube.com/@KASUMI_MOF">@KASUMI_MOF</a></p>
+  <p class="demo-note">このサイトはデモ版です。内容は順次更新されます。</p>
+</footer>
+<script src="../../../site.js"></script>
+</body>
+</html>

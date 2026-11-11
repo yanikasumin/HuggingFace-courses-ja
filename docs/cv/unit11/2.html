@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Zero-shot Learning | Hugging Face コース日本語版（デモ版）</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Shippori+Mincho:wght@500;700&family=Zen+Kaku+Gothic+New:wght@400;500;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../../style.css">
+<script>
+window.MathJax = { tex: { inlineMath: [['$', '$'], ['\\(', '\\)']], displayMath: [['$$', '$$'], ['\\[', '\\]']] }, options: { skipHtmlTags: ['script','noscript','style','textarea','pre','code'] } };
+</script>
+<script async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml.js"></script>
+</head>
+<body>
+<header class="site-header">
+  <div class="header-inner">
+    <a class="site-title" href="../../index.html">Hugging Face コース日本語版</a>
+    <span class="demo-badge">デモ版</span>
+  </div>
+</header>
+<main class="container">
+<p class="course-crumb"><a href="../index.html">Community CV コース</a>
+<span class="badge badge-qa-wip">翻訳済み・QA進行中（未検証の部分を含みます）</span></p>
+<nav class="page-nav"><a class="nav-link prev" href="1.html">← 前へ: Introduction</a><a class="nav-link toc-link" href="../index.html">目次へ</a><a class="nav-link next" href="../unit12/pre-intro.html">次へ →: CV モデルにおける倫理的基盤を探る</a></nav>
+<article class="content">
+<h1>Zero-shot Learning</h1>
+<p>入門の章に続いて、次にゼロショット学習（ZSL）をより詳しく説明します。この章では次を扱います。
+- さまざまな種類の ZSL の定義と、それらの違い。 <br />
+- 意味埋め込み（semantic embeddings）を用いる ZSL の詳しい例 [1]。 </p>
+<h2>Zero-shot Learning vs. Generalized Zero-shot Learning</h2>
+<p>ゼロショット学習と一般化ゼロショット学習（GZSL）は、画像分類モデルが訓練に含まれていないラベルを分類しなければならない機械学習アルゴリズムの種類に属します。ZSL と GZSL は非常によく似ており、主な違いはモデルの評価方法にあります [2]。</p>
+<p>ZSL では、モデルは未知のクラスの画像を分類する能力についてのみ評価されます。ZSL のテストデータセットには、未知のクラスの観測のみが含まれます。GZSL では、モデルは既知のクラスと未知のクラスの両方で評価されます。これは現実世界のユースケースにより近いと考えられます。全体として、GZSL は、観測が新しいクラスに属するのか既知のクラスに属するのかをモデルが判断しなければならない分、より困難です。 </p>
+<h2>Inductive Zero-shot Learning vs. Transductive Zero-shot Learning</h2>
+<p>訓練データの種類に基づいて、ゼロショット学習には2つの種類があります。</p>
+<p>帰納的（inductive）ZSL では、モデルは既知のクラスのみを含むデータセットだけで訓練され、未知のクラスのデータには一切アクセスしません。学習プロセスは、訓練データからパターンを抽出して汎化することに焦点を当て、それを未知のクラスのインスタンスの分類に適用します。このアプローチは、訓練時に既知データと未知データが明確に分離されていることを前提とし、訓練データから未知のクラスへ汎化するモデルの能力を重視します。 </p>
+<p>伝達的（transductive）ZSL は、訓練時にモデルが未知のクラスに関する何らかの情報にアクセスできる点が異なります。通常は未知のクラスの属性やラベルなしの例ですが、ラベルは含まれません。このアプローチは、未知データの構造に関する追加の情報を活用して、より汎化可能なモデルを訓練します。 </p>
+<p>次のセクションでは、Google の古典的な研究論文 [1] の主概念に沿って、帰納的 ZSL の例を取り上げます。 </p>
+<h2>Zero-shot Learning Example with Semantic Embeddings</h2>
+<p>前の章で述べたように、成功する ZSL モデルを開発するには、画像とクラスラベルだけでは不十分です。画像だけに基づいて未知のクラスを分類することは、ほぼ不可能です。ZSL は、意味属性や埋め込みのような補助情報を利用して、未知のクラスの画像の分類を助けます。詳細に入る前に、この用語に不慣れな読者のために、意味埋め込みについて短く紹介します。 </p>
+<h3>What are Semantic Embeddings?</h3>
+<p>意味埋め込み（Semantic embeddings）は、データの意味と解釈を担う意味情報のベクトル表現です。たとえば、話し言葉で伝えられる情報は、意味情報の一種です。意味情報には、単語や文の直接的な意味だけでなく、文脈的・文化的な含意も含まれます。</p>
+<p>埋め込みとは、意味情報を実数のベクトルへ写像するプロセスを指します。意味埋め込みは、Word2Vec [3] や GloVe [4] のような教師なし機械学習モデルで学習されることがよくあります。単語、句、文など、あらゆる種類のテキスト情報は、定められた手順に基づいて数値ベクトルに変換できます。意味埋め込みは、単語間の距離と方向がその意味関係を反映する高次元空間で単語を記述します。これにより、機械は単語埋め込みに対する数学的演算によって、各単語の用法、同義語、文脈を理解できます。 </p>
+<h3>Enable Zero-shot Learning with Semantic Embeddings</h3>
+<p>訓練中、ZSL モデルは、既知のクラスの画像の視覚的特徴を、対応する意味埋め込みと結びつけることを学習します。目的は、画像の射影された視覚的特徴と、そのクラスの意味埋め込みとの間の距離を最小化することです。このプロセスは、モデルが画像と意味情報の対応関係を学習する助けとなります。</p>
+<p>モデルは画像の特徴を意味空間へ射影することを学習しているため、未知のクラスの画像の特徴を同じ空間へ射影し、未知のクラスの埋め込みと比較することで、未知のクラスの画像の分類を試みることができます。未知のクラスの画像については、モデルはその射影された埋め込みを計算し、未知のクラスの中から最も近い意味埋め込みを探索します。埋め込みが最も近い未知のクラスが、その画像の予測ラベルとなります。</p>
+<p>まとめると、意味埋め込みは ZSL の中心にあり、モデルがその分類能力を拡張できるようにします。このアプローチにより、ラベル付きデータセットを必要とせずに、膨大な量の現実世界のカテゴリを分類する、より柔軟でスケーラブルな方法が可能になります。</p>
+<h2>Comparison to CLIP</h2>
+<p>ZSL と CLIP（Contrastive Language–Image Pre-training）[5] の関係は、訓練データに存在しなかったカテゴリの画像を認識・分類できるようにするという共通の目標に由来します。しかし、CLIP は ZSL の基礎にある原則の大きな進歩であり、より広い応用でもあります。新規な学習と汎化のアプローチを活用しています。</p>
+<p>ZSL と CLIP の関係は次のように説明できます。</p>
+<ul>
+<li>
+<p>ZSL と CLIP はどちらも、訓練時に見ていないクラスへ画像を分類することを目指します。しかし、従来の ZSL アプローチが、既知と未知のクラスの間のギャップを埋めるために事前に定義された意味埋め込みや属性に依存するかもしれないのに対し、CLIP は自然言語の記述から直接学習し、タスク固有の埋め込みを必要とせずに、はるかに広い範囲のタスクへ汎化できます。</p>
+</li>
+<li>
+<p>CLIP は、モデルがテキストデータと視覚データの両方から学習するマルチモーダル学習の代表例です。このアプローチは、分類性能を改善するために補助情報を使う ZSL と一致します。CLIP は、生のテキストと画像から直接学習することでこの概念をさらに進め、視覚コンテンツと記述言語の間の関係を理解し表現できるようにします。</p>
+</li>
+</ul>
+<h2>Zero-shot Learning Evaluation Datasets</h2>
+<p>新しい ZSL の手法は毎年提案されており、評価方法が異なるため、優れたアプローチを特定するのは困難です。さまざまな ZSL 手法を評価するには、標準化された評価フレームワークとデータセットが好まれます。古典的な ZSL 手法の比較研究は [6] に示されています。ZSL の評価によく使われるデータセットには次のものがあります。 </p>
+<ul>
+<li><strong>Animal with Attributes (AwA)</strong></li>
+</ul>
+<p>転移学習アルゴリズム、特に属性ベースの分類をベンチマークするためのデータセット [7]。50の動物クラスの画像30475枚で構成され、各画像に6種類の特徴表現が付いています。  </p>
+<ul>
+<li><strong>Caltech-UCSD-Birds-200-2011（CUB）</strong></li>
+</ul>
+<p>きめ細かい視覚分類タスクのためのデータセット。200の鳥のサブカテゴリの画像11788枚を含みます。各画像には、1つのサブカテゴリラベル、15の部位位置、312のバイナリ属性、1つのバウンディングボックスがあります。また、各画像について10文の記述が、Amazon の Mechanical Turk を通じて収集されており、その記述はサブカテゴリ情報を含まないよう注意深く構成されています。  </p>
+<ul>
+<li><strong>Sun database（SUN）</strong></li>
+</ul>
+<p>最初の大規模なシーン属性データベース。このデータセットは、899カテゴリの画像130519枚で構成され、高レベルのシーン理解ときめ細かいシーン認識に使えます。 </p>
+<ul>
+<li><strong>Attribute Pascal and Yahoo dataset（aPY）</strong></li>
+</ul>
+<p>3つの大まかなカテゴリ（動物、物体、乗り物）から構成され、合計32のサブカテゴリにさらに分割された、粗い粒度のデータセットで、15339枚の画像からなります。 </p>
+<ul>
+<li><strong>ILSVRC2012/ILSVRC2010（ImNet-2）</strong></li>
+</ul>
+<p>ImageNet Large Scale Visual Recognition Challenge（ILSVRC）は、大規模な物体検出と画像分類のアルゴリズムを評価します [8]。 </p>
+<h2>Reference</h2>
+<ul>
+<li>[1] Frome et al., DeViSE: A Deep Visual Semantic Embedding Model, NIPS, (2013)</li>
+<li>[2] Pourpanah et al., A Review of Generalized Zero-Shot Learning Methods (2022).</li>
+<li>[3] Mikilov et al., Efficient Estimation of Word-Representations in Vector Space, ICLR (2013). </li>
+<li>[4] Pennington et al., Glove: Global Vectors for Word Representation, EMNLP (2014).</li>
+<li>[5] Radford et al., Learning Transferable Visual Models From Natural Language Supervision, arXiv (2021).</li>
+<li>[6] Xian et al., Zero-Shot Learning - The Good, the Bad and the Ugly, CVPR (2017).</li>
+<li>[7] Lampert et al., Learning to Detect Unseen Object Classes by Between-Class Attribute Transfer, CVPR (2009).</li>
+<li>[8] Deng et al., Imagenet: A Large-Scale Hierarchical Image Datbse, CVPR (2012). </li>
+</ul>
+</article>
+<nav class="page-nav"><a class="nav-link prev" href="1.html">← 前へ: Introduction</a><a class="nav-link toc-link" href="../index.html">目次へ</a><a class="nav-link next" href="../unit12/pre-intro.html">次へ →: CV モデルにおける倫理的基盤を探る</a></nav>
+</main>
+<footer class="site-footer">
+  <p>原典: Hugging Face huggingface/computer-vision-course（<a href="https://github.com/huggingface/computer-vision-course">https://github.com/huggingface/computer-vision-course</a>）</p>
+  <p>日本語版の翻訳・公開: 霞ヶ関京 / 連絡先: GitHub <a href="https://github.com/yanikasumin">@yanikasumin</a> / YouTube <a href="https://www.youtube.com/@KASUMI_MOF">@KASUMI_MOF</a></p>
+  <p class="demo-note">このサイトはデモ版です。内容は順次更新されます。</p>
+</footer>
+<script src="../../site.js"></script>
+</body>
+</html>

@@ -1,0 +1,266 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>特徴マッチング（Feature Matching） | Hugging Face コース日本語版（デモ版）</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Shippori+Mincho:wght@500;700&family=Zen+Kaku+Gothic+New:wght@400;500;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../../../style.css">
+<script>
+window.MathJax = { tex: { inlineMath: [['$', '$'], ['\\(', '\\)']], displayMath: [['$$', '$$'], ['\\[', '\\]']] }, options: { skipHtmlTags: ['script','noscript','style','textarea','pre','code'] } };
+</script>
+<script async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml.js"></script>
+</head>
+<body>
+<header class="site-header">
+  <div class="header-inner">
+    <a class="site-title" href="../../../index.html">Hugging Face コース日本語版</a>
+    <span class="demo-badge">デモ版</span>
+  </div>
+</header>
+<main class="container">
+<p class="course-crumb"><a href="../../index.html">Community CV コース</a>
+<span class="badge badge-qa-wip">翻訳済み・QA進行中（未検証の部分を含みます）</span></p>
+<nav class="page-nav"><a class="nav-link prev" href="feature_description.html">← 前へ: Feature Description</a><a class="nav-link toc-link" href="../../index.html">目次へ</a><a class="nav-link next" href="real-world-applications.html">次へ →: コンピュータビジョンにおける特徴抽出の実世界の応用</a></nav>
+<article class="content">
+<h1>特徴マッチング（Feature Matching）</h1>
+<p>検出された特徴を、ある画像から別の画像へどうマッチングすればよいでしょうか？特徴マッチングでは、異なる画像の主要な属性を比較して類似点を見つけます。特徴マッチングは、シーン理解、画像スティッチング、物体追跡、パターン認識など、多くのコンピュータビジョン応用で役立ちます。</p>
+<h2>ブルートフォース探索</h2>
+<p>パズルのピースが入った巨大な箱があり、パズルにぴったり合う特定のピースを探していると想像してください。これは、画像内のマッチする特徴を探すのと似ています。特別な戦略はなく、正しいピースが見つかるまで、ピースを1つずつ確認することにしたとします。この素直な方法がブルートフォース探索です。ブルートフォースの利点はシンプルさです。特別な工夫は必要なく、忍耐だけが必要です。ただし、チェックするピースが多いと時間がかかる場合があります。特徴マッチングの文脈では、このブルートフォースアプローチは、ある画像のすべてのピクセルを別の画像のすべてのピクセルと比較してマッチするかどうかを確認するようなものです。徹底的ですが、特に大きな画像では多くの時間がかかる可能性があります。</p>
+<p>ブルートフォースでマッチがどう見つかるか直感的に理解できたので、アルゴリズムに踏み込みましょう。前の章で学んだ記述子を使って、2つの画像のマッチする特徴を見つけます。</p>
+<p>まずライブラリをインストールして読み込みます。</p>
+<div class="codehilite"><pre><span></span><code>!pip<span class="w"> </span>install<span class="w"> </span>opencv-python
+</code></pre></div>
+
+<div class="codehilite"><pre><span></span><code><span class="kn">import</span><span class="w"> </span><span class="nn">cv2</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
+</code></pre></div>
+
+<p><strong>SIFT によるブルートフォース</strong></p>
+<p>まず SIFT 検出器を初期化します。</p>
+<div class="codehilite"><pre><span></span><code><span class="n">sift</span> <span class="o">=</span> <span class="n">cv2</span><span class="o">.</span><span class="n">SIFT_create</span><span class="p">()</span>
+</code></pre></div>
+
+<p>SIFT でキーポイントと記述子を見つけます。</p>
+<div class="codehilite"><pre><span></span><code><span class="n">kp1</span><span class="p">,</span> <span class="n">des1</span> <span class="o">=</span> <span class="n">sift</span><span class="o">.</span><span class="n">detectAndCompute</span><span class="p">(</span><span class="n">img1</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
+<span class="n">kp2</span><span class="p">,</span> <span class="n">des2</span> <span class="o">=</span> <span class="n">sift</span><span class="o">.</span><span class="n">detectAndCompute</span><span class="p">(</span><span class="n">img2</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
+</code></pre></div>
+
+<p>k 近傍を使ってマッチを見つけます。</p>
+<div class="codehilite"><pre><span></span><code><span class="n">bf</span> <span class="o">=</span> <span class="n">cv2</span><span class="o">.</span><span class="n">BFMatcher</span><span class="p">()</span>
+<span class="n">matches</span> <span class="o">=</span> <span class="n">bf</span><span class="o">.</span><span class="n">knnMatch</span><span class="p">(</span><span class="n">des1</span><span class="p">,</span> <span class="n">des2</span><span class="p">,</span> <span class="n">k</span><span class="o">=</span><span class="mi">2</span><span class="p">)</span>
+</code></pre></div>
+
+<p>比率テストを適用して、最適なマッチにしきい値をかけます。</p>
+<div class="codehilite"><pre><span></span><code><span class="n">good</span> <span class="o">=</span> <span class="p">[]</span>
+<span class="k">for</span> <span class="n">m</span><span class="p">,</span> <span class="n">n</span> <span class="ow">in</span> <span class="n">matches</span><span class="p">:</span>
+    <span class="k">if</span> <span class="n">m</span><span class="o">.</span><span class="n">distance</span> <span class="o">&lt;</span> <span class="mf">0.75</span> <span class="o">*</span> <span class="n">n</span><span class="o">.</span><span class="n">distance</span><span class="p">:</span>
+        <span class="n">good</span><span class="o">.</span><span class="n">append</span><span class="p">([</span><span class="n">m</span><span class="p">])</span>
+</code></pre></div>
+
+<p>マッチを描画します。</p>
+<div class="codehilite"><pre><span></span><code><span class="n">img3</span> <span class="o">=</span> <span class="n">cv2</span><span class="o">.</span><span class="n">drawMatchesKnn</span><span class="p">(</span>
+    <span class="n">img1</span><span class="p">,</span> <span class="n">kp1</span><span class="p">,</span> <span class="n">img2</span><span class="p">,</span> <span class="n">kp2</span><span class="p">,</span> <span class="n">good</span><span class="p">,</span> <span class="kc">None</span><span class="p">,</span> <span class="n">flags</span><span class="o">=</span><span class="n">cv2</span><span class="o">.</span><span class="n">DrawMatchesFlags_NOT_DRAW_SINGLE_POINTS</span>
+<span class="p">)</span>
+</code></pre></div>
+
+<div class="flex justify-center">
+    <img src="https://huggingface.co/datasets/hf-vision/course-assets/resolve/main/feature-extraction-feature-matching/SIFT.png" alt="SIFT">
+</div>
+
+<p><strong>ORB（バイナリ）記述子によるブルートフォース</strong></p>
+<p>ORB 記述子を初期化します。</p>
+<div class="codehilite"><pre><span></span><code><span class="n">orb</span> <span class="o">=</span> <span class="n">cv2</span><span class="o">.</span><span class="n">ORB_create</span><span class="p">()</span>
+</code></pre></div>
+
+<p>キーポイントと記述子を見つけます。</p>
+<div class="codehilite"><pre><span></span><code><span class="n">kp1</span><span class="p">,</span> <span class="n">des1</span> <span class="o">=</span> <span class="n">orb</span><span class="o">.</span><span class="n">detectAndCompute</span><span class="p">(</span><span class="n">img1</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
+<span class="n">kp2</span><span class="p">,</span> <span class="n">des2</span> <span class="o">=</span> <span class="n">orb</span><span class="o">.</span><span class="n">detectAndCompute</span><span class="p">(</span><span class="n">img2</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
+</code></pre></div>
+
+<p>ORB はバイナリ記述子なので、同じ長さの2つの文字列の違いを測る尺度である<a href="https://www.geeksforgeeks.org/hamming-distance-two-strings/">ハミング距離</a>を使ってマッチを見つけます。</p>
+<div class="codehilite"><pre><span></span><code><span class="n">bf</span> <span class="o">=</span> <span class="n">cv2</span><span class="o">.</span><span class="n">BFMatcher</span><span class="p">(</span><span class="n">cv2</span><span class="o">.</span><span class="n">NORM_HAMMING</span><span class="p">,</span> <span class="n">crossCheck</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+</code></pre></div>
+
+<p>マッチを見つけます。</p>
+<div class="codehilite"><pre><span></span><code><span class="n">matches</span> <span class="o">=</span> <span class="n">bf</span><span class="o">.</span><span class="n">match</span><span class="p">(</span><span class="n">des1</span><span class="p">,</span> <span class="n">des2</span><span class="p">)</span>
+</code></pre></div>
+
+<p>次のように、距離の順に並べ替えできます。</p>
+<div class="codehilite"><pre><span></span><code><span class="n">matches</span> <span class="o">=</span> <span class="nb">sorted</span><span class="p">(</span><span class="n">matches</span><span class="p">,</span> <span class="n">key</span><span class="o">=</span><span class="k">lambda</span> <span class="n">x</span><span class="p">:</span> <span class="n">x</span><span class="o">.</span><span class="n">distance</span><span class="p">)</span>
+</code></pre></div>
+
+<p>最初の n 個のマッチを描画します。</p>
+<div class="codehilite"><pre><span></span><code><span class="n">img3</span> <span class="o">=</span> <span class="n">cv2</span><span class="o">.</span><span class="n">drawMatches</span><span class="p">(</span>
+    <span class="n">img1</span><span class="p">,</span>
+    <span class="n">kp1</span><span class="p">,</span>
+    <span class="n">img2</span><span class="p">,</span>
+    <span class="n">kp2</span><span class="p">,</span>
+    <span class="n">matches</span><span class="p">[:</span><span class="n">n</span><span class="p">],</span>
+    <span class="kc">None</span><span class="p">,</span>
+    <span class="n">flags</span><span class="o">=</span><span class="n">cv2</span><span class="o">.</span><span class="n">DrawMatchesFlags_NOT_DRAW_SINGLE_POINTS</span><span class="p">,</span>
+<span class="p">)</span>
+</code></pre></div>
+
+<p><strong>Fast Library for Approximate Nearest Neighbors（FLANN）</strong></p>
+<p>FLANN は Muja と Lowe による <a href="https://www.cs.ubc.ca/research/flann/uploads/FLANN/flann_visapp09.pdf">Fast Approximate Nearest Neighbors With Automatic Algorithm Configuration</a> で提案されました。FLANN を説明するために、パズルを解く例を引き続き使います。何百ものピースが散らばった巨大なパズルを思い浮かべてください。目標は、それらがどれだけよく合うかに基づいてピースを整理することです。ランダムにピースをマッチさせようとする代わりに、
+FLANN は賢い工夫を使って、どのピースが一緒に合いそうかを素早く把握します。すべてのピースを他のすべてのピースと試す代わりに、FLANN は近似的に似ているピースを見つけることでプロセスを効率化します。つまり、完全なマッチでなくても、どのピースがよく合う可能性があるかについて、根拠のある推測ができます。内部では、FLANN は k-d 木と呼ばれるものを使います。パズルのピースを特別な方法で整理することだと考えてください。すべてのピースを他のすべてのピースと照合する代わりに、FLANN はそれらを木のような構造に配置し、マッチをより速く見つけられるようにします。k-d 木の各ノードでは、FLANN は似た特徴を持つピースをまとめます。似た形や色のパズルのピースを山に分けるようなものです。こうすることで、マッチを探すときに、似たピースが最もありそうな山を素早く確認できます。「空」のピースを探しているとしましょう。すべてのピースを探し回る代わりに、FLANN は空色のピースが分類されている k-d 木の正しい場所へ案内します。FLANN は、パズルのピースの特徴に基づいて戦略も調整します。色が多いパズルなら色の特徴に焦点を当てます。複雑な形のパズルなら、その形に注意を払います。マッチする特徴を見つける際に速度と精度のバランスを取ることで、FLANN はクエリ時間を大幅に改善します。</p>
+<p>まず、使用するアルゴリズムを指定する辞書を作成します。SIFT や SURF の場合は次のようになります。</p>
+<div class="codehilite"><pre><span></span><code><span class="n">FLANN_INDEX_KDTREE</span> <span class="o">=</span> <span class="mi">1</span>
+<span class="n">index_params</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span><span class="n">algorithm</span><span class="o">=</span><span class="n">FLANN_INDEX_KDTREE</span><span class="p">,</span> <span class="n">trees</span><span class="o">=</span><span class="mi">5</span><span class="p">)</span>
+</code></pre></div>
+
+<p>ORB の場合は、論文のパラメータを使います。</p>
+<div class="codehilite"><pre><span></span><code><span class="n">FLANN_INDEX_LSH</span> <span class="o">=</span> <span class="mi">6</span>
+<span class="n">index_params</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span>
+    <span class="n">algorithm</span><span class="o">=</span><span class="n">FLANN_INDEX_LSH</span><span class="p">,</span> <span class="n">table_number</span><span class="o">=</span><span class="mi">12</span><span class="p">,</span> <span class="n">key_size</span><span class="o">=</span><span class="mi">20</span><span class="p">,</span> <span class="n">multi_probe_level</span><span class="o">=</span><span class="mi">2</span>
+<span class="p">)</span>
+</code></pre></div>
+
+<p>訪れる最大のリーフ数を指定する辞書も、次のように作成します。</p>
+<div class="codehilite"><pre><span></span><code><span class="n">search_params</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span><span class="n">checks</span><span class="o">=</span><span class="mi">50</span><span class="p">)</span>
+</code></pre></div>
+
+<p>SIFT 検出器を初期化します。</p>
+<div class="codehilite"><pre><span></span><code><span class="n">sift</span> <span class="o">=</span> <span class="n">cv2</span><span class="o">.</span><span class="n">SIFT_create</span><span class="p">()</span>
+</code></pre></div>
+
+<p>SIFT でキーポイントと記述子を見つけます。</p>
+<div class="codehilite"><pre><span></span><code><span class="n">kp1</span><span class="p">,</span> <span class="n">des1</span> <span class="o">=</span> <span class="n">sift</span><span class="o">.</span><span class="n">detectAndCompute</span><span class="p">(</span><span class="n">img1</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
+<span class="n">kp2</span><span class="p">,</span> <span class="n">des2</span> <span class="o">=</span> <span class="n">sift</span><span class="o">.</span><span class="n">detectAndCompute</span><span class="p">(</span><span class="n">img2</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
+</code></pre></div>
+
+<p>ここで FLANN パラメータを定義します。trees は欲しいビンの数です。</p>
+<div class="codehilite"><pre><span></span><code><span class="n">FLANN_INDEX_KDTREE</span> <span class="o">=</span> <span class="mi">1</span>
+<span class="n">index_params</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span><span class="n">algorithm</span><span class="o">=</span><span class="n">FLANN_INDEX_KDTREE</span><span class="p">,</span> <span class="n">trees</span><span class="o">=</span><span class="mi">5</span><span class="p">)</span>
+<span class="n">search_params</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span><span class="n">checks</span><span class="o">=</span><span class="mi">50</span><span class="p">)</span>
+<span class="n">flann</span> <span class="o">=</span> <span class="n">cv2</span><span class="o">.</span><span class="n">FlannBasedMatcher</span><span class="p">(</span><span class="n">index_params</span><span class="p">,</span> <span class="n">search_params</span><span class="p">)</span>
+
+<span class="n">matches</span> <span class="o">=</span> <span class="n">flann</span><span class="o">.</span><span class="n">knnMatch</span><span class="p">(</span><span class="n">des1</span><span class="p">,</span> <span class="n">des2</span><span class="p">,</span> <span class="n">k</span><span class="o">=</span><span class="mi">2</span><span class="p">)</span>
+</code></pre></div>
+
+<p>良いマッチだけを描画するので、マスクを作成します。</p>
+<div class="codehilite"><pre><span></span><code><span class="n">matchesMask</span> <span class="o">=</span> <span class="p">[[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">]</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">matches</span><span class="p">))]</span>
+</code></pre></div>
+
+<p>比率テストを実行して、良いマッチを判定できます。</p>
+<div class="codehilite"><pre><span></span><code><span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="p">(</span><span class="n">m</span><span class="p">,</span> <span class="n">n</span><span class="p">)</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">matches</span><span class="p">):</span>
+    <span class="k">if</span> <span class="n">m</span><span class="o">.</span><span class="n">distance</span> <span class="o">&lt;</span> <span class="mf">0.7</span> <span class="o">*</span> <span class="n">n</span><span class="o">.</span><span class="n">distance</span><span class="p">:</span>
+        <span class="n">matchesMask</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">0</span><span class="p">]</span>
+</code></pre></div>
+
+<p>マッチを可視化しましょう。</p>
+<div class="codehilite"><pre><span></span><code><span class="n">draw_params</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span>
+    <span class="n">matchColor</span><span class="o">=</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">255</span><span class="p">,</span> <span class="mi">0</span><span class="p">),</span>
+    <span class="n">singlePointColor</span><span class="o">=</span><span class="p">(</span><span class="mi">255</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">),</span>
+    <span class="n">matchesMask</span><span class="o">=</span><span class="n">matchesMask</span><span class="p">,</span>
+    <span class="n">flags</span><span class="o">=</span><span class="n">cv2</span><span class="o">.</span><span class="n">DrawMatchesFlags_DEFAULT</span><span class="p">,</span>
+<span class="p">)</span>
+
+<span class="n">img3</span> <span class="o">=</span> <span class="n">cv2</span><span class="o">.</span><span class="n">drawMatchesKnn</span><span class="p">(</span><span class="n">img1</span><span class="p">,</span> <span class="n">kp1</span><span class="p">,</span> <span class="n">img2</span><span class="p">,</span> <span class="n">kp2</span><span class="p">,</span> <span class="n">matches</span><span class="p">,</span> <span class="kc">None</span><span class="p">,</span> <span class="o">**</span><span class="n">draw_params</span><span class="p">)</span>
+</code></pre></div>
+
+<p><img alt="FLANN" src="https://huggingface.co/datasets/hf-vision/course-assets/resolve/main/feature-extraction-feature-matching/FLANN.png" /></p>
+<h2>Transformers による局所特徴マッチング（LoFTR）</h2>
+<p>LoFTR は Sun らによる <a href="https://arxiv.org/pdf/2104.00680.pdf">LoFTR: Detector-Free Local Feature Matching with Transformers</a> で提案されました。
+特徴検出器を使う代わりに、LoFTR は学習ベースのアプローチで特徴マッチングを行います。</p>
+<p>シンプルにするために、パズルの例をもう一度使いましょう。画像をピクセルごとに単純に比較する代わりに、LoFTR は各画像の特定のキーポイント、つまり特徴を探します。各パズルピースの角やエッジを特定するようなものです。パズルを組み立てるのが本当に上手な人が特徴的な目印に注目するように、LoFTR はある画像におけるこれらの固有の点を特定します。これらは目立つ主要なランドマークや構造でありえます。すでに学んだように、マッチングアルゴリズムが回転やスケールの変化を扱えることは重要です。特徴が回転したりリサイズされたりしても、LoFTR はそれを認識します。ピースが反転したり調整されたりするパズルを解くようなものです。LoFTR は特徴をマッチングする際、特徴がどれだけよく揃うかを示す類似度スコアを割り当てます。スコアが高いほど、より良いマッチです。あるパズルピースが別のピースにどれだけよく合うかを採点するようなものです。
+LoFTR は特定の変換に対しても不変であり、照明、角度、遠近法の変動を扱えます。これは、異なる条件下で撮影された可能性のある画像を扱うときに重要です。LoFTR の特徴をロバストにマッチングする能力は、共通の特徴を特定して接続することで複数の画像をシームレスに組み合わせる画像スティッチングのようなタスクで価値があります。</p>
+<p><a href="https://github.com/kornia/kornia">Kornia</a> を使って、LoFTR で2つの画像のマッチする特徴を見つけられます。</p>
+<div class="codehilite"><pre><span></span><code>!pip<span class="w"> </span>install<span class="w"> </span>kornia<span class="w">  </span>kornia-rs<span class="w">  </span>kornia_moons<span class="w"> </span>opencv-python<span class="w"> </span>--upgrade
+</code></pre></div>
+
+<p>必要なライブラリをインポートします。</p>
+<div class="codehilite"><pre><span></span><code><span class="kn">import</span><span class="w"> </span><span class="nn">cv2</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">kornia</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">K</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">kornia.feature</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">KF</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">matplotlib.pyplot</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">plt</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">torch</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">kornia_moons.viz</span><span class="w"> </span><span class="kn">import</span> <span class="n">draw_LAF_matches</span>
+</code></pre></div>
+
+<p>画像を読み込んでリサイズします。</p>
+<div class="codehilite"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">kornia.feature</span><span class="w"> </span><span class="kn">import</span> <span class="n">LoFTR</span>
+
+<span class="n">img1</span> <span class="o">=</span> <span class="n">K</span><span class="o">.</span><span class="n">io</span><span class="o">.</span><span class="n">load_image</span><span class="p">(</span><span class="n">image1</span><span class="o">.</span><span class="n">jpg</span><span class="p">,</span> <span class="n">K</span><span class="o">.</span><span class="n">io</span><span class="o">.</span><span class="n">ImageLoadType</span><span class="o">.</span><span class="n">RGB32</span><span class="p">)[</span><span class="kc">None</span><span class="p">,</span> <span class="o">...</span><span class="p">]</span>
+<span class="n">img2</span> <span class="o">=</span> <span class="n">K</span><span class="o">.</span><span class="n">io</span><span class="o">.</span><span class="n">load_image</span><span class="p">(</span><span class="n">image2</span><span class="o">.</span><span class="n">jpg</span><span class="p">,</span> <span class="n">K</span><span class="o">.</span><span class="n">io</span><span class="o">.</span><span class="n">ImageLoadType</span><span class="o">.</span><span class="n">RGB32</span><span class="p">)[</span><span class="kc">None</span><span class="p">,</span> <span class="o">...</span><span class="p">]</span>
+
+<span class="n">img1</span> <span class="o">=</span> <span class="n">K</span><span class="o">.</span><span class="n">geometry</span><span class="o">.</span><span class="n">resize</span><span class="p">(</span><span class="n">img1</span><span class="p">,</span> <span class="p">(</span><span class="mi">512</span><span class="p">,</span> <span class="mi">512</span><span class="p">),</span> <span class="n">antialias</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+<span class="n">img2</span> <span class="o">=</span> <span class="n">K</span><span class="o">.</span><span class="n">geometry</span><span class="o">.</span><span class="n">resize</span><span class="p">(</span><span class="n">img2</span><span class="p">,</span> <span class="p">(</span><span class="mi">512</span><span class="p">,</span> <span class="mi">512</span><span class="p">),</span> <span class="n">antialias</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+</code></pre></div>
+
+<p>画像が「屋内」か「屋外」かを示します。</p>
+<div class="codehilite"><pre><span></span><code><span class="n">matcher</span> <span class="o">=</span> <span class="n">LoFTR</span><span class="p">(</span><span class="n">pretrained</span><span class="o">=</span><span class="s2">"outdoor"</span><span class="p">)</span>
+</code></pre></div>
+
+<p>LoFTR はグレースケール画像でのみ動作するので、画像をグレースケールに変換します。</p>
+<div class="codehilite"><pre><span></span><code><span class="n">input_dict</span> <span class="o">=</span> <span class="p">{</span>
+    <span class="s2">"image0"</span><span class="p">:</span> <span class="n">K</span><span class="o">.</span><span class="n">color</span><span class="o">.</span><span class="n">rgb_to_grayscale</span><span class="p">(</span><span class="n">img1</span><span class="p">),</span>
+    <span class="s2">"image1"</span><span class="p">:</span> <span class="n">K</span><span class="o">.</span><span class="n">color</span><span class="o">.</span><span class="n">rgb_to_grayscale</span><span class="p">(</span><span class="n">img2</span><span class="p">),</span>
+<span class="p">}</span>
+</code></pre></div>
+
+<p>推論を実行しましょう。</p>
+<div class="codehilite"><pre><span></span><code><span class="k">with</span> <span class="n">torch</span><span class="o">.</span><span class="n">inference_mode</span><span class="p">():</span>
+    <span class="n">correspondences</span> <span class="o">=</span> <span class="n">matcher</span><span class="p">(</span><span class="n">input_dict</span><span class="p">)</span>
+</code></pre></div>
+
+<p>Random Sample Consensus（<a href="https://en.wikipedia.org/wiki/Random_sample_consensus">RANSAC</a>）を使って対応を整理します。これにより、データ内のノイズや外れ値に対処できます。</p>
+<div class="codehilite"><pre><span></span><code><span class="n">mkpts0</span> <span class="o">=</span> <span class="n">correspondences</span><span class="p">[</span><span class="s2">"keypoints0"</span><span class="p">]</span><span class="o">.</span><span class="n">cpu</span><span class="p">()</span><span class="o">.</span><span class="n">numpy</span><span class="p">()</span>
+<span class="n">mkpts1</span> <span class="o">=</span> <span class="n">correspondences</span><span class="p">[</span><span class="s2">"keypoints1"</span><span class="p">]</span><span class="o">.</span><span class="n">cpu</span><span class="p">()</span><span class="o">.</span><span class="n">numpy</span><span class="p">()</span>
+<span class="n">Fm</span><span class="p">,</span> <span class="n">inliers</span> <span class="o">=</span> <span class="n">cv2</span><span class="o">.</span><span class="n">findFundamentalMat</span><span class="p">(</span><span class="n">mkpts0</span><span class="p">,</span> <span class="n">mkpts1</span><span class="p">,</span> <span class="n">cv2</span><span class="o">.</span><span class="n">USAC_MAGSAC</span><span class="p">,</span> <span class="mf">0.5</span><span class="p">,</span> <span class="mf">0.999</span><span class="p">,</span> <span class="mi">100000</span><span class="p">)</span>
+<span class="n">inliers</span> <span class="o">=</span> <span class="n">inliers</span> <span class="o">&gt;</span> <span class="mi">0</span>
+</code></pre></div>
+
+<p>最後に、マッチを可視化できます。</p>
+<div class="codehilite"><pre><span></span><code><span class="n">draw_LAF_matches</span><span class="p">(</span>
+    <span class="n">KF</span><span class="o">.</span><span class="n">laf_from_center_scale_ori</span><span class="p">(</span>
+        <span class="n">torch</span><span class="o">.</span><span class="n">from_numpy</span><span class="p">(</span><span class="n">mkpts0</span><span class="p">)</span><span class="o">.</span><span class="n">view</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">),</span>
+        <span class="n">torch</span><span class="o">.</span><span class="n">ones</span><span class="p">(</span><span class="n">mkpts0</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span><span class="o">.</span><span class="n">view</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">),</span>
+        <span class="n">torch</span><span class="o">.</span><span class="n">ones</span><span class="p">(</span><span class="n">mkpts0</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span><span class="o">.</span><span class="n">view</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">),</span>
+    <span class="p">),</span>
+    <span class="n">KF</span><span class="o">.</span><span class="n">laf_from_center_scale_ori</span><span class="p">(</span>
+        <span class="n">torch</span><span class="o">.</span><span class="n">from_numpy</span><span class="p">(</span><span class="n">mkpts1</span><span class="p">)</span><span class="o">.</span><span class="n">view</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">),</span>
+        <span class="n">torch</span><span class="o">.</span><span class="n">ones</span><span class="p">(</span><span class="n">mkpts1</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span><span class="o">.</span><span class="n">view</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">),</span>
+        <span class="n">torch</span><span class="o">.</span><span class="n">ones</span><span class="p">(</span><span class="n">mkpts1</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span><span class="o">.</span><span class="n">view</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">),</span>
+    <span class="p">),</span>
+    <span class="n">torch</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="n">mkpts0</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span><span class="o">.</span><span class="n">view</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span><span class="o">.</span><span class="n">repeat</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">),</span>
+    <span class="n">K</span><span class="o">.</span><span class="n">tensor_to_image</span><span class="p">(</span><span class="n">img1</span><span class="p">),</span>
+    <span class="n">K</span><span class="o">.</span><span class="n">tensor_to_image</span><span class="p">(</span><span class="n">img2</span><span class="p">),</span>
+    <span class="n">inliers</span><span class="p">,</span>
+    <span class="n">draw_dict</span><span class="o">=</span><span class="p">{</span>
+        <span class="s2">"inlier_color"</span><span class="p">:</span> <span class="p">(</span><span class="mf">0.1</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mf">0.1</span><span class="p">,</span> <span class="mf">0.5</span><span class="p">),</span>
+        <span class="s2">"tentative_color"</span><span class="p">:</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="s2">"feature_color"</span><span class="p">:</span> <span class="p">(</span><span class="mf">0.2</span><span class="p">,</span> <span class="mf">0.2</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mf">0.5</span><span class="p">),</span>
+        <span class="s2">"vertical"</span><span class="p">:</span> <span class="kc">False</span><span class="p">,</span>
+    <span class="p">},</span>
+<span class="p">)</span>
+</code></pre></div>
+
+<p>最も良いマッチは緑色で可視化され、確実性が低いマッチは青色です。</p>
+<p><img alt="LoFTR" src="https://huggingface.co/datasets/hf-vision/course-assets/resolve/main/feature-extraction-feature-matching/LoFTR.png" /></p>
+<h2>リソースとさらに読む</h2>
+<ul>
+<li><a href="https://github.com/flann-lib/flann">FLANN Github</a></li>
+<li><a href="https://arxiv.org/pdf/1710.02726.pdf">Image Matching Using SIFT, SURF, BRIEF and ORB: Performance Comparison for Distorted Images</a></li>
+<li><a href="https://docs.opencv.org/4.x/d1/d89/tutorial_py_orb.html">ORB (Oriented FAST and Rotated BRIEF) tutorial</a></li>
+<li><a href="https://kornia.github.io/tutorials/nbs/image_matching.html">Kornia tutorial on Image Matching</a></li>
+<li><a href="https://github.com/zju3dv/LoFTR">LoFTR Github</a></li>
+<li><a href="https://github.com/opencv/opencv-python">OpenCV Github</a></li>
+<li><a href="https://docs.opencv.org/4.x/dc/dc3/tutorial_py_matcher.html">OpenCV Feature Matching Tutorial</a></li>
+<li><a href="https://arxiv.org/abs/2204.08870">OpenGlue: Open Source Graph Neural Net Based Pipeline for Image Matching</a></li>
+</ul>
+</article>
+<nav class="page-nav"><a class="nav-link prev" href="feature_description.html">← 前へ: Feature Description</a><a class="nav-link toc-link" href="../../index.html">目次へ</a><a class="nav-link next" href="real-world-applications.html">次へ →: コンピュータビジョンにおける特徴抽出の実世界の応用</a></nav>
+</main>
+<footer class="site-footer">
+  <p>原典: Hugging Face huggingface/computer-vision-course（<a href="https://github.com/huggingface/computer-vision-course">https://github.com/huggingface/computer-vision-course</a>）</p>
+  <p>日本語版の翻訳・公開: 霞ヶ関京 / 連絡先: GitHub <a href="https://github.com/yanikasumin">@yanikasumin</a> / YouTube <a href="https://www.youtube.com/@KASUMI_MOF">@KASUMI_MOF</a></p>
+  <p class="demo-note">このサイトはデモ版です。内容は順次更新されます。</p>
+</footer>
+<script src="../../../site.js"></script>
+</body>
+</html>

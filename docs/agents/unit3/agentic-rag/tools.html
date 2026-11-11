@@ -1,0 +1,522 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>エージェントのためのツールの構築と統合 | Hugging Face コース日本語版（デモ版）</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Shippori+Mincho:wght@500;700&family=Zen+Kaku+Gothic+New:wght@400;500;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../../../style.css">
+<script>
+window.MathJax = { tex: { inlineMath: [['$', '$'], ['\\(', '\\)']], displayMath: [['$$', '$$'], ['\\[', '\\]']] }, options: { skipHtmlTags: ['script','noscript','style','textarea','pre','code'] } };
+</script>
+<script async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml.js"></script>
+</head>
+<body>
+<header class="site-header">
+  <div class="header-inner">
+    <a class="site-title" href="../../../index.html">Hugging Face コース日本語版</a>
+    <span class="demo-badge">デモ版</span>
+  </div>
+</header>
+<main class="container">
+<p class="course-crumb"><a href="../../index.html">Agents コース</a>
+<span class="badge badge-qa-wip">翻訳済み・QA進行中（未検証の部分を含みます）</span></p>
+<nav class="page-nav"><a class="nav-link prev" href="invitees.html">← 前へ: ゲストのエピソードのためのRAGツールの作成</a><a class="nav-link toc-link" href="../../index.html">目次へ</a><a class="nav-link next" href="agent.html">次へ →: ガラ用エージェントの作成</a></nav>
+<article class="content">
+<h1>エージェントのためのツールの構築と統合</h1>
+<p>このセクションでは、AlfredにWebへのアクセスを許可し、最新のニュースや世界の動向を見つけられるようにします。
+さらに、天気データやHugging Face Hubのモデルのダウンロード統計にもアクセスできるようにし、新鮮な話題で適切な会話ができるようにします。</p>
+<h2>エージェントにWebへのアクセスを与える</h2>
+<p>Alfredには、世界の深い知識を持つ、真のルネサンス的ホストとしての存在感を確立してほしいのでしたね。</p>
+<p>そのためには、Alfredが世界に関する最新のニュースや情報にアクセスできるようにする必要があります。</p>
+<p>まずはAlfredのためのWeb検索ツールを作成しましょう！</p>
+<div class="hfoptions">
+<section class="hfoption" markdown="block">
+<p class="hfoption-label">smolagents</p>
+
+
+
+<div class="codehilite"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">smolagents</span><span class="w"> </span><span class="kn">import</span> <span class="n">DuckDuckGoSearchTool</span>
+
+<span class="c1"># DuckDuckGo検索ツールを初期化する</span>
+<span class="n">search_tool</span> <span class="o">=</span> <span class="n">DuckDuckGoSearchTool</span><span class="p">()</span>
+
+<span class="c1"># 使用例</span>
+<span class="n">results</span> <span class="o">=</span> <span class="n">search_tool</span><span class="p">(</span><span class="s2">"Who's the current President of France?"</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">results</span><span class="p">)</span>
+</code></pre></div>
+
+
+
+期待される出力：
+
+
+<div class="codehilite"><pre><span></span><code>The current President of France in Emmanuel Macron.
+</code></pre></div>
+
+
+
+
+</section>
+<section class="hfoption" markdown="block">
+<p class="hfoption-label">llama-index</p>
+
+
+
+<div class="codehilite"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">llama_index.tools.duckduckgo</span><span class="w"> </span><span class="kn">import</span> <span class="n">DuckDuckGoSearchToolSpec</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">llama_index.core.tools</span><span class="w"> </span><span class="kn">import</span> <span class="n">FunctionTool</span>
+
+<span class="c1"># DuckDuckGo検索ツールを初期化する</span>
+<span class="n">tool_spec</span> <span class="o">=</span> <span class="n">DuckDuckGoSearchToolSpec</span><span class="p">()</span>
+
+<span class="n">search_tool</span> <span class="o">=</span> <span class="n">FunctionTool</span><span class="o">.</span><span class="n">from_defaults</span><span class="p">(</span><span class="n">tool_spec</span><span class="o">.</span><span class="n">duckduckgo_full_search</span><span class="p">)</span>
+<span class="c1"># 使用例</span>
+<span class="n">response</span> <span class="o">=</span> <span class="n">search_tool</span><span class="p">(</span><span class="s2">"Who's the current President of France?"</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">response</span><span class="o">.</span><span class="n">raw_output</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">][</span><span class="s1">'body'</span><span class="p">])</span>
+</code></pre></div>
+
+
+
+期待される出力：
+
+
+<div class="codehilite"><pre><span></span><code>The President of the French Republic is the head of state of France. The current President is Emmanuel Macron since 14 May 2017 defeating Marine Le Pen in the second round of the presidential election on 7 May 2017. List of French presidents (Fifth Republic) N° Portrait Name ...
+</code></pre></div>
+
+
+
+</section>
+<section class="hfoption" markdown="block">
+<p class="hfoption-label">langgraph</p>
+
+
+
+<div class="codehilite"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">langchain_community.tools</span><span class="w"> </span><span class="kn">import</span> <span class="n">DuckDuckGoSearchRun</span>
+
+<span class="n">search_tool</span> <span class="o">=</span> <span class="n">DuckDuckGoSearchRun</span><span class="p">()</span>
+<span class="n">results</span> <span class="o">=</span> <span class="n">search_tool</span><span class="o">.</span><span class="n">invoke</span><span class="p">(</span><span class="s2">"Who's the current President of France?"</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">results</span><span class="p">)</span>
+</code></pre></div>
+
+
+
+期待される出力：
+
+
+<div class="codehilite"><pre><span></span><code>Emmanuel Macron (born December 21, 1977, Amiens, France) is a French banker and politician who was elected president of France in 2017...
+</code></pre></div>
+
+
+
+</section>
+</div>
+
+<h2>花火のスケジュールを決めるための天気情報カスタムツールの作成</h2>
+<p>完璧なガラには、澄み渡った空に花火が上がります。悪天候で花火が中止にならないようにしなければなりません。</p>
+<p>外部の天気APIを呼び出して、指定した場所の天気情報を取得するカスタムツールを作成しましょう。</p>
+<div class="callout callout-tip">
+<p class="callout-title">💡 ヒント</p>
+<p>簡単のため、この例ではダミーの天気APIを使います。本物の天気APIを使いたい場合は、<a href="../../unit1/tutorial.html">ユニット1</a>のように、OpenWeatherMap APIを使う天気ツールを実装できます。</p>
+</div>
+<div class="hfoptions">
+<section class="hfoption" markdown="block">
+<p class="hfoption-label">smolagents</p>
+
+
+
+<div class="codehilite"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">smolagents</span><span class="w"> </span><span class="kn">import</span> <span class="n">Tool</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">random</span>
+
+<span class="k">class</span><span class="w"> </span><span class="nc">WeatherInfoTool</span><span class="p">(</span><span class="n">Tool</span><span class="p">):</span>
+    <span class="n">name</span> <span class="o">=</span> <span class="s2">"weather_info"</span>
+    <span class="n">description</span> <span class="o">=</span> <span class="s2">"Fetches dummy weather information for a given location."</span>
+    <span class="n">inputs</span> <span class="o">=</span> <span class="p">{</span>
+        <span class="s2">"location"</span><span class="p">:</span> <span class="p">{</span>
+            <span class="s2">"type"</span><span class="p">:</span> <span class="s2">"string"</span><span class="p">,</span>
+            <span class="s2">"description"</span><span class="p">:</span> <span class="s2">"The location to get weather information for."</span>
+        <span class="p">}</span>
+    <span class="p">}</span>
+    <span class="n">output_type</span> <span class="o">=</span> <span class="s2">"string"</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">forward</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">location</span><span class="p">:</span> <span class="nb">str</span><span class="p">):</span>
+        <span class="c1"># ダミーの天気データ</span>
+        <span class="n">weather_conditions</span> <span class="o">=</span> <span class="p">[</span>
+            <span class="p">{</span><span class="s2">"condition"</span><span class="p">:</span> <span class="s2">"Rainy"</span><span class="p">,</span> <span class="s2">"temp_c"</span><span class="p">:</span> <span class="mi">15</span><span class="p">},</span>
+            <span class="p">{</span><span class="s2">"condition"</span><span class="p">:</span> <span class="s2">"Clear"</span><span class="p">,</span> <span class="s2">"temp_c"</span><span class="p">:</span> <span class="mi">25</span><span class="p">},</span>
+            <span class="p">{</span><span class="s2">"condition"</span><span class="p">:</span> <span class="s2">"Windy"</span><span class="p">,</span> <span class="s2">"temp_c"</span><span class="p">:</span> <span class="mi">20</span><span class="p">}</span>
+        <span class="p">]</span>
+        <span class="c1"># 天気の状態をランダムに選ぶ</span>
+        <span class="n">data</span> <span class="o">=</span> <span class="n">random</span><span class="o">.</span><span class="n">choice</span><span class="p">(</span><span class="n">weather_conditions</span><span class="p">)</span>
+        <span class="k">return</span> <span class="sa">f</span><span class="s2">"Weather in </span><span class="si">{</span><span class="n">location</span><span class="si">}</span><span class="s2">: </span><span class="si">{</span><span class="n">data</span><span class="p">[</span><span class="s1">'condition'</span><span class="p">]</span><span class="si">}</span><span class="s2">, </span><span class="si">{</span><span class="n">data</span><span class="p">[</span><span class="s1">'temp_c'</span><span class="p">]</span><span class="si">}</span><span class="s2">°C"</span>
+
+<span class="c1"># ツールを初期化する</span>
+<span class="n">weather_info_tool</span> <span class="o">=</span> <span class="n">WeatherInfoTool</span><span class="p">()</span>
+</code></pre></div>
+
+
+
+</section>
+<section class="hfoption" markdown="block">
+<p class="hfoption-label">llama-index</p>
+
+
+
+<div class="codehilite"><pre><span></span><code><span class="kn">import</span><span class="w"> </span><span class="nn">random</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">llama_index.core.tools</span><span class="w"> </span><span class="kn">import</span> <span class="n">FunctionTool</span>
+
+<span class="k">def</span><span class="w"> </span><span class="nf">get_weather_info</span><span class="p">(</span><span class="n">location</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""Fetches dummy weather information for a given location."""</span>
+    <span class="c1"># ダミーの天気データ</span>
+    <span class="n">weather_conditions</span> <span class="o">=</span> <span class="p">[</span>
+        <span class="p">{</span><span class="s2">"condition"</span><span class="p">:</span> <span class="s2">"Rainy"</span><span class="p">,</span> <span class="s2">"temp_c"</span><span class="p">:</span> <span class="mi">15</span><span class="p">},</span>
+        <span class="p">{</span><span class="s2">"condition"</span><span class="p">:</span> <span class="s2">"Clear"</span><span class="p">,</span> <span class="s2">"temp_c"</span><span class="p">:</span> <span class="mi">25</span><span class="p">},</span>
+        <span class="p">{</span><span class="s2">"condition"</span><span class="p">:</span> <span class="s2">"Windy"</span><span class="p">,</span> <span class="s2">"temp_c"</span><span class="p">:</span> <span class="mi">20</span><span class="p">}</span>
+    <span class="p">]</span>
+    <span class="c1"># 天気の状態をランダムに選ぶ</span>
+    <span class="n">data</span> <span class="o">=</span> <span class="n">random</span><span class="o">.</span><span class="n">choice</span><span class="p">(</span><span class="n">weather_conditions</span><span class="p">)</span>
+    <span class="k">return</span> <span class="sa">f</span><span class="s2">"Weather in </span><span class="si">{</span><span class="n">location</span><span class="si">}</span><span class="s2">: </span><span class="si">{</span><span class="n">data</span><span class="p">[</span><span class="s1">'condition'</span><span class="p">]</span><span class="si">}</span><span class="s2">, </span><span class="si">{</span><span class="n">data</span><span class="p">[</span><span class="s1">'temp_c'</span><span class="p">]</span><span class="si">}</span><span class="s2">°C"</span>
+
+<span class="c1"># ツールを初期化する</span>
+<span class="n">weather_info_tool</span> <span class="o">=</span> <span class="n">FunctionTool</span><span class="o">.</span><span class="n">from_defaults</span><span class="p">(</span><span class="n">get_weather_info</span><span class="p">)</span>
+</code></pre></div>
+
+
+
+</section>
+<section class="hfoption" markdown="block">
+<p class="hfoption-label">langgraph</p>
+
+
+
+<div class="codehilite"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">langchain_core.tools</span><span class="w"> </span><span class="kn">import</span> <span class="n">Tool</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">random</span>
+
+<span class="k">def</span><span class="w"> </span><span class="nf">get_weather_info</span><span class="p">(</span><span class="n">location</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""Fetches dummy weather information for a given location."""</span>
+    <span class="c1"># ダミーの天気データ</span>
+    <span class="n">weather_conditions</span> <span class="o">=</span> <span class="p">[</span>
+        <span class="p">{</span><span class="s2">"condition"</span><span class="p">:</span> <span class="s2">"Rainy"</span><span class="p">,</span> <span class="s2">"temp_c"</span><span class="p">:</span> <span class="mi">15</span><span class="p">},</span>
+        <span class="p">{</span><span class="s2">"condition"</span><span class="p">:</span> <span class="s2">"Clear"</span><span class="p">,</span> <span class="s2">"temp_c"</span><span class="p">:</span> <span class="mi">25</span><span class="p">},</span>
+        <span class="p">{</span><span class="s2">"condition"</span><span class="p">:</span> <span class="s2">"Windy"</span><span class="p">,</span> <span class="s2">"temp_c"</span><span class="p">:</span> <span class="mi">20</span><span class="p">}</span>
+    <span class="p">]</span>
+    <span class="c1"># 天気の状態をランダムに選ぶ</span>
+    <span class="n">data</span> <span class="o">=</span> <span class="n">random</span><span class="o">.</span><span class="n">choice</span><span class="p">(</span><span class="n">weather_conditions</span><span class="p">)</span>
+    <span class="k">return</span> <span class="sa">f</span><span class="s2">"Weather in </span><span class="si">{</span><span class="n">location</span><span class="si">}</span><span class="s2">: </span><span class="si">{</span><span class="n">data</span><span class="p">[</span><span class="s1">'condition'</span><span class="p">]</span><span class="si">}</span><span class="s2">, </span><span class="si">{</span><span class="n">data</span><span class="p">[</span><span class="s1">'temp_c'</span><span class="p">]</span><span class="si">}</span><span class="s2">°C"</span>
+
+<span class="c1"># ツールを初期化する</span>
+<span class="n">weather_info_tool</span> <span class="o">=</span> <span class="n">Tool</span><span class="p">(</span>
+    <span class="n">name</span><span class="o">=</span><span class="s2">"get_weather_info"</span><span class="p">,</span>
+    <span class="n">func</span><span class="o">=</span><span class="n">get_weather_info</span><span class="p">,</span>
+    <span class="n">description</span><span class="o">=</span><span class="s2">"Fetches dummy weather information for a given location."</span>
+<span class="p">)</span>
+</code></pre></div>
+
+
+
+</section>
+</div>
+
+<h2>影響力のあるAIビルダーのためのHub統計ツールの作成</h2>
+<p>ガラには、AIビルダーの著名人たちが集まります。Alfredは、彼らの最も人気のあるモデルやデータセット、Spaceについて話して、感心させたいと考えています。ユーザー名に基づいてHugging Face Hubからモデルの統計を取得するツールを作成しましょう。</p>
+<div class="hfoptions">
+<section class="hfoption" markdown="block">
+<p class="hfoption-label">smolagents</p>
+
+
+
+<div class="codehilite"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">smolagents</span><span class="w"> </span><span class="kn">import</span> <span class="n">Tool</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">huggingface_hub</span><span class="w"> </span><span class="kn">import</span> <span class="n">list_models</span>
+
+<span class="k">class</span><span class="w"> </span><span class="nc">HubStatsTool</span><span class="p">(</span><span class="n">Tool</span><span class="p">):</span>
+    <span class="n">name</span> <span class="o">=</span> <span class="s2">"hub_stats"</span>
+    <span class="n">description</span> <span class="o">=</span> <span class="s2">"Fetches the most downloaded model from a specific author on the Hugging Face Hub."</span>
+    <span class="n">inputs</span> <span class="o">=</span> <span class="p">{</span>
+        <span class="s2">"author"</span><span class="p">:</span> <span class="p">{</span>
+            <span class="s2">"type"</span><span class="p">:</span> <span class="s2">"string"</span><span class="p">,</span>
+            <span class="s2">"description"</span><span class="p">:</span> <span class="s2">"The username of the model author/organization to find models from."</span>
+        <span class="p">}</span>
+    <span class="p">}</span>
+    <span class="n">output_type</span> <span class="o">=</span> <span class="s2">"string"</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">forward</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">author</span><span class="p">:</span> <span class="nb">str</span><span class="p">):</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="c1"># 指定した作者のモデルを、ダウンロード数の降順で取得する</span>
+            <span class="n">models</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">list_models</span><span class="p">(</span><span class="n">author</span><span class="o">=</span><span class="n">author</span><span class="p">,</span> <span class="n">sort</span><span class="o">=</span><span class="s2">"downloads"</span><span class="p">,</span> <span class="n">direction</span><span class="o">=-</span><span class="mi">1</span><span class="p">,</span> <span class="n">limit</span><span class="o">=</span><span class="mi">1</span><span class="p">))</span>
+
+            <span class="k">if</span> <span class="n">models</span><span class="p">:</span>
+                <span class="n">model</span> <span class="o">=</span> <span class="n">models</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+                <span class="k">return</span> <span class="sa">f</span><span class="s2">"The most downloaded model by </span><span class="si">{</span><span class="n">author</span><span class="si">}</span><span class="s2"> is </span><span class="si">{</span><span class="n">model</span><span class="o">.</span><span class="n">id</span><span class="si">}</span><span class="s2"> with </span><span class="si">{</span><span class="n">model</span><span class="o">.</span><span class="n">downloads</span><span class="si">:</span><span class="s2">,</span><span class="si">}</span><span class="s2"> downloads."</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="k">return</span> <span class="sa">f</span><span class="s2">"No models found for author </span><span class="si">{</span><span class="n">author</span><span class="si">}</span><span class="s2">."</span>
+        <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+            <span class="k">return</span> <span class="sa">f</span><span class="s2">"Error fetching models for </span><span class="si">{</span><span class="n">author</span><span class="si">}</span><span class="s2">: </span><span class="si">{</span><span class="nb">str</span><span class="p">(</span><span class="n">e</span><span class="p">)</span><span class="si">}</span><span class="s2">"</span>
+
+<span class="c1"># ツールを初期化する</span>
+<span class="n">hub_stats_tool</span> <span class="o">=</span> <span class="n">HubStatsTool</span><span class="p">()</span>
+
+<span class="c1"># 使用例</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">hub_stats_tool</span><span class="p">(</span><span class="s2">"facebook"</span><span class="p">))</span> <span class="c1"># 例: Facebookの最もダウンロードされたモデルを取得する</span>
+</code></pre></div>
+
+
+
+期待される出力：
+
+
+<div class="codehilite"><pre><span></span><code>The most downloaded model by facebook is facebook/esmfold_v1 with 12,544,550 downloads.
+</code></pre></div>
+
+
+
+</section>
+<section class="hfoption" markdown="block">
+<p class="hfoption-label">llama-index</p>
+
+
+
+<div class="codehilite"><pre><span></span><code><span class="kn">import</span><span class="w"> </span><span class="nn">random</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">llama_index.core.tools</span><span class="w"> </span><span class="kn">import</span> <span class="n">FunctionTool</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">huggingface_hub</span><span class="w"> </span><span class="kn">import</span> <span class="n">list_models</span>
+
+<span class="k">def</span><span class="w"> </span><span class="nf">get_hub_stats</span><span class="p">(</span><span class="n">author</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""Fetches the most downloaded model from a specific author on the Hugging Face Hub."""</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="c1"># 指定した作者のモデルを、ダウンロード数の降順で取得する</span>
+        <span class="n">models</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">list_models</span><span class="p">(</span><span class="n">author</span><span class="o">=</span><span class="n">author</span><span class="p">,</span> <span class="n">sort</span><span class="o">=</span><span class="s2">"downloads"</span><span class="p">,</span> <span class="n">direction</span><span class="o">=-</span><span class="mi">1</span><span class="p">,</span> <span class="n">limit</span><span class="o">=</span><span class="mi">1</span><span class="p">))</span>
+
+        <span class="k">if</span> <span class="n">models</span><span class="p">:</span>
+            <span class="n">model</span> <span class="o">=</span> <span class="n">models</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+            <span class="k">return</span> <span class="sa">f</span><span class="s2">"The most downloaded model by </span><span class="si">{</span><span class="n">author</span><span class="si">}</span><span class="s2"> is </span><span class="si">{</span><span class="n">model</span><span class="o">.</span><span class="n">id</span><span class="si">}</span><span class="s2"> with </span><span class="si">{</span><span class="n">model</span><span class="o">.</span><span class="n">downloads</span><span class="si">:</span><span class="s2">,</span><span class="si">}</span><span class="s2"> downloads."</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">return</span> <span class="sa">f</span><span class="s2">"No models found for author </span><span class="si">{</span><span class="n">author</span><span class="si">}</span><span class="s2">."</span>
+    <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+        <span class="k">return</span> <span class="sa">f</span><span class="s2">"Error fetching models for </span><span class="si">{</span><span class="n">author</span><span class="si">}</span><span class="s2">: </span><span class="si">{</span><span class="nb">str</span><span class="p">(</span><span class="n">e</span><span class="p">)</span><span class="si">}</span><span class="s2">"</span>
+
+<span class="c1"># ツールを初期化する</span>
+<span class="n">hub_stats_tool</span> <span class="o">=</span> <span class="n">FunctionTool</span><span class="o">.</span><span class="n">from_defaults</span><span class="p">(</span><span class="n">get_hub_stats</span><span class="p">)</span>
+
+<span class="c1"># 使用例</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">hub_stats_tool</span><span class="p">(</span><span class="s2">"facebook"</span><span class="p">))</span> <span class="c1"># 例: Facebookの最もダウンロードされたモデルを取得する</span>
+</code></pre></div>
+
+
+
+期待される出力：
+
+
+<div class="codehilite"><pre><span></span><code>The most downloaded model by facebook is facebook/esmfold_v1 with 12,544,550 downloads.
+</code></pre></div>
+
+
+
+</section>
+<section class="hfoption" markdown="block">
+<p class="hfoption-label">langgraph</p>
+
+
+
+<div class="codehilite"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">langchain_core.tools</span><span class="w"> </span><span class="kn">import</span> <span class="n">Tool</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">huggingface_hub</span><span class="w"> </span><span class="kn">import</span> <span class="n">list_models</span>
+
+<span class="k">def</span><span class="w"> </span><span class="nf">get_hub_stats</span><span class="p">(</span><span class="n">author</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""Fetches the most downloaded model from a specific author on the Hugging Face Hub."""</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="c1"># 指定した作者のモデルを、ダウンロード数の降順で取得する</span>
+        <span class="n">models</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">list_models</span><span class="p">(</span><span class="n">author</span><span class="o">=</span><span class="n">author</span><span class="p">,</span> <span class="n">sort</span><span class="o">=</span><span class="s2">"downloads"</span><span class="p">,</span> <span class="n">direction</span><span class="o">=-</span><span class="mi">1</span><span class="p">,</span> <span class="n">limit</span><span class="o">=</span><span class="mi">1</span><span class="p">))</span>
+
+        <span class="k">if</span> <span class="n">models</span><span class="p">:</span>
+            <span class="n">model</span> <span class="o">=</span> <span class="n">models</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+            <span class="k">return</span> <span class="sa">f</span><span class="s2">"The most downloaded model by </span><span class="si">{</span><span class="n">author</span><span class="si">}</span><span class="s2"> is </span><span class="si">{</span><span class="n">model</span><span class="o">.</span><span class="n">id</span><span class="si">}</span><span class="s2"> with </span><span class="si">{</span><span class="n">model</span><span class="o">.</span><span class="n">downloads</span><span class="si">:</span><span class="s2">,</span><span class="si">}</span><span class="s2"> downloads."</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">return</span> <span class="sa">f</span><span class="s2">"No models found for author </span><span class="si">{</span><span class="n">author</span><span class="si">}</span><span class="s2">."</span>
+    <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+        <span class="k">return</span> <span class="sa">f</span><span class="s2">"Error fetching models for </span><span class="si">{</span><span class="n">author</span><span class="si">}</span><span class="s2">: </span><span class="si">{</span><span class="nb">str</span><span class="p">(</span><span class="n">e</span><span class="p">)</span><span class="si">}</span><span class="s2">"</span>
+
+<span class="c1"># ツールを初期化する</span>
+<span class="n">hub_stats_tool</span> <span class="o">=</span> <span class="n">Tool</span><span class="p">(</span>
+    <span class="n">name</span><span class="o">=</span><span class="s2">"get_hub_stats"</span><span class="p">,</span>
+    <span class="n">func</span><span class="o">=</span><span class="n">get_hub_stats</span><span class="p">,</span>
+    <span class="n">description</span><span class="o">=</span><span class="s2">"Fetches the most downloaded model from a specific author on the Hugging Face Hub."</span>
+<span class="p">)</span>
+
+<span class="c1"># 使用例</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">hub_stats_tool</span><span class="o">.</span><span class="n">invoke</span><span class="p">(</span><span class="s2">"facebook"</span><span class="p">))</span> <span class="c1"># 例: Facebookの最もダウンロードされたモデルを取得する</span>
+</code></pre></div>
+
+
+
+期待される出力：
+
+
+<div class="codehilite"><pre><span></span><code>The most downloaded model by facebook is facebook/esmfold_v1 with 13,109,861 downloads.
+</code></pre></div>
+
+
+
+</section>
+</div>
+
+<p>Hub統計ツールがあれば、Alfredは影響力のあるAIビルダーの最も人気のあるモデルについて話し、感心させることができます。</p>
+<h2>ツールとAlfredの統合</h2>
+<p>すべてのツールがそろったので、Alfredのエージェントに統合しましょう。</p>
+<div class="hfoptions">
+<section class="hfoption" markdown="block">
+<p class="hfoption-label">smolagents</p>
+
+
+
+<div class="codehilite"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">smolagents</span><span class="w"> </span><span class="kn">import</span> <span class="n">CodeAgent</span><span class="p">,</span> <span class="n">InferenceClientModel</span>
+
+<span class="c1"># Hugging Faceモデルを初期化する</span>
+<span class="n">model</span> <span class="o">=</span> <span class="n">InferenceClientModel</span><span class="p">()</span>
+
+<span class="c1"># すべてのツールを持ったAlfredを作成する</span>
+<span class="n">alfred</span> <span class="o">=</span> <span class="n">CodeAgent</span><span class="p">(</span>
+    <span class="n">tools</span><span class="o">=</span><span class="p">[</span><span class="n">search_tool</span><span class="p">,</span> <span class="n">weather_info_tool</span><span class="p">,</span> <span class="n">hub_stats_tool</span><span class="p">],</span>
+    <span class="n">model</span><span class="o">=</span><span class="n">model</span>
+<span class="p">)</span>
+
+<span class="c1"># ガラの最中にAlfredが受け取りそうなクエリの例</span>
+<span class="n">response</span> <span class="o">=</span> <span class="n">alfred</span><span class="o">.</span><span class="n">run</span><span class="p">(</span><span class="s2">"What is Facebook and what's their most popular model?"</span><span class="p">)</span>
+
+<span class="nb">print</span><span class="p">(</span><span class="s2">"🎩 Alfredの応答："</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">response</span><span class="p">)</span>
+</code></pre></div>
+
+
+
+期待される出力：
+
+
+<div class="codehilite"><pre><span></span><code>🎩 Alfredの応答：
+Facebook is a social networking website where users can connect, share information, and interact with others. The most downloaded model by Facebook on the Hugging Face Hub is ESMFold_v1.
+</code></pre></div>
+
+
+
+</section>
+<section class="hfoption" markdown="block">
+<p class="hfoption-label">llama-index</p>
+
+
+
+<div class="codehilite"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">llama_index.core.agent.workflow</span><span class="w"> </span><span class="kn">import</span> <span class="n">AgentWorkflow</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">llama_index.llms.huggingface_api</span><span class="w"> </span><span class="kn">import</span> <span class="n">HuggingFaceInferenceAPI</span>
+
+<span class="c1"># Hugging Faceモデルを初期化する</span>
+<span class="n">llm</span> <span class="o">=</span> <span class="n">HuggingFaceInferenceAPI</span><span class="p">(</span><span class="n">model_name</span><span class="o">=</span><span class="s2">"Qwen/Qwen2.5-Coder-32B-Instruct"</span><span class="p">)</span>
+<span class="c1"># すべてのツールを持ったAlfredを作成する</span>
+<span class="n">alfred</span> <span class="o">=</span> <span class="n">AgentWorkflow</span><span class="o">.</span><span class="n">from_tools_or_functions</span><span class="p">(</span>
+    <span class="p">[</span><span class="n">search_tool</span><span class="p">,</span> <span class="n">weather_info_tool</span><span class="p">,</span> <span class="n">hub_stats_tool</span><span class="p">],</span>
+    <span class="n">llm</span><span class="o">=</span><span class="n">llm</span>
+<span class="p">)</span>
+
+<span class="c1"># ガラの最中にAlfredが受け取りそうなクエリの例</span>
+<span class="n">response</span> <span class="o">=</span> <span class="k">await</span> <span class="n">alfred</span><span class="o">.</span><span class="n">run</span><span class="p">(</span><span class="s2">"What is Facebook and what's their most popular model?"</span><span class="p">)</span>
+
+<span class="nb">print</span><span class="p">(</span><span class="s2">"🎩 Alfredの応答："</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">response</span><span class="p">)</span>
+</code></pre></div>
+
+
+
+期待される出力：
+
+
+<div class="codehilite"><pre><span></span><code>🎩 Alfredの応答：
+Facebook is a social networking service and technology company based in Menlo Park, California. It was founded by Mark Zuckerberg and allows people to create profiles, connect with friends and family, share photos and videos, and join groups based on shared interests. The most popular model by Facebook on the Hugging Face Hub is `facebook/esmfold_v1` with 13,109,861 downloads.
+</code></pre></div>
+
+
+
+</section>
+<section class="hfoption" markdown="block">
+<p class="hfoption-label">langgraph</p>
+
+
+
+<div class="codehilite"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">TypedDict</span><span class="p">,</span> <span class="n">Annotated</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">langgraph.graph.message</span><span class="w"> </span><span class="kn">import</span> <span class="n">add_messages</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">langchain_core.messages</span><span class="w"> </span><span class="kn">import</span> <span class="n">AnyMessage</span><span class="p">,</span> <span class="n">HumanMessage</span><span class="p">,</span> <span class="n">AIMessage</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">langgraph.prebuilt</span><span class="w"> </span><span class="kn">import</span> <span class="n">ToolNode</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">langgraph.graph</span><span class="w"> </span><span class="kn">import</span> <span class="n">START</span><span class="p">,</span> <span class="n">StateGraph</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">langgraph.prebuilt</span><span class="w"> </span><span class="kn">import</span> <span class="n">tools_condition</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">langchain_huggingface</span><span class="w"> </span><span class="kn">import</span> <span class="n">HuggingFaceEndpoint</span><span class="p">,</span> <span class="n">ChatHuggingFace</span>
+
+<span class="c1"># ツールを含むチャットインターフェースを生成する</span>
+<span class="n">llm</span> <span class="o">=</span> <span class="n">HuggingFaceEndpoint</span><span class="p">(</span>
+    <span class="n">repo_id</span><span class="o">=</span><span class="s2">"Qwen/Qwen2.5-Coder-32B-Instruct"</span><span class="p">,</span>
+    <span class="n">huggingfacehub_api_token</span><span class="o">=</span><span class="n">HUGGINGFACEHUB_API_TOKEN</span><span class="p">,</span>
+<span class="p">)</span>
+
+<span class="n">chat</span> <span class="o">=</span> <span class="n">ChatHuggingFace</span><span class="p">(</span><span class="n">llm</span><span class="o">=</span><span class="n">llm</span><span class="p">,</span> <span class="n">verbose</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+<span class="n">tools</span> <span class="o">=</span> <span class="p">[</span><span class="n">search_tool</span><span class="p">,</span> <span class="n">weather_info_tool</span><span class="p">,</span> <span class="n">hub_stats_tool</span><span class="p">]</span>
+<span class="n">chat_with_tools</span> <span class="o">=</span> <span class="n">chat</span><span class="o">.</span><span class="n">bind_tools</span><span class="p">(</span><span class="n">tools</span><span class="p">)</span>
+
+<span class="c1"># AgentStateとエージェントのグラフを生成する</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">AgentState</span><span class="p">(</span><span class="n">TypedDict</span><span class="p">):</span>
+    <span class="n">messages</span><span class="p">:</span> <span class="n">Annotated</span><span class="p">[</span><span class="nb">list</span><span class="p">[</span><span class="n">AnyMessage</span><span class="p">],</span> <span class="n">add_messages</span><span class="p">]</span>
+
+<span class="k">def</span><span class="w"> </span><span class="nf">assistant</span><span class="p">(</span><span class="n">state</span><span class="p">:</span> <span class="n">AgentState</span><span class="p">):</span>
+    <span class="k">return</span> <span class="p">{</span>
+        <span class="s2">"messages"</span><span class="p">:</span> <span class="p">[</span><span class="n">chat_with_tools</span><span class="o">.</span><span class="n">invoke</span><span class="p">(</span><span class="n">state</span><span class="p">[</span><span class="s2">"messages"</span><span class="p">])],</span>
+    <span class="p">}</span>
+
+<span class="c1">## グラフ</span>
+<span class="n">builder</span> <span class="o">=</span> <span class="n">StateGraph</span><span class="p">(</span><span class="n">AgentState</span><span class="p">)</span>
+
+<span class="c1"># ノードを定義する: 実際の処理を行う</span>
+<span class="n">builder</span><span class="o">.</span><span class="n">add_node</span><span class="p">(</span><span class="s2">"assistant"</span><span class="p">,</span> <span class="n">assistant</span><span class="p">)</span>
+<span class="n">builder</span><span class="o">.</span><span class="n">add_node</span><span class="p">(</span><span class="s2">"tools"</span><span class="p">,</span> <span class="n">ToolNode</span><span class="p">(</span><span class="n">tools</span><span class="p">))</span>
+
+<span class="c1"># エッジを定義する: 制御フローの動きを決める</span>
+<span class="n">builder</span><span class="o">.</span><span class="n">add_edge</span><span class="p">(</span><span class="n">START</span><span class="p">,</span> <span class="s2">"assistant"</span><span class="p">)</span>
+<span class="n">builder</span><span class="o">.</span><span class="n">add_conditional_edges</span><span class="p">(</span>
+    <span class="s2">"assistant"</span><span class="p">,</span>
+    <span class="c1"># 最新のメッセージがツールを必要とする場合は、ツールへルーティングする</span>
+    <span class="c1"># それ以外の場合は、直接応答する</span>
+    <span class="n">tools_condition</span><span class="p">,</span>
+<span class="p">)</span>
+<span class="n">builder</span><span class="o">.</span><span class="n">add_edge</span><span class="p">(</span><span class="s2">"tools"</span><span class="p">,</span> <span class="s2">"assistant"</span><span class="p">)</span>
+<span class="n">alfred</span> <span class="o">=</span> <span class="n">builder</span><span class="o">.</span><span class="n">compile</span><span class="p">()</span>
+
+<span class="n">messages</span> <span class="o">=</span> <span class="p">[</span><span class="n">HumanMessage</span><span class="p">(</span><span class="n">content</span><span class="o">=</span><span class="s2">"Who is Facebook and what's their most popular model?"</span><span class="p">)]</span>
+<span class="n">response</span> <span class="o">=</span> <span class="n">alfred</span><span class="o">.</span><span class="n">invoke</span><span class="p">({</span><span class="s2">"messages"</span><span class="p">:</span> <span class="n">messages</span><span class="p">})</span>
+
+<span class="nb">print</span><span class="p">(</span><span class="s2">"🎩 Alfredの応答："</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">response</span><span class="p">[</span><span class="s1">'messages'</span><span class="p">][</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">content</span><span class="p">)</span>
+</code></pre></div>
+
+
+
+期待される出力：
+
+
+<div class="codehilite"><pre><span></span><code>🎩 Alfredの応答：
+Facebook is a social media company known for its social networking site, Facebook, as well as other services like Instagram and WhatsApp. The most downloaded model by Facebook on the Hugging Face Hub is facebook/esmfold_v1 with 13,202,321 downloads.
+</code></pre></div>
+
+
+</section>
+</div>
+
+<h2>まとめ</h2>
+<p>これらのツールを統合することで、AlfredはWeb検索から天気の更新、モデルの統計まで、さまざまなタスクを処理できるようになりました。これにより、ガラで最も情報通で魅力的なホストであり続けられます。</p>
+<div class="callout callout-tip">
+<p class="callout-title">💡 ヒント</p>
+<p>特定のトピックに関する最新ニュースを取得できるツールを実装してみましょう。</p>
+<p>できあがったら、カスタムツールを <code>tools.py</code> ファイルに実装してください。</p>
+</div>
+</article>
+<nav class="page-nav"><a class="nav-link prev" href="invitees.html">← 前へ: ゲストのエピソードのためのRAGツールの作成</a><a class="nav-link toc-link" href="../../index.html">目次へ</a><a class="nav-link next" href="agent.html">次へ →: ガラ用エージェントの作成</a></nav>
+</main>
+<footer class="site-footer">
+  <p>原典: Hugging Face huggingface/agents-course（<a href="https://github.com/huggingface/agents-course">https://github.com/huggingface/agents-course</a>）</p>
+  <p>日本語版の翻訳・公開: 霞ヶ関京 / 連絡先: GitHub <a href="https://github.com/yanikasumin">@yanikasumin</a> / YouTube <a href="https://www.youtube.com/@KASUMI_MOF">@KASUMI_MOF</a></p>
+  <p class="demo-note">このサイトはデモ版です。内容は順次更新されます。</p>
+</footer>
+<script src="../../../site.js"></script>
+</body>
+</html>

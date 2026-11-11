@@ -1,0 +1,233 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>GoogLeNet | Hugging Face コース日本語版（デモ版）</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Shippori+Mincho:wght@500;700&family=Zen+Kaku+Gothic+New:wght@400;500;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../../../style.css">
+<script>
+window.MathJax = { tex: { inlineMath: [['$', '$'], ['\\(', '\\)']], displayMath: [['$$', '$$'], ['\\[', '\\]']] }, options: { skipHtmlTags: ['script','noscript','style','textarea','pre','code'] } };
+</script>
+<script async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml.js"></script>
+</head>
+<body>
+<header class="site-header">
+  <div class="header-inner">
+    <a class="site-title" href="../../../index.html">Hugging Face コース日本語版</a>
+    <span class="demo-badge">デモ版</span>
+  </div>
+</header>
+<main class="container">
+<p class="course-crumb"><a href="../../index.html">Community CV コース</a>
+<span class="badge badge-qa-wip">翻訳済み・QA進行中（未検証の部分を含みます）</span></p>
+<nav class="page-nav"><a class="nav-link prev" href="vgg.html">← 前へ: 大規模画像認識のための非常に深い畳み込みネットワーク（2014）</a><a class="nav-link toc-link" href="../../index.html">目次へ</a><a class="nav-link next" href="mobilenet.html">次へ →: MobileNet</a></nav>
+<article class="content">
+<h1>GoogLeNet</h1>
+<p>この章では、GoogLeNet と呼ばれる畳み込みアーキテクチャを見ていきます。</p>
+<h2>概要</h2>
+<p>Inception アーキテクチャは、分類や検出などのコンピュータビジョンのタスクのために設計された畳み込みニューラルネットワーク（CNN）であり、その効率性で際立っています。パラメータ数は700万未満で、前任者たちよりも大幅にコンパクトで、AlexNet より9倍小さく、VGG16 より22倍小さいです。このアーキテクチャは ImageNet 2014 チャレンジで注目を集め、Google による適応版である GoogLeNet（LeNet へのオマージュとして名付けられました）が、従来の主要手法よりも少ないパラメータを使いながら性能の新たな基準を打ち立てました。</p>
+<h3>アーキテクチャの革新</h3>
+<p>Inception アーキテクチャの登場以前は、AlexNet や VGG などのモデルが、より深いネットワーク構造の利点を示していました。しかし、深いネットワークは通常、計算ステップが増え、過学習や勾配消失問題などの課題につながります。Inception アーキテクチャはその解決策を提供し、浮動小数点パラメータの数を減らしながら複雑な CNN の訓練を可能にします。</p>
+<h4>Inception の「Network In Network」モジュール</h4>
+<p>AlexNet や VGG のような従来のネットワークでは、基本ブロックは畳み込み層そのものでした。しかし、Lin ら（2013年）は Network In Network の概念を導入し、単一の畳み込みが必ずしも正しい基本構成ブロックとは限らないと主張しました。もっと複雑であるべきだというのです。そこで Inception モデルの著者たちは、それに着想を得て、有名な映画「インセプション」（夢の中の夢）にちなんで名付けられた Inception モジュールという、より複雑な構成ブロックを採用することにしました。</p>
+<p>Inception モジュールは、複数のスケールで特徴を抽出するために、異なるカーネルサイズの畳み込みフィルタを適用することにこだわります。任意の入力特徴マップに対して、\(1 \times 1\) 畳み込み、3x3 畳み込み、5x5 畳み込みを並列に適用します。畳み込みに加えて、最大プーリング演算も適用されます。4つの演算すべてに、空間次元が同じになるようなパディングとストライドが設定されます。これらの特徴が連結され、次のステージへの入力となります。図1をご覧ください。</p>
+<p><img alt="素朴な Inception モジュール" src="https://huggingface.co/datasets/hf-vision/course-assets/resolve/main/inception_naive.png" /></p>
+<p>図1： 素朴な Inception モジュール</p>
+<p>図のように、5x5 のような大きなカーネルサイズで複数のスケールの畳み込みを適用すると、パラメータ数が大幅に増える可能性があります。この問題は、入力特徴のサイズ（チャンネル数）が大きくなるほど顕著になります。そのため、こうした「Inception モジュール」をネットワークの深くに積み重ねていくと、計算量が大幅に増大します。単純な解決策は、計算の要求が増えそうな箇所では特徴の数を減らすことです。計算量の多さの主な原因は畳み込み層です。計算量の安い \(1 \times 1\) 畳み込みを 3x3 や 5x5 の畳み込みの直前に置くことで、特徴の次元を削減します。例で見てみましょう。</p>
+<p>\( S \times S \times 128 \) の特徴マップを、5x5 畳み込みで \( S \times S \times 256 \) に変換したいとします。パラメータ数（バイアスを除く）は 5*5*128*256 = 819,200 です。しかし、まず \(1 \times 1\) 畳み込みで特徴の次元を64まで削減すると、パラメータ数（バイアスを除く）は \( 1\times 1\times 128\times 64 + 5\times 5\times 64\times 256 = 8,192 + 409,600 = 417,792 \) となります。つまり、パラメータ数がほぼ半分に減りました！</p>
+<p>また、出力特徴マップと連結する前に、最大プーリングの出力特徴も削減したいところです。そこで、最大プーリング層の後にもう1つ \( 1\times 1 \) 畳み込みを追加します。各 \( 1\times 1 \) 畳み込みの後には ReLU 活性化も追加し、モジュールの非線形性と複雑さを高めます。図2をご覧ください。</p>
+<p><img alt="次元削減した Inception モジュール" src="https://huggingface.co/datasets/hf-vision/course-assets/resolve/main/inception_reduced.png" /></p>
+<p>図2： Inception モジュール</p>
+<p>また、複数のスケールでの畳み込みを並列に実行することで、ネットワークを深くすることなく演算を増やせるため、本質的に勾配消失問題が緩和されます。</p>
+<h4>平均プーリング</h4>
+<p>AlexNet や VGG のような従来のネットワークでは、最終層はいくつかの全結合層でした。これらの全結合層はユニット数が多いため、ネットワークのパラメータの大部分を占めます。たとえば、VGG16 のパラメータの89%は最後の3つの全結合層にあります。AlexNet のパラメータの95%は最後の全結合層にあります。この必要性は、畳み込み層は必ずしも十分に複雑ではないという前提に起因すると考えられます。</p>
+<p>しかし、Inception ブロックが手元にあれば、全結合層は不要で、空間次元に沿った単純な平均プーリングで十分なはずです。これも Network in Network 論文から導かれたものでした。ただし、GoogLeNet には全結合層が1つ含まれています。著者たちは top-1 精度が 0.6% 向上したと報告しています。</p>
+<p>GoogLeNet では、全結合層にあるパラメータは全体の15%だけです。</p>
+<h4>補助分類器</h4>
+<p>計算量を節約する \( 1 \times 1 \) 畳み込みの導入と、複数の全結合層の平均プーリングへの置き換えにより、このネットワークのパラメータは大幅に削減され、より多くの層を追加してネットワークを深くできます。しかし、層を積み重ねると勾配消失の問題が生じ得ます。勾配が入力側の層へ逆伝播するうちに小さくなり、ゼロに近づいてしまうのです。</p>
+<p>論文では補助分類器（auxiliary classifier）が導入されています。中間の層からいくつかの小さな分類器を分岐させ、これらの分類器の損失を（重みを小さくして）全体の損失に加えます。これにより、入力に近い層も適度な大きさの勾配を受け取れるようになります。</p>
+<p>補助分類器は以下から構成されます。
+- フィルタサイズ \( 5 \times 5 \)、ストライド3の平均プーリング層。
+- 次元削減のための128個のフィルタを持つ \( 1 \times 1 \) 畳み込みと、整流線形活性化（ReLU）。
+- 1024個のユニットと整流線形活性化を持つ全結合層。
+- 出力の70%を落とす比率のドロップアウト層。
+- 分類器として softmax 損失を持つ線形層。</p>
+<p>これらの補助分類器は推論時には取り除かれます。なお、補助分類器の使用による利得はわずかです（0.5%）。</p>
+<p><img alt="GoogLeNet の補助分類器" src="https://huggingface.co/datasets/hf-vision/course-assets/resolve/main/googlenet_auxiliary_classifier.jpg" /></p>
+<p>図3： 補助分類器</p>
+<h3>アーキテクチャ - GoogLeNet</h3>
+<p>GoogLeNet の完全なアーキテクチャを下の図に示します。Inception ブロック内部を含むすべての畳み込みは ReLU 活性化を使います。まず2つの畳み込みと最大プーリングのブロックから始まります。続いて、2つの Inception モジュール（3a と 3b）のブロックと最大プーリングが来ます。その後、5つの Inception ブロック（4a、4b、4c、4d、4e）のブロックと最大プーリングが続きます。補助分類器は 4a と 4d の出力から取り出されます。次に2つの Inception ブロック（5a と 5b）が続きます。その後、平均プーリングと128ユニットの全結合層が使われます。</p>
+<p><img alt="GoogLeNet の全体アーキテクチャ" src="https://huggingface.co/datasets/hf-vision/course-assets/resolve/main/googlenet_architecture.png" />
+図4： GoogLeNet の完全なアーキテクチャ</p>
+<h3>コード</h3>
+<div class="codehilite"><pre><span></span><code><span class="kn">import</span><span class="w"> </span><span class="nn">torch</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">torch.nn</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">nn</span>
+
+
+<span class="k">class</span><span class="w"> </span><span class="nc">BaseConv2d</span><span class="p">(</span><span class="n">nn</span><span class="o">.</span><span class="n">Module</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">in_channels</span><span class="p">,</span> <span class="n">out_channels</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="nb">super</span><span class="p">(</span><span class="n">BaseConv2d</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="fm">__init__</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">conv</span> <span class="o">=</span> <span class="n">nn</span><span class="o">.</span><span class="n">Conv2d</span><span class="p">(</span><span class="n">in_channels</span><span class="p">,</span> <span class="n">out_channels</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">relu</span> <span class="o">=</span> <span class="n">nn</span><span class="o">.</span><span class="n">ReLU</span><span class="p">()</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">forward</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">x</span><span class="p">):</span>
+        <span class="n">x</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">conv</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
+        <span class="n">x</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">relu</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">x</span>
+
+
+<span class="k">class</span><span class="w"> </span><span class="nc">InceptionModule</span><span class="p">(</span><span class="n">nn</span><span class="o">.</span><span class="n">Module</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">in_channels</span><span class="p">,</span> <span class="n">n1x1</span><span class="p">,</span> <span class="n">n3x3red</span><span class="p">,</span> <span class="n">n3x3</span><span class="p">,</span> <span class="n">n5x5red</span><span class="p">,</span> <span class="n">n5x5</span><span class="p">,</span> <span class="n">pool_proj</span><span class="p">):</span>
+        <span class="nb">super</span><span class="p">(</span><span class="n">InceptionModule</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="fm">__init__</span><span class="p">()</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">b1</span> <span class="o">=</span> <span class="n">nn</span><span class="o">.</span><span class="n">Sequential</span><span class="p">(</span>
+            <span class="n">nn</span><span class="o">.</span><span class="n">Conv2d</span><span class="p">(</span><span class="n">in_channels</span><span class="p">,</span> <span class="n">n1x1</span><span class="p">,</span> <span class="n">kernel_size</span><span class="o">=</span><span class="mi">1</span><span class="p">),</span>
+            <span class="n">nn</span><span class="o">.</span><span class="n">ReLU</span><span class="p">(</span><span class="kc">True</span><span class="p">),</span>
+        <span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">b2</span> <span class="o">=</span> <span class="n">nn</span><span class="o">.</span><span class="n">Sequential</span><span class="p">(</span>
+            <span class="n">BaseConv2d</span><span class="p">(</span><span class="n">in_channels</span><span class="p">,</span> <span class="n">n3x3red</span><span class="p">,</span> <span class="n">kernel_size</span><span class="o">=</span><span class="mi">1</span><span class="p">),</span>
+            <span class="n">BaseConv2d</span><span class="p">(</span><span class="n">n3x3red</span><span class="p">,</span> <span class="n">n3x3</span><span class="p">,</span> <span class="n">kernel_size</span><span class="o">=</span><span class="mi">3</span><span class="p">,</span> <span class="n">padding</span><span class="o">=</span><span class="mi">1</span><span class="p">),</span>
+        <span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">b3</span> <span class="o">=</span> <span class="n">nn</span><span class="o">.</span><span class="n">Sequential</span><span class="p">(</span>
+            <span class="n">BaseConv2d</span><span class="p">(</span><span class="n">in_channels</span><span class="p">,</span> <span class="n">n5x5red</span><span class="p">,</span> <span class="n">kernel_size</span><span class="o">=</span><span class="mi">1</span><span class="p">),</span>
+            <span class="n">BaseConv2d</span><span class="p">(</span><span class="n">n5x5red</span><span class="p">,</span> <span class="n">n5x5</span><span class="p">,</span> <span class="n">kernel_size</span><span class="o">=</span><span class="mi">5</span><span class="p">,</span> <span class="n">padding</span><span class="o">=</span><span class="mi">2</span><span class="p">),</span>
+        <span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">b4</span> <span class="o">=</span> <span class="n">nn</span><span class="o">.</span><span class="n">Sequential</span><span class="p">(</span>
+            <span class="n">nn</span><span class="o">.</span><span class="n">MaxPool2d</span><span class="p">(</span><span class="mi">3</span><span class="p">,</span> <span class="n">stride</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">padding</span><span class="o">=</span><span class="mi">1</span><span class="p">),</span>
+            <span class="n">BaseConv2d</span><span class="p">(</span><span class="n">in_channels</span><span class="p">,</span> <span class="n">pool_proj</span><span class="p">,</span> <span class="n">kernel_size</span><span class="o">=</span><span class="mi">1</span><span class="p">),</span>
+        <span class="p">)</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">forward</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">x</span><span class="p">):</span>
+        <span class="n">y1</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">b1</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
+        <span class="n">y2</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">b2</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
+        <span class="n">y3</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">b3</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
+        <span class="n">y4</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">b4</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">torch</span><span class="o">.</span><span class="n">cat</span><span class="p">([</span><span class="n">y1</span><span class="p">,</span> <span class="n">y2</span><span class="p">,</span> <span class="n">y3</span><span class="p">,</span> <span class="n">y4</span><span class="p">],</span> <span class="mi">1</span><span class="p">)</span>
+
+
+<span class="k">class</span><span class="w"> </span><span class="nc">AuxiliaryClassifier</span><span class="p">(</span><span class="n">nn</span><span class="o">.</span><span class="n">Module</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">in_channels</span><span class="p">,</span> <span class="n">num_classes</span><span class="p">,</span> <span class="n">dropout</span><span class="o">=</span><span class="mf">0.7</span><span class="p">):</span>
+        <span class="nb">super</span><span class="p">(</span><span class="n">AuxiliaryClassifier</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="fm">__init__</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">pool</span> <span class="o">=</span> <span class="n">nn</span><span class="o">.</span><span class="n">AvgPool2d</span><span class="p">(</span><span class="mi">5</span><span class="p">,</span> <span class="n">stride</span><span class="o">=</span><span class="mi">3</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">conv</span> <span class="o">=</span> <span class="n">BaseConv2d</span><span class="p">(</span><span class="n">in_channels</span><span class="p">,</span> <span class="mi">128</span><span class="p">,</span> <span class="n">kernel_size</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">relu</span> <span class="o">=</span> <span class="n">nn</span><span class="o">.</span><span class="n">ReLU</span><span class="p">(</span><span class="kc">True</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">flatten</span> <span class="o">=</span> <span class="n">nn</span><span class="o">.</span><span class="n">Flatten</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">fc1</span> <span class="o">=</span> <span class="n">nn</span><span class="o">.</span><span class="n">Linear</span><span class="p">(</span><span class="mi">2048</span><span class="p">,</span> <span class="mi">1024</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">dropout</span> <span class="o">=</span> <span class="n">nn</span><span class="o">.</span><span class="n">Dropout</span><span class="p">(</span><span class="n">dropout</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">fc2</span> <span class="o">=</span> <span class="n">nn</span><span class="o">.</span><span class="n">Linear</span><span class="p">(</span><span class="mi">1024</span><span class="p">,</span> <span class="n">num_classes</span><span class="p">)</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">forward</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">x</span><span class="p">):</span>
+        <span class="n">x</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">pool</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
+        <span class="n">x</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">conv</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
+        <span class="n">x</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">flatten</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
+        <span class="n">x</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">fc1</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
+        <span class="n">x</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">relu</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
+        <span class="n">x</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">dropout</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
+        <span class="n">x</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">fc2</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">x</span>
+
+
+<span class="k">class</span><span class="w"> </span><span class="nc">GoogLeNet</span><span class="p">(</span><span class="n">nn</span><span class="o">.</span><span class="n">Module</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">use_aux</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
+        <span class="nb">super</span><span class="p">(</span><span class="n">GoogLeNet</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="fm">__init__</span><span class="p">()</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">use_aux</span> <span class="o">=</span> <span class="n">use_aux</span>
+        <span class="c1">## ブロック 1</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">conv1</span> <span class="o">=</span> <span class="n">BaseConv2d</span><span class="p">(</span><span class="mi">3</span><span class="p">,</span> <span class="mi">64</span><span class="p">,</span> <span class="n">kernel_size</span><span class="o">=</span><span class="mi">7</span><span class="p">,</span> <span class="n">stride</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span> <span class="n">padding</span><span class="o">=</span><span class="mi">3</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">lrn1</span> <span class="o">=</span> <span class="n">nn</span><span class="o">.</span><span class="n">LocalResponseNorm</span><span class="p">(</span><span class="mi">5</span><span class="p">,</span> <span class="n">alpha</span><span class="o">=</span><span class="mf">0.0001</span><span class="p">,</span> <span class="n">beta</span><span class="o">=</span><span class="mf">0.75</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">maxpool1</span> <span class="o">=</span> <span class="n">nn</span><span class="o">.</span><span class="n">MaxPool2d</span><span class="p">(</span><span class="mi">3</span><span class="p">,</span> <span class="n">stride</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span> <span class="n">padding</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+
+        <span class="c1">## ブロック 2</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">conv2</span> <span class="o">=</span> <span class="n">BaseConv2d</span><span class="p">(</span><span class="mi">64</span><span class="p">,</span> <span class="mi">64</span><span class="p">,</span> <span class="n">kernel_size</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">conv3</span> <span class="o">=</span> <span class="n">BaseConv2d</span><span class="p">(</span><span class="mi">64</span><span class="p">,</span> <span class="mi">192</span><span class="p">,</span> <span class="n">kernel_size</span><span class="o">=</span><span class="mi">3</span><span class="p">,</span> <span class="n">padding</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">lrn2</span> <span class="o">=</span> <span class="n">nn</span><span class="o">.</span><span class="n">LocalResponseNorm</span><span class="p">(</span><span class="mi">5</span><span class="p">,</span> <span class="n">alpha</span><span class="o">=</span><span class="mf">0.0001</span><span class="p">,</span> <span class="n">beta</span><span class="o">=</span><span class="mf">0.75</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">maxpool2</span> <span class="o">=</span> <span class="n">nn</span><span class="o">.</span><span class="n">MaxPool2d</span><span class="p">(</span><span class="mi">3</span><span class="p">,</span> <span class="n">stride</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span> <span class="n">padding</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+
+        <span class="c1">## ブロック 3</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">inception3a</span> <span class="o">=</span> <span class="n">InceptionModule</span><span class="p">(</span><span class="mi">192</span><span class="p">,</span> <span class="mi">64</span><span class="p">,</span> <span class="mi">96</span><span class="p">,</span> <span class="mi">128</span><span class="p">,</span> <span class="mi">16</span><span class="p">,</span> <span class="mi">32</span><span class="p">,</span> <span class="mi">32</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">inception3b</span> <span class="o">=</span> <span class="n">InceptionModule</span><span class="p">(</span><span class="mi">256</span><span class="p">,</span> <span class="mi">128</span><span class="p">,</span> <span class="mi">128</span><span class="p">,</span> <span class="mi">192</span><span class="p">,</span> <span class="mi">32</span><span class="p">,</span> <span class="mi">96</span><span class="p">,</span> <span class="mi">64</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">maxpool3</span> <span class="o">=</span> <span class="n">nn</span><span class="o">.</span><span class="n">MaxPool2d</span><span class="p">(</span><span class="mi">3</span><span class="p">,</span> <span class="n">stride</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span> <span class="n">padding</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+
+        <span class="c1">## ブロック 4</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">inception4a</span> <span class="o">=</span> <span class="n">InceptionModule</span><span class="p">(</span><span class="mi">480</span><span class="p">,</span> <span class="mi">192</span><span class="p">,</span> <span class="mi">96</span><span class="p">,</span> <span class="mi">208</span><span class="p">,</span> <span class="mi">16</span><span class="p">,</span> <span class="mi">48</span><span class="p">,</span> <span class="mi">64</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">inception4b</span> <span class="o">=</span> <span class="n">InceptionModule</span><span class="p">(</span><span class="mi">512</span><span class="p">,</span> <span class="mi">160</span><span class="p">,</span> <span class="mi">112</span><span class="p">,</span> <span class="mi">224</span><span class="p">,</span> <span class="mi">24</span><span class="p">,</span> <span class="mi">64</span><span class="p">,</span> <span class="mi">64</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">inception4c</span> <span class="o">=</span> <span class="n">InceptionModule</span><span class="p">(</span><span class="mi">512</span><span class="p">,</span> <span class="mi">128</span><span class="p">,</span> <span class="mi">128</span><span class="p">,</span> <span class="mi">256</span><span class="p">,</span> <span class="mi">24</span><span class="p">,</span> <span class="mi">64</span><span class="p">,</span> <span class="mi">64</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">inception4d</span> <span class="o">=</span> <span class="n">InceptionModule</span><span class="p">(</span><span class="mi">512</span><span class="p">,</span> <span class="mi">112</span><span class="p">,</span> <span class="mi">144</span><span class="p">,</span> <span class="mi">288</span><span class="p">,</span> <span class="mi">32</span><span class="p">,</span> <span class="mi">64</span><span class="p">,</span> <span class="mi">64</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">inception4e</span> <span class="o">=</span> <span class="n">InceptionModule</span><span class="p">(</span><span class="mi">528</span><span class="p">,</span> <span class="mi">256</span><span class="p">,</span> <span class="mi">160</span><span class="p">,</span> <span class="mi">320</span><span class="p">,</span> <span class="mi">32</span><span class="p">,</span> <span class="mi">128</span><span class="p">,</span> <span class="mi">128</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">maxpool4</span> <span class="o">=</span> <span class="n">nn</span><span class="o">.</span><span class="n">MaxPool2d</span><span class="p">(</span><span class="mi">3</span><span class="p">,</span> <span class="n">stride</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span> <span class="n">padding</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+
+        <span class="c1">## ブロック 5</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">inception5a</span> <span class="o">=</span> <span class="n">InceptionModule</span><span class="p">(</span><span class="mi">832</span><span class="p">,</span> <span class="mi">256</span><span class="p">,</span> <span class="mi">160</span><span class="p">,</span> <span class="mi">320</span><span class="p">,</span> <span class="mi">32</span><span class="p">,</span> <span class="mi">128</span><span class="p">,</span> <span class="mi">128</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">inception5b</span> <span class="o">=</span> <span class="n">InceptionModule</span><span class="p">(</span><span class="mi">832</span><span class="p">,</span> <span class="mi">384</span><span class="p">,</span> <span class="mi">192</span><span class="p">,</span> <span class="mi">384</span><span class="p">,</span> <span class="mi">48</span><span class="p">,</span> <span class="mi">128</span><span class="p">,</span> <span class="mi">128</span><span class="p">)</span>
+
+        <span class="c1">## 補助分類器</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">use_aux</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">aux1</span> <span class="o">=</span> <span class="n">AuxiliaryClassifier</span><span class="p">(</span><span class="mi">512</span><span class="p">,</span> <span class="mi">1000</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">aux2</span> <span class="o">=</span> <span class="n">AuxiliaryClassifier</span><span class="p">(</span><span class="mi">528</span><span class="p">,</span> <span class="mi">1000</span><span class="p">)</span>
+
+        <span class="c1">## ブロック 6</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">avgpool</span> <span class="o">=</span> <span class="n">nn</span><span class="o">.</span><span class="n">AvgPool2d</span><span class="p">(</span><span class="mi">7</span><span class="p">,</span> <span class="n">stride</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">dropout</span> <span class="o">=</span> <span class="n">nn</span><span class="o">.</span><span class="n">Dropout</span><span class="p">(</span><span class="mf">0.4</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">fc</span> <span class="o">=</span> <span class="n">nn</span><span class="o">.</span><span class="n">Linear</span><span class="p">(</span><span class="mi">1024</span><span class="p">,</span> <span class="mi">1000</span><span class="p">)</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">forward</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">x</span><span class="p">):</span>
+        <span class="c1">## ブロック 1</span>
+        <span class="n">x</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">conv1</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
+        <span class="n">x</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">maxpool1</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
+        <span class="n">x</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">lrn1</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
+
+        <span class="c1">## ブロック 2</span>
+        <span class="n">x</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">conv2</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
+        <span class="n">x</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">conv3</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
+        <span class="n">x</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">lrn2</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
+        <span class="n">x</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">maxpool2</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
+
+        <span class="c1">## ブロック 3</span>
+        <span class="n">x</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">inception3a</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
+        <span class="n">x</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">inception3b</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
+        <span class="n">x</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">maxpool3</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
+
+        <span class="c1">## ブロック 4</span>
+        <span class="n">x</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">inception4a</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">use_aux</span><span class="p">:</span>
+            <span class="n">aux1</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">aux1</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
+        <span class="n">x</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">inception4b</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
+        <span class="n">x</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">inception4c</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
+        <span class="n">x</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">inception4d</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">use_aux</span><span class="p">:</span>
+            <span class="n">aux2</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">aux2</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
+        <span class="n">x</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">inception4e</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
+        <span class="n">x</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">maxpool4</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
+
+        <span class="c1">## ブロック 5</span>
+        <span class="n">x</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">inception5a</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
+        <span class="n">x</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">inception5b</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
+
+        <span class="c1">## ブロック 6</span>
+        <span class="n">x</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">avgpool</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
+        <span class="n">x</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">flatten</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
+        <span class="n">x</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">dropout</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
+        <span class="n">x</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">fc</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">use_aux</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">x</span><span class="p">,</span> <span class="n">aux1</span><span class="p">,</span> <span class="n">aux2</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">x</span>
+</code></pre></div>
+</article>
+<nav class="page-nav"><a class="nav-link prev" href="vgg.html">← 前へ: 大規模画像認識のための非常に深い畳み込みネットワーク（2014）</a><a class="nav-link toc-link" href="../../index.html">目次へ</a><a class="nav-link next" href="mobilenet.html">次へ →: MobileNet</a></nav>
+</main>
+<footer class="site-footer">
+  <p>原典: Hugging Face huggingface/computer-vision-course（<a href="https://github.com/huggingface/computer-vision-course">https://github.com/huggingface/computer-vision-course</a>）</p>
+  <p>日本語版の翻訳・公開: 霞ヶ関京 / 連絡先: GitHub <a href="https://github.com/yanikasumin">@yanikasumin</a> / YouTube <a href="https://www.youtube.com/@KASUMI_MOF">@KASUMI_MOF</a></p>
+  <p class="demo-note">このサイトはデモ版です。内容は順次更新されます。</p>
+</footer>
+<script src="../../../site.js"></script>
+</body>
+</html>

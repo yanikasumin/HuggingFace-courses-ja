@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Dilated Neighborhood Attention Transformer (DINAT) | Hugging Face コース日本語版（デモ版）</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Shippori+Mincho:wght@500;700&family=Zen+Kaku+Gothic+New:wght@400;500;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../../../style.css">
+<script>
+window.MathJax = { tex: { inlineMath: [['$', '$'], ['\\(', '\\)']], displayMath: [['$$', '$$'], ['\\[', '\\]']] }, options: { skipHtmlTags: ['script','noscript','style','textarea','pre','code'] } };
+</script>
+<script async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml.js"></script>
+</head>
+<body>
+<header class="site-header">
+  <div class="header-inner">
+    <a class="site-title" href="../../../index.html">Hugging Face コース日本語版</a>
+    <span class="demo-badge">デモ版</span>
+  </div>
+</header>
+<main class="container">
+<p class="course-crumb"><a href="../../index.html">Community CV コース</a>
+<span class="badge badge-qa-wip">翻訳済み・QA進行中（未検証の部分を含みます）</span></p>
+<nav class="page-nav"><a class="nav-link prev" href="cvt.html">← 前へ: Convolutional Vision Transformer (CvT)</a><a class="nav-link toc-link" href="../../index.html">目次へ</a><a class="nav-link next" href="mobilevit.html">次へ →: MobileViT v2</a></nav>
+<article class="content">
+<h1>Dilated Neighborhood Attention Transformer (DINAT)</h1>
+<p><img alt="DINAT アーキテクチャ図" src="https://huggingface.co/datasets/hf-vision/course-assets/resolve/main/dinat_images/dina_comparison.png" /></p>
+<h2>アーキテクチャの概要</h2>
+<p>Dilated Neighborhood Attention Transformer（DiNAT）は、階層型の Vision Transformer です。深層学習モデルの性能を高めるために設計されており、特に視覚認識タスクを対象としています。従来の Transformer では、モデルが大きくなると計算コストが膨らみやすい self-attention を使います。これに対して DiNAT は、Dilated Neighborhood Attention（DiNA）を導入しました。DiNA は Neighborhood Attention（NA）と呼ばれる局所的な attention の仕組みを拡張したもので、計算コストを増やさずに疎なグローバル attention を取り入れます。これにより、より広い文脈を捉えられるようになり、受容野は指数的に広がり、長距離の依存関係も効率よくモデル化できます。</p>
+<p>DiNAT のアーキテクチャは NA と DiNA の両方を組み合わせています。その結果、局所性を保ち、平行移動等変性を維持しながら、下流の視覚タスクで性能を大きく高められる Transformer モデルになっています。実験では、さまざまな視覚認識タスクで、NAT、Swin、ConvNeXt といった強力なベースラインモデルを DiNAT が上回ることが示されています。</p>
+<h2>DiNAT の中核: Neighborhood Attention</h2>
+<p>DiNAT の基盤は Neighborhood Attention（NA）です。これはコンピュータビジョン向けに設計された attention の仕組みで、画像内のピクセル同士の関係を効率よく捉えることを目指しています。身近な例で考えてみましょう。1枚の画像があり、全体の意味を理解するために、各ピクセルが近くのピクセルに注目する必要がある、という状況です。NA の主な特徴を見ていきます。</p>
+<ul>
+<li>
+<p><strong>局所的な関係</strong>: NA は局所的な関係を捉えます。各ピクセルが、すぐ周囲の情報を参考にできる仕組みです。身の回りの近いものから順に見て場面を理解し、そのあと全体に目を向ける、私たちの見方に似ています。</p>
+</li>
+<li>
+<p><strong>受容野</strong>: NA では、計算量を大きく増やさずに、各ピクセルが周囲への理解を広げられます。必要に応じて対象範囲、つまり「注意を向ける範囲」を動的に広げ、より遠くの近傍まで含められます。</p>
+</li>
+</ul>
+<p>要するに Neighborhood Attention は、画像内のピクセルが周囲に注目できるようにする手法です。局所的な関係を効率よく理解する助けになります。こうした局所的な理解を積み重ねることで、計算リソースを抑えながら、画像全体の詳細な理解につなげます。</p>
+<p><img alt="DiNAT アーキテクチャ図" src="https://huggingface.co/datasets/hf-vision/course-assets/resolve/main/dinat_images/dinat_architecture.png" /></p>
+<h2>DINAT の発展</h2>
+<p>Dilated Neighborhood Attention Transformer の開発は、Vision Transformer における大きな進歩です。既存の attention の仕組みが抱えていた限界に対処しています。当初、Neighborhood Attention は局所性と効率をもたらすために導入されましたが、グローバルな文脈を捉える点では不十分でした。この限界を克服するために考え出されたのが、Dilated Neighborhood Attention（DiNA）という考え方です。DiNA は NA を拡張し、近傍をより大きく疎な領域へ広げます。これにより、よりグローバルな文脈を捉えられるようになり、計算負荷を増やさずに受容野を指数的に広げられます。次の発展が DiNAT です。局所的な NA と、広がったグローバルな文脈を持つ DiNA を組み合わせています。モデル全体を通して dilation を段階的に変えることで受容野を最適化し、特徴学習をシンプルにしています。</p>
+<h2>DiNAT による画像分類</h2>
+<p>🤗 transformers を使うと、<a href="https://huggingface.co/shi-labs/dinat-small-in1k-224">shi-labs/dinat-mini-in1k-224</a> モデルで ImageNet-1k の画像を分類できます。自分のユースケース向けにファインチューニングすることもできます。</p>
+<div class="codehilite"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">transformers</span><span class="w"> </span><span class="kn">import</span> <span class="n">AutoImageProcessor</span><span class="p">,</span> <span class="n">DinatForImageClassification</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">PIL</span><span class="w"> </span><span class="kn">import</span> <span class="n">Image</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">requests</span>
+
+<span class="n">url</span> <span class="o">=</span> <span class="s2">"http://images.cocodataset.org/val2017/000000039769.jpg"</span>
+<span class="n">image</span> <span class="o">=</span> <span class="n">Image</span><span class="o">.</span><span class="n">open</span><span class="p">(</span><span class="n">requests</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">url</span><span class="p">,</span> <span class="n">stream</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span><span class="o">.</span><span class="n">raw</span><span class="p">)</span>
+
+<span class="n">feature_extractor</span> <span class="o">=</span> <span class="n">AutoImageProcessor</span><span class="o">.</span><span class="n">from_pretrained</span><span class="p">(</span><span class="s2">"shi-labs/dinat-mini-in1k-224"</span><span class="p">)</span>
+<span class="n">model</span> <span class="o">=</span> <span class="n">DinatForImageClassification</span><span class="o">.</span><span class="n">from_pretrained</span><span class="p">(</span><span class="s2">"shi-labs/dinat-mini-in1k-224"</span><span class="p">)</span>
+
+<span class="n">inputs</span> <span class="o">=</span> <span class="n">feature_extractor</span><span class="p">(</span><span class="n">images</span><span class="o">=</span><span class="n">image</span><span class="p">,</span> <span class="n">return_tensors</span><span class="o">=</span><span class="s2">"pt"</span><span class="p">)</span>
+<span class="n">outputs</span> <span class="o">=</span> <span class="n">model</span><span class="p">(</span><span class="o">**</span><span class="n">inputs</span><span class="p">)</span>
+<span class="n">logits</span> <span class="o">=</span> <span class="n">outputs</span><span class="o">.</span><span class="n">logits</span>
+<span class="c1"># モデルは ImageNet の 1000 クラスのいずれかを予測します</span>
+<span class="n">predicted_class_idx</span> <span class="o">=</span> <span class="n">logits</span><span class="o">.</span><span class="n">argmax</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">)</span><span class="o">.</span><span class="n">item</span><span class="p">()</span>
+<span class="nb">print</span><span class="p">(</span><span class="s2">"Predicted class:"</span><span class="p">,</span> <span class="n">model</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">id2label</span><span class="p">[</span><span class="n">predicted_class_idx</span><span class="p">])</span>
+</code></pre></div>
+
+<h2>参考文献</h2>
+<ul>
+<li><a href="https://arxiv.org/abs/2209.15001">DiNAT 論文</a> [1] </li>
+<li><a href="https://huggingface.co/docs/transformers/model_doc/dinat">Hugging Face DiNAT Transformer</a> [2]  </li>
+<li><a href="https://arxiv.org/abs/2204.07143">Neighborhood Attention(NA)</a> [3] </li>
+<li><a href="https://huggingface.co/shi-labs">SHI Labs</a> [4]  </li>
+<li><a href="https://arxiv.org/abs/2211.06220">OneFormer 論文</a> [5]</li>
+<li><a href="https://huggingface.co/docs/transformers/main/en/model_doc/oneformer">Hugging Face OneFormer</a> [6]  </li>
+</ul>
+</article>
+<nav class="page-nav"><a class="nav-link prev" href="cvt.html">← 前へ: Convolutional Vision Transformer (CvT)</a><a class="nav-link toc-link" href="../../index.html">目次へ</a><a class="nav-link next" href="mobilevit.html">次へ →: MobileViT v2</a></nav>
+</main>
+<footer class="site-footer">
+  <p>原典: Hugging Face huggingface/computer-vision-course（<a href="https://github.com/huggingface/computer-vision-course">https://github.com/huggingface/computer-vision-course</a>）</p>
+  <p>日本語版の翻訳・公開: 霞ヶ関京 / 連絡先: GitHub <a href="https://github.com/yanikasumin">@yanikasumin</a> / YouTube <a href="https://www.youtube.com/@KASUMI_MOF">@KASUMI_MOF</a></p>
+  <p class="demo-note">このサイトはデモ版です。内容は順次更新されます。</p>
+</footer>
+<script src="../../../site.js"></script>
+</body>
+</html>

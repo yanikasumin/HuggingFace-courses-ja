@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Challenges and Opportunities Associated With Using Synthetic Data | Hugging Face コース日本語版（デモ版）</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Shippori+Mincho:wght@500;700&family=Zen+Kaku+Gothic+New:wght@400;500;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../../style.css">
+<script>
+window.MathJax = { tex: { inlineMath: [['$', '$'], ['\\(', '\\)']], displayMath: [['$$', '$$'], ['\\[', '\\]']] }, options: { skipHtmlTags: ['script','noscript','style','textarea','pre','code'] } };
+</script>
+<script async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml.js"></script>
+</head>
+<body>
+<header class="site-header">
+  <div class="header-inner">
+    <a class="site-title" href="../../index.html">Hugging Face コース日本語版</a>
+    <span class="demo-badge">デモ版</span>
+  </div>
+</header>
+<main class="container">
+<p class="course-crumb"><a href="../index.html">Community CV コース</a>
+<span class="badge badge-qa-wip">翻訳済み・QA進行中（未検証の部分を含みます）</span></p>
+<nav class="page-nav"><a class="nav-link prev" href="datagen-diffusion-models.html">← 前へ: Synthetic Data Generation with Diffusion Models</a><a class="nav-link toc-link" href="../index.html">目次へ</a><a class="nav-link next" href="point_clouds.html">次へ →: Introduction</a></nav>
+<article class="content">
+<h1>Challenges and Opportunities Associated With Using Synthetic Data</h1>
+<p>機械学習モデルの訓練には大量のデータが必要です。合成データは、プライバシー問題への対処、限られたデータの拡張、実データの不均衡の是正によって、その助けとなります。私たちは、合成データを生成するいくつかの異なる方法を学んできました。しかし、合成データをモデルの訓練に使う前に、考慮すべき重要な点がいくつかあります。</p>
+<h2>Overfitting the Model</h2>
+<p>過学習（Overfitting）は、機械学習モデルが訓練データをあまりに上手く学習しすぎて、新しい未見のデータでうまく性能を発揮できなくなるときに起こります。
+これは、ある問題の特定の解き方を覚えたものの、その方法が通用しない新しい状況に遭遇するようなものです。合成データの生成プロセスが単純すぎたり、過度に一貫したパターンがあったりすると、モデルが合成データに存在する限られたバリエーションに過学習してしまう可能性があります。とても単純な例として、赤い円25個と青い四角25個からなる合成データセットでモデルを訓練したとしましょう。モデルはおそらく、円は赤色、四角は青色と結びつけて学習するでしょう。このモデルは、赤い四角を見せられたときに失敗する可能性が高いです。</p>
+<div class="callout callout-warning">
+<p>データセットに次のような種類のパターンが含まれていないことを、必ず再確認してください！</p>
+</div>
+<p><em>一貫しすぎた色（Overly Consistent Color）</em>
+<img alt="一貫しすぎた色" src="https://huggingface.co/datasets/hf-vision/course-assets/resolve/main/synthetic-data-creation-overfit/overfit-color.jpg" /></p>
+<p><em>一貫しすぎたサイズ（Overly Consistent Size）</em>
+<img alt="一貫しすぎたサイズ" src="https://huggingface.co/datasets/hf-vision/course-assets/resolve/main/synthetic-data-creation-overfit/overfit-size.jpg" /></p>
+<p><em>一貫しすぎた背景（Overly Consistent Background）</em>
+<img alt="一貫しすぎた背景" src="https://huggingface.co/datasets/hf-vision/course-assets/resolve/main/synthetic-data-creation-overfit/overfit-background.jpg" /></p>
+<p><em>一貫しすぎた位置（Overly Consistent Location）</em>
+<img alt="一貫しすぎた位置" src="https://huggingface.co/datasets/hf-vision/course-assets/resolve/main/synthetic-data-creation-overfit/overfit-location.jpg" /></p>
+<h2>Are there biases in the synthetic data?</h2>
+<p>合成データの生成プロセスにバイアスや不正確さがあると、モデルは意図せずにそのバイアスを学習し、存続させてしまう可能性があります。次の落とし穴に注意してください。</p>
+<p><strong>多様性の不足（Limited Diversity）</strong></p>
+<p>一つの課題は、合成データが実データの複雑さと多様性を十分に表現できない場合があるということです。図形の例は些細なものに思えるかもしれませんが、人、場所、動物、物体などの幅広いバリエーションを考慮しないと、モデルの性能が上がらない状況はたくさんあります。たとえば、アイアイ（aye-aye）キツネザルのような絶滅危惧種の個体数をモニタリングするモデルを訓練したいとしましょう。データセットにワオキツネザルの画像しか含まれていなければ、モデルは野生のアイアイキツネザルを正確に識別するのに苦労するかもしれません。この制約は、個体数評価の誤りにつながる可能性があります。素晴らしいのは、基になるデータセットの不均衡を意識していれば、代表の少ないクラスの合成データで拡張することで、実データのバイアスを取り除くために合成データを使える可能性があることです。</p>
+<div class="callout callout-tip">
+<p>データセットが現実世界に見られる多様性を反映するよう心がけてください！</p>
+</div>
+<p><strong>良いバリエーション（Nice Variety）</strong>
+<img alt="良いバリエーション" src="https://huggingface.co/datasets/hf-vision/course-assets/resolve/main/synthetic-data-creation-overfit/good-variety.jpg" /></p>
+<p><strong>既存のバイアスの複写（Copying Existing Biases）:</strong></p>
+<p>合成画像を作るために使ったデータ自体にすでにバイアスがあった場合、モデルは意図せずにそのバイアスを学習し、再現してしまうかもしれません。友達のノートを、間違いがあることに気づかず写すようなものです。コンピュータが同じ誤りを抱えてしまう可能性があります。</p>
+<h2>Does the benefit of using synthetic data outweigh the computational cost?</h2>
+<p>高品質な合成データの生成には計算コストがかかる場合があります。これは、特に複雑なモデルや大規模なデータセットでは、時間とリソースの両面で課題となりえます。一般的な目安として、合成データセットの生成と利用が意味を持つのは、最終的にリソース（費用、時間など）を節約できる場合だけです。</p>
+<h3>What is the perceived quality of the synthetic images?</h3>
+<p>DCGAN を使って生成した肺の画像を考えてみましょう。一部の画像はかなりリアルに見えましたが、そうでないものもありました。低品質な画像で訓練されたモデルは、実画像には存在しないノイズが含まれているために、肺炎を検出できないかもしれません。また、モデルが合成データのパターンの認識は非常に得意になる一方で、そうしたパターンが現実世界には存在しなかったり、異なっていたりする可能性もあります。</p>
+<p>良い実践方法は、Frechet Inception Distance（FID）、Inception Score（IS）、Classification Accuracy Score（CAS）のような指標を使ってデータセットを評価することです。</p>
+<p><em>FID:</em></p>
+<p>FID は、画像内の物体認識が得意な、多くの場合 <a href="https://huggingface.co/docs/timm/models/inception-v4">Inception</a> のような、事前に訓練されたニューラルネットワークモデルを使用します。このモデルは、実画像と生成画像の両方から特徴を抽出するために使われます。FID は、一つの分布がもう一つの分布からどれだけ「離れている」かを測る指標で、分布の平均と共分散の両方を考慮します。</p>
+<p>FID が低いことは、実画像と生成画像の特徴分布が似ており、生成画像がよりリアルである可能性が高いことを示唆します。</p>
+<p><em>IS:</em></p>
+<p>IS は、生成モデル（特に GAN）によって生成された画像の品質を評価するために、事前に訓練された Inception モデルを使用します。
+生成画像ごとに、Inception モデルは、その画像内の物体をどれだけ確信を持って認識できるかに基づいてスコアを割り当てます。スコアが高いほど良く、Inception モデルが画像の内容に確信を持っていることを示します。</p>
+<p><em>CAS:</em></p>
+<p>分類精度は、モデルが合成データでどれだけうまく機能しているかを示すもう一つの指標です。精度が高いほど、モデルが実画像の特徴やパターンを効果的に捉えていることを示します。特定のクラスの精度スコアが低い場合は、非現実的な背景、不正確なテクスチャ、一貫しない照明条件など、生成プロセスの問題を示している可能性があります。CIS を使えば、こうした問題を特定して対処し、合成データセット全体の品質を向上させることができます。</p>
+<h2>Conclusion</h2>
+<p>モデルを訓練した後でも、現実世界のシナリオでその性能を継続的にモニタリングすることが重要です。モデルが、合成データには存在しなかった新しい状況やトレンドに遭遇すると、適応に苦労するかもしれません。こうした課題への対処には、合成データの生成プロセスの慎重な設計と、実データにおけるモデルの性能評価が関わります。これらの原則を適用することで、合成データの可能性を引き出す助けになるでしょう！</p>
+<h2>Resources and Further Reading</h2>
+<ul>
+<li><a href="https://arxiv.org/pdf/2303.01268.pdf">Analyzing Effects of Fake Training Data on the Performance of Deep Learning Systems</a></li>
+<li><a href="https://arxiv.org/pdf/2305.10118.pdf">Bridging the Gap: Enhancing the Utility of Synthetic Data Via Post-Processing Techniques</a></li>
+<li><a href="https://arxiv.org/pdf/2303.14126.pdf">CIFAKE: Image Classification and Explanable Identification of AI-Generated Synthetic Images</a></li>
+<li><a href="https://arxiv.org/abs/1905.10887">Classification Accuracy Score for Conditional Generative Models</a></li>
+<li><a href="https://arxiv.org/abs/1706.08500">GANs Trained by a Two Time-Scale Update Rule Converge to a Local Nash Equilibrium</a></li>
+<li><a href="https://arxiv.org/abs/1606.03498">Improved Techniques for Training GANs</a></li>
+<li><a href="https://arxiv.org/pdf/1512.00567v3.pdf">Rethinking the Inception Architecture for Computer Vision</a></li>
+<li><a href="https://github.com/huggingface/community-events/tree/main/huggan/pytorch/metrics">Metrics</a></li>
+<li><a href="https://github.com/mseitzer/pytorch-fid">pytorch-fid</a></li>
+</ul>
+</article>
+<nav class="page-nav"><a class="nav-link prev" href="datagen-diffusion-models.html">← 前へ: Synthetic Data Generation with Diffusion Models</a><a class="nav-link toc-link" href="../index.html">目次へ</a><a class="nav-link next" href="point_clouds.html">次へ →: Introduction</a></nav>
+</main>
+<footer class="site-footer">
+  <p>原典: Hugging Face huggingface/computer-vision-course（<a href="https://github.com/huggingface/computer-vision-course">https://github.com/huggingface/computer-vision-course</a>）</p>
+  <p>日本語版の翻訳・公開: 霞ヶ関京 / 連絡先: GitHub <a href="https://github.com/yanikasumin">@yanikasumin</a> / YouTube <a href="https://www.youtube.com/@KASUMI_MOF">@KASUMI_MOF</a></p>
+  <p class="demo-note">このサイトはデモ版です。内容は順次更新されます。</p>
+</footer>
+<script src="../../site.js"></script>
+</body>
+</html>

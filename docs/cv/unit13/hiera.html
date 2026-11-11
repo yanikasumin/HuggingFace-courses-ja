@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Overview of Hiera | Hugging Face コース日本語版（デモ版）</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Shippori+Mincho:wght@500;700&family=Zen+Kaku+Gothic+New:wght@400;500;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../../style.css">
+<script>
+window.MathJax = { tex: { inlineMath: [['$', '$'], ['\\(', '\\)']], displayMath: [['$$', '$$'], ['\\[', '\\]']] }, options: { skipHtmlTags: ['script','noscript','style','textarea','pre','code'] } };
+</script>
+<script async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml.js"></script>
+</head>
+<body>
+<header class="site-header">
+  <div class="header-inner">
+    <a class="site-title" href="../../index.html">Hugging Face コース日本語版</a>
+    <span class="demo-badge">デモ版</span>
+  </div>
+</header>
+<main class="container">
+<p class="course-crumb"><a href="../index.html">Community CV コース</a>
+<span class="badge badge-qa-wip">翻訳済み・QA進行中（未検証の部分を含みます）</span></p>
+<nav class="page-nav"><a class="nav-link prev" href="retention.html">← 前へ: 視覚におけるリテンション（Retention）</a><a class="nav-link toc-link" href="../index.html">目次へ</a><a class="nav-link next" href="hyena.html">次へ →: Hyena</a></nav>
+<article class="content">
+<h2>概要</h2>
+<h3>Hiera とは？</h3>
+<p><a href="https://arxiv.org/abs/2306.00989">Hiera</a>（Hierarchical Vision Transformer）は、他の視覚モデルに見られる特殊なコンポーネントを必要とせずに高い精度を達成するアーキテクチャです。著者らは、Hiera を強力な視覚的前置タスク（pretext task）で事前学習し、不要な複雑さを取り除くことで、より高速で高精度なモデルを作ることを提案しています。</p>
+<p><img alt="Hiera のアーキテクチャ" src="https://huggingface.co/datasets/hf-vision/course-assets/resolve/main/hiera_images/hiera_architecture.png" /></p>
+<h3>CNN から ViT へ</h3>
+<p>CNN と階層型モデルは、視覚データの階層構造と空間構造を効果的に捉えられるため、コンピュータビジョンのタスクに適しています。これらのモデルは、初期の段階ではチャンネル数を少なく空間解像度を高くして単純な特徴を抽出し、後段ではチャンネル数を多く空間解像度を低くして、より複雑な特徴を抽出します。</p>
+<p><img alt="CNN" src="https://huggingface.co/datasets/hf-vision/course-assets/resolve/main/hiera_images/CNN_architecture.webp" /></p>
+<p>一方、Vision Transformer（ViT）は、導入されるやコンピュータビジョンの世界を席巻した、より高精度でスケーラブル、かつアーキテクチャがシンプルなモデルです。しかし、このシンプルさには代償があります。ViT には「視覚的な帰納バイアス」が欠けているのです（そのアーキテクチャは視覚データを扱うために特別に設計されたものではありません）。</p>
+<p>ViT を適応させる試みは数多くなされてきましたが、一般に、アーキテクチャにおけるこの帰納バイアスの欠如を補うために階層型のコンポーネントを追加する方法が取られてきました。残念ながら、得られたモデルはいずれも、より低速で、より大きく、スケールさせるのが難しいものでした。</p>
+<h3>Hiera のアプローチ: 事前学習タスクこそが必要なすべて</h3>
+<p>Hiera 論文の著者らは、ViT モデルは MAE と呼ばれる強力な視覚的前置タスクを使うことで空間推論を学習でき、コンピュータビジョンのタスクで優れた性能を発揮できると主張します。これにより、最先端の多段階 Vision Transformer から不要なコンポーネントと複雑さを取り除き、より高い精度と速度を達成できるのです。</p>
+<p>では、論文の著者らは実際にどのコンポーネントを取り除いているのでしょうか。それを理解するには、まず Hiera の派生元である階層型アーキテクチャ <a href="https://arxiv.org/abs/2112.01526">MViTv2</a> を紹介する必要があります。MViTv2 は4つの段階にわたってマルチスケールの表現を学習します。まず小さなチャンネル容量と高い空間解像度で低水準の特徴をモデル化し、次に各段階でチャンネル容量と空間解像度を交換しながら、より深い層で複雑な高水準の特徴をモデル化していきます。</p>
+<p><img alt="MViTv2" src="https://huggingface.co/datasets/hf-vision/course-assets/resolve/main/hiera_images/mvitv2.png" /></p>
+<p>MViTv2 の主要な特徴を深く掘り下げるのではなく（本題ではないため）、次のセクションではそれらを簡潔に説明し、研究者がこのベースアーキテクチャを簡略化することでどのように Hiera を作り出したかを示します。</p>
+<h3>MViTv2 の簡略化</h3>
+<p><img alt="MViTv2 の簡略化" src="https://huggingface.co/datasets/hf-vision/course-assets/resolve/main/hiera_images/hiera_changes.png" /></p>
+<p>この表は、Hiera を作るために著者らが MViTv2 に加えたすべての変更と、各変更が画像と動画における精度と速度にどう影響するかを示しています。</p>
+<ul>
+<li><strong>相対位置埋め込みから絶対位置埋め込みへの置き換え</strong>: MViTv2 は、元の <a href="https://arxiv.org/abs/2010.11929">ViT</a> 論文の絶対位置埋め込みを、各ブロックの Attention に追加される相対位置埋め込みに置き換えています。著者らは、モデルに余分な複雑さを加えていたため、この変更を元に戻しました。表から分かるように、MAE で訓練する場合、これらの相対位置埋め込みは不要です（この変更により精度と速度の両方が向上します）。</li>
+<li><strong>畳み込みの除去</strong>: この論文の重要な考えは、モデルは強力な視覚的前置タスクによる事前学習で空間バイアスを学習できるというものです。そのため、視覚固有のモジュールであり、不要なオーバーヘッドを加える可能性のある畳み込みを取り除くことが重要な変更となります。著者らはまず、すべての畳み込みを max pooling 層に置き換えました。画像の特徴への影響が大きいため、当初は精度が低下しました。しかし、これらの余分な max pooling 層の一部、とくにストライドが1のものは、実質的にはすべての特徴マップに ReLU を適用しているだけであると分かり、取り除くことができました。こうすることで、著者らは以前とほぼ同等の精度を取り戻しながら、画像では22%、動画では27%の高速化を実現しました。</li>
+</ul>
+<h3>マスク付きオートエンコーダ</h3>
+<p>マスク付きオートエンコーダ（Masked Autoencoder、MAE）は、教師なし訓練のパラダイムです。他のオートエンコーダと同様に、高次元データ（画像）を低次元の表現（埋め込み）にエンコードし、そのデータを再び元の高次元データにデコードできるようにすることから成ります。ただし、視覚 MAE の手法では、パッチを一定量（約75%）落とし、残りのパッチをエンコードして、欠けたパッチを予測しようとします。このアイデアは近年、画像エンコーダの事前学習タスクとして広く使われています。</p>
+<p><img alt="MAE" src="https://huggingface.co/datasets/hf-vision/course-assets/resolve/main/hiera_images/mae.png" /></p>
+<h2>Hiera が重要な理由</h2>
+<p>Transformer モデルが支配する時代にあっても、このシンプルなアーキテクチャを改良しようとする試みは数多くあり、CNN の複雑さを加えて再び階層型モデルに変換しようとしています。階層型モデルはコンピュータビジョンで優れていますが、この研究は、階層型 Transformer の実現には複雑なアーキテクチャの変更は必要ないことを示しています。その代わり、訓練タスクだけに集中的に注力することで、シンプルで高速かつ高精度なモデルが得られるのです。</p>
+</article>
+<nav class="page-nav"><a class="nav-link prev" href="retention.html">← 前へ: 視覚におけるリテンション（Retention）</a><a class="nav-link toc-link" href="../index.html">目次へ</a><a class="nav-link next" href="hyena.html">次へ →: Hyena</a></nav>
+</main>
+<footer class="site-footer">
+  <p>原典: Hugging Face huggingface/computer-vision-course（<a href="https://github.com/huggingface/computer-vision-course">https://github.com/huggingface/computer-vision-course</a>）</p>
+  <p>日本語版の翻訳・公開: 霞ヶ関京 / 連絡先: GitHub <a href="https://github.com/yanikasumin">@yanikasumin</a> / YouTube <a href="https://www.youtube.com/@KASUMI_MOF">@KASUMI_MOF</a></p>
+  <p class="demo-note">このサイトはデモ版です。内容は順次更新されます。</p>
+</footer>
+<script src="../../site.js"></script>
+</body>
+</html>

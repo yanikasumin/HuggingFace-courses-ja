@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Introduction | Hugging Face コース日本語版（デモ版）</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Shippori+Mincho:wght@500;700&family=Zen+Kaku+Gothic+New:wght@400;500;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../../style.css">
+<script>
+window.MathJax = { tex: { inlineMath: [['$', '$'], ['\\(', '\\)']], displayMath: [['$$', '$$'], ['\\[', '\\]']] }, options: { skipHtmlTags: ['script','noscript','style','textarea','pre','code'] } };
+</script>
+<script async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml.js"></script>
+</head>
+<body>
+<header class="site-header">
+  <div class="header-inner">
+    <a class="site-title" href="../../index.html">Hugging Face コース日本語版</a>
+    <span class="demo-badge">デモ版</span>
+  </div>
+</header>
+<main class="container">
+<p class="course-crumb"><a href="../index.html">Community CV コース</a>
+<span class="badge badge-qa-wip">翻訳済み・QA進行中（未検証の部分を含みます）</span></p>
+<nav class="page-nav"><a class="nav-link prev" href="challenges.html">← 前へ: Challenges and Opportunities Associated With Using Synthetic Data</a><a class="nav-link toc-link" href="../index.html">目次へ</a><a class="nav-link next" href="../unit11/1.html">次へ →: Introduction</a></nav>
+<article class="content">
+<h1>Introduction</h1>
+<h2>What is a point cloud?</h2>
+<p>点群（point cloud）は個々の点の集合で、各点は [x, y, z] 座標で表される三次元空間内の表面のサンプルを表します。これらの点は、空間座標だけでなく、法線、RGB カラー、アルベド、双方向反射分布関数（BRDF）などの追加の属性を保持することがよくあります。</p>
+<p>ここでアルベドとは、表面がどれだけ光を反射するかの尺度です。本質的には、表面に当たった入射光に対する反射光の比率です。簡単に言うと、入ってきた光がどれだけ跳ね返されるかを表します。アルベドが高いことは、雪のように多くの光を反射する表面を示し、アルベドが低いことは、アスファルトのように多くの光を吸収する表面を示唆します。</p>
+<p>BRDF は、不透明な表面で光がどのように散乱または反射されるかを記述する関数です。入射光の方向と出射方向を考慮して、表面上の交点で光がどう反射されるかを詳述します。光沢、粗さ、さまざまな角度にわたる反射光の分布といった要因を含め、表面の反射特性を数学的に記述します。
+これらの属性は、モデリング、レンダリング、シーン理解などのさまざまなアプリケーションで重要な役割を果たします。</p>
+<p>点群データの概念自体は新しいものではなく、グラフィックスや物理シミュレーションなどの分野で長年欠かせないものでしたが、2つの重要なトレンドにより、その重要性は著しく高まっています。
+第一に、コスト効率が良く使いやすい点群取得デバイスが広く普及したことで、アクセス性が大幅に向上しました。</p>
+<p>拡張現実や自動運転車も、今日の技術的状況においてその関連性をさらに際立たせています。</p>
+<p><img alt="点群の活用例" src="https://huggingface.co/datasets/hf-vision/course-assets/resolve/main/point_cloud_example.jpeg" /></p>
+<p><strong>点群とは何かが分かったところで、それで何ができるでしょうか？</strong></p>
+<p>3D ポイントデータは主に自動運転機能に使われますが、現在ではドローンやロボットのようなコンピュータビジョンを使う他の AI モデルも、より良い視覚認識のために LiDAR を使っています。LiDAR は、3D モデルや物体・環境の地図を作るために使われる計測値を収集するリモートセンシングのプロセスです。紫外線、可視光、近赤外光を使い、信号が物体に跳ね返ってスキャナに戻るまでの時間を計測することで、空間的な関係や形状を測ります。</p>
+<h2>Generation and Data Representation</h2>
+<p>Python ライブラリ <a href="https://github.com/fwilliams/point-cloud-utils">point-cloud-utils</a> と <a href="https://github.com/isl-org/Open3D">open-3d</a> を使います。これらは次のようにインストールできます。</p>
+<div class="codehilite"><pre><span></span><code>pip<span class="w"> </span>install<span class="w"> </span>point-cloud-utils
+</code></pre></div>
+
+<p>Python ライブラリ open-3d も使います。インストール方法は次のとおりです。</p>
+<div class="codehilite"><pre><span></span><code>pip<span class="w"> </span>install<span class="w"> </span>open3d
+</code></pre></div>
+
+<p>または、より小さい CPU のみのバージョン:</p>
+<div class="codehilite"><pre><span></span><code>pip<span class="w"> </span>install<span class="w"> </span>open3d-cpu
+</code></pre></div>
+
+<p>では、まずこれらの点群がどのような形式で保存されるのかを理解する必要があり、そのためにはメッシュクラウドを見る必要があります。</p>
+<p><strong>なぜでしょうか？</strong></p>
+<ul>
+<li><code>point-cloud-utils</code> は一般的なメッシュ形式（PLY、STL、OFF、OBJ、3DS、VRML 2.0、X3D、COLLADA）の読み取りをサポートします。</li>
+<li><a href="https://github.com/cnr-isti-vclab/meshlab">MeshLab</a> にインポートできるものであれば、読み取れます！（同ライブラリの readme より）</li>
+</ul>
+<p>ファイルの種類は拡張子から推測されます。サポートされている拡張子の一部は次のとおりです。</p>
+<p>** PLY (Polygon File Format) **</p>
+<ul>
+<li>単純な PLY オブジェクトは、オブジェクトを表現するための要素の集合で構成されます。頂点の (x,y,z) の三つ組のリストと、その頂点リストへのインデックスである面のリストで構成されます。</li>
+<li>頂点と面は要素の2つの例であり、PLY ファイルの大部分はこの2つの要素で構成されます。</li>
+<li>新しいプロパティを作成してオブジェクトの要素に付けることもできますが、こうした新しいプロパティに遭遇しても古いプログラムが壊れない方法で追加すべきです。</li>
+</ul>
+<p>** STL (Standard Tessellation Language) **</p>
+<ul>
+<li>この形式は、立体モデルの表面を三角形で近似します。</li>
+<li>これらの三角形はファセットとも呼ばれ、各ファセットは垂直方向と、三角形の頂点を表す3つの点で記述されます。</li>
+<li>ただし、これらのファイルには色やテクスチャの記述がありません。</li>
+</ul>
+<p>** OFF (Object File Format) **</p>
+<ul>
+<li>Object File Format（.OFF）ファイルは、モデルの表面のポリゴンを指定することで、モデルの形状を表現するために使われます。ポリゴンは任意の数の頂点を持つことができます。</li>
+<li>交換を目的としたオブジェクトの ASCII テキスト版と、読み書きの効率のためのバイナリ版をサポートします。</li>
+<li>.obj 形式とも呼ばれます。</li>
+</ul>
+<p>** 3DS (3D Studio) **</p>
+<ul>
+<li>.3ds 拡張子のファイルは、Autodesk 3D Studio で使われる 3D Studio メッシュファイル形式を表します。</li>
+<li>3DS 形式はバイナリファイル構造を利用しており、テキストベースの形式と比べて処理が速く、ファイルサイズも小さくなります。データはファイル内のチャンクに整理されます。</li>
+<li>これらのチャンクは、三次元シーンを構成する形状、ライティング、視聴情報を格納します。</li>
+</ul>
+<p>** X3D (Extensible 3D Graphics) **</p>
+<ul>
+<li>X3D は、3D 情報を表現するための XML ベースの 3D グラフィックスファイル形式です。モジュール式の標準であり、いくつかの ISO 仕様によって定義されています。</li>
+<li>この形式は、ベクターグラフィックスとラスターグラフィックス、透明度、ライティング効果、回転、フェード、スイングを含むアニメーション設定をサポートします。</li>
+<li>X3D には、カラー 3D プリンタでモデルを印刷する際に使われる色情報をエンコードできる利点があります（STL とは異なります）。</li>
+</ul>
+<p>** DAE (Digital Asset Exchange) **</p>
+<ul>
+<li>これは XML スキーマであり、オープン標準の XML スキーマで、DAE ファイルはこれをもとに構築されます。</li>
+<li>このファイル形式は、グラフィックスソフトウェアアプリケーション間でデジタルアセットを交換するためのオープン標準 XML スキーマである COLLADA（COLLAborative Design Activity）XML スキーマに基づいています。</li>
+<li>この形式の最大の売りは、複数のプラットフォームにわたる互換性です。</li>
+<li>COLLADA ファイルは1つのプログラムやメーカーに限定されません。代わりに、3D アセットを保存する標準的な方法を提供します。</li>
+</ul>
+</article>
+<nav class="page-nav"><a class="nav-link prev" href="challenges.html">← 前へ: Challenges and Opportunities Associated With Using Synthetic Data</a><a class="nav-link toc-link" href="../index.html">目次へ</a><a class="nav-link next" href="../unit11/1.html">次へ →: Introduction</a></nav>
+</main>
+<footer class="site-footer">
+  <p>原典: Hugging Face huggingface/computer-vision-course（<a href="https://github.com/huggingface/computer-vision-course">https://github.com/huggingface/computer-vision-course</a>）</p>
+  <p>日本語版の翻訳・公開: 霞ヶ関京 / 連絡先: GitHub <a href="https://github.com/yanikasumin">@yanikasumin</a> / YouTube <a href="https://www.youtube.com/@KASUMI_MOF">@KASUMI_MOF</a></p>
+  <p class="demo-note">このサイトはデモ版です。内容は順次更新されます。</p>
+</footer>
+<script src="../../site.js"></script>
+</body>
+</html>

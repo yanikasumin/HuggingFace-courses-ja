@@ -1,0 +1,521 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ゲストのエピソードのためのRAGツールの作成 | Hugging Face コース日本語版（デモ版）</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Shippori+Mincho:wght@500;700&family=Zen+Kaku+Gothic+New:wght@400;500;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../../../style.css">
+<script>
+window.MathJax = { tex: { inlineMath: [['$', '$'], ['\\(', '\\)']], displayMath: [['$$', '$$'], ['\\[', '\\]']] }, options: { skipHtmlTags: ['script','noscript','style','textarea','pre','code'] } };
+</script>
+<script async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml.js"></script>
+</head>
+<body>
+<header class="site-header">
+  <div class="header-inner">
+    <a class="site-title" href="../../../index.html">Hugging Face コース日本語版</a>
+    <span class="demo-badge">デモ版</span>
+  </div>
+</header>
+<main class="container">
+<p class="course-crumb"><a href="../../index.html">Agents コース</a>
+<span class="badge badge-qa-wip">翻訳済み・QA進行中（未検証の部分を含みます）</span></p>
+<nav class="page-nav"><a class="nav-link prev" href="agentic-rag.html">← 前へ: Agenticな検索拡張生成（RAG）</a><a class="nav-link toc-link" href="../../index.html">目次へ</a><a class="nav-link next" href="tools.html">次へ →: エージェントのためのツールの構築と統合</a></nav>
+<article class="content">
+<h1>ゲストのエピソードのためのRAGツールの作成</h1>
+<p>信頼できるエージェントのAlfredは、今世紀で最も豪華なガラの準備をしています。イベントが円滑に進むよう、Alfredは各ゲストに関する最新情報へ素早くアクセスできる必要があります。カスタムデータセットを活用した、カスタムの検索拡張生成（RAG）ツールを作って、Alfredを助けましょう。</p>
+<h2>なぜガラにRAGなのか？</h2>
+<p>Alfredがゲストの間を歩き回り、その場で各人の具体的な詳細を思い出す必要がある場面を想像してください。従来のLLMでは、このタスクが難しい場合があります。理由は次のとおりです。</p>
+<ol>
+<li>ゲストリストはあなたのイベント固有のもので、モデルの学習データには含まれていない</li>
+<li>ゲスト情報は頻繁に変わったり更新されたりする可能性がある</li>
+<li>Alfredはメールアドレスのような正確な詳細を取得する必要がある</li>
+</ol>
+<p>ここで検索拡張生成（RAG）が真価を発揮します！ 検索システムとLLMを組み合わせることで、Alfredはゲストに関する正確で最新の情報に、必要なときにアクセスできます。</p>
+<div class="callout callout-tip">
+<p class="callout-title">💡 ヒント</p>
+<p>このユースケースには、コースで扱ったどのフレームワークを使っても構いません。コードタブから好みの選択肢を選んでください。</p>
+</div>
+<h2>アプリケーションのセットアップ</h2>
+<p>このユニットでは、エージェントをHF Space上で、構造化されたPythonプロジェクトとして開発します。この方法なら、機能ごとにファイルを分けることで、クリーンでモジュール化されたコードを保てます。また、アプリケーションを公開用にデプロイする、より現実的なユースケースにもなります。</p>
+<h3>プロジェクト構成</h3>
+<ul>
+<li><strong><code>tools.py</code></strong> – エージェントのための補助ツールを提供します。</li>
+<li><strong><code>retriever.py</code></strong> – 知識へのアクセスを支える検索機能を実装します。</li>
+<li><strong><code>app.py</code></strong> – すべてのコンポーネントを統合し、完全に機能するエージェントにします。このユニットの最後のパートで仕上げます。</li>
+</ul>
+<p>実践的な参考として、<a href="https://huggingface.co/spaces/agents-course/Unit_3_Agentic_RAG">このHF Space</a> を確認してください。このユニットで開発したAgentic RAGが公開されています。自由にクローンして実験してみてください！</p>
+<p>エージェントは以下で直接試せます。</p>
+<p><iframe
+    src="https://agents-course-unit-3-agentic-rag.hf.space"
+    frameborder="0"
+    width="850"
+    height="450"
+></iframe>
+</p>
+<h2>データセットの概要</h2>
+<p>データセット <a href="https://huggingface.co/datasets/agents-course/unit3-invitees/"><code>agents-course/unit3-invitees</code></a> には、各ゲストについて次のフィールドが含まれています。</p>
+<ul>
+<li><strong>Name</strong>: ゲストのフルネーム</li>
+<li><strong>Relation</strong>: ゲストとホストとの関係</li>
+<li><strong>Description</strong>: ゲストの簡単な経歴や興味深い事実</li>
+<li><strong>Email Address</strong>: 招待状の送付やフォローアップのための連絡先情報</li>
+</ul>
+<p>以下はデータセットのプレビューです。</p>
+<p><iframe
+  src="https://huggingface.co/datasets/agents-course/unit3-invitees/embed/viewer/default/train"
+  frameborder="0"
+  width="100%"
+  height="560px"
+></iframe>
+</p>
+<div class="callout callout-tip">
+<p class="callout-title">💡 ヒント</p>
+<p>実際のシナリオでは、このデータセットを拡張して、食事の好み、ギフトの興味、避けるべき会話のトピックなど、ホストにとって役立つ詳細を含めることもできます。</p>
+</div>
+<h2>ゲストブックツールの構築</h2>
+<p>ガラの最中にAlfredがゲスト情報を素早く取得できるカスタムツールを作成します。扱いやすい3つのステップに分けましょう。</p>
+<ol>
+<li>データセットの読み込みと準備</li>
+<li>リトリーバーツールの作成</li>
+<li>ツールとAlfredの統合</li>
+</ol>
+<p>まずはデータセットの読み込みと準備から始めましょう！</p>
+<h3>ステップ1: データセットの読み込みと準備</h3>
+<p>まず、生のゲストデータを、検索に最適化された形式に変換する必要があります。</p>
+<div class="hfoptions">
+<section class="hfoption" markdown="block">
+<p class="hfoption-label">smolagents</p>
+
+
+Hugging Faceの `datasets` ライブラリを使ってデータセットを読み込み、`langchain.docstore.document` モジュールの `Document` オブジェクトのリストに変換します。
+
+
+<div class="codehilite"><pre><span></span><code><span class="kn">import</span><span class="w"> </span><span class="nn">datasets</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">langchain_core.documents</span><span class="w"> </span><span class="kn">import</span> <span class="n">Document</span>
+
+<span class="c1"># データセットを読み込む</span>
+<span class="n">guest_dataset</span> <span class="o">=</span> <span class="n">datasets</span><span class="o">.</span><span class="n">load_dataset</span><span class="p">(</span><span class="s2">"agents-course/unit3-invitees"</span><span class="p">,</span> <span class="n">split</span><span class="o">=</span><span class="s2">"train"</span><span class="p">)</span>
+
+<span class="c1"># データセットのエントリをDocumentオブジェクトに変換する</span>
+<span class="n">docs</span> <span class="o">=</span> <span class="p">[</span>
+    <span class="n">Document</span><span class="p">(</span>
+        <span class="n">page_content</span><span class="o">=</span><span class="s2">"</span><span class="se">\n</span><span class="s2">"</span><span class="o">.</span><span class="n">join</span><span class="p">([</span>
+            <span class="sa">f</span><span class="s2">"Name: </span><span class="si">{</span><span class="n">guest</span><span class="p">[</span><span class="s1">'name'</span><span class="p">]</span><span class="si">}</span><span class="s2">"</span><span class="p">,</span>
+            <span class="sa">f</span><span class="s2">"Relation: </span><span class="si">{</span><span class="n">guest</span><span class="p">[</span><span class="s1">'relation'</span><span class="p">]</span><span class="si">}</span><span class="s2">"</span><span class="p">,</span>
+            <span class="sa">f</span><span class="s2">"Description: </span><span class="si">{</span><span class="n">guest</span><span class="p">[</span><span class="s1">'description'</span><span class="p">]</span><span class="si">}</span><span class="s2">"</span><span class="p">,</span>
+            <span class="sa">f</span><span class="s2">"Email: </span><span class="si">{</span><span class="n">guest</span><span class="p">[</span><span class="s1">'email'</span><span class="p">]</span><span class="si">}</span><span class="s2">"</span>
+        <span class="p">]),</span>
+        <span class="n">metadata</span><span class="o">=</span><span class="p">{</span><span class="s2">"name"</span><span class="p">:</span> <span class="n">guest</span><span class="p">[</span><span class="s2">"name"</span><span class="p">]}</span>
+    <span class="p">)</span>
+    <span class="k">for</span> <span class="n">guest</span> <span class="ow">in</span> <span class="n">guest_dataset</span>
+<span class="p">]</span>
+</code></pre></div>
+
+
+
+</section>
+<section class="hfoption" markdown="block">
+<p class="hfoption-label">llama-index</p>
+
+
+Hugging Faceの `datasets` ライブラリを使ってデータセットを読み込み、`llama_index.core.schema` モジュールの `Document` オブジェクトのリストに変換します。
+
+
+<div class="codehilite"><pre><span></span><code><span class="kn">import</span><span class="w"> </span><span class="nn">datasets</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">llama_index.core.schema</span><span class="w"> </span><span class="kn">import</span> <span class="n">Document</span>
+
+<span class="c1"># データセットを読み込む</span>
+<span class="n">guest_dataset</span> <span class="o">=</span> <span class="n">datasets</span><span class="o">.</span><span class="n">load_dataset</span><span class="p">(</span><span class="s2">"agents-course/unit3-invitees"</span><span class="p">,</span> <span class="n">split</span><span class="o">=</span><span class="s2">"train"</span><span class="p">)</span>
+
+<span class="c1"># データセットのエントリをDocumentオブジェクトに変換する</span>
+<span class="n">docs</span> <span class="o">=</span> <span class="p">[</span>
+    <span class="n">Document</span><span class="p">(</span>
+        <span class="n">text</span><span class="o">=</span><span class="s2">"</span><span class="se">\n</span><span class="s2">"</span><span class="o">.</span><span class="n">join</span><span class="p">([</span>
+            <span class="sa">f</span><span class="s2">"Name: </span><span class="si">{</span><span class="n">guest_dataset</span><span class="p">[</span><span class="s1">'name'</span><span class="p">][</span><span class="n">i</span><span class="p">]</span><span class="si">}</span><span class="s2">"</span><span class="p">,</span>
+            <span class="sa">f</span><span class="s2">"Relation: </span><span class="si">{</span><span class="n">guest_dataset</span><span class="p">[</span><span class="s1">'relation'</span><span class="p">][</span><span class="n">i</span><span class="p">]</span><span class="si">}</span><span class="s2">"</span><span class="p">,</span>
+            <span class="sa">f</span><span class="s2">"Description: </span><span class="si">{</span><span class="n">guest_dataset</span><span class="p">[</span><span class="s1">'description'</span><span class="p">][</span><span class="n">i</span><span class="p">]</span><span class="si">}</span><span class="s2">"</span><span class="p">,</span>
+            <span class="sa">f</span><span class="s2">"Email: </span><span class="si">{</span><span class="n">guest_dataset</span><span class="p">[</span><span class="s1">'email'</span><span class="p">][</span><span class="n">i</span><span class="p">]</span><span class="si">}</span><span class="s2">"</span>
+        <span class="p">]),</span>
+        <span class="n">metadata</span><span class="o">=</span><span class="p">{</span><span class="s2">"name"</span><span class="p">:</span> <span class="n">guest_dataset</span><span class="p">[</span><span class="s1">'name'</span><span class="p">][</span><span class="n">i</span><span class="p">]}</span>
+    <span class="p">)</span>
+    <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">guest_dataset</span><span class="p">))</span>
+<span class="p">]</span>
+</code></pre></div>
+
+
+
+</section>
+<section class="hfoption" markdown="block">
+<p class="hfoption-label">langgraph</p>
+
+
+Hugging Faceの `datasets` ライブラリを使ってデータセットを読み込み、`langchain.docstore.document` モジュールの `Document` オブジェクトのリストに変換します。
+
+
+<div class="codehilite"><pre><span></span><code><span class="kn">import</span><span class="w"> </span><span class="nn">datasets</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">langchain_core.documents</span><span class="w"> </span><span class="kn">import</span> <span class="n">Document</span>
+
+<span class="c1"># データセットを読み込む</span>
+<span class="n">guest_dataset</span> <span class="o">=</span> <span class="n">datasets</span><span class="o">.</span><span class="n">load_dataset</span><span class="p">(</span><span class="s2">"agents-course/unit3-invitees"</span><span class="p">,</span> <span class="n">split</span><span class="o">=</span><span class="s2">"train"</span><span class="p">)</span>
+
+<span class="c1"># データセットのエントリをDocumentオブジェクトに変換する</span>
+<span class="n">docs</span> <span class="o">=</span> <span class="p">[</span>
+    <span class="n">Document</span><span class="p">(</span>
+        <span class="n">page_content</span><span class="o">=</span><span class="s2">"</span><span class="se">\n</span><span class="s2">"</span><span class="o">.</span><span class="n">join</span><span class="p">([</span>
+            <span class="sa">f</span><span class="s2">"Name: </span><span class="si">{</span><span class="n">guest</span><span class="p">[</span><span class="s1">'name'</span><span class="p">]</span><span class="si">}</span><span class="s2">"</span><span class="p">,</span>
+            <span class="sa">f</span><span class="s2">"Relation: </span><span class="si">{</span><span class="n">guest</span><span class="p">[</span><span class="s1">'relation'</span><span class="p">]</span><span class="si">}</span><span class="s2">"</span><span class="p">,</span>
+            <span class="sa">f</span><span class="s2">"Description: </span><span class="si">{</span><span class="n">guest</span><span class="p">[</span><span class="s1">'description'</span><span class="p">]</span><span class="si">}</span><span class="s2">"</span><span class="p">,</span>
+            <span class="sa">f</span><span class="s2">"Email: </span><span class="si">{</span><span class="n">guest</span><span class="p">[</span><span class="s1">'email'</span><span class="p">]</span><span class="si">}</span><span class="s2">"</span>
+        <span class="p">]),</span>
+        <span class="n">metadata</span><span class="o">=</span><span class="p">{</span><span class="s2">"name"</span><span class="p">:</span> <span class="n">guest</span><span class="p">[</span><span class="s2">"name"</span><span class="p">]}</span>
+    <span class="p">)</span>
+    <span class="k">for</span> <span class="n">guest</span> <span class="ow">in</span> <span class="n">guest_dataset</span>
+<span class="p">]</span>
+</code></pre></div>
+
+
+
+</section>
+</div>
+
+<p>上のコードでは、次のことをしています。
+- データセットを読み込む
+- 各ゲストのエントリを、整形された内容を持つ <code>Document</code> オブジェクトに変換する
+- <code>Document</code> オブジェクトをリストに格納する</p>
+<p>これで、すべてのデータがきれいに利用できるようになりました。検索の設定を始められます。</p>
+<h3>ステップ2: リトリーバーツールの作成</h3>
+<p>では、Alfredがゲスト情報を検索できるカスタムツールを作成しましょう。</p>
+<div class="hfoptions">
+<section class="hfoption" markdown="block">
+<p class="hfoption-label">smolagents</p>
+
+
+`langchain_community.retrievers` モジュールの `BM25Retriever` を使ってリトリーバーツールを作成します。
+
+<div class="callout callout-tip" markdown="block">
+<p class="callout-title">💡 ヒント</p>
+<code>BM25Retriever</code> は検索の良い出発点ですが、より高度なセマンティック検索には、<a href="https://www.sbert.net/">sentence-transformers</a> のような埋め込みベースのリトリーバーの利用も検討できます。
+</div>
+
+
+
+<div class="codehilite"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">smolagents</span><span class="w"> </span><span class="kn">import</span> <span class="n">Tool</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">langchain_community.retrievers</span><span class="w"> </span><span class="kn">import</span> <span class="n">BM25Retriever</span>
+
+<span class="k">class</span><span class="w"> </span><span class="nc">GuestInfoRetrieverTool</span><span class="p">(</span><span class="n">Tool</span><span class="p">):</span>
+    <span class="n">name</span> <span class="o">=</span> <span class="s2">"guest_info_retriever"</span>
+    <span class="n">description</span> <span class="o">=</span> <span class="s2">"Retrieves detailed information about gala guests based on their name or relation."</span>
+    <span class="n">inputs</span> <span class="o">=</span> <span class="p">{</span>
+        <span class="s2">"query"</span><span class="p">:</span> <span class="p">{</span>
+            <span class="s2">"type"</span><span class="p">:</span> <span class="s2">"string"</span><span class="p">,</span>
+            <span class="s2">"description"</span><span class="p">:</span> <span class="s2">"The name or relation of the guest you want information about."</span>
+        <span class="p">}</span>
+    <span class="p">}</span>
+    <span class="n">output_type</span> <span class="o">=</span> <span class="s2">"string"</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">docs</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">is_initialized</span> <span class="o">=</span> <span class="kc">False</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">retriever</span> <span class="o">=</span> <span class="n">BM25Retriever</span><span class="o">.</span><span class="n">from_documents</span><span class="p">(</span><span class="n">docs</span><span class="p">)</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">forward</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">query</span><span class="p">:</span> <span class="nb">str</span><span class="p">):</span>
+        <span class="n">results</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">retriever</span><span class="o">.</span><span class="n">invoke</span><span class="p">(</span><span class="n">query</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">results</span><span class="p">:</span>
+            <span class="k">return</span> <span class="s2">"</span><span class="se">\n\n</span><span class="s2">"</span><span class="o">.</span><span class="n">join</span><span class="p">([</span><span class="n">doc</span><span class="o">.</span><span class="n">page_content</span> <span class="k">for</span> <span class="n">doc</span> <span class="ow">in</span> <span class="n">results</span><span class="p">[:</span><span class="mi">3</span><span class="p">]])</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">return</span> <span class="s2">"No matching guest information found."</span>
+
+<span class="c1"># ツールを初期化する</span>
+<span class="n">guest_info_tool</span> <span class="o">=</span> <span class="n">GuestInfoRetrieverTool</span><span class="p">(</span><span class="n">docs</span><span class="p">)</span>
+</code></pre></div>
+
+
+
+このツールをステップごとに見ていきましょう。
+- `name` と `description` は、エージェントがこのツールをいつ、どう使うかを理解する助けになります
+- `inputs` はツールが期待するパラメータを定義します（この場合は検索クエリ）
+- 埋め込みを必要としない強力なテキスト検索アルゴリズムである `BM25Retriever` を使っています
+- `forward` メソッドはクエリを処理し、最も関連性の高いゲスト情報を返します
+
+</section>
+<section class="hfoption" markdown="block">
+<p class="hfoption-label">llama-index</p>
+
+
+`llama_index.retrievers.bm25` モジュールの `BM25Retriever` を使ってリトリーバーツールを作成します。
+
+<div class="callout callout-tip" markdown="block">
+<p class="callout-title">💡 ヒント</p>
+<code>BM25Retriever</code> は検索の良い出発点ですが、より高度なセマンティック検索には、<a href="https://www.sbert.net/">sentence-transformers</a> のような埋め込みベースのリトリーバーの利用も検討できます。
+</div>
+
+
+
+<div class="codehilite"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">llama_index.core.tools</span><span class="w"> </span><span class="kn">import</span> <span class="n">FunctionTool</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">llama_index.retrievers.bm25</span><span class="w"> </span><span class="kn">import</span> <span class="n">BM25Retriever</span>
+
+<span class="n">bm25_retriever</span> <span class="o">=</span> <span class="n">BM25Retriever</span><span class="o">.</span><span class="n">from_defaults</span><span class="p">(</span><span class="n">nodes</span><span class="o">=</span><span class="n">docs</span><span class="p">)</span>
+
+<span class="k">def</span><span class="w"> </span><span class="nf">get_guest_info_retriever</span><span class="p">(</span><span class="n">query</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""Retrieves detailed information about gala guests based on their name or relation."""</span>
+    <span class="n">results</span> <span class="o">=</span> <span class="n">bm25_retriever</span><span class="o">.</span><span class="n">retrieve</span><span class="p">(</span><span class="n">query</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">results</span><span class="p">:</span>
+        <span class="k">return</span> <span class="s2">"</span><span class="se">\n\n</span><span class="s2">"</span><span class="o">.</span><span class="n">join</span><span class="p">([</span><span class="n">doc</span><span class="o">.</span><span class="n">text</span> <span class="k">for</span> <span class="n">doc</span> <span class="ow">in</span> <span class="n">results</span><span class="p">[:</span><span class="mi">3</span><span class="p">]])</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="k">return</span> <span class="s2">"No matching guest information found."</span>
+
+<span class="c1"># ツールを初期化する</span>
+<span class="n">guest_info_tool</span> <span class="o">=</span> <span class="n">FunctionTool</span><span class="o">.</span><span class="n">from_defaults</span><span class="p">(</span><span class="n">get_guest_info_retriever</span><span class="p">)</span>
+</code></pre></div>
+
+
+
+このツールをステップごとに見ていきましょう。
+- docstringは、エージェントがこのツールをいつ、どう使うかを理解する助けになります
+- 型デコレータはツールが期待するパラメータを定義します（この場合は検索クエリ）
+- 埋め込みを必要としない強力なテキスト検索アルゴリズムである `BM25Retriever` を使っています
+- メソッドはクエリを処理し、最も関連性の高いゲスト情報を返します
+
+</section>
+<section class="hfoption" markdown="block">
+<p class="hfoption-label">langgraph</p>
+
+
+`langchain_community.retrievers` モジュールの `BM25Retriever` を使ってリトリーバーツールを作成します。
+
+<div class="callout callout-tip" markdown="block">
+<p class="callout-title">💡 ヒント</p>
+<code>BM25Retriever</code> は検索の良い出発点ですが、より高度なセマンティック検索には、<a href="https://www.sbert.net/">sentence-transformers</a> のような埋め込みベースのリトリーバーの利用も検討できます。
+</div>
+
+
+
+<div class="codehilite"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">langchain_community.retrievers</span><span class="w"> </span><span class="kn">import</span> <span class="n">BM25Retriever</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">langchain_core.tools</span><span class="w"> </span><span class="kn">import</span> <span class="n">Tool</span>
+
+<span class="n">bm25_retriever</span> <span class="o">=</span> <span class="n">BM25Retriever</span><span class="o">.</span><span class="n">from_documents</span><span class="p">(</span><span class="n">docs</span><span class="p">)</span>
+
+<span class="k">def</span><span class="w"> </span><span class="nf">extract_text</span><span class="p">(</span><span class="n">query</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""Retrieves detailed information about gala guests based on their name or relation."""</span>
+    <span class="n">results</span> <span class="o">=</span> <span class="n">bm25_retriever</span><span class="o">.</span><span class="n">invoke</span><span class="p">(</span><span class="n">query</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">results</span><span class="p">:</span>
+        <span class="k">return</span> <span class="s2">"</span><span class="se">\n\n</span><span class="s2">"</span><span class="o">.</span><span class="n">join</span><span class="p">([</span><span class="n">doc</span><span class="o">.</span><span class="n">page_content</span> <span class="k">for</span> <span class="n">doc</span> <span class="ow">in</span> <span class="n">results</span><span class="p">[:</span><span class="mi">3</span><span class="p">]])</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="k">return</span> <span class="s2">"No matching guest information found."</span>
+
+<span class="n">guest_info_tool</span> <span class="o">=</span> <span class="n">Tool</span><span class="p">(</span>
+    <span class="n">name</span><span class="o">=</span><span class="s2">"guest_info_retriever"</span><span class="p">,</span>
+    <span class="n">func</span><span class="o">=</span><span class="n">extract_text</span><span class="p">,</span>
+    <span class="n">description</span><span class="o">=</span><span class="s2">"Retrieves detailed information about gala guests based on their name or relation."</span>
+<span class="p">)</span>
+</code></pre></div>
+
+
+
+このツールをステップごとに見ていきましょう。
+- `name` と `description` は、エージェントがこのツールをいつ、どう使うかを理解する助けになります
+- 型デコレータはツールが期待するパラメータを定義します（この場合は検索クエリ）
+- 埋め込みを必要としない強力なテキスト検索アルゴリズムである `BM25Retriever` を使っています
+- メソッドはクエリを処理し、最も関連性の高いゲスト情報を返します
+
+
+</section>
+</div>
+
+<h3>ステップ3: ツールとAlfredの統合</h3>
+<p>最後に、エージェントを作成し、カスタムツールを装備させて、すべてをまとめましょう。</p>
+<div class="hfoptions">
+<section class="hfoption" markdown="block">
+<p class="hfoption-label">smolagents</p>
+
+
+
+<div class="codehilite"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">smolagents</span><span class="w"> </span><span class="kn">import</span> <span class="n">CodeAgent</span><span class="p">,</span> <span class="n">InferenceClientModel</span>
+
+<span class="c1"># Hugging Faceモデルを初期化する</span>
+<span class="n">model</span> <span class="o">=</span> <span class="n">InferenceClientModel</span><span class="p">()</span>
+
+<span class="c1"># ゲスト情報ツールを持った、ガラ用エージェントのAlfredを作成する</span>
+<span class="n">alfred</span> <span class="o">=</span> <span class="n">CodeAgent</span><span class="p">(</span><span class="n">tools</span><span class="o">=</span><span class="p">[</span><span class="n">guest_info_tool</span><span class="p">],</span> <span class="n">model</span><span class="o">=</span><span class="n">model</span><span class="p">)</span>
+
+<span class="c1"># ガラの最中にAlfredが受け取りそうなクエリの例</span>
+<span class="n">response</span> <span class="o">=</span> <span class="n">alfred</span><span class="o">.</span><span class="n">run</span><span class="p">(</span><span class="s2">"Tell me about our guest named 'Lady Ada Lovelace'."</span><span class="p">)</span>
+
+<span class="nb">print</span><span class="p">(</span><span class="s2">"🎩 Alfredの応答："</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">response</span><span class="p">)</span>
+</code></pre></div>
+
+
+
+期待される出力：
+
+
+<div class="codehilite"><pre><span></span><code>🎩 Alfredの応答：
+Based on the information I retrieved, Lady Ada Lovelace is an esteemed mathematician and friend. She is renowned for her pioneering work in mathematics and computing, often celebrated as the first computer programmer due to her work on Charles Babbage's Analytical Engine. Her email address is ada.lovelace@example.com.
+</code></pre></div>
+
+
+
+この最終ステップで起きていること：
+- `InferenceClientModel` クラスを使ってHugging Faceモデルを初期化します
+- エージェント（Alfred）を、問題解決のためにPythonコードを実行できる `CodeAgent` として作成します
+- 「Lady Ada Lovelace」という名前のゲストに関する情報を取得するようAlfredに頼みます
+
+</section>
+<section class="hfoption" markdown="block">
+<p class="hfoption-label">llama-index</p>
+
+
+
+<div class="codehilite"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">llama_index.core.agent.workflow</span><span class="w"> </span><span class="kn">import</span> <span class="n">AgentWorkflow</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">llama_index.llms.huggingface_api</span><span class="w"> </span><span class="kn">import</span> <span class="n">HuggingFaceInferenceAPI</span>
+
+<span class="c1"># Hugging Faceモデルを初期化する</span>
+<span class="n">llm</span> <span class="o">=</span> <span class="n">HuggingFaceInferenceAPI</span><span class="p">(</span><span class="n">model_name</span><span class="o">=</span><span class="s2">"Qwen/Qwen2.5-Coder-32B-Instruct"</span><span class="p">)</span>
+
+<span class="c1"># ゲスト情報ツールを持った、ガラ用エージェントのAlfredを作成する</span>
+<span class="n">alfred</span> <span class="o">=</span> <span class="n">AgentWorkflow</span><span class="o">.</span><span class="n">from_tools_or_functions</span><span class="p">(</span>
+    <span class="p">[</span><span class="n">guest_info_tool</span><span class="p">],</span>
+    <span class="n">llm</span><span class="o">=</span><span class="n">llm</span><span class="p">,</span>
+<span class="p">)</span>
+
+<span class="c1"># ガラの最中にAlfredが受け取りそうなクエリの例</span>
+<span class="n">response</span> <span class="o">=</span> <span class="k">await</span> <span class="n">alfred</span><span class="o">.</span><span class="n">run</span><span class="p">(</span><span class="s2">"Tell me about our guest named 'Lady Ada Lovelace'."</span><span class="p">)</span>
+
+<span class="nb">print</span><span class="p">(</span><span class="s2">"🎩 Alfredの応答："</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">response</span><span class="p">)</span>
+</code></pre></div>
+
+
+
+期待される出力：
+
+
+<div class="codehilite"><pre><span></span><code>🎩 Alfredの応答：
+Lady Ada Lovelace is an esteemed mathematician and friend, renowned for her pioneering work in mathematics and computing. She is celebrated as the first computer programmer due to her work on Charles Babbage's Analytical Engine. Her email is ada.lovelace@example.com.
+</code></pre></div>
+
+
+
+この最終ステップで起きていること：
+- `HuggingFaceInferenceAPI` クラスを使ってHugging Faceモデルを初期化します
+- 作成したばかりのツールを含め、エージェント（Alfred）を `AgentWorkflow` として作成します
+- 「Lady Ada Lovelace」という名前のゲストに関する情報を取得するようAlfredに頼みます
+
+</section>
+<section class="hfoption" markdown="block">
+<p class="hfoption-label">langgraph</p>
+
+
+
+<div class="codehilite"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">TypedDict</span><span class="p">,</span> <span class="n">Annotated</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">langgraph.graph.message</span><span class="w"> </span><span class="kn">import</span> <span class="n">add_messages</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">langchain_core.messages</span><span class="w"> </span><span class="kn">import</span> <span class="n">AnyMessage</span><span class="p">,</span> <span class="n">HumanMessage</span><span class="p">,</span> <span class="n">AIMessage</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">langgraph.prebuilt</span><span class="w"> </span><span class="kn">import</span> <span class="n">ToolNode</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">langgraph.graph</span><span class="w"> </span><span class="kn">import</span> <span class="n">START</span><span class="p">,</span> <span class="n">StateGraph</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">langgraph.prebuilt</span><span class="w"> </span><span class="kn">import</span> <span class="n">tools_condition</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">langchain_huggingface</span><span class="w"> </span><span class="kn">import</span> <span class="n">HuggingFaceEndpoint</span><span class="p">,</span> <span class="n">ChatHuggingFace</span>
+
+<span class="c1"># ツールを含むチャットインターフェースを生成する</span>
+<span class="n">llm</span> <span class="o">=</span> <span class="n">HuggingFaceEndpoint</span><span class="p">(</span>
+    <span class="n">repo_id</span><span class="o">=</span><span class="s2">"Qwen/Qwen2.5-Coder-32B-Instruct"</span><span class="p">,</span>
+    <span class="n">huggingfacehub_api_token</span><span class="o">=</span><span class="n">HUGGINGFACEHUB_API_TOKEN</span><span class="p">,</span>
+<span class="p">)</span>
+
+<span class="n">chat</span> <span class="o">=</span> <span class="n">ChatHuggingFace</span><span class="p">(</span><span class="n">llm</span><span class="o">=</span><span class="n">llm</span><span class="p">,</span> <span class="n">verbose</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+<span class="n">tools</span> <span class="o">=</span> <span class="p">[</span><span class="n">guest_info_tool</span><span class="p">]</span>
+<span class="n">chat_with_tools</span> <span class="o">=</span> <span class="n">chat</span><span class="o">.</span><span class="n">bind_tools</span><span class="p">(</span><span class="n">tools</span><span class="p">)</span>
+
+<span class="c1"># AgentStateとエージェントのグラフを生成する</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">AgentState</span><span class="p">(</span><span class="n">TypedDict</span><span class="p">):</span>
+    <span class="n">messages</span><span class="p">:</span> <span class="n">Annotated</span><span class="p">[</span><span class="nb">list</span><span class="p">[</span><span class="n">AnyMessage</span><span class="p">],</span> <span class="n">add_messages</span><span class="p">]</span>
+
+<span class="k">def</span><span class="w"> </span><span class="nf">assistant</span><span class="p">(</span><span class="n">state</span><span class="p">:</span> <span class="n">AgentState</span><span class="p">):</span>
+    <span class="k">return</span> <span class="p">{</span>
+        <span class="s2">"messages"</span><span class="p">:</span> <span class="p">[</span><span class="n">chat_with_tools</span><span class="o">.</span><span class="n">invoke</span><span class="p">(</span><span class="n">state</span><span class="p">[</span><span class="s2">"messages"</span><span class="p">])],</span>
+    <span class="p">}</span>
+
+<span class="c1">## グラフ</span>
+<span class="n">builder</span> <span class="o">=</span> <span class="n">StateGraph</span><span class="p">(</span><span class="n">AgentState</span><span class="p">)</span>
+
+<span class="c1"># ノードを定義する: 実際の処理を行う</span>
+<span class="n">builder</span><span class="o">.</span><span class="n">add_node</span><span class="p">(</span><span class="s2">"assistant"</span><span class="p">,</span> <span class="n">assistant</span><span class="p">)</span>
+<span class="n">builder</span><span class="o">.</span><span class="n">add_node</span><span class="p">(</span><span class="s2">"tools"</span><span class="p">,</span> <span class="n">ToolNode</span><span class="p">(</span><span class="n">tools</span><span class="p">))</span>
+
+<span class="c1"># エッジを定義する: 制御フローの動きを決める</span>
+<span class="n">builder</span><span class="o">.</span><span class="n">add_edge</span><span class="p">(</span><span class="n">START</span><span class="p">,</span> <span class="s2">"assistant"</span><span class="p">)</span>
+<span class="n">builder</span><span class="o">.</span><span class="n">add_conditional_edges</span><span class="p">(</span>
+    <span class="s2">"assistant"</span><span class="p">,</span>
+    <span class="c1"># 最新のメッセージがツールを必要とする場合は、ツールへルーティングする</span>
+    <span class="c1"># それ以外の場合は、直接応答する</span>
+    <span class="n">tools_condition</span><span class="p">,</span>
+<span class="p">)</span>
+<span class="n">builder</span><span class="o">.</span><span class="n">add_edge</span><span class="p">(</span><span class="s2">"tools"</span><span class="p">,</span> <span class="s2">"assistant"</span><span class="p">)</span>
+<span class="n">alfred</span> <span class="o">=</span> <span class="n">builder</span><span class="o">.</span><span class="n">compile</span><span class="p">()</span>
+
+<span class="n">messages</span> <span class="o">=</span> <span class="p">[</span><span class="n">HumanMessage</span><span class="p">(</span><span class="n">content</span><span class="o">=</span><span class="s2">"Tell me about our guest named 'Lady Ada Lovelace'."</span><span class="p">)]</span>
+<span class="n">response</span> <span class="o">=</span> <span class="n">alfred</span><span class="o">.</span><span class="n">invoke</span><span class="p">({</span><span class="s2">"messages"</span><span class="p">:</span> <span class="n">messages</span><span class="p">})</span>
+
+<span class="nb">print</span><span class="p">(</span><span class="s2">"🎩 Alfredの応答："</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">response</span><span class="p">[</span><span class="s1">'messages'</span><span class="p">][</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">content</span><span class="p">)</span>
+</code></pre></div>
+
+
+
+期待される出力：
+
+
+<div class="codehilite"><pre><span></span><code>🎩 Alfredの応答：
+Lady Ada Lovelace is an esteemed mathematician and pioneer in computing, often celebrated as the first computer programmer due to her work on Charles Babbage's Analytical Engine.
+</code></pre></div>
+
+
+
+この最終ステップで起きていること：
+- `HuggingFaceEndpoint` クラスを使ってHugging Faceモデルを初期化します。あわせてチャットインターフェースを生成し、ツールを追加します
+- エージェント（Alfred）を、2つのノード（`assistant`、`tools`）をエッジで結んだ `StateGraph` として作成します
+- 「Lady Ada Lovelace」という名前のゲストに関する情報を取得するようAlfredに頼みます
+
+</section>
+</div>
+
+<h2>やり取りの例</h2>
+<p>ガラの最中、会話は次のように進むかもしれません。</p>
+<p><strong>あなた：</strong> 「Alfred、大使と話しているあの紳士は誰ですか？」</p>
+<p><strong>Alfred:</strong> <em>ゲストのデータベースを素早く検索して</em> 「Dr. Nikola Teslaです。大学時代の古い友人です。最近、新しい無線エネルギー伝送システムの特許を取得し、あなたと議論できればとても喜ぶはずです。彼はハトに情熱を持っているので、世間話の良い話題になるでしょう」</p>
+<div class="codehilite"><pre><span></span><code><span class="p">{</span>
+<span class="w">    </span><span class="nt">"name"</span><span class="p">:</span><span class="w"> </span><span class="s2">"Dr. Nikola Tesla"</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">"relation"</span><span class="p">:</span><span class="w"> </span><span class="s2">"old friend from university days"</span><span class="p">,</span><span class="w">  </span>
+<span class="w">    </span><span class="nt">"description"</span><span class="p">:</span><span class="w"> </span><span class="s2">"Dr. Nikola Tesla is an old friend from your university days. He's recently patented a new wireless energy transmission system and would be delighted to discuss it with you. Just remember he's passionate about pigeons, so that might make for good small talk."</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">"email"</span><span class="p">:</span><span class="w"> </span><span class="s2">"nikola.tesla@gmail.com"</span>
+<span class="p">}</span>
+</code></pre></div>
+
+<h2>さらに発展させる</h2>
+<p>Alfredがゲスト情報を取得できるようになったので、このシステムをどう強化できるか考えてみましょう。</p>
+<ol>
+<li><strong>リトリーバーを改良</strong> して、<a href="https://www.sbert.net/">sentence-transformers</a> のような、より高度なアルゴリズムを使う</li>
+<li><strong>会話メモリを実装</strong> して、Alfredが以前のやり取りを覚えられるようにする</li>
+<li><strong>Web検索と組み合わせ</strong> て、面識のないゲストの最新情報を取得する</li>
+<li><strong>複数のインデックスを統合</strong> して、検証済みの情報源からより完全な情報を得る</li>
+</ol>
+<p>これでAlfredは、ゲストからの問い合わせに難なく対応できるようになりました。あなたのガラが、今世紀で最も洗練され、楽しいイベントとして記憶に残ることは間違いありません！</p>
+<div class="callout callout-tip">
+<p class="callout-title">💡 ヒント</p>
+<p>リトリーバーツールを拡張して、各ゲストの興味や背景に基づく会話のきっかけも返すようにしてみましょう。ツールをどう変更すれば実現できますか？</p>
+<p>できあがったら、ゲストリトリーバーツールを <code>retriever.py</code> ファイルに実装してください。</p>
+</div>
+</article>
+<nav class="page-nav"><a class="nav-link prev" href="agentic-rag.html">← 前へ: Agenticな検索拡張生成（RAG）</a><a class="nav-link toc-link" href="../../index.html">目次へ</a><a class="nav-link next" href="tools.html">次へ →: エージェントのためのツールの構築と統合</a></nav>
+</main>
+<footer class="site-footer">
+  <p>原典: Hugging Face huggingface/agents-course（<a href="https://github.com/huggingface/agents-course">https://github.com/huggingface/agents-course</a>）</p>
+  <p>日本語版の翻訳・公開: 霞ヶ関京 / 連絡先: GitHub <a href="https://github.com/yanikasumin">@yanikasumin</a> / YouTube <a href="https://www.youtube.com/@KASUMI_MOF">@KASUMI_MOF</a></p>
+  <p class="demo-note">このサイトはデモ版です。内容は順次更新されます。</p>
+</footer>
+<script src="../../../site.js"></script>
+</body>
+</html>
