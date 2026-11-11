@@ -1,269 +1,447 @@
-/* Hugging Face コース日本語版（デモ版）— JPMorgan 日本語版と同系統のデザイン */
+/* Hugging Face コース日本語版（デモ版）— Hugging Face 本家風ダークテーマ
+   参考: huggingface.co（ダーク: #0B0F19 基調、HF イエロー #FFD21E、大きめの角丸、サンセリフ） */
 :root {
-  --bg: #FAF6EF;
-  --ink: #1D2732;
-  --navy: #14324F;
-  --gold: #A96F14;
-  --card: #FFFFFF;
-  --line: #E3DCCB;
-  --ok: #1E7B34;
-  --ng: #B3261E;
+  --bg: #0B0F19;
+  --bg-soft: #0E1422;
+  --surface: #131A2A;
+  --surface-2: #1A2338;
+  --border: #242E47;
+  --border-soft: #1C2537;
+  --text: #E6EAF2;
+  --body: #C3CAD8;
+  --muted: #8B96AB;
+  --yellow: #FFD21E;
+  --yellow-soft: #FFDF4D;
+  --ok: #34D399;
+  --ok-bg: rgba(52, 211, 153, .12);
+  --ng: #F87171;
+  --ng-bg: rgba(248, 113, 113, .12);
+  --amber: #FBBF24;
+  --blue: #60A5FA;
+  --radius: 12px;
+  --header-h: 58px;
 }
 * { box-sizing: border-box; }
+html { scroll-behavior: smooth; }
 body {
   margin: 0;
   background: var(--bg);
-  color: var(--ink);
-  font-family: "Zen Kaku Gothic New", "Hiragino Kaku Gothic ProN", sans-serif;
-  line-height: 1.8;
+  color: var(--body);
+  font-family: "Inter", "Zen Kaku Gothic New", "Hiragino Kaku Gothic ProN", "Noto Sans JP", sans-serif;
+  line-height: 1.85;
   font-size: 16px;
+  -webkit-font-smoothing: antialiased;
 }
-a { color: var(--navy); text-decoration-color: var(--gold); }
-a:hover { color: var(--gold); }
-h1, h2, h3, h4 {
-  font-family: "Shippori Mincho", "Hiragino Mincho ProN", serif;
-  color: var(--navy);
-  line-height: 1.4;
+::selection { background: rgba(255, 210, 30, .35); color: #FFF; }
+a { color: var(--yellow-soft); text-decoration: none; }
+a:hover { color: var(--yellow); text-decoration: underline; text-underline-offset: 3px; }
+h1, h2, h3, h4, h5, h6 {
+  font-family: inherit;
+  color: var(--text);
+  line-height: 1.45;
+  font-weight: 700;
+  letter-spacing: .01em;
 }
-h1 { font-size: 1.9rem; border-bottom: 3px double var(--gold); padding-bottom: .3em; }
-h2 { font-size: 1.45rem; border-bottom: 1px solid var(--line); padding-bottom: .2em; margin-top: 1.6em; }
-h3 { font-size: 1.2rem; margin-top: 1.4em; }
+h1 { font-size: 1.85rem; font-weight: 800; border-bottom: 1px solid var(--border); padding-bottom: .45em; margin-top: .2em; }
+h2 { font-size: 1.42rem; border-bottom: 1px solid var(--border-soft); padding-bottom: .3em; margin-top: 1.7em; }
+h3 { font-size: 1.18rem; margin-top: 1.5em; }
+h4 { font-size: 1.02rem; margin-top: 1.3em; }
 code, pre, kbd {
-  font-family: "IBM Plex Mono", "Menlo", monospace;
+  font-family: "IBM Plex Mono", "Menlo", "Consolas", monospace;
 }
 :not(pre) > code {
-  background: #F1EAD8;
-  padding: .1em .35em;
-  border-radius: 4px;
-  font-size: .88em;
+  background: var(--surface-2);
+  color: #F2D06B;
+  padding: .12em .4em;
+  border-radius: 6px;
+  font-size: .87em;
+  border: 1px solid var(--border-soft);
 }
+hr { border: none; border-top: 1px solid var(--border-soft); margin: 2em 0; }
+
+/* ---------- ヘッダー ---------- */
 .site-header {
-  background: var(--navy);
-  color: #FFF;
+  position: sticky;
+  top: 0;
+  z-index: 50;
+  background: rgba(11, 15, 25, .92);
+  backdrop-filter: blur(10px);
+  border-bottom: 1px solid var(--border);
 }
 .header-inner {
-  max-width: 880px;
+  max-width: 1320px;
   margin: 0 auto;
-  padding: .7rem 1rem;
+  padding: 0 1.1rem;
+  height: var(--header-h);
   display: flex;
   align-items: center;
-  gap: .8rem;
+  gap: 1.1rem;
 }
-.site-title {
-  color: #FFF;
-  font-family: "Shippori Mincho", serif;
-  font-size: 1.15rem;
-  font-weight: 700;
+.site-logo {
+  display: flex;
+  align-items: center;
+  gap: .5rem;
   text-decoration: none;
-  white-space: nowrap;
+  flex: 0 0 auto;
 }
-.demo-badge {
-  background: var(--gold);
-  color: #FFF;
-  font-size: .75rem;
+.site-logo:hover { text-decoration: none; }
+.logo-face { font-size: 1.45rem; line-height: 1; }
+.site-title {
+  color: var(--text);
+  font-size: 1.02rem;
   font-weight: 700;
-  padding: .1em .6em;
+  white-space: nowrap;
+  letter-spacing: .02em;
+}
+.course-nav {
+  display: flex;
+  align-items: center;
+  gap: .15rem;
+  overflow-x: auto;
+  scrollbar-width: none;
+  flex: 1 1 auto;
+}
+.course-nav::-webkit-scrollbar { display: none; }
+.course-nav a {
+  color: var(--muted);
+  font-size: .92rem;
+  font-weight: 600;
+  padding: .38em .75em;
+  border-radius: 8px;
+  white-space: nowrap;
+  text-decoration: none;
+}
+.course-nav a:hover { color: var(--text); background: var(--surface-2); text-decoration: none; }
+.course-nav a.active { color: var(--yellow); background: rgba(255, 210, 30, .1); }
+.demo-badge {
+  background: var(--yellow);
+  color: #131313;
+  font-size: .74rem;
+  font-weight: 800;
+  padding: .22em .7em;
   border-radius: 999px;
   white-space: nowrap;
+  flex: 0 0 auto;
+  letter-spacing: .04em;
+}
+
+/* ---------- レイアウト ---------- */
+.layout {
+  display: flex;
+  align-items: flex-start;
+  max-width: 1320px;
+  margin: 0 auto;
 }
 .container {
-  max-width: 880px;
-  margin: 0 auto;
-  padding: 1.2rem 1rem 2rem;
+  flex: 1 1 auto;
+  min-width: 0;
+  max-width: 900px;
+  padding: 1.6rem 1.4rem 2.5rem;
 }
-.demo-banner {
-  background: #FDF3D8;
-  border: 1px solid var(--gold);
+.layout.no-sidebar .container { margin: 0 auto; }
+
+/* ---------- サイドバー（セクションページ） ---------- */
+.sidebar {
+  flex: 0 0 288px;
+  width: 288px;
+  position: sticky;
+  top: var(--header-h);
+  max-height: calc(100vh - var(--header-h));
+  overflow-y: auto;
+  padding: 1.3rem 1rem 2rem 1.1rem;
+  border-right: 1px solid var(--border-soft);
+  scrollbar-width: thin;
+  scrollbar-color: var(--border) transparent;
+}
+.sidebar-course { margin-bottom: 1rem; }
+.sidebar-course a {
+  color: var(--text);
+  font-weight: 700;
+  font-size: 1rem;
+  text-decoration: none;
+}
+.sidebar-course a:hover { color: var(--yellow); }
+.sidebar-course .badge { margin-top: .5em; white-space: normal; }
+.side-group {
+  color: var(--muted);
+  font-size: .74rem;
+  font-weight: 700;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+  margin: 1.3em 0 .45em;
+  line-height: 1.5;
+}
+.side-list { list-style: none; margin: 0; padding: 0; }
+.side-link {
+  display: block;
+  color: var(--body);
+  font-size: .9rem;
+  line-height: 1.55;
+  padding: .34em .6em;
   border-radius: 8px;
-  padding: .8rem 1rem;
+  border-left: 3px solid transparent;
+  text-decoration: none;
 }
+.side-link:hover { background: var(--surface); color: var(--text); text-decoration: none; }
+.side-link.active {
+  background: rgba(255, 210, 30, .09);
+  color: var(--yellow);
+  border-left-color: var(--yellow);
+  font-weight: 600;
+}
+
+/* ---------- バッジ・バナー ---------- */
 .badge {
   display: inline-block;
-  font-size: .8rem;
+  font-size: .78rem;
   font-weight: 700;
-  padding: .15em .7em;
+  padding: .18em .75em;
   border-radius: 999px;
   white-space: nowrap;
+  line-height: 1.6;
 }
-.badge-qa-pass { background: #E2F2E4; color: var(--ok); border: 1px solid var(--ok); }
-.badge-qa-wip { background: #FDF3D8; color: #7A5410; border: 1px solid var(--gold); }
-.course-card .badge { white-space: normal; line-height: 1.5; }
+.badge-qa-pass { background: var(--ok-bg); color: var(--ok); border: 1px solid rgba(52, 211, 153, .45); }
+.badge-qa-wip { background: rgba(251, 191, 36, .1); color: var(--amber); border: 1px solid rgba(251, 191, 36, .4); }
+.course-card .badge { white-space: normal; }
+.demo-banner {
+  background: var(--yellow);
+  color: #181818;
+  border-radius: var(--radius);
+  padding: .95rem 1.15rem;
+  font-size: .96rem;
+  line-height: 1.7;
+  margin: 1.2rem 0 .4rem;
+}
+.demo-banner strong { font-weight: 800; }
+
+/* ---------- トップページ ---------- */
 .course-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
-  gap: 1rem;
-  margin-top: 1rem;
+  grid-template-columns: repeat(auto-fill, minmax(258px, 1fr));
+  gap: 1.1rem;
+  margin-top: 1.4rem;
 }
 .course-card {
-  background: var(--card);
-  border: 1px solid var(--line);
-  border-radius: 10px;
-  padding: 1rem 1.1rem;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  padding: 1.15rem 1.25rem 1.25rem;
+  transition: border-color .15s ease, transform .15s ease;
 }
-.course-card h2 { border: none; margin-top: 0; font-size: 1.3rem; }
-.course-card h2 a { text-decoration: none; }
-.course-en { color: #5A6B7A; font-size: .9rem; margin-top: -.4em; }
-.course-meta { font-size: .9rem; }
+.course-card:hover { border-color: rgba(255, 210, 30, .55); transform: translateY(-2px); }
+.course-card h2 { border: none; margin: 0 0 .15em; font-size: 1.28rem; padding: 0; }
+.course-card h2 a { color: var(--text); text-decoration: none; }
+.course-card h2 a:hover { color: var(--yellow); }
+.course-en { color: var(--muted); font-size: .88rem; margin: .1em 0 .7em; }
+.course-meta { font-size: .9rem; color: var(--body); }
+.course-meta a { color: var(--muted); }
+.course-meta a:hover { color: var(--yellow-soft); }
 .btn {
   display: inline-block;
-  background: var(--navy);
-  color: #FFF;
-  padding: .45em 1.2em;
-  border-radius: 6px;
+  background: var(--yellow);
+  color: #131313;
+  padding: .5em 1.25em;
+  border-radius: 10px;
   text-decoration: none;
   white-space: nowrap;
   font-weight: 700;
+  font-size: .95rem;
 }
-.btn:hover { background: var(--gold); color: #FFF; }
-.toc-group { margin-top: 1.4em; }
-.toc-list { padding-left: 1.4em; }
-.toc-list li { margin: .25em 0; }
-.course-crumb { display: flex; align-items: center; gap: .8rem; flex-wrap: wrap; font-size: .95rem; }
+.btn:hover { background: var(--yellow-soft); color: #131313; text-decoration: none; }
+
+/* ---------- コース目次 ---------- */
+.toc-group { margin-top: 1.6em; }
+.toc-list { padding-left: 1.3em; }
+.toc-list li { margin: .3em 0; }
+.toc-list a { color: var(--body); }
+.toc-list a:hover { color: var(--yellow); }
+
+/* ---------- セクションページ ---------- */
+.course-crumb { display: flex; align-items: center; gap: .8rem; flex-wrap: wrap; font-size: .95rem; margin-top: 0; }
+.course-crumb a { color: var(--muted); font-weight: 600; }
+.course-crumb a:hover { color: var(--yellow); }
 .page-nav {
   display: flex;
   justify-content: space-between;
-  align-items: center;
+  align-items: stretch;
   gap: .6rem;
-  margin: 1rem 0;
-  flex-wrap: wrap;
+  margin: 1.1rem 0;
 }
 .nav-link {
-  background: var(--card);
-  border: 1px solid var(--line);
-  border-radius: 6px;
-  padding: .35em .8em;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: .5em .9em;
   text-decoration: none;
   font-size: .9rem;
-  max-width: 42%;
+  color: var(--body);
+  max-width: 44%;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+  display: flex;
+  align-items: center;
 }
+.nav-link:hover { border-color: rgba(255, 210, 30, .55); color: var(--text); text-decoration: none; }
 .nav-link.disabled { visibility: hidden; }
-.nav-link.toc-link { white-space: nowrap; }
-.content img { max-width: 100%; height: auto; }
-.content table { border-collapse: collapse; margin: 1em 0; display: block; overflow-x: auto; }
-.content th, .content td { border: 1px solid var(--line); padding: .35em .7em; }
-.content th { background: #F1EAD8; }
+.nav-link.toc-link { white-space: nowrap; color: var(--yellow-soft); font-weight: 600; }
+.content img { max-width: 100%; height: auto; border-radius: 8px; }
+.content table { border-collapse: collapse; margin: 1em 0; display: block; overflow-x: auto; font-size: .95rem; }
+.content th, .content td { border: 1px solid var(--border); padding: .45em .75em; }
+.content th { background: var(--surface-2); color: var(--text); }
+.content tr:nth-child(even) td { background: rgba(255, 255, 255, .015); }
 .content blockquote {
-  border-left: 4px solid var(--line);
+  border-left: 4px solid var(--border);
   margin: 1em 0;
   padding: .2em 1em;
-  color: #44566A;
+  color: var(--muted);
 }
+
+/* ---------- コード ---------- */
 .codehilite {
-  background: var(--navy);
-  border-radius: 8px;
-  padding: .9rem 1rem;
+  background: #0D1117;
+  border: 1px solid var(--border-soft);
+  border-radius: var(--radius);
+  padding: 1rem 1.1rem;
   overflow-x: auto;
   margin: 1em 0;
 }
 .codehilite pre {
   margin: 0;
-  color: #E8EEF4;
+  color: #E6EDF3;
   font-size: .88rem;
-  line-height: 1.6;
+  line-height: 1.65;
 }
 pre:not(.codehilite pre) {
-  background: #20262E;
-  color: #E8EEF4;
-  border-radius: 8px;
-  padding: .9rem 1rem;
+  background: #0D1117;
+  border: 1px solid var(--border-soft);
+  color: #E6EDF3;
+  border-radius: var(--radius);
+  padding: 1rem 1.1rem;
   overflow-x: auto;
   font-size: .88rem;
+  line-height: 1.65;
 }
+
+/* ---------- 埋め込み・コールアウト ---------- */
 .youtube-embed {
   position: relative;
   padding-bottom: 56.25%;
   height: 0;
   margin: 1em 0;
-  border-radius: 8px;
+  border-radius: var(--radius);
   overflow: hidden;
+  border: 1px solid var(--border-soft);
 }
 .youtube-embed iframe {
   position: absolute; top: 0; left: 0; width: 100%; height: 100%; border: 0;
 }
 .callout {
-  border-radius: 8px;
-  padding: .8rem 1rem;
+  border-radius: var(--radius);
+  padding: .85rem 1.05rem;
   margin: 1em 0;
-  border: 1px solid var(--line);
-  background: #FFF;
+  border: 1px solid var(--border);
+  background: var(--surface);
 }
-.callout-tip { border-left: 5px solid var(--gold); background: #FDF8EA; }
-.callout-warning, .callout-caution { border-left: 5px solid var(--ng); background: #FBEFEE; }
-.callout-note, .callout-important { border-left: 5px solid var(--navy); background: #EFF4F8; }
-.callout-title { font-weight: 700; margin: 0 0 .4em; color: var(--navy); }
+.callout-tip { border-left: 5px solid var(--yellow); background: rgba(255, 210, 30, .06); }
+.callout-warning, .callout-caution { border-left: 5px solid var(--ng); background: var(--ng-bg); }
+.callout-note, .callout-important { border-left: 5px solid var(--blue); background: rgba(96, 165, 250, .08); }
+.callout-title { font-weight: 700; margin: 0 0 .4em; color: var(--text); }
 .callout > *:last-child { margin-bottom: 0; }
 .hfoptions { margin: 1em 0; }
 .hfoption {
-  border: 1px solid var(--line);
-  border-radius: 8px;
-  background: var(--card);
-  padding: .8rem 1rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--surface);
+  padding: .85rem 1.05rem;
   margin: .8em 0;
 }
 .hfoption-label {
   display: inline-block;
   font-family: "IBM Plex Mono", monospace;
   font-size: .78rem;
-  background: var(--navy);
-  color: #FFF;
-  padding: .1em .6em;
-  border-radius: 4px;
+  font-weight: 600;
+  background: var(--surface-2);
+  color: var(--yellow);
+  border: 1px solid var(--border);
+  padding: .15em .65em;
+  border-radius: 6px;
   margin: 0 0 .5em;
 }
+
+/* ---------- クイズ ---------- */
 .quiz {
-  border: 1px solid var(--gold);
-  border-radius: 10px;
-  background: #FFFDF5;
-  padding: 1rem;
-  margin: 1em 0;
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  background: var(--bg-soft);
+  padding: 1.1rem;
+  margin: 1.2em 0;
 }
-.quiz-choices { display: flex; flex-direction: column; gap: .5rem; }
+.quiz-choices { display: flex; flex-direction: column; gap: .55rem; }
 .quiz-choice {
   text-align: left;
   font: inherit;
-  background: var(--card);
-  border: 1px solid var(--line);
-  border-radius: 8px;
-  padding: .6em .9em;
+  color: var(--body);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: .65em .95em;
   cursor: pointer;
   white-space: normal;
+  line-height: 1.6;
+  transition: border-color .12s ease, background .12s ease;
 }
-.quiz-choice:hover { border-color: var(--gold); }
-.quiz-choice.is-correct { border-color: var(--ok); background: #E2F2E4; }
-.quiz-choice.is-wrong { border-color: var(--ng); background: #FBEFEE; }
+.quiz-choice:hover { border-color: var(--yellow); color: var(--text); }
+.quiz-choice.is-correct { border-color: var(--ok); background: var(--ok-bg); color: var(--text); }
+.quiz-choice.is-wrong { border-color: var(--ng); background: var(--ng-bg); color: var(--text); }
 .quiz-feedback {
-  margin-top: .8rem;
-  border-top: 1px dashed var(--line);
-  padding-top: .6rem;
+  margin-top: .9rem;
+  border-top: 1px dashed var(--border);
+  padding-top: .7rem;
   font-size: .95rem;
 }
-.quiz-feedback .verdict { font-weight: 700; }
+.quiz-feedback .verdict { font-weight: 800; margin: 0 0 .3em; }
 .quiz-feedback .verdict.ok { color: var(--ok); }
 .quiz-feedback .verdict.ng { color: var(--ng); }
 .quiz-fallback pre { white-space: pre-wrap; font-size: .8rem; }
+.quiz-fallback-note { color: var(--amber); font-size: .85rem; }
+
+/* ---------- フッター ---------- */
 .site-footer {
-  border-top: 1px solid var(--line);
-  margin-top: 2rem;
-  padding: 1.2rem 1rem 2rem;
+  border-top: 1px solid var(--border-soft);
+  margin-top: 2.5rem;
+  padding: 1.6rem 1.1rem 2.4rem;
   text-align: center;
   font-size: .88rem;
-  color: #5A6B7A;
+  color: var(--muted);
+  background: var(--bg-soft);
 }
-.site-footer p { margin: .3em 0; }
+.site-footer p { margin: .35em 0; }
+.site-footer a { color: var(--muted); text-decoration: underline; text-underline-offset: 3px; }
+.site-footer a:hover { color: var(--yellow); }
+
+/* ---------- レスポンシブ ---------- */
+@media (max-width: 1020px) {
+  .sidebar { display: none; }
+  .layout .container { margin: 0 auto; }
+}
 @media (max-width: 640px) {
+  .site-title { font-size: .92rem; }
+  .course-nav a { padding: .38em .5em; font-size: .86rem; }
+  .container { padding: 1.2rem 1rem 2rem; }
+  .page-nav { flex-wrap: wrap; }
   .nav-link { max-width: 100%; }
-  h1 { font-size: 1.55rem; }
+  h1 { font-size: 1.5rem; }
 }
+
+/* ---------- Pygments (GitHub Dark) ---------- */
 pre { line-height: 125%; }
 td.linenos .normal { color: #6e7681; background-color: #0d1117; padding-left: 5px; padding-right: 5px; }
 span.linenos { color: #6e7681; background-color: #0d1117; padding-left: 5px; padding-right: 5px; }
 td.linenos .special { color: #e6edf3; background-color: #6e7681; padding-left: 5px; padding-right: 5px; }
 span.linenos.special { color: #e6edf3; background-color: #6e7681; padding-left: 5px; padding-right: 5px; }
 .codehilite .hll { background-color: #6e7681 }
-.codehilite { background: #0d1117; color: #E6EDF3 }
+.codehilite { color: #E6EDF3 }
 .codehilite .c { color: #8B949E; font-style: italic } /* Comment */
 .codehilite .err { color: #F85149 } /* Error */
 .codehilite .esc { color: #E6EDF3 } /* Escape */
