@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>マルチモーダルな世界 | Hugging Face コース日本語版（デモ版）</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Shippori+Mincho:wght@500;700&family=Zen+Kaku+Gothic+New:wght@400;500;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../../../style.css">
+<script>
+window.MathJax = { tex: { inlineMath: [['$', '$'], ['\\(', '\\)']], displayMath: [['$$', '$$'], ['\\[', '\\]']] }, options: { skipHtmlTags: ['script','noscript','style','textarea','pre','code'] } };
+</script>
+<script async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml.js"></script>
+</head>
+<body>
+<header class="site-header">
+  <div class="header-inner">
+    <a class="site-title" href="../../../index.html">Hugging Face コース日本語版</a>
+    <span class="demo-badge">デモ版</span>
+  </div>
+</header>
+<main class="container">
+<p class="course-crumb"><a href="../../index.html">Community CV コース</a>
+<span class="badge badge-qa-wip">翻訳済み・QA進行中（未検証の部分を含みます）</span></p>
+<nav class="page-nav"><a class="nav-link prev" href="pre-intro.html">← 前へ: マルチモーダルなテキスト・視覚モデルを探る: AI の中で感覚を結びつける</a><a class="nav-link toc-link" href="../../index.html">目次へ</a><a class="nav-link next" href="vlm-intro.html">次へ →: 視覚言語モデル入門</a></nav>
+<article class="content">
+<h1>マルチモーダルな世界</h1>
+<p>マルチモダリティの基礎を学ぶ章へようこそ。この章は、このユニットの後半のセクションへの土台となります。ここで探るのは次の点です:</p>
+<ul>
+<li>マルチモダリティの概念と、人間が効率よく意思決定するために使うさまざまな感覚入力。</li>
+<li>私たちがやり取りし、生活を楽にする革新的なアプリケーションやサービスを作るうえで、なぜマルチモダリティが重要なのか。</li>
+<li>ディープラーニング、データ、タスク、モデルの文脈におけるマルチモダリティ。</li>
+<li>マルチモーダル感情認識やマルチモーダル検索などの関連応用。</li>
+</ul>
+<p>それでは始めましょう 🤗</p>
+<h2>マルチモダリティとは？ 📸📝🎵</h2>
+<p>モダリティとは、何かが存在する、あるいは行われる媒体や方法のことです。私たちは日常生活で、意思決定をしてタスクをこなさなければならない場面に数多く出会います。そのために、5つの感覚器官（見る目、聞く耳、嗅ぐ鼻、味わう舌、触れる皮膚）を使います。すべての感覚器官からの情報をもとに、環境を評価し、タスクをこなし、生き延びるための意思決定を行います。これら5つの感覚器官はそれぞれ、情報が私たちに届く異なるモダリティであり、ここからマルチモダリティ（multimodality）／マルチモーダル（multimodal）という言葉が生まれました。</p>
+<p>少しだけこの場面を想像してみてください。風の強い夜、ベッドにいると何やら不気味な音が聞こえてきます 👻😨。音の出所が分からないので、少し怖くなります。勇気を出して周囲を確認しようとしますが、正体は分かりません 😱。思い切って明かりをつけると、それは半分開いた窓に風が吹き込んで音を立てていただけだと分かります 😒。</p>
+<p>ここで何が起きたのでしょうか？ 最初は環境についての知識が限られていたため、状況の理解も限られていました。知識が限られていたのは、理解するために耳（不気味な音）だけに頼っていたからです。しかし部屋の明かりをつけて目で周りを見渡す（感覚器官をもう1つ加える）と、状況全体がよく分かるようになりました。同じ場面でもモダリティを加えるにつれて理解が以前より良く、明確になっていきます。これは、モダリティを追加するとそれらが互いを補助し、情報量が増えることを示しています。
+このコースを進めていくうえでも、平坦なテキストコンテンツだけでなく、細かな概念を説明するビデオコンテンツを伴った格好いいインフォグラフィックが欲しくなりませんか 😉
+こちらです:</p>
+<p><img alt="マルチモダリティの概念" src="https://huggingface.co/datasets/hf-vision/course-assets/resolve/main/multimodal_fusion_text_vision/multimodal_elephant.png" /></p>
+<p><em>マルチモダリティについてのインフォグラフィック。異なるモダリティを通してデータの全体像を捉えることがなぜ重要なのかを説明しています。このインフォグラフィック自体もマルチモーダル（画像＋テキスト）です。</em></p>
+<p>多くの場合、2人のコミュニケーションはテキストだけだと非常にぎこちなくなりますが、声が関わると少し改善し、ボディランゲージや表情も見えるようになると大きく改善します。これはアメリカの心理学者アルバート・メラビアンが詳しく研究し、コミュニケーションの 7-38-55 の法則として述べたものです。その法則によれば:
+「コミュニケーションにおいて、全体の意味の7%は言語的な方法（話し言葉）で伝わり、38%は声とトーンで、55%はボディランゲージと表情で伝わる。」</p>
+<p>より一般化すると、AI の文脈では、伝わる意味の7%はテキストモダリティ、38%は音声モダリティ、55%は視覚モダリティを通じたものになります。
+ディープラーニングの文脈では、各モダリティはデータが処理と予測のためにディープラーニングモデルに届く経路を指します。ディープラーニングで最もよく使われるモダリティは視覚、音声、テキストです。ユースケースによっては、LIDAR、EEG データ、視線追跡データなどの他のモダリティも考えられます。</p>
+<p>ユニモーダルなモデルとデータセットは単一のモダリティだけに基づいていて、多くのタスクやベンチマークで長く研究されてきましたが、その能力には限界があります。単一のモダリティに頼ると全体像が得られないことがあります。より多くのモダリティを組み合わせると情報量が増え、その中にある手がかりを見逃す可能性が減ります。
+私たちの周りの機械がより賢く、私たちとのコミュニケーションに長け、解釈や推論の能力を高めるためには、マルチモーダルな性質を持つモデルとデータセットを中心にアプリケーションやサービスを構築することが重要です。マルチモダリティは、私たちの周りの世界をより明確かつ正確に表現できるため、実世界のシナリオに近いアプリケーションを開発できるからです。</p>
+<p><strong>モダリティの一般的な組み合わせと実例:</strong></p>
+<ul>
+<li>視覚＋テキスト: インフォグラフィック、ミーム、記事、ブログ。</li>
+<li>視覚＋音声: 友人との Skype 通話、二者間の会話。</li>
+<li>視覚＋音声＋テキスト: 字幕付きで YouTube 動画や映画を見ること。一般にソーシャルメディアのコンテンツはマルチモーダルです。</li>
+<li>音声＋テキスト: ボイスメモ、歌詞付きの音楽ファイル。</li>
+</ul>
+<h2>マルチモーダルデータセット</h2>
+<p>複数のモダリティから構成されるデータセットはマルチモーダルデータセットです。一般的なモダリティの組み合わせから、いくつか例を見てみましょう:</p>
+<ul>
+<li>視覚＋テキスト: <a href="https://visionandlanguage.net/VIST/">Visual Storytelling Dataset</a>、<a href="https://visualqa.org/download.html">Visual Question Answering Dataset</a>、<a href="https://laion.ai/blog/laion-5b/">LAION-5B Dataset</a>。</li>
+<li>視覚＋音声: <a href="https://www.robots.ox.ac.uk/~vgg/data/vggsound/">VGG-Sound Dataset</a>、<a href="https://zenodo.org/records/1188976">RAVDESS Dataset</a>、<a href="https://www.avid.wiki/Main_Page">Audio-Visual Identity Database (AVID)</a>。</li>
+<li>視覚＋音声＋テキスト: <a href="https://diuf.unifr.ch/main/diva/recola/">RECOLA Database</a>、<a href="https://sail.usc.edu/iemocap/">IEMOCAP Dataset</a>。</li>
+</ul>
+<p>次に、マルチモーダルデータセットを使ってどんなタスクができるかを見てみましょう。例は数多くありますが、ここでは視覚要素とテキスト要素の両方を含むタスクに焦点を当てます。マルチモーダルデータセットには、複数のモダリティのデータを処理できるモデルが必要です。そのようなモデルはマルチモーダルモデルと呼ばれます。</p>
+<h2>マルチモーダルタスクとマルチモーダルモデル</h2>
+<p>モダリティごとに、それに関連するタスクがあります。例えば、視覚の下流タスクには画像分類、画像セグメンテーション、物体検出などがあり、それらのタスクのために専用に設計されたモデルを使います。このように、タスクとモデルは密接に関係しています。タスクが2つ以上のモダリティを含む場合、そのタスクはマルチモーダルタスクと呼べます。タスクを入力と出力の観点で考えると、マルチモーダルタスクは一般に、入力端と出力端でそれぞれ異なるモダリティを持つ、単一の入力／出力の配置と考えることができます。</p>
+<p>Hugging Face は多種多様なマルチモーダルタスクをサポートしています。いくつか見てみましょう。</p>
+<p><strong>🤗 がサポートするマルチモーダルタスクとそのバリエーション:</strong></p>
+<ol>
+<li>視覚＋テキスト:</li>
+</ol>
+<ul>
+<li><a href="https://huggingface.co/tasks/visual-question-answering">Visual Question Answering（VQA）</a>: 視覚障害者への支援、効率的な画像検索、動画検索、ビデオ質問応答、ドキュメント VQA。</li>
+<li><a href="https://huggingface.co/tasks/image-to-text">Image to Text</a>: 画像キャプション生成、光学文字認識（OCR）、Pix2Struct。</li>
+<li><a href="https://huggingface.co/tasks/text-to-image">Text to Image</a>: 画像生成。</li>
+<li><a href="https://huggingface.co/tasks/text-to-video">Text to Video</a>: テキストによる動画編集、テキストによる動画検索、動画翻訳、テキスト駆動の動画予測。</li>
+</ul>
+<ol start="2">
+<li>音声＋テキスト:</li>
+</ol>
+<ul>
+<li><a href="https://huggingface.co/tasks/automatic-speech-recognition">Automatic Speech Recognition</a>（音声認識）: バーチャル音声アシスタント、字幕生成。</li>
+<li><a href="https://huggingface.co/tasks/text-to-speech">Text to Speech</a>: 音声アシスタント、アナウンスシステム。</li>
+</ul>
+<div class="callout callout-tip">
+<p>💡マルチモーダルタスクの素晴らしいユースケースが、マルチモーダル感情認識（MER: Multimodal Emotion Recognition）です。MER タスクは、音声＋テキスト、テキスト＋視覚、音声＋視覚、視覚＋テキスト＋音声のように、2つ以上のモダリティから感情を認識します。例で議論したように、MER はユニモーダルな感情認識より効率的で、感情認識タスクへの明確な洞察を与えます。MER については<a href="https://github.com/EvelynFan/AWESOME-MER">こちらのリポジトリ</a>で詳しく見られます。</p>
+</div>
+<p><img alt="マルチモーダルモデルの流れ" src="https://huggingface.co/datasets/hf-vision/course-assets/resolve/main/multimodal_fusion_text_vision/Multimodal.jpg" /></p>
+<p>マルチモーダルモデルとは、複数のモダリティから得られるデータを同時に処理してマルチモーダルタスクを実行できるモデルです。これらのモデルは、異なるモダリティの独自性と強みを組み合わせてデータの完全な表現を作り、複数のタスクでの性能を高めます。マルチモーダルモデルは、画像、動画、テキスト、音声などのソースからのデータを統合して処理するよう学習されます。
+これらのモダリティを組み合わせるプロセスは、複数のユニモーダルモデルから始まります。ユニモーダルモデルの出力（エンコードされたデータ）は、融合モジュールが用いる戦略によって融合されます。融合の戦略には、早期融合（early fusion）、後期融合（late fusion）、ハイブリッド融合（hybrid fusion）があります。融合モジュールの全体的な役割は、ユニモーダルモデルからエンコードされたデータの結合表現を作ることです。最後に、分類ネットワークが融合された表現を受け取って予測を行います。</p>
+<p>視覚とテキストに焦点を当てたマルチモーダルタスクとモデルについての詳細なセクションは、次章で議論します。</p>
+<h2>マルチモダリティの応用: マルチモーダル検索 🔎📲💻</h2>
+<p>インターネット検索は Google の重要な強みの1つでしたが、OpenAI の ChatGPT の登場により、Microsoft は競争に打ち勝つために Bing 検索エンジンを強化し始めました。当初は LLM に限定され、大量のテキストデータのコーパスを調べるものでしたが、私たちの周りの世界、主にソーシャルメディアのコンテンツやウェブ記事、あらゆる形のオンラインコンテンツは、大きくマルチモーダルです。画像を検索すると、その画像を説明するテキストと一緒に画像が表示されます。視覚とテキストの両方を同時に扱う、もう1つの強力なマルチモーダルモデルがあったら素晴らしくないでしょうか？ これは検索の landscape を大きく変革できます。その核となる技術がマルチモーダル学習です。多くの企業も、大きくマルチモーダルで、ほとんどが非構造化されたデータベースを持っていることが知られています。マルチモーダルモデルは、社内検索、インタラクティブなドキュメント（チャットボット）、その他多くのユースケースで企業を助けるかもしれません。これは、組織の知能化のために AI を活用するエンタープライズ AI のもう1つの領域です。</p>
+<p>視覚言語モデル（VLM: Vision Language Model）は、視覚とテキストの両方のモダリティを理解して処理できるモデルです。両モダリティの共同理解により、VLM は視覚的質問応答、テキストから画像への検索など、さまざまなタスクを効率的に実行できます。したがって VLM は、マルチモーダル検索の最有力候補の1つとなり得ます。全体として、VLM はテキストと画像のペアを、各テキスト・画像ペアが1つの埋め込みとして存在する結合埋め込み空間へマッピングする方法を見つける必要があります。これらの埋め込みを使ってさまざまな下流タスクを実行でき、検索にも使えます。このような結合空間の考え方は、意味が似た画像埋め込みとテキスト埋め込みが互いに近くに位置するというもので、テキストに基づく画像検索（text-to-image search）やその逆を可能にします。</p>
+<div class="callout callout-tip">
+<p>💡Meta は、画像と動画、音声、テキスト、深度、熱、慣性計測ユニット（IMU）という6つの異なるモダリティの情報を結びつける初のマルチモーダル AI モデルを公開しました。詳しくは<a href="https://imagebind.metademolab.com/">こちら</a>をご覧ください。</p>
+</div>
+<p>マルチモダリティの基礎を学んだので、次は 🤗 で利用できるさまざまなマルチモーダルタスクとモデルと、面白いデモや Spaces を通じたその応用を見ていきましょう。</p>
+</article>
+<nav class="page-nav"><a class="nav-link prev" href="pre-intro.html">← 前へ: マルチモーダルなテキスト・視覚モデルを探る: AI の中で感覚を結びつける</a><a class="nav-link toc-link" href="../../index.html">目次へ</a><a class="nav-link next" href="vlm-intro.html">次へ →: 視覚言語モデル入門</a></nav>
+</main>
+<footer class="site-footer">
+  <p>原典: Hugging Face huggingface/computer-vision-course（<a href="https://github.com/huggingface/computer-vision-course">https://github.com/huggingface/computer-vision-course</a>）</p>
+  <p>日本語版の翻訳・公開: 霞ヶ関京 / 連絡先: GitHub <a href="https://github.com/yanikasumin">@yanikasumin</a> / YouTube <a href="https://www.youtube.com/@KASUMI_MOF">@KASUMI_MOF</a></p>
+  <p class="demo-note">このサイトはデモ版です。内容は順次更新されます。</p>
+</footer>
+<script src="../../../site.js"></script>
+</body>
+</html>

@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>3Dデータの表現方法 | Hugging Face コース日本語版（デモ版）</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Shippori+Mincho:wght@500;700&family=Zen+Kaku+Gothic+New:wght@400;500;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../../../style.css">
+<script>
+window.MathJax = { tex: { inlineMath: [['$', '$'], ['\\(', '\\)']], displayMath: [['$$', '$$'], ['\\[', '\\]']] }, options: { skipHtmlTags: ['script','noscript','style','textarea','pre','code'] } };
+</script>
+<script async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml.js"></script>
+</head>
+<body>
+<header class="site-header">
+  <div class="header-inner">
+    <a class="site-title" href="../../../index.html">Hugging Face コース日本語版</a>
+    <span class="demo-badge">デモ版</span>
+  </div>
+</header>
+<main class="container">
+<p class="course-crumb"><a href="../../index.html">Community CV コース</a>
+<span class="badge badge-qa-wip">翻訳済み・QA進行中（未検証の部分を含みます）</span></p>
+<nav class="page-nav"><a class="nav-link prev" href="linear-algebra.html">← 前へ: 3Dデータのための線形代数の基礎</a><a class="nav-link toc-link" href="../../index.html">目次へ</a><a class="nav-link next" href="../monocular_depth_estimation.html">次へ →: メトリック深度と相対深度の単眼深度推定： 概要。Depth Anything V2 のファインチューニング 👐 📚</a></nav>
+<article class="content">
+<h1>3Dデータの表現方法</h1>
+<p>応用に応じて、3Dデータにはいくつかの異なる表現方法のいずれかが使われます。
+ここでは、代表的なものをいくつか紹介します。</p>
+<h2>点群</h2>
+<p>点群は、3D空間内の点のリストによってデータを表現します。各点には座標があり、場合によっては他の特徴も付随します。点は物体の表面上だけに分布することもあれば、内部全体に広がることもあります。点群は一般に、LIDAR のような3Dスキャン技術によって生成されます。点群には接続関係の情報がないため、物体の表面やトポロジーを特定するのが難しい場合があります。</p>
+<h2>メッシュ</h2>
+<p>メッシュはコンピュータグラフィックスでよく使われ、3次元空間内の頂点を結んだ（通常は三角形の）面の集合として物体の表面を表現します。法線、色、テクスチャ座標といった追加情報は、頂点と面のどちらにも付随させることができます。特にテクスチャを使う場合、メッシュは立体物を保存する非常に効率的な方法となり、ゲームやその他のコンピュータグラフィックスの応用でよく使われます。</p>
+<p>Python の <code>trimesh</code> パッケージには、メッシュデータを扱う便利な関数が数多く含まれており、特に一般的なデータ形式の読み込みと保存に役立ちます。</p>
+<h2>ボリュームデータ</h2>
+<p>ボリュームデータは、雲や炎のような透明な物体についての情報を符号化するのによく使われます。その本質は、空間内の位置を密度、色、そして場合によってはその他の属性へ写像する関数 \( f(x,y,z) \) の形を取ります。こうしたデータの単純な表現方法の1つがボクセルグリッドです。各点のデータは、その点を含むボクセルの8つの角からの三線形補間（trilinear interpolation）によって求められます。</p>
+<p>後の NeRF の章で見るように、ボリューム表現は立体物の表現にも効果的に使えます。もっと高度な表現も可能で、たとえば小さな MLP や、InstantNGP のような複雑なハッシュグリッドが使われます。</p>
+<h2>陰関数曲面</h2>
+<p>ボリューム表現の柔軟さが欲しい一方で、関心があるのは物体の表面そのものである、という場合があります。陰関数曲面はボリュームデータに似ていますが、関数 \( f(x,y,z) \) が空間内の各点を1つの数値に写像し、表面はこの関数のゼロ点となります。計算効率のため、この関数が実際に符号付き距離関数（SDF）であることが有用な場合があります。SDF では、関数 \( f(x,y,z) \) が表面までの最短距離を表し、物体の外側では正、内側では負の値を取ります（この符号の約束は慣例であり、異なる場合もあります）。この制約を維持するのはより難しいのですが、スフィアトレーシング（sphere tracing）と呼ばれるアルゴリズムを使うことで、直線と表面の交点をより速く計算できます。</p>
+</article>
+<nav class="page-nav"><a class="nav-link prev" href="linear-algebra.html">← 前へ: 3Dデータのための線形代数の基礎</a><a class="nav-link toc-link" href="../../index.html">目次へ</a><a class="nav-link next" href="../monocular_depth_estimation.html">次へ →: メトリック深度と相対深度の単眼深度推定： 概要。Depth Anything V2 のファインチューニング 👐 📚</a></nav>
+</main>
+<footer class="site-footer">
+  <p>原典: Hugging Face huggingface/computer-vision-course（<a href="https://github.com/huggingface/computer-vision-course">https://github.com/huggingface/computer-vision-course</a>）</p>
+  <p>日本語版の翻訳・公開: 霞ヶ関京 / 連絡先: GitHub <a href="https://github.com/yanikasumin">@yanikasumin</a> / YouTube <a href="https://www.youtube.com/@KASUMI_MOF">@KASUMI_MOF</a></p>
+  <p class="demo-note">このサイトはデモ版です。内容は順次更新されます。</p>
+</footer>
+<script src="../../../site.js"></script>
+</body>
+</html>

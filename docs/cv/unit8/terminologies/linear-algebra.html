@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>3Dデータのための線形代数の基礎 | Hugging Face コース日本語版（デモ版）</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Shippori+Mincho:wght@500;700&family=Zen+Kaku+Gothic+New:wght@400;500;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../../../style.css">
+<script>
+window.MathJax = { tex: { inlineMath: [['$', '$'], ['\\(', '\\)']], displayMath: [['$$', '$$'], ['\\[', '\\]']] }, options: { skipHtmlTags: ['script','noscript','style','textarea','pre','code'] } };
+</script>
+<script async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml.js"></script>
+</head>
+<body>
+<header class="site-header">
+  <div class="header-inner">
+    <a class="site-title" href="../../../index.html">Hugging Face コース日本語版</a>
+    <span class="demo-badge">デモ版</span>
+  </div>
+</header>
+<main class="container">
+<p class="course-crumb"><a href="../../index.html">Community CV コース</a>
+<span class="badge badge-qa-wip">翻訳済み・QA進行中（未検証の部分を含みます）</span></p>
+<nav class="page-nav"><a class="nav-link prev" href="camera-models.html">← 前へ: カメラモデル</a><a class="nav-link toc-link" href="../../index.html">目次へ</a><a class="nav-link next" href="representations.html">次へ →: 3Dデータの表現方法</a></nav>
+<article class="content">
+<h1>3Dデータのための線形代数の基礎</h1>
+<h2>座標系</h2>
+<p>3次元データの多くは、空間内に定まった位置を持つ点のような対象から構成され、しばしば3つのデカルト座標 \([X, Y, Z]\) で表されます。</p>
+<p><img alt="軸の右手系・左手系" src="https://huggingface.co/datasets/hf-vision/course-assets/resolve/main/axes_handedness.png" /></p>
+<p>ただし、この座標系の規約はシステムによって異なります。最も重要な違いは、X、Y、Z 軸の相対的な向きである「手系」（handedness）です。違いを覚える最も簡単な方法は、中指を内側に向けて、親指、人差し指、中指がおおよそ互いに直角になるようにすることです。左手では、親指（X）、人差し指（Y）、中指（Z）が左手系の座標系をなします。同様に、右手の指は右手系の座標系をなします。</p>
+<p>数学や物理学では通常、右手系が使われます。しかしコンピュータグラフィックスでは、ライブラリや環境によって規約が異なります。特に、Blender、Pytorch3d、OpenGL は（ほとんどの場合）右手系の座標を使い、DirectX は左手系の座標を使います。ここでは Blender と NerfStudio に従い、右手系の規約を使います。</p>
+<h2>変換</h2>
+<p>これらの座標を空間内で回転、拡大縮小、平行移動できると便利です。たとえば、物体が動いている場合や、これらの座標を、固定された軸に対するワールド座標から、カメラに対する相対座標に変えたい場合です。</p>
+<p>これらの変換は行列で表すことができます。ここでは行列の乗算を <code>@</code> で表記します。平行移動、回転、拡大縮小を一貫した方法で表せるようにするために、3次元座標 \([x,y,z]\) に追加の座標 \(w=1\) を加えます。これは同次座標として知られています。より一般的には、\(w\) は任意の値を取ることができ、4次元の直線 \([wx, wy, wz, w]\) 上のすべての点は、3次元空間内の同じ点 \([x,y,z]\) に対応します。ただし、ここでは \(w\) は常に1とします。</p>
+<p><a href="https://pytorch3d.org/">Pytorch3d</a> のようなライブラリには、変換を生成し操作するためのさまざまな関数が用意されています。</p>
+<p>もう1つ注意すべき規約があります。OpenGL は位置を列ベクトル <code>x</code>（形状 4x1）として扱い、ベクトルに行列を前から掛けること（<code>M @ x</code>）で変換 <code>M</code> を適用します。一方、DirectX と Pytorch3d は位置を形状 (1x4) の行ベクトルと考え、ベクトルに行列を後ろから掛けること（<code>x @ M</code>）で変換を適用します。2つの規約の間で変換するには、行列 <code>M.T</code> の転置を取る必要があります。いくつかのコードスニペットで、立方体が異なる変換行列のもとでどのように変換されるかを示します。これらのコードスニペットでは、OpenGL の規約を使います。</p>
+<h3>平行移動</h3>
+<p>平行移動、つまり空間内のすべての点を同じ距離・同じ方向に動かすことは、次のように表すことができます</p>
+<p>$$T = \begin{pmatrix} 1 &amp; 0 &amp; 0 &amp; t_x \ 0 &amp; 1 &amp; 0 &amp; t_y \ 0 &amp; 0 &amp; 1 &amp; t_z \ 0 &amp; 0 &amp; 0 &amp; 1 \end{pmatrix}$$</p>
+<p>ここで \(t = [t_x,t_y,t_z]\) は、すべての点を平行移動させる方向ベクトルです。</p>
+<p>平行移動を自分で試すために、まず立方体を可視化する小さなヘルパー関数を書いてみましょう。</p>
+<div class="codehilite"><pre><span></span><code><span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">matplotlib.pyplot</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">plt</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">plot_cube</span><span class="p">(</span><span class="n">ax</span><span class="p">,</span> <span class="n">cube</span><span class="p">,</span> <span class="n">label</span><span class="p">,</span> <span class="n">color</span><span class="o">=</span><span class="s2">"black"</span><span class="p">):</span>
+    <span class="n">ax</span><span class="o">.</span><span class="n">scatter3D</span><span class="p">(</span><span class="n">cube</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="p">:],</span> <span class="n">cube</span><span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="p">:],</span> <span class="n">cube</span><span class="p">[</span><span class="mi">2</span><span class="p">,</span> <span class="p">:],</span> <span class="n">label</span><span class="o">=</span><span class="n">label</span><span class="p">,</span> <span class="n">color</span><span class="o">=</span><span class="n">color</span><span class="p">)</span>
+    <span class="n">lines</span> <span class="o">=</span> <span class="p">[</span>
+        <span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">],</span>
+        <span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">],</span>
+        <span class="p">[</span><span class="mi">2</span><span class="p">,</span> <span class="mi">3</span><span class="p">],</span>
+        <span class="p">[</span><span class="mi">3</span><span class="p">,</span> <span class="mi">0</span><span class="p">],</span>
+        <span class="p">[</span><span class="mi">4</span><span class="p">,</span> <span class="mi">5</span><span class="p">],</span>
+        <span class="p">[</span><span class="mi">5</span><span class="p">,</span> <span class="mi">6</span><span class="p">],</span>
+        <span class="p">[</span><span class="mi">6</span><span class="p">,</span> <span class="mi">7</span><span class="p">],</span>
+        <span class="p">[</span><span class="mi">7</span><span class="p">,</span> <span class="mi">4</span><span class="p">],</span>
+        <span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">4</span><span class="p">],</span>
+        <span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">5</span><span class="p">],</span>
+        <span class="p">[</span><span class="mi">2</span><span class="p">,</span> <span class="mi">6</span><span class="p">],</span>
+        <span class="p">[</span><span class="mi">3</span><span class="p">,</span> <span class="mi">7</span><span class="p">],</span>
+    <span class="p">]</span>
+    <span class="k">for</span> <span class="n">line</span> <span class="ow">in</span> <span class="n">lines</span><span class="p">:</span>
+        <span class="n">ax</span><span class="o">.</span><span class="n">plot3D</span><span class="p">(</span><span class="n">cube</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="n">line</span><span class="p">],</span> <span class="n">cube</span><span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="n">line</span><span class="p">],</span> <span class="n">cube</span><span class="p">[</span><span class="mi">2</span><span class="p">,</span> <span class="n">line</span><span class="p">],</span> <span class="n">color</span><span class="o">=</span><span class="n">color</span><span class="p">)</span>
+    <span class="n">ax</span><span class="o">.</span><span class="n">set_xlabel</span><span class="p">(</span><span class="s2">"X"</span><span class="p">)</span>
+    <span class="n">ax</span><span class="o">.</span><span class="n">set_ylabel</span><span class="p">(</span><span class="s2">"Y"</span><span class="p">)</span>
+    <span class="n">ax</span><span class="o">.</span><span class="n">set_zlabel</span><span class="p">(</span><span class="s2">"Z"</span><span class="p">)</span>
+    <span class="n">ax</span><span class="o">.</span><span class="n">legend</span><span class="p">()</span>
+    <span class="n">ax</span><span class="o">.</span><span class="n">set_xlim</span><span class="p">([</span><span class="o">-</span><span class="mi">2</span><span class="p">,</span> <span class="mi">2</span><span class="p">])</span>
+    <span class="n">ax</span><span class="o">.</span><span class="n">set_ylim</span><span class="p">([</span><span class="o">-</span><span class="mi">2</span><span class="p">,</span> <span class="mi">2</span><span class="p">])</span>
+    <span class="n">ax</span><span class="o">.</span><span class="n">set_zlim</span><span class="p">([</span><span class="o">-</span><span class="mi">2</span><span class="p">,</span> <span class="mi">2</span><span class="p">])</span>
+</code></pre></div>
+
+<p>では、立方体を作成し、平行移動行列を前から掛けてみましょう。</p>
+<div class="codehilite"><pre><span></span><code><span class="c1"># 立方体の8つの角を座標 (x,y,z,w) で定義する。w はこのケースでは常に1</span>
+<span class="n">cube</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span>
+    <span class="p">[</span>
+        <span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">],</span>
+        <span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">],</span>
+        <span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">],</span>
+        <span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">],</span>
+        <span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">],</span>
+        <span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">],</span>
+        <span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">],</span>
+        <span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">],</span>
+    <span class="p">]</span>
+<span class="p">)</span>
+
+<span class="c1"># OpenGL の表記に従うよう転置する</span>
+<span class="n">cube</span> <span class="o">=</span> <span class="n">cube</span><span class="o">.</span><span class="n">T</span>
+
+<span class="c1"># 図を準備する</span>
+<span class="n">fig</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">figure</span><span class="p">()</span>
+<span class="n">ax</span> <span class="o">=</span> <span class="n">fig</span><span class="o">.</span><span class="n">add_subplot</span><span class="p">(</span><span class="mi">111</span><span class="p">,</span> <span class="n">projection</span><span class="o">=</span><span class="s2">"3d"</span><span class="p">)</span>
+
+<span class="c1"># 元の立方体を描画する</span>
+<span class="n">plot_cube</span><span class="p">(</span><span class="n">ax</span><span class="p">,</span> <span class="n">cube</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="s2">"Original"</span><span class="p">,</span> <span class="n">color</span><span class="o">=</span><span class="s2">"blue"</span><span class="p">)</span>
+
+<span class="c1"># 平行移動行列（正の x 方向に1、正の y 軸方向に1だけずらす）</span>
+<span class="n">translation_matrix</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">],</span> <span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">],</span> <span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">0</span><span class="p">],</span> <span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">]])</span>
+
+<span class="c1"># 平行移動</span>
+<span class="n">translated_cube</span> <span class="o">=</span> <span class="n">translation_matrix</span> <span class="o">@</span> <span class="n">cube</span>
+<span class="n">plot_cube</span><span class="p">(</span><span class="n">ax</span><span class="p">,</span> <span class="n">translated_cube</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="s2">"Translated"</span><span class="p">,</span> <span class="n">color</span><span class="o">=</span><span class="s2">"red"</span><span class="p">)</span>
+</code></pre></div>
+
+<p>出力は次のようになるはずです。</p>
+<div style="display: flex; flex-direction: column; align-items: center;">
+  <img src="https://huggingface.co/datasets/hf-vision/course-assets/resolve/main/translation.png" alt="平行移動の出力" />
+</div>
+
+<h3>拡大縮小</h3>
+<p>拡大縮小は、物体の大きさを一様に大きくしたり小さくしたりする処理です。拡大縮小の変換は、各座標にスケール係数を掛ける行列で表されます。拡大縮小行列は次のように与えられます。</p>
+<p>$$S = \begin{pmatrix} s_x &amp; 0 &amp; 0 &amp; 0 \ 0 &amp; s_y &amp; 0 &amp; 0 \ 0 &amp; 0 &amp; s_z &amp; 0 \ 0 &amp; 0 &amp; 0 &amp; 1 \end{pmatrix}$$</p>
+<p>立方体を X 軸方向に2倍、Y 軸方向に0.5倍に拡大縮小する、次の例を試してみましょう。</p>
+<div class="codehilite"><pre><span></span><code><span class="c1"># 図を準備する</span>
+<span class="n">fig</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">figure</span><span class="p">()</span>
+<span class="n">ax</span> <span class="o">=</span> <span class="n">fig</span><span class="o">.</span><span class="n">add_subplot</span><span class="p">(</span><span class="mi">111</span><span class="p">,</span> <span class="n">projection</span><span class="o">=</span><span class="s2">"3d"</span><span class="p">)</span>
+
+<span class="c1"># 元の立方体を描画する</span>
+<span class="n">plot_cube</span><span class="p">(</span><span class="n">ax</span><span class="p">,</span> <span class="n">cube</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="s2">"Original"</span><span class="p">,</span> <span class="n">color</span><span class="o">=</span><span class="s2">"blue"</span><span class="p">)</span>
+
+<span class="c1"># 拡大縮小行列（x 軸方向に2倍、y 軸方向に0.5倍）</span>
+<span class="n">scaling_matrix</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([[</span><span class="mi">2</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">],</span> <span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mf">0.5</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">],</span> <span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">0</span><span class="p">],</span> <span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">]])</span>
+
+
+<span class="n">scaled_cube</span> <span class="o">=</span> <span class="n">scaling_matrix</span> <span class="o">@</span> <span class="n">cube</span>
+
+<span class="n">plot_cube</span><span class="p">(</span><span class="n">ax</span><span class="p">,</span> <span class="n">scaled_cube</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="s2">"Scaled"</span><span class="p">,</span> <span class="n">color</span><span class="o">=</span><span class="s2">"green"</span><span class="p">)</span>
+</code></pre></div>
+
+<p>出力は次のようになるはずです。</p>
+<div style="display: flex; flex-direction: column; align-items: center;">
+  <img src="https://huggingface.co/datasets/hf-vision/course-assets/resolve/main/scaling.png" alt="拡大縮小の出力" />
+</div>
+
+<h3>回転</h3>
+<p>軸の周りの回転も、よく使われる変換の1つです。回転の表現方法には、オイラー角やクォータニオンなどさまざまなものがあり、応用によっては非常に役立ちます。ここでも、Pytorch3d のようなライブラリには回転を行うための幅広い機能が含まれています。ただし、簡単な例として、3つの軸それぞれの周りの回転を構成する方法だけを示します。</p>
+<ul>
+<li>X 軸の周りの回転:</li>
+</ul>
+<p>$$ R_x(\alpha) = \begin{pmatrix} 1 &amp; 0 &amp; 0 &amp; 0 \ 0 &amp; \cos \alpha &amp; -\sin \alpha &amp; 0 \ 0 &amp; \sin \alpha &amp; \cos \alpha &amp; 0 \ 0 &amp; 0 &amp; 0 &amp; 1 \end{pmatrix} $$</p>
+<p>X 軸の周りに正の20度だけ回転させる簡単な例を以下に示します。</p>
+<div class="codehilite"><pre><span></span><code><span class="c1"># 図を準備する</span>
+<span class="n">fig</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">figure</span><span class="p">()</span>
+<span class="n">ax</span> <span class="o">=</span> <span class="n">fig</span><span class="o">.</span><span class="n">add_subplot</span><span class="p">(</span><span class="mi">111</span><span class="p">,</span> <span class="n">projection</span><span class="o">=</span><span class="s2">"3d"</span><span class="p">)</span>
+
+<span class="c1"># 元の立方体を描画する</span>
+<span class="n">plot_cube</span><span class="p">(</span><span class="n">ax</span><span class="p">,</span> <span class="n">cube</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="s2">"Original"</span><span class="p">,</span> <span class="n">color</span><span class="o">=</span><span class="s2">"blue"</span><span class="p">)</span>
+
+<span class="c1"># 回転行列: x 軸の周りに +20 度</span>
+<span class="n">angle</span> <span class="o">=</span> <span class="mi">20</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">pi</span> <span class="o">/</span> <span class="mi">180</span>
+<span class="n">rotation_matrix</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span>
+    <span class="p">[</span>
+        <span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">],</span>
+        <span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">cos</span><span class="p">(</span><span class="n">angle</span><span class="p">),</span> <span class="o">-</span><span class="n">np</span><span class="o">.</span><span class="n">sin</span><span class="p">(</span><span class="n">angle</span><span class="p">),</span> <span class="mi">0</span><span class="p">],</span>
+        <span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">sin</span><span class="p">(</span><span class="n">angle</span><span class="p">),</span> <span class="n">np</span><span class="o">.</span><span class="n">cos</span><span class="p">(</span><span class="n">angle</span><span class="p">),</span> <span class="mi">0</span><span class="p">],</span>
+        <span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">],</span>
+    <span class="p">]</span>
+<span class="p">)</span>
+
+
+<span class="n">rotated_cube</span> <span class="o">=</span> <span class="n">rotation_matrix</span> <span class="o">@</span> <span class="n">cube</span>
+
+<span class="n">plot_cube</span><span class="p">(</span><span class="n">ax</span><span class="p">,</span> <span class="n">rotated_cube</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="s2">"Rotated"</span><span class="p">,</span> <span class="n">color</span><span class="o">=</span><span class="s2">"orange"</span><span class="p">)</span>
+</code></pre></div>
+
+<p>出力は次のようになるはずです。</p>
+<div style="display: flex; flex-direction: column; align-items: center;">
+  <img src="https://huggingface.co/datasets/hf-vision/course-assets/resolve/main/rotation.png" alt="回転の出力" />
+</div>
+
+<ul>
+<li>Y 軸の周りの回転:</li>
+</ul>
+<p>$$ R_y(\beta) = \begin{pmatrix} \cos \beta &amp; 0 &amp; \sin \beta &amp; 0 \ 0 &amp; 1 &amp; 0 &amp; 0 \ -\sin \beta &amp; 0 &amp; \cos \beta &amp; 0 \ 0 &amp; 0 &amp; 0 &amp; 1 \end{pmatrix} $$</p>
+<p>上のスニペットを使えば、Y 軸の周りの回転をどう実装するか分かるはずです。😎😎</p>
+<ul>
+<li>Z 軸の周りの回転</li>
+</ul>
+<p>$$ R_z(\beta) = \begin{pmatrix} \cos \beta &amp; -\sin \beta &amp; 0 &amp; 0 \ \sin \beta &amp; \cos \beta &amp; 0 &amp; 0 \ 0 &amp; 0 &amp; 1 &amp; 0 \ 0 &amp; 0 &amp; 0 &amp; 1 \end{pmatrix} $$</p>
+<p>同じように、直前のコードスニペットを使って Z 軸の周りの回転を実装できますか❓</p>
+<p>標準的な規約では、正の回転角は、回転軸が見る人の方向を向いているときに反時計回りの回転に対応することに注意してください。また、ほとんどのライブラリでは、余弦関数（cosine）は角度をラジアンで要求することにも注意してください。度からラジアンへの変換は、\( pi/180\) を掛けて行います。</p>
+<h3>変換の組み合わせ</h3>
+<p>複数の変換は、それらの行列を掛け合わせることで組み合わせることができます。行列を掛ける順序が重要であることに注意してください。行列は右から左へ適用されます。変換 P、Q、R をその順序で適用する行列を作るには、合成変換は \( X = R @ Q @ P\) で与えられます。</p>
+<p>上で行った平行移動、次に回転、次に拡大縮小を1回の操作で行いたい場合は、次のようになります。</p>
+<div class="codehilite"><pre><span></span><code><span class="c1"># 図を準備する</span>
+<span class="n">fig</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">figure</span><span class="p">()</span>
+<span class="n">ax</span> <span class="o">=</span> <span class="n">fig</span><span class="o">.</span><span class="n">add_subplot</span><span class="p">(</span><span class="mi">111</span><span class="p">,</span> <span class="n">projection</span><span class="o">=</span><span class="s2">"3d"</span><span class="p">)</span>
+
+<span class="c1"># 元の立方体を描画する</span>
+<span class="n">plot_cube</span><span class="p">(</span><span class="n">ax</span><span class="p">,</span> <span class="n">cube</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="s2">"Original"</span><span class="p">,</span> <span class="n">color</span><span class="o">=</span><span class="s2">"blue"</span><span class="p">)</span>
+
+<span class="c1"># 変換の組み合わせ</span>
+<span class="n">combination_transform</span> <span class="o">=</span> <span class="n">rotation_matrix</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">scaling_matrix</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">translation_matrix</span><span class="p">))</span>
+<span class="n">final_result</span> <span class="o">=</span> <span class="n">combination_transform</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">cube</span><span class="p">)</span>
+<span class="n">plot_cube</span><span class="p">(</span><span class="n">ax</span><span class="p">,</span> <span class="n">final_result</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="s2">"Combined"</span><span class="p">,</span> <span class="n">color</span><span class="o">=</span><span class="s2">"violet"</span><span class="p">)</span>
+</code></pre></div>
+
+<p>出力は次のようになるはずです。</p>
+<div style="display: flex; flex-direction: column; align-items: center;">
+  <img src="https://huggingface.co/datasets/hf-vision/course-assets/resolve/main/combined.png" alt="組み合わせの出力" />
+</div>
+</article>
+<nav class="page-nav"><a class="nav-link prev" href="camera-models.html">← 前へ: カメラモデル</a><a class="nav-link toc-link" href="../../index.html">目次へ</a><a class="nav-link next" href="representations.html">次へ →: 3Dデータの表現方法</a></nav>
+</main>
+<footer class="site-footer">
+  <p>原典: Hugging Face huggingface/computer-vision-course（<a href="https://github.com/huggingface/computer-vision-course">https://github.com/huggingface/computer-vision-course</a>）</p>
+  <p>日本語版の翻訳・公開: 霞ヶ関京 / 連絡先: GitHub <a href="https://github.com/yanikasumin">@yanikasumin</a> / YouTube <a href="https://www.youtube.com/@KASUMI_MOF">@KASUMI_MOF</a></p>
+  <p class="demo-note">このサイトはデモ版です。内容は順次更新されます。</p>
+</footer>
+<script src="../../../site.js"></script>
+</body>
+</html>

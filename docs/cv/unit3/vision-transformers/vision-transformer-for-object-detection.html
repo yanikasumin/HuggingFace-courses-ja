@@ -1,0 +1,516 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Vision Transformers を使った物体検出 | Hugging Face コース日本語版（デモ版）</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Shippori+Mincho:wght@500;700&family=Zen+Kaku+Gothic+New:wght@400;500;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../../../style.css">
+<script>
+window.MathJax = { tex: { inlineMath: [['$', '$'], ['\\(', '\\)']], displayMath: [['$$', '$$'], ['\\[', '\\]']] }, options: { skipHtmlTags: ['script','noscript','style','textarea','pre','code'] } };
+</script>
+<script async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml.js"></script>
+</head>
+<body>
+<header class="site-header">
+  <div class="header-inner">
+    <a class="site-title" href="../../../index.html">Hugging Face コース日本語版</a>
+    <span class="demo-badge">デモ版</span>
+  </div>
+</header>
+<main class="container">
+<p class="course-crumb"><a href="../../index.html">Community CV コース</a>
+<span class="badge badge-qa-wip">翻訳済み・QA進行中（未検証の部分を含みます）</span></p>
+<nav class="page-nav"><a class="nav-link prev" href="mobilevit.html">← 前へ: MobileViT v2</a><a class="nav-link toc-link" href="../../index.html">目次へ</a><a class="nav-link next" href="detr.html">次へ →: DEtection TRansformer (DETR)</a></nav>
+<article class="content">
+<h1>Vision Transformers を使った物体検出</h1>
+<p>このセクションでは、Vision Transformers を使って物体検出タスクを行う方法を説明します。事前学習済みの物体検出モデルを、自分のユースケースに合わせてファインチューニングする方法を理解していきます。始める前に、最終的な出力結果を試せるこちらの Hugging Face Space も確認してみてください。</p>
+<p><iframe
+    src="https://hf-vision-finetuning-demo-for-object-detection.hf.space/"
+    frameborder="0"
+    width="850"
+    height="450">
+</iframe>
+</p>
+<h2>はじめに</h2>
+<p><img alt="物体検出の例" src="https://huggingface.co/datasets/hf-vision/course-assets/resolve/main/object_detection_wiki.png" /></p>
+<p>物体検出は、画像や動画の中にある物体を識別し、その位置を特定するコンピュータビジョンのタスクです。主に次の2つのステップで構成されます。</p>
+<ul>
+<li>1つ目は、車や人、動物など、どんな種類の物体があるかを認識することです。</li>
+<li>2つ目は、バウンディングボックスで囲んで、その正確な位置を求めることです。</li>
+</ul>
+<p>これらのモデルは通常、画像（静止画や動画のフレーム）を入力として受け取り、各画像には複数の物体が含まれています。たとえば、車や人、自転車など複数の物体を含む画像を考えてみてください。入力を処理すると、モデルは次の情報を表す数値の集合を出力します。</p>
+<ul>
+<li>物体の位置（バウンディングボックスの XY 座標）</li>
+<li>物体のクラス</li>
+</ul>
+<p>物体検出には多くの応用があります。代表的な例が自動運転の分野です。物体検出を使って車の周囲にある歩行者や道路標識、信号機などの物体を検出し、それを意思決定の入力の1つとして使います。</p>
+<p>物体検出の仕組みをより深く理解するには、物体検出に関する<a href="https://huggingface.co/learn/computer-vision-course/unit6/basic-cv-tasks/object_detection">専用の章</a>も確認してみてください 🤗。</p>
+<h3>物体検出でモデルをファインチューニングする必要性 🤔</h3>
+<p>新しいモデルを作るべきか、それとも既存のモデルを改変すべきか。これはとても良い問いです。物体検出モデルをゼロから学習させるということは、次のようなことを意味します。</p>
+<ul>
+<li>すでに終わっている研究を、何度もやり直すことになります。</li>
+<li>モデルのコードを繰り返し書いて学習させ、ユースケースごとに別々のリポジトリを維持することになります。</li>
+<li>多くの実験が必要になり、リソースも無駄になります。</li>
+</ul>
+<p>こうした作業をする代わりに、性能の良い事前学習済みモデル（一般的な特徴の認識が得意なモデル）を用意し、その重み（または重みの一部）を調整して、自分のユースケースに適応させます。事前学習済みモデルは、画像の中から物体の位置特定と分類に役立つ重要な特徴を抽出する方法を、すでに十分に学習していると考えられます。そのため、新しい物体が加わっても、すでに学習した特徴と新しい特徴を使って、短時間の学習と少ない計算でその物体を検出できるようになります。</p>
+<p>このチュートリアルが終わる頃には、物体検出のユースケースについて、データセットの読み込みからモデルのファインチューニング、推論までを行う一連の pipeline を作れるようになります。</p>
+<h2>必要なライブラリのインストール</h2>
+<p>まずはインストールから始めます。以下のセルを実行して、必要なパッケージをインストールしてください。このチュートリアルでは Hugging Face Transformers と PyTorch を使います。</p>
+<div class="codehilite"><pre><span></span><code>!pip<span class="w"> </span>install<span class="w"> </span>-U<span class="w"> </span>-q<span class="w"> </span>datasets<span class="w"> </span>transformers<span class="o">[</span>torch<span class="o">]</span><span class="w"> </span>evaluate<span class="w"> </span>timm<span class="w"> </span>albumentations<span class="w"> </span>accelerate
+</code></pre></div>
+
+<h2>シナリオ</h2>
+<p>このチュートリアルを面白くするために、実世界の例を考えてみましょう。次のようなシナリオです。建設作業員は、建設現場で作業する際に最大限の安全が求められます。基本的な安全ルールでは、常にヘルメットを着用することになっています。しかし、建設作業員は大勢いるため、全員を常に見守るのは困難です。</p>
+<p>ですが、人物と、その人物がヘルメットを着用しているかどうかをリアルタイムで検出できるカメラシステムがあれば、素晴らしいと思いませんか？</p>
+<p>そこで、まさにそのための軽量な物体検出モデルをファインチューニングしていきます。さっそく始めましょう。</p>
+<h3>データセット</h3>
+<p>上記のシナリオでは、<a href="https://dataverse.harvard.edu/dataset.xhtml?persistentId=doi:10.7910/DVN/7CBGOS">Northeastern University China</a> が提供する <a href="https://huggingface.co/datasets/hf-vision/hardhat">hardhat</a> データセットを使います。このデータセットは 🤗 <code>datasets</code> でダウンロードして読み込めます。</p>
+<div class="codehilite"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">datasets</span><span class="w"> </span><span class="kn">import</span> <span class="n">load_dataset</span>
+
+<span class="n">dataset</span> <span class="o">=</span> <span class="n">load_dataset</span><span class="p">(</span><span class="s2">"anindya64/hardhat"</span><span class="p">)</span>
+<span class="n">dataset</span>
+</code></pre></div>
+
+<p>これにより、次のようなデータ構造が得られます。</p>
+<div class="codehilite"><pre><span></span><code>DatasetDict({
+    train: Dataset({
+        features: ['image', 'image_id', 'width', 'height', 'objects'],
+        num_rows: 5297
+    })
+    test: Dataset({
+        features: ['image', 'image_id', 'width', 'height', 'objects'],
+        num_rows: 1766
+    })
+})
+</code></pre></div>
+
+<p>上記は <a href="https://huggingface.co/docs/datasets/v2.17.1/en/package_reference/main_classes#datasets.DatasetDict">DatasetDict</a> です。これは辞書のような効率的な構造で、データセット全体を train スプリットと test スプリットに分けて保持します。各スプリット（train と test）の下には <code>features</code> と <code>num_rows</code> があるのが分かります。features の下には <code>image</code>、<a href="https://realpython.com/image-processing-with-the-python-pillow-library/">Pillow Object</a>、画像の id、高さと幅、そして objects があります。
+次に、（train/test セット内の）各データ点がどのようなものかを見てみましょう。そのためには、次の行を実行します。</p>
+<div class="codehilite"><pre><span></span><code><span class="n">dataset</span><span class="p">[</span><span class="s2">"train"</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span>
+</code></pre></div>
+
+<p>これにより、次のような構造が得られます。</p>
+<div class="codehilite"><pre><span></span><code>{'image': &lt;PIL.JpegImagePlugin.JpegImageFile image mode=RGB size=500x375&gt;,
+ 'image_id': 1,
+ 'width': 500,
+ 'height': 375,
+ 'objects': {'id': [1, 1],
+  'area': [3068.0, 690.0],
+  'bbox': [[178.0, 84.0, 52.0, 59.0], [111.0, 144.0, 23.0, 30.0]],
+  'category': ['helmet', 'helmet']}}
+</code></pre></div>
+
+<p>見てのとおり、<code>objects</code> はもう1つの辞書で、物体の id（ここではクラス id）、物体の面積、バウンディングボックスの座標（<code>bbox</code>）、そしてカテゴリ（ラベル）を含んでいます。データ要素の各キーと値について、より詳しく説明します。</p>
+<ul>
+<li><code>image</code>: Pillow の Image オブジェクトです。パスから読み込む前でも、画像を直接確認できます。</li>
+<li><code>image_id</code>: train ファイルの中で何番目の画像かを示します。</li>
+<li><code>width</code>: 画像の幅です。</li>
+<li><code>height</code>: 画像の高さです。</li>
+<li><code>objects</code>:  アノテーションに関する情報を含む、もう1つの辞書です。次の内容を含みます。<ul>
+<li><code>id</code>: リストです。リストの長さが物体の数を表し、各要素の値がクラスインデックスを表します。</li>
+<li><code>area</code>: 物体の面積です。</li>
+<li><code>bbox</code>: 物体のバウンディングボックスの座標を表します。</li>
+<li><code>category</code>: 物体のクラス（文字列）です。</li>
+</ul>
+</li>
+</ul>
+<p>では、train サンプルと test サンプルをきちんと取り出しましょう。このチュートリアルでは、学習サンプルが約5000件、テストサンプルが約1700件あります。</p>
+<div class="codehilite"><pre><span></span><code><span class="c1"># まず、train セットと test セットを取り出す</span>
+
+<span class="n">train_dataset</span> <span class="o">=</span> <span class="n">dataset</span><span class="p">[</span><span class="s2">"train"</span><span class="p">]</span>
+<span class="n">test_dataset</span> <span class="o">=</span> <span class="n">dataset</span><span class="p">[</span><span class="s2">"test"</span><span class="p">]</span>
+</code></pre></div>
+
+<p>1つのデータ点に何が含まれているかが分かったので、まずはそのサンプルを描画してみましょう。ここでは、最初に画像を描き、次に対応するバウンディングボックスも描きます。</p>
+<p>行うことは次のとおりです。</p>
+<ol>
+<li>画像と、それに対応する高さと幅を取得します。</li>
+<li>画像上にテキストや線を簡単に描ける描画オブジェクトを作ります。</li>
+<li>サンプルからアノテーションの辞書を取得します。</li>
+<li>それを反復処理します。</li>
+<li>各要素について、バウンディングボックスの座標を取得します。これは x（バウンディングボックスが横方向に始まる位置）、y（バウンディングボックスが縦方向に始まる位置）、w（バウンディングボックスの幅）、h（バウンディングボックスの高さ）です。</li>
+<li>バウンディングボックスの値が正規化されている場合はスケーリングし、そうでない場合はそのままにします。</li>
+<li>最後に、矩形とクラスのカテゴリのテキストを描きます。</li>
+</ol>
+<div class="codehilite"><pre><span></span><code><span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">PIL</span><span class="w"> </span><span class="kn">import</span> <span class="n">Image</span><span class="p">,</span> <span class="n">ImageDraw</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">draw_image_from_idx</span><span class="p">(</span><span class="n">dataset</span><span class="p">,</span> <span class="n">idx</span><span class="p">):</span>
+    <span class="n">sample</span> <span class="o">=</span> <span class="n">dataset</span><span class="p">[</span><span class="n">idx</span><span class="p">]</span>
+    <span class="n">image</span> <span class="o">=</span> <span class="n">sample</span><span class="p">[</span><span class="s2">"image"</span><span class="p">]</span>
+    <span class="n">annotations</span> <span class="o">=</span> <span class="n">sample</span><span class="p">[</span><span class="s2">"objects"</span><span class="p">]</span>
+    <span class="n">draw</span> <span class="o">=</span> <span class="n">ImageDraw</span><span class="o">.</span><span class="n">Draw</span><span class="p">(</span><span class="n">image</span><span class="p">)</span>
+    <span class="n">width</span><span class="p">,</span> <span class="n">height</span> <span class="o">=</span> <span class="n">sample</span><span class="p">[</span><span class="s2">"width"</span><span class="p">],</span> <span class="n">sample</span><span class="p">[</span><span class="s2">"height"</span><span class="p">]</span>
+
+    <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">annotations</span><span class="p">[</span><span class="s2">"id"</span><span class="p">])):</span>
+        <span class="n">box</span> <span class="o">=</span> <span class="n">annotations</span><span class="p">[</span><span class="s2">"bbox"</span><span class="p">][</span><span class="n">i</span><span class="p">]</span>
+        <span class="n">class_idx</span> <span class="o">=</span> <span class="n">annotations</span><span class="p">[</span><span class="s2">"id"</span><span class="p">][</span><span class="n">i</span><span class="p">]</span>
+        <span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">w</span><span class="p">,</span> <span class="n">h</span> <span class="o">=</span> <span class="nb">tuple</span><span class="p">(</span><span class="n">box</span><span class="p">)</span>
+        <span class="k">if</span> <span class="nb">max</span><span class="p">(</span><span class="n">box</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mf">1.0</span><span class="p">:</span>
+            <span class="n">x1</span><span class="p">,</span> <span class="n">y1</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">x</span><span class="p">),</span> <span class="nb">int</span><span class="p">(</span><span class="n">y</span><span class="p">)</span>
+            <span class="n">x2</span><span class="p">,</span> <span class="n">y2</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">x</span> <span class="o">+</span> <span class="n">w</span><span class="p">),</span> <span class="nb">int</span><span class="p">(</span><span class="n">y</span> <span class="o">+</span> <span class="n">h</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">x1</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">x</span> <span class="o">*</span> <span class="n">width</span><span class="p">)</span>
+            <span class="n">y1</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">y</span> <span class="o">*</span> <span class="n">height</span><span class="p">)</span>
+            <span class="n">x2</span> <span class="o">=</span> <span class="nb">int</span><span class="p">((</span><span class="n">x</span> <span class="o">+</span> <span class="n">w</span><span class="p">)</span> <span class="o">*</span> <span class="n">width</span><span class="p">)</span>
+            <span class="n">y2</span> <span class="o">=</span> <span class="nb">int</span><span class="p">((</span><span class="n">y</span> <span class="o">+</span> <span class="n">h</span><span class="p">)</span> <span class="o">*</span> <span class="n">height</span><span class="p">)</span>
+        <span class="n">draw</span><span class="o">.</span><span class="n">rectangle</span><span class="p">((</span><span class="n">x1</span><span class="p">,</span> <span class="n">y1</span><span class="p">,</span> <span class="n">x2</span><span class="p">,</span> <span class="n">y2</span><span class="p">),</span> <span class="n">outline</span><span class="o">=</span><span class="s2">"red"</span><span class="p">,</span> <span class="n">width</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+        <span class="n">draw</span><span class="o">.</span><span class="n">text</span><span class="p">((</span><span class="n">x1</span><span class="p">,</span> <span class="n">y1</span><span class="p">),</span> <span class="n">annotations</span><span class="p">[</span><span class="s2">"category"</span><span class="p">][</span><span class="n">i</span><span class="p">],</span> <span class="n">fill</span><span class="o">=</span><span class="s2">"white"</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">image</span>
+
+
+<span class="n">draw_image_from_idx</span><span class="p">(</span><span class="n">dataset</span><span class="o">=</span><span class="n">train_dataset</span><span class="p">,</span> <span class="n">idx</span><span class="o">=</span><span class="mi">10</span><span class="p">)</span>
+</code></pre></div>
+
+<p>1枚の画像を描画する関数ができたので、上記の関数を使って複数の画像を描画する簡単な関数を書きましょう。分析に役立ちます。</p>
+<div class="codehilite"><pre><span></span><code><span class="kn">import</span><span class="w"> </span><span class="nn">matplotlib.pyplot</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">plt</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">plot_images</span><span class="p">(</span><span class="n">dataset</span><span class="p">,</span> <span class="n">indices</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">"""</span>
+<span class="sd">    画像とそのアノテーションを描画する。</span>
+<span class="sd">    """</span>
+    <span class="n">num_rows</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">indices</span><span class="p">)</span> <span class="o">//</span> <span class="mi">3</span>
+    <span class="n">num_cols</span> <span class="o">=</span> <span class="mi">3</span>
+    <span class="n">fig</span><span class="p">,</span> <span class="n">axes</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">subplots</span><span class="p">(</span><span class="n">num_rows</span><span class="p">,</span> <span class="n">num_cols</span><span class="p">,</span> <span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mi">15</span><span class="p">,</span> <span class="mi">10</span><span class="p">))</span>
+
+    <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">idx</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">indices</span><span class="p">):</span>
+        <span class="n">row</span> <span class="o">=</span> <span class="n">i</span> <span class="o">//</span> <span class="n">num_cols</span>
+        <span class="n">col</span> <span class="o">=</span> <span class="n">i</span> <span class="o">%</span> <span class="n">num_cols</span>
+
+        <span class="c1"># 画像を描画する</span>
+        <span class="n">image</span> <span class="o">=</span> <span class="n">draw_image_from_idx</span><span class="p">(</span><span class="n">dataset</span><span class="p">,</span> <span class="n">idx</span><span class="p">)</span>
+
+        <span class="c1"># 対応するサブプロットに画像を表示する</span>
+        <span class="n">axes</span><span class="p">[</span><span class="n">row</span><span class="p">,</span> <span class="n">col</span><span class="p">]</span><span class="o">.</span><span class="n">imshow</span><span class="p">(</span><span class="n">image</span><span class="p">)</span>
+        <span class="n">axes</span><span class="p">[</span><span class="n">row</span><span class="p">,</span> <span class="n">col</span><span class="p">]</span><span class="o">.</span><span class="n">axis</span><span class="p">(</span><span class="s2">"off"</span><span class="p">)</span>
+
+    <span class="n">plt</span><span class="o">.</span><span class="n">tight_layout</span><span class="p">()</span>
+    <span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
+
+
+<span class="c1"># この関数を使って画像を描画する</span>
+
+<span class="n">plot_images</span><span class="p">(</span><span class="n">train_dataset</span><span class="p">,</span> <span class="nb">range</span><span class="p">(</span><span class="mi">9</span><span class="p">))</span>
+</code></pre></div>
+
+<p>この関数を実行すると、以下に示すような美しいコラージュが得られます。</p>
+<p><img alt="input-image-plot" src="https://huggingface.co/datasets/hf-vision/course-assets/resolve/main/object_detection_train_image_with_annotation_plots.png" /></p>
+<h2>AutoImageProcessor</h2>
+<p>モデルをファインチューニングする前に、事前学習時に使われた方法と正確に一致するようにデータを前処理しなければなりません。Hugging Face の <a href="https://huggingface.co/docs/transformers/v4.36.0/en/model_doc/auto#transformers.AutoImageProcessor">AutoImageProcessor</a> が画像データの処理を担い、DETR モデルが学習に使える <code>pixel_values</code>、<code>pixel_mask</code>、<code>labels</code> を作成します。</p>
+<p>では、ファインチューニングに使いたいモデルと同じチェックポイントから、イメージプロセッサをインスタンス化しましょう。</p>
+<div class="codehilite"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">transformers</span><span class="w"> </span><span class="kn">import</span> <span class="n">AutoImageProcessor</span>
+
+<span class="n">checkpoint</span> <span class="o">=</span> <span class="s2">"facebook/detr-resnet-50-dc5"</span>
+<span class="n">image_processor</span> <span class="o">=</span> <span class="n">AutoImageProcessor</span><span class="o">.</span><span class="n">from_pretrained</span><span class="p">(</span><span class="n">checkpoint</span><span class="p">)</span>
+</code></pre></div>
+
+<h2>データセットの前処理</h2>
+<p>画像を <code>image_processor</code> に渡す前に、画像とそれに対応するバウンディングボックスに対して、さまざまな種類のデータ拡張も適用しましょう。</p>
+<p>簡単に言うと、データ拡張とは、回転やリサイズなどのランダムな変換の集合です。これらを適用することでサンプル数を増やし、ビジョンモデルを画像のさまざまな条件に対して頑健にします。これには <a href="https://github.com/albumentations-team/albumentations">albumentations</a> ライブラリを使います。画像にランダムな変換を作成できるため、学習用のサンプルサイズを増やせます。</p>
+<div class="codehilite"><pre><span></span><code><span class="kn">import</span><span class="w"> </span><span class="nn">albumentations</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">torch</span>
+
+<span class="n">transform</span> <span class="o">=</span> <span class="n">albumentations</span><span class="o">.</span><span class="n">Compose</span><span class="p">(</span>
+    <span class="p">[</span>
+        <span class="n">albumentations</span><span class="o">.</span><span class="n">Resize</span><span class="p">(</span><span class="mi">480</span><span class="p">,</span> <span class="mi">480</span><span class="p">),</span>
+        <span class="n">albumentations</span><span class="o">.</span><span class="n">HorizontalFlip</span><span class="p">(</span><span class="n">p</span><span class="o">=</span><span class="mf">1.0</span><span class="p">),</span>
+        <span class="n">albumentations</span><span class="o">.</span><span class="n">RandomBrightnessContrast</span><span class="p">(</span><span class="n">p</span><span class="o">=</span><span class="mf">1.0</span><span class="p">),</span>
+    <span class="p">],</span>
+    <span class="n">bbox_params</span><span class="o">=</span><span class="n">albumentations</span><span class="o">.</span><span class="n">BboxParams</span><span class="p">(</span><span class="nb">format</span><span class="o">=</span><span class="s2">"coco"</span><span class="p">,</span> <span class="n">label_fields</span><span class="o">=</span><span class="p">[</span><span class="s2">"category"</span><span class="p">]),</span>
+<span class="p">)</span>
+</code></pre></div>
+
+<p>すべての変換を初期化したら、アノテーションを整形し、非常に特定の形式のアノテーションのリストを返す関数を作る必要があります。</p>
+<p>これは、<code>image_processor</code> がアノテーションを次の形式で受け取ることを想定しているためです。<code>{'image_id': int, 'annotations': List[Dict]}</code> という形式で、各辞書が COCO の物体アノテーションです。</p>
+<div class="codehilite"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">formatted_anns</span><span class="p">(</span><span class="n">image_id</span><span class="p">,</span> <span class="n">category</span><span class="p">,</span> <span class="n">area</span><span class="p">,</span> <span class="n">bbox</span><span class="p">):</span>
+    <span class="n">annotations</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">category</span><span class="p">)):</span>
+        <span class="n">new_ann</span> <span class="o">=</span> <span class="p">{</span>
+            <span class="s2">"image_id"</span><span class="p">:</span> <span class="n">image_id</span><span class="p">,</span>
+            <span class="s2">"category_id"</span><span class="p">:</span> <span class="n">category</span><span class="p">[</span><span class="n">i</span><span class="p">],</span>
+            <span class="s2">"isCrowd"</span><span class="p">:</span> <span class="mi">0</span><span class="p">,</span>
+            <span class="s2">"area"</span><span class="p">:</span> <span class="n">area</span><span class="p">[</span><span class="n">i</span><span class="p">],</span>
+            <span class="s2">"bbox"</span><span class="p">:</span> <span class="nb">list</span><span class="p">(</span><span class="n">bbox</span><span class="p">[</span><span class="n">i</span><span class="p">]),</span>
+        <span class="p">}</span>
+        <span class="n">annotations</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">new_ann</span><span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">annotations</span>
+</code></pre></div>
+
+<p>最後に、画像の変換とアノテーションの変換を組み合わせて、データセットのバッチ全体に対して変換を行います。</p>
+<p>そのための最終的なコードは次のとおりです。</p>
+<div class="codehilite"><pre><span></span><code><span class="c1"># バッチを変換する</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">transform_aug_ann</span><span class="p">(</span><span class="n">examples</span><span class="p">):</span>
+    <span class="n">image_ids</span> <span class="o">=</span> <span class="n">examples</span><span class="p">[</span><span class="s2">"image_id"</span><span class="p">]</span>
+    <span class="n">images</span><span class="p">,</span> <span class="n">bboxes</span><span class="p">,</span> <span class="n">area</span><span class="p">,</span> <span class="n">categories</span> <span class="o">=</span> <span class="p">[],</span> <span class="p">[],</span> <span class="p">[],</span> <span class="p">[]</span>
+    <span class="k">for</span> <span class="n">image</span><span class="p">,</span> <span class="n">objects</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="n">examples</span><span class="p">[</span><span class="s2">"image"</span><span class="p">],</span> <span class="n">examples</span><span class="p">[</span><span class="s2">"objects"</span><span class="p">]):</span>
+        <span class="n">image</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">image</span><span class="o">.</span><span class="n">convert</span><span class="p">(</span><span class="s2">"RGB"</span><span class="p">))[:,</span> <span class="p">:,</span> <span class="p">::</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+        <span class="n">out</span> <span class="o">=</span> <span class="n">transform</span><span class="p">(</span><span class="n">image</span><span class="o">=</span><span class="n">image</span><span class="p">,</span> <span class="n">bboxes</span><span class="o">=</span><span class="n">objects</span><span class="p">[</span><span class="s2">"bbox"</span><span class="p">],</span> <span class="n">category</span><span class="o">=</span><span class="n">objects</span><span class="p">[</span><span class="s2">"id"</span><span class="p">])</span>
+
+        <span class="n">area</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">objects</span><span class="p">[</span><span class="s2">"area"</span><span class="p">])</span>
+        <span class="n">images</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">out</span><span class="p">[</span><span class="s2">"image"</span><span class="p">])</span>
+        <span class="n">bboxes</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">out</span><span class="p">[</span><span class="s2">"bboxes"</span><span class="p">])</span>
+        <span class="n">categories</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">out</span><span class="p">[</span><span class="s2">"category"</span><span class="p">])</span>
+
+    <span class="n">targets</span> <span class="o">=</span> <span class="p">[</span>
+        <span class="p">{</span><span class="s2">"image_id"</span><span class="p">:</span> <span class="n">id_</span><span class="p">,</span> <span class="s2">"annotations"</span><span class="p">:</span> <span class="n">formatted_anns</span><span class="p">(</span><span class="n">id_</span><span class="p">,</span> <span class="n">cat_</span><span class="p">,</span> <span class="n">ar_</span><span class="p">,</span> <span class="n">box_</span><span class="p">)}</span>
+        <span class="k">for</span> <span class="n">id_</span><span class="p">,</span> <span class="n">cat_</span><span class="p">,</span> <span class="n">ar_</span><span class="p">,</span> <span class="n">box_</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="n">image_ids</span><span class="p">,</span> <span class="n">categories</span><span class="p">,</span> <span class="n">area</span><span class="p">,</span> <span class="n">bboxes</span><span class="p">)</span>
+    <span class="p">]</span>
+
+    <span class="k">return</span> <span class="n">image_processor</span><span class="p">(</span><span class="n">images</span><span class="o">=</span><span class="n">images</span><span class="p">,</span> <span class="n">annotations</span><span class="o">=</span><span class="n">targets</span><span class="p">,</span> <span class="n">return_tensors</span><span class="o">=</span><span class="s2">"pt"</span><span class="p">)</span>
+</code></pre></div>
+
+<p>最後に、この前処理関数をデータセット全体に適用するだけです。Hugging Face 🤗 の <a href="https://huggingface.co/docs/datasets/v2.15.0/en/package_reference/main_classes#datasets.Dataset.with_transform">Datasets with transform</a> メソッドを使うことで実現できます。</p>
+<div class="codehilite"><pre><span></span><code><span class="c1"># train データセットと test データセットの両方に変換を適用する</span>
+
+<span class="n">train_dataset_transformed</span> <span class="o">=</span> <span class="n">train_dataset</span><span class="o">.</span><span class="n">with_transform</span><span class="p">(</span><span class="n">transform_aug_ann</span><span class="p">)</span>
+<span class="n">test_dataset_transformed</span> <span class="o">=</span> <span class="n">test_dataset</span><span class="o">.</span><span class="n">with_transform</span><span class="p">(</span><span class="n">transform_aug_ann</span><span class="p">)</span>
+</code></pre></div>
+
+<p>では、変換後の train データセットのサンプルがどのように見えるかを確認しましょう。</p>
+<div class="codehilite"><pre><span></span><code><span class="n">train_dataset_transformed</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+</code></pre></div>
+
+<p>これにより、テンソルの辞書が返されます。ここで主に必要なのは、画像を表す <code>pixel_values</code>、アテンションマスクである <code>pixel_mask</code>、そして <code>labels</code> です。1つのデータ点は次のようになります。</p>
+<div class="codehilite"><pre><span></span><code>{'pixel_values': tensor([[[-0.1657, -0.1657, -0.1657,  ..., -0.3369, -0.4739, -0.5767],
+          [-0.1657, -0.1657, -0.1657,  ..., -0.3369, -0.4739, -0.5767],
+          [-0.1657, -0.1657, -0.1828,  ..., -0.3541, -0.4911, -0.5938],
+          ...,
+          [-0.4911, -0.5596, -0.6623,  ..., -0.7137, -0.7650, -0.7993],
+          [-0.4911, -0.5596, -0.6794,  ..., -0.7308, -0.7993, -0.8335],
+          [-0.4911, -0.5596, -0.6794,  ..., -0.7479, -0.8164, -0.8507]],
+
+         [[-0.0924, -0.0924, -0.0924,  ...,  0.0651, -0.0749, -0.1800],
+          [-0.0924, -0.0924, -0.0924,  ...,  0.0651, -0.0924, -0.2150],
+          [-0.0924, -0.0924, -0.1099,  ...,  0.0476, -0.1275, -0.2500],
+          ...,
+          [-0.0924, -0.1800, -0.3200,  ..., -0.4426, -0.4951, -0.5301],
+          [-0.0924, -0.1800, -0.3200,  ..., -0.4601, -0.5126, -0.5651],
+          [-0.0924, -0.1800, -0.3200,  ..., -0.4601, -0.5301, -0.5826]],
+
+         [[ 0.1999,  0.1999,  0.1999,  ...,  0.6705,  0.5136,  0.4091],
+          [ 0.1999,  0.1999,  0.1999,  ...,  0.6531,  0.4962,  0.3916],
+          [ 0.1999,  0.1999,  0.1825,  ...,  0.6356,  0.4614,  0.3568],
+          ...,
+          [ 0.4788,  0.3916,  0.2696,  ...,  0.1825,  0.1302,  0.0953],
+          [ 0.4788,  0.3916,  0.2696,  ...,  0.1651,  0.0953,  0.0605],
+          [ 0.4788,  0.3916,  0.2696,  ...,  0.1476,  0.0779,  0.0431]]]),
+ 'pixel_mask': tensor([[1, 1, 1,  ..., 1, 1, 1],
+         [1, 1, 1,  ..., 1, 1, 1],
+         [1, 1, 1,  ..., 1, 1, 1],
+         ...,
+         [1, 1, 1,  ..., 1, 1, 1],
+         [1, 1, 1,  ..., 1, 1, 1],
+         [1, 1, 1,  ..., 1, 1, 1]]),
+ 'labels': {'size': tensor([800, 800]), 'image_id': tensor([1]), 'class_labels': tensor([1, 1]), 'boxes': tensor([[0.5920, 0.3027, 0.1040, 0.1573],
+         [0.7550, 0.4240, 0.0460, 0.0800]]), 'area': tensor([8522.2217, 1916.6666]), 'iscrowd': tensor([0, 0]), 'orig_size': tensor([480, 480])}}
+</code></pre></div>
+
+<p>あと少しです 🚀。最後の前処理ステップとして、カスタムの <code>collate_fn</code> を書く必要があります。では、<code>collate_fn</code> とは何でしょうか？</p>
+<p><code>collate_fn</code> は、データセットからサンプルのリストを受け取り、モデルの入力形式に適したバッチへ変換する役割を担います。</p>
+<p>一般に、<code>DataCollator</code> はパディングや切り捨てなどのタスクを行います。カスタムの collate 関数では、データをバッチにまとめる方法、つまり各バッチをどのように表すかを定義することがよくあります。</p>
+<p>データコレーターは主にデータをまとめ、それから前処理を行います。collate 関数を作りましょう。</p>
+<div class="codehilite"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">collate_fn</span><span class="p">(</span><span class="n">batch</span><span class="p">):</span>
+    <span class="n">pixel_values</span> <span class="o">=</span> <span class="p">[</span><span class="n">item</span><span class="p">[</span><span class="s2">"pixel_values"</span><span class="p">]</span> <span class="k">for</span> <span class="n">item</span> <span class="ow">in</span> <span class="n">batch</span><span class="p">]</span>
+    <span class="n">encoding</span> <span class="o">=</span> <span class="n">image_processor</span><span class="o">.</span><span class="n">pad</span><span class="p">(</span><span class="n">pixel_values</span><span class="p">,</span> <span class="n">return_tensors</span><span class="o">=</span><span class="s2">"pt"</span><span class="p">)</span>
+    <span class="n">labels</span> <span class="o">=</span> <span class="p">[</span><span class="n">item</span><span class="p">[</span><span class="s2">"labels"</span><span class="p">]</span> <span class="k">for</span> <span class="n">item</span> <span class="ow">in</span> <span class="n">batch</span><span class="p">]</span>
+    <span class="n">batch</span> <span class="o">=</span> <span class="p">{}</span>
+    <span class="n">batch</span><span class="p">[</span><span class="s2">"pixel_values"</span><span class="p">]</span> <span class="o">=</span> <span class="n">encoding</span><span class="p">[</span><span class="s2">"pixel_values"</span><span class="p">]</span>
+    <span class="n">batch</span><span class="p">[</span><span class="s2">"pixel_mask"</span><span class="p">]</span> <span class="o">=</span> <span class="n">encoding</span><span class="p">[</span><span class="s2">"pixel_mask"</span><span class="p">]</span>
+    <span class="n">batch</span><span class="p">[</span><span class="s2">"labels"</span><span class="p">]</span> <span class="o">=</span> <span class="n">labels</span>
+    <span class="k">return</span> <span class="n">batch</span>
+</code></pre></div>
+
+<h2>DETR モデルの学習</h2>
+<p>ここまでの重い作業は終わりました。あとはパズルのピースを1つずつ組み立てるだけです。始めましょう。</p>
+<p>学習の手順は次のステップで構成されます。</p>
+<ol>
+<li>
+<p>前処理で使ったのと同じチェックポイントを使って、<a href="https://huggingface.co/docs/transformers/v4.36.0/en/model_doc/auto#transformers.AutoModelForObjectDetection">AutoModelForObjectDetection</a> でベースの（事前学習済みの）モデルを読み込みます。</p>
+</li>
+<li>
+<p><a href="https://huggingface.co/docs/transformers/v4.36.0/en/main_classes/trainer#transformers.TrainingArguments">TrainingArguments</a> の中で、すべてのハイパーパラメータと追加の引数を定義します。</p>
+</li>
+<li>
+<p>学習用の引数を、モデル、データセット、画像とともに <a href="https://huggingface.co/docs/transformers/v4.36.0/en/main_classes/trainer#transformers.Trainer">Hugging Face Trainer</a> に渡します。</p>
+</li>
+<li>
+<p><code>train()</code> メソッドを呼び出して、モデルをファインチューニングします。</p>
+</li>
+</ol>
+<blockquote>
+<p>前処理で使ったのと同じチェックポイントからモデルを読み込む際は、データセットのメタデータから先に作成した <code>label2id</code> と <code>id2label</code> のマップを渡すのを忘れないでください。さらに、<code>ignore_mismatched_sizes=True</code> を指定して、既存の分類ヘッドを新しいものに置き換えます。</p>
+</blockquote>
+<div class="codehilite"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">transformers</span><span class="w"> </span><span class="kn">import</span> <span class="n">AutoModelForObjectDetection</span>
+
+<span class="n">id2label</span> <span class="o">=</span> <span class="p">{</span><span class="mi">0</span><span class="p">:</span> <span class="s2">"head"</span><span class="p">,</span> <span class="mi">1</span><span class="p">:</span> <span class="s2">"helmet"</span><span class="p">,</span> <span class="mi">2</span><span class="p">:</span> <span class="s2">"person"</span><span class="p">}</span>
+<span class="n">label2id</span> <span class="o">=</span> <span class="p">{</span><span class="n">v</span><span class="p">:</span> <span class="n">k</span> <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">id2label</span><span class="o">.</span><span class="n">items</span><span class="p">()}</span>
+
+
+<span class="n">model</span> <span class="o">=</span> <span class="n">AutoModelForObjectDetection</span><span class="o">.</span><span class="n">from_pretrained</span><span class="p">(</span>
+    <span class="n">checkpoint</span><span class="p">,</span>
+    <span class="n">id2label</span><span class="o">=</span><span class="n">id2label</span><span class="p">,</span>
+    <span class="n">label2id</span><span class="o">=</span><span class="n">label2id</span><span class="p">,</span>
+    <span class="n">ignore_mismatched_sizes</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+<span class="p">)</span>
+</code></pre></div>
+
+<p>次に進む前に、Hugging Face Hub にログインして、学習中にモデルをその場でアップロードできるようにしましょう。こうすれば、チェックポイントを扱ったり、どこかに保存したりする必要がなくなります。</p>
+<div class="codehilite"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">huggingface_hub</span><span class="w"> </span><span class="kn">import</span> <span class="n">notebook_login</span>
+
+<span class="n">notebook_login</span><span class="p">()</span>
+</code></pre></div>
+
+<p>完了したら、モデルの学習を始めましょう。まず学習用の引数を定義し、それらの引数を使って学習を行う trainer オブジェクトを定義します。次に示すとおりです。</p>
+<div class="codehilite"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">transformers</span><span class="w"> </span><span class="kn">import</span> <span class="n">TrainingArguments</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">transformers</span><span class="w"> </span><span class="kn">import</span> <span class="n">Trainer</span>
+
+<span class="c1"># 学習用の引数を定義する</span>
+
+<span class="n">training_args</span> <span class="o">=</span> <span class="n">TrainingArguments</span><span class="p">(</span>
+    <span class="n">output_dir</span><span class="o">=</span><span class="s2">"detr-resnet-50-hardhat-finetuned"</span><span class="p">,</span>
+    <span class="n">per_device_train_batch_size</span><span class="o">=</span><span class="mi">8</span><span class="p">,</span>
+    <span class="n">num_train_epochs</span><span class="o">=</span><span class="mi">3</span><span class="p">,</span>
+    <span class="n">max_steps</span><span class="o">=</span><span class="mi">1000</span><span class="p">,</span>
+    <span class="n">fp16</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+    <span class="n">save_steps</span><span class="o">=</span><span class="mi">10</span><span class="p">,</span>
+    <span class="n">logging_steps</span><span class="o">=</span><span class="mi">30</span><span class="p">,</span>
+    <span class="n">learning_rate</span><span class="o">=</span><span class="mf">1e-5</span><span class="p">,</span>
+    <span class="n">weight_decay</span><span class="o">=</span><span class="mf">1e-4</span><span class="p">,</span>
+    <span class="n">save_total_limit</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span>
+    <span class="n">remove_unused_columns</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+    <span class="n">push_to_hub</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+<span class="p">)</span>
+
+<span class="c1"># trainer を定義する</span>
+
+<span class="n">trainer</span> <span class="o">=</span> <span class="n">Trainer</span><span class="p">(</span>
+    <span class="n">model</span><span class="o">=</span><span class="n">model</span><span class="p">,</span>
+    <span class="n">args</span><span class="o">=</span><span class="n">training_args</span><span class="p">,</span>
+    <span class="n">data_collator</span><span class="o">=</span><span class="n">collate_fn</span><span class="p">,</span>
+    <span class="n">train_dataset</span><span class="o">=</span><span class="n">train_dataset_transformed</span><span class="p">,</span>
+    <span class="n">eval_dataset</span><span class="o">=</span><span class="n">test_dataset_transformed</span><span class="p">,</span>
+    <span class="n">tokenizer</span><span class="o">=</span><span class="n">image_processor</span><span class="p">,</span>
+<span class="p">)</span>
+
+<span class="n">trainer</span><span class="o">.</span><span class="n">train</span><span class="p">()</span>
+</code></pre></div>
+
+<p>学習が終わったら、チェックポイントはすでに Hugging Face Hub にアップロードされているため、モデルを削除できます。</p>
+<div class="codehilite"><pre><span></span><code><span class="k">del</span> <span class="n">model</span>
+<span class="n">torch</span><span class="o">.</span><span class="n">cuda</span><span class="o">.</span><span class="n">synchronize</span><span class="p">()</span>
+</code></pre></div>
+
+<h3>テストと推論</h3>
+<p>次に、新しくファインチューニングしたモデルで推論を試します。このチュートリアルでは、次の画像でテストします。</p>
+<p><img alt="input-test-image" src="https://huggingface.co/datasets/hf-vision/course-assets/resolve/main/test_input_for_od.png" /></p>
+<p>ここではまず、新しい画像に対して物体検出の推論を行う非常に簡単なコードを書きます。最初は1枚の画像について推論し、その後すべてをまとめて関数にします。</p>
+<div class="codehilite"><pre><span></span><code><span class="kn">import</span><span class="w"> </span><span class="nn">requests</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">transformers</span><span class="w"> </span><span class="kn">import</span> <span class="n">pipeline</span>
+
+<span class="c1"># サンプル画像をダウンロードする</span>
+
+<span class="n">url</span> <span class="o">=</span> <span class="s2">"https://huggingface.co/datasets/hf-vision/course-assets/resolve/main/test-helmet-object-detection.jpg"</span>
+<span class="n">image</span> <span class="o">=</span> <span class="n">Image</span><span class="o">.</span><span class="n">open</span><span class="p">(</span><span class="n">requests</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">url</span><span class="p">,</span> <span class="n">stream</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span><span class="o">.</span><span class="n">raw</span><span class="p">)</span>
+
+<span class="c1"># 物体検出の pipeline を作る</span>
+
+<span class="n">obj_detector</span> <span class="o">=</span> <span class="n">pipeline</span><span class="p">(</span>
+    <span class="s2">"object-detection"</span><span class="p">,</span> <span class="n">model</span><span class="o">=</span><span class="s2">"anindya64/detr-resnet-50-dc5-hardhat-finetuned"</span>
+<span class="p">)</span>
+<span class="n">results</span> <span class="o">=</span> <span class="n">obj_detector</span><span class="p">(</span><span class="n">train_dataset</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="s2">"image"</span><span class="p">])</span>
+
+<span class="nb">print</span><span class="p">(</span><span class="n">results</span><span class="p">)</span>
+</code></pre></div>
+
+<p>では、結果を画像上に描画する非常に簡単な関数を作りましょう。results から score、label、対応するバウンディングボックスの座標を取得し、それを使って画像に描画します。</p>
+<div class="codehilite"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">plot_results</span><span class="p">(</span><span class="n">image</span><span class="p">,</span> <span class="n">results</span><span class="p">,</span> <span class="n">threshold</span><span class="o">=</span><span class="mf">0.7</span><span class="p">):</span>
+    <span class="n">image</span> <span class="o">=</span> <span class="n">Image</span><span class="o">.</span><span class="n">fromarray</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">uint8</span><span class="p">(</span><span class="n">image</span><span class="p">))</span>
+    <span class="n">draw</span> <span class="o">=</span> <span class="n">ImageDraw</span><span class="o">.</span><span class="n">Draw</span><span class="p">(</span><span class="n">image</span><span class="p">)</span>
+    <span class="k">for</span> <span class="n">result</span> <span class="ow">in</span> <span class="n">results</span><span class="p">:</span>
+        <span class="n">score</span> <span class="o">=</span> <span class="n">result</span><span class="p">[</span><span class="s2">"score"</span><span class="p">]</span>
+        <span class="n">label</span> <span class="o">=</span> <span class="n">result</span><span class="p">[</span><span class="s2">"label"</span><span class="p">]</span>
+        <span class="n">box</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">result</span><span class="p">[</span><span class="s2">"box"</span><span class="p">]</span><span class="o">.</span><span class="n">values</span><span class="p">())</span>
+        <span class="k">if</span> <span class="n">score</span> <span class="o">&gt;</span> <span class="n">threshold</span><span class="p">:</span>
+            <span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">x2</span><span class="p">,</span> <span class="n">y2</span> <span class="o">=</span> <span class="nb">tuple</span><span class="p">(</span><span class="n">box</span><span class="p">)</span>
+            <span class="n">draw</span><span class="o">.</span><span class="n">rectangle</span><span class="p">((</span><span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">x2</span><span class="p">,</span> <span class="n">y2</span><span class="p">),</span> <span class="n">outline</span><span class="o">=</span><span class="s2">"red"</span><span class="p">,</span> <span class="n">width</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+            <span class="n">draw</span><span class="o">.</span><span class="n">text</span><span class="p">((</span><span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">),</span> <span class="n">label</span><span class="p">,</span> <span class="n">fill</span><span class="o">=</span><span class="s2">"white"</span><span class="p">)</span>
+            <span class="n">draw</span><span class="o">.</span><span class="n">text</span><span class="p">(</span>
+                <span class="p">(</span><span class="n">x</span> <span class="o">+</span> <span class="mf">0.5</span><span class="p">,</span> <span class="n">y</span> <span class="o">-</span> <span class="mf">0.5</span><span class="p">),</span>
+                <span class="n">text</span><span class="o">=</span><span class="nb">str</span><span class="p">(</span><span class="n">score</span><span class="p">),</span>
+                <span class="n">fill</span><span class="o">=</span><span class="s2">"green"</span> <span class="k">if</span> <span class="n">score</span> <span class="o">&gt;</span> <span class="mf">0.7</span> <span class="k">else</span> <span class="s2">"red"</span><span class="p">,</span>
+            <span class="p">)</span>
+    <span class="k">return</span> <span class="n">image</span>
+</code></pre></div>
+
+<p>最後に、同じテスト画像に対してこの関数を使います。</p>
+<div class="codehilite"><pre><span></span><code>results = obj_detector(image)
+plot_results(image, results)
+</code></pre></div>
+
+<p>これにより、以下の出力が描画されます。</p>
+<p><img alt="output-test-image-plot" src="https://huggingface.co/datasets/hf-vision/course-assets/resolve/main/test_output_for_od.png" /></p>
+<p>では、すべてをまとめて簡単な関数にしましょう。</p>
+<div class="codehilite"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">predict</span><span class="p">(</span><span class="n">image</span><span class="p">,</span> <span class="n">pipeline</span><span class="p">,</span> <span class="n">threshold</span><span class="o">=</span><span class="mf">0.7</span><span class="p">):</span>
+    <span class="n">results</span> <span class="o">=</span> <span class="n">pipeline</span><span class="p">(</span><span class="n">image</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">plot_results</span><span class="p">(</span><span class="n">image</span><span class="p">,</span> <span class="n">results</span><span class="p">,</span> <span class="n">threshold</span><span class="p">)</span>
+
+
+<span class="c1"># 別のテスト画像で試す</span>
+
+<span class="n">img</span> <span class="o">=</span> <span class="n">test_dataset</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="s2">"image"</span><span class="p">]</span>
+<span class="n">predict</span><span class="p">(</span><span class="n">img</span><span class="p">,</span> <span class="n">obj_detector</span><span class="p">)</span>
+</code></pre></div>
+
+<p>さらに、小さなテストサンプルに対して、推論関数を使って複数の画像も描画してみましょう。</p>
+<div class="codehilite"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">tqdm.auto</span><span class="w"> </span><span class="kn">import</span> <span class="n">tqdm</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">plot_images</span><span class="p">(</span><span class="n">dataset</span><span class="p">,</span> <span class="n">indices</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">"""</span>
+<span class="sd">    画像とそのアノテーションを描画する。</span>
+<span class="sd">    """</span>
+    <span class="n">num_rows</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">indices</span><span class="p">)</span> <span class="o">//</span> <span class="mi">3</span>
+    <span class="n">num_cols</span> <span class="o">=</span> <span class="mi">3</span>
+    <span class="n">fig</span><span class="p">,</span> <span class="n">axes</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">subplots</span><span class="p">(</span><span class="n">num_rows</span><span class="p">,</span> <span class="n">num_cols</span><span class="p">,</span> <span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mi">15</span><span class="p">,</span> <span class="mi">10</span><span class="p">))</span>
+
+    <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">idx</span> <span class="ow">in</span> <span class="n">tqdm</span><span class="p">(</span><span class="nb">enumerate</span><span class="p">(</span><span class="n">indices</span><span class="p">),</span> <span class="n">total</span><span class="o">=</span><span class="nb">len</span><span class="p">(</span><span class="n">indices</span><span class="p">)):</span>
+        <span class="n">row</span> <span class="o">=</span> <span class="n">i</span> <span class="o">//</span> <span class="n">num_cols</span>
+        <span class="n">col</span> <span class="o">=</span> <span class="n">i</span> <span class="o">%</span> <span class="n">num_cols</span>
+
+        <span class="c1"># 画像を描画する</span>
+        <span class="n">image</span> <span class="o">=</span> <span class="n">predict</span><span class="p">(</span><span class="n">dataset</span><span class="p">[</span><span class="n">idx</span><span class="p">][</span><span class="s2">"image"</span><span class="p">],</span> <span class="n">obj_detector</span><span class="p">)</span>
+
+        <span class="c1"># 対応するサブプロットに画像を表示する</span>
+        <span class="n">axes</span><span class="p">[</span><span class="n">row</span><span class="p">,</span> <span class="n">col</span><span class="p">]</span><span class="o">.</span><span class="n">imshow</span><span class="p">(</span><span class="n">image</span><span class="p">)</span>
+        <span class="n">axes</span><span class="p">[</span><span class="n">row</span><span class="p">,</span> <span class="n">col</span><span class="p">]</span><span class="o">.</span><span class="n">axis</span><span class="p">(</span><span class="s2">"off"</span><span class="p">)</span>
+
+    <span class="n">plt</span><span class="o">.</span><span class="n">tight_layout</span><span class="p">()</span>
+    <span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
+
+
+<span class="n">plot_images</span><span class="p">(</span><span class="n">test_dataset</span><span class="p">,</span> <span class="nb">range</span><span class="p">(</span><span class="mi">6</span><span class="p">))</span>
+</code></pre></div>
+
+<p>この関数を実行すると、次のような出力が得られます。</p>
+<p><img alt="test-sample-output-plot" src="https://huggingface.co/datasets/hf-vision/course-assets/resolve/main/sample_od_test_set_inference_output.png" /></p>
+<p>悪くない結果です。さらにファインチューニングすれば、結果を改善できます。ファインチューニング済みのこのチェックポイントは<a href="hf-vision/detr-resnet-50-dc5-harhat-finetuned">こちら</a>で確認できます。</p>
+</article>
+<nav class="page-nav"><a class="nav-link prev" href="mobilevit.html">← 前へ: MobileViT v2</a><a class="nav-link toc-link" href="../../index.html">目次へ</a><a class="nav-link next" href="detr.html">次へ →: DEtection TRansformer (DETR)</a></nav>
+</main>
+<footer class="site-footer">
+  <p>原典: Hugging Face huggingface/computer-vision-course（<a href="https://github.com/huggingface/computer-vision-course">https://github.com/huggingface/computer-vision-course</a>）</p>
+  <p>日本語版の翻訳・公開: 霞ヶ関京 / 連絡先: GitHub <a href="https://github.com/yanikasumin">@yanikasumin</a> / YouTube <a href="https://www.youtube.com/@KASUMI_MOF">@KASUMI_MOF</a></p>
+  <p class="demo-note">このサイトはデモ版です。内容は順次更新されます。</p>
+</footer>
+<script src="../../../site.js"></script>
+</body>
+</html>

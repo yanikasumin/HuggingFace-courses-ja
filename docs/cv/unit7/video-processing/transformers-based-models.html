@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ビデオ処理における Transformer（Part 1） | Hugging Face コース日本語版（デモ版）</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Shippori+Mincho:wght@500;700&family=Zen+Kaku+Gothic+New:wght@400;500;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../../../style.css">
+<script>
+window.MathJax = { tex: { inlineMath: [['$', '$'], ['\\(', '\\)']], displayMath: [['$$', '$$'], ['\\[', '\\]']] }, options: { skipHtmlTags: ['script','noscript','style','textarea','pre','code'] } };
+</script>
+<script async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml.js"></script>
+</head>
+<body>
+<header class="site-header">
+  <div class="header-inner">
+    <a class="site-title" href="../../../index.html">Hugging Face コース日本語版</a>
+    <span class="demo-badge">デモ版</span>
+  </div>
+</header>
+<main class="container">
+<p class="course-crumb"><a href="../../index.html">Community CV コース</a>
+<span class="badge badge-qa-wip">翻訳済み・QA進行中（未検証の部分を含みます）</span></p>
+<nav class="page-nav"><a class="nav-link prev" href="rnn-based-video-models.html">← 前へ: はじめに</a><a class="nav-link toc-link" href="../../index.html">目次へ</a><a class="nav-link next" href="../../unit8/introduction/introduction.html">次へ →: はじめに</a></nav>
+<article class="content">
+<h1>ビデオ処理における Transformer（Part 1）</h1>
+<h2>はじめに</h2>
+<p>この章では、Transformer モデルがビデオ処理でどう活用されるかを扱います。特に、ビジョン分野における Transformer の成功した応用である Vision Transformer を紹介します。次に、画像で使われる Vision Transformer に対して、ビデオで使われる Video Vision Transformer（ViViT）モデルで追加された検討事項を説明します。最後に、TimeSFormer モデルについて簡単に議論します。</p>
+<p><strong>この文書を読む前に復習しておくと役立つ資料</strong>:</p>
+<ul>
+<li><a href="https://huggingface.co/learn/computer-vision-course/unit3/vision-transformers/vision-transformers-for-image-classification">computer vision course / unit3 / vision transformers for image classification</a></li>
+<li><a href="https://huggingface.co/docs/transformers/main/en/model_doc/vit">transformers / model documentation: ViT</a></li>
+</ul>
+<h2>ViT のおさらい</h2>
+<p>まず、ビジョンへの Transformer の応用として最も基本的な成功例である Vision Transformer、<a href="https://arxiv.org/abs/2010.11929">An image is worth 16x16 words: Transformers for image recognition at scale</a> を簡単に見てみましょう。</p>
+<p>論文の要旨は次のとおりです。</p>
+<p><em>NLP における Transformer のスケーリングの成功に着想を得て、私たちは標準的な Transformer を、できるだけ少ない変更で画像に直接適用する実験を行った。そのために、画像をパッチに分割し、それらのパッチの線形埋め込みの列を Transformer への入力として与える。画像パッチは、NLP アプリケーションにおけるトークン（単語）と同じように扱われる。私たちは教師あり学習の方法で、画像分類についてモデルを訓練する。</em></p>
+<div class="flex justify-center">
+<img src="https://huggingface.co/datasets/hf-vision/course-assets/resolve/main/transformer_based_video_model/unit7_1_vit_architecture.png" alt="Vision Transformer のアーキテクチャ">
+</div>
+<p><small>ViT のアーキテクチャ。<a href= "https://arxiv.org/abs/2010.11929">原論文</a>より。</small></p>
+<p>ViT 論文で提案された主な技術は次のとおりです。</p>
+<ul>
+<li>
+<p>画像を小さなパッチに分割し、各パッチを Transformer モデルへの入力として使い、CNN を Transformer ベースのアプローチに置き換えます。</p>
+</li>
+<li>
+<p>各画像パッチを線形にマッピングし、位置埋め込みを加えることで、Transformer がパッチの順序を認識できるようにします。</p>
+</li>
+<li>
+<p>モデルを大規模データセットで事前学習し、下流のビジョンタスク向けにファインチューニングすることで、高い性能を達成します。</p>
+</li>
+</ul>
+<h3>性能と限界</h3>
+<div class="flex justify-center">
+<img src="https://huggingface.co/datasets/hf-vision/course-assets/resolve/main/transformer_based_video_model/unit7_2_vit_performance.JPG" alt="Vision Transformer の性能">
+</div>
+<p><small>SOTA モデルとの比較。<a href="https://arxiv.org/abs/2010.11929">原論文</a>より。</small></p>
+<p>ViT は他の最先端モデルを上回りましたが、ViT モデルの訓練には大量の計算能力が必要でした。ViT モデルの訓練には TPU-v3 で2,500日を要しました。TPU-v3 コアの価格を1時間あたり約2ドルと仮定すると（より詳しい料金情報は<a href="https://cloud.google.com/tpu/pricing">こちら</a>）、モデルを1回訓練するコストは 2ドル × 24時間 × 2,500日 = 120,000ドルになります。</p>
+<h2>Video Vision Transformer（ViViT）</h2>
+<p>前述のとおり、ViT の画像処理をビデオ分類タスクへ拡張した ViViT の重要な課題は、モデルをより速く効率的に訓練することでした。また、画像とは異なり、ビデオには空間情報だけでなく時間情報も含まれており、この「時間情報」をどう扱うかが重要な検討事項であり探求の対象です。</p>
+<p><a href="https://arxiv.org/abs/2103.15691">論文</a>の要旨は次のとおりです。</p>
+<p><em>私たちは、画像分類における最近の成功を踏まえ、ビデオ分類のための純粋な Transformer ベースのモデルを発表する。私たちのモデルは、入力ビデオから時空間トークンを抽出し、それらを一連の Transformer 層でエンコードする。ビデオでは長いトークン列を扱うことになるため、入力の空間次元と時間次元を因数分解する、効率的なモデルのバリエーションをいくつか提案する。Transformer ベースのモデルは、大規模な訓練データセットが利用できる場合にのみ効果的であることが知られているが、私たちは訓練時にモデルを効果的に正則化し、事前学習済みの画像モデルを活用することで、比較的小さなデータセットでも訓練できることを示す。私たちは徹底的なアブレーション研究を行い、Kinetics 400 および 600、Epic Kitchens、Something-Something v2、Moments in Time を含む複数のビデオ分類ベンチマークで最先端の結果を達成し、深層3D畳み込みネットワークに基づく従来手法を上回った。さらなる研究を促進するため、コードを次の場所で公開する。https://github.com/google-research/scenic.</em></p>
+<div class="flex justify-center">
+<img src="https://huggingface.co/datasets/hf-vision/course-assets/resolve/main/transformer_based_video_model/unit7_3_vivit_architecture.png" alt="ViViT のアーキテクチャ">
+</div>
+<p><small>ViViT のアーキテクチャ。<a href = "https://arxiv.org/abs/2103.15691">原論文</a>より。</small></p>
+<h3>ビデオクリップの埋め込み</h3>
+<h4>埋め込みとは？</h4>
+<p>具体的な技術に入る前に、埋め込みとは何かを理解することが重要です。機械学習において、埋め込みとは、入力データの意味のある特徴を、ニューラルネットワークが処理できる形式で捉えた密なベクトル表現です。ビデオについては、空間情報（各フレームに何が映っているか）と時間情報（物事が時間とともにどう変化するか）の両方を保ちながら、生のピクセルデータをこうした数学的表現に変換する必要があります。</p>
+<h4>ビデオ埋め込みが重要な理由</h4>
+<p>ビデオの処理は、その大きさと複雑さゆえに計算負荷が高くなります。優れた埋め込み技術は次の点で役立ちます。</p>
+<ul>
+<li>重要な特徴を保ちながら次元を削減する</li>
+<li>フレーム間の時間的な関係を捉える</li>
+<li>ニューラルネットワークがビデオデータを効率的に処理できるようにする</li>
+</ul>
+<h4>なぜ一様フレームサンプリングとチューブレット埋め込みに注目するのか？</h4>
+<p>これら2つの技術は、ビデオ処理における基本的なアプローチであり、より高度な手法の構成要素となっています。</p>
+<ol>
+<li>計算効率と情報の保存のバランスを取り、さまざまなビデオ処理タスクに応じた選択肢を提供します。</li>
+<li>ベースライン手法として機能し、新しい技術が改善を示す際の比較対象となります。</li>
+<li>これらのアプローチを学ぶことで、時空間処理の確かな基礎が築かれ、より高度なビデオ埋め込み手法を理解するのに役立ちます。</li>
+</ol>
+<h4>一様フレームサンプリング（Uniform Frame Sampling）</h4>
+<div class="flex justify-center">
+<img src="https://huggingface.co/datasets/hf-vision/course-assets/resolve/main/transformer_based_video_model/unit7_4_uniform_sampling_1JPG.JPG" alt="一様フレームサンプリング">
+</div>
+<p><small>一様フレームサンプリング。<a href = "https://arxiv.org/abs/2103.15691">原論文</a>より。</small></p>
+<p>このマッピング方法では、モデルは時間領域にわたってフレームを一様にサンプリングします。
+たとえば、2フレームに1フレームの割合でサンプリングします。</p>
+<h4>チューブレット埋め込み（Tubelet Embedding）</h4>
+<div class="flex justify-center">
+<img src="https://huggingface.co/datasets/hf-vision/course-assets/resolve/main/transformer_based_video_model/unit7_5_tubelet_embedding.JPG" alt="チューブレット埋め込み">
+</div>
+<p><small>チューブレット埋め込み。<a href = "https://arxiv.org/abs/2103.15691">原論文</a>より。</small></p>
+<p>もう1つの方法で、入力ボリュームから時空間的な「チューブ（tube）」を抽出し、これを線形に射影します。この方法は、トークン化の段階で時空間情報を融合します。</p>
+<p>ここまで紹介した一様フレームサンプリングやチューブレット埋め込みといった手法は、効果的ですが比較的単純なアプローチです。次に紹介する手法は、より高度なものです。</p>
+<h3>ViViT におけるビデオ向け Transformer モデル</h3>
+<p>元の ViViT 論文では、Transformer ベースのアーキテクチャが複数提案されています。順に見ていきましょう。</p>
+<h4>モデル1: 時空間注意（Spatio-Temporal Attention）</h4>
+<p>最初のモデルは、ViT の考え方を自然にビデオ分類タスクへ拡張したものです。ビデオの各フレームは n_w（列の数）× n_h（行の数）の画像パッチに分割され、合計で n_t（フレーム数）× n_w × n_h 個のパッチになります。これらのパッチはそれぞれ「時空間トークン」として埋め込まれます。これは本質的に、空間（画像）情報と時間（ビデオシーケンス）情報の両方を表す小さな単位です。このモデルは、ビデオから抽出されたすべての時空間トークンを Transformer のエンコーダに通します。つまり、各パッチ（トークン）は、それ自体の特徴だけでなく、時間と空間を越えた他のパッチとの関係も理解できるよう処理されます。「文脈化（contextualizing）」と呼ばれるこのプロセスを通して、エンコーダは位置、色、動きのパターンを捉えることで、各パッチが他のパッチとどう関係するかを学習し、ビデオ全体の文脈について豊かで包括的な理解を構築します。</p>
+<p><strong>計算量 : O(n_h^2 x n_w^2 x n_t^2)</strong></p>
+<p>ただし、すべての時空間トークンに対して注意を適用すると、計算コストが大きくなります。この処理を効率化するため、先に説明した一様フレームサンプリングやチューブレット埋め込みといった手法が、コストの削減に使われます。</p>
+<h4>モデル2: 因数分解エンコーダ（Factorised Encoder）</h4>
+<p>モデル1のアプローチは、すべてのパッチを同時に文脈化していたため、やや非効率でした。これを改善するため、モデル2は空間エンコーダと時間エンコーダを順番に分離します。</p>
+<div class="flex justify-center">
+<img src="https://huggingface.co/datasets/hf-vision/course-assets/resolve/main/transformer_based_video_model/unit7_6_vivit_model2.JPG" alt="ViViT モデル2">
+</div>
+<p><small>因数分解エンコーダ（モデル2）。<a href = "https://arxiv.org/abs/2103.15691">原論文</a>より。</small></p>
+<p>まず、空間的な相互作用だけを、Spatial Transformer Encoder（＝ViT）を通して文脈化します。次に、各フレームを1つの埋め込みにエンコードし、Temporal Transformer Encoder（＝通常の Transformer）に入力します。</p>
+<p><strong>計算量 : O(n_h^2 x n_w^2 + n_t^2)</strong></p>
+<h4>モデル3: 因数分解自己注意（Factorised Self-Attention）</h4>
+<div class="flex justify-center">
+<img src="https://huggingface.co/datasets/hf-vision/course-assets/resolve/main/transformer_based_video_model/unit7_7_vivit_model3.JPG" alt="ViViT モデル3">
+</div>
+<p><small>因数分解自己注意（モデル3）。<a href = "https://arxiv.org/abs/2103.15691">原論文</a>より。</small></p>
+<p>モデル3では、すべてのトークンのペアに対してマルチヘッド自己注意を計算する代わりに、まず空間方向だけに自己注意を計算します（同じ時間インデックスから抽出されたすべてのトークンの間）。次に、時間方向に自己注意を計算します（同じ空間インデックスから抽出されたすべてのトークンの間）。曖昧さが生じるため、CLS（分類）トークンは使われません。</p>
+<p><strong>計算量 : モデル2と同じ</strong></p>
+<h4>モデル4: 因数分解ドット積注意（Factorized Dot-Product Attention）</h4>
+<div class="flex justify-center">
+<img src="https://huggingface.co/datasets/hf-vision/course-assets/resolve/main/transformer_based_video_model/unit7_8_vivit_model4.JPG" alt="ViViT モデル4">
+</div>
+<p><small>因数分解ドット積注意（モデル4）。<a href = "https://arxiv.org/abs/2103.15691">原論文</a>より。</small></p>
+<p>モデル4では、注意ヘッドの半分が空間インデックスからのキーと値で動作するよう設計され、残りの半分が同じ時間インデックスからのキーと値で動作します。</p>
+<p><strong>計算量 : モデル2、3と同じ</strong></p>
+<h3>実験と議論</h3>
+<div class="flex justify-center">
+<img src="https://huggingface.co/datasets/hf-vision/course-assets/resolve/main/transformer_based_video_model/unit7_9_vivit_performance.JPG" alt="ViViT モデルの性能">
+</div>
+<p><small>モデルアーキテクチャの比較（Top-1 精度）。<a href = "https://arxiv.org/abs/2103.15691">原論文</a>より。</small></p>
+<p>モデル1、2、3、4を比較すると、モデル1が最も優れた性能を達成しましたが、最も長い訓練時間を必要としたことが明らかです。対照的に、モデル2はモデル3や4と比べて訓練時間が短く、比較的高い性能を示したため、全体として最も効率的なモデルとなりました。</p>
+<p>ViViT モデルは根本的に、データセットの疎らさという問題に直面しています。Vision Transformer（ViT）と同様、ViViT は優れた性能を達成するために極めて大規模なデータセットを必要とします。しかし、ビデオについては、その規模のデータセットが利用できないことが多くあります。学習タスクがより複雑であることを踏まえ、まず ViT を使って大規模な画像データセットで事前学習し、モデルを初期化するというアプローチが取られます。</p>
+<h2>TimeSFormer</h2>
+<p>TimeSFormer は ViViT と同時期の研究で、Transformer をビデオ分類に適用したものです。以下のセクションは、各タイプの注意についての説明です。</p>
+<div class="flex justify-center">
+<img src="https://huggingface.co/datasets/hf-vision/course-assets/resolve/main/transformer_based_video_model/unit7_10_timesformer.JPG" alt="TimeSFormer モデル">
+</div>
+<p><small>5つの時空間自己注意スキームの可視化。<a href = "https://arxiv.org/abs/2102.05095">原論文</a>より。</small></p>
+<ul>
+<li><strong>スパース注意（Sparse Attention）</strong>は ViT と同じで、青いパッチがクエリとなり、1フレーム内の他のパッチを文脈化します。</li>
+<li><strong>結合時空間注意（Joint Space-Time Attention）</strong>は ViViT のモデル1と同じで、青いパッチがクエリとなり、複数のフレームにわたる他のパッチを文脈化します。</li>
+<li><strong>分割時空間注意（Divided Space-Time Attention）</strong>は ViViT のモデル3に似ており、青いパッチはまず同じ位置にある緑のパッチと時間方向に文脈化し、次に同じ時間インデックスの他の画像パッチと空間方向に文脈化します。</li>
+<li><strong>スパース局所・大域注意（Sparse Local Global Attention）</strong>: 局所的な情報と大域的な情報を選択的に組み合わせます。</li>
+<li><strong>軸方向注意（Axial Attention）</strong>: 空間次元と時間次元を、それぞれの軸に沿って個別に処理します。</li>
+</ul>
+<h3>性能に関する議論</h3>
+<p><strong>分割時空間注意（Divided Space-Time Attention）</strong>の仕組みが最も効果的な性能を示し、K400 と SSv2 の両データセットで、パラメータ効率と精度の最良のバランスを提供します。</p>
+<h2>まとめ</h2>
+<p>ViViT は、ViT モデルを拡張してビデオデータをより効果的に扱えるようにし、時空間次元を効率的に管理することを目指した因数分解エンコーダ、因数分解自己注意、因数分解ドット積注意といったさまざまなモデルを導入しました。同様に、TimeSFormer も ViT アーキテクチャから発展し、ViViT のように多様な注意機構を利用して時空間次元を扱いました。この進展から得られる重要なポイントは、Transformer アーキテクチャをビデオ分析に適用する際の大きな計算コストの削減に焦点が当てられていることです。さまざまな最適化技術を活用することで、これらのモデルは効率を改善し、より少ない計算リソースでの学習を可能にします。</p>
+<h2>追加リソース</h2>
+<ul>
+<li><a href="https://arxiv.org/abs/2201.05991">Video Transformers: A Survey</a></li>
+</ul>
+</article>
+<nav class="page-nav"><a class="nav-link prev" href="rnn-based-video-models.html">← 前へ: はじめに</a><a class="nav-link toc-link" href="../../index.html">目次へ</a><a class="nav-link next" href="../../unit8/introduction/introduction.html">次へ →: はじめに</a></nav>
+</main>
+<footer class="site-footer">
+  <p>原典: Hugging Face huggingface/computer-vision-course（<a href="https://github.com/huggingface/computer-vision-course">https://github.com/huggingface/computer-vision-course</a>）</p>
+  <p>日本語版の翻訳・公開: 霞ヶ関京 / 連絡先: GitHub <a href="https://github.com/yanikasumin">@yanikasumin</a> / YouTube <a href="https://www.youtube.com/@KASUMI_MOF">@KASUMI_MOF</a></p>
+  <p class="demo-note">このサイトはデモ版です。内容は順次更新されます。</p>
+</footer>
+<script src="../../../site.js"></script>
+</body>
+</html>

@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>OneFormer: 汎用画像セグメンテーションを統べる1つの Transformer | Hugging Face コース日本語版（デモ版）</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Shippori+Mincho:wght@500;700&family=Zen+Kaku+Gothic+New:wght@400;500;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../../../style.css">
+<script>
+window.MathJax = { tex: { inlineMath: [['$', '$'], ['\\(', '\\)']], displayMath: [['$$', '$$'], ['\\[', '\\]']] }, options: { skipHtmlTags: ['script','noscript','style','textarea','pre','code'] } };
+</script>
+<script async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml.js"></script>
+</head>
+<body>
+<header class="site-header">
+  <div class="header-inner">
+    <a class="site-title" href="../../../index.html">Hugging Face コース日本語版</a>
+    <span class="demo-badge">デモ版</span>
+  </div>
+</header>
+<main class="container">
+<p class="course-crumb"><a href="../../index.html">Community CV コース</a>
+<span class="badge badge-qa-wip">翻訳済み・QA進行中（未検証の部分を含みます）</span></p>
+<nav class="page-nav"><a class="nav-link prev" href="vision-transformers-for-image-segmentation.html">← 前へ: Transformer ベースの画像セグメンテーション</a><a class="nav-link toc-link" href="../../index.html">目次へ</a><a class="nav-link next" href="knowledge-distillation.html">次へ →: Vision Transformer における知識蒸留</a></nav>
+<article class="content">
+<h1>OneFormer: 汎用画像セグメンテーションを統べる1つの Transformer</h1>
+<p><img align="center" width="1050" height="303" src="https://huggingface.co/datasets/hf-vision/course-assets/resolve/main/oneformer/teaser.svg"></p>
+<h2>はじめに</h2>
+<p>OneFormer は、画像セグメンテーションに対する画期的なアプローチです。画像セグメンテーションは、画像を意味のある領域に分割するコンピュータビジョンのタスクです。従来の手法では、物体を識別する処理（instance segmentation）や領域にラベルを付ける処理（semantic segmentation）など、セグメンテーションのタスクごとに別々のモデルとアーキテクチャを使っていました。より最近の試みでは、アーキテクチャを共有してこれらのタスクを統一しようとしましたが、それでもタスクごとに別々の訓練が必要でした。</p>
+<p>ここに登場する OneFormer は、こうした課題を克服するために設計された汎用画像セグメンテーションのフレームワークです。独自のマルチタスクのアプローチを導入し、semantic、instance、panoptic の各セグメンテーションタスクを、タスクごとに別々に訓練することなく、1つのモデルで処理できます。中核となる工夫は、タスク条件付きの共同訓練の戦略です。モデルはタスク入力によって誘導され、訓練時も推論時も、異なるタスクに動的に対応できます。</p>
+<p>この進歩により、訓練プロセスがシンプルになるだけでなく、さまざまなデータセットで既存のモデルを上回る性能が得られます。OneFormer は、すべてのタスクに必要な正解情報を統一する panoptic アノテーションを使うことでこれを実現しています。さらに、このフレームワークは query-text 対照学習を導入し、タスク同士の区別をより明確にして、全体の性能を高めています。</p>
+<h2>OneFormer の背景</h2>
+<p><img alt="Oneformer の手法" src="https://huggingface.co/datasets/hf-vision/course-assets/resolve/main/oneformer/oneformer.svg" />
+<em>OneFormer 論文から引用した画像</em></p>
+<p>OneFormer の重要性を理解するために、画像セグメンテーションの背景を見ていきます。画像処理において、セグメンテーションは画像を異なる部分に分割する処理で、物体の認識やシーンの内容理解といったタスクに欠かせません。従来、セグメンテーションの主なタスクは2種類でした。1つは semantic segmentation で、ピクセルに「道路」や「空」のようなカテゴリのラベルを付けます。もう1つは instance segmentation で、明確な境界を持つ物体を識別します。</p>
+<p>その後、研究者らは semantic segmentation と instance segmentation を統一する方法として panoptic segmentation を提案しました。しかし、こうした進歩があっても課題は残りました。panoptic segmentation 向けに設計された既存のモデルでも、タスクごとに別々の訓練が必要で、せいぜい半汎用にとどまっていたのです。</p>
+<p>ここで OneFormer が状況を変えます。新しいアプローチとして、マルチタスクの汎用アーキテクチャを導入しました。考え方はシンプルです。このフレームワークを、1つの汎用アーキテクチャ、1つのモデル、1つのデータセットだけで、1回だけ訓練します。すると OneFormer は、semantic、instance、panoptic の各セグメンテーションタスクで、特化したフレームワークを上回ります。この進歩は、単に精度が上がるという話ではありません。画像セグメンテーションをより汎用的で効率的なものにする点に意味があります。OneFormer があれば、タスクごとに大量のリソースを使って別々に訓練する必要は過去のものになります。</p>
+<h2>OneFormer の中核となる概念</h2>
+<p><img alt="タスク条件付き共同訓練" src="https://huggingface.co/datasets/hf-vision/course-assets/resolve/main/oneformer/text_gen.svg" /></p>
+<p>OneFormer を際立たせている主な特徴を分解して見ていきます。</p>
+<h3>Task-Dynamic Mask</h3>
+<p>OneFormer は「Task-Dynamic Mask」と呼ばれる巧妙な仕組みを使い、さまざまな種類の画像セグメンテーションタスクをよりよく理解し、処理します。モデルが画像に接すると、この「Task-Dynamic Mask」を使って、シーン全体に注目すべきか、明確な境界を持つ特定の物体を識別すべきか、その両方を組み合わせるべきかを判断します。</p>
+<h3>Task-Conditioned Joint Training</h3>
+<p>OneFormer の画期的な特徴の1つが、タスク条件付き共同訓練の戦略です。semantic、instance、panoptic のセグメンテーションを別々に訓練するのではなく、OneFormer は訓練中にタスクを一様にサンプリングします。この戦略により、モデルは異なるセグメンテーションタスクを同時に学習し、汎化できます。タスクトークンを通してアーキテクチャにタスクの条件を与えることで、OneFormer は訓練プロセスを統一し、タスク固有のアーキテクチャ、モデル、データセットの必要性を減らします。この革新的なアプローチにより、訓練パイプラインと必要なリソースは大きく効率化されます。</p>
+<h3>Query-Text Contrastive Loss</h3>
+<p>最後に、「Query-Text Contrastive Loss」について説明します。OneFormer がタスクやクラス同士の違いを自ら学ぶための方法、と考えてください。訓練プロセスでは、モデルは画像から取り出した特徴（クエリ）と、対応するテキスト記述（「車が写った写真」のようなもの）を比較します。これにより、モデルは各タスクの固有の特徴を理解し、異なるクラス同士の混同を減らせます。OneFormer の「Task-Dynamic Mask」は、マルチタスクのアシスタントのように汎用的に振る舞えるようにするものです。そして「Query-Text Contrastive Loss」は、視覚的な特徴とテキスト記述を比べることで、各タスクの具体的な内容を学ぶ助けになります。</p>
+<p>これらの中核となる概念を組み合わせることで、OneFormer は画像セグメンテーションのための賢く効率的なツールになり、プロセスをより汎用的で身近なものにします。 </p>
+<h2>まとめ</h2>
+<p><img alt="結果の比較" src="https://huggingface.co/datasets/hf-vision/course-assets/resolve/main/oneformer/plots.svg" />
+<em>OneFormer 論文から引用した画像</em></p>
+<p>まとめると、OneFormer フレームワークは画像セグメンテーション分野における画期的なアプローチです。さまざまな領域にわたってこのタスクをシンプルにし、統一することを目指しています。セグメンテーションタスクごとに特化したアーキテクチャに頼る従来の手法とは異なり、OneFormer は新しいマルチタスクの汎用アーキテクチャを導入しました。汎用データセットで1回だけ訓練した1つのモデルで、既存のフレームワークを上回ります。さらに、訓練時に query-text 対照損失を取り入れることで、モデルがタスク間およびクラス間の違いを学習する能力が高まります。OneFormer は、コンピュータビジョンにおける最近の成功に着想を得た Transformer ベースのアーキテクチャを使い、タスクへの感度を高めるためにタスク誘導クエリを導入しています。結果は目覚ましく、OneFormer は ADE20k、Cityscapes、COCO といったベンチマークデータセットで、semantic、instance、panoptic の各セグメンテーションタスクにおいて最先端のモデルを上回ります。このフレームワークの性能は、新しい ConvNeXt および DiNAT バックボーンによってさらに高まります。</p>
+<p>要するに、OneFormer は汎用的で身近な画像セグメンテーションに向けた大きな一歩です。多様なセグメンテーションタスクを処理できる1つのモデルを導入することで、このフレームワークはセグメンテーションプロセスを効率化し、必要なリソースを減らします。</p>
+<h2>モデルの使用例</h2>
+<p>モデルの使用例を見ていきます。Dinat バックボーンには Natten ライブラリが必要で、インストールに時間がかかる場合があります。</p>
+<div class="codehilite"><pre><span></span><code>!pip<span class="w"> </span>install<span class="w"> </span>-q<span class="w"> </span>natten<span class="w"> </span>
+</code></pre></div>
+
+<p>セグメンテーションの種類に応じた推論コードを次に示します。</p>
+<div class="codehilite"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">transformers</span><span class="w"> </span><span class="kn">import</span> <span class="n">OneFormerProcessor</span><span class="p">,</span> <span class="n">OneFormerForUniversalSegmentation</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">PIL</span><span class="w"> </span><span class="kn">import</span> <span class="n">Image</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">requests</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">matplotlib.pyplot</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">plt</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">run_segmentation</span><span class="p">(</span><span class="n">image</span><span class="p">,</span> <span class="n">task_type</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">"""Performs image segmentation based on the given task type.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        image (PIL.Image): The input image.</span>
+<span class="sd">        task_type (str): The type of segmentation to perform ('semantic', 'instance', or 'panoptic').</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        PIL.Image: The segmented image.</span>
+
+<span class="sd">    Raises:</span>
+<span class="sd">        ValueError: If the task type is invalid.</span>
+<span class="sd">    """</span>
+
+    <span class="n">processor</span> <span class="o">=</span> <span class="n">OneFormerProcessor</span><span class="o">.</span><span class="n">from_pretrained</span><span class="p">(</span>
+        <span class="s2">"shi-labs/oneformer_ade20k_dinat_large"</span>
+    <span class="p">)</span>  <span class="c1"># ここで1回だけ読み込みます</span>
+    <span class="n">model</span> <span class="o">=</span> <span class="n">OneFormerForUniversalSegmentation</span><span class="o">.</span><span class="n">from_pretrained</span><span class="p">(</span>
+        <span class="s2">"shi-labs/oneformer_ade20k_dinat_large"</span>
+    <span class="p">)</span>
+
+    <span class="k">if</span> <span class="n">task_type</span> <span class="o">==</span> <span class="s2">"semantic"</span><span class="p">:</span>
+        <span class="n">inputs</span> <span class="o">=</span> <span class="n">processor</span><span class="p">(</span><span class="n">images</span><span class="o">=</span><span class="n">image</span><span class="p">,</span> <span class="n">task_inputs</span><span class="o">=</span><span class="p">[</span><span class="s2">"semantic"</span><span class="p">],</span> <span class="n">return_tensors</span><span class="o">=</span><span class="s2">"pt"</span><span class="p">)</span>
+        <span class="n">outputs</span> <span class="o">=</span> <span class="n">model</span><span class="p">(</span><span class="o">**</span><span class="n">inputs</span><span class="p">)</span>
+        <span class="n">predicted_map</span> <span class="o">=</span> <span class="n">processor</span><span class="o">.</span><span class="n">post_process_semantic_segmentation</span><span class="p">(</span>
+            <span class="n">outputs</span><span class="p">,</span> <span class="n">target_sizes</span><span class="o">=</span><span class="p">[</span><span class="n">image</span><span class="o">.</span><span class="n">size</span><span class="p">[::</span><span class="o">-</span><span class="mi">1</span><span class="p">]]</span>
+        <span class="p">)[</span><span class="mi">0</span><span class="p">]</span>
+
+    <span class="k">elif</span> <span class="n">task_type</span> <span class="o">==</span> <span class="s2">"instance"</span><span class="p">:</span>
+        <span class="n">inputs</span> <span class="o">=</span> <span class="n">processor</span><span class="p">(</span><span class="n">images</span><span class="o">=</span><span class="n">image</span><span class="p">,</span> <span class="n">task_inputs</span><span class="o">=</span><span class="p">[</span><span class="s2">"instance"</span><span class="p">],</span> <span class="n">return_tensors</span><span class="o">=</span><span class="s2">"pt"</span><span class="p">)</span>
+        <span class="n">outputs</span> <span class="o">=</span> <span class="n">model</span><span class="p">(</span><span class="o">**</span><span class="n">inputs</span><span class="p">)</span>
+        <span class="n">predicted_map</span> <span class="o">=</span> <span class="n">processor</span><span class="o">.</span><span class="n">post_process_instance_segmentation</span><span class="p">(</span>
+            <span class="n">outputs</span><span class="p">,</span> <span class="n">target_sizes</span><span class="o">=</span><span class="p">[</span><span class="n">image</span><span class="o">.</span><span class="n">size</span><span class="p">[::</span><span class="o">-</span><span class="mi">1</span><span class="p">]]</span>
+        <span class="p">)[</span><span class="mi">0</span><span class="p">][</span><span class="s2">"segmentation"</span><span class="p">]</span>
+
+    <span class="k">elif</span> <span class="n">task_type</span> <span class="o">==</span> <span class="s2">"panoptic"</span><span class="p">:</span>
+        <span class="n">inputs</span> <span class="o">=</span> <span class="n">processor</span><span class="p">(</span><span class="n">images</span><span class="o">=</span><span class="n">image</span><span class="p">,</span> <span class="n">task_inputs</span><span class="o">=</span><span class="p">[</span><span class="s2">"panoptic"</span><span class="p">],</span> <span class="n">return_tensors</span><span class="o">=</span><span class="s2">"pt"</span><span class="p">)</span>
+        <span class="n">outputs</span> <span class="o">=</span> <span class="n">model</span><span class="p">(</span><span class="o">**</span><span class="n">inputs</span><span class="p">)</span>
+        <span class="n">predicted_map</span> <span class="o">=</span> <span class="n">processor</span><span class="o">.</span><span class="n">post_process_panoptic_segmentation</span><span class="p">(</span>
+            <span class="n">outputs</span><span class="p">,</span> <span class="n">target_sizes</span><span class="o">=</span><span class="p">[</span><span class="n">image</span><span class="o">.</span><span class="n">size</span><span class="p">[::</span><span class="o">-</span><span class="mi">1</span><span class="p">]]</span>
+        <span class="p">)[</span><span class="mi">0</span><span class="p">][</span><span class="s2">"segmentation"</span><span class="p">]</span>
+
+    <span class="k">else</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+            <span class="s2">"Invalid task type. Choose from 'semantic', 'instance', or 'panoptic'"</span>
+        <span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">predicted_map</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">show_image_comparison</span><span class="p">(</span><span class="n">image</span><span class="p">,</span> <span class="n">predicted_map</span><span class="p">,</span> <span class="n">segmentation_title</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">"""Displays the original image and the segmented image side-by-side.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        image (PIL.Image): The original image.</span>
+<span class="sd">        predicted_map (PIL.Image): The segmented image.</span>
+<span class="sd">        segmentation_title (str): The title for the segmented image.</span>
+<span class="sd">    """</span>
+
+    <span class="n">plt</span><span class="o">.</span><span class="n">figure</span><span class="p">(</span><span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mi">12</span><span class="p">,</span> <span class="mi">6</span><span class="p">))</span>
+    <span class="n">plt</span><span class="o">.</span><span class="n">subplot</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
+    <span class="n">plt</span><span class="o">.</span><span class="n">imshow</span><span class="p">(</span><span class="n">image</span><span class="p">)</span>
+    <span class="n">plt</span><span class="o">.</span><span class="n">title</span><span class="p">(</span><span class="s2">"Original Image"</span><span class="p">)</span>
+    <span class="n">plt</span><span class="o">.</span><span class="n">axis</span><span class="p">(</span><span class="s2">"off"</span><span class="p">)</span>
+    <span class="n">plt</span><span class="o">.</span><span class="n">subplot</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">2</span><span class="p">)</span>
+    <span class="n">plt</span><span class="o">.</span><span class="n">imshow</span><span class="p">(</span><span class="n">predicted_map</span><span class="p">)</span>
+    <span class="n">plt</span><span class="o">.</span><span class="n">title</span><span class="p">(</span><span class="n">segmentation_title</span> <span class="o">+</span> <span class="s2">" Segmentation"</span><span class="p">)</span>
+    <span class="n">plt</span><span class="o">.</span><span class="n">axis</span><span class="p">(</span><span class="s2">"off"</span><span class="p">)</span>
+    <span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
+
+
+<span class="n">url</span> <span class="o">=</span> <span class="s2">"https://huggingface.co/datasets/shi-labs/oneformer_demo/resolve/main/ade20k.jpeg"</span>
+<span class="n">response</span> <span class="o">=</span> <span class="n">requests</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">url</span><span class="p">,</span> <span class="n">stream</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+<span class="n">response</span><span class="o">.</span><span class="n">raise_for_status</span><span class="p">()</span>  <span class="c1"># HTTP エラーを確認します</span>
+<span class="n">image</span> <span class="o">=</span> <span class="n">Image</span><span class="o">.</span><span class="n">open</span><span class="p">(</span><span class="n">response</span><span class="o">.</span><span class="n">raw</span><span class="p">)</span>
+
+<span class="n">task_to_run</span> <span class="o">=</span> <span class="s2">"semantic"</span>
+<span class="n">predicted_map</span> <span class="o">=</span> <span class="n">run_segmentation</span><span class="p">(</span><span class="n">image</span><span class="p">,</span> <span class="n">task_to_run</span><span class="p">)</span>
+<span class="n">show_image_comparison</span><span class="p">(</span><span class="n">image</span><span class="p">,</span> <span class="n">predicted_map</span><span class="p">,</span> <span class="n">task_to_run</span><span class="p">)</span>
+</code></pre></div>
+
+<p><img alt="セマンティックセグメンテーション" src="https://huggingface.co/datasets/hf-vision/course-assets/resolve/main/oneformer/oneformer_semantic.png" /></p>
+<h2>参考文献</h2>
+<ul>
+<li><a href="https://arxiv.org/pdf/2211.06220.pdf">OneFormer 論文</a>  </li>
+<li><a href="https://huggingface.co/shi-labs/oneformer_ade20k_dinat_large">HuggingFace OneFormer モデル</a></li>
+</ul>
+</article>
+<nav class="page-nav"><a class="nav-link prev" href="vision-transformers-for-image-segmentation.html">← 前へ: Transformer ベースの画像セグメンテーション</a><a class="nav-link toc-link" href="../../index.html">目次へ</a><a class="nav-link next" href="knowledge-distillation.html">次へ →: Vision Transformer における知識蒸留</a></nav>
+</main>
+<footer class="site-footer">
+  <p>原典: Hugging Face huggingface/computer-vision-course（<a href="https://github.com/huggingface/computer-vision-course">https://github.com/huggingface/computer-vision-course</a>）</p>
+  <p>日本語版の翻訳・公開: 霞ヶ関京 / 連絡先: GitHub <a href="https://github.com/yanikasumin">@yanikasumin</a> / YouTube <a href="https://www.youtube.com/@KASUMI_MOF">@KASUMI_MOF</a></p>
+  <p class="demo-note">このサイトはデモ版です。内容は順次更新されます。</p>
+</footer>
+<script src="../../../site.js"></script>
+</body>
+</html>

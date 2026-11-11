@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Transformer ベースの画像セグメンテーション | Hugging Face コース日本語版（デモ版）</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Shippori+Mincho:wght@500;700&family=Zen+Kaku+Gothic+New:wght@400;500;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../../../style.css">
+<script>
+window.MathJax = { tex: { inlineMath: [['$', '$'], ['\\(', '\\)']], displayMath: [['$$', '$$'], ['\\[', '\\]']] }, options: { skipHtmlTags: ['script','noscript','style','textarea','pre','code'] } };
+</script>
+<script async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml.js"></script>
+</head>
+<body>
+<header class="site-header">
+  <div class="header-inner">
+    <a class="site-title" href="../../../index.html">Hugging Face コース日本語版</a>
+    <span class="demo-badge">デモ版</span>
+  </div>
+</header>
+<main class="container">
+<p class="course-crumb"><a href="../../index.html">Community CV コース</a>
+<span class="badge badge-qa-wip">翻訳済み・QA進行中（未検証の部分を含みます）</span></p>
+<nav class="page-nav"><a class="nav-link prev" href="detr.html">← 前へ: DEtection TRansformer (DETR)</a><a class="nav-link toc-link" href="../../index.html">目次へ</a><a class="nav-link next" href="oneformer.html">次へ →: OneFormer: 汎用画像セグメンテーションを統べる1つの Transformer</a></nav>
+<article class="content">
+<h1>Transformer ベースの画像セグメンテーション</h1>
+<p>このセクションでは、画像セグメンテーションにおいて Vision Transformer と畳み込みニューラルネットワーク（CNN）がどう違うかを探ります。あわせて、Vision Transformer ベースのセグメンテーションモデルを例に、そのアーキテクチャを詳しく説明します。</p>
+<div class="callout callout-warning">
+<p>このセクションでは、画像セグメンテーション、畳み込みニューラルネットワーク（CNN）、Vision Transformer の基礎を理解していることを前提としています。これらの概念にまだ慣れていない場合は、先にコース内の関連資料を確認することをおすすめします。</p>
+</div>
+<h2>セグメンテーションにおける CNN と Transformer の比較</h2>
+<p>Vision Transformer が登場する前は、CNN（畳み込みニューラルネットワーク）が画像セグメンテーションの定番でした。<a href="https://arxiv.org/abs/1505.04597">U-Net</a> や <a href="https://arxiv.org/abs/1703.06870">Mask R-CNN</a> のようなモデルは、画像内の異なる物体を区別するために必要な詳細を捉え、セグメンテーションタスクで最先端の性能を達成しました。</p>
+<p>過去10年間で優れた成果を上げてきた一方で、CNN ベースのモデルにはいくつかの限界があります。Transformer はその解決を目指しています。</p>
+<ul>
+<li><strong>空間的な制約</strong>：CNN は、小さな受容野を通して局所的なパターンを学習します。この局所的な焦点のため、画像内で遠く離れているものの関連する特徴同士を「結びつける」ことが難しくなります。その結果、複雑なシーンや物体を正確にセグメンテーションする能力に影響します。CNN とは異なり、ViT はアテンション機構を活用し、画像内のグローバルな依存関係を捉えるよう設計されています。つまり、ViT ベースのモデルは画像全体を一度に考慮するため、画像の離れた部分同士の複雑な関係を理解できます。セグメンテーションにおいて、このグローバルな視点は、物体をより正確に切り分けることにつながります。</li>
+<li><strong>タスク固有のコンポーネント</strong>：Mask R-CNN のような手法は、セグメンテーションタスクに関する事前知識を符号化するために、手作業で設計されたコンポーネント（非最大値抑制や空間アンカーなど）を取り入れています。これらのコンポーネントは複雑さを増し、手作業での調整も必要になります。これに対して、ViT ベースのセグメンテーション手法は、手作業で設計されたコンポーネントを不要にすることでセグメンテーションのプロセスを簡素化し、最適化をより容易にします。</li>
+<li><strong>セグメンテーションタスクへの特化</strong>：CNN ベースのセグメンテーションモデルは、セマンティックセグメンテーション、インスタンスセグメンテーション、パノプティックセグメンテーションの各タスクに個別に取り組んできました。そのため、タスクごとに特化したアーキテクチャが生まれ、研究の取り組みも分かれていました。最近の ViT ベースのモデル、たとえば <a href="https://arxiv.org/abs/2107.06278">MaskFormer</a>、<a href="https://arxiv.org/abs/2105.15203">SegFormer</a>、<a href="https://arxiv.org/abs/2304.02643">SAM</a> は、単一のフレームワークの中でセマンティック、インスタンス、パノプティックの各セグメンテーションタスクに取り組む統一的なアプローチを提供します。</li>
+</ul>
+<h2>MaskFormer に注目：画像セグメンテーションにおける ViT の例</h2>
+<p>MaskFormer（<a href="https://arxiv.org/abs/2107.06278">論文</a>、<a href="https://huggingface.co/docs/transformers/en/model_doc/maskformer">Hugging Face Transformers ドキュメント</a>）は、論文「MaskFormer: Per-Pixel Classification is Not All You Need for Semantic Segmentation」で発表されたモデルです。画像内に存在する各クラスについてセグメンテーションマスクを予測し、セマンティックセグメンテーションとインスタンスセグメンテーションを1つのアーキテクチャに統合します。</p>
+<h3>MaskFormer のアーキテクチャ</h3>
+<p>次の図は、論文から引用したアーキテクチャ図です。</p>
+<p><img
+  width="600"
+  src="https://huggingface.co/datasets/huggingface/documentation-images/resolve/main/maskformer_architecture.png"
+/></p>
+<p>このアーキテクチャは、3つのコンポーネントで構成されています。</p>
+<p><strong>ピクセルレベルモジュール</strong>：バックボーンを使って画像の特徴を抽出し、ピクセルデコーダでピクセルごとの埋め込みを生成します。</p>
+<p><strong>Transformer モジュール</strong>：標準的な Transformer デコーダを使い、画像の特徴と学習可能な位置埋め込み（クエリ）からセグメントごとの埋め込みを計算します。各セグメントに関するグローバルな情報を符号化します。</p>
+<p><strong>セグメンテーションモジュール</strong>：線形分類器と多層パーセプトロン（MLP）をそれぞれ使い、各セグメントについてクラスの確率予測とマスク埋め込みを生成します。マスク埋め込みは、ピクセルごとの埋め込みと組み合わせて使われ、各セグメントのバイナリマスクを予測します。</p>
+<p>このモデルは、<a href="https://huggingface.co/learn/computer-vision-course/unit3/vision-transformers/detr">DETR</a> と同じバイナリマスク損失と、予測されたセグメントごとの交差エントロピー分類損失で学習します。</p>
+<h3>Hugging Face Transformers を使ったパノプティックセグメンテーションの推論例</h3>
+<p>パノプティックセグメンテーションは、画像のすべてのピクセルにカテゴリのラベルを付け、それらのカテゴリの中で異なる物体を識別するタスクです。セマンティックセグメンテーションとインスタンスセグメンテーションを組み合わせたものです。</p>
+<div class="codehilite"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">transformers</span><span class="w"> </span><span class="kn">import</span> <span class="n">pipeline</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">PIL</span><span class="w"> </span><span class="kn">import</span> <span class="n">Image</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">requests</span>
+
+<span class="n">segmentation</span> <span class="o">=</span> <span class="n">pipeline</span><span class="p">(</span><span class="s2">"image-segmentation"</span><span class="p">,</span> <span class="s2">"facebook/maskformer-swin-base-coco"</span><span class="p">)</span>
+
+<span class="n">url</span> <span class="o">=</span> <span class="s2">"http://images.cocodataset.org/val2017/000000039769.jpg"</span>
+<span class="n">image</span> <span class="o">=</span> <span class="n">Image</span><span class="o">.</span><span class="n">open</span><span class="p">(</span><span class="n">requests</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">url</span><span class="p">,</span> <span class="n">stream</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span><span class="o">.</span><span class="n">raw</span><span class="p">)</span>
+
+<span class="n">results</span> <span class="o">=</span> <span class="n">segmentation</span><span class="p">(</span><span class="n">inputs</span><span class="o">=</span><span class="n">image</span><span class="p">,</span> <span class="n">subtask</span><span class="o">=</span><span class="s2">"panoptic"</span><span class="p">)</span>
+<span class="n">results</span>
+</code></pre></div>
+
+<p>下記のように、結果には同じクラスの複数のインスタンスが含まれ、それぞれ異なるマスクを持ちます。</p>
+<div class="codehilite"><pre><span></span><code><span class="o">[</span>
+<span class="w">  </span><span class="o">{</span>
+<span class="w">    </span><span class="s2">"score"</span>:<span class="w"> </span><span class="m">0</span>.993197,
+<span class="w">    </span><span class="s2">"label"</span>:<span class="w"> </span><span class="s2">"remote"</span>,
+<span class="w">    </span><span class="s2">"mask"</span>:<span class="w"> </span>&lt;PIL.Image.Image<span class="w"> </span>image<span class="w"> </span><span class="nv">mode</span><span class="o">=</span>L<span class="w"> </span><span class="nv">size</span><span class="o">=</span>640x480<span class="w"> </span>at<span class="w"> </span>0x109363910&gt;
+<span class="w">  </span><span class="o">}</span>,
+<span class="w">  </span><span class="o">{</span>
+<span class="w">    </span><span class="s2">"score"</span>:<span class="w"> </span><span class="m">0</span>.997852,
+<span class="w">    </span><span class="s2">"label"</span>:<span class="w"> </span><span class="s2">"cat"</span>,
+<span class="w">    </span><span class="s2">"mask"</span>:<span class="w"> </span>&lt;PIL.Image.Image<span class="w"> </span>image<span class="w"> </span><span class="nv">mode</span><span class="o">=</span>L<span class="w"> </span><span class="nv">size</span><span class="o">=</span>640x480<span class="w"> </span>at<span class="w"> </span>0x1093635B0&gt;
+<span class="w">  </span><span class="o">}</span>,
+<span class="w">  </span><span class="o">{</span>
+<span class="w">    </span><span class="s2">"score"</span>:<span class="w"> </span><span class="m">0</span>.998006,
+<span class="w">    </span><span class="s2">"label"</span>:<span class="w"> </span><span class="s2">"remote"</span>,
+<span class="w">    </span><span class="s2">"mask"</span>:<span class="w"> </span>&lt;PIL.Image.Image<span class="w"> </span>image<span class="w"> </span><span class="nv">mode</span><span class="o">=</span>L<span class="w"> </span><span class="nv">size</span><span class="o">=</span>640x480<span class="w"> </span>at<span class="w"> </span>0x17EE84670&gt;
+<span class="w">  </span><span class="o">}</span>,
+<span class="w">  </span><span class="o">{</span>
+<span class="w">    </span><span class="s2">"score"</span>:<span class="w"> </span><span class="m">0</span>.997469,
+<span class="w">    </span><span class="s2">"label"</span>:<span class="w"> </span><span class="s2">"cat"</span>,
+<span class="w">    </span><span class="s2">"mask"</span>:<span class="w"> </span>&lt;PIL.Image.Image<span class="w"> </span>image<span class="w"> </span><span class="nv">mode</span><span class="o">=</span>L<span class="w"> </span><span class="nv">size</span><span class="o">=</span>640x480<span class="w"> </span>at<span class="w"> </span>0x17EE87100&gt;
+<span class="w">  </span><span class="o">}</span>
+<span class="o">]</span>
+</code></pre></div>
+
+<h2>Vision Transformer ベースのセグメンテーションモデルのファインチューニング</h2>
+<p>事前学習済みのセグメンテーションモデルは数多く公開されています。そのため、特定のユースケースにこれらのモデルを適応させるために、転移学習とファインチューニングがよく使われます。特に、MaskFormer のような Transformer ベースのセグメンテーションモデルは大量のデータを必要とし、ゼロから学習するのは難しいためです。
+これらの手法は、事前学習で得られた表現を活用し、新しいデータへ効率的にモデルを適応させます。通常、MaskFormer では、学習済みの汎用的な特徴を活用するために、バックボーン、ピクセルデコーダ、Transformer デコーダを凍結したままにします。一方で、Transformer モジュールはファインチューニングし、クラス予測とマスク生成の能力を新しいセグメンテーションタスクに適応させます。</p>
+<p><a href="https://colab.research.google.com/github/huggingface/computer-vision-course/blob/main/notebooks/Unit%203%20-%20Vision%20Transformers/transfer-learning-segmentation.ipynb">このノートブック</a> では、MaskFormer を使った画像セグメンテーションの転移学習チュートリアルを進めます。</p>
+<h2>参考文献</h2>
+<ul>
+<li><a href="https://huggingface.co/docs/transformers/en/model_doc/maskformer">MaskFormer の Hugging Face ドキュメント</a></li>
+<li><a href="https://huggingface.co/docs/transformers/en/tasks/semantic_segmentation">画像セグメンテーションの Hugging Face タスクガイド</a></li>
+</ul>
+</article>
+<nav class="page-nav"><a class="nav-link prev" href="detr.html">← 前へ: DEtection TRansformer (DETR)</a><a class="nav-link toc-link" href="../../index.html">目次へ</a><a class="nav-link next" href="oneformer.html">次へ →: OneFormer: 汎用画像セグメンテーションを統べる1つの Transformer</a></nav>
+</main>
+<footer class="site-footer">
+  <p>原典: Hugging Face huggingface/computer-vision-course（<a href="https://github.com/huggingface/computer-vision-course">https://github.com/huggingface/computer-vision-course</a>）</p>
+  <p>日本語版の翻訳・公開: 霞ヶ関京 / 連絡先: GitHub <a href="https://github.com/yanikasumin">@yanikasumin</a> / YouTube <a href="https://www.youtube.com/@KASUMI_MOF">@KASUMI_MOF</a></p>
+  <p class="demo-note">このサイトはデモ版です。内容は順次更新されます。</p>
+</footer>
+<script src="../../../site.js"></script>
+</body>
+</html>

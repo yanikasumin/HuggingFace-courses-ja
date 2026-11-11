@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>はじめに | Hugging Face コース日本語版（デモ版）</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Shippori+Mincho:wght@500;700&family=Zen+Kaku+Gothic+New:wght@400;500;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../../../style.css">
+<script>
+window.MathJax = { tex: { inlineMath: [['$', '$'], ['\\(', '\\)']], displayMath: [['$$', '$$'], ['\\[', '\\]']] }, options: { skipHtmlTags: ['script','noscript','style','textarea','pre','code'] } };
+</script>
+<script async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml.js"></script>
+</head>
+<body>
+<header class="site-header">
+  <div class="header-inner">
+    <a class="site-title" href="../../../index.html">Hugging Face コース日本語版</a>
+    <span class="demo-badge">デモ版</span>
+  </div>
+</header>
+<main class="container">
+<p class="course-crumb"><a href="../../index.html">Community CV コース</a>
+<span class="badge badge-qa-wip">翻訳済み・QA進行中（未検証の部分を含みます）</span></p>
+<nav class="page-nav"><a class="nav-link prev" href="cnn-based-video-model.html">← 前へ: CNN ベースのビデオモデル</a><a class="nav-link toc-link" href="../../index.html">目次へ</a><a class="nav-link next" href="transformers-based-models.html">次へ →: ビデオ処理における Transformer（Part 1）</a></nav>
+<article class="content">
+<h1>はじめに</h1>
+<h2>系列データとしてのビデオ</h2>
+<p>ビデオは、フレームと呼ばれる画像の列で構成され、それらが次々と再生されることで動きが作られます。各フレームは空間情報、つまり画像内の物体やシーンを捉えます。これらのフレームが順番に表示されると、時間情報、つまり物事が時間とともにどう変化し動くかも提供されます。
+この空間と時間の組み合わせにより、ビデオは単一の画像よりも複雑な情報を含んでいます。ビデオを効果的に分析するには、空間的な側面と時間的な側面の両方を理解できるモデルが必要です。</p>
+<h2>ビデオ処理における RNN の役割と必要性</h2>
+<div class="flex justify-center">
+    <img src="https://huggingface.co/datasets/hf-vision/course-assets/resolve/main/rnn_video_models/rnn.png" alt="RNN のアーキテクチャ">
+</div>
+<p>畳み込みニューラルネットワーク（CNN）は、画像の空間的特徴の分析に優れています。
+しかし、時間的な関係が重要になる系列を扱うようには設計されていません。ここでリカレントニューラルネットワーク（RNN）の出番です。
+RNN は、過去のステップからの情報を捉える「メモリ」を持っているため、系列データの処理に特化しています。そのため、ビデオフレームどうしが時間とともにどう関係するかを理解するのに適しています。</p>
+<h2>時空間モデリングを理解する</h2>
+<p>ビデオ分析では、空間的（空間）特徴と時間的（時間）特徴を一緒に考えることが重要で、これを時空間モデリングと呼びます。空間モデリングは各フレームに何が映っているか、たとえば物体や人物を見ます。一方、時間モデリングは、それらがフレームごとにどう変化するかを見ます。
+この2つを組み合わせることで、ビデオの全体的な文脈を理解できます。CNN と RNN を組み合わせたり、空間と時間の両方を捉える特殊な畳み込みを使ったりする技術が、研究者たちがこれを実現する方法です。</p>
+<h1>RNN ベースのビデオモデリングアーキテクチャ</h1>
+<h2>Long-term Recurrent Convolutional Networks（LRCN）</h2>
+<div class="flex justify-center">
+    <img src="https://huggingface.co/datasets/hf-vision/course-assets/resolve/main/rnn_video_models/lrcn.png" alt="LRCN モデルのアーキテクチャ">
+</div>
+
+<p><strong>概要</strong>
+Long-term Recurrent Convolutional Networks（LRCN）は、2015年に Donahue らが発表したモデルです。
+CNN と、RNN の一種である Long Short-Term Memory ネットワーク（LSTM）を組み合わせ、ビデオの空間的特徴と時間的特徴の両方から学習します。
+CNN が各フレームを処理して空間的特徴を抽出し、LSTM がこれらの特徴を順番に受け取り、時間とともにどう変化するかを学習します。</p>
+<p><strong>主な特徴</strong>
+- <strong>CNN と LSTM の組み合わせ:</strong> 各フレームの空間的特徴を LSTM に入力し、時間的な関係をモデル化します。
+- <strong>幅広い応用:</strong> LRCN は、行動認識（ビデオ内の行動を識別する）やビデオキャプション生成（ビデオの説明文を生成する）といったタスクで成功を収めています。</p>
+<p><strong>なぜ重要か</strong>
+LRCN は、ビデオデータの空間的な側面と時間的な側面の両方を効果的に扱った最初のモデルの1つでした。CNN と RNN の組み合わせがビデオ分析に強力であることを示し、その後の研究の道を切り開きました。</p>
+<h2>Convolutional LSTM Network: 降水ナウキャスティングのための機械学習アプローチ（ConvLSTM）</h2>
+<div class="flex justify-center">
+    <img src="https://huggingface.co/datasets/hf-vision/course-assets/resolve/main/rnn_video_models/convlstm.png" alt="ConvLSTM モデルのアーキテクチャ">
+</div>
+
+<p><strong>概要</strong></p>
+<p>Convolutional LSTM Network（ConvLSTM）は、2015年に Shi らが提案しました。従来の LSTM を改良し、LSTM の構造の中に畳み込み演算を取り入れたものです。つまり、1次元の系列を処理する代わりに、ConvLSTM は2次元の空間データ（画像など）を時間にわたって扱えます。</p>
+<p><strong>主な特徴</strong>
+- <strong>空間構造の保持:</strong> 畳み込みを使うことで、ConvLSTM は時間系列を処理しながらデータの空間的なレイアウトを保持します。
+- <strong>時空間予測に効果的:</strong> 気象予報やビデオフレーム予測など、空間データが時間とともにどう変化するかを予測する必要があるタスクに特に役立ちます。</p>
+<p><strong>なぜ重要か</strong>
+ConvLSTM は、畳み込みを LSTM アーキテクチャに直接統合することで、時空間データを処理する新しい方法を導入しました。これは、空間的・時間的パターンに基づいて将来の状態を予測する必要がある分野に影響を与えています。</p>
+<h2>LSTM を使ったビデオ表現の教師なし学習</h2>
+<p><strong>概要</strong>
+2015年、Srivastava らは、教師なし学習として知られる、ラベルなしデータでビデオ表現を学習する方法を発表しました。この論文は、多層 LSTM モデルを利用してビデオ表現を学習します。このモデルは、エンコーダ LSTM とデコーダ LSTM という2つの主要なコンポーネントで構成されます。エンコーダは、（時間次元において）任意の長さのビデオ系列を固定サイズの表現にマッピングします。デコーダはその後、この表現を使って、入力ビデオ系列を再構成するか、続くビデオ系列を予測します。</p>
+<p><strong>主な特徴</strong>
+- <strong>教師なし学習:</strong> ラベル付きデータを必要としないため、大量のビデオを扱いやすくなります。</p>
+<p><strong>なぜ重要か</strong>
+このアプローチは、時間とコストのかかる大規模なラベル付けを必要とせずに、有用なビデオ表現を学習できることを示しました。教師なし手法によるビデオ分析と生成の新しい可能性を切り開きました。</p>
+<h2>時間構造を活用したビデオの記述</h2>
+<div class="flex justify-center">
+    <img src="https://huggingface.co/datasets/hf-vision/course-assets/resolve/main/rnn_video_models/attention_model.png">
+</div>
+
+<p><strong>概要</strong>
+2015年、Yao らはビデオモデルに注意機構を導入しました。特にビデオキャプション生成のタスクに向けたものです。このアプローチは、注意機構を活用してビデオ内の重要な時間的・空間的特徴に選択的に注目し、モデルがより正確で文脈に適した説明を生成できるようにします。</p>
+<p><strong>主な特徴</strong>
+- <strong>時間的注意と空間的注意:</strong> 注意機構は、ビデオの中で最も関連性の高いフレームや領域を動的に特定し、局所的な行動（特定の動きなど）と大域的な文脈（全体の活動など）の両方が考慮されるようにします。
+- <strong>表現の強化:</strong> 重要な特徴に注目することで、モデルは局所的・大域的な時間構造を組み合わせ、ビデオ表現の改善と、より正確なキャプション生成につなげます。</p>
+<p><strong>なぜ重要か</strong>
+ビデオモデルに注意機構を取り入れることは、時間データの処理方法を一変させました。この方法は、ビデオ系列における複雑な相互作用を扱うモデルの能力を高め、ビデオ分析と生成のための現代のニューラルネットワークアーキテクチャに不可欠なコンポーネントとなっています。</p>
+<h1>RNN ベースモデルの限界</h1>
+<ul>
+<li>
+<p><strong>長期依存関係の難しさ</strong></p>
+<p>RNN は、LSTM を含め、長い系列にわたって情報を保持するのが苦手なことがあります。つまり、長いビデオを処理する際、前のフレームの重要な詳細を「忘れて」しまう可能性があります。この限界は、ビデオの全体的な文脈を理解するモデルの能力に影響し得ます。</p>
+</li>
+<li>
+<p><strong>計算の複雑さと処理時間</strong></p>
+<p>RNN はデータを逐次的に、つまり一度に1ステップずつ処理するため、特にビデオのような長い系列では遅くなりがちです。この逐次処理では並列計算リソースを活かすのが難しく、訓練と推論の時間が長くなります。</p>
+</li>
+<li>
+<p><strong>代替モデルの登場</strong></p>
+<p>RNN の限界の一部に対処するため、Transformer のような新しいモデルが開発されました。Transformer は注意機構を使って系列を扱い、データを並列に処理できるため、より高速で、長期依存関係の捕捉にも効果的です。</p>
+</li>
+</ul>
+<h1>まとめ</h1>
+<p>RNN ベースのモデルは、時間系列を効果的に扱うツールを提供することで、ビデオ分析の分野を大きく前進させました。LRCN、ConvLSTM、注意機構を取り入れたモデルなどは、空間処理と時間処理を組み合わせる可能性を示しました。しかし、長い系列の扱いの難しさ、計算効率の悪さ、大量のデータを必要とする点といった限界は、継続的な革新の必要性を浮き彫りにしています。</p>
+<p>今後の研究は、おそらく Transformer のような新しいアーキテクチャの採用、訓練効率の改善、モデルの解釈可能性の向上によって、これらの課題の克服に焦点を当てるでしょう。こうした取り組みは、実世界のビデオ応用に対して強力かつ実用的なモデルを作ることを目指しています。</p>
+<h3>参考文献</h3>
+<ol>
+<li><a href="https://arxiv.org/pdf/1411.4389">Long-term Recurrent Convolutional Networks 論文</a></li>
+<li><a href="https://proceedings.neurips.cc/paper_files/paper/2015/file/07563a3fe3bbe7e3ba84431ad9d055af-Paper.pdf">Convolutional LSTM Network: A Machine Learning Approach for Precipitation Nowcasting 論文</a></li>
+<li><a href="https://arxiv.org/pdf/1502.04681">Unsupervised Learning of Video Representations using LSTMs 論文</a></li>
+<li><a href="https://arxiv.org/pdf/1502.08029">Describing Videos by Exploiting Temporal Structure 論文</a></li>
+</ol>
+</article>
+<nav class="page-nav"><a class="nav-link prev" href="cnn-based-video-model.html">← 前へ: CNN ベースのビデオモデル</a><a class="nav-link toc-link" href="../../index.html">目次へ</a><a class="nav-link next" href="transformers-based-models.html">次へ →: ビデオ処理における Transformer（Part 1）</a></nav>
+</main>
+<footer class="site-footer">
+  <p>原典: Hugging Face huggingface/computer-vision-course（<a href="https://github.com/huggingface/computer-vision-course">https://github.com/huggingface/computer-vision-course</a>）</p>
+  <p>日本語版の翻訳・公開: 霞ヶ関京 / 連絡先: GitHub <a href="https://github.com/yanikasumin">@yanikasumin</a> / YouTube <a href="https://www.youtube.com/@KASUMI_MOF">@KASUMI_MOF</a></p>
+  <p class="demo-note">このサイトはデモ版です。内容は順次更新されます。</p>
+</footer>
+<script src="../../../site.js"></script>
+</body>
+</html>

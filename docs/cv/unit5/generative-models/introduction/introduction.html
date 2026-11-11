@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>はじめに | Hugging Face コース日本語版（デモ版）</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Shippori+Mincho:wght@500;700&family=Zen+Kaku+Gothic+New:wght@400;500;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../../../../style.css">
+<script>
+window.MathJax = { tex: { inlineMath: [['$', '$'], ['\\(', '\\)']], displayMath: [['$$', '$$'], ['\\[', '\\]']] }, options: { skipHtmlTags: ['script','noscript','style','textarea','pre','code'] } };
+</script>
+<script async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml.js"></script>
+</head>
+<body>
+<header class="site-header">
+  <div class="header-inner">
+    <a class="site-title" href="../../../../index.html">Hugging Face コース日本語版</a>
+    <span class="demo-badge">デモ版</span>
+  </div>
+</header>
+<main class="container">
+<p class="course-crumb"><a href="../../../index.html">Community CV コース</a>
+<span class="badge badge-qa-wip">翻訳済み・QA進行中（未検証の部分を含みます）</span></p>
+<nav class="page-nav"><a class="nav-link prev" href="../../../unit4/multimodal-models/supplementary-material.html">← 前へ: 補足資料と参考リソース 🤗</a><a class="nav-link toc-link" href="../../../index.html">目次へ</a><a class="nav-link next" href="../variational_autoencoders.html">次へ →: 変分オートエンコーダ</a></nav>
+<article class="content">
+<h1>はじめに</h1>
+<p>前のユニットではマルチモーダルについて学び、特に視覚モデルと言語モデルを融合させることで、両方の長所を活かし、Zero-Shot Image Classification のようなタスクで単純な視覚モデルを上回る性能が得られることを見ました。
+マルチモーダルモデルが大きな影響を与えたもう1つの分野が、生成ビジョンモデルです。このユニットでは、この種のニューラルネットワークを詳しく見ていきます。</p>
+<h2>定義</h2>
+<p>生成ビジョンモデルとは何か、他のモデルとどう違うのでしょうか。</p>
+<p>数理モデルは一般に、生成モデルと識別モデルの2つの大きなグループに分けられます。
+識別モデルと生成モデルの主な違いは、識別モデルが異なるクラスを分ける境界を学習するのに対し、生成モデルは異なるクラスの分布を学習する点です。</p>
+<p>識別モデルは、分類や回帰といった標準的なコンピュータビジョンタスクに適用できます。
+これらのタスクは、セマンティックセグメンテーションや物体検出のような、より複雑な処理へと拡張できます。</p>
+<p>話を簡単にするため、この章では次のタスクを解く生成モデルを扱います。</p>
+<ul>
+<li>ノイズから画像へ（DCGAN）</li>
+<li>テキストから画像へ（拡散モデル）</li>
+<li>画像から画像へ（StyleGAN、CycleGAN、拡散モデル）</li>
+</ul>
+<p>このセクションでは、GAN ベースのモデルと拡散ベースのモデルの2種類の生成モデルを取り上げます。</p>
+<h2>コンピュータビジョンにおける生成モデルの評価</h2>
+<p>一般に、生成モデルを評価する意味のある指標を考えるのは本当に難しい問題です。確かな「正解（ground truth）」が存在しないことが多く、画像の品質を定量化するのが難しいためです。FID は最もよく使われる指標ですが、完璧ではありません。</p>
+<p>FID を簡単に見ていきましょう。FID は Fréchet Inception Distance の略で、Inception Score を改良したもので、<a href="https://arxiv.org/pdf/1706.08500.pdf">GANs Trained by a Two Time-Scale Update Rule Converge to a Local Nash Equilibrium</a> で導入されました。FID は、生成画像に含まれうるノイズや特定のアーティファクトに対して頑健だと考えられています。FID は低いほど良い指標です。</p>
+<p>FID は、Inception-v3 の特徴量から2つの分布を構築して計算します。1つ目の分布は学習データの特徴量から計算され、2つ目の分布は生成画像の特徴量から計算されます。そして、この2つの分布の間の Fréchet 距離を計算したものが FID スコアです。このスコアが低いほど、生成画像の知覚的な品質は良いとされます。FID についての<a href="https://www.youtube.com/watch?v=9zTwSzXxNDo&amp;t=398s">短い解説</a>もあります。</p>
+<p>他に目にする可能性のある指標としては、SSIM、PSNR、IS（Inception Score）、そして最近導入された CLIP Score があります。</p>
+<ul>
+<li>
+<p>PSNR（peak signal-to-noise ratio）は、ほぼ平均二乗誤差として解釈できます。一般に、[25, 34] の範囲の値ならまずまずの結果で、34以上は非常に良い結果です。</p>
+</li>
+<li>
+<p>SSIM（Structural Similarity Index）は [0, 1] の範囲の指標で、1が完全な一致を表します。最終的な指標は、輝度、コントラスト、構造の3つの要素から計算されます。SSIM とその構成要素について分析した<a href="https://arxiv.org/pdf/2006.13846.pdf">この論文</a>も、興味のある方はどうぞ。</p>
+</li>
+<li>
+<p>Inception Score は <a href="https://arxiv.org/pdf/1606.03498.pdf">Improved Techniques for Training GANs</a> で導入されました。Inception-v3 モデルの特徴量を使って計算され、高いほど良い指標です。数学的に非常に興味深い指標ですが、最近ではあまり使われなくなってきています。</p>
+</li>
+<li>
+<p>CLIP Score は、<a href="https://arxiv.org/pdf/2104.08718.pdf">CLIPScore: A Reference-free Evaluation Metric for Image Captioning</a> で導入された指標で、テキストから画像を生成するモデルの品質評価に使われます。CLIP モデルを使って、生成画像とテキストプロンプトのコサイン類似度を計算します。範囲は [0, 100] で、高いほど良い指標です。</p>
+</li>
+</ul>
+<p>FID について<em>本当に</em>興味がある方向けに、<a href="https://arxiv.org/pdf/2203.06026.pdf">The Role of ImageNet Classes in Fréchet Inception Distance</a> は、FID が画像の何を重要視するのか、ImageNet で事前学習された特徴量が FID スコアにどう影響するのかを分析しようとした論文です。非常に興味深い読み物です。</p>
+</article>
+<nav class="page-nav"><a class="nav-link prev" href="../../../unit4/multimodal-models/supplementary-material.html">← 前へ: 補足資料と参考リソース 🤗</a><a class="nav-link toc-link" href="../../../index.html">目次へ</a><a class="nav-link next" href="../variational_autoencoders.html">次へ →: 変分オートエンコーダ</a></nav>
+</main>
+<footer class="site-footer">
+  <p>原典: Hugging Face huggingface/computer-vision-course（<a href="https://github.com/huggingface/computer-vision-course">https://github.com/huggingface/computer-vision-course</a>）</p>
+  <p>日本語版の翻訳・公開: 霞ヶ関京 / 連絡先: GitHub <a href="https://github.com/yanikasumin">@yanikasumin</a> / YouTube <a href="https://www.youtube.com/@KASUMI_MOF">@KASUMI_MOF</a></p>
+  <p class="demo-note">このサイトはデモ版です。内容は順次更新されます。</p>
+</footer>
+<script src="../../../../site.js"></script>
+</body>
+</html>

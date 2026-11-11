@@ -1,0 +1,629 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Swin Transformer | Hugging Face コース日本語版（デモ版）</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Shippori+Mincho:wght@500;700&family=Zen+Kaku+Gothic+New:wght@400;500;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../../../style.css">
+<script>
+window.MathJax = { tex: { inlineMath: [['$', '$'], ['\\(', '\\)']], displayMath: [['$$', '$$'], ['\\[', '\\]']] }, options: { skipHtmlTags: ['script','noscript','style','textarea','pre','code'] } };
+</script>
+<script async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml.js"></script>
+</head>
+<body>
+<header class="site-header">
+  <div class="header-inner">
+    <a class="site-title" href="../../../index.html">Hugging Face コース日本語版</a>
+    <span class="demo-badge">デモ版</span>
+  </div>
+</header>
+<main class="container">
+<p class="course-crumb"><a href="../../index.html">Community CV コース</a>
+<span class="badge badge-qa-wip">翻訳済み・QA進行中（未検証の部分を含みます）</span></p>
+<nav class="page-nav"><a class="nav-link prev" href="vision-transformers-for-image-classification.html">← 前へ: 画像分類のための Vision Transformer の転移学習とファインチューニング</a><a class="nav-link toc-link" href="../../index.html">目次へ</a><a class="nav-link next" href="cvt.html">次へ →: Convolutional Vision Transformer (CvT)</a></nav>
+<article class="content">
+<h1>Swin Transformer</h1>
+<p>2021年の論文 <a href="https://arxiv.org/pdf/2103.14030.pdf">Swin Transformer: Hierarchical Vision Transformer using Shifted Windows</a> で提案された Swin Transformer は、シフトウィンドウ（sliding window ではなく shifted window）を使うことで必要な演算量を減らし、レイテンシと性能を最適化したアーキテクチャです。Swin はコンピュータビジョンにおける <strong>階層型バックボーン（hierarchical backbone）</strong> とみなされています。画像分類などのタスクに使えます。</p>
+<div class="callout callout-tip">
+<p>深層学習でいうバックボーンとは、ニューラルネットワークのうち特徴抽出を担う部分のことです。バックボーンにレイヤーを追加すれば、さまざまなビジョンタスクに対応できます。階層型バックボーンは段階的な構造を持ち、解像度が途中で変わることもあります。これに対して、<a href="https://arxiv.org/abs/2203.16527">VitDet</a> モデルの非階層型の <strong>plain backbone</strong> があります。</p>
+</div>
+<h2>主な特徴</h2>
+<h3>シフトウィンドウ</h3>
+<p>元の ViT では、各パッチが他のすべてのパッチとの間で attention を計算するため、計算量が大きくなります。Swin はこの処理を最適化し、通常は2次（quadratic）になる ViT の計算量を、画像サイズに対して線形（linear）にまで減らします。その仕組みは CNN に似ています。パッチは他のすべてのパッチではなく、同じウィンドウ内のパッチだけに attend し、その後、隣接するパッチと段階的にマージされていきます。この構造が、Swin を階層型モデルにしています。</p>
+<p><img alt="Swin Transformer の論文から取った、Swin と Vit のアーキテクチャ図" src="https://huggingface.co/datasets/hf-vision/course-assets/resolve/main/swin_transformer_architecture.png" />
+<em>Swin Transformer の論文から取った画像</em></p>
+<h2>利点</h2>
+<h3>計算効率</h3>
+<p>Swin は、ViT のような完全にパッチベースのアプローチよりも高い性能を示します。</p>
+<h3>大規模データセット</h3>
+<p>SwinV2 は、初期の 3B パラメータモデルの1つです。学習規模が大きくなるにつれて、Swin は CNN を上回るようになります。パラメータ数が多いため、学習できる容量が増え、より複雑な表現を扱えます。</p>
+<h2>Swin Transformer V2 <a href="https://arxiv.org/abs/2111.09883">(paper)</a></h2>
+<p>Swin Transformer V2 は、最大で 3B パラメータまで対応し、高解像度画像で学習できる大規模なビジョンモデルです。元の Swin Transformer から、学習の安定化、低解像度画像で事前学習したモデルの高解像度タスクへの転移、そして学習に必要なラベル付き画像の数を減らす自己教師あり学習手法 <a href="https://arxiv.org/abs/2111.09886">SimMIM</a> の導入によって改善されています。</p>
+<h2>画像復元への応用</h2>
+<h3>SwinIR <a href="https://arxiv.org/abs/2108.10257">(paper)</a></h3>
+<p>SwinIR は、Swin Transformer をベースに、低解像度画像を高解像度画像に変換するモデルです。</p>
+<h3>Swin2SR  <a href="https://arxiv.org/abs/2209.11345">(paper)</a></h3>
+<p>Swin2SR も画像復元のモデルです。Swin Transformer V2 を取り入れて SwinIR を改良したもので、学習の安定性や、より高い画像解像度に対応できる能力といった Swin V2 の利点を活かしています。</p>
+<h2>Swin の PyTorch 実装の概要</h2>
+<p><a href="https://github.com/microsoft/Swin-Transformer/blob/main/models/swin_transformer.py">元の論文の Swin の実装</a> の主要部分を、以下で概説します。</p>
+<h3>Swin Transformer クラス</h3>
+<ol>
+<li>
+<p><strong>パラメータの初期化</strong>。さまざまな dropout や正規化のパラメータに加えて、次のパラメータがあります。</p>
+<ul>
+<li><code>window_size</code>: ローカル self-attention 用のウィンドウのサイズ。</li>
+<li><code>ape (bool)</code>: True の場合、パッチ埋め込みに絶対位置埋め込みを追加します。 </li>
+<li><code>fused_window_process</code>: ハードウェア向けの任意の最適化。</li>
+</ul>
+</li>
+<li>
+<p><strong>パッチ埋め込みの適用</strong>: ViT と同様に、画像を重ならないパッチに分割し、<code>Conv2D</code> を使って線形に埋め込みます。</p>
+</li>
+<li>
+<p><strong>位置埋め込みの適用</strong>: <code>SwinTransformer</code> では、パッチ埋め込みに加える絶対位置埋め込み（<code>ape</code>）を任意で使います。絶対位置埋め込みがあると、各パッチの位置情報をモデルが活用できるようになり、より情報に基づいた予測に役立つことがよくあります。</p>
+</li>
+<li>
+<p><strong>Depth decay の適用</strong>: Depth decay は、正則化と過学習の防止に役立ちます。通常は学習中にレイヤーをスキップすることで行います。この Swin の実装では <strong>stochastic（確率的）</strong> な depth decay が使われており、レイヤーが深いほどスキップされる確率が高くなります。</p>
+</li>
+<li>
+<p><strong>レイヤーの構築</strong>:</p>
+<ul>
+<li>モデルは <code>SwinTransformerBlock</code> の複数のレイヤー（<code>BasicLayer</code>）で構成され、各レイヤーは <code>PatchMerging</code> を使って特徴マップをダウンサンプリングし、階層的に処理します。</li>
+<li>特徴の次元と特徴マップの解像度は、レイヤーごとに変わります。</li>
+</ul>
+</li>
+<li>
+<p><strong>分類ヘッド</strong>: ViT と同様に、最後のステップとして、<code>self.head</code> で定義される Multi-Layer Perceptron（MLP）ヘッドを分類タスクに使います。</p>
+</li>
+</ol>
+<div class="codehilite"><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">SwinTransformer</span><span class="p">(</span><span class="n">nn</span><span class="o">.</span><span class="n">Module</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">img_size</span><span class="o">=</span><span class="mi">224</span><span class="p">,</span>
+        <span class="n">patch_size</span><span class="o">=</span><span class="mi">4</span><span class="p">,</span>
+        <span class="n">in_chans</span><span class="o">=</span><span class="mi">3</span><span class="p">,</span>
+        <span class="n">num_classes</span><span class="o">=</span><span class="mi">1000</span><span class="p">,</span>
+        <span class="n">embed_dim</span><span class="o">=</span><span class="mi">96</span><span class="p">,</span>
+        <span class="n">depths</span><span class="o">=</span><span class="p">[</span><span class="mi">2</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">6</span><span class="p">,</span> <span class="mi">2</span><span class="p">],</span>
+        <span class="n">num_heads</span><span class="o">=</span><span class="p">[</span><span class="mi">3</span><span class="p">,</span> <span class="mi">6</span><span class="p">,</span> <span class="mi">12</span><span class="p">,</span> <span class="mi">24</span><span class="p">],</span>
+        <span class="n">window_size</span><span class="o">=</span><span class="mi">7</span><span class="p">,</span>
+        <span class="n">mlp_ratio</span><span class="o">=</span><span class="mf">4.0</span><span class="p">,</span>
+        <span class="n">qkv_bias</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+        <span class="n">qk_scale</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+        <span class="n">drop_rate</span><span class="o">=</span><span class="mf">0.0</span><span class="p">,</span>
+        <span class="n">attn_drop_rate</span><span class="o">=</span><span class="mf">0.0</span><span class="p">,</span>
+        <span class="n">drop_path_rate</span><span class="o">=</span><span class="mf">0.1</span><span class="p">,</span>
+        <span class="n">norm_layer</span><span class="o">=</span><span class="n">nn</span><span class="o">.</span><span class="n">LayerNorm</span><span class="p">,</span>
+        <span class="n">ape</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+        <span class="n">patch_norm</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+        <span class="n">use_checkpoint</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+        <span class="n">fused_window_process</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+        <span class="o">**</span><span class="n">kwargs</span><span class="p">,</span>
+    <span class="p">):</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">()</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">num_classes</span> <span class="o">=</span> <span class="n">num_classes</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">num_layers</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">depths</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">embed_dim</span> <span class="o">=</span> <span class="n">embed_dim</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">ape</span> <span class="o">=</span> <span class="n">ape</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">patch_norm</span> <span class="o">=</span> <span class="n">patch_norm</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">num_features</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">embed_dim</span> <span class="o">*</span> <span class="mi">2</span> <span class="o">**</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">num_layers</span> <span class="o">-</span> <span class="mi">1</span><span class="p">))</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">mlp_ratio</span> <span class="o">=</span> <span class="n">mlp_ratio</span>
+
+        <span class="c1"># 画像を重ならないパッチに分割</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">patch_embed</span> <span class="o">=</span> <span class="n">PatchEmbed</span><span class="p">(</span>
+            <span class="n">img_size</span><span class="o">=</span><span class="n">img_size</span><span class="p">,</span>
+            <span class="n">patch_size</span><span class="o">=</span><span class="n">patch_size</span><span class="p">,</span>
+            <span class="n">in_chans</span><span class="o">=</span><span class="n">in_chans</span><span class="p">,</span>
+            <span class="n">embed_dim</span><span class="o">=</span><span class="n">embed_dim</span><span class="p">,</span>
+            <span class="n">norm_layer</span><span class="o">=</span><span class="n">norm_layer</span> <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">patch_norm</span> <span class="k">else</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="p">)</span>
+        <span class="n">num_patches</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">patch_embed</span><span class="o">.</span><span class="n">num_patches</span>
+        <span class="n">patches_resolution</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">patch_embed</span><span class="o">.</span><span class="n">patches_resolution</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">patches_resolution</span> <span class="o">=</span> <span class="n">patches_resolution</span>
+
+        <span class="c1"># 絶対位置埋め込み</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">ape</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">absolute_pos_embed</span> <span class="o">=</span> <span class="n">nn</span><span class="o">.</span><span class="n">Parameter</span><span class="p">(</span><span class="n">torch</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="n">num_patches</span><span class="p">,</span> <span class="n">embed_dim</span><span class="p">))</span>
+            <span class="n">trunc_normal_</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">absolute_pos_embed</span><span class="p">,</span> <span class="n">std</span><span class="o">=</span><span class="mf">0.02</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">pos_drop</span> <span class="o">=</span> <span class="n">nn</span><span class="o">.</span><span class="n">Dropout</span><span class="p">(</span><span class="n">p</span><span class="o">=</span><span class="n">drop_rate</span><span class="p">)</span>
+
+        <span class="c1"># 確率的深さ（stochastic depth）</span>
+        <span class="n">dpr</span> <span class="o">=</span> <span class="p">[</span>
+            <span class="n">x</span><span class="o">.</span><span class="n">item</span><span class="p">()</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="n">torch</span><span class="o">.</span><span class="n">linspace</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">drop_path_rate</span><span class="p">,</span> <span class="nb">sum</span><span class="p">(</span><span class="n">depths</span><span class="p">))</span>
+        <span class="p">]</span>  <span class="c1"># 確率的深さの減衰ルール</span>
+
+        <span class="c1"># レイヤーを構築</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">layers</span> <span class="o">=</span> <span class="n">nn</span><span class="o">.</span><span class="n">ModuleList</span><span class="p">()</span>
+        <span class="k">for</span> <span class="n">i_layer</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">num_layers</span><span class="p">):</span>
+            <span class="n">layer</span> <span class="o">=</span> <span class="n">BasicLayer</span><span class="p">(</span>
+                <span class="n">dim</span><span class="o">=</span><span class="nb">int</span><span class="p">(</span><span class="n">embed_dim</span> <span class="o">*</span> <span class="mi">2</span><span class="o">**</span><span class="n">i_layer</span><span class="p">),</span>
+                <span class="n">input_resolution</span><span class="o">=</span><span class="p">(</span>
+                    <span class="n">patches_resolution</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">//</span> <span class="p">(</span><span class="mi">2</span><span class="o">**</span><span class="n">i_layer</span><span class="p">),</span>
+                    <span class="n">patches_resolution</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">//</span> <span class="p">(</span><span class="mi">2</span><span class="o">**</span><span class="n">i_layer</span><span class="p">),</span>
+                <span class="p">),</span>
+                <span class="n">depth</span><span class="o">=</span><span class="n">depths</span><span class="p">[</span><span class="n">i_layer</span><span class="p">],</span>
+                <span class="n">num_heads</span><span class="o">=</span><span class="n">num_heads</span><span class="p">[</span><span class="n">i_layer</span><span class="p">],</span>
+                <span class="n">window_size</span><span class="o">=</span><span class="n">window_size</span><span class="p">,</span>
+                <span class="n">mlp_ratio</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">mlp_ratio</span><span class="p">,</span>
+                <span class="n">qkv_bias</span><span class="o">=</span><span class="n">qkv_bias</span><span class="p">,</span>
+                <span class="n">qk_scale</span><span class="o">=</span><span class="n">qk_scale</span><span class="p">,</span>
+                <span class="n">drop</span><span class="o">=</span><span class="n">drop_rate</span><span class="p">,</span>
+                <span class="n">attn_drop</span><span class="o">=</span><span class="n">attn_drop_rate</span><span class="p">,</span>
+                <span class="n">drop_path</span><span class="o">=</span><span class="n">dpr</span><span class="p">[</span><span class="nb">sum</span><span class="p">(</span><span class="n">depths</span><span class="p">[:</span><span class="n">i_layer</span><span class="p">])</span> <span class="p">:</span> <span class="nb">sum</span><span class="p">(</span><span class="n">depths</span><span class="p">[:</span> <span class="n">i_layer</span> <span class="o">+</span> <span class="mi">1</span><span class="p">])],</span>
+                <span class="n">norm_layer</span><span class="o">=</span><span class="n">norm_layer</span><span class="p">,</span>
+                <span class="n">downsample</span><span class="o">=</span><span class="n">PatchMerging</span> <span class="k">if</span> <span class="p">(</span><span class="n">i_layer</span> <span class="o">&lt;</span> <span class="bp">self</span><span class="o">.</span><span class="n">num_layers</span> <span class="o">-</span> <span class="mi">1</span><span class="p">)</span> <span class="k">else</span> <span class="kc">None</span><span class="p">,</span>
+                <span class="n">use_checkpoint</span><span class="o">=</span><span class="n">use_checkpoint</span><span class="p">,</span>
+                <span class="n">fused_window_process</span><span class="o">=</span><span class="n">fused_window_process</span><span class="p">,</span>
+            <span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">layers</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">layer</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">norm</span> <span class="o">=</span> <span class="n">norm_layer</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">num_features</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">avgpool</span> <span class="o">=</span> <span class="n">nn</span><span class="o">.</span><span class="n">AdaptiveAvgPool1d</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">head</span> <span class="o">=</span> <span class="p">(</span>
+            <span class="n">nn</span><span class="o">.</span><span class="n">Linear</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">num_features</span><span class="p">,</span> <span class="n">num_classes</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">num_classes</span> <span class="o">&gt;</span> <span class="mi">0</span>
+            <span class="k">else</span> <span class="n">nn</span><span class="o">.</span><span class="n">Identity</span><span class="p">()</span>
+        <span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">apply</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_init_weights</span><span class="p">)</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_init_weights</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">m</span><span class="p">):</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">m</span><span class="p">,</span> <span class="n">nn</span><span class="o">.</span><span class="n">Linear</span><span class="p">):</span>
+            <span class="n">trunc_normal_</span><span class="p">(</span><span class="n">m</span><span class="o">.</span><span class="n">weight</span><span class="p">,</span> <span class="n">std</span><span class="o">=</span><span class="mf">0.02</span><span class="p">)</span>
+            <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">m</span><span class="p">,</span> <span class="n">nn</span><span class="o">.</span><span class="n">Linear</span><span class="p">)</span> <span class="ow">and</span> <span class="n">m</span><span class="o">.</span><span class="n">bias</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="n">nn</span><span class="o">.</span><span class="n">init</span><span class="o">.</span><span class="n">constant_</span><span class="p">(</span><span class="n">m</span><span class="o">.</span><span class="n">bias</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">m</span><span class="p">,</span> <span class="n">nn</span><span class="o">.</span><span class="n">LayerNorm</span><span class="p">):</span>
+            <span class="n">nn</span><span class="o">.</span><span class="n">init</span><span class="o">.</span><span class="n">constant_</span><span class="p">(</span><span class="n">m</span><span class="o">.</span><span class="n">bias</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span>
+            <span class="n">nn</span><span class="o">.</span><span class="n">init</span><span class="o">.</span><span class="n">constant_</span><span class="p">(</span><span class="n">m</span><span class="o">.</span><span class="n">weight</span><span class="p">,</span> <span class="mf">1.0</span><span class="p">)</span>
+
+    <span class="nd">@torch</span><span class="o">.</span><span class="n">jit</span><span class="o">.</span><span class="n">ignore</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">no_weight_decay</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="p">{</span><span class="s2">"absolute_pos_embed"</span><span class="p">}</span>
+
+    <span class="nd">@torch</span><span class="o">.</span><span class="n">jit</span><span class="o">.</span><span class="n">ignore</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">no_weight_decay_keywords</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="p">{</span><span class="s2">"relative_position_bias_table"</span><span class="p">}</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">forward_features</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">x</span><span class="p">):</span>
+        <span class="n">x</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">patch_embed</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">ape</span><span class="p">:</span>
+            <span class="n">x</span> <span class="o">=</span> <span class="n">x</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">absolute_pos_embed</span>
+        <span class="n">x</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">pos_drop</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
+
+        <span class="k">for</span> <span class="n">layer</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">layers</span><span class="p">:</span>
+            <span class="n">x</span> <span class="o">=</span> <span class="n">layer</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
+
+        <span class="n">x</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">norm</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>  <span class="c1"># B L C</span>
+        <span class="n">x</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">avgpool</span><span class="p">(</span><span class="n">x</span><span class="o">.</span><span class="n">transpose</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">))</span>  <span class="c1"># B C 1</span>
+        <span class="n">x</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">flatten</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">x</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">forward</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">x</span><span class="p">):</span>
+        <span class="n">x</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">forward_features</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
+        <span class="n">x</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">head</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">x</span>
+</code></pre></div>
+
+<h3>Swin Transformer Block</h3>
+<p><code>SwinTransformerBlock</code> は、Swin Transformer の中核となる処理、つまりローカルなウィンドウ attention と、その後の MLP 処理をカプセル化したものです。ローカルなパッチに注目しながらグローバルな表現も学習できる能力を保つことで、Swin Transformer が大きな画像を効率的に扱えるようにするうえで、重要な役割を果たします。</p>
+<p><strong>レイヤーの構成要素</strong>:
+- <strong>正規化レイヤー1（<code>self.norm1</code>）</strong>: attention 機構の前に適用されます。
+- <strong>Window Attention（<code>self.attn</code>）</strong>: ローカルウィンドウ内で self-attention を計算します。
+- <strong>Drop Path（<code>self.drop_path</code>）</strong>: 正則化のための stochastic depth を実装します。
+- <strong>正規化レイヤー2（<code>self.norm2</code>）</strong>: MLP レイヤーの前に適用されます。
+- <strong>MLP（<code>mlp</code>）</strong>: attention の後の特徴を処理する multi-layer perceptron です。
+- <strong>Attention Mask（<code>self.register_buffer</code>）</strong>: attention mask は self-attention の計算時に使われ、ウィンドウ化した入力のどの要素同士が相互作用（つまり互いに attend）できるかを制御します。シフトウィンドウの手法ではウィンドウをまたいだ相互作用も一部可能になるため、モデルはより広い文脈情報を捉えられます。</p>
+<h4>Swin Transformer Block の初期化</h4>
+<div class="codehilite"><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">SwinTransformerBlock</span><span class="p">(</span><span class="n">nn</span><span class="o">.</span><span class="n">Module</span><span class="p">):</span>
+<span class="w">    </span><span class="sa">r</span><span class="sd">"""Swin Transformer Block.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        dim (int): Number of input channels.</span>
+<span class="sd">        input_resolution (tuple[int]): Input resulotion.</span>
+<span class="sd">        num_heads (int): Number of attention heads.</span>
+<span class="sd">        window_size (int): Window size.</span>
+<span class="sd">        shift_size (int): Shift size for SW-MSA.</span>
+<span class="sd">        mlp_ratio (float): Ratio of mlp hidden dim to embedding dim.</span>
+<span class="sd">        qkv_bias (bool, optional): If True, add a learnable bias to query, key, value. Default: True</span>
+<span class="sd">        qk_scale (float | None, optional): Override default qk scale of head_dim ** -0.5 if set.</span>
+<span class="sd">        drop (float, optional): Dropout rate. Default: 0.0</span>
+<span class="sd">        attn_drop (float, optional): Attention dropout rate. Default: 0.0</span>
+<span class="sd">        drop_path (float, optional): Stochastic depth rate. Default: 0.0</span>
+<span class="sd">        act_layer (nn.Module, optional): Activation layer. Default: nn.GELU</span>
+<span class="sd">        norm_layer (nn.Module, optional): Normalization layer.  Default: nn.LayerNorm</span>
+<span class="sd">        fused_window_process (bool, optional): If True, use one kernel to fused window shift &amp; window partition for acceleration, similar for the reversed part. Default: False</span>
+<span class="sd">    """</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">dim</span><span class="p">,</span>
+        <span class="n">input_resolution</span><span class="p">,</span>
+        <span class="n">num_heads</span><span class="p">,</span>
+        <span class="n">window_size</span><span class="o">=</span><span class="mi">7</span><span class="p">,</span>
+        <span class="n">shift_size</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span>
+        <span class="n">mlp_ratio</span><span class="o">=</span><span class="mf">4.0</span><span class="p">,</span>
+        <span class="n">qkv_bias</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+        <span class="n">qk_scale</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+        <span class="n">drop</span><span class="o">=</span><span class="mf">0.0</span><span class="p">,</span>
+        <span class="n">attn_drop</span><span class="o">=</span><span class="mf">0.0</span><span class="p">,</span>
+        <span class="n">drop_path</span><span class="o">=</span><span class="mf">0.0</span><span class="p">,</span>
+        <span class="n">act_layer</span><span class="o">=</span><span class="n">nn</span><span class="o">.</span><span class="n">GELU</span><span class="p">,</span>
+        <span class="n">norm_layer</span><span class="o">=</span><span class="n">nn</span><span class="o">.</span><span class="n">LayerNorm</span><span class="p">,</span>
+        <span class="n">fused_window_process</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+    <span class="p">):</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">dim</span> <span class="o">=</span> <span class="n">dim</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">input_resolution</span> <span class="o">=</span> <span class="n">input_resolution</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">num_heads</span> <span class="o">=</span> <span class="n">num_heads</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">window_size</span> <span class="o">=</span> <span class="n">window_size</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">shift_size</span> <span class="o">=</span> <span class="n">shift_size</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">mlp_ratio</span> <span class="o">=</span> <span class="n">mlp_ratio</span>
+        <span class="k">if</span> <span class="nb">min</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">input_resolution</span><span class="p">)</span> <span class="o">&lt;=</span> <span class="bp">self</span><span class="o">.</span><span class="n">window_size</span><span class="p">:</span>
+            <span class="c1"># ウィンドウサイズが入力解像度より大きい場合は、ウィンドウに分割しない</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">shift_size</span> <span class="o">=</span> <span class="mi">0</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">window_size</span> <span class="o">=</span> <span class="nb">min</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">input_resolution</span><span class="p">)</span>
+        <span class="k">assert</span> <span class="mi">0</span> <span class="o">&lt;=</span> <span class="bp">self</span><span class="o">.</span><span class="n">shift_size</span> <span class="o">&lt;</span> <span class="bp">self</span><span class="o">.</span><span class="n">window_size</span><span class="p">,</span> <span class="s2">"shift_size must in 0-window_size"</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">norm1</span> <span class="o">=</span> <span class="n">norm_layer</span><span class="p">(</span><span class="n">dim</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">attn</span> <span class="o">=</span> <span class="n">WindowAttention</span><span class="p">(</span>
+            <span class="n">dim</span><span class="p">,</span>
+            <span class="n">window_size</span><span class="o">=</span><span class="n">to_2tuple</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">window_size</span><span class="p">),</span>
+            <span class="n">num_heads</span><span class="o">=</span><span class="n">num_heads</span><span class="p">,</span>
+            <span class="n">qkv_bias</span><span class="o">=</span><span class="n">qkv_bias</span><span class="p">,</span>
+            <span class="n">qk_scale</span><span class="o">=</span><span class="n">qk_scale</span><span class="p">,</span>
+            <span class="n">attn_drop</span><span class="o">=</span><span class="n">attn_drop</span><span class="p">,</span>
+            <span class="n">proj_drop</span><span class="o">=</span><span class="n">drop</span><span class="p">,</span>
+        <span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">drop_path</span> <span class="o">=</span> <span class="n">DropPath</span><span class="p">(</span><span class="n">drop_path</span><span class="p">)</span> <span class="k">if</span> <span class="n">drop_path</span> <span class="o">&gt;</span> <span class="mf">0.0</span> <span class="k">else</span> <span class="n">nn</span><span class="o">.</span><span class="n">Identity</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">norm2</span> <span class="o">=</span> <span class="n">norm_layer</span><span class="p">(</span><span class="n">dim</span><span class="p">)</span>
+        <span class="n">mlp_hidden_dim</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">dim</span> <span class="o">*</span> <span class="n">mlp_ratio</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">mlp</span> <span class="o">=</span> <span class="n">Mlp</span><span class="p">(</span>
+            <span class="n">in_features</span><span class="o">=</span><span class="n">dim</span><span class="p">,</span>
+            <span class="n">hidden_features</span><span class="o">=</span><span class="n">mlp_hidden_dim</span><span class="p">,</span>
+            <span class="n">act_layer</span><span class="o">=</span><span class="n">act_layer</span><span class="p">,</span>
+            <span class="n">drop</span><span class="o">=</span><span class="n">drop</span><span class="p">,</span>
+        <span class="p">)</span>
+
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">shift_size</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="c1"># SW-MSA 用の attention mask を計算</span>
+            <span class="n">H</span><span class="p">,</span> <span class="n">W</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">input_resolution</span>
+            <span class="n">img_mask</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="mi">1</span><span class="p">,</span> <span class="n">H</span><span class="p">,</span> <span class="n">W</span><span class="p">,</span> <span class="mi">1</span><span class="p">))</span>  <span class="c1"># 1 H W 1</span>
+            <span class="n">h_slices</span> <span class="o">=</span> <span class="p">(</span>
+                <span class="nb">slice</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="o">-</span><span class="bp">self</span><span class="o">.</span><span class="n">window_size</span><span class="p">),</span>
+                <span class="nb">slice</span><span class="p">(</span><span class="o">-</span><span class="bp">self</span><span class="o">.</span><span class="n">window_size</span><span class="p">,</span> <span class="o">-</span><span class="bp">self</span><span class="o">.</span><span class="n">shift_size</span><span class="p">),</span>
+                <span class="nb">slice</span><span class="p">(</span><span class="o">-</span><span class="bp">self</span><span class="o">.</span><span class="n">shift_size</span><span class="p">,</span> <span class="kc">None</span><span class="p">),</span>
+            <span class="p">)</span>
+            <span class="n">w_slices</span> <span class="o">=</span> <span class="p">(</span>
+                <span class="nb">slice</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="o">-</span><span class="bp">self</span><span class="o">.</span><span class="n">window_size</span><span class="p">),</span>
+                <span class="nb">slice</span><span class="p">(</span><span class="o">-</span><span class="bp">self</span><span class="o">.</span><span class="n">window_size</span><span class="p">,</span> <span class="o">-</span><span class="bp">self</span><span class="o">.</span><span class="n">shift_size</span><span class="p">),</span>
+                <span class="nb">slice</span><span class="p">(</span><span class="o">-</span><span class="bp">self</span><span class="o">.</span><span class="n">shift_size</span><span class="p">,</span> <span class="kc">None</span><span class="p">),</span>
+            <span class="p">)</span>
+            <span class="n">cnt</span> <span class="o">=</span> <span class="mi">0</span>
+            <span class="k">for</span> <span class="n">h</span> <span class="ow">in</span> <span class="n">h_slices</span><span class="p">:</span>
+                <span class="k">for</span> <span class="n">w</span> <span class="ow">in</span> <span class="n">w_slices</span><span class="p">:</span>
+                    <span class="n">img_mask</span><span class="p">[:,</span> <span class="n">h</span><span class="p">,</span> <span class="n">w</span><span class="p">,</span> <span class="p">:]</span> <span class="o">=</span> <span class="n">cnt</span>
+                    <span class="n">cnt</span> <span class="o">+=</span> <span class="mi">1</span>
+
+            <span class="n">mask_windows</span> <span class="o">=</span> <span class="n">window_partition</span><span class="p">(</span>
+                <span class="n">img_mask</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">window_size</span>
+            <span class="p">)</span>  <span class="c1"># nW, window_size, window_size, 1</span>
+            <span class="n">mask_windows</span> <span class="o">=</span> <span class="n">mask_windows</span><span class="o">.</span><span class="n">view</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">window_size</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">window_size</span><span class="p">)</span>
+            <span class="n">attn_mask</span> <span class="o">=</span> <span class="n">mask_windows</span><span class="o">.</span><span class="n">unsqueeze</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span> <span class="o">-</span> <span class="n">mask_windows</span><span class="o">.</span><span class="n">unsqueeze</span><span class="p">(</span><span class="mi">2</span><span class="p">)</span>
+            <span class="n">attn_mask</span> <span class="o">=</span> <span class="n">attn_mask</span><span class="o">.</span><span class="n">masked_fill</span><span class="p">(</span><span class="n">attn_mask</span> <span class="o">!=</span> <span class="mi">0</span><span class="p">,</span> <span class="nb">float</span><span class="p">(</span><span class="o">-</span><span class="mf">100.0</span><span class="p">))</span><span class="o">.</span><span class="n">masked_fill</span><span class="p">(</span>
+                <span class="n">attn_mask</span> <span class="o">==</span> <span class="mi">0</span><span class="p">,</span> <span class="nb">float</span><span class="p">(</span><span class="mf">0.0</span><span class="p">)</span>
+            <span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">attn_mask</span> <span class="o">=</span> <span class="kc">None</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">register_buffer</span><span class="p">(</span><span class="s2">"attn_mask"</span><span class="p">,</span> <span class="n">attn_mask</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">fused_window_process</span> <span class="o">=</span> <span class="n">fused_window_process</span>
+
+    <span class="c1">### New cell ###</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">forward</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">x</span><span class="p">):</span>
+        <span class="n">H</span><span class="p">,</span> <span class="n">W</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">input_resolution</span>
+        <span class="n">B</span><span class="p">,</span> <span class="n">L</span><span class="p">,</span> <span class="n">C</span> <span class="o">=</span> <span class="n">x</span><span class="o">.</span><span class="n">shape</span>
+        <span class="k">assert</span> <span class="n">L</span> <span class="o">==</span> <span class="n">H</span> <span class="o">*</span> <span class="n">W</span><span class="p">,</span> <span class="s2">"input feature has wrong size"</span>
+
+        <span class="n">shortcut</span> <span class="o">=</span> <span class="n">x</span>
+        <span class="n">x</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">norm1</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
+        <span class="n">x</span> <span class="o">=</span> <span class="n">x</span><span class="o">.</span><span class="n">view</span><span class="p">(</span><span class="n">B</span><span class="p">,</span> <span class="n">H</span><span class="p">,</span> <span class="n">W</span><span class="p">,</span> <span class="n">C</span><span class="p">)</span>
+
+        <span class="c1"># 循環シフト（cyclic shift）</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">shift_size</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">fused_window_process</span><span class="p">:</span>
+                <span class="n">shifted_x</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">roll</span><span class="p">(</span>
+                    <span class="n">x</span><span class="p">,</span> <span class="n">shifts</span><span class="o">=</span><span class="p">(</span><span class="o">-</span><span class="bp">self</span><span class="o">.</span><span class="n">shift_size</span><span class="p">,</span> <span class="o">-</span><span class="bp">self</span><span class="o">.</span><span class="n">shift_size</span><span class="p">),</span> <span class="n">dims</span><span class="o">=</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">)</span>
+                <span class="p">)</span>
+                <span class="c1"># ウィンドウに分割</span>
+                <span class="n">x_windows</span> <span class="o">=</span> <span class="n">window_partition</span><span class="p">(</span>
+                    <span class="n">shifted_x</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">window_size</span>
+                <span class="p">)</span>  <span class="c1"># nW*B, window_size, window_size, C</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">x_windows</span> <span class="o">=</span> <span class="n">WindowProcess</span><span class="o">.</span><span class="n">apply</span><span class="p">(</span>
+                    <span class="n">x</span><span class="p">,</span> <span class="n">B</span><span class="p">,</span> <span class="n">H</span><span class="p">,</span> <span class="n">W</span><span class="p">,</span> <span class="n">C</span><span class="p">,</span> <span class="o">-</span><span class="bp">self</span><span class="o">.</span><span class="n">shift_size</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">window_size</span>
+                <span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">shifted_x</span> <span class="o">=</span> <span class="n">x</span>
+            <span class="c1"># ウィンドウに分割</span>
+            <span class="n">x_windows</span> <span class="o">=</span> <span class="n">window_partition</span><span class="p">(</span>
+                <span class="n">shifted_x</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">window_size</span>
+            <span class="p">)</span>  <span class="c1"># nW*B, window_size, window_size, C</span>
+
+        <span class="n">x_windows</span> <span class="o">=</span> <span class="n">x_windows</span><span class="o">.</span><span class="n">view</span><span class="p">(</span>
+            <span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">window_size</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">window_size</span><span class="p">,</span> <span class="n">C</span>
+        <span class="p">)</span>  <span class="c1"># nW*B, window_size*window_size, C</span>
+
+        <span class="c1"># W-MSA/SW-MSA</span>
+        <span class="n">attn_windows</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">attn</span><span class="p">(</span>
+            <span class="n">x_windows</span><span class="p">,</span> <span class="n">mask</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">attn_mask</span>
+        <span class="p">)</span>  <span class="c1"># nW*B, window_size*window_size, C</span>
+
+        <span class="c1"># ウィンドウをマージ</span>
+        <span class="n">attn_windows</span> <span class="o">=</span> <span class="n">attn_windows</span><span class="o">.</span><span class="n">view</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">window_size</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">window_size</span><span class="p">,</span> <span class="n">C</span><span class="p">)</span>
+
+        <span class="c1"># 循環シフトを元に戻す</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">shift_size</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">fused_window_process</span><span class="p">:</span>
+                <span class="n">shifted_x</span> <span class="o">=</span> <span class="n">window_reverse</span><span class="p">(</span>
+                    <span class="n">attn_windows</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">window_size</span><span class="p">,</span> <span class="n">H</span><span class="p">,</span> <span class="n">W</span>
+                <span class="p">)</span>  <span class="c1"># B H' W' C</span>
+                <span class="n">x</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">roll</span><span class="p">(</span>
+                    <span class="n">shifted_x</span><span class="p">,</span> <span class="n">shifts</span><span class="o">=</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">shift_size</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">shift_size</span><span class="p">),</span> <span class="n">dims</span><span class="o">=</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">)</span>
+                <span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">x</span> <span class="o">=</span> <span class="n">WindowProcessReverse</span><span class="o">.</span><span class="n">apply</span><span class="p">(</span>
+                    <span class="n">attn_windows</span><span class="p">,</span> <span class="n">B</span><span class="p">,</span> <span class="n">H</span><span class="p">,</span> <span class="n">W</span><span class="p">,</span> <span class="n">C</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">shift_size</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">window_size</span>
+                <span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">shifted_x</span> <span class="o">=</span> <span class="n">window_reverse</span><span class="p">(</span><span class="n">attn_windows</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">window_size</span><span class="p">,</span> <span class="n">H</span><span class="p">,</span> <span class="n">W</span><span class="p">)</span>  <span class="c1"># B H' W' C</span>
+            <span class="n">x</span> <span class="o">=</span> <span class="n">shifted_x</span>
+        <span class="n">x</span> <span class="o">=</span> <span class="n">x</span><span class="o">.</span><span class="n">view</span><span class="p">(</span><span class="n">B</span><span class="p">,</span> <span class="n">H</span> <span class="o">*</span> <span class="n">W</span><span class="p">,</span> <span class="n">C</span><span class="p">)</span>
+        <span class="n">x</span> <span class="o">=</span> <span class="n">shortcut</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">drop_path</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
+
+        <span class="c1"># フィードフォワードネットワーク（FFN）</span>
+        <span class="n">x</span> <span class="o">=</span> <span class="n">x</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">drop_path</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">mlp</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">norm2</span><span class="p">(</span><span class="n">x</span><span class="p">)))</span>
+
+        <span class="k">return</span> <span class="n">x</span>
+</code></pre></div>
+
+<h4>Swin Transformer Block のフォワードパス</h4>
+<p>重要なステップは4つです。</p>
+<ol>
+<li><strong>循環シフト（cyclic shift）</strong>:
+特徴マップは <code>window_partition</code> でウィンドウに分割されます。その区画に <strong>cyclic shift</strong> が適用されます。cyclic shift とは、列の中の要素（ここでは区画）を左または右へずらし、一端からはみ出した要素を反対側に回り込ませる操作です。要素同士の相対的な位置は変わりますが、列そのものはそのまま保たれます。たとえば、列 <code>A, B, C, D</code> を右へ1つ cyclic shift すると <code>D, A, B, C</code> になります。</li>
+</ol>
+<p>cyclic shift により、モデルは隣接するウィンドウ同士の関係を捉えられるようになり、個々のウィンドウのローカルな範囲を超えた空間的文脈を学習する能力が高まります。</p>
+<ol start="2">
+<li>
+<p><strong>ウィンドウ attention</strong>: ウィンドウベースの multi-head self attention（W-MSA）モジュールを使って attention を実行します。</p>
+</li>
+<li>
+<p><strong>パッチのマージ</strong>: <code>PatchMerging</code> でパッチをマージします。</p>
+</li>
+<li>
+<p><strong>循環シフトを元に戻す</strong>: attention が終わったら、<code>reverse_window</code> でウィンドウ分割を元に戻し、cyclic shift の操作も逆向きに実行して、特徴マップを元の形に戻します。</p>
+</li>
+</ol>
+<div class="codehilite"><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">WindowAttention</span><span class="p">(</span><span class="n">nn</span><span class="o">.</span><span class="n">Module</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">"""</span>
+<span class="sd">    Args:</span>
+<span class="sd">        dim (int): Number of input channels.</span>
+<span class="sd">        window_size (tuple[int]): The height and width of the window.</span>
+<span class="sd">        num_heads (int): Number of attention heads.</span>
+<span class="sd">        qkv_bias (bool, optional):  If True, add a learnable bias to query, key, value. Default: True</span>
+<span class="sd">        qk_scale (float | None, optional): Override default qk scale of head_dim ** -0.5 if set</span>
+<span class="sd">        attn_drop (float, optional): Dropout ratio of attention weight. Default: 0.0</span>
+<span class="sd">        proj_drop (float, optional): Dropout ratio of output. Default: 0.0</span>
+<span class="sd">    """</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">dim</span><span class="p">,</span>
+        <span class="n">window_size</span><span class="p">,</span>
+        <span class="n">num_heads</span><span class="p">,</span>
+        <span class="n">qkv_bias</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+        <span class="n">qk_scale</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+        <span class="n">attn_drop</span><span class="o">=</span><span class="mf">0.0</span><span class="p">,</span>
+        <span class="n">proj_drop</span><span class="o">=</span><span class="mf">0.0</span><span class="p">,</span>
+    <span class="p">):</span>
+
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">dim</span> <span class="o">=</span> <span class="n">dim</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">window_size</span> <span class="o">=</span> <span class="n">window_size</span>  <span class="c1"># Wh, Ww</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">num_heads</span> <span class="o">=</span> <span class="n">num_heads</span>
+        <span class="n">head_dim</span> <span class="o">=</span> <span class="n">dim</span> <span class="o">//</span> <span class="n">num_heads</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">scale</span> <span class="o">=</span> <span class="n">qk_scale</span> <span class="ow">or</span> <span class="n">head_dim</span><span class="o">**-</span><span class="mf">0.5</span>
+
+        <span class="c1"># 相対位置バイアスのパラメータテーブルを定義</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">relative_position_bias_table</span> <span class="o">=</span> <span class="n">nn</span><span class="o">.</span><span class="n">Parameter</span><span class="p">(</span>
+            <span class="n">torch</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="mi">2</span> <span class="o">*</span> <span class="n">window_size</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">-</span> <span class="mi">1</span><span class="p">)</span> <span class="o">*</span> <span class="p">(</span><span class="mi">2</span> <span class="o">*</span> <span class="n">window_size</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">-</span> <span class="mi">1</span><span class="p">),</span> <span class="n">num_heads</span><span class="p">)</span>
+        <span class="p">)</span>  <span class="c1"># 2*Wh-1 * 2*Ww-1, nH</span>
+
+        <span class="c1"># ウィンドウ内の各トークンについて、ペアごとの相対位置インデックスを取得</span>
+        <span class="n">coords_h</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">window_size</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+        <span class="n">coords_w</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">window_size</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span>
+        <span class="n">coords</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">stack</span><span class="p">(</span><span class="n">torch</span><span class="o">.</span><span class="n">meshgrid</span><span class="p">([</span><span class="n">coords_h</span><span class="p">,</span> <span class="n">coords_w</span><span class="p">]))</span>  <span class="c1"># 2, Wh, Ww</span>
+        <span class="n">coords_flatten</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">flatten</span><span class="p">(</span><span class="n">coords</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>  <span class="c1"># 2, Wh*Ww</span>
+        <span class="n">relative_coords</span> <span class="o">=</span> <span class="p">(</span>
+            <span class="n">coords_flatten</span><span class="p">[:,</span> <span class="p">:,</span> <span class="kc">None</span><span class="p">]</span> <span class="o">-</span> <span class="n">coords_flatten</span><span class="p">[:,</span> <span class="kc">None</span><span class="p">,</span> <span class="p">:]</span>
+        <span class="p">)</span>  <span class="c1"># 2, Wh*Ww, Wh*Ww</span>
+        <span class="n">relative_coords</span> <span class="o">=</span> <span class="n">relative_coords</span><span class="o">.</span><span class="n">permute</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span><span class="o">.</span><span class="n">contiguous</span><span class="p">()</span>  <span class="c1"># Wh*Ww, Wh*Ww, 2</span>
+        <span class="n">relative_coords</span><span class="p">[:,</span> <span class="p">:,</span> <span class="mi">0</span><span class="p">]</span> <span class="o">+=</span> <span class="bp">self</span><span class="o">.</span><span class="n">window_size</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">-</span> <span class="mi">1</span>  <span class="c1"># 0 から始まるようにシフト</span>
+        <span class="n">relative_coords</span><span class="p">[:,</span> <span class="p">:,</span> <span class="mi">1</span><span class="p">]</span> <span class="o">+=</span> <span class="bp">self</span><span class="o">.</span><span class="n">window_size</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">-</span> <span class="mi">1</span>
+        <span class="n">relative_coords</span><span class="p">[:,</span> <span class="p">:,</span> <span class="mi">0</span><span class="p">]</span> <span class="o">*=</span> <span class="mi">2</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">window_size</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">-</span> <span class="mi">1</span>
+        <span class="n">relative_position_index</span> <span class="o">=</span> <span class="n">relative_coords</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">)</span>  <span class="c1"># Wh*Ww, Wh*Ww</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">register_buffer</span><span class="p">(</span><span class="s2">"relative_position_index"</span><span class="p">,</span> <span class="n">relative_position_index</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">qkv</span> <span class="o">=</span> <span class="n">nn</span><span class="o">.</span><span class="n">Linear</span><span class="p">(</span><span class="n">dim</span><span class="p">,</span> <span class="n">dim</span> <span class="o">*</span> <span class="mi">3</span><span class="p">,</span> <span class="n">bias</span><span class="o">=</span><span class="n">qkv_bias</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">attn_drop</span> <span class="o">=</span> <span class="n">nn</span><span class="o">.</span><span class="n">Dropout</span><span class="p">(</span><span class="n">attn_drop</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">proj</span> <span class="o">=</span> <span class="n">nn</span><span class="o">.</span><span class="n">Linear</span><span class="p">(</span><span class="n">dim</span><span class="p">,</span> <span class="n">dim</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">proj_drop</span> <span class="o">=</span> <span class="n">nn</span><span class="o">.</span><span class="n">Dropout</span><span class="p">(</span><span class="n">proj_drop</span><span class="p">)</span>
+
+        <span class="n">trunc_normal_</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">relative_position_bias_table</span><span class="p">,</span> <span class="n">std</span><span class="o">=</span><span class="mf">0.02</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">softmax</span> <span class="o">=</span> <span class="n">nn</span><span class="o">.</span><span class="n">Softmax</span><span class="p">(</span><span class="n">dim</span><span class="o">=-</span><span class="mi">1</span><span class="p">)</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">forward</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="n">mask</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">"""</span>
+<span class="sd">        Args:</span>
+<span class="sd">            x: input features with shape of (num_windows*B, N, C)</span>
+<span class="sd">            mask: (0/-inf) mask with shape of (num_windows, Wh*Ww, Wh*Ww) or None</span>
+<span class="sd">        """</span>
+        <span class="n">B_</span><span class="p">,</span> <span class="n">N</span><span class="p">,</span> <span class="n">C</span> <span class="o">=</span> <span class="n">x</span><span class="o">.</span><span class="n">shape</span>
+        <span class="n">qkv</span> <span class="o">=</span> <span class="p">(</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">qkv</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
+            <span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="n">B_</span><span class="p">,</span> <span class="n">N</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">num_heads</span><span class="p">,</span> <span class="n">C</span> <span class="o">//</span> <span class="bp">self</span><span class="o">.</span><span class="n">num_heads</span><span class="p">)</span>
+            <span class="o">.</span><span class="n">permute</span><span class="p">(</span><span class="mi">2</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">4</span><span class="p">)</span>
+        <span class="p">)</span>
+        <span class="n">q</span><span class="p">,</span> <span class="n">k</span><span class="p">,</span> <span class="n">v</span> <span class="o">=</span> <span class="p">(</span>
+            <span class="n">qkv</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span>
+            <span class="n">qkv</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span>
+            <span class="n">qkv</span><span class="p">[</span><span class="mi">2</span><span class="p">],</span>
+        <span class="p">)</span>  <span class="c1"># torchscript の都合に合わせる（テンソルをタプルとしては使えないため）</span>
+
+        <span class="n">q</span> <span class="o">=</span> <span class="n">q</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">scale</span>
+        <span class="n">attn</span> <span class="o">=</span> <span class="n">q</span> <span class="o">@</span> <span class="n">k</span><span class="o">.</span><span class="n">transpose</span><span class="p">(</span><span class="o">-</span><span class="mi">2</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">)</span>
+
+        <span class="n">relative_position_bias</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">relative_position_bias_table</span><span class="p">[</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">relative_position_index</span><span class="o">.</span><span class="n">view</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">)</span>
+        <span class="p">]</span><span class="o">.</span><span class="n">view</span><span class="p">(</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">window_size</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">window_size</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">window_size</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">window_size</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span>
+            <span class="o">-</span><span class="mi">1</span><span class="p">,</span>
+        <span class="p">)</span>  <span class="c1"># Wh*Ww,Wh*Ww,nH</span>
+        <span class="n">relative_position_bias</span> <span class="o">=</span> <span class="n">relative_position_bias</span><span class="o">.</span><span class="n">permute</span><span class="p">(</span>
+            <span class="mi">2</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">1</span>
+        <span class="p">)</span><span class="o">.</span><span class="n">contiguous</span><span class="p">()</span>  <span class="c1"># nH, Wh*Ww, Wh*Ww</span>
+        <span class="n">attn</span> <span class="o">=</span> <span class="n">attn</span> <span class="o">+</span> <span class="n">relative_position_bias</span><span class="o">.</span><span class="n">unsqueeze</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">mask</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">nW</span> <span class="o">=</span> <span class="n">mask</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+            <span class="n">attn</span> <span class="o">=</span> <span class="n">attn</span><span class="o">.</span><span class="n">view</span><span class="p">(</span><span class="n">B_</span> <span class="o">//</span> <span class="n">nW</span><span class="p">,</span> <span class="n">nW</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">num_heads</span><span class="p">,</span> <span class="n">N</span><span class="p">,</span> <span class="n">N</span><span class="p">)</span> <span class="o">+</span> <span class="n">mask</span><span class="o">.</span><span class="n">unsqueeze</span><span class="p">(</span>
+                <span class="mi">1</span>
+            <span class="p">)</span><span class="o">.</span><span class="n">unsqueeze</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
+            <span class="n">attn</span> <span class="o">=</span> <span class="n">attn</span><span class="o">.</span><span class="n">view</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">num_heads</span><span class="p">,</span> <span class="n">N</span><span class="p">,</span> <span class="n">N</span><span class="p">)</span>
+            <span class="n">attn</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">softmax</span><span class="p">(</span><span class="n">attn</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">attn</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">softmax</span><span class="p">(</span><span class="n">attn</span><span class="p">)</span>
+
+        <span class="n">attn</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">attn_drop</span><span class="p">(</span><span class="n">attn</span><span class="p">)</span>
+
+        <span class="n">x</span> <span class="o">=</span> <span class="p">(</span><span class="n">attn</span> <span class="o">@</span> <span class="n">v</span><span class="p">)</span><span class="o">.</span><span class="n">transpose</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">)</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="n">B_</span><span class="p">,</span> <span class="n">N</span><span class="p">,</span> <span class="n">C</span><span class="p">)</span>
+        <span class="n">x</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">proj</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
+        <span class="n">x</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">proj_drop</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">x</span>
+</code></pre></div>
+
+<h3>Window Attention</h3>
+<p><code>WindowAttention</code> は、相対位置バイアスを持つウィンドウベースの multi-head self attention（W-MSA）モジュールです。シフトありとシフトなしのどちらのウィンドウにも使えます。</p>
+<div class="codehilite"><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">PatchMerging</span><span class="p">(</span><span class="n">nn</span><span class="o">.</span><span class="n">Module</span><span class="p">):</span>
+<span class="w">    </span><span class="sa">r</span><span class="sd">"""Patch Merging Layer.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        input_resolution (tuple[int]): Resolution of input feature.</span>
+<span class="sd">        dim (int): Number of input channels.</span>
+<span class="sd">        norm_layer (nn.Module, optional): Normalization layer.  Default: nn.LayerNorm</span>
+<span class="sd">    """</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">input_resolution</span><span class="p">,</span> <span class="n">dim</span><span class="p">,</span> <span class="n">norm_layer</span><span class="o">=</span><span class="n">nn</span><span class="o">.</span><span class="n">LayerNorm</span><span class="p">):</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">input_resolution</span> <span class="o">=</span> <span class="n">input_resolution</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">dim</span> <span class="o">=</span> <span class="n">dim</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">reduction</span> <span class="o">=</span> <span class="n">nn</span><span class="o">.</span><span class="n">Linear</span><span class="p">(</span><span class="mi">4</span> <span class="o">*</span> <span class="n">dim</span><span class="p">,</span> <span class="mi">2</span> <span class="o">*</span> <span class="n">dim</span><span class="p">,</span> <span class="n">bias</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">norm</span> <span class="o">=</span> <span class="n">norm_layer</span><span class="p">(</span><span class="mi">4</span> <span class="o">*</span> <span class="n">dim</span><span class="p">)</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">forward</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">x</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">"""</span>
+<span class="sd">        x: B, H*W, C</span>
+<span class="sd">        """</span>
+        <span class="n">H</span><span class="p">,</span> <span class="n">W</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">input_resolution</span>
+        <span class="n">B</span><span class="p">,</span> <span class="n">L</span><span class="p">,</span> <span class="n">C</span> <span class="o">=</span> <span class="n">x</span><span class="o">.</span><span class="n">shape</span>
+        <span class="k">assert</span> <span class="n">L</span> <span class="o">==</span> <span class="n">H</span> <span class="o">*</span> <span class="n">W</span><span class="p">,</span> <span class="s2">"input feature has wrong size"</span>
+        <span class="k">assert</span> <span class="n">H</span> <span class="o">%</span> <span class="mi">2</span> <span class="o">==</span> <span class="mi">0</span> <span class="ow">and</span> <span class="n">W</span> <span class="o">%</span> <span class="mi">2</span> <span class="o">==</span> <span class="mi">0</span><span class="p">,</span> <span class="sa">f</span><span class="s2">"x size (</span><span class="si">{</span><span class="n">H</span><span class="si">}</span><span class="s2">*</span><span class="si">{</span><span class="n">W</span><span class="si">}</span><span class="s2">) are not even."</span>
+
+        <span class="n">x</span> <span class="o">=</span> <span class="n">x</span><span class="o">.</span><span class="n">view</span><span class="p">(</span><span class="n">B</span><span class="p">,</span> <span class="n">H</span><span class="p">,</span> <span class="n">W</span><span class="p">,</span> <span class="n">C</span><span class="p">)</span>
+
+        <span class="n">x0</span> <span class="o">=</span> <span class="n">x</span><span class="p">[:,</span> <span class="mi">0</span><span class="p">::</span><span class="mi">2</span><span class="p">,</span> <span class="mi">0</span><span class="p">::</span><span class="mi">2</span><span class="p">,</span> <span class="p">:]</span>  <span class="c1"># B H/2 W/2 C</span>
+        <span class="n">x1</span> <span class="o">=</span> <span class="n">x</span><span class="p">[:,</span> <span class="mi">1</span><span class="p">::</span><span class="mi">2</span><span class="p">,</span> <span class="mi">0</span><span class="p">::</span><span class="mi">2</span><span class="p">,</span> <span class="p">:]</span>  <span class="c1"># B H/2 W/2 C</span>
+        <span class="n">x2</span> <span class="o">=</span> <span class="n">x</span><span class="p">[:,</span> <span class="mi">0</span><span class="p">::</span><span class="mi">2</span><span class="p">,</span> <span class="mi">1</span><span class="p">::</span><span class="mi">2</span><span class="p">,</span> <span class="p">:]</span>  <span class="c1"># B H/2 W/2 C</span>
+        <span class="n">x3</span> <span class="o">=</span> <span class="n">x</span><span class="p">[:,</span> <span class="mi">1</span><span class="p">::</span><span class="mi">2</span><span class="p">,</span> <span class="mi">1</span><span class="p">::</span><span class="mi">2</span><span class="p">,</span> <span class="p">:]</span>  <span class="c1"># B H/2 W/2 C</span>
+        <span class="n">x</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">cat</span><span class="p">([</span><span class="n">x0</span><span class="p">,</span> <span class="n">x1</span><span class="p">,</span> <span class="n">x2</span><span class="p">,</span> <span class="n">x3</span><span class="p">],</span> <span class="o">-</span><span class="mi">1</span><span class="p">)</span>  <span class="c1"># B H/2 W/2 4*C</span>
+        <span class="n">x</span> <span class="o">=</span> <span class="n">x</span><span class="o">.</span><span class="n">view</span><span class="p">(</span><span class="n">B</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="mi">4</span> <span class="o">*</span> <span class="n">C</span><span class="p">)</span>  <span class="c1"># B H/2*W/2 4*C</span>
+
+        <span class="n">x</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">norm</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
+        <span class="n">x</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">reduction</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">x</span>
+</code></pre></div>
+
+<h3>Patch Merging レイヤー</h3>
+<p>パッチマージはダウンサンプリングに使われる手法です。従来の畳み込みニューラルネットワーク（CNN）の pooling と同様に、特徴マップの空間次元を削減します。受容野を段階的に広げ、空間解像度を下げながら、階層的な特徴表現を構築するのに役立ちます。</p>
+<div class="codehilite"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">datasets</span><span class="w"> </span><span class="kn">import</span> <span class="n">load_dataset</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">transformers</span><span class="w"> </span><span class="kn">import</span> <span class="n">AutoImageProcessor</span><span class="p">,</span> <span class="n">SwinForImageClassification</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">torch</span>
+
+<span class="n">model</span> <span class="o">=</span> <span class="n">SwinForImageClassification</span><span class="o">.</span><span class="n">from_pretrained</span><span class="p">(</span>
+    <span class="s2">"microsoft/swin-tiny-patch4-window7-224"</span>
+<span class="p">)</span>
+<span class="n">image_processor</span> <span class="o">=</span> <span class="n">AutoImageProcessor</span><span class="o">.</span><span class="n">from_pretrained</span><span class="p">(</span>
+    <span class="s2">"microsoft/swin-tiny-patch4-window7-224"</span>
+<span class="p">)</span>
+
+<span class="n">dataset</span> <span class="o">=</span> <span class="n">load_dataset</span><span class="p">(</span><span class="s2">"huggingface/cats-image"</span><span class="p">)</span>
+<span class="n">image</span> <span class="o">=</span> <span class="n">dataset</span><span class="p">[</span><span class="s2">"test"</span><span class="p">][</span><span class="s2">"image"</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span>
+
+<span class="n">inputs</span> <span class="o">=</span> <span class="n">image_processor</span><span class="p">(</span><span class="n">image</span><span class="p">,</span> <span class="n">return_tensors</span><span class="o">=</span><span class="s2">"pt"</span><span class="p">)</span>
+
+<span class="k">with</span> <span class="n">torch</span><span class="o">.</span><span class="n">no_grad</span><span class="p">():</span>
+    <span class="n">logits</span> <span class="o">=</span> <span class="n">model</span><span class="p">(</span><span class="o">**</span><span class="n">inputs</span><span class="p">)</span><span class="o">.</span><span class="n">logits</span>
+
+<span class="n">predicted_label_id</span> <span class="o">=</span> <span class="n">logits</span><span class="o">.</span><span class="n">argmax</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">)</span><span class="o">.</span><span class="n">item</span><span class="p">()</span>
+<span class="n">predicted_label_text</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">id2label</span><span class="p">[</span><span class="n">predicted_label_id</span><span class="p">]</span>
+
+<span class="nb">print</span><span class="p">(</span><span class="n">predicted_label_text</span><span class="p">)</span>
+</code></pre></div>
+
+<h2>試してみる</h2>
+<p>Swin の 🤗 ドキュメントは <a href="https://huggingface.co/docs/transformers/model_doc/swin">こちら</a> にあります。</p>
+<h3>事前学習済み Swin モデルを分類に使う</h3>
+<p>Swin モデルを使って猫の画像を ImageNet の1,000クラスのいずれかに分類する方法は、次のとおりです。</p>
+<div class="codehilite"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">datasets</span><span class="w"> </span><span class="kn">import</span> <span class="n">load_dataset</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">transformers</span><span class="w"> </span><span class="kn">import</span> <span class="n">AutoImageProcessor</span><span class="p">,</span> <span class="n">SwinForImageClassification</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">torch</span>
+
+<span class="n">model</span> <span class="o">=</span> <span class="n">SwinForImageClassification</span><span class="o">.</span><span class="n">from_pretrained</span><span class="p">(</span>
+    <span class="s2">"microsoft/swin-tiny-patch4-window7-224"</span>
+<span class="p">)</span>
+<span class="n">image_processor</span> <span class="o">=</span> <span class="n">AutoImageProcessor</span><span class="o">.</span><span class="n">from_pretrained</span><span class="p">(</span>
+    <span class="s2">"microsoft/swin-tiny-patch4-window7-224"</span>
+<span class="p">)</span>
+
+<span class="n">dataset</span> <span class="o">=</span> <span class="n">load_dataset</span><span class="p">(</span><span class="s2">"huggingface/cats-image"</span><span class="p">)</span>
+<span class="n">image</span> <span class="o">=</span> <span class="n">dataset</span><span class="p">[</span><span class="s2">"test"</span><span class="p">][</span><span class="s2">"image"</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span>
+
+<span class="n">inputs</span> <span class="o">=</span> <span class="n">image_processor</span><span class="p">(</span><span class="n">image</span><span class="p">,</span> <span class="n">return_tensors</span><span class="o">=</span><span class="s2">"pt"</span><span class="p">)</span>
+
+<span class="k">with</span> <span class="n">torch</span><span class="o">.</span><span class="n">no_grad</span><span class="p">():</span>
+    <span class="n">logits</span> <span class="o">=</span> <span class="n">model</span><span class="p">(</span><span class="o">**</span><span class="n">inputs</span><span class="p">)</span><span class="o">.</span><span class="n">logits</span>
+
+<span class="n">predicted_label_id</span> <span class="o">=</span> <span class="n">logits</span><span class="o">.</span><span class="n">argmax</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">)</span><span class="o">.</span><span class="n">item</span><span class="p">()</span>
+<span class="n">predicted_label_text</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">id2label</span><span class="p">[</span><span class="n">predicted_label_id</span><span class="p">]</span>
+
+<span class="nb">print</span><span class="p">(</span><span class="n">predicted_label_text</span><span class="p">)</span>
+</code></pre></div>
+</article>
+<nav class="page-nav"><a class="nav-link prev" href="vision-transformers-for-image-classification.html">← 前へ: 画像分類のための Vision Transformer の転移学習とファインチューニング</a><a class="nav-link toc-link" href="../../index.html">目次へ</a><a class="nav-link next" href="cvt.html">次へ →: Convolutional Vision Transformer (CvT)</a></nav>
+</main>
+<footer class="site-footer">
+  <p>原典: Hugging Face huggingface/computer-vision-course（<a href="https://github.com/huggingface/computer-vision-course">https://github.com/huggingface/computer-vision-course</a>）</p>
+  <p>日本語版の翻訳・公開: 霞ヶ関京 / 連絡先: GitHub <a href="https://github.com/yanikasumin">@yanikasumin</a> / YouTube <a href="https://www.youtube.com/@KASUMI_MOF">@KASUMI_MOF</a></p>
+  <p class="demo-note">このサイトはデモ版です。内容は順次更新されます。</p>
+</footer>
+<script src="../../../site.js"></script>
+</body>
+</html>

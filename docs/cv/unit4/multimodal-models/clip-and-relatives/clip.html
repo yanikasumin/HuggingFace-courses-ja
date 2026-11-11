@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Contrastive Language-Image Pre-training（CLIP） | Hugging Face コース日本語版（デモ版）</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Shippori+Mincho:wght@500;700&family=Zen+Kaku+Gothic+New:wght@400;500;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../../../../style.css">
+<script>
+window.MathJax = { tex: { inlineMath: [['$', '$'], ['\\(', '\\)']], displayMath: [['$$', '$$'], ['\\[', '\\]']] }, options: { skipHtmlTags: ['script','noscript','style','textarea','pre','code'] } };
+</script>
+<script async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml.js"></script>
+</head>
+<body>
+<header class="site-header">
+  <div class="header-inner">
+    <a class="site-title" href="../../../../index.html">Hugging Face コース日本語版</a>
+    <span class="demo-badge">デモ版</span>
+  </div>
+</header>
+<main class="container">
+<p class="course-crumb"><a href="../../../index.html">Community CV コース</a>
+<span class="badge badge-qa-wip">翻訳済み・QA進行中（未検証の部分を含みます）</span></p>
+<nav class="page-nav"><a class="nav-link prev" href="losses.html">← 前へ: 損失（Losses）</a><a class="nav-link toc-link" href="../../../index.html">目次へ</a><a class="nav-link next" href="blip.html">次へ →: マルチモーダルテキスト生成（BLIP）</a></nav>
+<article class="content">
+<h1>Contrastive Language-Image Pre-training（CLIP）</h1>
+<h2>はじめに</h2>
+<p>CLIP は、自然言語による教師を通じて視覚概念を把握することに長けたニューラルネットワークです。テキストエンコーダと画像エンコーダを同時に学習し、キャプションと対応する画像を照合する事前学習タスクに焦点を当てることで動作します。このアーキテクチャにより、CLIP はさまざまな視覚分類ベンチマークへシームレスに適応できます。認識すべき視覚カテゴリの名前を与えるだけでそれが可能であり、GPT-2 や GPT-3 のモデルで見られたものと同様の「ゼロショット」学習能力を示しています。</p>
+<h2>対照事前学習</h2>
+<p>画像・テキストのペアのバッチが与えられると、CLIP はそのバッチ内のすべての（画像、テキスト）候補の組み合わせについて、密なコサイン類似度行列を計算します。核心のアイデアは、正しいペア（下図で青で示されたもの）の類似度を最大化し、間違ったペア（図で灰色で示されたもの）の類似度を最小化することです。そのために、これらの類似度スコアに対する対称クロスエントロピー損失を最適化します。</p>
+<p><img alt="CLIP の対照事前学習" src="https://images.openai.com/blob/fbc4f633-9ad4-4dc2-bd94-0b6f1feee22f/overview-a.svg" />
+<em>OpenAI から引用した画像</em></p>
+<p>簡単に説明すると、画像とそれに対応するキャプションの類似度をできるだけ高くし、画像と他のキャプションの類似度は小さくしたい、ということです。この論理をキャプション側にも適用し、キャプションとそれに対応する画像の類似度を最大化し、他のすべての画像との類似度を最小化したいと考えます。</p>
+<h2>テキストエンコーダと画像エンコーダ</h2>
+<p>CLIP の設計は、画像とテキストに独立したエンコーダを備えており、その選択に柔軟性があります。標準の画像エンコーダである Vision Transformer を ResNet のような代替手段に入れ替えたり、別のテキストエンコーダを選んだりでき、適応性と実験の幅が広がります。もちろん、エンコーダのどちらかを切り替えると、埋め込みの分布が変わるため、モデルを再学習する必要があります。</p>
+<h2>ユースケース</h2>
+<p>CLIP はさまざまな応用に活用できます。代表的なユースケースを挙げます:</p>
+<ul>
+<li>ゼロショット画像分類;</li>
+<li>類似度検索;</li>
+<li>拡散モデルの条件付け。</li>
+</ul>
+<h2>使い方</h2>
+<p>実際の応用では、通常、画像とあらかじめ定義されたクラスを入力として使います。次の Python の例は、CLIP の実行に transformers ライブラリを使う方法を示しています。この例では、下の画像を <code>dog</code> と <code>cat</code> のどちらかにゼロショット分類したいとします。</p>
+<p><img alt="猫の写真" src="http://images.cocodataset.org/val2017/000000039769.jpg" /></p>
+<div class="codehilite"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">PIL</span><span class="w"> </span><span class="kn">import</span> <span class="n">Image</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">requests</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">transformers</span><span class="w"> </span><span class="kn">import</span> <span class="n">CLIPProcessor</span><span class="p">,</span> <span class="n">CLIPModel</span>
+
+<span class="n">model</span> <span class="o">=</span> <span class="n">CLIPModel</span><span class="o">.</span><span class="n">from_pretrained</span><span class="p">(</span><span class="s2">"openai/clip-vit-base-patch32"</span><span class="p">)</span>
+<span class="n">processor</span> <span class="o">=</span> <span class="n">CLIPProcessor</span><span class="o">.</span><span class="n">from_pretrained</span><span class="p">(</span><span class="s2">"openai/clip-vit-base-patch32"</span><span class="p">)</span>
+
+<span class="n">url</span> <span class="o">=</span> <span class="s2">"http://images.cocodataset.org/val2017/000000039769.jpg"</span>
+<span class="n">image</span> <span class="o">=</span> <span class="n">Image</span><span class="o">.</span><span class="n">open</span><span class="p">(</span><span class="n">requests</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">url</span><span class="p">,</span> <span class="n">stream</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span><span class="o">.</span><span class="n">raw</span><span class="p">)</span>
+
+<span class="n">inputs</span> <span class="o">=</span> <span class="n">processor</span><span class="p">(</span>
+    <span class="n">text</span><span class="o">=</span><span class="p">[</span><span class="s2">"a photo of a cat"</span><span class="p">,</span> <span class="s2">"a photo of a dog"</span><span class="p">],</span>
+    <span class="n">images</span><span class="o">=</span><span class="n">image</span><span class="p">,</span>
+    <span class="n">return_tensors</span><span class="o">=</span><span class="s2">"pt"</span><span class="p">,</span>
+    <span class="n">padding</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+<span class="p">)</span>
+
+<span class="n">outputs</span> <span class="o">=</span> <span class="n">model</span><span class="p">(</span><span class="o">**</span><span class="n">inputs</span><span class="p">)</span>
+<span class="n">logits_per_image</span> <span class="o">=</span> <span class="n">outputs</span><span class="o">.</span><span class="n">logits_per_image</span>
+<span class="n">probs</span> <span class="o">=</span> <span class="n">logits_per_image</span><span class="o">.</span><span class="n">softmax</span><span class="p">(</span><span class="n">dim</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+</code></pre></div>
+
+<p>このコードを実行した結果、得られた確率は次のとおりです:
+- "a photo of a cat": 99.49%
+- "a photo of a dog": 0.51%</p>
+<h2>限界</h2>
+<p>CLIP はゼロショット分類に長けていますが、専門にファインチューニングされたモデルを上回る可能性は低いでしょう。さらに、その汎化能力はやや限定的で、特に学習中に遭遇しなかったデータや例を含むシナリオではそうです。
+論文ではまた、Fairface データセットを使ったテストで示されたように、CLIP の有効性とバイアスはカテゴリの選択に影響されることも示されています。性別と人種の分類で顕著な差が見られ、性別の精度は 96% 超、人種の精度は 93% 程度でした。</p>
+<h2>まとめ</h2>
+<p>まとめると、OpenAI の CLIP モデルはマルチモーダル分野に革命をもたらしました。CLIP を際立たせているのは、ゼロショット学習への習熟度であり、明示的に学習していないカテゴリへ画像を分類できます。この驚くべき汎化能力は、画像とテキストキャプションを照合することで学習するという革新的な学習方法から来ています。</p>
+<h2>参考文献</h2>
+<ul>
+<li><a href="https://arxiv.org/abs/2103.00020">CLIP 論文</a></li>
+<li><a href="https://lilianweng.github.io/posts/2021-05-31-contrastive/#clip">Lilian Weng による CLIP の解説</a></li>
+</ul>
+</article>
+<nav class="page-nav"><a class="nav-link prev" href="losses.html">← 前へ: 損失（Losses）</a><a class="nav-link toc-link" href="../../../index.html">目次へ</a><a class="nav-link next" href="blip.html">次へ →: マルチモーダルテキスト生成（BLIP）</a></nav>
+</main>
+<footer class="site-footer">
+  <p>原典: Hugging Face huggingface/computer-vision-course（<a href="https://github.com/huggingface/computer-vision-course">https://github.com/huggingface/computer-vision-course</a>）</p>
+  <p>日本語版の翻訳・公開: 霞ヶ関京 / 連絡先: GitHub <a href="https://github.com/yanikasumin">@yanikasumin</a> / YouTube <a href="https://www.youtube.com/@KASUMI_MOF">@KASUMI_MOF</a></p>
+  <p class="demo-note">このサイトはデモ版です。内容は順次更新されます。</p>
+</footer>
+<script src="../../../../site.js"></script>
+</body>
+</html>

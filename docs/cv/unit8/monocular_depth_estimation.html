@@ -1,0 +1,587 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>メトリック深度と相対深度の単眼深度推定： 概要。Depth Anything V2 のファインチューニング 👐 📚 | Hugging Face コース日本語版（デモ版）</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Shippori+Mincho:wght@500;700&family=Zen+Kaku+Gothic+New:wght@400;500;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../../style.css">
+<script>
+window.MathJax = { tex: { inlineMath: [['$', '$'], ['\\(', '\\)']], displayMath: [['$$', '$$'], ['\\[', '\\]']] }, options: { skipHtmlTags: ['script','noscript','style','textarea','pre','code'] } };
+</script>
+<script async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml.js"></script>
+</head>
+<body>
+<header class="site-header">
+  <div class="header-inner">
+    <a class="site-title" href="../../index.html">Hugging Face コース日本語版</a>
+    <span class="demo-badge">デモ版</span>
+  </div>
+</header>
+<main class="container">
+<p class="course-crumb"><a href="../index.html">Community CV コース</a>
+<span class="badge badge-qa-wip">翻訳済み・QA進行中（未検証の部分を含みます）</span></p>
+<nav class="page-nav"><a class="nav-link prev" href="terminologies/representations.html">← 前へ: 3Dデータの表現方法</a><a class="nav-link toc-link" href="../index.html">目次へ</a><a class="nav-link next" href="3d-vision/nvs.html">次へ →: 新規視点合成（Novel View Synthesis）</a></nav>
+<article class="content">
+<h1>メトリック深度と相対深度の単眼深度推定： 概要。Depth Anything V2 のファインチューニング 👐 📚</h1>
+<h2>モデルの進化</h2>
+<p>過去10年間で、単眼深度推定モデルは目覚ましい進歩を遂げてきました。その進化を目で追ってみましょう。</p>
+<p>出発点は、このような基本的なモデルでした。</p>
+<p><img alt="image/png" src="https://huggingface.co/datasets/hf-vision/course-assets/resolve/main/Metric%20and%20Relative%20Monocular%20Depth%20Estimation%20An%20Overview.%20Fine-Tuning%20Depth%20Anything%20V2/depth_estimation_evolution1.png" />
+そして、より洗練されたモデルへと進歩しました。</p>
+<p><img alt="image/png" src="https://huggingface.co/datasets/hf-vision/course-assets/resolve/main/Metric%20and%20Relative%20Monocular%20Depth%20Estimation%20An%20Overview.%20Fine-Tuning%20Depth%20Anything%20V2/depth_estimation_evolution2.png" /></p>
+<p>そして現在、最先端のモデルである Depth Anything V2 があります。</p>
+<p><img alt="image/png" src="https://huggingface.co/datasets/hf-vision/course-assets/resolve/main/Metric%20and%20Relative%20Monocular%20Depth%20Estimation%20An%20Overview.%20Fine-Tuning%20Depth%20Anything%20V2/depth_estimation_evolution3.png" /></p>
+<p>素晴らしいですね。</p>
+<p>今日は、これらのモデルの仕組みを解き明かし、複雑な概念を分かりやすくします。さらに、カスタムデータセットを使って自前のモデルをファインチューニングします。「<em>でも待って、</em>」と思うかもしれません。「<em>最新のモデルがどんな環境でもあれほど良い性能を出すのに、なぜ自前のデータセットでモデルをファインチューニングする必要があるの？</em>」</p>
+<p>ここにニュアンスや具体性が関わってきます。これこそ、まさにこの記事の焦点です。単眼深度推定の細部を探求したい方は、このまま読み進めてください。</p>
+<h2>基礎</h2>
+<p>「<em>ところで、深度とは正確には何なの？</em>」典型的には、各ピクセルが、カメラやセンサーからそのピクセルに対応する空間内の点までの距離を表す、単一チャンネルの画像です。しかし、これらの距離は絶対値の場合も相対値の場合もあることが分かっています。なんと！
+- <strong>絶対深度（Absolute Depth）</strong>: 各ピクセルの値が物理的な距離（メートルやセンチメートルなど）に直接対応します。
+- <strong>相対深度（Relative Depth）</strong>: ピクセルの値は、実世界の測定単位に言及することなく、どの点が近く、どの点が遠いかを示します。相対深度は逆転していることが多く、つまり数値が小さいほどその点は遠くにあります。</p>
+<p>これらの概念については、あとでもう少し詳しく探ります。</p>
+<p>「<em>では、単眼（monocular）とは何を意味するの？</em>」簡単に言えば、写真1枚だけを使って深度を推定する必要がある、ということです。その何が難しいのでしょうか。次を見てください。</p>
+<p><img alt="image/gif" src="https://huggingface.co/datasets/hf-vision/course-assets/resolve/main/Metric%20and%20Relative%20Monocular%20Depth%20Estimation%20An%20Overview.%20Fine-Tuning%20Depth%20Anything%20V2/depth_ambiguity1.gif" /></p>
+<p><img alt="image/gif" src="https://huggingface.co/datasets/hf-vision/course-assets/resolve/main/Metric%20and%20Relative%20Monocular%20Depth%20Estimation%20An%20Overview.%20Fine-Tuning%20Depth%20Anything%20V2/depth_ambiguity2.gif" /></p>
+<p>ご覧のように、3D空間を2D平面に投影すると、遠近法のために曖昧さが生じることがあります。これに対処するために、ステレオビジョン、Structure from Motion、そしてより広い分野である写真測量（Photogrammetry）のような、複数の画像を使った深度推定の精密な数学的手法があります。さらに、レーザースキャナー（LiDAR など）のような技術も深度の測定に使えます。</p>
+<p><img alt="image/png" src="https://huggingface.co/datasets/hf-vision/course-assets/resolve/main/Metric%20and%20Relative%20Monocular%20Depth%20Estimation%20An%20Overview.%20Fine-Tuning%20Depth%20Anything%20V2/stereo_vision_sfm.png" /></p>
+<h2>相対深度と絶対（メトリック）深度の推定： その意義は？</h2>
+<p>相対深度推定の必要性を際立たせる課題をいくつか探ってみましょう。そして、より科学的に、いくつかの論文も参照しましょう。</p>
+<blockquote>
+<p>メトリック深度を予測する利点は、コンピュータビジョンやロボティクスにおける多くの下流の応用、たとえばマッピング、計画、ナビゲーション、物体認識、3D再構成、画像編集にとって実用的に役立つことです。しかし、複数のデータセットにわたって単一のメトリック深度推定モデルを訓練すると、性能が低下することが多く、特に屋内と屋外の画像のように深度スケールの差が大きい画像を含むコレクションでは顕著です。その結果、現在の MDE モデルは通常、特定のデータセットに過学習し、他のデータセットへはうまく汎化しません。</p>
+</blockquote>
+<p>この image-to-image タスクのアーキテクチャは典型的には、U-Net のようなエンコーダ・デコーダモデルにさまざまな変更を加えたものです。形式的には、これはピクセル単位の回帰問題です。数メートルから数百メートルまでの範囲で、各ピクセルの距離を正確に予測することが、ニューラルネットワークにとっていかに難しいか想像してみてください。<br> そこで、あらゆるシナリオで正確な距離を予測する万能モデルから離れるという発想に行き着きます。代わりに、どの物体が他の物体や私たちに対して遠くにあり、どれが近くにあるかを示すことでシーンの形状と構造を捉えながら、深度を大まかに（相対的に）予測するモデルを開発しましょう。正確な距離が必要であれば、このタスクについて既に理解していることを活かして、この相対モデルを特定のデータセットでファインチューニングできます。</p>
+<p><img alt="image/png" src="https://huggingface.co/datasets/hf-vision/course-assets/resolve/main/Metric%20and%20Relative%20Monocular%20Depth%20Estimation%20An%20Overview.%20Fine-Tuning%20Depth%20Anything%20V2/different_scales.png" /></p>
+<p>注意しなければならない細部は、さらにあります。</p>
+<blockquote>
+<p>モデルは、異なるカメラやカメラ設定で撮影された画像を扱わなければならないだけでなく、シーン全体のスケールの大きな変動に適応することも学ばなければなりません。</p>
+</blockquote>
+<p>異なるスケールとは別に、先ほど述べたように、大きな問題はカメラ自体にあります。カメラは世界の見え方が大きく異なる場合があるのです。</p>
+<p><img alt="image/png" src="https://huggingface.co/datasets/hf-vision/course-assets/resolve/main/Metric%20and%20Relative%20Monocular%20Depth%20Estimation%20An%20Overview.%20Fine-Tuning%20Depth%20Anything%20V2/focal_lenght.png" /></p>
+<p>焦点距離の変化が、背景の距離の知覚をいかに劇的に変えるか注目してください！</p>
+<p>最後に、多くのデータセットには絶対深度マップが全くなく、相対的なものしかありません（たとえば、カメラキャリブレーションの不足のため）。さらに、深度を得る方法ごとに、それぞれ利点、欠点、バイアス、問題があります。</p>
+<p><img alt="image/png" src="https://huggingface.co/datasets/hf-vision/course-assets/resolve/main/Metric%20and%20Relative%20Monocular%20Depth%20Estimation%20An%20Overview.%20Fine-Tuning%20Depth%20Anything%20V2/metrics1.png" /></p>
+<blockquote>
+<p>私たちは3つの大きな課題を特定します。1) 本質的に異なる深度の表現： 直接深度表現と逆深度表現。2) スケールの曖昧さ： 一部のデータソースでは、深度は未知のスケールまでしか与えられません。3) シフトの曖昧さ： 一部のデータセットは、未知のスケールまでの視差と、未知のベースラインと後処理による主点の水平シフトの関数である全体的な視差シフトまでの視差しか提供しません</p>
+</blockquote>
+<p><em>視差（Disparity）とは、2つの異なる視点から見たときの物体の見かけの位置の差を指し、ステレオビジョンで深度を推定するのによく使われます。</em></p>
+<p>要するに、インターネット上にあるばらばらの深度マップをただ集めて、ピクセル単位の MSE のようなものでモデルを訓練することはできない、と納得していただけたかと思います。</p>
+<p>では、これらすべての変動をどうやって均一化するのでしょうか。違いからできるだけ抽象化し、これらすべてのデータセットから共通点、すなわちシーンの形状と構造、物体同士の比例関係、何が近く何が遠いか、をどうやって抽出するのでしょうか。</p>
+<h2>スケール・シフト不変損失 😎</h2>
+<p>簡単に言えば、訓練に使いたいすべての深度マップと、指標の評価に使う深度マップに対して、何らかの正規化を行う必要があります。ここにアイデアがあります。環境のスケールやさまざまなシフトを考慮しない損失関数を作りたいのです。残るタスクは、このアイデアを数学的な言葉に翻訳することです。</p>
+<blockquote>
+<p>具体的には、深度値はまず \( d = \frac{1}{t} \) によって視差空間に変換され、次に各深度マップについて \( 0 \sim 1 \) に正規化されます。複数データセットの共同訓練を可能にするために、各サンプルの未知のスケールとシフトを無視するアフィン不変損失を採用します：
+$$\mathcal{L}<em i="1">1 = \frac{1}{HW} \sum</em> \rho(d_i^}^{HW<em>, d_i),$$
+ここで \( d_i^</em> \) と \( d_i \) はそれぞれ予測と正解です。また \( \rho \) はアフィン不変の平均絶対誤差損失です： \( \rho(d_i^<em>, d_i) = \left| \hat{d}_i^</em> - \hat{d}_i \right| \)。ここで \( \hat{d}_i^* \) と \( \hat{d}_i \) は、予測 \( d_i^* \) と正解 \( d_i \) をスケーリングしシフトしたバージョンです：
+$$\hat{d}<em i="1">i = \frac{d_i - t(d)}{s(d)},$$
+ここで \( t(d) \) と \( s(d) \) は、予測と正解を平行移動ゼロ・スケール1に揃えるために使われます：
+$$t(d) = \mathrm{median}(d), \quad s(d) = \frac{1}{HW} \sum</em> \left| d_i - t(d) \right|.$$}^{HW</p>
+</blockquote>
+<p>実際には、スケールとシフトを取り除くのに役立つ方法や関数は他にも数多くあります。損失関数へのさまざまな追加もあり、たとえばピクセルの値自体ではなく、それがどれだけ速く変化するかに焦点を当てる勾配損失（gradient loss）（名前の由来はまさにそれです）があります。これについては <a href="https://arxiv.org/abs/1907.01341">MiDaS</a> の論文で詳しく読めます。有用な文献のリストは末尾に含めます。最も面白い部分、つまりカスタムデータセットを使った絶対深度のファインチューニングに進む前に、指標について簡単に議論しましょう。</p>
+<h2>指標</h2>
+<p>深度推定では、性能を評価するためにいくつかの標準的な指標が使われます。MAE（平均絶対誤差）、RMSE（二乗平均平方根誤差）、そして距離の大きな隔たりを滑らかにするためのそれらの対数バリエーションなどです。さらに、次も考慮してください。
+- <strong>絶対相対誤差（Absolute Relative Error, AbsRel）</strong>: この指標は MAE に似ていますが、パーセンテージで表され、予測した距離が真の距離から平均して何パーセント異なるかを測ります。<br> \(\text{AbsRel} = \frac{1}{N} \sum_{i=1}^{N} \frac{|d_i - \hat{d}_i|}{d_i}\)
+- <strong>閾値精度（Threshold Accuracy, \(\delta_1\))</strong>: これは、予測ピクセルが真のピクセルから25%以内しか異ならないピクセルの割合を測ります。<br> \(\delta_1 = \text{ proportion of predicted depths where } \max\left(\frac{d_i}{\hat{d}_i}, \frac{\hat{d}_i}{d_i}\right) &lt; 1.25\)</p>
+<h3>重要な考慮事項</h3>
+<blockquote>
+<p>私たちのすべてのモデルとベースラインについて、誤差を測定する前に、画像ごとに予測と正解のスケールとシフトを揃えます。</p>
+</blockquote>
+<p>確かに、相対深度を予測するよう訓練しているのに、絶対値を持つデータセットで品質を測りたい場合、そしてこのデータセットでのファインチューニングや絶対値自体には関心がない場合、損失関数と同様に、スケールとシフトを計算から除外し、すべてを統一した尺度に標準化できます。</p>
+<h3>指標の計算方法4つ</h3>
+<p>これらの方法を理解すると、論文の指標を分析する際の混乱を避けるのに役立ちます。</p>
+<ol>
+<li><strong>ゼロショット相対深度推定</strong><ul>
+<li>あるデータセットの集合で相対深度を予測するよう訓練し、他のデータセットで品質を測ります。深度は相対的なものなので、大きく異なるスケールは問題にならず、他のデータセットでの指標は通常、訓練データセットのテストセットと同様に高いままです。</li>
+</ul>
+</li>
+</ol>
+<p><img alt="image/png" src="https://huggingface.co/datasets/hf-vision/course-assets/resolve/main/Metric%20and%20Relative%20Monocular%20Depth%20Estimation%20An%20Overview.%20Fine-Tuning%20Depth%20Anything%20V2/metrics2.png" /></p>
+<ol start="2">
+<li><strong>ゼロショット絶対深度推定</strong><ul>
+<li>万能な相対モデルを訓練し、次に絶対深度を予測するための良いデータセットでそれをファインチューニングし、別のデータセットで絶対深度予測の品質を測ります。この場合の指標は前の方法に比べて悪くなる傾向があり、異なる環境にわたって絶対深度をうまく予測することの難しさを際立たせます。</li>
+</ul>
+</li>
+</ol>
+<p><img alt="image/png" src="https://huggingface.co/datasets/hf-vision/course-assets/resolve/main/Metric%20and%20Relative%20Monocular%20Depth%20Estimation%20An%20Overview.%20Fine-Tuning%20Depth%20Anything%20V2/metrics3.png" /></p>
+<ol start="3">
+<li><strong>ファインチューニング済み（インドメイン）絶対深度推定</strong><ul>
+<li>前の方法と似ていますが、今度は絶対深度予測のファインチューニングに使ったデータセットのテストセットで品質を測ります。これは最も実用的なアプローチの1つです。</li>
+</ul>
+</li>
+</ol>
+<p><img alt="image/png" src="https://huggingface.co/datasets/hf-vision/course-assets/resolve/main/Metric%20and%20Relative%20Monocular%20Depth%20Estimation%20An%20Overview.%20Fine-Tuning%20Depth%20Anything%20V2/metrics4.png" /></p>
+<ol start="4">
+<li><strong>ファインチューニング済み（インドメイン）相対深度推定</strong><ul>
+<li>相対深度を予測するよう訓練し、訓練データセットのテストセットで品質を測ります。最も正確な名前ではないかもしれませんが、考え方は単純です。</li>
+</ul>
+</li>
+</ol>
+<h2>Depth Anything V2 の絶対深度推定ファインチューニング</h2>
+<p>このセクションでは、NYU-D データセットで絶対深度を予測するようモデルをファインチューニングすることで、Depth Anything V2 の論文の結果を再現します。前のセクションの最後の表に示されたものと同様の指標を達成することを目指します。</p>
+<h3>Depth Anything V2 の背後にある重要なアイデア</h3>
+<p>Depth Anything V2 は深度推定のための強力なモデルであり、いくつかの革新的な概念のおかげで目覚ましい結果を達成しています。</p>
+<ul>
+<li><strong>異種データに対する万能な訓練手法</strong>: MiDaS の2020年の論文で導入されたこの手法により、さまざまなタイプのデータセットにわたる堅牢な訓練が可能になります。</li>
+<li><strong>DPT アーキテクチャ</strong>: 「Vision Transformers for Dense Prediction」の論文が提示するこのアーキテクチャは、本質的には Vision Transformer（ViT）エンコーダを持つ U-Net に、いくつかの変更を加えたものです。</li>
+</ul>
+<p><img alt="image/png" src="https://huggingface.co/datasets/hf-vision/course-assets/resolve/main/Metric%20and%20Relative%20Monocular%20Depth%20Estimation%20An%20Overview.%20Fine-Tuning%20Depth%20Anything%20V2/dpt.png" /></p>
+<ul>
+<li><strong>DINOv2 エンコーダ</strong>: 大規模なデータセットで自己教師あり手法により事前訓練されたこの標準的な ViT は、強力で汎用的な特徴抽出器として機能します。近年、CV の研究者たちは NLP における GPT や BERT のような基盤モデルを作ることを目指してきました。DINOv2 はその方向への重要な一歩です。</li>
+<li><strong>合成データの使用</strong>: 訓練パイプラインは、以下の画像で非常によく説明されています。このアプローチにより、著者たちは深度マップにおけるこれほどの明瞭さと正確さを達成できました。結局のところ、考えてみれば、合成データから得られるラベルは真の「正解（ground truth）」なのです。</li>
+</ul>
+<p><img alt="image/png" src="https://huggingface.co/datasets/hf-vision/course-assets/resolve/main/Metric%20and%20Relative%20Monocular%20Depth%20Estimation%20An%20Overview.%20Fine-Tuning%20Depth%20Anything%20V2/DA2_pipeline.png" /></p>
+<h3>ファインチューニングを始める</h3>
+<p>では、コードに踏み込みましょう。強力な GPU にアクセスできない場合は、Colab よりも Kaggle を強くおすすめします。Kaggle にはいくつかの利点があります。
+- 週に最大30時間の GPU 使用時間
+- 接続が切れることがない
+- データセットへの非常に高速で便利なアクセス
+- 構成の1つでは2つの GPU を同時に使えるため、分散訓練の練習に役立つ</p>
+<p>この <a href="https://www.kaggle.com/code/amanattheedge/depth-anything-v2-metric-fine-tunning-on-nyu/notebook">Kaggle のノートブック</a> を使って、すぐにコードに入ることができます。</p>
+<p>ここではすべてを詳細に通して見ていきます。まず、著者らのリポジトリから必要なモジュールをすべてダウンロードし、ViT-S エンコーダを持つ最も小さいモデルのチェックポイントをダウンロードしましょう。</p>
+<h4>ステップ1: リポジトリのクローンと事前訓練済み重みのダウンロード</h4>
+<div class="codehilite"><pre><span></span><code>!git<span class="w"> </span>clone<span class="w"> </span>https://github.com/DepthAnything/Depth-Anything-V2
+!wget<span class="w"> </span>-O<span class="w"> </span>depth_anything_v2_vits.pth<span class="w"> </span>https://huggingface.co/depth-anything/Depth-Anything-V2-Small/resolve/main/depth_anything_v2_vits.pth?download<span class="o">=</span><span class="nb">true</span>
+</code></pre></div>
+
+<p>データセットは<a href="http://datasets.lids.mit.edu/fastdepth/data/">こちら</a>からもダウンロードできます</p>
+<h4>ステップ2: 必要なモジュールのインポート</h4>
+<div class="codehilite"><pre><span></span><code><span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">matplotlib.pyplot</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">plt</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">os</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">tqdm</span><span class="w"> </span><span class="kn">import</span> <span class="n">tqdm</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">cv2</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">random</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">h5py</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">sys</span>
+
+<span class="n">sys</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s2">"/kaggle/working/Depth-Anything-V2/metric_depth"</span><span class="p">)</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">accelerate</span><span class="w"> </span><span class="kn">import</span> <span class="n">Accelerator</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">accelerate.utils</span><span class="w"> </span><span class="kn">import</span> <span class="n">set_seed</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">accelerate</span><span class="w"> </span><span class="kn">import</span> <span class="n">notebook_launcher</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">accelerate</span><span class="w"> </span><span class="kn">import</span> <span class="n">DistributedDataParallelKwargs</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">transformers</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">torch</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">torchvision</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">torchvision.transforms</span><span class="w"> </span><span class="kn">import</span> <span class="n">v2</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">torchvision.transforms</span><span class="w"> </span><span class="kn">import</span> <span class="n">Compose</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">torch.nn.functional</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">F</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">albumentations</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">A</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">depth_anything_v2.dpt</span><span class="w"> </span><span class="kn">import</span> <span class="n">DepthAnythingV2</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">util.loss</span><span class="w"> </span><span class="kn">import</span> <span class="n">SiLogLoss</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">dataset.transform</span><span class="w"> </span><span class="kn">import</span> <span class="n">Resize</span><span class="p">,</span> <span class="n">NormalizeImage</span><span class="p">,</span> <span class="n">PrepareForNet</span><span class="p">,</span> <span class="n">Crop</span>
+</code></pre></div>
+
+<h4>ステップ3: 訓練用と検証用のすべてのファイルパスの取得</h4>
+<div class="codehilite"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">get_all_files</span><span class="p">(</span><span class="n">directory</span><span class="p">):</span>
+    <span class="n">all_files</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="k">for</span> <span class="n">root</span><span class="p">,</span> <span class="n">dirs</span><span class="p">,</span> <span class="n">files</span> <span class="ow">in</span> <span class="n">os</span><span class="o">.</span><span class="n">walk</span><span class="p">(</span><span class="n">directory</span><span class="p">):</span>
+        <span class="k">for</span> <span class="n">file</span> <span class="ow">in</span> <span class="n">files</span><span class="p">:</span>
+            <span class="n">all_files</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">root</span><span class="p">,</span> <span class="n">file</span><span class="p">))</span>
+    <span class="k">return</span> <span class="n">all_files</span>
+
+
+<span class="n">train_paths</span> <span class="o">=</span> <span class="n">get_all_files</span><span class="p">(</span><span class="s2">"/kaggle/input/nyu-depth-dataset-v2/nyudepthv2/train"</span><span class="p">)</span>
+<span class="n">val_paths</span> <span class="o">=</span> <span class="n">get_all_files</span><span class="p">(</span><span class="s2">"/kaggle/input/nyu-depth-dataset-v2/nyudepthv2/val"</span><span class="p">)</span>
+</code></pre></div>
+
+<h4>ステップ4: PyTorch データセットの定義</h4>
+<div class="codehilite"><pre><span></span><code><span class="c1"># NYU Depth V2 40k。元の NYU は 400k</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">NYU</span><span class="p">(</span><span class="n">torch</span><span class="o">.</span><span class="n">utils</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">Dataset</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">paths</span><span class="p">,</span> <span class="n">mode</span><span class="p">,</span> <span class="n">size</span><span class="o">=</span><span class="p">(</span><span class="mi">518</span><span class="p">,</span> <span class="mi">518</span><span class="p">)):</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">mode</span> <span class="o">=</span> <span class="n">mode</span>  <span class="c1"># train または val</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">size</span> <span class="o">=</span> <span class="n">size</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">paths</span> <span class="o">=</span> <span class="n">paths</span>
+
+        <span class="n">net_w</span><span class="p">,</span> <span class="n">net_h</span> <span class="o">=</span> <span class="n">size</span>
+        <span class="c1"># 著者らの変換</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">transform</span> <span class="o">=</span> <span class="n">Compose</span><span class="p">(</span>
+            <span class="p">[</span>
+                <span class="n">Resize</span><span class="p">(</span>
+                    <span class="n">width</span><span class="o">=</span><span class="n">net_w</span><span class="p">,</span>
+                    <span class="n">height</span><span class="o">=</span><span class="n">net_h</span><span class="p">,</span>
+                    <span class="n">resize_target</span><span class="o">=</span><span class="kc">True</span> <span class="k">if</span> <span class="n">mode</span> <span class="o">==</span> <span class="s2">"train"</span> <span class="k">else</span> <span class="kc">False</span><span class="p">,</span>
+                    <span class="n">keep_aspect_ratio</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+                    <span class="n">ensure_multiple_of</span><span class="o">=</span><span class="mi">14</span><span class="p">,</span>
+                    <span class="n">resize_method</span><span class="o">=</span><span class="s2">"lower_bound"</span><span class="p">,</span>
+                    <span class="n">image_interpolation_method</span><span class="o">=</span><span class="n">cv2</span><span class="o">.</span><span class="n">INTER_CUBIC</span><span class="p">,</span>
+                <span class="p">),</span>
+                <span class="n">NormalizeImage</span><span class="p">(</span><span class="n">mean</span><span class="o">=</span><span class="p">[</span><span class="mf">0.485</span><span class="p">,</span> <span class="mf">0.456</span><span class="p">,</span> <span class="mf">0.406</span><span class="p">],</span> <span class="n">std</span><span class="o">=</span><span class="p">[</span><span class="mf">0.229</span><span class="p">,</span> <span class="mf">0.224</span><span class="p">,</span> <span class="mf">0.225</span><span class="p">]),</span>
+                <span class="n">PrepareForNet</span><span class="p">(),</span>
+            <span class="p">]</span>
+            <span class="o">+</span> <span class="p">([</span><span class="n">Crop</span><span class="p">(</span><span class="n">size</span><span class="p">[</span><span class="mi">0</span><span class="p">])]</span> <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">mode</span> <span class="o">==</span> <span class="s2">"train"</span> <span class="k">else</span> <span class="p">[])</span>
+        <span class="p">)</span>
+
+        <span class="c1"># 論文では水平反転のみ</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">augs</span> <span class="o">=</span> <span class="n">A</span><span class="o">.</span><span class="n">Compose</span><span class="p">(</span>
+            <span class="p">[</span>
+                <span class="n">A</span><span class="o">.</span><span class="n">HorizontalFlip</span><span class="p">(),</span>
+                <span class="n">A</span><span class="o">.</span><span class="n">ColorJitter</span><span class="p">(</span><span class="n">hue</span><span class="o">=</span><span class="mf">0.1</span><span class="p">,</span> <span class="n">contrast</span><span class="o">=</span><span class="mf">0.1</span><span class="p">,</span> <span class="n">brightness</span><span class="o">=</span><span class="mf">0.1</span><span class="p">,</span> <span class="n">saturation</span><span class="o">=</span><span class="mf">0.1</span><span class="p">),</span>
+                <span class="n">A</span><span class="o">.</span><span class="n">GaussNoise</span><span class="p">(</span><span class="n">var_limit</span><span class="o">=</span><span class="mi">25</span><span class="p">),</span>
+            <span class="p">]</span>
+        <span class="p">)</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__getitem__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">item</span><span class="p">):</span>
+        <span class="n">path</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">paths</span><span class="p">[</span><span class="n">item</span><span class="p">]</span>
+        <span class="n">image</span><span class="p">,</span> <span class="n">depth</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">h5_loader</span><span class="p">(</span><span class="n">path</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">mode</span> <span class="o">==</span> <span class="s2">"train"</span><span class="p">:</span>
+            <span class="n">augmented</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">augs</span><span class="p">(</span><span class="n">image</span><span class="o">=</span><span class="n">image</span><span class="p">,</span> <span class="n">mask</span><span class="o">=</span><span class="n">depth</span><span class="p">)</span>
+            <span class="n">image</span> <span class="o">=</span> <span class="n">augmented</span><span class="p">[</span><span class="s2">"image"</span><span class="p">]</span> <span class="o">/</span> <span class="mf">255.0</span>
+            <span class="n">depth</span> <span class="o">=</span> <span class="n">augmented</span><span class="p">[</span><span class="s2">"mask"</span><span class="p">]</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">image</span> <span class="o">=</span> <span class="n">image</span> <span class="o">/</span> <span class="mf">255.0</span>
+
+        <span class="n">sample</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">transform</span><span class="p">({</span><span class="s2">"image"</span><span class="p">:</span> <span class="n">image</span><span class="p">,</span> <span class="s2">"depth"</span><span class="p">:</span> <span class="n">depth</span><span class="p">})</span>
+
+        <span class="n">sample</span><span class="p">[</span><span class="s2">"image"</span><span class="p">]</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">from_numpy</span><span class="p">(</span><span class="n">sample</span><span class="p">[</span><span class="s2">"image"</span><span class="p">])</span>
+        <span class="n">sample</span><span class="p">[</span><span class="s2">"depth"</span><span class="p">]</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">from_numpy</span><span class="p">(</span><span class="n">sample</span><span class="p">[</span><span class="s2">"depth"</span><span class="p">])</span>
+
+        <span class="c1"># データセットにはノイズなどのために有効な深度のマスクが含まれている場合がある</span>
+        <span class="c1">#         sample['valid_mask'] = ...</span>
+
+        <span class="k">return</span> <span class="n">sample</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__len__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">paths</span><span class="p">)</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">h5_loader</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">path</span><span class="p">):</span>
+        <span class="n">h5f</span> <span class="o">=</span> <span class="n">h5py</span><span class="o">.</span><span class="n">File</span><span class="p">(</span><span class="n">path</span><span class="p">,</span> <span class="s2">"r"</span><span class="p">)</span>
+        <span class="n">rgb</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">h5f</span><span class="p">[</span><span class="s2">"rgb"</span><span class="p">])</span>
+        <span class="n">rgb</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">transpose</span><span class="p">(</span><span class="n">rgb</span><span class="p">,</span> <span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">0</span><span class="p">))</span>
+        <span class="n">depth</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">h5f</span><span class="p">[</span><span class="s2">"depth"</span><span class="p">])</span>
+        <span class="k">return</span> <span class="n">rgb</span><span class="p">,</span> <span class="n">depth</span>
+</code></pre></div>
+
+<p>注意すべき点をいくつか挙げます。
+- 元の NYU-D データセットには407kのサンプルが含まれていますが、私たちは40kのサブセットを使っています。これは最終的なモデルの品質にわずかに影響します。
+- 論文の著者らは、データ拡張として水平反転のみを使いました。
+- 深度マップ内の一部の点が正しく処理されず、「不良ピクセル」になる場合があります。一部のデータセットには、画像と深度マップに加えて、有効なピクセルと無効なピクセルを区別するマスクが含まれています。このマスクは、不良ピクセルを損失と指標の計算から除外するために必要です。</p>
+<p><img alt="image/png" src="https://huggingface.co/datasets/hf-vision/course-assets/resolve/main/Metric%20and%20Relative%20Monocular%20Depth%20Estimation%20An%20Overview.%20Fine-Tuning%20Depth%20Anything%20V2/depth_holes.png" /></p>
+<ul>
+<li>訓練中は、短い方の辺が518ピクセルになるよう画像をリサイズしてから切り取ります。検証では、深度マップの切り取りやリサイズはしません。代わりに、予測された深度マップをアップサンプリングし、元の解像度で指標を計算します。</li>
+</ul>
+<h4>ステップ5: データの可視化</h4>
+<div class="codehilite"><pre><span></span><code><span class="n">num_images</span> <span class="o">=</span> <span class="mi">5</span>
+
+<span class="n">fig</span><span class="p">,</span> <span class="n">axes</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">subplots</span><span class="p">(</span><span class="n">num_images</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mi">10</span><span class="p">,</span> <span class="mi">5</span> <span class="o">*</span> <span class="n">num_images</span><span class="p">))</span>
+
+<span class="n">train_set</span> <span class="o">=</span> <span class="n">NYU</span><span class="p">(</span><span class="n">train_paths</span><span class="p">,</span> <span class="n">mode</span><span class="o">=</span><span class="s2">"train"</span><span class="p">)</span>
+
+<span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">num_images</span><span class="p">):</span>
+    <span class="n">sample</span> <span class="o">=</span> <span class="n">train_set</span><span class="p">[</span><span class="n">i</span> <span class="o">*</span> <span class="mi">1000</span><span class="p">]</span>
+    <span class="n">img</span><span class="p">,</span> <span class="n">depth</span> <span class="o">=</span> <span class="n">sample</span><span class="p">[</span><span class="s2">"image"</span><span class="p">]</span><span class="o">.</span><span class="n">numpy</span><span class="p">(),</span> <span class="n">sample</span><span class="p">[</span><span class="s2">"depth"</span><span class="p">]</span><span class="o">.</span><span class="n">numpy</span><span class="p">()</span>
+
+    <span class="n">mean</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="mf">0.485</span><span class="p">,</span> <span class="mf">0.456</span><span class="p">,</span> <span class="mf">0.406</span><span class="p">])</span><span class="o">.</span><span class="n">reshape</span><span class="p">((</span><span class="mi">3</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">))</span>
+    <span class="n">std</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="mf">0.229</span><span class="p">,</span> <span class="mf">0.224</span><span class="p">,</span> <span class="mf">0.225</span><span class="p">])</span><span class="o">.</span><span class="n">reshape</span><span class="p">((</span><span class="mi">3</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">))</span>
+    <span class="n">img</span> <span class="o">=</span> <span class="n">img</span> <span class="o">*</span> <span class="n">std</span> <span class="o">+</span> <span class="n">mean</span>
+
+    <span class="n">axes</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">imshow</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">transpose</span><span class="p">(</span><span class="n">img</span><span class="p">,</span> <span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">0</span><span class="p">)))</span>
+    <span class="n">axes</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">set_title</span><span class="p">(</span><span class="s2">"Image"</span><span class="p">)</span>
+    <span class="n">axes</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">axis</span><span class="p">(</span><span class="s2">"off"</span><span class="p">)</span>
+
+    <span class="n">im1</span> <span class="o">=</span> <span class="n">axes</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">imshow</span><span class="p">(</span><span class="n">depth</span><span class="p">,</span> <span class="n">cmap</span><span class="o">=</span><span class="s2">"viridis"</span><span class="p">,</span> <span class="n">vmin</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+    <span class="n">axes</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">set_title</span><span class="p">(</span><span class="s2">"True Depth"</span><span class="p">)</span>
+    <span class="n">axes</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">axis</span><span class="p">(</span><span class="s2">"off"</span><span class="p">)</span>
+    <span class="n">fig</span><span class="o">.</span><span class="n">colorbar</span><span class="p">(</span><span class="n">im1</span><span class="p">,</span> <span class="n">ax</span><span class="o">=</span><span class="n">axes</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="mi">1</span><span class="p">])</span>
+
+<span class="n">plt</span><span class="o">.</span><span class="n">tight_layout</span><span class="p">()</span>
+</code></pre></div>
+
+<p><img alt="image/png" src="https://huggingface.co/datasets/hf-vision/course-assets/resolve/main/Metric%20and%20Relative%20Monocular%20Depth%20Estimation%20An%20Overview.%20Fine-Tuning%20Depth%20Anything%20V2/dataset.png" /></p>
+<p>ご覧のように、画像は非常にぼやけてノイズが多くなっています。このため、Depth Anything V2 のプレビューで見られるようなきめ細かい深度マップは得られません。ブラックホールのアーティファクトでは深度は0であり、この事実をあとでこれらの穴をマスクするために使います。また、このデータセットには、同じ場所のほぼ同一の写真が多数含まれています。</p>
+<h4>ステップ6: データローダーの準備</h4>
+<div class="codehilite"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">get_dataloaders</span><span class="p">(</span><span class="n">batch_size</span><span class="p">):</span>
+
+    <span class="n">train_dataset</span> <span class="o">=</span> <span class="n">NYU</span><span class="p">(</span><span class="n">train_paths</span><span class="p">,</span> <span class="n">mode</span><span class="o">=</span><span class="s2">"train"</span><span class="p">)</span>
+    <span class="n">val_dataset</span> <span class="o">=</span> <span class="n">NYU</span><span class="p">(</span><span class="n">val_paths</span><span class="p">,</span> <span class="n">mode</span><span class="o">=</span><span class="s2">"val"</span><span class="p">)</span>
+
+    <span class="n">train_dataloader</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">utils</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">DataLoader</span><span class="p">(</span>
+        <span class="n">train_dataset</span><span class="p">,</span> <span class="n">batch_size</span><span class="o">=</span><span class="n">batch_size</span><span class="p">,</span> <span class="n">shuffle</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">num_workers</span><span class="o">=</span><span class="mi">4</span><span class="p">,</span> <span class="n">drop_last</span><span class="o">=</span><span class="kc">True</span>
+    <span class="p">)</span>
+
+    <span class="n">val_dataloader</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">utils</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">DataLoader</span><span class="p">(</span>
+        <span class="n">val_dataset</span><span class="p">,</span>
+        <span class="n">batch_size</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span>  <span class="c1"># パディングなしで動的な解像度の評価を行うため</span>
+        <span class="n">shuffle</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+        <span class="n">num_workers</span><span class="o">=</span><span class="mi">4</span><span class="p">,</span>
+        <span class="n">drop_last</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+    <span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">train_dataloader</span><span class="p">,</span> <span class="n">val_dataloader</span>
+</code></pre></div>
+
+<h4>ステップ7: 指標の評価</h4>
+<div class="codehilite"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">eval_depth</span><span class="p">(</span><span class="n">pred</span><span class="p">,</span> <span class="n">target</span><span class="p">):</span>
+    <span class="k">assert</span> <span class="n">pred</span><span class="o">.</span><span class="n">shape</span> <span class="o">==</span> <span class="n">target</span><span class="o">.</span><span class="n">shape</span>
+
+    <span class="n">thresh</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">max</span><span class="p">((</span><span class="n">target</span> <span class="o">/</span> <span class="n">pred</span><span class="p">),</span> <span class="p">(</span><span class="n">pred</span> <span class="o">/</span> <span class="n">target</span><span class="p">))</span>
+
+    <span class="n">d1</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">thresh</span> <span class="o">&lt;</span> <span class="mf">1.25</span><span class="p">)</span><span class="o">.</span><span class="n">float</span><span class="p">()</span> <span class="o">/</span> <span class="nb">len</span><span class="p">(</span><span class="n">thresh</span><span class="p">)</span>
+
+    <span class="n">diff</span> <span class="o">=</span> <span class="n">pred</span> <span class="o">-</span> <span class="n">target</span>
+    <span class="n">diff_log</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="n">pred</span><span class="p">)</span> <span class="o">-</span> <span class="n">torch</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="n">target</span><span class="p">)</span>
+
+    <span class="n">abs_rel</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">torch</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">diff</span><span class="p">)</span> <span class="o">/</span> <span class="n">target</span><span class="p">)</span>
+
+    <span class="n">rmse</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="n">torch</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">torch</span><span class="o">.</span><span class="n">pow</span><span class="p">(</span><span class="n">diff</span><span class="p">,</span> <span class="mi">2</span><span class="p">)))</span>
+    <span class="n">mae</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">torch</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">diff</span><span class="p">))</span>
+
+    <span class="n">silog</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span>
+        <span class="n">torch</span><span class="o">.</span><span class="n">pow</span><span class="p">(</span><span class="n">diff_log</span><span class="p">,</span> <span class="mi">2</span><span class="p">)</span><span class="o">.</span><span class="n">mean</span><span class="p">()</span> <span class="o">-</span> <span class="mf">0.5</span> <span class="o">*</span> <span class="n">torch</span><span class="o">.</span><span class="n">pow</span><span class="p">(</span><span class="n">diff_log</span><span class="o">.</span><span class="n">mean</span><span class="p">(),</span> <span class="mi">2</span><span class="p">)</span>
+    <span class="p">)</span>
+
+    <span class="k">return</span> <span class="p">{</span>
+        <span class="s2">"d1"</span><span class="p">:</span> <span class="n">d1</span><span class="o">.</span><span class="n">detach</span><span class="p">(),</span>
+        <span class="s2">"abs_rel"</span><span class="p">:</span> <span class="n">abs_rel</span><span class="o">.</span><span class="n">detach</span><span class="p">(),</span>
+        <span class="s2">"rmse"</span><span class="p">:</span> <span class="n">rmse</span><span class="o">.</span><span class="n">detach</span><span class="p">(),</span>
+        <span class="s2">"mae"</span><span class="p">:</span> <span class="n">mae</span><span class="o">.</span><span class="n">detach</span><span class="p">(),</span>
+        <span class="s2">"silog"</span><span class="p">:</span> <span class="n">silog</span><span class="o">.</span><span class="n">detach</span><span class="p">(),</span>
+    <span class="p">}</span>
+</code></pre></div>
+
+<p>私たちの損失関数は SiLog です。絶対深度で訓練する際には、相対深度の訓練で使ったスケールへの不変性などの手法は忘れるべきだと思えるかもしれません。しかし、実際にはそれは完全には正しくなく、程度は小さいものの、ある種の「スケール正則化」を使いたい場合がよくあります。パラメータ λ=0.5 は、全体の一貫性と局所的な正確さのバランスを取るのに役立ちます。</p>
+<h4>ステップ8: ハイパーパラメータの定義</h4>
+<div class="codehilite"><pre><span></span><code><span class="n">model_weights_path</span> <span class="o">=</span> <span class="s2">"/kaggle/working/depth_anything_v2_vits.pth"</span>
+<span class="n">model_configs</span> <span class="o">=</span> <span class="p">{</span>
+    <span class="s2">"vits"</span><span class="p">:</span> <span class="p">{</span><span class="s2">"encoder"</span><span class="p">:</span> <span class="s2">"vits"</span><span class="p">,</span> <span class="s2">"features"</span><span class="p">:</span> <span class="mi">64</span><span class="p">,</span> <span class="s2">"out_channels"</span><span class="p">:</span> <span class="p">[</span><span class="mi">48</span><span class="p">,</span> <span class="mi">96</span><span class="p">,</span> <span class="mi">192</span><span class="p">,</span> <span class="mi">384</span><span class="p">]},</span>
+    <span class="s2">"vitb"</span><span class="p">:</span> <span class="p">{</span><span class="s2">"encoder"</span><span class="p">:</span> <span class="s2">"vitb"</span><span class="p">,</span> <span class="s2">"features"</span><span class="p">:</span> <span class="mi">128</span><span class="p">,</span> <span class="s2">"out_channels"</span><span class="p">:</span> <span class="p">[</span><span class="mi">96</span><span class="p">,</span> <span class="mi">192</span><span class="p">,</span> <span class="mi">384</span><span class="p">,</span> <span class="mi">768</span><span class="p">]},</span>
+    <span class="s2">"vitl"</span><span class="p">:</span> <span class="p">{</span><span class="s2">"encoder"</span><span class="p">:</span> <span class="s2">"vitl"</span><span class="p">,</span> <span class="s2">"features"</span><span class="p">:</span> <span class="mi">256</span><span class="p">,</span> <span class="s2">"out_channels"</span><span class="p">:</span> <span class="p">[</span><span class="mi">256</span><span class="p">,</span> <span class="mi">512</span><span class="p">,</span> <span class="mi">1024</span><span class="p">,</span> <span class="mi">1024</span><span class="p">]},</span>
+    <span class="s2">"vitg"</span><span class="p">:</span> <span class="p">{</span>
+        <span class="s2">"encoder"</span><span class="p">:</span> <span class="s2">"vitg"</span><span class="p">,</span>
+        <span class="s2">"features"</span><span class="p">:</span> <span class="mi">384</span><span class="p">,</span>
+        <span class="s2">"out_channels"</span><span class="p">:</span> <span class="p">[</span><span class="mi">1536</span><span class="p">,</span> <span class="mi">1536</span><span class="p">,</span> <span class="mi">1536</span><span class="p">,</span> <span class="mi">1536</span><span class="p">],</span>
+    <span class="p">},</span>
+<span class="p">}</span>
+<span class="n">model_encoder</span> <span class="o">=</span> <span class="s2">"vits"</span>
+<span class="n">max_depth</span> <span class="o">=</span> <span class="mi">10</span>
+<span class="n">batch_size</span> <span class="o">=</span> <span class="mi">11</span>
+<span class="n">lr</span> <span class="o">=</span> <span class="mf">5e-6</span>
+<span class="n">weight_decay</span> <span class="o">=</span> <span class="mf">0.01</span>
+<span class="n">num_epochs</span> <span class="o">=</span> <span class="mi">10</span>
+<span class="n">warmup_epochs</span> <span class="o">=</span> <span class="mf">0.5</span>
+<span class="n">scheduler_rate</span> <span class="o">=</span> <span class="mi">1</span>
+<span class="n">load_state</span> <span class="o">=</span> <span class="kc">False</span>
+
+<span class="n">state_path</span> <span class="o">=</span> <span class="s2">"/kaggle/working/cp"</span>
+<span class="n">save_model_path</span> <span class="o">=</span> <span class="s2">"/kaggle/working/model"</span>
+<span class="n">seed</span> <span class="o">=</span> <span class="mi">42</span>
+<span class="n">mixed_precision</span> <span class="o">=</span> <span class="s2">"fp16"</span>
+</code></pre></div>
+
+<p>パラメータ「<strong>max_depth</strong>」に注意してください。私たちのモデルの最後の層はピクセルごとのシグモイドであり、0から1までの出力を生成します。各ピクセルに「<strong>max_depth</strong>」を掛けることで、0から「<strong>max_depth</strong>」までの距離を表します。</p>
+<h4>ステップ9: 訓練関数</h4>
+<div class="codehilite"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">train_fn</span><span class="p">():</span>
+
+    <span class="n">set_seed</span><span class="p">(</span><span class="n">seed</span><span class="p">)</span>
+    <span class="n">ddp_kwargs</span> <span class="o">=</span> <span class="n">DistributedDataParallelKwargs</span><span class="p">(</span><span class="n">find_unused_parameters</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+    <span class="n">accelerator</span> <span class="o">=</span> <span class="n">Accelerator</span><span class="p">(</span>
+        <span class="n">mixed_precision</span><span class="o">=</span><span class="n">mixed_precision</span><span class="p">,</span>
+        <span class="n">kwargs_handlers</span><span class="o">=</span><span class="p">[</span><span class="n">ddp_kwargs</span><span class="p">],</span>
+    <span class="p">)</span>
+
+    <span class="c1"># 論文ではデコーダをランダムに初期化し、エンコーダの事前訓練済み重みのみを使う。その後、全体をファインチューニングする</span>
+    <span class="c1"># ここでは ViT-S エンコーダ</span>
+    <span class="n">model</span> <span class="o">=</span> <span class="n">DepthAnythingV2</span><span class="p">(</span><span class="o">**</span><span class="p">{</span><span class="o">**</span><span class="n">model_configs</span><span class="p">[</span><span class="n">model_encoder</span><span class="p">],</span> <span class="s2">"max_depth"</span><span class="p">:</span> <span class="n">max_depth</span><span class="p">})</span>
+    <span class="n">model</span><span class="o">.</span><span class="n">load_state_dict</span><span class="p">(</span>
+        <span class="p">{</span><span class="n">k</span><span class="p">:</span> <span class="n">v</span> <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">torch</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="n">model_weights_path</span><span class="p">)</span><span class="o">.</span><span class="n">items</span><span class="p">()</span> <span class="k">if</span> <span class="s2">"pretrained"</span> <span class="ow">in</span> <span class="n">k</span><span class="p">},</span>
+        <span class="n">strict</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+    <span class="p">)</span>
+
+    <span class="n">optim</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">optim</span><span class="o">.</span><span class="n">AdamW</span><span class="p">(</span>
+        <span class="p">[</span>
+            <span class="p">{</span>
+                <span class="s2">"params"</span><span class="p">:</span> <span class="p">[</span>
+                    <span class="n">param</span>
+                    <span class="k">for</span> <span class="n">name</span><span class="p">,</span> <span class="n">param</span> <span class="ow">in</span> <span class="n">model</span><span class="o">.</span><span class="n">named_parameters</span><span class="p">()</span>
+                    <span class="k">if</span> <span class="s2">"pretrained"</span> <span class="ow">in</span> <span class="n">name</span>
+                <span class="p">],</span>
+                <span class="s2">"lr"</span><span class="p">:</span> <span class="n">lr</span><span class="p">,</span>
+            <span class="p">},</span>
+            <span class="p">{</span>
+                <span class="s2">"params"</span><span class="p">:</span> <span class="p">[</span>
+                    <span class="n">param</span>
+                    <span class="k">for</span> <span class="n">name</span><span class="p">,</span> <span class="n">param</span> <span class="ow">in</span> <span class="n">model</span><span class="o">.</span><span class="n">named_parameters</span><span class="p">()</span>
+                    <span class="k">if</span> <span class="s2">"pretrained"</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">name</span>
+                <span class="p">],</span>
+                <span class="s2">"lr"</span><span class="p">:</span> <span class="n">lr</span> <span class="o">*</span> <span class="mi">10</span><span class="p">,</span>
+            <span class="p">},</span>
+        <span class="p">],</span>
+        <span class="n">lr</span><span class="o">=</span><span class="n">lr</span><span class="p">,</span>
+        <span class="n">weight_decay</span><span class="o">=</span><span class="n">weight_decay</span><span class="p">,</span>
+    <span class="p">)</span>
+
+    <span class="n">criterion</span> <span class="o">=</span> <span class="n">SiLogLoss</span><span class="p">()</span>  <span class="c1"># 著者らの損失関数</span>
+
+    <span class="n">train_dataloader</span><span class="p">,</span> <span class="n">val_dataloader</span> <span class="o">=</span> <span class="n">get_dataloaders</span><span class="p">(</span><span class="n">batch_size</span><span class="p">)</span>
+
+    <span class="n">scheduler</span> <span class="o">=</span> <span class="n">transformers</span><span class="o">.</span><span class="n">get_cosine_schedule_with_warmup</span><span class="p">(</span>
+        <span class="n">optim</span><span class="p">,</span>
+        <span class="nb">len</span><span class="p">(</span><span class="n">train_dataloader</span><span class="p">)</span> <span class="o">*</span> <span class="n">warmup_epochs</span><span class="p">,</span>
+        <span class="n">num_epochs</span> <span class="o">*</span> <span class="n">scheduler_rate</span> <span class="o">*</span> <span class="nb">len</span><span class="p">(</span><span class="n">train_dataloader</span><span class="p">),</span>
+    <span class="p">)</span>
+
+    <span class="n">model</span><span class="p">,</span> <span class="n">optim</span><span class="p">,</span> <span class="n">train_dataloader</span><span class="p">,</span> <span class="n">val_dataloader</span><span class="p">,</span> <span class="n">scheduler</span> <span class="o">=</span> <span class="n">accelerator</span><span class="o">.</span><span class="n">prepare</span><span class="p">(</span>
+        <span class="n">model</span><span class="p">,</span> <span class="n">optim</span><span class="p">,</span> <span class="n">train_dataloader</span><span class="p">,</span> <span class="n">val_dataloader</span><span class="p">,</span> <span class="n">scheduler</span>
+    <span class="p">)</span>
+
+    <span class="k">if</span> <span class="n">load_state</span><span class="p">:</span>
+        <span class="n">accelerator</span><span class="o">.</span><span class="n">wait_for_everyone</span><span class="p">()</span>
+        <span class="n">accelerator</span><span class="o">.</span><span class="n">load_state</span><span class="p">(</span><span class="n">state_path</span><span class="p">)</span>
+
+    <span class="n">best_val_absrel</span> <span class="o">=</span> <span class="mi">1000</span>
+
+    <span class="k">for</span> <span class="n">epoch</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="n">num_epochs</span><span class="p">):</span>
+
+        <span class="n">model</span><span class="o">.</span><span class="n">train</span><span class="p">()</span>
+        <span class="n">train_loss</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="k">for</span> <span class="n">sample</span> <span class="ow">in</span> <span class="n">tqdm</span><span class="p">(</span>
+            <span class="n">train_dataloader</span><span class="p">,</span> <span class="n">disable</span><span class="o">=</span><span class="ow">not</span> <span class="n">accelerator</span><span class="o">.</span><span class="n">is_local_main_process</span>
+        <span class="p">):</span>
+            <span class="n">optim</span><span class="o">.</span><span class="n">zero_grad</span><span class="p">()</span>
+
+            <span class="n">img</span><span class="p">,</span> <span class="n">depth</span> <span class="o">=</span> <span class="n">sample</span><span class="p">[</span><span class="s2">"image"</span><span class="p">],</span> <span class="n">sample</span><span class="p">[</span><span class="s2">"depth"</span><span class="p">]</span>
+
+            <span class="n">pred</span> <span class="o">=</span> <span class="n">model</span><span class="p">(</span><span class="n">img</span><span class="p">)</span>
+            <span class="c1"># マスク</span>
+            <span class="n">loss</span> <span class="o">=</span> <span class="n">criterion</span><span class="p">(</span><span class="n">pred</span><span class="p">,</span> <span class="n">depth</span><span class="p">,</span> <span class="p">(</span><span class="n">depth</span> <span class="o">&lt;=</span> <span class="n">max_depth</span><span class="p">)</span> <span class="o">&amp;</span> <span class="p">(</span><span class="n">depth</span> <span class="o">&gt;=</span> <span class="mf">0.001</span><span class="p">))</span>
+
+            <span class="n">accelerator</span><span class="o">.</span><span class="n">backward</span><span class="p">(</span><span class="n">loss</span><span class="p">)</span>
+            <span class="n">optim</span><span class="o">.</span><span class="n">step</span><span class="p">()</span>
+            <span class="n">scheduler</span><span class="o">.</span><span class="n">step</span><span class="p">()</span>
+
+            <span class="n">train_loss</span> <span class="o">+=</span> <span class="n">loss</span><span class="o">.</span><span class="n">detach</span><span class="p">()</span>
+
+        <span class="n">train_loss</span> <span class="o">/=</span> <span class="nb">len</span><span class="p">(</span><span class="n">train_dataloader</span><span class="p">)</span>
+        <span class="n">train_loss</span> <span class="o">=</span> <span class="n">accelerator</span><span class="o">.</span><span class="n">reduce</span><span class="p">(</span><span class="n">train_loss</span><span class="p">,</span> <span class="n">reduction</span><span class="o">=</span><span class="s2">"mean"</span><span class="p">)</span><span class="o">.</span><span class="n">item</span><span class="p">()</span>
+
+        <span class="n">model</span><span class="o">.</span><span class="n">eval</span><span class="p">()</span>
+        <span class="n">results</span> <span class="o">=</span> <span class="p">{</span><span class="s2">"d1"</span><span class="p">:</span> <span class="mi">0</span><span class="p">,</span> <span class="s2">"abs_rel"</span><span class="p">:</span> <span class="mi">0</span><span class="p">,</span> <span class="s2">"rmse"</span><span class="p">:</span> <span class="mi">0</span><span class="p">,</span> <span class="s2">"mae"</span><span class="p">:</span> <span class="mi">0</span><span class="p">,</span> <span class="s2">"silog"</span><span class="p">:</span> <span class="mi">0</span><span class="p">}</span>
+        <span class="k">for</span> <span class="n">sample</span> <span class="ow">in</span> <span class="n">tqdm</span><span class="p">(</span><span class="n">val_dataloader</span><span class="p">,</span> <span class="n">disable</span><span class="o">=</span><span class="ow">not</span> <span class="n">accelerator</span><span class="o">.</span><span class="n">is_local_main_process</span><span class="p">):</span>
+
+            <span class="n">img</span><span class="p">,</span> <span class="n">depth</span> <span class="o">=</span> <span class="n">sample</span><span class="p">[</span><span class="s2">"image"</span><span class="p">]</span><span class="o">.</span><span class="n">float</span><span class="p">(),</span> <span class="n">sample</span><span class="p">[</span><span class="s2">"depth"</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span>
+
+            <span class="k">with</span> <span class="n">torch</span><span class="o">.</span><span class="n">no_grad</span><span class="p">():</span>
+                <span class="n">pred</span> <span class="o">=</span> <span class="n">model</span><span class="p">(</span><span class="n">img</span><span class="p">)</span>
+                <span class="c1"># 元の解像度で評価する</span>
+                <span class="n">pred</span> <span class="o">=</span> <span class="n">F</span><span class="o">.</span><span class="n">interpolate</span><span class="p">(</span>
+                    <span class="n">pred</span><span class="p">[:,</span> <span class="kc">None</span><span class="p">],</span> <span class="n">depth</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="o">-</span><span class="mi">2</span><span class="p">:],</span> <span class="n">mode</span><span class="o">=</span><span class="s2">"bilinear"</span><span class="p">,</span> <span class="n">align_corners</span><span class="o">=</span><span class="kc">True</span>
+                <span class="p">)[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">]</span>
+
+            <span class="n">valid_mask</span> <span class="o">=</span> <span class="p">(</span><span class="n">depth</span> <span class="o">&lt;=</span> <span class="n">max_depth</span><span class="p">)</span> <span class="o">&amp;</span> <span class="p">(</span><span class="n">depth</span> <span class="o">&gt;=</span> <span class="mf">0.001</span><span class="p">)</span>
+
+            <span class="n">cur_results</span> <span class="o">=</span> <span class="n">eval_depth</span><span class="p">(</span><span class="n">pred</span><span class="p">[</span><span class="n">valid_mask</span><span class="p">],</span> <span class="n">depth</span><span class="p">[</span><span class="n">valid_mask</span><span class="p">])</span>
+
+            <span class="k">for</span> <span class="n">k</span> <span class="ow">in</span> <span class="n">results</span><span class="o">.</span><span class="n">keys</span><span class="p">():</span>
+                <span class="n">results</span><span class="p">[</span><span class="n">k</span><span class="p">]</span> <span class="o">+=</span> <span class="n">cur_results</span><span class="p">[</span><span class="n">k</span><span class="p">]</span>
+
+        <span class="k">for</span> <span class="n">k</span> <span class="ow">in</span> <span class="n">results</span><span class="o">.</span><span class="n">keys</span><span class="p">():</span>
+            <span class="n">results</span><span class="p">[</span><span class="n">k</span><span class="p">]</span> <span class="o">=</span> <span class="n">results</span><span class="p">[</span><span class="n">k</span><span class="p">]</span> <span class="o">/</span> <span class="nb">len</span><span class="p">(</span><span class="n">val_dataloader</span><span class="p">)</span>
+            <span class="n">results</span><span class="p">[</span><span class="n">k</span><span class="p">]</span> <span class="o">=</span> <span class="nb">round</span><span class="p">(</span><span class="n">accelerator</span><span class="o">.</span><span class="n">reduce</span><span class="p">(</span><span class="n">results</span><span class="p">[</span><span class="n">k</span><span class="p">],</span> <span class="n">reduction</span><span class="o">=</span><span class="s2">"mean"</span><span class="p">)</span><span class="o">.</span><span class="n">item</span><span class="p">(),</span> <span class="mi">3</span><span class="p">)</span>
+
+        <span class="n">accelerator</span><span class="o">.</span><span class="n">wait_for_everyone</span><span class="p">()</span>
+        <span class="n">accelerator</span><span class="o">.</span><span class="n">save_state</span><span class="p">(</span><span class="n">state_path</span><span class="p">,</span> <span class="n">safe_serialization</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">results</span><span class="p">[</span><span class="s2">"abs_rel"</span><span class="p">]</span> <span class="o">&lt;</span> <span class="n">best_val_absrel</span><span class="p">:</span>
+            <span class="n">best_val_absrel</span> <span class="o">=</span> <span class="n">results</span><span class="p">[</span><span class="s2">"abs_rel"</span><span class="p">]</span>
+            <span class="n">unwrapped_model</span> <span class="o">=</span> <span class="n">accelerator</span><span class="o">.</span><span class="n">unwrap_model</span><span class="p">(</span><span class="n">model</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">accelerator</span><span class="o">.</span><span class="n">is_local_main_process</span><span class="p">:</span>
+                <span class="n">torch</span><span class="o">.</span><span class="n">save</span><span class="p">(</span><span class="n">unwrapped_model</span><span class="o">.</span><span class="n">state_dict</span><span class="p">(),</span> <span class="n">save_model_path</span><span class="p">)</span>
+
+        <span class="n">accelerator</span><span class="o">.</span><span class="n">print</span><span class="p">(</span>
+            <span class="sa">f</span><span class="s2">"epoch_</span><span class="si">{</span><span class="n">epoch</span><span class="si">}</span><span class="s2">,  train_loss = </span><span class="si">{</span><span class="n">train_loss</span><span class="si">:</span><span class="s2">.5f</span><span class="si">}</span><span class="s2">, val_metrics = </span><span class="si">{</span><span class="n">results</span><span class="si">}</span><span class="s2">"</span>
+        <span class="p">)</span>
+
+
+<span class="c1"># 追伸。ある構成をテストしている際に、損失が nan になるエラーに遭遇しました。</span>
+<span class="c1"># これは、0 での割り算を防ぐために予測に小さなイプシロンを加えることで修正されます</span>
+</code></pre></div>
+
+<p>論文では、著者らはデコーダをランダムに初期化し、エンコーダの重みのみを使います。その後、モデル全体をファインチューニングします。その他の注目すべき点は次のとおりです。
+- デコーダとエンコーダで異なる学習率を使う。エンコーダの学習率は低くします。ランダムに初期化されたデコーダとは異なり、既に優れた重みを大きく変えたくはないためです。
+- 著者らは論文で多項式スケジューラを使いましたが、私は好みでウォームアップ付きのコサインスケジューラを使いました。
+- マスクでは、先に述べたように、「<strong>depth &gt;= 0.001</strong>」という条件を使うことで、深度マップのブラックホールを避けます
+- 訓練サイクルでは、リサイズされた深度マップに対して損失を計算します。検証では、予測をアップサンプリングし、元の解像度で指標を計算します。
+- そして、HF accelerate を使うと、カスタムの PyTorch コードを分散コンピューティング用にいかに簡単にラップできるか見てください。</p>
+<h4>ステップ10: 訓練の開始</h4>
+<div class="codehilite"><pre><span></span><code><span class="c1"># このコードは GPU 1つでも実行できます。num_processes=1 と設定するだけです</span>
+<span class="n">notebook_launcher</span><span class="p">(</span><span class="n">train_fn</span><span class="p">,</span> <span class="n">num_processes</span><span class="o">=</span><span class="mi">2</span><span class="p">)</span>
+</code></pre></div>
+
+<p>望んでいた目標は達成できたと思います。性能のわずかな差は、データセットサイズの大きな違い（40k 対 400k）に帰することができます。私たちが ViT-S エンコーダを使ったことを覚えておいてください。</p>
+<p><img alt="image/png" src="https://huggingface.co/datasets/hf-vision/course-assets/resolve/main/Metric%20and%20Relative%20Monocular%20Depth%20Estimation%20An%20Overview.%20Fine-Tuning%20Depth%20Anything%20V2/metrics5.png" /></p>
+<p>結果をいくつか示しましょう</p>
+<div class="codehilite"><pre><span></span><code><span class="n">model</span> <span class="o">=</span> <span class="n">DepthAnythingV2</span><span class="p">(</span><span class="o">**</span><span class="p">{</span><span class="o">**</span><span class="n">model_configs</span><span class="p">[</span><span class="n">model_encoder</span><span class="p">],</span> <span class="s2">"max_depth"</span><span class="p">:</span> <span class="n">max_depth</span><span class="p">})</span><span class="o">.</span><span class="n">to</span><span class="p">(</span>
+    <span class="s2">"cuda"</span>
+<span class="p">)</span>
+<span class="n">model</span><span class="o">.</span><span class="n">load_state_dict</span><span class="p">(</span><span class="n">torch</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="n">save_model_path</span><span class="p">))</span>
+
+<span class="n">num_images</span> <span class="o">=</span> <span class="mi">10</span>
+
+<span class="n">fig</span><span class="p">,</span> <span class="n">axes</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">subplots</span><span class="p">(</span><span class="n">num_images</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mi">15</span><span class="p">,</span> <span class="mi">5</span> <span class="o">*</span> <span class="n">num_images</span><span class="p">))</span>
+
+<span class="n">val_dataset</span> <span class="o">=</span> <span class="n">NYU</span><span class="p">(</span><span class="n">val_paths</span><span class="p">,</span> <span class="n">mode</span><span class="o">=</span><span class="s2">"val"</span><span class="p">)</span>
+<span class="n">model</span><span class="o">.</span><span class="n">eval</span><span class="p">()</span>
+<span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">num_images</span><span class="p">):</span>
+    <span class="n">sample</span> <span class="o">=</span> <span class="n">val_dataset</span><span class="p">[</span><span class="n">i</span><span class="p">]</span>
+    <span class="n">img</span><span class="p">,</span> <span class="n">depth</span> <span class="o">=</span> <span class="n">sample</span><span class="p">[</span><span class="s2">"image"</span><span class="p">],</span> <span class="n">sample</span><span class="p">[</span><span class="s2">"depth"</span><span class="p">]</span>
+
+    <span class="n">mean</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">tensor</span><span class="p">([</span><span class="mf">0.485</span><span class="p">,</span> <span class="mf">0.456</span><span class="p">,</span> <span class="mf">0.406</span><span class="p">])</span><span class="o">.</span><span class="n">view</span><span class="p">(</span><span class="mi">3</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
+    <span class="n">std</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">tensor</span><span class="p">([</span><span class="mf">0.229</span><span class="p">,</span> <span class="mf">0.224</span><span class="p">,</span> <span class="mf">0.225</span><span class="p">])</span><span class="o">.</span><span class="n">view</span><span class="p">(</span><span class="mi">3</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
+
+    <span class="k">with</span> <span class="n">torch</span><span class="o">.</span><span class="n">inference_mode</span><span class="p">():</span>
+        <span class="n">pred</span> <span class="o">=</span> <span class="n">model</span><span class="p">(</span><span class="n">img</span><span class="o">.</span><span class="n">unsqueeze</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="s2">"cuda"</span><span class="p">))</span>
+        <span class="n">pred</span> <span class="o">=</span> <span class="n">F</span><span class="o">.</span><span class="n">interpolate</span><span class="p">(</span>
+            <span class="n">pred</span><span class="p">[:,</span> <span class="kc">None</span><span class="p">],</span> <span class="n">depth</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="o">-</span><span class="mi">2</span><span class="p">:],</span> <span class="n">mode</span><span class="o">=</span><span class="s2">"bilinear"</span><span class="p">,</span> <span class="n">align_corners</span><span class="o">=</span><span class="kc">True</span>
+        <span class="p">)[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">]</span>
+
+    <span class="n">img</span> <span class="o">=</span> <span class="n">img</span> <span class="o">*</span> <span class="n">std</span> <span class="o">+</span> <span class="n">mean</span>
+
+    <span class="n">axes</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">imshow</span><span class="p">(</span><span class="n">img</span><span class="o">.</span><span class="n">permute</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">0</span><span class="p">))</span>
+    <span class="n">axes</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">set_title</span><span class="p">(</span><span class="s2">"Image"</span><span class="p">)</span>
+    <span class="n">axes</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">axis</span><span class="p">(</span><span class="s2">"off"</span><span class="p">)</span>
+
+    <span class="n">max_depth</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="n">depth</span><span class="o">.</span><span class="n">max</span><span class="p">(),</span> <span class="n">pred</span><span class="o">.</span><span class="n">cpu</span><span class="p">()</span><span class="o">.</span><span class="n">max</span><span class="p">())</span>
+
+    <span class="n">im1</span> <span class="o">=</span> <span class="n">axes</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">imshow</span><span class="p">(</span><span class="n">depth</span><span class="p">,</span> <span class="n">cmap</span><span class="o">=</span><span class="s2">"viridis"</span><span class="p">,</span> <span class="n">vmin</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">vmax</span><span class="o">=</span><span class="n">max_depth</span><span class="p">)</span>
+    <span class="n">axes</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">set_title</span><span class="p">(</span><span class="s2">"True Depth"</span><span class="p">)</span>
+    <span class="n">axes</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">axis</span><span class="p">(</span><span class="s2">"off"</span><span class="p">)</span>
+    <span class="n">fig</span><span class="o">.</span><span class="n">colorbar</span><span class="p">(</span><span class="n">im1</span><span class="p">,</span> <span class="n">ax</span><span class="o">=</span><span class="n">axes</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="mi">1</span><span class="p">])</span>
+
+    <span class="n">im2</span> <span class="o">=</span> <span class="n">axes</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="mi">2</span><span class="p">]</span><span class="o">.</span><span class="n">imshow</span><span class="p">(</span><span class="n">pred</span><span class="o">.</span><span class="n">cpu</span><span class="p">(),</span> <span class="n">cmap</span><span class="o">=</span><span class="s2">"viridis"</span><span class="p">,</span> <span class="n">vmin</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">vmax</span><span class="o">=</span><span class="n">max_depth</span><span class="p">)</span>
+    <span class="n">axes</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="mi">2</span><span class="p">]</span><span class="o">.</span><span class="n">set_title</span><span class="p">(</span><span class="s2">"Predicted Depth"</span><span class="p">)</span>
+    <span class="n">axes</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="mi">2</span><span class="p">]</span><span class="o">.</span><span class="n">axis</span><span class="p">(</span><span class="s2">"off"</span><span class="p">)</span>
+    <span class="n">fig</span><span class="o">.</span><span class="n">colorbar</span><span class="p">(</span><span class="n">im2</span><span class="p">,</span> <span class="n">ax</span><span class="o">=</span><span class="n">axes</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="mi">2</span><span class="p">])</span>
+
+<span class="n">plt</span><span class="o">.</span><span class="n">tight_layout</span><span class="p">()</span>
+</code></pre></div>
+
+<p><img alt="image/png" src="https://huggingface.co/datasets/hf-vision/course-assets/resolve/main/Metric%20and%20Relative%20Monocular%20Depth%20Estimation%20An%20Overview.%20Fine-Tuning%20Depth%20Anything%20V2/inference.png" /></p>
+<p>検証セットの画像は訓練セットの画像よりもはるかにクリーンで正確です。そのため、私たちの予測は比較すると少しぼやけて見えます。上の訓練サンプルをもう一度見てください。</p>
+<p>全体として、重要なポイントは、モデルの品質は提供される深度マップの品質に大きく依存するということです。この制限を克服し、非常にシャープな深度マップを生み出した Depth Anything V2 の著者らに敬意を表します。唯一の欠点は、それらが相対深度であることです。</p>
+<h2>参考文献</h2>
+<ul>
+<li><a href="https://arxiv.org/abs/1907.01341">Towards Robust Monocular Depth Estimation: Mixing Datasets for Zero-shot Cross-dataset Transfer</a></li>
+<li><a href="https://arxiv.org/abs/2302.12288">ZoeDepth: Zero-shot Transfer by Combining Relative and Metric Depth</a></li>
+<li><a href="https://arxiv.org/abs/2103.13413">Vision Transformers for Dense Prediction</a></li>
+<li><a href="https://arxiv.org/abs/2401.10891">Depth Anything: Unleashing the Power of Large-Scale Unlabeled Data</a></li>
+<li><a href="https://arxiv.org/abs/2406.09414">Depth Anything V2</a></li>
+</ul>
+</article>
+<nav class="page-nav"><a class="nav-link prev" href="terminologies/representations.html">← 前へ: 3Dデータの表現方法</a><a class="nav-link toc-link" href="../index.html">目次へ</a><a class="nav-link next" href="3d-vision/nvs.html">次へ →: 新規視点合成（Novel View Synthesis）</a></nav>
+</main>
+<footer class="site-footer">
+  <p>原典: Hugging Face huggingface/computer-vision-course（<a href="https://github.com/huggingface/computer-vision-course">https://github.com/huggingface/computer-vision-course</a>）</p>
+  <p>日本語版の翻訳・公開: 霞ヶ関京 / 連絡先: GitHub <a href="https://github.com/yanikasumin">@yanikasumin</a> / YouTube <a href="https://www.youtube.com/@KASUMI_MOF">@KASUMI_MOF</a></p>
+  <p class="demo-note">このサイトはデモ版です。内容は順次更新されます。</p>
+</footer>
+<script src="../../site.js"></script>
+</body>
+</html>

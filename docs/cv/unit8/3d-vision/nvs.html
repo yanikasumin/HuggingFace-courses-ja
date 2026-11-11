@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>新規視点合成（Novel View Synthesis） | Hugging Face コース日本語版（デモ版）</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Shippori+Mincho:wght@500;700&family=Zen+Kaku+Gothic+New:wght@400;500;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../../../style.css">
+<script>
+window.MathJax = { tex: { inlineMath: [['$', '$'], ['\\(', '\\)']], displayMath: [['$$', '$$'], ['\\[', '\\]']] }, options: { skipHtmlTags: ['script','noscript','style','textarea','pre','code'] } };
+</script>
+<script async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml.js"></script>
+</head>
+<body>
+<header class="site-header">
+  <div class="header-inner">
+    <a class="site-title" href="../../../index.html">Hugging Face コース日本語版</a>
+    <span class="demo-badge">デモ版</span>
+  </div>
+</header>
+<main class="container">
+<p class="course-crumb"><a href="../../index.html">Community CV コース</a>
+<span class="badge badge-qa-wip">翻訳済み・QA進行中（未検証の部分を含みます）</span></p>
+<nav class="page-nav"><a class="nav-link prev" href="../monocular_depth_estimation.html">← 前へ: メトリック深度と相対深度の単眼深度推定： 概要。Depth Anything V2 のファインチューニング 👐 📚</a><a class="nav-link toc-link" href="../../index.html">目次へ</a><a class="nav-link next" href="../3d_measurements_stereo_vision.html">次へ →: はじめに</a></nav>
+<article class="content">
+<h1>新規視点合成（Novel View Synthesis）</h1>
+<p>NeRF の章では、大量の画像があれば物体の3次元表現を生成できることを見ました。
+しかし、手元にある画像がほんの数枚、あるいは1枚だけという場合もあります。
+新規視点合成（Novel View Synthesis, NVS）は、与えられた画像の集合と矛盾しない、新しいカメラ角度からの視点を生成する手法の総称です。
+大きくて一貫性のある画像の集合が得られれば、NeRF や同様のアルゴリズムを使って3D表現を構築できます。</p>
+<p>このタスクのために、近年多くの手法が開発されてきました。
+ただし、それらは大きく2つのクラスに分けられます。中間の3次元表現を生成し、それを新しい視方向からレンダリングするものと、新しい画像を直接生成するものです。</p>
+<p>重要な困難の1つは、このタスクがほぼ常に決定不足（underdetermined）であることです。
+たとえば、看板の裏側の画像については、表側に何が描かれているかは無数に考えられます。
+同様に、物体の一部が別の部分の前にあって隠れている場合もあります。
+見えていない部分を直接予測（回帰）するようモデルを訓練し、ホールドアウトした視点の再構成誤差にペナルティを与える損失を使うと、そこに何があるべきか不明確な場合、モデルは必然的にぼんやりした灰色の領域を予測することになります。これは <a href="https://jiataogu.me/nerfdiff/">NerfDiff</a> でも指摘されています。
+このことが、生成モデル、とりわけ拡散ベースのモデルへの関心を高めました。こうしたモデルは、見えていない領域についてあり得る複数の可能性からサンプリングできます。</p>
+<p>ここでは、2つのクラスの代表として2つのアプローチを簡単に取り上げます。
+<a href="https://alexyu.net/pixelnerf">PixelNeRF</a> は、入力画像からシーンの NeRF を直接予測します。
+<a href="https://zero123.cs.columbia.edu/">Zero123</a> は、Stable Diffusion の潜在拡散モデルを応用し、中間の3D表現なしに新しい視点を直接生成します。</p>
+<h2>PixelNeRF</h2>
+<p>PixelNeRF は、1枚以上の画像から NeRF のパラメータを直接生成する手法です。
+言い換えると、入力画像を条件として NeRF を生成します。
+空間内の点を密度と色に変換する MLP を訓練する元の NeRF とは異なり、PixelNeRF は入力画像から生成された空間特徴を使います。</p>
+<div style="display: flex; flex-direction: column; align-items: center;">
+  <img src="https://huggingface.co/datasets/hf-vision/course-assets/resolve/main/PixelNeRF_pipeline.png" alt="PixelNeRF の図" />
+  <p>画像の出典: <a href="https://alexyu.net/pixelnerf">PixelNeRF</a></p>
+</div>
+
+<p>この手法はまず、入力画像を畳み込みニューラルネットワーク（ResNet34）に通し、複数の層からの特徴を双線形アップサンプリングして入力画像と同じ解像度に揃えます。
+標準的な NeRF と同様、新しい視点はボリュームレンダリングによって生成されます。
+ただし、NeRF 自体の構造は少し変わっています。
+レンダリングされるボリューム内の各クエリ点 \( x \) について、入力画像における対応点（入力画像のカメラ変換 \( \pi \) を使って投影することで得られます）を求めます。
+この点における入力画像の特徴 \( W(\pi x) \) は、双線形補間によって得られます。
+元の NeRF と同様、クエリ点 \( x \) は位置エンコーディングされ、視方向 \( d\) と連結されます。
+NeRF のネットワークは ResNet ブロックの集合から構成されます。入力画像の特徴 \( W(\pi(x)) \) は線形層を通り、最初の3つの残差ブロックそれぞれの開始時点の特徴に加算されます。
+その後ろには、これらの特徴をさらに処理する残差ブロックが2つあり、最後に出力層がチャンネル数を4（RGB＋密度）に減らします。
+複数の入力視点が与えられた場合、それらは最初の3つの残差ブロックまでは独立に処理され、最後の2ブロックの前に特徴が平均されます。</p>
+<p>元の PixelNeRF モデルは、<a href="https://huggingface.co/datasets/ShapeNet/ShapeNetCore">ShapeNet</a> データセットからの比較的小規模なレンダリング画像の集合で訓練されました。
+モデルは1枚または2枚の入力画像で訓練され、新しいカメラ角度からの単一の新規視点を予測しようとします。
+損失は、レンダリングされた新規視点と期待される新規視点との平均二乗誤差です。
+モデルは物体のクラスごとに（飛行機、ベンチ、車など）別々に訓練されました。</p>
+<h3>結果（PixelNeRF のウェブサイトより）</h3>
+<div style="display: flex; flex-direction: column; align-items: center;">
+  <img src="https://huggingface.co/datasets/hf-vision/course-assets/resolve/main/PixelNeRF_input.png" alt="椅子の入力画像" />
+</div>
+
+<div style="display: flex; flex-direction: column; align-items: center;">
+  <img src="https://huggingface.co/datasets/hf-vision/course-assets/resolve/main/PixelNeRF_output.gif" alt="レンダリングされた新規視点の回転 GIF アニメーション" />
+  <p>画像の出典: <a href="https://alexyu.net/pixelnerf">PixelNeRF</a></p>
+</div>
+
+<p>PixelNeRF のコードは <a href="https://github.com/sxyu/pixel-nerf">GitHub</a> にあります。</p>
+<h3>関連手法</h3>
+<p><a href="https://arxiv.org/pdf/2307.05663.pdf">ObjaverseXL</a> の論文では、PixelNeRF がはるかに大規模なデータセット <a href="https://huggingface.co/datasets/allenai/objaverse-xl">allenai/objaverse-xl</a> で訓練されました。</p>
+<p>関連項目 - <a href="https://deepmind.google/discover/blog/neural-scene-representation-and-rendering/">Generative Query Networks</a>、
+<a href="https://www.vincentsitzmann.com/srns/">Scene Representation Networks</a>、
+<a href="https://arxiv.org/pdf/2311.04400.pdf">LRM</a>。</p>
+<h2>Zero123（Zero-1-to-3）</h2>
+<p>Zero123 は異なるアプローチを取り、拡散モデルです。
+3次元表現を生成しようとするのではなく、新しい視点からの画像を直接予測します。
+モデルは1枚の入力画像と、入力視点と新規視点の間の相対的な視点変換を受け取ります。
+そして、新規視点方向から見た、もっともらしく3Dとして一貫した画像の生成を試みます。</p>
+<p>Zero123 は <a href="https://arxiv.org/abs/2112.10752">Stable Diffusion</a> のアーキテクチャを土台としており、既存の重みをファインチューニングして訓練されました。
+ただし、いくつかの新しい工夫が加えられています。
+このモデルは実際には <a href="https://huggingface.co/spaces/lambdalabs/stable-diffusion-image-variations">Stable Diffusion Image Variations</a> の重みから出発します。このモデルは、テキストプロンプトの代わりに、入力画像の CLIP 画像埋め込み（最終隠れ状態）を使って拡散 U-Net を条件付けします。
+ただし Zero123 では、これらの CLIP 画像埋め込みが、入力視点と新規視点の間の相対的な視点変換と連結されます。
+（この視点の変化は球面極座標で表されます）。</p>
+<div style="display: flex; flex-direction: column; align-items: center;">
+  <img src="https://huggingface.co/datasets/hf-vision/course-assets/resolve/main/Zero123.png" alt="Zero123" />
+  <p>画像の出典: <a href="https://zero123.cs.columbia.edu">https://zero123.cs.columbia.edu</a></p>
+</div>
+
+<p>アーキテクチャの残りの部分は Stable Diffusion と同じです。
+ただし、入力画像の潜在表現は、ノイズ除去 U-Net への入力の前に、ノイズのある潜在変数とチャンネル方向に連結されます。</p>
+<p>このモデルをさらに探ってみたい方は、<a href="https://huggingface.co/spaces/cvlab/zero123-live">Live Demo</a> をご覧ください。</p>
+<h3>関連手法</h3>
+<p><a href="https://3d-diffusion.github.io/">3DiM</a> - X-UNet アーキテクチャで、入力フレームとノイズのあるフレームの間にクロスアテンションを持つ。</p>
+<p><a href="https://arxiv.org/pdf/2311.13617.pdf">Zero123-XL</a> - より大規模な objaverseXL データセットで訓練された。<a href="https://huggingface.co/stabilityai/stable-zero123">Stable Zero 123</a> も参照。</p>
+<p><a href="https://arxiv.org/abs/2310.15110">Zero123++</a> - 入力視点に対する固定の相対位置で、6つの新しい固定視点を生成する。入力画像と生成画像の間の reference attention を備える。</p>
+</article>
+<nav class="page-nav"><a class="nav-link prev" href="../monocular_depth_estimation.html">← 前へ: メトリック深度と相対深度の単眼深度推定： 概要。Depth Anything V2 のファインチューニング 👐 📚</a><a class="nav-link toc-link" href="../../index.html">目次へ</a><a class="nav-link next" href="../3d_measurements_stereo_vision.html">次へ →: はじめに</a></nav>
+</main>
+<footer class="site-footer">
+  <p>原典: Hugging Face huggingface/computer-vision-course（<a href="https://github.com/huggingface/computer-vision-course">https://github.com/huggingface/computer-vision-course</a>）</p>
+  <p>日本語版の翻訳・公開: 霞ヶ関京 / 連絡先: GitHub <a href="https://github.com/yanikasumin">@yanikasumin</a> / YouTube <a href="https://www.youtube.com/@KASUMI_MOF">@KASUMI_MOF</a></p>
+  <p class="demo-note">このサイトはデモ版です。内容は順次更新されます。</p>
+</footer>
+<script src="../../../site.js"></script>
+</body>
+</html>

@@ -1,0 +1,283 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Transformer のアーキテクチャ | Hugging Face コース日本語版（デモ版）</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Shippori+Mincho:wght@500;700&family=Zen+Kaku+Gothic+New:wght@400;500;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../../style.css">
+<script>
+window.MathJax = { tex: { inlineMath: [['$', '$'], ['\\(', '\\)']], displayMath: [['$$', '$$'], ['\\[', '\\]']] }, options: { skipHtmlTags: ['script','noscript','style','textarea','pre','code'] } };
+</script>
+<script async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml.js"></script>
+</head>
+<body>
+<header class="site-header">
+  <div class="header-inner">
+    <a class="site-title" href="../../index.html">Hugging Face コース日本語版</a>
+    <span class="demo-badge">デモ版</span>
+  </div>
+</header>
+<main class="container">
+<p class="course-crumb"><a href="../index.html">LLM コース</a>
+<span class="badge badge-qa-pass">翻訳QA 最終合格</span></p>
+<nav class="page-nav"><a class="nav-link prev" href="5.html">← 前へ: 🤗 Transformers がタスクを解く仕組み</a><a class="nav-link toc-link" href="../index.html">目次へ</a><a class="nav-link next" href="7.html">次へ →: 確認クイズ（採点なし）</a></nav>
+<article class="content">
+<h1>Transformer のアーキテクチャ</h1>
+<p>前のセクションでは、Transformer の全体的なアーキテクチャを紹介し、これらのモデルがさまざまなタスクをどう解くのかを見てきました。ここでは、Transformer モデルの3つの主要なアーキテクチャのバリエーションを詳しく見て、それぞれをいつ使うべきかを理解しましょう。そのうえで、それらのアーキテクチャがさまざまな言語タスクにどう応用されるかを見ていきます。</p>
+<p>このセクションでは、Transformer モデルの3つの主要なアーキテクチャのバリエーションをさらに掘り下げ、それぞれをいつ使うべきかを理解していきます。</p>
+<div class="callout callout-tip">
+<p class="callout-title">💡 ヒント</p>
+<p>ほとんどの Transformer モデルは、エンコーダのみ、デコーダのみ、エンコーダ・デコーダ（シーケンス・ツー・シーケンス）という3つのアーキテクチャのいずれかを使っていることを思い出してください。これらの違いを理解すると、自分のタスクに合ったモデルを選べるようになります。</p>
+</div>
+<h2>エンコーダモデル</h2>
+<div class="youtube-embed"><iframe src="https://www.youtube-nocookie.com/embed/MUqNwgPjJvQ" title="YouTube video" loading="lazy" allowfullscreen referrerpolicy="strict-origin-when-cross-origin"></iframe></div>
+<p>エンコーダモデルは、Transformer モデルのエンコーダだけを使うモデルです。各ステージで、アテンション層は入力文のすべての単語にアクセスできます。これらのモデルは「双方向」のアテンションを持つとよく説明され、<em>オートエンコーディングモデル</em>とも呼ばれます。</p>
+<p>これらのモデルの事前学習は、通常、与えられた文を何らかの形で加工し（たとえばランダムな単語をマスクするなど）、元の文を見つけたり再構成したりするタスクをモデルに課す、という形で行われます。</p>
+<p>エンコーダモデルは、文全体の理解が必要なタスクに最も向いています。たとえば、文の分類、固有表現抽出（より一般的には単語の分類）、抽出型質問応答などです。</p>
+<div class="callout callout-tip">
+<p class="callout-title">💡 ヒント</p>
+<p><a href="https://huggingface.co/learn/llm-course/chapter1/5">🤗 Transformers がタスクを解く仕組み</a>で見たように、BERT のようなエンコーダモデルは、文脈全体を両方向から見ることができるため、テキストの理解に優れています。そのため、入力全体の理解が重要なタスクに最適です。</p>
+</div>
+<p>この系統の代表的なモデルには次のものがあります。</p>
+<ul>
+<li><a href="https://huggingface.co/docs/transformers/model_doc/bert">BERT</a></li>
+<li><a href="https://huggingface.co/docs/transformers/model_doc/distilbert">DistilBERT</a></li>
+<li><a href="https://huggingface.co/docs/transformers/en/model_doc/modernbert">ModernBERT</a></li>
+</ul>
+<h2>デコーダモデル</h2>
+<div class="youtube-embed"><iframe src="https://www.youtube-nocookie.com/embed/d_ixlCubqQw" title="YouTube video" loading="lazy" allowfullscreen referrerpolicy="strict-origin-when-cross-origin"></iframe></div>
+<p>デコーダモデルは、Transformer モデルのデコーダだけを使うモデルです。各ステージで、アテンション層は、ある単語について、その単語より前に位置する単語にしかアクセスできません。これらのモデルは<em>自己回帰モデル</em>とよく呼ばれます。</p>
+<p>デコーダモデルの事前学習は、通常、文の次の単語を予測することを中心に行われます。</p>
+<p>これらのモデルは、テキスト生成を伴うタスクに最も向いています。</p>
+<div class="callout callout-tip">
+<p class="callout-title">💡 ヒント</p>
+<p>GPT のようなデコーダモデルは、トークンを1つずつ予測してテキストを生成するよう設計されています。<a href="https://huggingface.co/learn/llm-course/chapter1/5">🤗 Transformers がタスクを解く仕組み</a>で見たように、デコーダモデルは前のトークンしか見ることができません。そのため、創造的なテキスト生成には優れていますが、双方向の理解が必要なタスクにはあまり向いていません。</p>
+</div>
+<p>この系統の代表的なモデルには次のものがあります。</p>
+<ul>
+<li><a href="https://huggingface.co/HuggingFaceTB/SmolLM2-1.7B-Instruct">Hugging Face の SmolLM シリーズ</a></li>
+<li><a href="https://huggingface.co/docs/transformers/en/model_doc/llama4">Meta の Llama シリーズ</a></li>
+<li><a href="https://huggingface.co/docs/transformers/main/en/model_doc/gemma3">Google の Gemma シリーズ</a></li>
+<li><a href="https://huggingface.co/deepseek-ai/DeepSeek-V3">DeepSeek V3</a></li>
+</ul>
+<h3>現代の大規模言語モデル（LLM）</h3>
+<p>現代の大規模言語モデル（LLM）のほとんどは、デコーダのみのアーキテクチャを採用しています。これらのモデルは過去数年で規模と能力が劇的に拡大し、最大級のモデルは数千億のパラメータを持っています。</p>
+<p>現代の LLM は通常、2つのフェーズで学習されます。
+1. <strong>事前学習</strong>: 膨大なテキストデータで、次のトークンを予測することを学習する
+2. <strong>インストラクションチューニング</strong>: 指示に従い、役に立つ応答を生成できるようにファインチューニングする</p>
+<p>このアプローチによって、幅広いトピックやタスクにわたって、人間のようなテキストを理解し生成できるモデルが生まれました。</p>
+<h4>現代の LLM の主な能力</h4>
+<p>現代のデコーダベースの LLM は、印象的な能力を示してきました。</p>
+<table>
+<thead>
+<tr>
+<th>能力</th>
+<th>説明</th>
+<th>例</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>テキスト生成</td>
+<td>一貫性があり文脈に合ったテキストを作成する</td>
+<td>エッセイ、物語、メールを書く</td>
+</tr>
+<tr>
+<td>要約</td>
+<td>長い文書を短く凝縮する</td>
+<td>レポートのエグゼクティブサマリーを作成する</td>
+</tr>
+<tr>
+<td>翻訳</td>
+<td>テキストを別の言語に変換する</td>
+<td>英語をスペイン語に翻訳する</td>
+</tr>
+<tr>
+<td>質問応答</td>
+<td>事実に関する質問に答える</td>
+<td>「フランスの首都はどこですか？」</td>
+</tr>
+<tr>
+<td>コード生成</td>
+<td>コードスニペットを書いたり補完したりする</td>
+<td>説明に基づいて関数を作成する</td>
+</tr>
+<tr>
+<td>推論</td>
+<td>問題を段階的に解いていく</td>
+<td>数学の問題や論理パズルを解く</td>
+</tr>
+<tr>
+<td>Few-shot 学習</td>
+<td>プロンプト内の少数の例から学習する</td>
+<td>2〜3個の例を見ただけでテキストを分類する</td>
+</tr>
+</tbody>
+</table>
+<p>デコーダベースの LLM は、Hub のモデルリポジトリのページから、ブラウザ上で直接試すことができます。例として、定番の <a href="https://huggingface.co/openai-community/gpt2">GPT-2</a>（OpenAI の最高のオープンソースモデル！）を見てみましょう。</p>
+<p><a 
+  href="https://huggingface.co/openai-community/gpt2" target="_blank">
+  Hugging Face で GPT-2 モデルを見る
+</a></p>
+<h2>シーケンス・ツー・シーケンスモデル</h2>
+<div class="youtube-embed"><iframe src="https://www.youtube-nocookie.com/embed/0_4KEb08xrE" title="YouTube video" loading="lazy" allowfullscreen referrerpolicy="strict-origin-when-cross-origin"></iframe></div>
+<p>エンコーダ・デコーダモデル（<em>シーケンス・ツー・シーケンスモデル</em>とも呼ばれます）は、Transformer アーキテクチャの両方の部分を使います。各ステージで、エンコーダのアテンション層は入力文のすべての単語にアクセスできる一方、デコーダのアテンション層は、入力中のある単語より前に位置する単語にしかアクセスできません。</p>
+<p>これらのモデルの事前学習にはさまざまな形がありますが、入力が何らかの形で壊された（たとえばランダムな単語がマスクされた）文を再構成する、という形がよく使われます。T5 モデルの事前学習では、テキストのランダムなスパン（複数の単語を含むこともあります）を1つのマスク用の特殊トークンで置き換え、そのマスクトークンが置き換えたテキストを予測するタスクを行います。</p>
+<p>シーケンス・ツー・シーケンスモデルは、与えられた入力に応じて新しい文を生成するタスクに最も向いています。たとえば、要約、翻訳、生成型質問応答などです。</p>
+<div class="callout callout-tip">
+<p class="callout-title">💡 ヒント</p>
+<p><a href="https://huggingface.co/learn/llm-course/chapter1/5">🤗 Transformers がタスクを解く仕組み</a>で見たように、BART や T5 のようなエンコーダ・デコーダモデルは、両方のアーキテクチャの長所を兼ね備えています。エンコーダが入力の深い双方向の理解を提供し、デコーダが適切な出力テキストを生成します。そのため、翻訳や要約のように、あるシーケンスを別のシーケンスに変換するタスクに最適です。</p>
+</div>
+<h3>実践的な応用例</h3>
+<p>シーケンス・ツー・シーケンスモデルは、意味を保ちながら、ある形式のテキストを別の形式に変換するタスクに優れています。実践的な応用例には次のようなものがあります。</p>
+<table>
+<thead>
+<tr>
+<th>アプリケーション</th>
+<th>説明</th>
+<th>モデル例</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>機械翻訳</td>
+<td>テキストを別の言語に変換する</td>
+<td>Marian, T5</td>
+</tr>
+<tr>
+<td>テキスト要約</td>
+<td>長いテキストの簡潔な要約を作成する</td>
+<td>BART, T5</td>
+</tr>
+<tr>
+<td>データからテキストへの生成</td>
+<td>構造化データを自然言語に変換する</td>
+<td>T5</td>
+</tr>
+<tr>
+<td>文法訂正</td>
+<td>テキストの文法的な誤りを修正する</td>
+<td>T5</td>
+</tr>
+<tr>
+<td>質問応答</td>
+<td>文脈に基づいて答えを生成する</td>
+<td>BART, T5</td>
+</tr>
+</tbody>
+</table>
+<p>翻訳用のシーケンス・ツー・シーケンスモデルのインタラクティブなデモです。</p>
+<p><iframe
+    src="https://course-demos-speech-to-speech-translation.hf.space"
+    frameborder="0"
+    width="850"
+    height="450"
+></iframe>
+</p>
+<p>この系統の代表的なモデルには次のものがあります。</p>
+<ul>
+<li><a href="https://huggingface.co/docs/transformers/model_doc/bart">BART</a></li>
+<li><a href="https://huggingface.co/docs/transformers/model_doc/mbart">mBART</a></li>
+<li><a href="https://huggingface.co/docs/transformers/model_doc/marian">Marian</a></li>
+<li><a href="https://huggingface.co/docs/transformers/model_doc/t5">T5</a></li>
+</ul>
+<h2>適切なアーキテクチャの選び方</h2>
+<p>特定の NLP タスクに取り組むとき、どのアーキテクチャを使えばいいのでしょうか。簡単なガイドを示します。</p>
+<table>
+<thead>
+<tr>
+<th>タスク</th>
+<th>推奨アーキテクチャ</th>
+<th>例</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>テキスト分類（感情分析、トピック）</td>
+<td>エンコーダ</td>
+<td>BERT, RoBERTa</td>
+</tr>
+<tr>
+<td>テキスト生成（創作）</td>
+<td>デコーダ</td>
+<td>GPT, LLaMA</td>
+</tr>
+<tr>
+<td>翻訳</td>
+<td>エンコーダ・デコーダ</td>
+<td>T5, BART</td>
+</tr>
+<tr>
+<td>要約</td>
+<td>エンコーダ・デコーダ</td>
+<td>BART, T5</td>
+</tr>
+<tr>
+<td>固有表現抽出</td>
+<td>エンコーダ</td>
+<td>BERT, RoBERTa</td>
+</tr>
+<tr>
+<td>質問応答（抽出型）</td>
+<td>エンコーダ</td>
+<td>BERT, RoBERTa</td>
+</tr>
+<tr>
+<td>質問応答（生成型）</td>
+<td>エンコーダ・デコーダまたはデコーダ</td>
+<td>T5, GPT</td>
+</tr>
+<tr>
+<td>対話型 AI</td>
+<td>デコーダ</td>
+<td>GPT, LLaMA</td>
+</tr>
+</tbody>
+</table>
+<div class="callout callout-tip">
+<p class="callout-title">💡 ヒント</p>
+<p>どのモデルを使うか迷ったら、次の点を考えてみてください。  </p>
+<ol>
+<li>タスクにはどんな理解が必要か（双方向か単方向か）  </li>
+<li>新しいテキストを生成するのか、既存のテキストを分析するのか  </li>
+<li>あるシーケンスを別のシーケンスに変換する必要があるか  </li>
+</ol>
+<p>これらの答えが、適切なアーキテクチャへと導いてくれます。 </p>
+</div>
+<h2>LLM の進化</h2>
+<p>大規模言語モデルは近年急速に進化しており、世代ごとに能力が大きく向上しています。 </p>
+<h2>アテンション機構</h2>
+<p>ほとんどの Transformer モデルは、アテンション行列が正方行列になるという意味でフルアテンションを使っています。長いテキストでは、これが計算上の大きなボトルネックになることがあります。Longformer や Reformer は、より効率的になるよう工夫されたモデルで、アテンション行列の疎（スパース）なバージョンを使って学習を高速化します。</p>
+<div class="callout callout-tip">
+<p class="callout-title">💡 ヒント</p>
+<p>標準的なアテンション機構の計算量は O(n²) で、n はシーケンス長です。これは、非常に長いシーケンスでは問題になります。以下で紹介する特殊なアテンション機構は、この制限の解消に役立ちます。</p>
+</div>
+<h3>LSHアテンション</h3>
+<p><a href="https://huggingface.co/docs/transformers/model_doc/reformer">Reformer</a> は LSHアテンションを使います。softmax(QK^t) では、行列 QK^t の要素のうち、値が大きいものほど計算結果への寄与が大きくなります。そこで、Q の各クエリ q に対して、q に近い K のキー k だけを考えればよくなります。q と k が近いかどうかは、ハッシュ関数を使って判定します。アテンションマスクは、現在のトークンをマスクするように変更されます（先頭の位置を除く）。現在のトークンはクエリとキーが等しくなり（つまり非常によく似て）しまうためです。ハッシュには多少のランダム性があるため、実際には複数のハッシュ関数を使い（n_rounds パラメータで決まります）、その結果を平均します。</p>
+<h3>ローカルアテンション</h3>
+<p><a href="https://huggingface.co/docs/transformers/model_doc/longformer">Longformer</a> はローカルアテンションを使います。多くの場合、あるトークンについて判断するには、ローカルな文脈（たとえば左右2つのトークン）で十分です。また、小さなウィンドウを持つアテンション層を積み重ねることで、最後の層ではウィンドウ内のトークンだけにとどまらない受容野が得られ、文全体の表現を構築できます。</p>
+<p>あらかじめ選ばれた一部の入力トークンには、グローバルアテンションも与えられます。その少数のトークンについては、アテンション行列はすべてのトークンにアクセスでき、この関係は対称です。つまり、ほかのすべてのトークンも、それらの特定のトークンにアクセスできます（ローカル ウィンドウ内のトークンに加えて）。これは論文の Figure 2d に示されています。以下にアテンションマスクの例を示します。</p>
+<div class="flex justify-center">
+    <img scale="50 %" align="center" src="https://huggingface.co/datasets/huggingface/documentation-images/resolve/main/local_attention_mask.png"/>
+</div>
+
+<p>パラメータの少ないこれらのアテンション行列を使うことで、モデルはより大きなシーケンス長の入力を扱えるようになります。</p>
+<h3>軸方向の位置エンコーディング</h3>
+<p><a href="https://huggingface.co/docs/transformers/model_doc/reformer">Reformer</a> は軸方向の位置エンコーディングを使います。従来の Transformer モデルでは、位置エンコーディング E は \(l\) × \(d\) の行列で、\(l\) はシーケンス長、\(d\) は隠れ状態の次元です。テキストが非常に長いと、この行列は巨大になり、GPU 上の容量を取りすぎてしまいます。これを緩和するため、軸方向の位置エンコーディングでは、その大きな行列 E を、次元が \(l_{1} \times d_{1}\) と \(l_{2} \times d_{2}\) の2つの小さな行列 E1 と E2 に分解します。ここで \(l_{1} \times l_{2} = l\) かつ \(d_{1} + d_{2} = d\) です（長さ同士の積になるため、全体としてずっと小さくなります）。E におけるタイムステップ \(j\) の埋め込みは、E1 のタイムステップ \(j \% l1\) の埋め込みと、E2 のタイムステップ \(j // l1\) の埋め込みを連結して得られます。</p>
+<h2>まとめ</h2>
+<p>このセクションでは、Transformer の3つの主要なアーキテクチャと、いくつかの特殊なアテンション機構を学びました。これらのアーキテクチャの違いを理解することは、自分の NLP タスクに合ったモデルを選ぶうえで非常に重要です。</p>
+<p>コースを進めていくと、これらのさまざまなアーキテクチャを実際に使って体験し、自分のニーズに合わせてファインチューニングする方法を学んでいきます。次のセクションでは、これらのモデルを導入する際に知っておくべき、モデルに存在する制限やバイアスについて見ていきます。</p>
+</article>
+<nav class="page-nav"><a class="nav-link prev" href="5.html">← 前へ: 🤗 Transformers がタスクを解く仕組み</a><a class="nav-link toc-link" href="../index.html">目次へ</a><a class="nav-link next" href="7.html">次へ →: 確認クイズ（採点なし）</a></nav>
+</main>
+<footer class="site-footer">
+  <p>原典: Hugging Face huggingface/course（<a href="https://github.com/huggingface/course">https://github.com/huggingface/course</a>）</p>
+  <p>日本語版の翻訳・公開: 霞ヶ関京 / 連絡先: GitHub <a href="https://github.com/yanikasumin">@yanikasumin</a> / YouTube <a href="https://www.youtube.com/@KASUMI_MOF">@KASUMI_MOF</a></p>
+  <p class="demo-note">このサイトはデモ版です。内容は順次更新されます。</p>
+</footer>
+<script src="../../site.js"></script>
+</body>
+</html>

@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ビデオ処理の基礎 | Hugging Face コース日本語版（デモ版）</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Shippori+Mincho:wght@500;700&family=Zen+Kaku+Gothic+New:wght@400;500;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../../../style.css">
+<script>
+window.MathJax = { tex: { inlineMath: [['$', '$'], ['\\(', '\\)']], displayMath: [['$$', '$$'], ['\\[', '\\]']] }, options: { skipHtmlTags: ['script','noscript','style','textarea','pre','code'] } };
+</script>
+<script async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml.js"></script>
+</head>
+<body>
+<header class="site-header">
+  <div class="header-inner">
+    <a class="site-title" href="../../../index.html">Hugging Face コース日本語版</a>
+    <span class="demo-badge">デモ版</span>
+  </div>
+</header>
+<main class="container">
+<p class="course-crumb"><a href="../../index.html">Community CV コース</a>
+<span class="badge badge-qa-wip">翻訳済み・QA進行中（未検証の部分を含みます）</span></p>
+<nav class="page-nav"><a class="nav-link prev" href="introduction-to-video.html">← 前へ: はじめに</a><a class="nav-link toc-link" href="../../index.html">目次へ</a><a class="nav-link next" href="multimodal-based-video-models.html">次へ →: マルチモーダルベースのビデオモデル</a></nav>
+<article class="content">
+<h1>ビデオ処理の基礎</h1>
+<p>Transformer の台頭とともに、Vision Transformer はさまざまなコンピュータビジョンタスクに欠かせないツールになりました。Vision Transformer は、画像とビデオの両方に関わるコンピュータビジョンタスクで優れた性能を発揮します。</p>
+<p>ただし、最適な性能と正確な結果を得るには、これらのモデルが画像とビデオをどう異なる方法で扱うかを理解することが重要です。</p>
+<h2>Vision Transformer の画像処理を理解する</h2>
+<p>画像データについては、Vision Transformer は通常、静止画像を重ならないパッチに分割し、各パッチを個別に変換して処理します。
+224x224の画像を、14x14ピクセルからなるパッチへ16x16に分割するとします。このパッチベースの処理は、計算量を減らすだけでなく、モデルが画像の局所的な特徴を効果的に捉えることも可能にします。
+各パッチはその後、自己注意（self-attention）層とフィードフォワードニューラルネットワークの系列を通して、意味情報を抽出します。この階層的な処理技術のおかげで、Vision Transformer は画像の高レベルな特徴と低レベルな特徴の両方を捉えることができます。
+Vision Transformer はパッチを個別に処理し、Transformer には本来、入力の位置を追跡する仕組みがないため、画像の空間的な文脈が失われる可能性があります。
+これに対処するため、Vision Transformer には、画像内での各パッチの相対位置を捉える位置エンコーディング（positional encoding）が含まれることが多くあります。位置情報を取り入れることで、モデルは異なるパッチ間の空間的な関係をよりよく理解し、物体やパターンを認識する能力を高められます。</p>
+<p><em>注:</em> CNN は空間的特徴を学習するよう設計されていますが、Vision Transformer は空間的特徴と文脈的特徴の両方を学習するよう設計されています。</p>
+<h2>画像処理とビデオ処理の主な違い</h2>
+<p>ビデオは本質的にフレームの列であり、それを処理するには動きの情報を捉えて取り込む技術が必要です。画像処理では、Transformer はフレーム間の時間的（時間の）関係を無視します。つまり、フレームの空間的（空間の）情報だけに注目します。</p>
+<p>時間的な関係こそ、ビデオのコンテンツをしっかり理解するための主な要因です。そのため、ビデオには別のアルゴリズムが必要になります。画像処理とビデオ処理の主な違いの1つは、入力に時間という軸が1つ追加されることです。
+ビデオからトークンを抽出したり、ビデオクリップを埋め込んだりする方法には、主に2つのアプローチがあります。</p>
+<h3>一様フレームサンプリング（Uniform Frame Sampling）</h3>
+<p>入力ビデオをトークン化する分かりやすい方法で、入力ビデオクリップから \(n_t\) フレームを一様にサンプリングし、各2Dフレームを画像処理と同じ方法で独立に埋め込んで、すべてのトークンを連結します。</p>
+<p>各フレームから \(n_h<em>n_w\) 個の重ならない画像パッチが抽出される場合、合計 \(n_t</em>n_h*n_w'\) 個のトークンが Transformer のエンコーダへ送られます。一様フレームサンプリングは、ビデオクリップからフレームをサンプリングし、単純な ViT のトークン化を行うトークン化スキームです。</p>
+<h3>チューブレット埋め込み（Tubelet Embedding）</h3>
+<p>この方法は、Vision Transformer の画像埋め込みを3Dに拡張したもので、3D畳み込みに対応します。入力ボリュームから、重ならない時空間的な「チューブ（tube）」を抽出し、線形に射影する代替的な方法です。</p>
+<p>まず、ビデオからチューブを抽出します。これらのチューブにはフレームのパッチに加えて時間情報も含まれます。次に、チューブを平らにしてビデオトークンを構築します。直感的には、この方法はトークン化の段階で時空間情報を融合します。一方、「一様フレームサンプリング」では、異なるフレームからの時間情報は Transformer によって融合されます。</p>
+<h2>ビデオ処理における時間情報の重要性</h2>
+<p>時間情報の取り込みは、いくつかのコンピュータビジョンタスクにとって重要です。その1つが行動認識で、ビデオ内の行動を分類することを目的とします。時間情報は、ビデオの内容を文章で説明することを目的とするビデオキャプション生成のようなタスクでも不可欠です。</p>
+<p>フレーム間の時間的な関係を考慮することで、Vision Transformer はより文脈に即したキャプションを生成できます。たとえば、あるフレームで人が走っている様子が映り、次のフレームでジャンプする様子が映れば、モデルはこの一連の行動を反映したキャプションを生成できます。さらに、時間的な処理は、ビデオ物体検出や追跡といったタスクでも重要です。</p>
+<p>まとめると、時間情報の存在と、より多くのメモリやストレージを必要とするといったビデオデータ特有の難しさが、ビデオ処理と画像処理の主な違いです。画像処理とビデオ処理のどちらを選ぶかは、具体的なコンピュータビジョンタスクとデータの特性によって決まります。</p>
+</article>
+<nav class="page-nav"><a class="nav-link prev" href="introduction-to-video.html">← 前へ: はじめに</a><a class="nav-link toc-link" href="../../index.html">目次へ</a><a class="nav-link next" href="multimodal-based-video-models.html">次へ →: マルチモーダルベースのビデオモデル</a></nav>
+</main>
+<footer class="site-footer">
+  <p>原典: Hugging Face huggingface/computer-vision-course（<a href="https://github.com/huggingface/computer-vision-course">https://github.com/huggingface/computer-vision-course</a>）</p>
+  <p>日本語版の翻訳・公開: 霞ヶ関京 / 連絡先: GitHub <a href="https://github.com/yanikasumin">@yanikasumin</a> / YouTube <a href="https://www.youtube.com/@KASUMI_MOF">@KASUMI_MOF</a></p>
+  <p class="demo-note">このサイトはデモ版です。内容は順次更新されます。</p>
+</footer>
+<script src="../../../site.js"></script>
+</body>
+</html>

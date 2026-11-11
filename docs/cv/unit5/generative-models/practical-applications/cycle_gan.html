@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>CycleGAN 入門 | Hugging Face コース日本語版（デモ版）</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Shippori+Mincho:wght@500;700&family=Zen+Kaku+Gothic+New:wght@400;500;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../../../../style.css">
+<script>
+window.MathJax = { tex: { inlineMath: [['$', '$'], ['\\(', '\\)']], displayMath: [['$$', '$$'], ['\\[', '\\]']] }, options: { skipHtmlTags: ['script','noscript','style','textarea','pre','code'] } };
+</script>
+<script async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml.js"></script>
+</head>
+<body>
+<header class="site-header">
+  <div class="header-inner">
+    <a class="site-title" href="../../../../index.html">Hugging Face コース日本語版</a>
+    <span class="demo-badge">デモ版</span>
+  </div>
+</header>
+<main class="container">
+<p class="course-crumb"><a href="../../../index.html">Community CV コース</a>
+<span class="badge badge-qa-wip">翻訳済み・QA進行中（未検証の部分を含みます）</span></p>
+<nav class="page-nav"><a class="nav-link prev" href="../gans-vaes/stylegan.html">← 前へ: StyleGAN のバリエーション</a><a class="nav-link toc-link" href="../../../index.html">目次へ</a><a class="nav-link next" href="../diffusion-models/introduction.html">次へ →: 拡散モデル入門</a></nav>
+<article class="content">
+<h1>CycleGAN 入門</h1>
+<p>このセクションでは、<em>Cycle-Consistent Generative Adversarial Network</em> の略である CycleGAN を紹介します。これは、ペアになった例が利用できない画像変換（image-to-image translation）タスクのために設計されたフレームワークです。Zhu らによって <a href="https://arxiv.org/abs/1703.10593">2017年</a> の論文で導入され、コンピュータビジョンと機械学習の分野における大きな進歩となりました。</p>
+<p>多くの画像変換タスクでは、入力画像と出力画像の間のマッピングを学習することが目標です。従来のアプローチは、ペアになった例（例えば写真と対応するスケッチ）の大規模なデータセットに依存することが多いです。しかし、そのようなペアのデータセットを得ることは、多くのシナリオで極めて困難か、場合によっては不可能です。ここで CycleGAN の出番となります。CycleGAN はペアのないデータセットで動作するよう設計されています。</p>
+<h2>ペアなし画像変換とは</h2>
+<p><img alt="ペアあり画像とペアなし画像" src="https://huggingface.co/datasets/hf-vision/course-assets/resolve/main/unpaired_images.png" /></p>
+<p>多くの画像変換シナリオでは、画像ペアの間に直接的な一対一の対応がないデータセットに遭遇します。これがペアなし画像変換（unpaired image-to-image translation）が活躍する場面です。ここでは、一致する画像ペアの代わりに、X と Y のような異なるスタイルやドメインを表す、2つの異なる画像の集合（「山」）を扱います。例えば、一方の山が現実的な写真から構成され、もう一方がモネやセザンヌなどの芸術家の作品を含むことがあります。あるいは、この山が異なる季節を表し、一方が冬の風景、もう一方が夏の風景を見せることもあります。別の例では、一方に馬の画像のコレクション、もう一方にシマウマの画像のコレクションがあり、両者の間に直接の対応付けはありません。ペアなし画像変換の目的は、モデルが各山から一般的なスタイルの要素を学習して抽出し、学習したスタイルを適用して画像を一方のドメインから他方のドメインに変換することです。この変換は多くの場合双方向に機能し、ドメイン X の画像をドメイン Y のスタイルに変換でき、その逆も可能です。このアプローチは、正確な画像ペアが利用できない、または得ることが困難な場合に特に価値があります。</p>
+<h2>CycleGAN の主な構成要素</h2>
+<p><strong>二重の GAN 構造</strong>:</p>
+<p>CycleGAN は2つの GAN（敵対的生成ネットワーク）を使います。1つは最初の集合から2番目の集合への変換用（例えばシマウマから馬）、もう1つはその逆のプロセス用（馬からシマウマ）です。この二重構造により、リアリズム（敵対的プロセスによる）とコンテンツの保持（サイクル一貫性による）が保証されます。
+    - PatchGAN 識別器: CycleGAN で使われる識別器は <a href="https://arxiv.org/pdf/1611.07004.pdf">PatchGAN</a> アーキテクチャに基づいており、画像全体ではなく画像のパッチを評価することで、より詳細で局所的なリアリズムに貢献します。
+    - 生成器のアーキテクチャ: CycleGAN の生成器は <a href="https://arxiv.org/abs/1505.04597">U-Net</a> と [DCGAN](https://arxiv.org/abs/1511.06434 アーキテクチャを参考にしており、ダウンサンプリング（エンコーディング）、アップサンプリング（デコーディング）、バッチ正規化と ReLU を備えた畳み込み層を伴います。 
+これらの生成器は、追加の畳み込み層と、残差接続として知られるスキップ接続によって強化されており、恒等関数の学習を助け、より深い変換を支えます。</p>
+<p><strong>サイクル一貫性損失（Cycle Consistency Loss）</strong>:</p>
+<p>画像のスタイルを変更し（例えば悲しい顔からハグ顔へ）、その後元の形に戻した（ハグ顔から悲しい顔へ）ときに、細部やコンテンツの損失が最小限に抑えられることを保証します。</p>
+<p>実装は2段階の変換を伴います。</p>
+<p><strong>第1段階</strong>: 悲しい顔がハグ顔に変換されます。<strong>第2段階</strong>: このハグ顔が今度は悲しい顔に戻されます。モデルは、最終的な画像（元に戻された悲しい顔）が元の悲しい顔によく似ることを目指します。これは、この2つの画像のピクセル差を最小化し、それをモデルの損失関数に加えることで達成されます。サイクル一貫性は両方向に適用されます。悲しい顔からハグ顔、そして悲しい顔へ、という方向と、ハグ顔から悲しい顔、そしてハグ顔へ、という方向です。各サイクルの損失はピクセル差の合計によって計算され、生成器全体の損失に組み込まれます。 
+敵対的損失との統合: サイクル一貫性損失は、GAN で一般的に使われる敵対的損失と組み合わされて、包括的な損失関数を形成します。この組み合わされた損失関数は、CycleGAN の両方の生成器について同時に最適化されます。</p>
+<p><strong>最小二乗損失（Least-Square Loss）</strong>:</p>
+<p>残差の二乗和を最小化する方法です。つまり、すべての点との二乗距離の合計が最小になる最適な直線を見つけようとするものです。GAN では、<strong>直線</strong> はラベル（本物か偽物か）を表し、点は識別器の予測を表します。最小二乗敵対的損失における識別器の損失関数は、複数の画像にわたって、その予測と実際のラベル（本物か偽物か）の間の二乗距離を計算することによって定式化されます。生成器については、その偽の出力ができるだけ本物らしく見えるよう、損失関数はこれらの出力が <strong>本物</strong> というラベルからどれだけ離れているかで測られるよう設計されています。最小二乗損失を持つことで、BCE 損失でよくある勾配消失やモード崩壊の問題に対処できます。</p>
+<p><strong>同一性損失（Identity Loss）</strong>:</p>
+<p>CycleGAN で導入された同一性損失（identity loss）は、生成画像における色の保持を高めることを目的とした任意の損失項です。これは、生成器に入力された画像（例えば、シマウマから馬への生成器に入力された馬の画像）は、すでにターゲットのスタイルになっているため、理想的には同じ画像を出力すべきだという考えで動作します。損失は、実際の入力と生成器の出力の間のピクセル距離として計算されます。ピクセル距離がゼロ（画像に変化がない）の場合、同一性損失はゼロとなり、これが望ましい結果です。
+CycleGAN の生成器については、この損失は敵対的損失とサイクル一貫性損失と並んで加えられます。これはラムダ項（重み係数）を使って調整されます。</p>
+<p><img alt="CycleGAN" src="https://huggingface.co/datasets/hf-vision/course-assets/resolve/main/cycleGAN1.jpg" />
+この図は、両方の <strong>GAN</strong> を組み合わせたアーキテクチャの機能を示しています。これらの GAN はサイクル一貫性によって結びつけられ、サイクルを形成します。
+実画像については、分類行列には 1 が含まれます。偽画像については、0 が含まれます。まとめると、CycleGAN は2つの GAN を、敵対的損失、サイクル一貫性損失、任意の同一性損失などのさまざまな損失関数と複雑に組み合わせ、入力画像の本質的な特徴を保持しながら2つのドメインの間でスタイルを効果的に転送します。</p>
+</article>
+<nav class="page-nav"><a class="nav-link prev" href="../gans-vaes/stylegan.html">← 前へ: StyleGAN のバリエーション</a><a class="nav-link toc-link" href="../../../index.html">目次へ</a><a class="nav-link next" href="../diffusion-models/introduction.html">次へ →: 拡散モデル入門</a></nav>
+</main>
+<footer class="site-footer">
+  <p>原典: Hugging Face huggingface/computer-vision-course（<a href="https://github.com/huggingface/computer-vision-course">https://github.com/huggingface/computer-vision-course</a>）</p>
+  <p>日本語版の翻訳・公開: 霞ヶ関京 / 連絡先: GitHub <a href="https://github.com/yanikasumin">@yanikasumin</a> / YouTube <a href="https://www.youtube.com/@KASUMI_MOF">@KASUMI_MOF</a></p>
+  <p class="demo-note">このサイトはデモ版です。内容は順次更新されます。</p>
+</footer>
+<script src="../../../../site.js"></script>
+</body>
+</html>

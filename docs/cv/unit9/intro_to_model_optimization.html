@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>デプロイのためのモデル最適化入門 | Hugging Face コース日本語版（デモ版）</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Shippori+Mincho:wght@500;700&family=Zen+Kaku+Gothic+New:wght@400;500;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../../style.css">
+<script>
+window.MathJax = { tex: { inlineMath: [['$', '$'], ['\\(', '\\)']], displayMath: [['$$', '$$'], ['\\[', '\\]']] }, options: { skipHtmlTags: ['script','noscript','style','textarea','pre','code'] } };
+</script>
+<script async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml.js"></script>
+</head>
+<body>
+<header class="site-header">
+  <div class="header-inner">
+    <a class="site-title" href="../../index.html">Hugging Face コース日本語版</a>
+    <span class="demo-badge">デモ版</span>
+  </div>
+</header>
+<main class="container">
+<p class="course-crumb"><a href="../index.html">Community CV コース</a>
+<span class="badge badge-qa-wip">翻訳済み・QA進行中（未検証の部分を含みます）</span></p>
+<nav class="page-nav"><a class="nav-link prev" href="../unit8/nerf.html">← 前へ: Neural Radiance Fields（NeRF）</a><a class="nav-link toc-link" href="../index.html">目次へ</a><a class="nav-link next" href="model_deployment.html">次へ →: モデルデプロイの検討事項</a></nav>
+<article class="content">
+<h1>デプロイのためのモデル最適化入門</h1>
+<p>モデルの訓練が終わった後、混乱したことはありませんか。次に何をすべきでしょうか。もしそうなら、この章が役立つはずです。一般に、コンピュータビジョンモデルを訓練した後のステップは、他の人がモデルを使えるようデプロイすることです。しかし、モデルを本番環境に無事デプロイできても、モデルのサイズが大きすぎる、予測処理に時間がかかる、デバイスのメモリが限られている、といった多くの問題が発生します。これらの問題は、通常、訓練用のハードウェアよりも仕様の低いデバイスにモデルをデプロイするために起こり得ます。こうした問題を克服するには、デプロイの前に追加の段階、すなわちモデル最適化を行うことができます。</p>
+<h2>モデル最適化とは？</h2>
+<p>モデル最適化は、訓練したモデルを効率の面でより良くするために改変するプロセスです。訓練時と推論時では、使用するハードウェアがほとんどの場合で大きく異なるため、これらの改変は重要です。推論時のハードウェアの仕様はより低いため、この最適化が必要になります。たとえば、訓練は高性能な GPU で行い、モデルの推論プロセスはエッジデバイス（マイコン、モバイルデバイス、IoT など）で実行されるといった場合です。当然、これらのデバイスは仕様が異なり、より低い傾向があります。仕様の低いデバイスでもモデルが滑らかに動作するよう、モデル最適化を行うことが重要です。</p>
+<h2>コンピュータビジョンのデプロイでなぜ重要か？</h2>
+<p>すでに述べたとおり、モデルの最適化はデプロイ段階の前に重要ですが、それはなぜでしょうか。デプロイ段階の前にこの最適化が重要である理由はいくつかあります。その一部は次のとおりです。
+1. リソースの制限: コンピュータビジョンモデルは、メモリ、CPU、GPU といった高い計算リソースを必要とすることがよくあります。携帯電話、組み込みシステム、エッジデバイスなど、リソースが限られたデバイスにモデルをデプロイしたい場合、これは問題になります。最適化技術により、モデルのサイズと計算コストを削減し、そのプラットフォームへデプロイ可能にできます。
+2. レイテンシの要件: 自動運転車や拡張現実など、多くのコンピュータビジョンアプリケーションはリアルタイムの応答を必要とします。つまり、モデルはデータを処理し、結果を素早く生成できなければなりません。最適化により、モデルの推論速度を大幅に高め、レイテンシの制約を満たすことができます。
+3. 消費電力: ドローンやウェアラブルデバイスなど、バッテリーを使うデバイスには、電力効率の良いモデルが必要です。最適化技術は、大きすぎるモデルサイズが原因で起こることの多いバッテリー消費も削減できます。
+4. ハードウェアの互換性: ハードウェアによって、能力や制限が異なることがあります。いくつかの最適化技術は、特定のハードウェア専用に使われます。これを行えば、ハードウェアの制限を簡単に克服できます。</p>
+<h2>モデル最適化技術の種類</h2>
+<p>モデル最適化にはいくつかの技術があり、次のセクションで説明します。ただし、このセクションではいくつかの種類を簡単に説明します。
+1. プルーニング（Pruning）: プルーニングは、モデル内の冗長な接続や重要でない接続を取り除くプロセスです。モデルのサイズと複雑さを減らすことを目的とします。</p>
+<p><img alt="プルーニング" src="https://huggingface.co/datasets/hf-vision/course-assets/resolve/main/pruning.png" /></p>
+<ol start="2">
+<li>量子化（Quantization）: 量子化は、モデルの重みを高精度な形式（32ビット浮動小数点など）から低精度な形式（16ビット浮動小数点や8ビット整数など）に変換することです。メモリフットプリントを削減し、推論速度を高めます。</li>
+<li>知識蒸留（Knowledge Distillation）: 知識蒸留は、複雑で大きなモデル（教師モデル）の振る舞いを模倣することで、その知識を小さなモデル（生徒モデル）へ転移することを目的とします。</li>
+</ol>
+<p><img alt="知識蒸留" src="https://huggingface.co/datasets/hf-vision/course-assets/resolve/main/knowledge_distillation.png" /></p>
+<ol start="4">
+<li>低ランク近似（Low-rank approximation）: 大きな行列を小さな行列で近似し、メモリ消費と計算コストを削減します。</li>
+<li>ハードウェアアクセラレータによるモデル圧縮: このプロセスはプルーニングや量子化に似ています。ただし、NVIDIA の GPU や Intel のハードウェアといった特定のハードウェアで実行します。</li>
+</ol>
+<h2>精度、性能、リソース使用のトレードオフ</h2>
+<p>モデルをデプロイする際には、精度、性能、リソース使用の間にトレードオフが存在します。そのため、当面のケースでモデルを最大限に活かせるよう、どの部分を優先するかを決めなければなりません。
+1. 精度は、モデルが正しく予測する能力です。すべてのアプリケーションで高い精度が必要であり、それは高い性能とリソース使用も伴います。精度の高い複雑なモデルは通常、大量のメモリを必要とするため、リソースに制約のあるデバイスへデプロイすると制限が生じます。
+2. 性能は、モデルの速度と効率（レイテンシ）です。モデルがリアルタイムでも素早く予測できるよう、これは重要です。ただし、性能を最適化すると通常、精度の低下を招きます。
+3. リソース使用は、CPU、メモリ、ストレージなど、モデルの推論を行うのに必要な計算リソースです。スマートフォンや IoT デバイスなど、一定の制限のあるデバイスにモデルをデプロイしたい場合、効率的なリソース使用が重要です。</p>
+<p>下の画像は、一般的なコンピュータビジョンモデルを、モデルサイズ、精度、レイテンシの観点で示したものです。大きなモデルは精度が高い一方、推論により多くの時間を要し、ファイルサイズも大きくなります。</p>
+<p><img alt="モデルサイズ対精度" src="https://huggingface.co/datasets/hf-vision/course-assets/resolve/main/model_size_vs_accuracy.png" /></p>
+<p><img alt="精度対レイテンシ" src="https://huggingface.co/datasets/hf-vision/course-assets/resolve/main/accuracy_vs_latency.png" /></p>
+<p>考慮すべきはこの3点です。訓練したモデルのどこに重点を置くか。たとえば、高い精度に重点を置くと、推論時に遅いモデルになったり、膨大なリソースを必要としたりします。これを克服するため、説明した最適化手法のいずれかを適用し、得られるモデルが上記3要素間のトレードオフを最大化、あるいはバランスの取れたものになるようにします。</p>
+</article>
+<nav class="page-nav"><a class="nav-link prev" href="../unit8/nerf.html">← 前へ: Neural Radiance Fields（NeRF）</a><a class="nav-link toc-link" href="../index.html">目次へ</a><a class="nav-link next" href="model_deployment.html">次へ →: モデルデプロイの検討事項</a></nav>
+</main>
+<footer class="site-footer">
+  <p>原典: Hugging Face huggingface/computer-vision-course（<a href="https://github.com/huggingface/computer-vision-course">https://github.com/huggingface/computer-vision-course</a>）</p>
+  <p>日本語版の翻訳・公開: 霞ヶ関京 / 連絡先: GitHub <a href="https://github.com/yanikasumin">@yanikasumin</a> / YouTube <a href="https://www.youtube.com/@KASUMI_MOF">@KASUMI_MOF</a></p>
+  <p class="demo-note">このサイトはデモ版です。内容は順次更新されます。</p>
+</footer>
+<script src="../../site.js"></script>
+</body>
+</html>

@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>StyleGAN のバリエーション | Hugging Face コース日本語版（デモ版）</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Shippori+Mincho:wght@500;700&family=Zen+Kaku+Gothic+New:wght@400;500;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../../../../style.css">
+<script>
+window.MathJax = { tex: { inlineMath: [['$', '$'], ['\\(', '\\)']], displayMath: [['$$', '$$'], ['\\[', '\\]']] }, options: { skipHtmlTags: ['script','noscript','style','textarea','pre','code'] } };
+</script>
+<script async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml.js"></script>
+</head>
+<body>
+<header class="site-header">
+  <div class="header-inner">
+    <a class="site-title" href="../../../../index.html">Hugging Face コース日本語版</a>
+    <span class="demo-badge">デモ版</span>
+  </div>
+</header>
+<main class="container">
+<p class="course-crumb"><a href="../../../index.html">Community CV コース</a>
+<span class="badge badge-qa-wip">翻訳済み・QA進行中（未検証の部分を含みます）</span></p>
+<nav class="page-nav"><a class="nav-link prev" href="../gans.html">← 前へ: 敵対的生成ネットワーク</a><a class="nav-link toc-link" href="../../../index.html">目次へ</a><a class="nav-link next" href="../practical-applications/cycle_gan.html">次へ →: CycleGAN 入門</a></nav>
+<article class="content">
+<h1>StyleGAN のバリエーション</h1>
+<p>この章で学ぶこと:</p>
+<ul>
+<li>バニラ GAN に欠けているもの</li>
+<li>StyleGAN1 の構成要素と利点</li>
+<li>StyleGAN1 の欠点と StyleGAN2 が必要になった理由</li>
+<li>StyleGAN2 の欠点と StyleGAN3 が必要になった理由</li>
+<li>StyleGAN のユースケース</li>
+</ul>
+<h2>バニラ GAN に欠けているもの</h2>
+<p>敵対的生成ネットワーク（GAN）は、現実的な画像を生成する生成モデルの一種です。しかし、画像がどのように生成されるかを制御する手段が一切ないことは明らかです。バニラ GAN には2つのネットワークがあります。(i) 生成器（Generator）と、(ii) 識別器（Discriminator）です。識別器は画像を入力として受け取り、それが本物の画像か、生成器が合成した画像かを返します。生成器はノイズベクトル（通常は多変量ガウス分布からサンプリングされます）を入力として受け取り、学習サンプルに似ているが全く同じではない画像を生成しようとします。最初はゴミのような画像ですが、長期的には、生成器が生成した画像を本物だと識別器に信じ込ませることが生成器の目標です。</p>
+<p>学習済みの GAN を考えてみましょう。z1 と z2 を、生成器に送って画像を生成するための、ガウス分布からサンプリングされた2つのノイズベクトルとします。z1 は眼鏡をかけた男性を含む画像に変換され、z2 は眼鏡をかけていない女性を含む画像に変換されると仮定します。では、眼鏡をかけた女性の画像が必要な場合はどうでしょうか。特徴が絡み合っている（entangled）ため、この種の明示的な制御はバニラ GAN では直感的には実現できません（詳しくは後述します）。この点をまず押さえておいてください。StyleGAN が成し遂げたことを見れば、さらに理解が深まります。</p>
+<p>要点（TL;DR）: StyleGAN は、識別器はそのままに、生成器だけのアーキテクチャスタイルに加えられた特殊な変更です。StyleGAN の変更された生成器は、ユーザーが望むとおりに画像を生成する自由を与え、高レベルな側面（ポーズ、表情）と確率的な側面（肌の毛穴や髪の局所的な配置といった低レベルの特徴）の両方を制御できます。このような柔軟な画像生成能力に加えて、StyleGAN は長年にわたり、プライバシー保護や画像編集など、いわゆるダウンストリームタスクにも数多く使われてきました。</p>
+<h2>StyleGAN1 の構成要素と利点</h2>
+<p><img alt="アーキテクチャ" src="https://huggingface.co/datasets/hwaseem04/Documentation-files/resolve/main/CV-Course/stylegan_arch.png" /></p>
+<p>それでは、StyleGAN に上で説明した力を与える特殊な構成要素に早速入っていきましょう。上の図に圧倒される必要はありません。非常にシンプルでありながら強力なアイデアで、簡単に理解できます。</p>
+<p>すでに述べたとおり、StyleGAN は生成器のみを変更し、識別器はそのままであるため、上では言及されていません。図 (a) は ProgressiveGAN の構造に対応します。ProgressiveGAN はバニラ GAN そのものですが、固定解像度の画像を生成する代わりに、現実的な高解像度画像の生成を目指して、段階的に高い解像度の画像を生成します。つまり、生成器のブロック1は 4×4 の解像度の画像を生成し、ブロック2は 8×8 の解像度の画像を生成する、といった具合です。
+図 (b) は提案された StyleGAN のアーキテクチャです。主な構成要素は次のとおりです。
+1. マッピングネットワーク
+2. AdaIN（Adaptive Instance Normalisation）
+3. ノイズベクトルの結合</p>
+<p>1つずつ見ていきましょう。</p>
+<h3>マッピングネットワーク</h3>
+<p>従来の GAN のように潜在コード（ノイズベクトルとも呼ばれます）z を直接生成器に渡すのではなく、8層の MLP で構成される一連の層によって w にマッピングします。生成された潜在コード w は、ProgressiveGAN のように生成器の最初の層への入力として渡されるだけではなく、生成器ネットワークの各ブロックに渡されます（StyleGAN の用語では、これは Synthesis Network（合成ネットワーク）と呼ばれます）。ここには2つの大きなアイデアがあります。</p>
+<ul>
+<li>潜在コードを z から w にマッピングすることで、特徴空間が分離（disentangle）されます。ここでいう分離とは、512次元の潜在コードにおいて、その特徴値のうち1つだけを変更した場合（例えば512個の値のうち4番目の値を増減させた場合）、理想的には分離された特徴空間では現実世界の特徴のうち1つだけが変化するということです。4番目の特徴値が現実世界の特徴「笑顔」に対応するなら、512次元の潜在コードの4番目の値を変更すると、笑っている／笑っていない／その中間の画像が生成されるはずです。</li>
+<li>潜在コードを各層に渡すことは、制御される現実の特徴の種類に大きな影響を与えます。例えば、潜在コード w を合成ネットワークの低いブロックに渡すことの影響は、ポーズ、全体的な髪型、顔の形、眼鏡といった高レベルの側面の制御であり、潜在コード w を合成ネットワークの高解像度側のブロックに渡すことの影響は、より小さいスケールの顔の特徴、髪型、目の開閉といったものの制御です。</li>
+</ul>
+<h3>Adaptive Instance Normalisation（AdaIN）</h3>
+<p><img alt="Adaptive Instance Normalization" src="https://huggingface.co/datasets/hwaseem04/Documentation-files/resolve/main/CV-Course/AdaIN.png" /></p>
+<p>AdaIN は、インスタンス正規化を改良したもので、正規化パラメータ（平均と標準偏差）を別のソースからのスタイル情報に基づいて動的に調整できるようにします。このスタイル情報は、多くの場合、潜在コード w から得られます。</p>
+<p>StyleGAN では、潜在コードは合成ネットワークに直接渡されるのではなく、アフィン変換された w、すなわち y が異なるブロックに渡されます。y は「スタイル」表現と呼ばれます。
+ここで、 \(y_{s,i}\) と \(y_{b,i}\) はスタイル表現 y の平均と標準偏差であり、\(mu(x_i)\) と \(sigma(x_i)\) は特徴マップ x の平均と標準偏差です。</p>
+<p>AdaIN により、生成器は生成プロセス中にその振る舞いを動的に調整できます。これは、生成出力の異なる部分が異なるスタイルや特徴を必要とするシナリオで特に役立ちます。</p>
+<h3>ノイズベクトルの結合</h3>
+<p>従来の GAN では、生成器は確率的な特徴を自力で学習しなければなりません。確率的な特徴とは、髪の位置や肌の毛穴など、画像を生成するたびに変化すべきで一定であってはならない、微細でありながら重要な細部のことです。従来の GAN には明示的な構造がないため、生成器にとってこれは困難なタスクです。ピクセルレベルのランダム性を層から層へと自力で導入しなければならず、多様な確率的特徴の集合が得られないことも多いためです。</p>
+<p>これに対し StyleGAN では、合成ネットワーク（生成器とも呼ばれます）の各ブロックで特徴マップにノイズマップを加えることで、各層がこの情報を使って、従来の GAN のようにすべてを自力で行おうとすることなく、多様な確率的性質を生み出せるという仮説を著者らは立てました。これはうまくいきました。</p>
+<p><img alt="ノイズの例" src="https://huggingface.co/datasets/hwaseem04/Documentation-files/resolve/main/CV-Course/noise.png" /></p>
+<h2>StyleGAN1 の欠点と StyleGAN2 が必要になった理由</h2>
+<p>StyleGAN は、データ駆動の無条件生成画像モデリングにおいて最先端の結果をもたらします。それでも、既存のアーキテクチャ設計に関するいくつかの問題が存在し、次のバージョンである StyleGAN2 で対処されました。</p>
+<p>この章を読みやすくするため、アーキテクチャの詳細には立ち入らず、最初のバージョンで見つかった特徴的なアーティファクトと、品質がどのようにさらに改善されたかを述べます。</p>
+<p>この論文で対処された主なアーティファクトは2つあり、一般的な blob（塊）状のアーティファクトと、既存のプログレッシブ成長（progressive growing）アーキテクチャに起因する位置選好アーティファクトです。</p>
+<p><img alt="blob アーティファクト" src="https://huggingface.co/datasets/hwaseem04/Documentation-files/resolve/main/CV-Course/norm.png" /></p>
+<p>上の画像には blob 構造が見られます。著者らは、これは StyleGAN1 の正規化プロセスに由来すると主張しています。そのため、下の (d) がこの問題を克服した提案アーキテクチャです。</p>
+<p><img alt="復調（Demodulation）" src="https://huggingface.co/datasets/hwaseem04/Documentation-files/resolve/main/CV-Course/stylegan2_demod.png" /></p>
+<p>(ii) Progressive GAN 構造における強い位置選好アーティファクトの修正。</p>
+<p><img alt="位相アーティファクト" src="https://huggingface.co/datasets/hwaseem04/Documentation-files/resolve/main/CV-Course/progress.png" /></p>
+<p>上の図では、各画像は潜在コード w を補間してポーズを変調することで得られたものです。これにより、視覚的な品質が高いにもかかわらず、かなり非現実的な画像になります。</p>
+<p>この問題を克服するために、プログレッシブ成長なしで、スキップ生成器と残差識別器が使われました。</p>
+<p>StyleGAN2 では他にも変更が導入されていますが、まずは上記の2つを知ることが重要です。</p>
+<h2>StyleGAN2 の欠点と StyleGAN3 が必要になった理由</h2>
+<p>StyleGAN2 と同じ著者らは、合成ネットワークが絶対的なピクセル座標に不健康な形で依存していることを突き止めました。これはエイリアシング効果と呼ばれる現象を引き起こします。</p>
+<p><img alt="エイリアシングのアニメーション" src="https://huggingface.co/datasets/hwaseem04/Documentation-files/resolve/main/CV-Course/MP4%20to%20GIF%20conversion.gif" />
+上では、潜在コード w を補間することでアニメーションが生成されています。左の画像では、テクスチャのピクセルがその位置に固定されたようになっており、高レベルの属性（顔のポーズ／表情）だけが変化していることがはっきりと分かります。これにより、このようなアニメーションを生成する際の人工的な感じが露呈します。StyleGAN3 はこの問題に根本から取り組んでおり、その結果は右側のアニメーションで確認できます。</p>
+<h2>ユースケース</h2>
+<p>StyleGAN がフォトリアルな画像を生成できる能力は、画像編集、プライバシーの保護、さらには創造的な探求など、多様な応用への扉を開きました。</p>
+<p><strong>画像編集</strong></p>
+<ul>
+<li>画像インペインティング: 画像の欠けた領域を継ぎ目なく現実的に埋めること。 </li>
+<li>画像スタイル変換: ある画像のスタイルを別の画像に転送すること。 </li>
+</ul>
+<p><strong>プライバシー保護の応用</strong></p>
+<ul>
+<li>合成データの生成: 学習やテストの目的で、機密情報を現実的な合成データに置き換えること。 </li>
+<li>画像の匿名化: 個人のプライバシーを保護するために、画像内の識別可能な特徴をぼかしたり変更したりすること。</li>
+</ul>
+<p><strong>創造的な探求</strong></p>
+<ul>
+<li>ファッションデザインの生成: StyleGAN は、現実的で多様なファッションデザインの生成に使えます。</li>
+<li>没入感のある体験の創出: StyleGAN は、ゲーム、教育、その他の応用のための現実的な仮想環境の作成に使えます。例えば StyleNeRF は、高解像度画像生成のためのスタイルベースの3D対応ジェネレータです。</li>
+</ul>
+<p>以上は網羅的なリストではありません。</p>
+<h2>参考文献</h2>
+<ul>
+<li>StyleGAN - <a href="https://github.com/NVlabs/stylegan">リポジトリ</a>、<a href="https://arxiv.org/abs/1812.04948">論文</a> </li>
+<li>StyleGAN2 - <a href="https://github.com/NVlabs/stylegan2">リポジトリ</a>、<a href="http://arxiv.org/abs/1912.04958">論文</a>  </li>
+<li>StyleGAN3 - <a href="https://github.com/NVlabs/stylegan3">リポジトリ</a>、<a href="https://arxiv.org/abs/2106.12423">論文</a> </li>
+</ul>
+</article>
+<nav class="page-nav"><a class="nav-link prev" href="../gans.html">← 前へ: 敵対的生成ネットワーク</a><a class="nav-link toc-link" href="../../../index.html">目次へ</a><a class="nav-link next" href="../practical-applications/cycle_gan.html">次へ →: CycleGAN 入門</a></nav>
+</main>
+<footer class="site-footer">
+  <p>原典: Hugging Face huggingface/computer-vision-course（<a href="https://github.com/huggingface/computer-vision-course">https://github.com/huggingface/computer-vision-course</a>）</p>
+  <p>日本語版の翻訳・公開: 霞ヶ関京 / 連絡先: GitHub <a href="https://github.com/yanikasumin">@yanikasumin</a> / YouTube <a href="https://www.youtube.com/@KASUMI_MOF">@KASUMI_MOF</a></p>
+  <p class="demo-note">このサイトはデモ版です。内容は順次更新されます。</p>
+</footer>
+<script src="../../../../site.js"></script>
+</body>
+</html>

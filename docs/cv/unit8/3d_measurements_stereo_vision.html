@@ -1,0 +1,394 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>はじめに | Hugging Face コース日本語版（デモ版）</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Shippori+Mincho:wght@500;700&family=Zen+Kaku+Gothic+New:wght@400;500;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../../style.css">
+<script>
+window.MathJax = { tex: { inlineMath: [['$', '$'], ['\\(', '\\)']], displayMath: [['$$', '$$'], ['\\[', '\\]']] }, options: { skipHtmlTags: ['script','noscript','style','textarea','pre','code'] } };
+</script>
+<script async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml.js"></script>
+</head>
+<body>
+<header class="site-header">
+  <div class="header-inner">
+    <a class="site-title" href="../../index.html">Hugging Face コース日本語版</a>
+    <span class="demo-badge">デモ版</span>
+  </div>
+</header>
+<main class="container">
+<p class="course-crumb"><a href="../index.html">Community CV コース</a>
+<span class="badge badge-qa-wip">翻訳済み・QA進行中（未検証の部分を含みます）</span></p>
+<nav class="page-nav"><a class="nav-link prev" href="3d-vision/nvs.html">← 前へ: 新規視点合成（Novel View Synthesis）</a><a class="nav-link toc-link" href="../index.html">目次へ</a><a class="nav-link next" href="nerf.html">次へ →: Neural Radiance Fields（NeRF）</a></nav>
+<article class="content">
+<h1>はじめに</h1>
+<p>このセクションでは、ステレオビジョンの仕組みと、それを使って周囲の物体の3次元構造を求める方法を説明します。ステレオビジョンでは、同じシーンを異なる位置と視点から撮影した2枚以上の画像を使います。これらの画像は、複数のカメラを使うか、同じカメラの位置を変えることで得られます。</p>
+<h2>問題設定</h2>
+<p>物体の3D構造を求めるという問題設定を理解するために、画像形成の幾何学を考えてみましょう。図1に示すように、3D空間内に x、y、z 座標を持つ点 P があります。点 P はピンホールを通してカメラの画像平面に投影されます。これは、3Dの点を2Dの画像平面に投影することと見なすこともできます。</p>
+<p>ここで、この2D画像と、画像内における点 P の画素座標の位置が与えられたとします。点 P の3D座標を求めることはできるでしょうか。点 P は一意に定まるのでしょうか、それとも点 P と同じ画素座標に写る3D点は他にもあるのでしょうか。答えは、点 P とピンホールを結ぶ直線上にあるすべての3D点が、2D画像平面上の同じ画素座標に写る、というものです。</p>
+<p>私たちが解きたいのは、物体の3D構造を求める問題です。この問題設定では、3Dの物体を3D点の集合として表すことができます。これらの各点の3D座標を求めることで、物体の3D構造を特定できます。</p>
+<div style="display: flex; flex-direction: column; align-items: center;">
+  <img src="https://huggingface.co/datasets/hf-vision/course-assets/resolve/main/3d_stereo_vision_images/image_formation_single_camera.png?download=true" alt="図1: 単一カメラによる画像形成" />
+  <p>図1: 単一カメラによる画像形成</p>
+</div>
+
+<h2>解法</h2>
+<p>次の情報が与えられていると仮定します。</p>
+<ol>
+<li>シーンの点 P の単一の画像</li>
+<li>画像内における点 P の画素座標</li>
+<li>画像を撮影したカメラの位置と向き。簡単のため、図1のように、ピンホールの位置に XYZ 座標系を置き、z 軸を画像平面に垂直に、x 軸と y 軸を画像平面に平行にすることもできます。</li>
+<li>焦点距離や主点の位置といった、カメラの内部パラメータ。主点とは、光軸が画像平面と交わる点です。画像平面におけるその位置は通常 (Ox,Oy) と表記されます。</li>
+</ol>
+<p>上記の情報があれば、点 P の画素座標（画像平面における点 P の投影）から始まり、ピンホールを通って無限遠まで伸びる3Dの直線を求めることができます。画像形成の幾何学の原理から、点 P はこの直線上のどこかに存在するはずだと結論できます。</p>
+<ol>
+<li>最初（画像がない状態）では、点 P は3D空間内のどこにでも存在し得ました。</li>
+<li>単一の画像を使うことで、点 P の存在し得る場所を3D空間内の1本の直線に絞り込みました。</li>
+<li>では、この3D直線上で点 P の正確な位置を特定できるまで、候補をさらに絞り込めるでしょうか。</li>
+<li>カメラを別の位置に動かしたと想像してください。座標系は以前の位置に固定したままにします。先ほど求めた3D直線も変わらず、点 P は依然としてこの直線上のどこかにあります。</li>
+<li>この新しいカメラ位置から、同じシーンの点 P の画像をもう1枚撮影します。再び、この新しい画像における点 P の画素座標と、更新されたカメラのピンホールの位置を使って、点 P が存在するはずの3D直線を求めます。</li>
+<li>これで3D空間内に2本の直線があり、点 P はその両方の上にあります。したがって、点 P はこの2本の直線の交点上に存在するはずです。</li>
+</ol>
+<p>3D空間内の2本の直線の交わり方には、次の3つの可能性があります。</p>
+<ol>
+<li>ちょうど1点で交わる</li>
+<li>無数の点で交わる</li>
+<li>交わらない</li>
+</ol>
+<p>（元の位置と新しい位置の）両方の画像に点 P が含まれている場合、2本の3D直線は少なくとも1回は交わらなければならず、その交点が点 P であると結論できます。さらに、2本の直線が一致（collinear）している場合にのみ、両直線が無数の点で交わることが想像できます。これは、新しいカメラ位置のピンホールが元の3D直線上のどこかにある場合に実現できます。それ以外の新しいカメラの位置と向きではすべて、2本の3D直線は点 P が存在するちょうど1点で交わらなければなりません。</p>
+<p>したがって、同じシーンの点 P の2枚の画像、カメラ位置の既知の位置と向き、そしてカメラの既知の内部パラメータを使えば、点 P が3D空間内のどこにあるかを正確に求めることができます。</p>
+<h2>簡略化した解法</h2>
+<p>カメラ位置の位置と向きはさまざまに選べますが、計算をより単純で分かりやすくし、コンピュータや組み込みデバイスで実行する際の計算処理を減らせる配置を選ぶこともできます。一般的によく使われる人気の配置が図2に示されています。この配置では2台のカメラを使いますが、これは1台のカメラを2つの異なる場所で使って2枚の画像を撮影することと等価です。</p>
+<div style="display: flex; flex-direction: column; align-items: center;">
+  <img src="https://huggingface.co/datasets/hf-vision/course-assets/resolve/main/3d_stereo_vision_images/image_formation_simple_stereo.jpg?download=true" alt="図2: 2台のカメラによる画像形成" />
+  <p>図2: 2台のカメラによる画像形成</p>
+</div>
+
+<ol>
+<li>座標系の原点は、通常は左カメラである1台目のカメラのピンホールに置かれます。</li>
+<li>座標系の Z 軸は、画像平面に垂直に定義されます。</li>
+<li>座標系の X 軸と Y 軸は、画像平面に平行に定義されます。</li>
+<li>2D画像にも X 方向と Y 方向があります。X は水平方向、Y は垂直方向です。画像平面におけるこれらの方向を、それぞれ u と v と呼ぶことにします。したがって、点の画素座標は (u,v) の値で定義されます。</li>
+<li>座標系の X 軸は、画像平面における u 方向／水平方向として定義されます。</li>
+<li>同様に、座標系の Y 軸は、画像平面における v 方向／垂直方向として定義されます。</li>
+<li>2台目のカメラ（より正確には2台目のカメラのピンホール）は、1台目のカメラの右側に、正の x 方向にベースラインと呼ばれる距離 b だけ離れて置かれます。したがって、2台目のカメラのピンホールの x,y,z 座標は (b,0,0) です。</li>
+<li>2台目のカメラの画像平面は、1台目のカメラの画像平面と平行に向けられます。</li>
+<li>2台目／右カメラの画像平面における u 方向と v 方向は、1台目／左カメラの画像平面における u 方向と v 方向に揃えられます。</li>
+<li>左右両方のカメラは、焦点距離や主点の位置といった同じ内部パラメータを持つと仮定します。</li>
+</ol>
+<p>上記の配置のもとで、3Dの点を2Dの画像平面に対応付ける次の方程式が得られます。</p>
+<ol>
+<li>
+<p>左カメラ</p>
+<ol>
+<li>\(u_left = f_x * \frac{x}{z} + O_x\)</li>
+<li>\(v_left = f_y * \frac{y}{z} + O_y\)</li>
+</ol>
+</li>
+<li>
+<p>右カメラ</p>
+<ol>
+<li>\(u_right = f_x * \frac{x-b}{z} + O_x\)</li>
+<li>\(v_right = f_y * \frac{y}{z} + O_y\)</li>
+</ol>
+</li>
+</ol>
+<p>上記の方程式で使われるさまざまな記号は、以下で定義されます。
+*  \(u_left\)、\(v_left\) は、左画像における点 P の画素座標を指します。
+*  \(u_right\)、\(v_right\) は、右画像における点 P の画素座標を指します。
+*  \(f_x\) は x 方向の焦点距離（ピクセル単位）を指し、\(f_y\) は y 方向の焦点距離（ピクセル単位）を指します。実際には、カメラの焦点距離は1つだけであり、それはピンホール（レンズの光学中心）から画像平面までの距離です。しかし、ピクセルは長方形で完全な正方形でない場合があるため、f をピクセル単位で表すと fx と fy の値が異なります。
+*  x、y、z は点 P の3D座標です（cm、フィートなど、任意の単位が使えます）。
+*  \(O_x\) と \(O_y\) は、主点の画素座標を指します。
+*  b はベースラインと呼ばれ、左カメラと右カメラの間の距離を指します。b と x,y,z 座標には同じ単位が使われます（cm、フィートなど、任意の単位が使えます）。</p>
+<p>上記の4つの方程式と、未知数は3Dの点 P の x、y、z 座標の3つです。内部カメラパラメータである焦点距離と主点は既知と仮定します。方程式1.2と2.2は、左右の画像における v 座標の値が同じであることを示しています。</p>
+<ol start="3">
+<li>\(v_left = v_right\)</li>
+</ol>
+<p>方程式1.1、1.2、2.1を使うことで、点 P の x,y,z 座標を導出できます。</p>
+<ol start="4">
+<li>\(x = \frac{b * (u_left - O_x)}{u_left - u_right}\)</li>
+<li>\(y = \frac{b * f_x * (v_left - O_y)}{ f_y * (u_left - u_right)}\)</li>
+<li>\(z = \frac{b * f_x}{u_left - u_right}\)</li>
+</ol>
+<p>上記の x と y の値は左カメラに関するものであることに注意してください。座標系の原点が左カメラに揃えられているためです。上記の方程式は、2つの異なるカメラ位置から撮影された点 P の2枚の画像を使って、点 P の3D座標を求められることを示しています。z の値は深度値（depth）とも呼ばれます。この手法を使えば、画像内のさまざまなピクセルの深度値と、実世界における x 座標と y 座標を求めることができます。画像内の異なる点同士の実世界での距離も求められます。</p>
+<h2>デモ</h2>
+<h3>セットアップ</h3>
+<p>例を通して実際に作業し、画像を撮影し、計算を行って、上記の仮定と計算が正しいかどうかを確認しましょう。画像の撮影には、OAK-D Lite（OAK は OpenCV AI Kit の略）というハードウェアを使います。このデバイスには3台のカメラがあり、左右のモノクロ（白黒）カメラと中央のカラーカメラです。実験には左右のモノクロカメラを使います。通常のスマートフォンのカメラも使えますが、OAK-D Lite には以下に挙げる利点があります。</p>
+<ul>
+<li>OAK-D Lite では、焦点距離や主点の位置といった内部カメラパラメータが既知です。このデバイスはキャリブレーション済みで出荷され、これらのパラメータは Python API を使ってデバイスから読み取ることができます。スマートフォンのカメラでは、内部パラメータを求める必要があり、カメラキャリブレーションを行うか、スマートフォンで撮影した画像のメタデータに含まれている場合に得られます。</li>
+<li>上記の主な仮定の1つは、左右のカメラの位置と向きが既知であることです。スマートフォンのカメラを使うと、この情報を求めるのが難しかったり、追加のキャリブレーションが必要になったりする場合があります。一方、OAK-D Lite デバイスでは、左右のカメラの位置と向きは固定され、既知で、キャリブレーション済みであり、上記の簡略化した解法の幾何学に非常に近いものになっています。ただし、以下で詳しく述べるように、生の画像に対する後処理／画像の平行化（rectification）は依然として必要です。</li>
+</ul>
+<h3>生の左画像と右画像</h3>
+<p>OAK-D Lite の左右のカメラは、上記の簡略化した解法の幾何学と同様の向きになっています。左右のカメラ間のベースライン距離は7.5cmです。このデバイスで撮影したシーンの左画像と右画像を以下に示します。この図では、これらの画像を水平に並べ、一定の高さ（つまり一定の v 値）に赤い線を引いています。水平方向の x 軸を u、垂直方向の y 軸を v と呼ぶことにします。</p>
+<p>生の左画像</p>
+<div style="display: flex; flex-direction: column; align-items: center;">
+  <img src="https://huggingface.co/datasets/hf-vision/course-assets/resolve/main/3d_stereo_vision_images/unrectified_left_frame.jpg?download=true" alt="生の左画像" />
+</div>
+
+<p>生の右画像</p>
+<div style="display: flex; flex-direction: column; align-items: center;">
+  <img src="https://huggingface.co/datasets/hf-vision/course-assets/resolve/main/3d_stereo_vision_images/unrectified_right_frame.jpg?download=true" alt="生の右画像" />
+</div>
+
+<p>生の左画像と右画像を並べたもの</p>
+<div style="display: flex; flex-direction: column; align-items: center;">
+  <img src="https://huggingface.co/datasets/hf-vision/course-assets/resolve/main/3d_stereo_vision_images/unrectified_stacked_frames.jpg?download=true" alt="生の左画像と右画像を並べたもの" />
+</div>
+
+<p>1つの点、ノートパソコンの左上の角に注目しましょう。上記の方程式3によれば、左右の画像における同じ点について \(v_left = v_right\) となります。しかし、一定の v 値にある赤い線は、左画像ではノートパソコンの左上の角に触れているのに、右画像ではこの点から数ピクセルずれていることに気づきます。この食い違いには主に2つの理由があります。</p>
+<ul>
+<li>左右のカメラの内部パラメータが異なります。左カメラの主点は (319.13, 233.86) ですが、右カメラでは (298.85, 245.52) です。左カメラの焦点距離は450.9ですが、右カメラでは452.9です。fx の値は、左右どちらのカメラでも fy と等しくなっています。これらの内部パラメータは Python API を使ってデバイスから読み取ったもので、OAK-D Lite の個体によって異なる場合があります。</li>
+<li>左右のカメラの向きが、上記の簡略化した解法の幾何学とわずかに異なります。</li>
+</ul>
+<h3>平行化した左画像と右画像</h3>
+<p>左右のカメラの内部パラメータと向きの違いを補正するために、画像の平行化（rectification）／後処理を行うことができます。この処理には 3x3 行列変換が含まれます。OAK-D Lite の API では、ステレオノードがこれらの計算を行い、平行化された左画像と右画像を出力します。詳細とソースコードは<a href="https://github.com/luxonis/depthai-experiments/blob/master/gen2-stereo-on-host/main.py">こちら</a>で見ることができます。この特定の実装では、内部パラメータの補正は内部カメラ行列を使って行われ、向きの補正は左右のカメラの回転行列（キャリブレーションパラメータの一部）を使って行われます。平行化された左画像は、左カメラが右カメラと同じ内部パラメータを持つかのように変換されます。したがって、以降のすべての計算では、右カメラの内部パラメータ、つまり焦点距離452.9と主点 (298.85, 245.52) を使います。以下の平行化して並べた画像では、一定の v にある赤い線が、左画像と右画像の両方でノートパソコンの左上の角に触れていることに気づきます。</p>
+<p>平行化した左画像</p>
+<div style="display: flex; flex-direction: column; align-items: center;">
+  <img src="https://huggingface.co/datasets/hf-vision/course-assets/resolve/main/3d_stereo_vision_images/rectified_left_frame.jpg?download=true" alt="平行化した左画像" />
+</div>
+
+<p>平行化した右画像</p>
+<div style="display: flex; flex-direction: column; align-items: center;">
+  <img src="https://huggingface.co/datasets/hf-vision/course-assets/resolve/main/3d_stereo_vision_images/rectified_right_frame.jpg?download=true" alt="平行化した右画像" />
+</div>
+
+<p>平行化して並べた左画像と右画像</p>
+<div style="display: flex; flex-direction: column; align-items: center;">
+  <img src="https://huggingface.co/datasets/hf-vision/course-assets/resolve/main/3d_stereo_vision_images/rectified_stacked_frames.jpg?download=true" alt="平行化して並べた左画像と右画像" />
+</div>
+
+<p>平行化した左画像と右画像を重ねて、違いも見てみましょう。異なる点の v 値は、左右の画像でほぼ一定のままであることが分かります。しかし、u 値は変化し、この u 値の差によって、上記の方程式6に示すように、シーン内の異なる点の深度情報を求めることができます。この u 値の差 \(u_left - u_right\) は視差（disparity）と呼ばれ、カメラに近い点の視差は、遠い点に比べて大きいことが分かります。方程式6に示すように、深度 z と視差 \(u_left - u_right\) は反比例します。</p>
+<p>平行化して重ねた左画像と右画像</p>
+<div style="display: flex; flex-direction: column; align-items: center;">
+  <img src="https://huggingface.co/datasets/hf-vision/course-assets/resolve/main/3d_stereo_vision_images/rectified_overlapping_frames.jpg?download=true" alt="平行化して重ねた左画像と右画像" />
+</div>
+
+<h3>注釈付きの平行化した左画像と右画像</h3>
+<p>シーン内のいくつかの点の3D座標を求めてみましょう。以下の図に示すように、いくつかの点を選び、その (u,v) 値を手動で注釈しました。手動の注釈の代わりに、テンプレートマッチングや SIFT のような特徴検出アルゴリズムなどを使って、左右の画像の対応点を見つけることもできます。</p>
+<p>注釈付きの左画像</p>
+<div style="display: flex; flex-direction: column; align-items: center;">
+  <img src="https://huggingface.co/datasets/hf-vision/course-assets/resolve/main/3d_stereo_vision_images/annotated_left_img.jpg?download=true" alt="注釈付きの左画像" />
+</div>
+
+<p>注釈付きの右画像</p>
+<div style="display: flex; flex-direction: column; align-items: center;">
+  <img src="https://huggingface.co/datasets/hf-vision/course-assets/resolve/main/3d_stereo_vision_images/annotated_right_img.jpg?download=true" alt="注釈付きの右画像" />
+</div>
+
+<h3>3D座標の計算</h3>
+<p>シーン内で12個の点が選ばれ、左画像と右画像におけるそれらの (u,v) 値が下の表にまとめられています。方程式4、5、6を使って、これらの点の (x,y,z) 座標も計算され、下の表にまとめられています。X 座標と Y 座標は左カメラに関するもので、原点は左カメラのピンホール（あるいはレンズの光学中心）にあります。したがって、ピンホールより左側・上側にある3D点は、それぞれ負の X 値と Y 値を持ちます。</p>
+<table>
+<thead>
+<tr>
+<th style="text-align: center;">point</th>
+<th style="text-align: center;">\(u_left\)</th>
+<th style="text-align: center;">\(v_left\)</th>
+<th style="text-align: center;">\(u_right\)</th>
+<th style="text-align: center;">\(v_right\)</th>
+<th style="text-align: center;">depth/z(cm)</th>
+<th style="text-align: center;">\(x_wrt_left\)</th>
+<th style="text-align: center;">\(y_wrt_left\)</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align: center;">pt1</td>
+<td style="text-align: center;">138</td>
+<td style="text-align: center;">219</td>
+<td style="text-align: center;">102</td>
+<td style="text-align: center;">219</td>
+<td style="text-align: center;">94.36</td>
+<td style="text-align: center;">-33.51</td>
+<td style="text-align: center;">-5.53</td>
+</tr>
+<tr>
+<td style="text-align: center;">pt2</td>
+<td style="text-align: center;">264</td>
+<td style="text-align: center;">216</td>
+<td style="text-align: center;">234</td>
+<td style="text-align: center;">217</td>
+<td style="text-align: center;">113.23</td>
+<td style="text-align: center;">-8.72</td>
+<td style="text-align: center;">-7.38</td>
+</tr>
+<tr>
+<td style="text-align: center;">pt3</td>
+<td style="text-align: center;">137</td>
+<td style="text-align: center;">320</td>
+<td style="text-align: center;">101</td>
+<td style="text-align: center;">321</td>
+<td style="text-align: center;">94.36</td>
+<td style="text-align: center;">-33.72</td>
+<td style="text-align: center;">15.52</td>
+</tr>
+<tr>
+<td style="text-align: center;">pt4</td>
+<td style="text-align: center;">263</td>
+<td style="text-align: center;">303</td>
+<td style="text-align: center;">233</td>
+<td style="text-align: center;">302</td>
+<td style="text-align: center;">113.23</td>
+<td style="text-align: center;">-8.97</td>
+<td style="text-align: center;">14.37</td>
+</tr>
+<tr>
+<td style="text-align: center;">pt5</td>
+<td style="text-align: center;">307</td>
+<td style="text-align: center;">211</td>
+<td style="text-align: center;">280</td>
+<td style="text-align: center;">211</td>
+<td style="text-align: center;">125.81</td>
+<td style="text-align: center;">2.26</td>
+<td style="text-align: center;">-9.59</td>
+</tr>
+<tr>
+<td style="text-align: center;">pt6</td>
+<td style="text-align: center;">367</td>
+<td style="text-align: center;">212</td>
+<td style="text-align: center;">339</td>
+<td style="text-align: center;">212</td>
+<td style="text-align: center;">121.32</td>
+<td style="text-align: center;">18.25</td>
+<td style="text-align: center;">-8.98</td>
+</tr>
+<tr>
+<td style="text-align: center;">pt7</td>
+<td style="text-align: center;">305</td>
+<td style="text-align: center;">298</td>
+<td style="text-align: center;">278</td>
+<td style="text-align: center;">298</td>
+<td style="text-align: center;">125.81</td>
+<td style="text-align: center;">1.71</td>
+<td style="text-align: center;">14.58</td>
+</tr>
+<tr>
+<td style="text-align: center;">pt8</td>
+<td style="text-align: center;">365</td>
+<td style="text-align: center;">299</td>
+<td style="text-align: center;">338</td>
+<td style="text-align: center;">299</td>
+<td style="text-align: center;">125.81</td>
+<td style="text-align: center;">18.37</td>
+<td style="text-align: center;">14.86</td>
+</tr>
+<tr>
+<td style="text-align: center;">pt9</td>
+<td style="text-align: center;">466</td>
+<td style="text-align: center;">225</td>
+<td style="text-align: center;">415</td>
+<td style="text-align: center;">225</td>
+<td style="text-align: center;">66.61</td>
+<td style="text-align: center;">24.58</td>
+<td style="text-align: center;">-3.02</td>
+</tr>
+<tr>
+<td style="text-align: center;">pt10</td>
+<td style="text-align: center;">581</td>
+<td style="text-align: center;">225</td>
+<td style="text-align: center;">530</td>
+<td style="text-align: center;">226</td>
+<td style="text-align: center;">66.61</td>
+<td style="text-align: center;">41.49</td>
+<td style="text-align: center;">-3.02</td>
+</tr>
+<tr>
+<td style="text-align: center;">pt11</td>
+<td style="text-align: center;">464</td>
+<td style="text-align: center;">387</td>
+<td style="text-align: center;">413</td>
+<td style="text-align: center;">388</td>
+<td style="text-align: center;">66.61</td>
+<td style="text-align: center;">24.29</td>
+<td style="text-align: center;">20.81</td>
+</tr>
+<tr>
+<td style="text-align: center;">pt12</td>
+<td style="text-align: center;">579</td>
+<td style="text-align: center;">388</td>
+<td style="text-align: center;">528</td>
+<td style="text-align: center;">390</td>
+<td style="text-align: center;">66.61</td>
+<td style="text-align: center;">41.2</td>
+<td style="text-align: center;">20.95</td>
+</tr>
+</tbody>
+</table>
+<h3>寸法の計算と精度</h3>
+<p>異なる点の (x,y,z) 値を使って、点同士の3D距離も計算できます。公式は \(distance = \sqrt{(x_2 - x_1)^2 + (y_2 - y_1)^2 + (z_2 - z_1)^2}\) です。いくつかの点の間で計算した距離を、実際に測定した値とともに下の表にまとめました。誤差率 \(( \frac{(actual-measured) * 100}{actual}\)) も計算して表にまとめています。計算値と実測値が非常によく一致し、誤差率は1.2%以下であることに気づきます。</p>
+<table>
+<thead>
+<tr>
+<th style="text-align: center;">dimension</th>
+<th style="text-align: center;">calculated(cm)</th>
+<th style="text-align: center;">actual(cm)</th>
+<th style="text-align: center;">% error</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align: center;">d1(1-2)</td>
+<td style="text-align: center;">31.2</td>
+<td style="text-align: center;">31.2</td>
+<td style="text-align: center;">0</td>
+</tr>
+<tr>
+<td style="text-align: center;">d2(1-3)</td>
+<td style="text-align: center;">21.1</td>
+<td style="text-align: center;">21.3</td>
+<td style="text-align: center;">0.94</td>
+</tr>
+<tr>
+<td style="text-align: center;">d3(5-6)</td>
+<td style="text-align: center;">16.6</td>
+<td style="text-align: center;">16.7</td>
+<td style="text-align: center;">0.6</td>
+</tr>
+<tr>
+<td style="text-align: center;">d4(5-7)</td>
+<td style="text-align: center;">24.2</td>
+<td style="text-align: center;">24</td>
+<td style="text-align: center;">0.83</td>
+</tr>
+<tr>
+<td style="text-align: center;">d5(9-10)</td>
+<td style="text-align: center;">16.9</td>
+<td style="text-align: center;">16.7</td>
+<td style="text-align: center;">1.2</td>
+</tr>
+<tr>
+<td style="text-align: center;">d6(9-11)</td>
+<td style="text-align: center;">23.8</td>
+<td style="text-align: center;">24</td>
+<td style="text-align: center;">0.83</td>
+</tr>
+</tbody>
+</table>
+<p>計算した寸法の結果
+<img alt="計算した寸法の結果" src="https://huggingface.co/datasets/hf-vision/course-assets/resolve/main/3d_stereo_vision_images/calculated_dim_results.png?download=true" /></p>
+<h2>まとめ</h2>
+<ol>
+<li>まとめとして、ステレオビジョンの仕組み、異なる視点から撮影された点 P の2枚の画像から実世界の座標 (x, y, z) を求める方程式、そして理論値と実験結果の比較を学びました。</li>
+<li>カメラの内部パラメータである焦点距離と主点は、カメラの位置と向きの情報とともに既知であると仮定しました。これはキャリブレーション済みステレオビジョン（calibrated stereo vision）とも呼ばれます。</li>
+<li>興味深いことに、カメラの位置と向きが未知でも、点 P の3D座標を求めることは可能です。実際、カメラ同士の相対的な位置と向きは、画像自体から求めることができます。これは未キャリブレーションのステレオビジョン（uncalibrated stereo vision）と呼ばれます！</li>
+</ol>
+<h2>参考文献</h2>
+<ol>
+<li>3D Reconstruction - Multiple Viewpoints <a href="https://www.coursera.org/learn/3d-reconstruction-multiple-viewpoints">Coursera</a></li>
+<li>Stereo Vision and Depth Estimation using OpenCV AI Kit <a href="https://learnopencv.com/stereo-vision-and-depth-estimation-using-opencv-ai-kit/">LearnOpenCV</a></li>
+<li>OAK-D Lite <a href="https://docs.luxonis.com/projects/hardware/en/latest/pages/DM9095/">Luxonics</a></li>
+</ol>
+</article>
+<nav class="page-nav"><a class="nav-link prev" href="3d-vision/nvs.html">← 前へ: 新規視点合成（Novel View Synthesis）</a><a class="nav-link toc-link" href="../index.html">目次へ</a><a class="nav-link next" href="nerf.html">次へ →: Neural Radiance Fields（NeRF）</a></nav>
+</main>
+<footer class="site-footer">
+  <p>原典: Hugging Face huggingface/computer-vision-course（<a href="https://github.com/huggingface/computer-vision-course">https://github.com/huggingface/computer-vision-course</a>）</p>
+  <p>日本語版の翻訳・公開: 霞ヶ関京 / 連絡先: GitHub <a href="https://github.com/yanikasumin">@yanikasumin</a> / YouTube <a href="https://www.youtube.com/@KASUMI_MOF">@KASUMI_MOF</a></p>
+  <p class="demo-note">このサイトはデモ版です。内容は順次更新されます。</p>
+</footer>
+<script src="../../site.js"></script>
+</body>
+</html>

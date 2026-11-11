@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>マルチモーダル物体検出（OWL-ViT） | Hugging Face コース日本語版（デモ版）</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Shippori+Mincho:wght@500;700&family=Zen+Kaku+Gothic+New:wght@400;500;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../../../../style.css">
+<script>
+window.MathJax = { tex: { inlineMath: [['$', '$'], ['\\(', '\\)']], displayMath: [['$$', '$$'], ['\\[', '\\]']] }, options: { skipHtmlTags: ['script','noscript','style','textarea','pre','code'] } };
+</script>
+<script async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml.js"></script>
+</head>
+<body>
+<header class="site-header">
+  <div class="header-inner">
+    <a class="site-title" href="../../../../index.html">Hugging Face コース日本語版</a>
+    <span class="demo-badge">デモ版</span>
+  </div>
+</header>
+<main class="container">
+<p class="course-crumb"><a href="../../../index.html">Community CV コース</a>
+<span class="badge badge-qa-wip">翻訳済み・QA進行中（未検証の部分を含みます）</span></p>
+<nav class="page-nav"><a class="nav-link prev" href="blip.html">← 前へ: マルチモーダルテキスト生成（BLIP）</a><a class="nav-link toc-link" href="../../../index.html">目次へ</a><a class="nav-link next" href="../transfer_learning.html">次へ →: マルチモーダルモデルの転移学習</a></nav>
+<article class="content">
+<h1>マルチモーダル物体検出（OWL-ViT）</h1>
+<h3>はじめに</h3>
+<p>物体検出はコンピュータービジョンの重要なタスクであり、YOLO のようなモデル（<a href="https://arxiv.org/abs/1506.02640">原論文</a>、<a href="https://github.com/ultralytics/ultralytics">最新のコード版</a>）によって大きな進歩を遂げてきました。しかし、YOLO のような従来のモデルには、学習データセットの外にある物体を検出するうえで限界があります。これに対処するため、AI コミュニティは、より広い範囲の物体を特定できるモデルの開発へと移行し、物体検出のための CLIP のようなモデルの創出につながりました。</p>
+<h3>OWL-ViT: 強化点と能力</h3>
+<p>OWL-ViT は、オープンボキャブラリ物体検出における飛躍的な進歩を表しています。CLIP と同様の学習段階から始まり、対照損失を使った視覚エンコーダと言語エンコーダに焦点を当てます。この基礎段階により、モデルは視覚データとテキストデータの共有表現空間を学習できます。</p>
+<h4>物体検出のためのファインチューニング</h4>
+<p>OWL-ViT の革新は、物体検出のためのファインチューニング段階で現れます。ここでは、CLIP で使われるトークンのプーリングと最終投影層の代わりに、OWL-VIT は各出力トークンの線形投影を用いて、物体ごとの画像埋め込みを取得します。これらの埋め込みは分類に使われ、ボックス座標はトークン表現から小さな MLP を通じて導かれます。このアプローチにより、OWL-ViT は画像内の物体とその空間位置を検出でき、従来の物体検出モデルに対する大きな進歩となっています。</p>
+<p>以下は、OWL-ViT の事前学習とファインチューニングの段階の図です:</p>
+<p><img alt="OWL-ViT の事前学習とファインチューニング" src="https://huggingface.co/datasets/huggingface/documentation-images/resolve/main/transformers/model_doc/owlvit_architecture.jpg" /></p>
+<h4>オープンボキャブラリ検出</h4>
+<p>ファインチューニング後、OWL-ViT はオープンボキャブラリ物体検出に優れた性能を示します。視覚エンコーダとテキストエンコーダの共有埋め込み空間のおかげで、学習データセットに明示的に存在しない物体も特定できます。この能力により、物体検出に画像とテキストクエリの両方を使うことが可能になり、多用途性が高まります。</p>
+<h4>使用例</h4>
+<p>実際の応用では、通常、テキストをクエリとして使い、画像を文脈として使います。次の Python の例は、OWL-ViT で推論を実行するために transformers ライブラリを使う方法を示しています。</p>
+<div class="codehilite"><pre><span></span><code><span class="kn">import</span><span class="w"> </span><span class="nn">requests</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">PIL</span><span class="w"> </span><span class="kn">import</span> <span class="n">Image</span><span class="p">,</span> <span class="n">ImageDraw</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">torch</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">transformers</span><span class="w"> </span><span class="kn">import</span> <span class="n">OwlViTProcessor</span><span class="p">,</span> <span class="n">OwlViTForObjectDetection</span>
+
+<span class="n">processor</span> <span class="o">=</span> <span class="n">OwlViTProcessor</span><span class="o">.</span><span class="n">from_pretrained</span><span class="p">(</span><span class="s2">"google/owlvit-base-patch32"</span><span class="p">)</span>
+<span class="n">model</span> <span class="o">=</span> <span class="n">OwlViTForObjectDetection</span><span class="o">.</span><span class="n">from_pretrained</span><span class="p">(</span><span class="s2">"google/owlvit-base-patch32"</span><span class="p">)</span>
+
+<span class="n">url</span> <span class="o">=</span> <span class="s2">"http://images.cocodataset.org/val2017/000000039769.jpg"</span>
+<span class="n">image</span> <span class="o">=</span> <span class="n">Image</span><span class="o">.</span><span class="n">open</span><span class="p">(</span><span class="n">requests</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">url</span><span class="p">,</span> <span class="n">stream</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span><span class="o">.</span><span class="n">raw</span><span class="p">)</span>
+<span class="n">texts</span> <span class="o">=</span> <span class="p">[[</span><span class="s2">"a photo of a cat"</span><span class="p">,</span> <span class="s2">"a photo of a dog"</span><span class="p">,</span> <span class="s2">"remote control"</span><span class="p">,</span> <span class="s2">"cat tail"</span><span class="p">]]</span>
+<span class="n">inputs</span> <span class="o">=</span> <span class="n">processor</span><span class="p">(</span><span class="n">text</span><span class="o">=</span><span class="n">texts</span><span class="p">,</span> <span class="n">images</span><span class="o">=</span><span class="n">image</span><span class="p">,</span> <span class="n">return_tensors</span><span class="o">=</span><span class="s2">"pt"</span><span class="p">)</span>
+<span class="n">outputs</span> <span class="o">=</span> <span class="n">model</span><span class="p">(</span><span class="o">**</span><span class="n">inputs</span><span class="p">)</span>
+
+<span class="n">target_sizes</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">([</span><span class="n">image</span><span class="o">.</span><span class="n">size</span><span class="p">[::</span><span class="o">-</span><span class="mi">1</span><span class="p">]])</span>
+<span class="n">results</span> <span class="o">=</span> <span class="n">processor</span><span class="o">.</span><span class="n">post_process_object_detection</span><span class="p">(</span>
+    <span class="n">outputs</span><span class="o">=</span><span class="n">outputs</span><span class="p">,</span> <span class="n">target_sizes</span><span class="o">=</span><span class="n">target_sizes</span><span class="p">,</span> <span class="n">threshold</span><span class="o">=</span><span class="mf">0.1</span>
+<span class="p">)</span>
+<span class="n">i</span> <span class="o">=</span> <span class="mi">0</span>  <span class="c1"># 対応するテキストクエリについて、最初の画像の予測を取得する</span>
+<span class="n">text</span> <span class="o">=</span> <span class="n">texts</span><span class="p">[</span><span class="n">i</span><span class="p">]</span>
+<span class="n">boxes</span><span class="p">,</span> <span class="n">scores</span><span class="p">,</span> <span class="n">labels</span> <span class="o">=</span> <span class="n">results</span><span class="p">[</span><span class="n">i</span><span class="p">][</span><span class="s2">"boxes"</span><span class="p">],</span> <span class="n">results</span><span class="p">[</span><span class="n">i</span><span class="p">][</span><span class="s2">"scores"</span><span class="p">],</span> <span class="n">results</span><span class="p">[</span><span class="n">i</span><span class="p">][</span><span class="s2">"labels"</span><span class="p">]</span>
+
+<span class="c1"># 描画オブジェクトを作成する</span>
+<span class="n">draw</span> <span class="o">=</span> <span class="n">ImageDraw</span><span class="o">.</span><span class="n">Draw</span><span class="p">(</span><span class="n">image</span><span class="p">)</span>
+
+<span class="c1"># 各バウンディングボックスを描画する</span>
+<span class="k">for</span> <span class="n">box</span><span class="p">,</span> <span class="n">score</span><span class="p">,</span> <span class="n">label</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="n">boxes</span><span class="p">,</span> <span class="n">scores</span><span class="p">,</span> <span class="n">labels</span><span class="p">):</span>
+    <span class="n">box</span> <span class="o">=</span> <span class="p">[</span><span class="nb">round</span><span class="p">(</span><span class="n">i</span><span class="p">,</span> <span class="mi">2</span><span class="p">)</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">box</span><span class="o">.</span><span class="n">tolist</span><span class="p">()]</span>
+    <span class="nb">print</span><span class="p">(</span>
+        <span class="sa">f</span><span class="s2">"Detected </span><span class="si">{</span><span class="n">text</span><span class="p">[</span><span class="n">label</span><span class="p">]</span><span class="si">}</span><span class="s2"> with confidence </span><span class="si">{</span><span class="nb">round</span><span class="p">(</span><span class="n">score</span><span class="o">.</span><span class="n">item</span><span class="p">(),</span><span class="w"> </span><span class="mi">3</span><span class="p">)</span><span class="si">}</span><span class="s2"> at location </span><span class="si">{</span><span class="n">box</span><span class="si">}</span><span class="s2">"</span>
+    <span class="p">)</span>
+    <span class="c1"># 画像にバウンディングボックスを描画する</span>
+    <span class="n">draw</span><span class="o">.</span><span class="n">rectangle</span><span class="p">(</span><span class="n">box</span><span class="p">,</span> <span class="n">outline</span><span class="o">=</span><span class="s2">"red"</span><span class="p">)</span>
+
+<span class="c1"># 画像を表示する</span>
+<span class="n">image</span>
+</code></pre></div>
+
+<p>画像は次のようになるはずです:
+<img alt="OWL-ViT の例" src="https://huggingface.co/datasets/hf-vision/course-assets/resolve/main/OWL_ViT_example.jpg" />
+この例は OWL-ViT の単純なユースケースを示しています。データセットにありそうな猫のような物体と、どの物体検出データセットにもおそらく存在しない猫のしっぽのような、より抽象的な物体を指定しています。これは、オープンボキャブラリ物体検出における OWL-ViT の強力さを示しています。</p>
+<p>自由にコードを使ってより複雑な例を試したり、この Gradio アプリを使ったりしてみてください:</p>
+<p><iframe
+    src="https://johko-OWL-ViT.hf.space"
+    frameborder="0"
+    width="850"
+    height="450">
+</iframe>
+</p>
+<h3>まとめ</h3>
+<p>物体検出に対する OWL-ViT のアプローチは、AI モデルが視覚世界を理解し、やり取りする方法における注目すべき転換を表しています。言語理解と視覚知覚を統合することで、物体検出の境界を押し広げ、より広い範囲の物体を特定できる、より正確で多用途なモデルを可能にします。モデル能力のこの進化は、特に動的で実世界の環境において、視覚シーンへの微妙な理解を必要とする応用にとって重要です。</p>
+<p>より詳しい情報と技術的な詳細は、<a href="https://arxiv.org/abs/2205.06230">OWL-VIT 論文</a> を参照してください。<a href="https://huggingface.co/docs/transformers/model_doc/owlv2">OWL-ViT 2 モデル</a> についての情報も Hugging Face ドキュメントで確認できます。</p>
+</article>
+<nav class="page-nav"><a class="nav-link prev" href="blip.html">← 前へ: マルチモーダルテキスト生成（BLIP）</a><a class="nav-link toc-link" href="../../../index.html">目次へ</a><a class="nav-link next" href="../transfer_learning.html">次へ →: マルチモーダルモデルの転移学習</a></nav>
+</main>
+<footer class="site-footer">
+  <p>原典: Hugging Face huggingface/computer-vision-course（<a href="https://github.com/huggingface/computer-vision-course">https://github.com/huggingface/computer-vision-course</a>）</p>
+  <p>日本語版の翻訳・公開: 霞ヶ関京 / 連絡先: GitHub <a href="https://github.com/yanikasumin">@yanikasumin</a> / YouTube <a href="https://www.youtube.com/@KASUMI_MOF">@KASUMI_MOF</a></p>
+  <p class="demo-note">このサイトはデモ版です。内容は順次更新されます。</p>
+</footer>
+<script src="../../../../site.js"></script>
+</body>
+</html>

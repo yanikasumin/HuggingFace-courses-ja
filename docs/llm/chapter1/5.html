@@ -1,0 +1,251 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>🤗 Transformers がタスクを解く仕組み | Hugging Face コース日本語版（デモ版）</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Shippori+Mincho:wght@500;700&family=Zen+Kaku+Gothic+New:wght@400;500;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../../style.css">
+<script>
+window.MathJax = { tex: { inlineMath: [['$', '$'], ['\\(', '\\)']], displayMath: [['$$', '$$'], ['\\[', '\\]']] }, options: { skipHtmlTags: ['script','noscript','style','textarea','pre','code'] } };
+</script>
+<script async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml.js"></script>
+</head>
+<body>
+<header class="site-header">
+  <div class="header-inner">
+    <a class="site-title" href="../../index.html">Hugging Face コース日本語版</a>
+    <span class="demo-badge">デモ版</span>
+  </div>
+</header>
+<main class="container">
+<p class="course-crumb"><a href="../index.html">LLM コース</a>
+<span class="badge badge-qa-pass">翻訳QA 最終合格</span></p>
+<nav class="page-nav"><a class="nav-link prev" href="4.html">← 前へ: Transformer はどのように動作するのか？</a><a class="nav-link toc-link" href="../index.html">目次へ</a><a class="nav-link next" href="6.html">次へ →: Transformer のアーキテクチャ</a></nav>
+<article class="content">
+<h1>🤗 Transformers がタスクを解く仕組み</h1>
+<div class="youtube-embed"><iframe src="https://www.youtube-nocookie.com/embed/zsfR7eY9Uho" title="YouTube video" loading="lazy" allowfullscreen referrerpolicy="strict-origin-when-cross-origin"></iframe></div>
+<p><a href="3.html">Transformers で何ができるのか</a>では、自然言語処理（NLP）、音声、コンピュータービジョンのタスクと、その重要なアプリケーションについて学びました。このページでは、モデルがこれらのタスクをどのように解いているのか、その裏側の仕組みを詳しく見ていきます。タスクを解く方法はさまざまで、モデルによっては特定の技法を実装していたり、まったく新しい角度からタスクにアプローチしていたりします。それでも、Transformer モデルについては大まかな考え方は共通しています。その柔軟なアーキテクチャのおかげで、ほとんどのモデルはエンコーダ、デコーダ、またはエンコーダ・デコーダのいずれかの構成のバリエーションになっています。</p>
+<div class="callout callout-tip">
+<p class="callout-title">💡 ヒント</p>
+<p>個別のアーキテクチャのバリエーションに入る前に、ほとんどのタスクが似たパターンをたどることを押さえておくと理解が進みます。つまり、入力データがモデルで処理され、その出力が特定のタスクのために解釈される、という流れです。違いは、データをどう準備するか、モデルのアーキテクチャにどのバリエーションを使うか、出力をどう処理するかにあります。</p>
+</div>
+<p>タスクがどう解かれるのかを説明するため、モデルが有用な予測を出力するまでに、内部で何が起きているのかを順に見ていきます。取り上げるモデルとタスクは次のとおりです。</p>
+<ul>
+<li><a href="https://huggingface.co/docs/transformers/model_doc/wav2vec2">Wav2Vec2</a> — 音声分類と自動音声認識（ASR）</li>
+<li><a href="https://huggingface.co/docs/transformers/model_doc/vit">Vision Transformer (ViT)</a> と <a href="https://huggingface.co/docs/transformers/model_doc/convnext">ConvNeXT</a> — 画像分類</li>
+<li><a href="https://huggingface.co/docs/transformers/model_doc/detr">DETR</a> — 物体検出</li>
+<li><a href="https://huggingface.co/docs/transformers/model_doc/mask2former">Mask2Former</a> — 画像セグメンテーション</li>
+<li><a href="https://huggingface.co/docs/transformers/model_doc/glpn">GLPN</a> — 深度推定</li>
+<li><a href="https://huggingface.co/docs/transformers/model_doc/bert">BERT</a> — エンコーダを使う、テキスト分類・トークン分類・質問応答などの NLP タスク</li>
+<li><a href="https://huggingface.co/docs/transformers/model_doc/gpt2">GPT2</a> — デコーダを使う、テキスト生成などの NLP タスク</li>
+<li><a href="https://huggingface.co/docs/transformers/model_doc/bart">BART</a> — エンコーダ・デコーダを使う、要約や翻訳などの NLP タスク</li>
+</ul>
+<div class="callout callout-tip">
+<p class="callout-title">💡 ヒント</p>
+<p>先に進む前に、オリジナルの Transformer アーキテクチャについての基本的な知識があると役立ちます。エンコーダ、デコーダ、アテンションの仕組みを知っていれば、さまざまな Transformer モデルの動作を理解しやすくなります。詳しくは<a href="https://huggingface.co/course/chapter1/4?fw=pt">前のセクション</a>をぜひ確認してください！</p>
+</div>
+<h2>言語のための Transformer モデル</h2>
+<p>言語モデルは現代の NLP の中心にあります。言語モデルは、テキストの中の単語やトークンの統計的なパターンと関係性を学習することで、人間の言語を理解し、生成できるように設計されています。</p>
+<p>Transformer はもともと機械翻訳のために設計されましたが、それ以降、あらゆる AI タスクを解くための標準的なアーキテクチャになりました。タスクによっては Transformer のエンコーダ構造が向いているものもあれば、デコーダの方が適しているものもあります。また、エンコーダとデコーダの両方を使うタスクもあります。</p>
+<h3>言語モデルの仕組み</h3>
+<p>言語モデルは、周囲の単語から得られる文脈をもとに、ある単語が現れる確率を予測するように学習します。これにより、ほかのタスクにも応用できる、言語についての基礎的な理解が得られます。</p>
+<p>Transformer モデルの訓練方法には、主に2つのアプローチがあります。</p>
+<ol>
+<li>
+<p><strong>マスク言語モデリング（MLM）</strong>: BERT のようなエンコーダモデルで使われるアプローチで、入力の一部のトークンをランダムにマスクし、周囲の文脈から元のトークンを予測するようモデルを訓練します。これにより、モデルは双方向の文脈（マスクされた単語の前と後の両方を見ること）を学習できます。</p>
+</li>
+<li>
+<p><strong>因果言語モデリング（CLM）</strong>: GPT のようなデコーダモデルで使われるアプローチで、シーケンス内のそれまでのすべてのトークンに基づいて、次のトークンを予測します。モデルは次のトークンの予測に、左側（前のトークン）の文脈だけを使えます。</p>
+</li>
+</ol>
+<h3>言語モデルの種類</h3>
+<p>Transformers ライブラリでは、言語モデルは一般に次の3つのアーキテクチャに分類されます。</p>
+<ol>
+<li>
+<p><strong>エンコーダのみのモデル</strong>（BERT など）: これらのモデルは双方向のアプローチを使い、両方向から文脈を理解します。分類、固有表現認識、質問応答など、テキストの深い理解が必要なタスクに最適です。</p>
+</li>
+<li>
+<p><strong>デコーダのみのモデル</strong>（GPT、Llama など）: これらのモデルはテキストを左から右へ処理し、テキスト生成タスクが特に得意です。プロンプトに基づいて、文の続きを書いたり、エッセイを書いたり、コードを生成したりできます。</p>
+</li>
+<li>
+<p><strong>エンコーダ・デコーダモデル</strong>（T5、BART など）: これらのモデルは両方のアプローチを組み合わせたもので、エンコーダで入力を理解し、デコーダで出力を生成します。翻訳、要約、質問応答のようなシーケンス・ツー・シーケンスのタスクが得意です。</p>
+</li>
+</ol>
+<p><img alt="言語モデルに用いられる Transformer の主なアーキテクチャ" src="https://huggingface.co/datasets/huggingface-course/documentation-images/resolve/main/en/chapter1/transformers_architecture.png" /></p>
+<p>前のセクションで触れたように、言語モデルは通常、大量のテキストデータで自己教師あり学習（人手のアノテーションなし）により事前学習され、その後、特定のタスク向けにファインチューニングされます。転移学習として知られるこのアプローチにより、モデルは比較的少量のタスク固有データで、さまざまな NLP タスクに適応できます。</p>
+<p>以降のセクションでは、具体的なモデルのアーキテクチャと、それらが音声、ビジョン、テキストの各領域のさまざまなタスクにどう適用されるのかを見ていきます。</p>
+<div class="callout callout-tip">
+<p class="callout-title">💡 ヒント</p>
+<p>Transformer アーキテクチャのどの部分（エンコーダ、デコーダ、またはその両方）が特定の NLP タスクに適しているかを理解することが、適切なモデル選びの鍵になります。一般に、双方向の文脈が必要なタスクにはエンコーダ、テキストを生成するタスクにはデコーダ、あるシーケンスを別のシーケンスに変換するタスクにはエンコーダ・デコーダを使います。</p>
+</div>
+<h3>テキスト生成</h3>
+<p>テキスト生成とは、プロンプトや入力に基づいて、一貫性があり文脈に沿ったテキストを作り出すことです。</p>
+<p><a href="https://huggingface.co/docs/transformers/model_doc/gpt2">GPT-2</a> は、大量のテキストで事前学習されたデコーダのみのモデルです。プロンプトを与えると、説得力のある（ただし常に正しいとは限りません！）テキストを生成でき、明示的に訓練されていなくても質問応答など他の NLP タスクもこなせます。</p>
+<div class="flex justify-center">
+    <img src="https://huggingface.co/datasets/huggingface/documentation-images/resolve/main/gpt2_architecture.png"/>
+</div>
+
+<ol>
+<li>
+<p>GPT-2 は<a href="https://huggingface.co/docs/transformers/tokenizer_summary#bytepair-encoding-bpe">バイトペアエンコーディング（BPE）</a>を使って単語をトークン化し、トークン埋め込みを生成します。トークン埋め込みには、各トークンのシーケンス内の位置を示す位置エンコーディングが加えられます。入力埋め込みは複数のデコーダブロックを通り、最終隠れ状態を出力します。各デコーダブロックの中で、GPT-2 は <em>マスク付きセルフアテンション</em> 層を使います。これは、GPT-2 が未来のトークンに注意を向けられないことを意味します。注意を向けられるのは左側のトークンだけです。BERT の [<code>mask</code>] トークンとは仕組みが異なります。マスク付きセルフアテンションでは、アテンションマスクによって未来のトークンに対するスコアを <code>0</code> に設定します。</p>
+</li>
+<li>
+<p>デコーダの出力は言語モデリングヘッドに渡され、線形変換によって隠れ状態がロジットに変換されます。ラベルはシーケンス内の次のトークンで、ロジットを右に1つずらすことで作られます。ずらしたロジットとラベルの間でクロスエントロピー損失を計算し、次に来る可能性が最も高いトークンを出力します。</p>
+</li>
+</ol>
+<p>GPT-2 の事前学習の目的は、完全に<a href="https://huggingface.co/docs/transformers/glossary#causal-language-modeling">因果言語モデリング</a>に基づいており、シーケンス内の次の単語を予測します。そのため、GPT-2 はテキスト生成を伴うタスクが特に得意です。</p>
+<p>テキスト生成を試してみたくなりましたか？DistilGPT-2 をファインチューニングして推論に使う方法は、<a href="https://huggingface.co/docs/transformers/tasks/language_modeling#causal-language-modeling">因果言語モデリングのガイド</a>で詳しく解説しています！</p>
+<div class="callout callout-tip">
+<p class="callout-title">💡 ヒント</p>
+<p>テキスト生成について詳しくは、<a href="https://huggingface.co/docs/transformers/generation_strategies#generation-strategies">テキスト生成戦略</a>のガイドを確認してください！</p>
+</div>
+<h3>テキスト分類</h3>
+<p>テキスト分類とは、感情分析、トピック分類、スパム検出のように、テキストドキュメントにあらかじめ定義されたカテゴリを割り当てることです。</p>
+<p><a href="https://huggingface.co/docs/transformers/model_doc/bert">BERT</a> はエンコーダのみのモデルで、両側の単語に注意を向けることでテキストのより豊かな表現を学習する、深い双方向性を効果的に実装した最初のモデルです。</p>
+<ol>
+<li>
+<p>BERT は <a href="https://huggingface.co/docs/transformers/tokenizer_summary#wordpiece">WordPiece</a> トークン化を使って、テキストのトークン埋め込みを生成します。1つの文と文のペアを区別するため、特別な <code>[SEP]</code> トークンが追加されます。また、テキストの各シーケンスの先頭には、特別な <code>[CLS]</code> トークンが追加されます。分類タスクでは、<code>[CLS]</code> トークンを含む最終出力が分類ヘッドへの入力として使われます。さらに BERT は、文のペアの中でトークンが1番目の文と2番目の文のどちらに属するかを示すセグメント埋め込みも追加します。</p>
+</li>
+<li>
+<p>BERT は、マスク言語モデリングと次文予測という2つの目的で事前学習されます。マスク言語モデリングでは、入力トークンの一定割合がランダムにマスクされ、モデルはそれらを予測しなければなりません。これにより、双方向性に伴う問題、つまりモデルがすべての単語を見て次の単語を「予測」するという、正解をそのまま参照できてしまう問題が解消されます。予測対象のマスクトークンの最終隠れ状態は、語彙に対するソフトマックスを備えたフィードフォワードネットワークに渡され、マスクされた単語を予測します。</p>
+<p>2つ目の事前学習の目的は次文予測です。モデルは、文 B が文 A の次に来るかどうかを予測しなければなりません。半分の場合、文 B は実際に次の文であり、残り半分の場合、文 B はランダムな文です。次の文かどうかの予測は、2つのクラス（<code>IsNext</code> と <code>NotNext</code>）に対するソフトマックスを備えたフィードフォワードネットワークに渡されます。</p>
+</li>
+<li>
+<p>入力埋め込みは複数のエンコーダ層を通り、最終隠れ状態を出力します。</p>
+</li>
+</ol>
+<p>事前学習済みモデルをテキスト分類に使うには、ベースの BERT モデルの上にシーケンス分類ヘッドを追加します。シーケンス分類ヘッドは線形層で、最終隠れ状態を受け取り、線形変換によってロジットに変換します。ロジットとターゲットの間でクロスエントロピー損失を計算し、最も可能性の高いラベルを求めます。</p>
+<p>テキスト分類を試してみたくなりましたか？DistilBERT をファインチューニングして推論に使う方法は、<a href="https://huggingface.co/docs/transformers/tasks/sequence_classification">テキスト分類ガイド</a>で詳しく解説しています！</p>
+<h3>トークン分類</h3>
+<p>トークン分類とは、固有表現認識や品詞タグ付けのように、シーケンス内の各トークンにラベルを割り当てることです。</p>
+<p>固有表現認識（NER）のようなトークン分類タスクに BERT を使うには、ベースの BERT モデルの上にトークン分類ヘッドを追加します。トークン分類ヘッドは線形層で、最終隠れ状態を受け取り、線形変換によってロジットに変換します。ロジットと各トークンの間でクロスエントロピー損失を計算し、最も可能性の高いラベルを求めます。</p>
+<p>トークン分類を試してみたくなりましたか？DistilBERT をファインチューニングして推論に使う方法は、<a href="https://huggingface.co/docs/transformers/tasks/token_classification">トークン分類ガイド</a>で詳しく解説しています！</p>
+<h3>質問応答</h3>
+<p>質問応答とは、与えられた文脈や文章の中から、質問への答えを見つけ出すことです。</p>
+<p>質問応答に BERT を使うには、ベースの BERT モデルの上にスパン分類ヘッドを追加します。この線形層は最終隠れ状態を受け取り、線形変換によって、答えに対応する <code>span</code> の開始と終了のロジットを計算します。ロジットとラベルの位置の間でクロスエントロピー損失を計算し、答えに対応する可能性が最も高いテキストのスパン（範囲）を求めます。</p>
+<p>質問応答を試してみたくなりましたか？DistilBERT をファインチューニングして推論に使う方法は、<a href="https://huggingface.co/docs/transformers/tasks/question_answering">質問応答ガイド</a>で詳しく解説しています！</p>
+<div class="callout callout-tip">
+<p class="callout-title">💡 ヒント</p>
+<p>💡 一度事前学習してしまえば、BERT をさまざまなタスクに使うのがいかに簡単か、気づいたでしょうか。事前学習済みモデルにタスク固有のヘッドを追加するだけで、隠れ状態を望ましい出力に変換できます！</p>
+</div>
+<h3>要約</h3>
+<p>要約とは、重要な情報と意味を保ちながら、長いテキストを短い文章にまとめることです。</p>
+<p><a href="https://huggingface.co/docs/transformers/model_doc/bart">BART</a> や <a href="model_doc/t5">T5</a> のようなエンコーダ・デコーダモデルは、入力された文章から要約文を生成する、シーケンス・ツー・シーケンス型のタスクに適しています。このセクションでは BART の仕組みを説明し、最後に T5 のファインチューニングに挑戦してもらいます。</p>
+<div class="flex justify-center">
+    <img src="https://huggingface.co/datasets/huggingface/documentation-images/resolve/main/bart_architecture.png"/>
+</div>
+
+<ol>
+<li>
+<p>BART のエンコーダのアーキテクチャは BERT と非常によく似ており、テキストのトークン埋め込みと位置埋め込みを受け取ります。BART は、入力テキストの一部をマスクするなどして意図的に変形し、元のテキストをデコーダで復元するように事前学習されるモデルです。入力の変形方法が決まっている他のエンコーダと違い、BART はさまざまな種類の変形を適用できます。中でも <em>text infilling</em>（テキスト補完）という変形方法が最もうまく機能します。text infilling では、複数のテキストスパンが <strong>1つの</strong> [<code>mask</code>] トークンに置き換えられます。モデルはマスクされたトークンを予測しなければならず、欠けたトークンの数を予測することも学ぶため、これは重要です。入力埋め込みとマスクされたスパンはエンコーダを通り、最終隠れ状態を出力します。ただし BERT と違い、BART は単語を予測するための最終フィードフォワードネットワークを末尾に追加しません。</p>
+</li>
+<li>
+<p>エンコーダの出力はデコーダに渡され、デコーダはエンコーダの出力から、マスクされたトークンと変形されていないトークンを予測しなければなりません。これにより、デコーダが元のテキストを復元するための追加の文脈が得られます。デコーダの出力は言語モデリングヘッドに渡され、線形変換によって隠れ状態がロジットに変換されます。クロスエントロピー損失は、ロジットとラベル（右にずらしただけのトークン）の間で計算されます。</p>
+</li>
+</ol>
+<p>要約を試してみたくなりましたか？T5 をファインチューニングして推論に使う方法は、<a href="https://huggingface.co/docs/transformers/tasks/summarization">要約ガイド</a>で詳しく解説しています！</p>
+<div class="callout callout-tip">
+<p class="callout-title">💡 ヒント</p>
+<p>テキスト生成について詳しくは、<a href="https://huggingface.co/docs/transformers/generation_strategies">テキスト生成戦略</a>のガイドを確認してください！</p>
+</div>
+<h3>翻訳</h3>
+<p>翻訳とは、意味を保ちながら、テキストをある言語から別の言語に変換することです。翻訳もシーケンス・ツー・シーケンスのタスクの一例であり、<a href="https://huggingface.co/docs/transformers/model_doc/bart">BART</a> や <a href="model_doc/t5">T5</a> のようなエンコーダ・デコーダモデルを使って行えます。このセクションでは BART の仕組みを説明し、最後に T5 のファインチューニングに挑戦してもらいます。</p>
+<p>BART は、ソース言語をターゲット言語へデコード可能な入力に変換するため、ランダムに初期化された別のエンコーダを追加することで翻訳に対応します。この新しいエンコーダの埋め込みは、元の単語埋め込みの代わりに事前学習済みエンコーダへ渡されます。ソースエンコーダの訓練では、モデルの出力に対するクロスエントロピー損失を使って、ソースエンコーダ自身と位置埋め込み、入力埋め込みを更新します。この最初のステップではモデルのパラメーターは凍結され、2番目のステップですべてのモデルパラメーターが一緒に訓練されます。
+BART の後には、翻訳を目的として多くの異なる言語で事前学習された多言語版 mBART も登場しました。</p>
+<p>翻訳を試してみたくなりましたか？T5 をファインチューニングして推論に使う方法は、<a href="https://huggingface.co/docs/transformers/tasks/translation">翻訳ガイド</a>で詳しく解説しています！</p>
+<div class="callout callout-tip">
+<p class="callout-title">💡 ヒント</p>
+<p>このガイドを通して見てきたように、多くのモデルは、扱うタスクが異なっても似たパターンをたどります。こうした共通パターンを理解しておくと、新しいモデルの仕組みを素早く把握したり、既存のモデルを自分のニーズに合わせて適応させたりするのに役立ちます。</p>
+</div>
+<h2>テキスト以外のモダリティ</h2>
+<p>Transformer はテキストに限ったものではありません。音声、画像、動画といった他のモダリティにも適用できます。もちろん、このコースではテキストに焦点を当てますが、他のモダリティについても簡単に紹介します。</p>
+<h3>音声</h3>
+<p>まず、Transformer モデルが音声データをどう扱うのかを見ていきましょう。音声には、テキストや画像とは異なる独特の難しさがあります。</p>
+<p><a href="https://huggingface.co/docs/transformers/main/en/model_doc/whisper">Whisper</a> は、68万時間分のラベル付き音声データで事前学習されたエンコーダ・デコーダ（シーケンス・ツー・シーケンス）型の Transformer です。これだけの量の事前学習データのおかげで、英語や他の多くの言語の音声タスクでゼロショットの性能を発揮できます。デコーダにより、Whisper はエンコーダが学習した音声表現を、追加のファインチューニングなしに、テキストのような有用な出力へ変換できます。つまり、Whisper は追加学習なしでもすぐに利用できます。</p>
+<div class="flex justify-center">
+    <img src="https://huggingface.co/datasets/huggingface-course/documentation-images/resolve/main/en/chapter1/whisper_architecture.png"/>
+</div>
+
+<p>図は <a href="https://huggingface.co/papers/2212.04356">Whisper の論文</a>からの引用です。</p>
+<p>このモデルは主に2つのコンポーネントで構成されています。</p>
+<ol>
+<li>
+<p><strong>エンコーダ</strong> が入力音声を処理します。生の音声はまず対数メルスペクトログラムに変換されます。このスペクトログラムが、Transformer エンコーダネットワークを通されます。</p>
+</li>
+<li>
+<p><strong>デコーダ</strong> は、エンコードされた音声表現を受け取り、対応するテキストトークンを自己回帰的に予測します。これは標準的な Transformer デコーダで、前のトークンとエンコーダの出力が与えられたときに次のテキストトークンを予測するよう訓練されています。デコーダ入力の先頭には、文字起こし、翻訳、言語識別といった特定のタスクへモデルを誘導するための特殊トークンが使われます。</p>
+</li>
+</ol>
+<p>Whisper は、Web から収集された68万時間分のラベル付き音声データという、巨大で多様なデータセットで事前学習されました。この大規模な弱教師あり事前学習こそが、多くの言語とタスクにわたる強力なゼロショット性能の鍵です。</p>
+<p>事前学習済みの Whisper は、そのままゼロショット推論に使うことも、自動音声認識や音声翻訳のような特定のタスクで性能を上げるために自分のデータでファインチューニングすることもできます！</p>
+<div class="callout callout-tip">
+<p class="callout-title">💡 ヒント</p>
+<p>Whisper の重要な革新は、インターネット上の多様な弱教師あり音声データを、前例のない規模で訓練に使った点です。これにより、タスク固有のファインチューニングなしに、さまざまな言語、アクセント、タスクへ驚くほどよく汎化できます。</p>
+</div>
+<h3>自動音声認識</h3>
+<p>事前学習済みモデルを自動音声認識に使うには、エンコーダ・デコーダの構造全体を活用します。エンコーダが音声入力を処理し、デコーダが文字起こしをトークンごとに自己回帰的に生成します。ファインチューニングの際は通常、音声入力に基づいて正しいテキストトークンを予測するよう、標準的なシーケンス・ツー・シーケンスの損失（クロスエントロピーなど）を使ってモデルを訓練します。</p>
+<p>ファインチューニング済みモデルを推論に使う最も簡単な方法は、<code>pipeline</code> を使うことです。</p>
+<div class="codehilite"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">transformers</span><span class="w"> </span><span class="kn">import</span> <span class="n">pipeline</span>
+
+<span class="n">transcriber</span> <span class="o">=</span> <span class="n">pipeline</span><span class="p">(</span>
+    <span class="n">task</span><span class="o">=</span><span class="s2">"automatic-speech-recognition"</span><span class="p">,</span> <span class="n">model</span><span class="o">=</span><span class="s2">"openai/whisper-base.en"</span>
+<span class="p">)</span>
+<span class="n">transcriber</span><span class="p">(</span><span class="s2">"https://huggingface.co/datasets/Narsil/asr_dummy/resolve/main/mlk.flac"</span><span class="p">)</span>
+<span class="c1"># 出力: {'text': ' I have a dream that one day this nation will rise up and live out the true meaning of its creed.'}</span>
+</code></pre></div>
+
+<p>自動音声認識を試してみたくなりましたか？Whisper をファインチューニングして推論に使う方法は、<a href="https://huggingface.co/docs/transformers/tasks/asr">自動音声認識ガイド</a>で詳しく解説しています！</p>
+<h3>コンピュータービジョン</h3>
+<p>次に、画像や動画から視覚情報を理解し解釈するコンピュータービジョンのタスクに移りましょう。</p>
+<p>コンピュータービジョンのタスクへのアプローチには2通りがあります。</p>
+<ol>
+<li>画像をパッチのシーケンスに分割し、Transformer で並列に処理する。</li>
+<li><a href="https://huggingface.co/docs/transformers/model_doc/convnext">ConvNeXT</a> のような最新の CNN を使う。畳み込み層に依拠しつつ、最新のネットワーク設計を取り入れたものです。</li>
+</ol>
+<div class="callout callout-tip">
+<p class="callout-title">💡 ヒント</p>
+<p>第3のアプローチとして、Transformer と畳み込みを組み合わせたもの（<a href="https://huggingface.co/docs/transformers/model_doc/cvt">Convolutional Vision Transformer</a> や <a href="https://huggingface.co/docs/transformers/model_doc/levit">LeViT</a> など）もあります。ここで取り上げる2つのアプローチの組み合わせにすぎないため、ここでは触れません。</p>
+</div>
+<p>ViT と ConvNeXT は画像分類によく使われますが、物体検出、セグメンテーション、深度推定といった他のビジョンタスクについては、それぞれ DETR、Mask2Former、GLPN を見ていきます。これらのモデルの方がそうしたタスクに適しているからです。</p>
+<h3>画像分類</h3>
+<p>画像分類は、コンピュータービジョンの基本的なタスクの1つです。モデルのアーキテクチャによって、この問題へのアプローチがどう違うのかを見ていきましょう。</p>
+<p>ViT と ConvNeXT はどちらも画像分類に使えます。主な違いは、ViT がアテンション機構を使うのに対し、ConvNeXT は畳み込みを使う点です。</p>
+<p><a href="https://huggingface.co/docs/transformers/model_doc/vit">ViT</a> は、畳み込みを完全に排除し、純粋な Transformer アーキテクチャに置き換えたものです。オリジナルの Transformer に馴染みがあれば、ViT を理解する下地はほぼ整っています。</p>
+<div class="flex justify-center">
+    <img src="https://huggingface.co/datasets/huggingface/documentation-images/resolve/main/transformers/model_doc/vit_architecture.jpg"/>
+</div>
+
+<p>ViT が導入した主な変更点は、画像を Transformer に入力する方法にありました。</p>
+<ol>
+<li>
+<p>画像は、正方形で重なりのないパッチに分割され、それぞれがベクトル、すなわち <em>パッチ埋め込み</em> に変換されます。パッチ埋め込みは畳み込み2D層で生成され、適切な入力次元が作られます（ベースの Transformer の場合、パッチ埋め込み1つあたり768個の値です）。たとえば224x224ピクセルの画像であれば、16x16の画像パッチ196個に分割できます。テキストが単語にトークン化されるのと同じように、画像はパッチのシーケンスに「トークン化」されるのです。</p>
+</li>
+<li>
+<p>BERT と同様に、<em>学習可能な埋め込み</em> である特別な <code>[CLS]</code> トークンが、パッチ埋め込みの先頭に追加されます。<code>[CLS]</code> トークンの最終隠れ状態が、接続された分類ヘッドへの入力として使われ、他の出力は無視されます。このトークンは、モデルが画像の表現をエンコードする方法を学習する助けになります。</p>
+</li>
+<li>
+<p>最後に、パッチ埋め込みと学習可能な埋め込みに <em>位置埋め込み</em> を加えます。モデルには画像パッチの順序が分からないためです。位置埋め込みも学習可能で、パッチ埋め込みと同じサイズを持ちます。最後に、すべての埋め込みが Transformer エンコーダに渡されます。</p>
+</li>
+<li>
+<p>出力のうち、具体的には <code>[CLS]</code> トークンを含む出力だけが、多層パーセプトロンヘッド（MLP）に渡されます。ViT の事前学習の目的はシンプルに分類です。他の分類ヘッドと同様に、MLP ヘッドは出力をクラスラベルに対するロジットに変換し、クロスエントロピー損失を計算して、最も可能性の高いクラスを求めます。</p>
+</li>
+</ol>
+<p>画像分類を試してみたくなりましたか？ViT をファインチューニングして推論に使う方法は、<a href="https://huggingface.co/docs/transformers/tasks/image_classification">画像分類ガイド</a>で詳しく解説しています！</p>
+<div class="callout callout-tip">
+<p class="callout-title">💡 ヒント</p>
+<p>ViT と BERT の類似点に注目してください。どちらも全体の表現を捉えるための特別なトークン（<code>[CLS]</code>）を使い、どちらも埋め込みに位置情報を加え、どちらもトークン／パッチのシーケンスを Transformer エンコーダで処理します。</p>
+</div>
+</article>
+<nav class="page-nav"><a class="nav-link prev" href="4.html">← 前へ: Transformer はどのように動作するのか？</a><a class="nav-link toc-link" href="../index.html">目次へ</a><a class="nav-link next" href="6.html">次へ →: Transformer のアーキテクチャ</a></nav>
+</main>
+<footer class="site-footer">
+  <p>原典: Hugging Face huggingface/course（<a href="https://github.com/huggingface/course">https://github.com/huggingface/course</a>）</p>
+  <p>日本語版の翻訳・公開: 霞ヶ関京 / 連絡先: GitHub <a href="https://github.com/yanikasumin">@yanikasumin</a> / YouTube <a href="https://www.youtube.com/@KASUMI_MOF">@KASUMI_MOF</a></p>
+  <p class="demo-note">このサイトはデモ版です。内容は順次更新されます。</p>
+</footer>
+<script src="../../site.js"></script>
+</body>
+</html>

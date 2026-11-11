@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>モデルデプロイの検討事項 | Hugging Face コース日本語版（デモ版）</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Shippori+Mincho:wght@500;700&family=Zen+Kaku+Gothic+New:wght@400;500;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../../style.css">
+<script>
+window.MathJax = { tex: { inlineMath: [['$', '$'], ['\\(', '\\)']], displayMath: [['$$', '$$'], ['\\[', '\\]']] }, options: { skipHtmlTags: ['script','noscript','style','textarea','pre','code'] } };
+</script>
+<script async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml.js"></script>
+</head>
+<body>
+<header class="site-header">
+  <div class="header-inner">
+    <a class="site-title" href="../../index.html">Hugging Face コース日本語版</a>
+    <span class="demo-badge">デモ版</span>
+  </div>
+</header>
+<main class="container">
+<p class="course-crumb"><a href="../index.html">Community CV コース</a>
+<span class="badge badge-qa-wip">翻訳済み・QA進行中（未検証の部分を含みます）</span></p>
+<nav class="page-nav"><a class="nav-link prev" href="intro_to_model_optimization.html">← 前へ: デプロイのためのモデル最適化入門</a><a class="nav-link toc-link" href="../index.html">目次へ</a><a class="nav-link next" href="tools_and_frameworks.html">次へ →: モデル最適化のツールとフレームワーク</a></nav>
+<article class="content">
+<h1>モデルデプロイの検討事項</h1>
+<p>この章では、機械学習モデルのデプロイにおける複雑な検討事項を深掘りします。多様なデプロイプラットフォームから、シリアライゼーション、パッケージング、サービングといった重要な実践、最適なデプロイ戦略まで、モデルデプロイの多面的な全体像を探究します。</p>
+<h2>さまざまなデプロイプラットフォーム</h2>
+<ul>
+<li>
+<p><strong>クラウド</strong>: AWS、Google Cloud、Azure などのクラウドプラットフォームにモデルをデプロイすると、AI モデルのデプロイに向けたスケーラブルで堅牢なインフラが得られます。これらのプラットフォームは、モデルのホスティングのためのマネージドサービスを提供し、スケーラビリティ、柔軟性、他のクラウドサービスとの統合を確保します。<br /></p>
+<ul>
+<li>
+<p><strong>利点</strong></p>
+<ul>
+<li>クラウドデプロイは、高い計算能力、豊富なメモリリソース、マネージドサービスによるスケーラビリティを提供します。</li>
+<li>クラウドエコシステムとの統合により、さまざまなクラウドサービスとシームレスに連携できます。</li>
+</ul>
+</li>
+<li>
+<p><strong>検討事項</strong></p>
+<ul>
+<li>インフラの使用に関するコストへの影響を評価する必要があります。</li>
+<li>データプライバシーへの懸念と、リアルタイムアプリケーションにおけるネットワークレイテンシの管理に対処すべきです。</li>
+</ul>
+</li>
+</ul>
+</li>
+<li>
+<p><strong>エッジ</strong>: IoT デバイス、エッジサーバー、組み込みシステムなどのエッジデバイスへのデプロイを検討すると、モデルをローカルで実行でき、クラウドサービスへの依存を減らせます。これにより、リアルタイム処理が可能になり、クラウドへのデータ送信を最小限に抑えられます。</p>
+<ul>
+<li>
+<p><strong>利点</strong></p>
+<ul>
+<li>ローカルデプロイによる低レイテンシとリアルタイム処理能力。</li>
+<li>データ送信の削減とオフライン能力により、プライバシーと性能が向上します。</li>
+</ul>
+</li>
+<li>
+<p><strong>課題</strong></p>
+<ul>
+<li>計算能力とメモリの面でリソースが限られていることが課題となります。</li>
+<li>ハードウェアの制限を考慮し、制約のある環境向けに最適化することが重要です。</li>
+</ul>
+</li>
+</ul>
+</li>
+<li>
+<p>エッジへのデプロイは、クラウド特有のシナリオに限られるものではなく、モデルのデプロイをユーザーやネットワーク接続の悪い地域の近くで行うことを重視するものです。</p>
+</li>
+<li>
+<p>エッジデプロイでは、モデルを別の場所（クラウドなど）で訓練し、エッジデバイス向けに最適化します。その際、小さなデバイス向けにモデルパッケージのサイズを削減することがよくあります。</p>
+</li>
+<li>
+<p><strong>モバイル</strong>: 性能とリソースの制約に合わせてモデルを最適化します。<a href="https://developer.apple.com/documentation/coreml">Core ML</a>（iOS 向け）や <a href="https://www.tensorflow.org/mobile">TensorFlow Mobile</a>（Android と iOS 向け）といったフレームワークが、モバイルプラットフォームへのモデルデプロイを容易にします。</p>
+</li>
+</ul>
+<h2>モデルのシリアライゼーションとパッケージング</h2>
+<ul>
+<li>
+<p><strong>シリアライゼーション:</strong> シリアライゼーションは、複雑なオブジェクト（機械学習モデル）を、保存や送信が簡単な形式に変換します。立体パズルを平面の画像に平らにするようなものです。このシリアライズされた表現は、ディスクに保存したり、ネットワーク経由で送信したり、データベースに格納したりできます。</p>
+<ul>
+<li><strong>ONNX（Open Neural Network Exchange）:</strong> ONNX は、機械学習モデルのための万能翻訳機のようなものです。TensorFlow、PyTorch、scikit-learn といった異なるフレームワークが、互いのモデルを理解し扱えるようにする形式です。すべてのフレームワークが話せる共通言語を持つようなものです。<ul>
+<li>PyTorch の <code>torch.onnx.export()</code> 関数は、PyTorch モデルを ONNX 形式に変換し、フレームワーク間の相互運用性を容易にします。</li>
+<li>TensorFlow は、グラフを固定（freeze）し、<code>tf2onnx</code> のようなツールを使って ONNX 形式に変換する方法を提供します。</li>
+</ul>
+</li>
+</ul>
+</li>
+<li>
+<p><strong>パッケージング:</strong> 一方、パッケージングは、機械学習モデルに必要なすべてのコンポーネントと依存関係を束ねることです。パズルのピースをすべて箱に入れ、組み立て方の説明書も一緒に入れるようなものです。パッケージングには、シリアライズされたモデルファイル、前処理・後処理のコード、必要なライブラリや依存関係など、モデルの実行に必要なすべてが含まれます。</p>
+</li>
+<li>
+<p>シリアライゼーションは、クラウドデプロイ向けにパッケージングする際、デバイスに依存しません。シリアライズされたモデルは、コンテナ（Docker など）にパッケージングされたり、Web サービス（Flask や FastAPI など）としてデプロイされたりすることがよくあります。クラウドデプロイには、オートスケーリング、ロードバランシング、他のクラウドサービスとの統合も関わります。</p>
+</li>
+<li>
+<p>機械学習モデルをデプロイするもう1つの現代的なアプローチは、🤗 <a href="https://huggingface.co/inference-endpoints">Inference Endpoints</a> が提供する専用のフルマネージドインフラを使う方法です。これらのエンドポイントにより、コンテナや GPU を直接扱う必要なく、Transformers、Diffusers、その他あらゆるモデルを簡単にデプロイできます。このサービスは、安全で、コンプライアンスに準拠し、柔軟な本番ソリューションを提供し、数クリックでデプロイを可能にします。</p>
+</li>
+</ul>
+<h2>モデルのサービングと推論</h2>
+<ul>
+<li>
+<p><strong>モデルサービング:</strong> 訓練しパッケージングしたモデルを、推論リクエストに対してアクセス可能にすることです。</p>
+<ul>
+<li>
+<p>HTTP REST API: HTTP エンドポイント経由でモデルをサービングすると、クライアントは入力データを添えてリクエストを送り、予測を受け取ることができます。Flask、FastAPI、TensorFlow Serving といったフレームワークがこのアプローチを容易にします。</p>
+</li>
+<li>
+<p>gRPC（Remote Procedure Call）: gRPC は、機械学習モデルをサービングするための、高性能で言語に依存しないフレームワークを提供します。クライアントとサーバー間の効率的な通信を可能にします。</p>
+</li>
+<li>
+<p>クラウドベースのサービス: AWS、Azure、GCP といったクラウドプラットフォームは、機械学習モデルのデプロイとサービングのためのマネージドサービスを提供し、スケーラビリティと保守を簡素化します。</p>
+</li>
+<li>
+<p><strong>推論:</strong> 推論は、デプロイされたモデルを使って、入ってくるデータに基づいて予測や出力を生成することです。サービングインフラに依存して、モデルを実行し予測を提供します。</p>
+</li>
+<li>
+<p>モデルの使用: 推論システムは、サービング経由で受け取った入力データを取り、デプロイされたモデルに通し、予測や出力を生成します。</p>
+</li>
+<li>
+<p>クライアントとのやり取り: クライアントはサービングシステムとやり取りして入力データを送り、予測や推論を受け取ることで、モデル利用のサイクルが完結します。</p>
+</li>
+</ul>
+</li>
+<li>
+<p><strong>Kubernetes</strong>: <a href="https://kubernetes.io/docs/home/">Kubernetes</a> は、アプリケーションのデプロイと管理に広く使われるオープンソースのコンテナオーケストレーションプラットフォームです。Kubernetes を理解すると、モデルをスケーラブルで信頼性の高い方法でデプロイするのに役立ちます。</p>
+</li>
+</ul>
+<h2>本番環境へのデプロイのベストプラクティス</h2>
+<ul>
+<li><strong>MLOps</strong> は、DevOps の原則を機械学習プロジェクトに適用する新しい実践です。バージョン管理、継続的インテグレーションとデプロイ、モニタリング、自動化など、本番環境にモデルをデプロイするためのさまざまなベストプラクティスを包含します。</li>
+<li><strong>負荷テスト</strong>: さまざまなワークロードをシミュレーションし、異なる条件下でのモデルの応答性を確認します。</li>
+<li><strong>異常検出</strong>: モデルの振る舞いや性能の逸脱を検出するシステムを実装します。<ul>
+<li>例: <em>分布シフト（Distribution shift）</em> は、入ってくるデータの統計的性質が、モデルの訓練に使われたデータから大きく変化したときに起こります。この変化はモデルの精度や性能の低下につながり得ます。そのため、こうしたシフトをリアルタイムで特定し緩和する異常検出の仕組みが重要です。</li>
+</ul>
+</li>
+<li>
+<p><strong>リアルタイムモニタリング</strong>: ツールを活用し、デプロイされたモデルの問題を即座に特定します。</p>
+<ul>
+<li>リアルタイムモニタリングツールは、予測エラーの急な急増や入力データの異常なパターンを検知し、さらなる調査と迅速な対応のためのアラートを出すことができます。</li>
+</ul>
+</li>
+<li>
+<p><strong>セキュリティとプライバシー:</strong> 推論中と送信中のデータを保護するために暗号化手法を採用します。厳格なアクセス制御を確立し、モデルへのアクセスを制限してデータプライバシーを確保します。</p>
+</li>
+<li><strong>A/B テスト</strong>: 本格的なデプロイの前に、A/B テストで新しいモデルのバージョンを既存のものと比較評価します。<ul>
+<li>A/B テストでは、モデルの2つのバージョンを同時にデプロイし、トラフィックの一部をそれぞれに振り向けます。精度やユーザーエンゲージメントといった性能指標を比較し、どちらのモデルバージョンが優れているかを判断します。</li>
+</ul>
+</li>
+<li><strong>継続的な評価</strong>: デプロイ後もモデルの性能を継続的に評価し、問題が発生した場合は迅速にロールバックできるよう準備します。</li>
+<li>モデルのアーキテクチャ、依存関係、性能指標をカバーする詳細な記録を維持します。</li>
+</ul>
+</article>
+<nav class="page-nav"><a class="nav-link prev" href="intro_to_model_optimization.html">← 前へ: デプロイのためのモデル最適化入門</a><a class="nav-link toc-link" href="../index.html">目次へ</a><a class="nav-link next" href="tools_and_frameworks.html">次へ →: モデル最適化のツールとフレームワーク</a></nav>
+</main>
+<footer class="site-footer">
+  <p>原典: Hugging Face huggingface/computer-vision-course（<a href="https://github.com/huggingface/computer-vision-course">https://github.com/huggingface/computer-vision-course</a>）</p>
+  <p>日本語版の翻訳・公開: 霞ヶ関京 / 連絡先: GitHub <a href="https://github.com/yanikasumin">@yanikasumin</a> / YouTube <a href="https://www.youtube.com/@KASUMI_MOF">@KASUMI_MOF</a></p>
+  <p class="demo-note">このサイトはデモ版です。内容は順次更新されます。</p>
+</footer>
+<script src="../../site.js"></script>
+</body>
+</html>

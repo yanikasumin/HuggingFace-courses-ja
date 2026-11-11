@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>画像セグメンテーション | Hugging Face コース日本語版（デモ版）</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Shippori+Mincho:wght@500;700&family=Zen+Kaku+Gothic+New:wght@400;500;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../../../style.css">
+<script>
+window.MathJax = { tex: { inlineMath: [['$', '$'], ['\\(', '\\)']], displayMath: [['$$', '$$'], ['\\[', '\\]']] }, options: { skipHtmlTags: ['script','noscript','style','textarea','pre','code'] } };
+</script>
+<script async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml.js"></script>
+</head>
+<body>
+<header class="site-header">
+  <div class="header-inner">
+    <a class="site-title" href="../../../index.html">Hugging Face コース日本語版</a>
+    <span class="demo-badge">デモ版</span>
+  </div>
+</header>
+<main class="container">
+<p class="course-crumb"><a href="../../index.html">Community CV コース</a>
+<span class="badge badge-qa-wip">翻訳済み・QA進行中（未検証の部分を含みます）</span></p>
+<nav class="page-nav"><a class="nav-link prev" href="object_detection.html">← 前へ: 物体検出</a><a class="nav-link toc-link" href="../../index.html">目次へ</a><a class="nav-link next" href="../../unit7/video-processing/introduction-to-video.html">次へ →: はじめに</a></nav>
+<article class="content">
+<h1>画像セグメンテーション</h1>
+<p>画像セグメンテーションは、画像を意味のある領域に分割する処理です。画像内の各物体にスポットライトを当てるようなマスクを作ることがその本質です。
+このタスクの直感的な捉え方は、<em>画像のピクセルごとに分類を行う問題として見ることができる</em>という点にあります。
+セグメンテーションモデルは、さまざまな産業の中核を担うモデルです。農業や自動運転の分野で使われています。農業では、土地の区画を識別したり、作物の生育段階を評価したりするために使われます。自動運転車にとっても重要な役割を果たし、車線や歩道、その他の道路利用者を識別するために使われます。</p>
+<p><img alt="画像セグメンテーション" src="https://huggingface.co/datasets/hf-vision/course-assets/resolve/main/segmentation-example.png" /></p>
+<p>文脈や目的に応じて、さまざまな種類のセグメンテーションが適用できます。
+一般的に定義されるセグメンテーションは次のとおりです。
+- <strong>セマンティックセグメンテーション（Semantic Segmentation）</strong>: 各ピクセルに最も可能性の高いクラスを割り当てます。たとえばセマンティックセグメンテーションでは、2匹の猫を個々に区別するのではなく、ピクセルのクラスに注目します。各ピクセルの分類がすべてです。
+- <strong>インスタンスセグメンテーション（Instance Segmentation）</strong>: 物体の各インスタンスを固有のマスクで識別します。物体検出とセグメンテーションの要素を組み合わせ、同じクラスの個々の物体を区別します。
+- <strong>パノプティックセグメンテーション（Panoptic Segmentation）</strong>: セマンティックセグメンテーションとインスタンスセグメンテーションの要素を組み合わせたハイブリッドな手法です。各ピクセルにクラスとインスタンスの両方を割り当て、画像の <em>what</em>（何が）と <em>where</em>（どこに）の両面を統合します。</p>
+<p><img alt="セグメンテーションの種類の比較" src="https://huggingface.co/datasets/hf-vision/course-assets/resolve/main/segmentation-types.png" /></p>
+<p>どのセグメンテーション手法を選ぶかは、文脈と目的によって決まります。嬉しいことに、最近のモデルでは1つのモデルで3種類すべてのセグメンテーションを実現できます。こちらの<a href="https://huggingface.co/blog/mask2former">記事</a>をぜひご覧ください。パノプティックデータセットだけで3種類のセグメンテーションを達成する Meta の新しいモデル、Mask2former を紹介しています。</p>
+<h3>現代的なアプローチ: Vision Transformer ベースのセグメンテーション</h3>
+<p>画像セグメンテーションでよく使われるネットワーク、U-Net の名前を聞いたことがあるかもしれません。複数の畳み込み層で設計され、主に2つのフェーズで動作します。1つはダウンサンプリングフェーズで、画像を圧縮して特徴を理解します。もう1つはアップサンプリングフェーズで、画像を元のサイズに戻し、詳細なセグメンテーションを行います。</p>
+<p>コンピュータビジョンはかつて畳み込みモデルが主流でしたが、最近では Vision Transformer のアプローチへ移行しつつあります。
+例として、<em><a href="https://arxiv.org/abs/2304.02643">Segment Anything Model（SAM）</a></em> があります。2023年4月に <em>Meta AI Research（FAIR）</em> が発表した、人気のプロンプトベースのモデルです。このモデルは Vision Transformer（ViT）をベースにしており、プロンプト可能（画像内でセグメントしたいものを言葉で指定できる）なセグメンテーションモデルを作ることに焦点を当てていて、新しい画像へのゼロショット転移が可能です。このモデルの強みは、1,100万枚の画像に10億を超えるマスクを含む、最大規模のデータセットで訓練されていることに由来します。いくつかの画像で <a href="https://segment-anything.com/">Meta のデモ</a>を試してみることをおすすめします。さらに良いことに、Transformers の<a href="https://huggingface.co/ybelkada/segment-anything">モデル</a>でも試すことができます。</p>
+<p>Transformers でこのモデルを使う例を紹介します。まず <code>mask-generation</code> パイプラインを初期化します。
+次に、画像をパイプラインに渡して推論します。</p>
+<div class="codehilite"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">transformers</span><span class="w"> </span><span class="kn">import</span> <span class="n">pipeline</span>
+
+<span class="n">pipe</span> <span class="o">=</span> <span class="n">pipeline</span><span class="p">(</span><span class="s2">"mask-generation"</span><span class="p">,</span> <span class="n">model</span><span class="o">=</span><span class="s2">"facebook/sam-vit-base"</span><span class="p">,</span> <span class="n">device</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+
+<span class="n">raw_image</span> <span class="o">=</span> <span class="n">Image</span><span class="o">.</span><span class="n">open</span><span class="p">(</span><span class="s2">"path/to/image"</span><span class="p">)</span><span class="o">.</span><span class="n">convert</span><span class="p">(</span><span class="s2">"RGB"</span><span class="p">)</span>
+
+<span class="n">masks</span> <span class="o">=</span> <span class="n">pipe</span><span class="p">(</span><span class="n">raw_image</span><span class="p">)</span>
+</code></pre></div>
+
+<p>モデルの使い方の詳細は<a href="https://huggingface.co/docs/transformers/main/en/model_doc/sam">ドキュメント</a>をご覧ください。</p>
+<h3>セグメンテーションモデルはどう評価する？</h3>
+<p>セグメンテーションモデルの使い方は分かりました。では、どうやって評価すればよいのでしょうか。前のセクションで見たとおり、セグメンテーションは基本的に教師あり学習のタスクです。つまり、データセットは画像と、それに対応するマスク（正解データ）で構成されます。モデルの評価にはいくつかの指標が使えます。代表的なものは次のとおりです。</p>
+<ul>
+<li><strong>Intersection over Union（IoU）／Jaccard 指数</strong>は、予測マスクと正解データの共通部分と和集合の比です。
+IoU は、セグメンテーションタスクでおそらく最もよく使われる指標です。クラス不均衡の影響を受けにくい点が利点で、モデリングを始めたばかりの段階でも良い選択肢になることが多いです。</li>
+</ul>
+<p><img alt="IoU" src="https://huggingface.co/datasets/hf-vision/course-assets/resolve/main/iou.png" /></p>
+<ul>
+<li><strong>ピクセル精度（Pixel accuracy）</strong>: 正しく分類されたピクセル数と総ピクセル数の比として計算されます。
+直感的な指標ですが、クラス不均衡に敏感なため、誤解を招くことがあります。</li>
+</ul>
+<p><img alt="ピクセル精度" src="https://huggingface.co/datasets/hf-vision/course-assets/resolve/main/pixel-accuracy.png" /></p>
+<ul>
+<li><strong>Dice 係数</strong>: 共通部分の2倍と、予測マスクと正解データの合計の比です。
+Dice 係数は、予測と正解データの重なりの割合そのものです。重なりの小さな差異に敏感である必要がある場合に適した指標です。</li>
+</ul>
+<p><img alt="Dice 係数" src="https://huggingface.co/datasets/hf-vision/course-assets/resolve/main/dice-coefficient.png" /></p>
+<h2>リソースと参考文献</h2>
+<ul>
+<li><a href="https://arxiv.org/abs/2304.02643">Segment Anything 論文</a></li>
+<li><a href="https://huggingface.co/blog/fine-tune-segformer">Segformer のファインチューニングに関するブログ記事</a></li>
+<li><a href="https://huggingface.co/blog/mask2former">Mask2former のブログ記事</a></li>
+<li><a href="https://huggingface.co/docs/transformers/main/tasks/semantic_segmentation">Hugging Face のセグメンテーションタスクに関するドキュメント</a></li>
+<li>このトピックをさらに深く学びたい方には、スタンフォード大学の<a href="https://www.youtube.com/watch?v=nDPWywWRIRo">セグメンテーションに関する講義</a>をおすすめします。</li>
+</ul>
+</article>
+<nav class="page-nav"><a class="nav-link prev" href="object_detection.html">← 前へ: 物体検出</a><a class="nav-link toc-link" href="../../index.html">目次へ</a><a class="nav-link next" href="../../unit7/video-processing/introduction-to-video.html">次へ →: はじめに</a></nav>
+</main>
+<footer class="site-footer">
+  <p>原典: Hugging Face huggingface/computer-vision-course（<a href="https://github.com/huggingface/computer-vision-course">https://github.com/huggingface/computer-vision-course</a>）</p>
+  <p>日本語版の翻訳・公開: 霞ヶ関京 / 連絡先: GitHub <a href="https://github.com/yanikasumin">@yanikasumin</a> / YouTube <a href="https://www.youtube.com/@KASUMI_MOF">@KASUMI_MOF</a></p>
+  <p class="demo-note">このサイトはデモ版です。内容は順次更新されます。</p>
+</footer>
+<script src="../../../site.js"></script>
+</body>
+</html>

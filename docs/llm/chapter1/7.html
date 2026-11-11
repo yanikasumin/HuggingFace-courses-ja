@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>確認クイズ（採点なし） | Hugging Face コース日本語版（デモ版）</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Shippori+Mincho:wght@500;700&family=Zen+Kaku+Gothic+New:wght@400;500;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../../style.css">
+<script>
+window.MathJax = { tex: { inlineMath: [['$', '$'], ['\\(', '\\)']], displayMath: [['$$', '$$'], ['\\[', '\\]']] }, options: { skipHtmlTags: ['script','noscript','style','textarea','pre','code'] } };
+</script>
+<script async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml.js"></script>
+</head>
+<body>
+<header class="site-header">
+  <div class="header-inner">
+    <a class="site-title" href="../../index.html">Hugging Face コース日本語版</a>
+    <span class="demo-badge">デモ版</span>
+  </div>
+</header>
+<main class="container">
+<p class="course-crumb"><a href="../index.html">LLM コース</a>
+<span class="badge badge-qa-pass">翻訳QA 最終合格</span></p>
+<nav class="page-nav"><a class="nav-link prev" href="6.html">← 前へ: Transformer のアーキテクチャ</a><a class="nav-link toc-link" href="../index.html">目次へ</a><a class="nav-link next" href="8.html">次へ →: LLM のテキスト生成と推論を深く掘り下げる</a></nav>
+<article class="content">
+<h1>確認クイズ（採点なし）</h1>
+<p>ここまで、この章ではたくさんの内容を扱ってきました。細部まで全部理解できていなくても心配いりません。クイズでここまでの学習内容を振り返ってみましょう。</p>
+<p>このクイズは成績には関係ないので、何度でも挑戦できます。難しい問題があったら、ヒントに従って教材を見直してみてください。この内容は認定試験でも改めて出題されます。</p>
+<h3>1. Hub を探索して、<code>roberta-large-mnli</code> チェックポイントを探してみましょう。このモデルはどんなタスクを行うものでしょうか？</h3>
+<div class="quiz">
+<div class="quiz-choices">
+<button type="button" class="quiz-choice" data-correct="false" data-quiz-idx="0">要約</button>
+<div class="quiz-explain-src" id="qe-125591344618432-0" hidden><a href="https://huggingface.co/roberta-large-mnli">roberta-large-mnli のページ</a>をもう一度見てみましょう。</div>
+<button type="button" class="quiz-choice" data-correct="true" data-quiz-idx="1">テキスト分類</button>
+<div class="quiz-explain-src" id="qe-125591344618432-1" hidden>より正確には、2つの文が論理的に結びついているかどうかを、3つのラベル（矛盾、中立、含意）で分類します。これは<em>自然言語推論</em>とも呼ばれるタスクです。</div>
+<button type="button" class="quiz-choice" data-correct="false" data-quiz-idx="2">テキスト生成</button>
+<div class="quiz-explain-src" id="qe-125591344618432-2" hidden><a href="https://huggingface.co/roberta-large-mnli">roberta-large-mnli のページ</a>をもう一度見てみましょう。</div>
+</div><div class="quiz-feedback" hidden></div></div>
+<h3>2. 次のコードはどんな結果を返すでしょうか？</h3>
+<div class="codehilite"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">transformers</span><span class="w"> </span><span class="kn">import</span> <span class="n">pipeline</span>
+
+<span class="n">ner</span> <span class="o">=</span> <span class="n">pipeline</span><span class="p">(</span><span class="s2">"ner"</span><span class="p">,</span> <span class="n">aggregation_strategy</span><span class="o">=</span><span class="s2">"simple"</span><span class="p">)</span>
+<span class="n">ner</span><span class="p">(</span><span class="s2">"My name is Sylvain and I work at Hugging Face in Brooklyn."</span><span class="p">)</span>
+</code></pre></div>
+
+<div class="quiz">
+<div class="quiz-choices">
+<button type="button" class="quiz-choice" data-correct="false" data-quiz-idx="0">この文に対する分類スコアを、「positive」または「negative」というラベルとともに返します。</button>
+<div class="quiz-explain-src" id="qe-125591344626880-0" hidden>不正解です。これは <code>sentiment-analysis</code> パイプラインの動作です。</div>
+<button type="button" class="quiz-choice" data-correct="false" data-quiz-idx="1">この文を補完する、生成されたテキストを返します。</button>
+<div class="quiz-explain-src" id="qe-125591344626880-1" hidden>不正解です。これは <code>text-generation</code> パイプラインの動作です。</div>
+<button type="button" class="quiz-choice" data-correct="true" data-quiz-idx="2">人物、組織、場所を表す単語を返します。</button>
+<div class="quiz-explain-src" id="qe-125591344626880-2" hidden>さらに、<code>aggregation_strategy=&quot;simple&quot;</code> を指定すると、「Hugging Face」のように、同じエンティティに属する単語がグループ化されます。</div>
+</div><div class="quiz-feedback" hidden></div></div>
+<h3>3. このコードサンプルの ... には何が入るでしょうか？</h3>
+<div class="codehilite"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">transformers</span><span class="w"> </span><span class="kn">import</span> <span class="n">pipeline</span>
+
+<span class="n">filler</span> <span class="o">=</span> <span class="n">pipeline</span><span class="p">(</span><span class="s2">"fill-mask"</span><span class="p">,</span> <span class="n">model</span><span class="o">=</span><span class="s2">"bert-base-cased"</span><span class="p">)</span>
+<span class="n">result</span> <span class="o">=</span> <span class="n">filler</span><span class="p">(</span><span class="s2">"..."</span><span class="p">)</span>
+</code></pre></div>
+
+<div class="quiz">
+<div class="quiz-choices">
+<button type="button" class="quiz-choice" data-correct="false" data-quiz-idx="0">This &#60;mask> has been waiting for you.</button>
+<div class="quiz-explain-src" id="qe-125591344618432-0" hidden>不正解です。<code>bert-base-cased</code> のモデルカードを確認して、間違いに気づけるか試してみましょう。</div>
+<button type="button" class="quiz-choice" data-correct="true" data-quiz-idx="1">This [MASK] has been waiting for you.</button>
+<div class="quiz-explain-src" id="qe-125591344618432-1" hidden>このモデルのマスクトークンは [MASK] です。</div>
+<button type="button" class="quiz-choice" data-correct="false" data-quiz-idx="2">This man has been waiting for you.</button>
+<div class="quiz-explain-src" id="qe-125591344618432-2" hidden>不正解です。このパイプラインはマスクされた単語を埋めるものなので、どこかにマスクトークンが必要です。</div>
+</div><div class="quiz-feedback" hidden></div></div>
+<h3>4. このコードが失敗するのはなぜでしょうか？</h3>
+<div class="codehilite"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">transformers</span><span class="w"> </span><span class="kn">import</span> <span class="n">pipeline</span>
+
+<span class="n">classifier</span> <span class="o">=</span> <span class="n">pipeline</span><span class="p">(</span><span class="s2">"zero-shot-classification"</span><span class="p">)</span>
+<span class="n">result</span> <span class="o">=</span> <span class="n">classifier</span><span class="p">(</span><span class="s2">"This is a course about the Transformers library"</span><span class="p">)</span>
+</code></pre></div>
+
+<div class="quiz">
+<div class="quiz-choices">
+<button type="button" class="quiz-choice" data-correct="true" data-quiz-idx="0">このパイプラインでは、このテキストを分類するためのラベルを与える必要があります。</button>
+<div class="quiz-explain-src" id="qe-125591344626880-0" hidden>そのとおりです。正しいコードには <code>candidate_labels=[...]</code> を含める必要があります。</div>
+<button type="button" class="quiz-choice" data-correct="false" data-quiz-idx="1">このパイプラインには、1文ではなく複数の文が必要です。</button>
+<div class="quiz-explain-src" id="qe-125591344626880-1" hidden>不正解です。なお、このパイプラインも他のパイプラインと同様、正しく使えば文のリストを受け取って処理することもできます。</div>
+<button type="button" class="quiz-choice" data-correct="false" data-quiz-idx="2">🤗 Transformers ライブラリが壊れている。いつものことです。</button>
+<div class="quiz-explain-src" id="qe-125591344626880-2" hidden>この選択肢については、コメントする必要すらありません！</div>
+<button type="button" class="quiz-choice" data-correct="false" data-quiz-idx="3">このパイプラインにはもっと長い入力が必要です。これは短すぎます。</button>
+<div class="quiz-explain-src" id="qe-125591344626880-3" hidden>不正解です。なお、非常に長いテキストは、このパイプラインで処理される際に切り捨てられます。</div>
+</div><div class="quiz-feedback" hidden></div></div>
+<h3>5. 「転移学習」とは何を意味するでしょうか？</h3>
+<div class="quiz">
+<div class="quiz-choices">
+<button type="button" class="quiz-choice" data-correct="false" data-quiz-idx="0">事前学習済みモデルの知識を、同じデータセットで学習させることで新しいモデルへ移すこと。</button>
+<div class="quiz-explain-src" id="qe-125591344618432-0" hidden>いいえ、それでは同じモデルの2つのバージョンになってしまいます。</div>
+<button type="button" class="quiz-choice" data-correct="true" data-quiz-idx="1">事前学習済みモデルの重みを使って新しいモデルを初期化し、学習済みの知識を引き継がせること。</button>
+<div class="quiz-explain-src" id="qe-125591344618432-1" hidden>2番目のモデルを新しいタスクで学習させると、1番目のモデルの知識が*転移*します。</div>
+<button type="button" class="quiz-choice" data-correct="false" data-quiz-idx="2">事前学習済みモデルの知識を、2番目のモデルを1番目のモデルと同じアーキテクチャで構築することで、新しいモデルへ移すこと。</button>
+<div class="quiz-explain-src" id="qe-125591344618432-2" hidden>アーキテクチャはモデルの構築方法にすぎません。この場合、知識が共有されたり転移したりすることはありません。</div>
+</div><div class="quiz-feedback" hidden></div></div>
+<h3>6. 正しいか誤りか： 言語モデルの事前学習には、通常ラベルは必要ない。</h3>
+<div class="quiz">
+<div class="quiz-choices">
+<button type="button" class="quiz-choice" data-correct="true" data-quiz-idx="0">正しい</button>
+<div class="quiz-explain-src" id="qe-125591344626880-0" hidden>事前学習は通常<em>自己教師あり</em>で行われます。つまり、ラベルは入力から自動的に作られます（次の単語を予測したり、マスクされた単語を埋めたりするなど）。</div>
+<button type="button" class="quiz-choice" data-correct="false" data-quiz-idx="1">誤り</button>
+<div class="quiz-explain-src" id="qe-125591344626880-1" hidden>不正解です。</div>
+</div><div class="quiz-feedback" hidden></div></div>
+<h3>7. 「モデル」「アーキテクチャ」「重み」という用語を最もよく説明している文を選んでください。</h3>
+<div class="quiz">
+<div class="quiz-choices">
+<button type="button" class="quiz-choice" data-correct="false" data-quiz-idx="0">モデルを建物に例えると、そのアーキテクチャは設計図で、重みはその中に住んでいる人々である。</button>
+<div class="quiz-explain-src" id="qe-125591344618432-0" hidden>この例えでいえば、重みは建物を建てるのに使うレンガやその他の材料にあたります。</div>
+<button type="button" class="quiz-choice" data-correct="false" data-quiz-idx="1">アーキテクチャはモデルを構築するための地図で、その重みは地図上に表された都市である。</button>
+<div class="quiz-explain-src" id="qe-125591344618432-1" hidden>この例えの問題点は、地図は通常、実在する1つの現実を表すことです（フランスにパリという都市は1つしかありません）。あるアーキテクチャに対して、重みは複数あり得ます。</div>
+<button type="button" class="quiz-choice" data-correct="true" data-quiz-idx="2">アーキテクチャはモデルを構築するための数学的な関数が連なったもので、その重みはそれらの関数のパラメータである。</button>
+<div class="quiz-explain-src" id="qe-125591344618432-2" hidden>同じ関数の集合（アーキテクチャ）でも、異なるパラメータ（重み）を使うことで、異なるモデルを構築できます。</div>
+</div><div class="quiz-feedback" hidden></div></div>
+<h3>8. プロンプトに続くテキストを生成するには、どのタイプのモデルを使うでしょうか？</h3>
+<div class="quiz">
+<div class="quiz-choices">
+<button type="button" class="quiz-choice" data-correct="false" data-quiz-idx="0">エンコーダモデル</button>
+<div class="quiz-explain-src" id="qe-125591344626880-0" hidden>エンコーダモデルは文全体の表現を生成するもので、分類のようなタスクにより向いています。</div>
+<button type="button" class="quiz-choice" data-correct="true" data-quiz-idx="1">デコーダモデル</button>
+<div class="quiz-explain-src" id="qe-125591344626880-1" hidden>デコーダモデルは、プロンプトからのテキスト生成に最適です。</div>
+<button type="button" class="quiz-choice" data-correct="false" data-quiz-idx="2">シーケンス・ツー・シーケンスモデル</button>
+<div class="quiz-explain-src" id="qe-125591344626880-2" hidden>シーケンス・ツー・シーケンスモデルは、与えられたプロンプトではなく、入力文に関連した文を生成したいタスクにより向いています。</div>
+</div><div class="quiz-feedback" hidden></div></div>
+<h3>9. テキストを要約するには、どのタイプのモデルを使うでしょうか？</h3>
+<div class="quiz">
+<div class="quiz-choices">
+<button type="button" class="quiz-choice" data-correct="false" data-quiz-idx="0">エンコーダモデル</button>
+<div class="quiz-explain-src" id="qe-125591344618432-0" hidden>エンコーダモデルは文全体の表現を生成するもので、分類のようなタスクにより向いています。</div>
+<button type="button" class="quiz-choice" data-correct="false" data-quiz-idx="1">デコーダモデル</button>
+<div class="quiz-explain-src" id="qe-125591344618432-1" hidden>デコーダモデルは出力テキスト（要約など）の生成は得意ですが、要約対象のテキスト全体のような文脈を活用する能力はありません。</div>
+<button type="button" class="quiz-choice" data-correct="true" data-quiz-idx="2">シーケンス・ツー・シーケンスモデル</button>
+<div class="quiz-explain-src" id="qe-125591344618432-2" hidden>シーケンス・ツー・シーケンスモデルは、要約タスクに最適です。</div>
+</div><div class="quiz-feedback" hidden></div></div>
+<h3>10. テキスト入力を特定のラベルに分類するには、どのタイプのモデルを使うでしょうか？</h3>
+<div class="quiz">
+<div class="quiz-choices">
+<button type="button" class="quiz-choice" data-correct="true" data-quiz-idx="0">エンコーダモデル</button>
+<div class="quiz-explain-src" id="qe-125591344626880-0" hidden>エンコーダモデルは文全体の表現を生成するもので、分類のようなタスクに最適です。</div>
+<button type="button" class="quiz-choice" data-correct="false" data-quiz-idx="1">デコーダモデル</button>
+<div class="quiz-explain-src" id="qe-125591344626880-1" hidden>デコーダモデルは出力テキストの生成は得意ですが、文からラベルを抽出するのは得意ではありません。</div>
+<button type="button" class="quiz-choice" data-correct="false" data-quiz-idx="2">シーケンス・ツー・シーケンスモデル</button>
+<div class="quiz-explain-src" id="qe-125591344626880-2" hidden>シーケンス・ツー・シーケンスモデルは、ラベルではなく、入力文に基づいてテキストを生成したいタスクにより向いています。</div>
+</div><div class="quiz-feedback" hidden></div></div>
+<h3>11. モデルに見られるバイアスの原因として考えられるものは何でしょうか？</h3>
+<div class="quiz">
+<div class="quiz-choices">
+<button type="button" class="quiz-choice" data-correct="true" data-quiz-idx="0">モデルが事前学習済みモデルのファインチューニング版であり、そのバイアスを受け継いでいる。</button>
+<div class="quiz-explain-src" id="qe-125591344618432-0" hidden>転移学習を適用すると、使用した事前学習済みモデルのバイアスは、ファインチューニング後のモデルにも残ります。</div>
+<button type="button" class="quiz-choice" data-correct="true" data-quiz-idx="1">モデルの学習に使われたデータにバイアスがある。</button>
+<div class="quiz-explain-src" id="qe-125591344618432-1" hidden>これは最も明白なバイアスの原因ですが、唯一の原因ではありません。</div>
+<button type="button" class="quiz-choice" data-correct="true" data-quiz-idx="2">モデルが最適化していた指標（メトリクス）にバイアスがある。</button>
+<div class="quiz-explain-src" id="qe-125591344618432-2" hidden>気づきにくいバイアスの原因は、モデルの学習方法そのものです。モデルは、選ばれた指標が何であれ、深く考えずにそれへ最適化していきます。</div>
+</div><div class="quiz-feedback" hidden></div></div>
+</article>
+<nav class="page-nav"><a class="nav-link prev" href="6.html">← 前へ: Transformer のアーキテクチャ</a><a class="nav-link toc-link" href="../index.html">目次へ</a><a class="nav-link next" href="8.html">次へ →: LLM のテキスト生成と推論を深く掘り下げる</a></nav>
+</main>
+<footer class="site-footer">
+  <p>原典: Hugging Face huggingface/course（<a href="https://github.com/huggingface/course">https://github.com/huggingface/course</a>）</p>
+  <p>日本語版の翻訳・公開: 霞ヶ関京 / 連絡先: GitHub <a href="https://github.com/yanikasumin">@yanikasumin</a> / YouTube <a href="https://www.youtube.com/@KASUMI_MOF">@KASUMI_MOF</a></p>
+  <p class="demo-note">このサイトはデモ版です。内容は順次更新されます。</p>
+</footer>
+<script src="../../site.js"></script>
+</body>
+</html>

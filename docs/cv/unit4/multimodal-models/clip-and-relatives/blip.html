@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>マルチモーダルテキスト生成（BLIP） | Hugging Face コース日本語版（デモ版）</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Shippori+Mincho:wght@500;700&family=Zen+Kaku+Gothic+New:wght@400;500;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../../../../style.css">
+<script>
+window.MathJax = { tex: { inlineMath: [['$', '$'], ['\\(', '\\)']], displayMath: [['$$', '$$'], ['\\[', '\\]']] }, options: { skipHtmlTags: ['script','noscript','style','textarea','pre','code'] } };
+</script>
+<script async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml.js"></script>
+</head>
+<body>
+<header class="site-header">
+  <div class="header-inner">
+    <a class="site-title" href="../../../../index.html">Hugging Face コース日本語版</a>
+    <span class="demo-badge">デモ版</span>
+  </div>
+</header>
+<main class="container">
+<p class="course-crumb"><a href="../../../index.html">Community CV コース</a>
+<span class="badge badge-qa-wip">翻訳済み・QA進行中（未検証の部分を含みます）</span></p>
+<nav class="page-nav"><a class="nav-link prev" href="clip.html">← 前へ: Contrastive Language-Image Pre-training（CLIP）</a><a class="nav-link toc-link" href="../../../index.html">目次へ</a><a class="nav-link next" href="owl_vit.html">次へ →: マルチモーダル物体検出（OWL-ViT）</a></nav>
+<article class="content">
+<h1>マルチモーダルテキスト生成（BLIP）</h1>
+<h2>はじめに</h2>
+<p>CLIP の公開後、AI コミュニティは、より大規模なデータセットと対照学習がディープラーニングにもたらす計り知れない可能性を認識しました。この領域での大きな発展の1つが <a href="https://arxiv.org/abs/2201.12086">BLIP（Bootstrapping Language-Image Pre-training）</a> で、マルチモーダルモデルの能力をテキスト生成にまで拡張しました。</p>
+<h2>CapFilt: キャプション生成とフィルタリング</h2>
+<p>マルチモーダルモデルには大規模なデータセットが必要なため、画像と代替テキスト（alt テキスト）のペアを使ってインターネットからスクレイピングしなければならないことがよくあります。しかし、alt テキストは画像の視覚的内容を正確に説明していないことが多く、視覚言語の整合を学習するには最適とは言えないノイズの多いシグナルとなります。そこで BLIP の論文は、キャプション生成とフィルタリングの仕組み（CapFilt）を導入しました。これは、ノイズの多いペアを除去するディープラーニングモデルと、画像のキャプションを作成するもう1つのモデルから構成されます。どちらのモデルも、まず人間が注釈を付けたデータセットでファインチューニングされます。CapFilt を使ってデータセットを洗浄すると、ウェブデータセットをそのまま使うよりも優れた性能が得られることが分かりました。このプロセスの詳細は <a href="https://arxiv.org/abs/2201.12086">BLIP 論文</a> で確認できます。</p>
+<h2>BLIP のアーキテクチャと学習</h2>
+<p>BLIP のアーキテクチャは、視覚エンコーダと Multimodal Mixture of Encoder-Decoder（MED）を組み合わせ、視覚データとテキストデータの両方を多用途に処理できるようにします。その構造は下図のとおりで（同じ色のブロックはパラメータを共有します）、次の要素を備えています:</p>
+<ul>
+<li><strong>Vision Transformer（ViT）:</strong> セルフアテンション、フィードフォワードブロック、埋め込み表現のための [CLS] トークンを備えた、素の視覚 Transformer です。</li>
+<li><strong>ユニモーダルテキストエンコーダ:</strong> BERT のアーキテクチャに似ており、埋め込みに [CLS] トークンを使い、CLIP のように対照損失を用いて画像とテキストの表現を整合させます。</li>
+<li><strong>画像に基づくテキストエンコーダ（Image-Grounded Text Encoder）:</strong> [CLS] トークンを [Encode] トークンに置き換えたものです。クロスアテンション層により画像とテキストの埋め込みを統合し、マルチモーダルな表現を作成します。線形層を使って画像・テキストペアの整合性を評価します。</li>
+<li><strong>画像に基づくテキストデコーダ（Image-Grounded Text Decoder）:</strong> 双方向セルフアテンションを因果的（causal）セルフアテンションに置き換えたこのデコーダは、キャプション生成や視覚的質問への回答などのタスクのために、自己回帰的にクロスエントロピー損失で学習されます。</li>
+</ul>
+<p>BLIP のアーキテクチャは、視覚エンコーダと、エンコーダ・デコーダを組み合わせたマルチモーダルな混合コンポーネントを統合し、高度なテキストと画像の処理を可能にします。この設計により、画像・テキストペアの整合から、キャプションの生成、視覚的質問への回答まで、多様なタスクに巧みに対応できます。</p>
+<h2>使用例: BLIP-2</h2>
+<p>BLIP の成功を受け、その開発元である Salesforce は、改良された BLIP-2 を発表しました。BLIP-2 の進歩と能力は <a href="https://arxiv.org/abs/2301.12597">BLIP-2 論文</a> と <a href="https://huggingface.co/docs/transformers/model_doc/blip-2">Hugging Face ドキュメント</a> で詳しく説明されています。ここでは、BLIP-2 を視覚的質問応答に利用します。</p>
+<div class="codehilite"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">PIL</span><span class="w"> </span><span class="kn">import</span> <span class="n">Image</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">requests</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">transformers</span><span class="w"> </span><span class="kn">import</span> <span class="n">Blip2Processor</span><span class="p">,</span> <span class="n">Blip2ForConditionalGeneration</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">torch</span>
+
+<span class="n">device</span> <span class="o">=</span> <span class="s2">"cuda"</span> <span class="k">if</span> <span class="n">torch</span><span class="o">.</span><span class="n">cuda</span><span class="o">.</span><span class="n">is_available</span><span class="p">()</span> <span class="k">else</span> <span class="s2">"cpu"</span>
+
+<span class="n">processor</span> <span class="o">=</span> <span class="n">Blip2Processor</span><span class="o">.</span><span class="n">from_pretrained</span><span class="p">(</span><span class="s2">"Salesforce/blip2-opt-2.7b"</span><span class="p">)</span>
+<span class="n">model</span> <span class="o">=</span> <span class="n">Blip2ForConditionalGeneration</span><span class="o">.</span><span class="n">from_pretrained</span><span class="p">(</span>
+    <span class="s2">"Salesforce/blip2-opt-2.7b"</span><span class="p">,</span> <span class="n">torch_dtype</span><span class="o">=</span><span class="n">torch</span><span class="o">.</span><span class="n">float16</span>
+<span class="p">)</span>
+<span class="n">model</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="n">device</span><span class="p">)</span>
+<span class="n">url</span> <span class="o">=</span> <span class="s2">"http://images.cocodataset.org/val2017/000000039769.jpg"</span>
+<span class="n">image</span> <span class="o">=</span> <span class="n">Image</span><span class="o">.</span><span class="n">open</span><span class="p">(</span><span class="n">requests</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">url</span><span class="p">,</span> <span class="n">stream</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span><span class="o">.</span><span class="n">raw</span><span class="p">)</span>
+
+<span class="n">prompt</span> <span class="o">=</span> <span class="s2">"Question: How many remotes are there? Answer:"</span>
+<span class="n">inputs</span> <span class="o">=</span> <span class="n">processor</span><span class="p">(</span><span class="n">images</span><span class="o">=</span><span class="n">image</span><span class="p">,</span> <span class="n">text</span><span class="o">=</span><span class="n">prompt</span><span class="p">,</span> <span class="n">return_tensors</span><span class="o">=</span><span class="s2">"pt"</span><span class="p">)</span><span class="o">.</span><span class="n">to</span><span class="p">(</span>
+    <span class="n">device</span><span class="p">,</span> <span class="n">torch</span><span class="o">.</span><span class="n">float16</span>
+<span class="p">)</span>
+<span class="n">outputs</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">generate</span><span class="p">(</span><span class="o">**</span><span class="n">inputs</span><span class="p">)</span>
+<span class="n">text</span> <span class="o">=</span> <span class="n">processor</span><span class="o">.</span><span class="n">tokenizer</span><span class="o">.</span><span class="n">batch_decode</span><span class="p">(</span><span class="n">outputs</span><span class="p">,</span> <span class="n">skip_special_tokens</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">text</span><span class="p">)</span>
+</code></pre></div>
+
+<p>このコードスニペットは、視覚的質問応答への BLIP-2 の応用を示しています。より複雑なクエリを試したり、提供されている Gradio アプリでこの機能をさらに探ったりしてみてください:</p>
+<p><iframe
+    src="https://merve-BLIP2-with-transformers.hf.space"
+    frameborder="0"
+    width="850"
+    height="450">
+</iframe>
+</p>
+<h2>まとめ</h2>
+<p>BLIP は、CLIP の強みを活かして堅牢なモデルを作り、マルチモーダルテキスト生成における重要な節目となりました。データセットの量より質の重要性を強調し、マルチモーダル学習の進歩に貢献しています。詳細は <a href="https://arxiv.org/abs/2201.12086">BLIP 論文</a>、<a href="https://arxiv.org/abs/2301.12597">BLIP-2 論文</a>、そして Hugging Face ドキュメントの <a href="https://huggingface.co/docs/transformers/model_doc/blip">BLIP</a> と <a href="https://huggingface.co/docs/transformers/model_doc/blip-2">BLIP-2</a> を参照してください。</p>
+</article>
+<nav class="page-nav"><a class="nav-link prev" href="clip.html">← 前へ: Contrastive Language-Image Pre-training（CLIP）</a><a class="nav-link toc-link" href="../../../index.html">目次へ</a><a class="nav-link next" href="owl_vit.html">次へ →: マルチモーダル物体検出（OWL-ViT）</a></nav>
+</main>
+<footer class="site-footer">
+  <p>原典: Hugging Face huggingface/computer-vision-course（<a href="https://github.com/huggingface/computer-vision-course">https://github.com/huggingface/computer-vision-course</a>）</p>
+  <p>日本語版の翻訳・公開: 霞ヶ関京 / 連絡先: GitHub <a href="https://github.com/yanikasumin">@yanikasumin</a> / YouTube <a href="https://www.youtube.com/@KASUMI_MOF">@KASUMI_MOF</a></p>
+  <p class="demo-note">このサイトはデモ版です。内容は順次更新されます。</p>
+</footer>
+<script src="../../../../site.js"></script>
+</body>
+</html>

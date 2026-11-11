@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>拡散モデル入門 | Hugging Face コース日本語版（デモ版）</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Shippori+Mincho:wght@500;700&family=Zen+Kaku+Gothic+New:wght@400;500;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../../../../style.css">
+<script>
+window.MathJax = { tex: { inlineMath: [['$', '$'], ['\\(', '\\)']], displayMath: [['$$', '$$'], ['\\[', '\\]']] }, options: { skipHtmlTags: ['script','noscript','style','textarea','pre','code'] } };
+</script>
+<script async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml.js"></script>
+</head>
+<body>
+<header class="site-header">
+  <div class="header-inner">
+    <a class="site-title" href="../../../../index.html">Hugging Face コース日本語版</a>
+    <span class="demo-badge">デモ版</span>
+  </div>
+</header>
+<main class="container">
+<p class="course-crumb"><a href="../../../index.html">Community CV コース</a>
+<span class="badge badge-qa-wip">翻訳済み・QA進行中（未検証の部分を含みます）</span></p>
+<nav class="page-nav"><a class="nav-link prev" href="../practical-applications/cycle_gan.html">← 前へ: CycleGAN 入門</a><a class="nav-link toc-link" href="../../../index.html">目次へ</a><a class="nav-link next" href="stable-diffusion.html">次へ →: Stable Diffusion 入門</a></nav>
+<article class="content">
+<h1>拡散モデル入門</h1>
+<p>この章で学ぶこと:</p>
+<ul>
+<li>拡散モデルとは何か、GAN とどう違うのか</li>
+<li>拡散モデルの主なサブカテゴリ</li>
+<li>拡散モデルのユースケース</li>
+<li>拡散モデルの欠点</li>
+</ul>
+<h2>拡散モデルと GAN との違い</h2>
+<p>拡散モデルはコンピュータビジョンにおける新しいエキサイティングな分野で、画像の生成において素晴らしい結果を示してきました。これらの生成モデルは、順方向拡散と逆方向拡散の2つの段階で動作します。まず入力データに少しノイズを加えて変化させ、次にその変化を元に戻して元のデータを取り戻そうとします。この「変化させて元に戻す」プロセスが、現実的な画像の生成に役立っています。</p>
+<p>これらの生成モデルは、生成モデリングの分野の水準を新たなレベルに引き上げました。特に <a href="https://imagen.research.google/">Imagen</a> や <a href="https://arxiv.org/abs/2112.10752">Latent Diffusion Models</a>（LDM）といったモデルがその例です。例えば、このようなモデルで生成された以下の画像を考えてみてください。</p>
+<p><img alt="拡散モデルで生成した画像の例" src="https://huggingface.co/datasets/hwaseem04/Documentation-files/resolve/main/CV-Course/diffusion-eg.png" /></p>
+<p>最近の拡散モデルの台頭以前は、GAN は生成サンプルの品質の面で最先端の生成モデルだと多くの人に考えられていました。GAN は敵対的な目的関数のため学習が難しいことでも知られており、モード崩壊（mode collapse）を起こすこともよくあります。異なるモードを異なるカテゴリと考えてください。猫と犬を2つの別々のモードとします。生成器のタスクが猫と犬の画像を生成することである場合、モード崩壊が起きると、生成器は猫か犬のどちらか一方のもっともらしい画像だけを生成することになります。これが起こる理由の1つは、識別器が局所最適解から抜け出せず、どちらか一方のモード（猫か犬）だけを繰り返し偽物と分類し続けることです。対照的に、拡散モデルは尤度ベースであるため、学習プロセスが安定しており、より多様性があります。</p>
+<p>ただし、拡散モデルは段階的な逆方向プロセスのため、GAN と比べて計算負荷が高く、推論時間が長くなる傾向があります。</p>
+<p>科学において、拡散とは、溶媒の中で溶質の粒子が高濃度の領域から低濃度の領域へ移動するプロセスです。ハイレベルな直感を得るために、以下の拡散のアナロジーを考えてみてください。</p>
+<p><img alt="拡散のアナロジー：水の中のインクの滴" src="https://huggingface.co/datasets/hwaseem04/Documentation-files/resolve/main/CV-Course/diffusion-intuition.jpeg" /></p>
+<p>上は伝統的な拡散プロセスで、きれいな水の入ったグラスに落とされたインクの滴は、時間が経つと完全に混ざり合います。これを実際に逆転させること、つまり混合物から滴を取り戻すことは不可能です。しかし拡散モデルで行われているのはまさにこれです。つまり、ノイズを除去してきれいな画像を生成するのです。</p>
+<p>拡散モデルでは、学習画像にガウスノイズを段階的に加えて、完全にゴミのようなノイズ画像に変えていきます。このプロセスを通じて、モデルはノイズを段階的に除去する方法を学習し、その結果、あらゆるガウスノイズ画像を新しい多様な画像に変えることができます（テキストプロンプトに基づいて条件付けることもできます）。</p>
+<p><img alt="逆方向プロセス" src="https://huggingface.co/datasets/hwaseem04/Documentation-files/resolve/main/CV-Course/diffusion-process.jpg" /></p>
+<h2>拡散モデルの主なバリエーション</h2>
+<p>拡散モデリングのフレームワークには主に3つあります。
+- ノイズ除去拡散確率モデル（DDPM）:
+    - DDPM は、確率分布を推定するために潜在変数を用いるモデルです。この観点から、DDPM は変分オートエンコーダ（VAE）の特殊な一種と見ることができ、順方向拡散の段階が VAE 内部のエンコーディングプロセスに対応し、逆方向拡散の段階がデコーディングプロセスに対応します。
+- ノイズ条件付きスコアネットワーク（NCSN）:
+    - スコアマッチングによって共有ニューラルネットワークを学習し、異なるノイズレベルで摂動されたデータ分布のスコア関数（対数密度の勾配として定義されます）を推定することに基づいています。
+- 確率微分方程式（SDE）:
+    - 拡散をモデル化するもう1つの方法であり、拡散モデルの3つ目のサブカテゴリをなします。順方向と逆方向の SDE で拡散をモデル化すると、効率的な生成戦略と強力な理論的結果が得られます。これは DDPM と NCSN の一般化と見ることができます。</p>
+<p><img alt="拡散モデルのサブカテゴリ" src="https://huggingface.co/datasets/hwaseem04/Documentation-files/resolve/main/CV-Course/diffusion-sub-categories.png" /></p>
+<h2>拡散モデルのユースケース</h2>
+<p>拡散は、以下を含む様々なタスクに使われていますが、これらに限りません。
+- 画像生成 - プロンプトに基づいて画像を生成すること。
+- 画像の超解像 - 画像の解像度を高めること。
+- 画像インペインティング - プロンプトに基づいて、画像の劣化した部分を埋めること。
+- 画像編集 - 視覚的なアイデンティティを失わずに、画像の特定の部分／全体を編集すること。
+- 画像変換（image-to-image translation） - 背景の変更や場所の属性の変更などを含みます。
+- 拡散モデルから学習された潜在表現は、次のような用途にも使えます。
+    - 画像セグメンテーション
+    - 分類
+    - 異常検知</p>
+<p>拡散モデルで遊んでみたいですか。心配いりません。Hugging Face の <a href="https://huggingface.co/docs/diffusers/index">Diffusers</a> ライブラリが助けてくれます。ほぼすべてのタスクに、最近のほぼすべての拡散モデルの SOTA モデルを使えます。</p>
+<h2>拡散モデルの欠点</h2>
+<p>拡散モデルの最も重大な欠点は、たった1つのサンプルを生成するために、推論時に複数ステップを実行する必要があることのままです。<a href="https://latent-consistency-models.github.io/">潜在整合性モデル</a>（LCM）は、潜在拡散モデル（LDM）の遅い反復サンプリングプロセスを克服するために提案された研究の方向性の1つで、あらゆる事前学習済み LDM（例: Stable Diffusion）に対して最小限のステップで高速な推論を可能にします。この方向で多くの研究が行われているにもかかわらず、GAN の方がまだ画像生成は高速です。</p>
+<p>拡散モデルの他の問題は、テキストから画像への生成に一般的に使われる、CLIP 埋め込みを使う戦略に関連している可能性があります。いくつかの文献研究では、モデルが画像内に読めるテキストを描くのに苦労することが指摘されており、その振る舞いは、CLIP 埋め込みが綴りに関する情報を含まないことによるものだと動機付けられています。</p>
+</article>
+<nav class="page-nav"><a class="nav-link prev" href="../practical-applications/cycle_gan.html">← 前へ: CycleGAN 入門</a><a class="nav-link toc-link" href="../../../index.html">目次へ</a><a class="nav-link next" href="stable-diffusion.html">次へ →: Stable Diffusion 入門</a></nav>
+</main>
+<footer class="site-footer">
+  <p>原典: Hugging Face huggingface/computer-vision-course（<a href="https://github.com/huggingface/computer-vision-course">https://github.com/huggingface/computer-vision-course</a>）</p>
+  <p>日本語版の翻訳・公開: 霞ヶ関京 / 連絡先: GitHub <a href="https://github.com/yanikasumin">@yanikasumin</a> / YouTube <a href="https://www.youtube.com/@KASUMI_MOF">@KASUMI_MOF</a></p>
+  <p class="demo-note">このサイトはデモ版です。内容は順次更新されます。</p>
+</footer>
+<script src="../../../../site.js"></script>
+</body>
+</html>

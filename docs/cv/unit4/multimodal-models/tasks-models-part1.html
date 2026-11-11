@@ -1,0 +1,435 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>マルチモーダルタスクとマルチモーダルモデル | Hugging Face コース日本語版（デモ版）</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Shippori+Mincho:wght@500;700&family=Zen+Kaku+Gothic+New:wght@400;500;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../../../style.css">
+<script>
+window.MathJax = { tex: { inlineMath: [['$', '$'], ['\\(', '\\)']], displayMath: [['$$', '$$'], ['\\[', '\\]']] }, options: { skipHtmlTags: ['script','noscript','style','textarea','pre','code'] } };
+</script>
+<script async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml.js"></script>
+</head>
+<body>
+<header class="site-header">
+  <div class="header-inner">
+    <a class="site-title" href="../../../index.html">Hugging Face コース日本語版</a>
+    <span class="demo-badge">デモ版</span>
+  </div>
+</header>
+<main class="container">
+<p class="course-crumb"><a href="../../index.html">Community CV コース</a>
+<span class="badge badge-qa-wip">翻訳済み・QA進行中（未検証の部分を含みます）</span></p>
+<nav class="page-nav"><a class="nav-link prev" href="vlm-intro.html">← 前へ: 視覚言語モデル入門</a><a class="nav-link toc-link" href="../../index.html">目次へ</a><a class="nav-link next" href="clip-and-relatives/Introduction.html">次へ →: CLIP とその仲間たち</a></nav>
+<article class="content">
+<h1>マルチモーダルタスクとマルチモーダルモデル</h1>
+<p>このセクションでは、画像とテキストのモダリティを含むさまざまなマルチモーダルタスクと、それに対応するモデルを簡単に見ていきます。深入りする前に、前セクションで扱った「マルチモーダル」とは何かを少し復習しましょう。人間の世界は多様な感覚入力の交響曲です。私たちは視覚、聴覚、触覚などを通して知覚し、理解します。このマルチモダリティこそが、私たちの豊かな理解と、従来のユニモーダルな AI モデルの限界を分けるものです。人間の認知から着想を得て、マルチモーダルモデルは、テキスト、画像、音声、さらにはセンサーデータなど、複数のソースからの情報を統合することで、この隔たりを埋めることを目指しています。モダリティのこの融合は、世界へのより包括的で微妙な理解につながり、膨大な範囲のタスクと応用を解き放ちます。</p>
+<h2>タスクの例</h2>
+<p>特定のモデルを見る前に、画像とテキストを含む多様なタスクを理解することが重要です。これらのタスクには、以下が含まれます（これらに限りません）:</p>
+<ul>
+<li>
+<p><strong>視覚的質問応答（VQA）と視覚的推論（Visual Reasoning）:</strong> 写真を見て、それについての質問を理解する機械を想像してください。視覚的質問応答（VQA）とはまさにそれです！ コンピュータに画像から意味を抽出し、「この車を運転しているのは誰？」のような質問に答えるよう学習させます。一方、視覚的推論は「秘密のソース」で、機械が単純な認識を超えて、関係を推論し、物体を比較し、シーンの文脈を理解して正確な答えを出せるようにします。探偵に写真の中の手がかりを読ませるようなもので、しかもはるかに速く正確です！</p>
+</li>
+<li>
+<p><strong>ドキュメント視覚的質問応答（DocVQA）:</strong> 地図や契約書のようなドキュメントのテキストとレイアウトの両方をコンピュータが理解し、その画像から直接質問に答えることを想像してください。それがドキュメント視覚的質問応答（DocVQA）の要約です。画像要素を処理するコンピュータービジョンと、テキストを解釈する自然言語処理を組み合わせ、人間と同じように機械がドキュメントを「読み」、質問に答えられるようにします。ドキュメント検索を AI で強化し、画像の中に閉じ込められたすべての情報を解き放つものと考えてください。</p>
+</li>
+<li>
+<p><strong>画像キャプション生成（Image captioning）:</strong> 画像キャプション生成は、視覚と言語の間の隔たりを埋めます。探偵のように画像を分析し、詳細を抽出し、シーンを理解して、穏やかな海に沈む夕日、ブランコで笑う子ども、にぎやかな街の通りなど、その物語を伝える1〜2文を作ります。コンピュータービジョンと言語の魅力的な融合で、コンピュータが一度に1枚の写真ずつ、周りの世界を描写できるようにします。</p>
+</li>
+<li>
+<p><strong>画像・テキスト検索（Image-Text Retrieval）:</strong> 画像・テキスト検索は、画像とその説明のための仲人のようなものです。本の表紙の絵や短い要約を使って特定の本を探せる図書館を思い浮かべてください。画像と単語の両方を理解する超強力な検索エンジンのようなもので、画像検索、自動キャプション生成、さらには視覚障害者がテキストの説明を通じて「見る」ことを助けるなど、面白い応用への扉を開きます。</p>
+</li>
+<li>
+<p><strong>視覚的グラウンディング（Visual grounding）:</strong> 視覚的グラウンディングは、私たちが見て言うことの間を点で結ぶようなものです。言語が画像の特定の部分をどう参照するかを理解することで、AI モデルが自然言語の説明に基づいて物体や領域を特定できるようにします。「果物かごの中の赤いリンゴはどこ？」と尋ねると AI が即座に画像の中でそれをハイライトする、そんなイメージです。それが視覚的グラウンディングの働きです！</p>
+</li>
+<li>
+<p><strong>テキストからの画像生成（Text-to-Image generation）:</strong> あなたの言葉を解釈して命を吹き込む魔法の絵筆を想像してください！ テキストからの画像生成とはそのようなもので、書かれた説明をユニークな画像へ変換します。言語理解と画像生成の融合で、あなたのテキストが、写実的な風景から夢のような抽象画まで、言葉の力から生まれた視覚世界を解き放ちます。</p>
+</li>
+</ul>
+<h2>視覚的質問応答（VQA）と視覚的推論</h2>
+<p><img alt="VQA" src="https://huggingface.co/datasets/hf-vision/course-assets/resolve/main/multimodal_fusion_text_vision/vqa_visual_reasoning.png" /> <em>VQA および視覚的推論モデルの入力（画像＋テキスト）と出力（テキスト）の例 <a href="#pretraining-paper">[1]</a></em></p>
+<p><strong>視覚的質問応答（VQA）</strong>
+- <strong>入力:</strong> 画像と質問のペア（画像とそれについての質問）。
+- <strong>出力:</strong> 多肢選択の設定では、あらかじめ定義された選択肢の中で正解に対応するラベル。
+自由形式の設定では、画像と質問に基づく自由な自然言語の答え。
+- <strong>タスク:</strong> 画像についての質問に答える。（ほとんどの VQA モデルは、あらかじめ定義された答えを持つ分類問題として扱います）。参考として上の例をご覧ください。</p>
+<p><strong>視覚的推論</strong>
+- <strong>入力:</strong> 特定の視覚的推論タスクによって異なります:
+    - VQA 形式のタスク: 画像と質問のペア。
+    - マッチングタスク: 画像とテキストの文。
+    - 含意（entailment）タスク: 画像とテキストのペア（複数の文を含むこともある）。
+    - サブクエスチョンタスク: 画像と、知覚に関連する追加のサブクエスチョンを伴う主要な質問。
+- <strong>出力:</strong> タスクによって異なります:
+    - VQA: 画像についての質問への答え。
+    - マッチング: テキストが画像について正しいかどうかの真／偽。
+    - 含意: 画像がテキストを意味的に含意するかの予測。
+    - サブクエスチョン: 知覚に関連するサブクエスチョンへの答え。
+- <strong>タスク:</strong> 画像についてさまざまな推論タスクを実行する。参考として上の例をご覧ください。</p>
+<p>一般に、VQA と視覚的推論はどちらも <em>視覚的質問応答（VQA）</em> タスクとして扱われます。VQA タスクで人気のモデルをいくつか挙げます:
+- <strong>BLIP-VQA</strong>: Salesforce AI が開発した、視覚的質問応答（VQA）タスクのための大規模な事前学習済みモデルです。「Bootstrapping Language-Image Pre-training」（BLIP）アプローチを使い、ノイズの多いウェブデータとキャプション生成の両方を活用して、さまざまな視覚言語タスクで最先端の性能を達成しています。BLIP は Hugging Face で次のように使えます:</p>
+<div class="codehilite"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">PIL</span><span class="w"> </span><span class="kn">import</span> <span class="n">Image</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">transformers</span><span class="w"> </span><span class="kn">import</span> <span class="n">pipeline</span>
+
+<span class="n">vqa_pipeline</span> <span class="o">=</span> <span class="n">pipeline</span><span class="p">(</span>
+    <span class="s2">"visual-question-answering"</span><span class="p">,</span> <span class="n">model</span><span class="o">=</span><span class="s2">"Salesforce/blip-vqa-capfilt-large"</span>
+<span class="p">)</span>
+
+<span class="n">image</span> <span class="o">=</span> <span class="n">Image</span><span class="o">.</span><span class="n">open</span><span class="p">(</span><span class="s2">"elephant.jpeg"</span><span class="p">)</span>
+<span class="n">question</span> <span class="o">=</span> <span class="s2">"Is there an elephant?"</span>
+
+<span class="n">vqa_pipeline</span><span class="p">(</span><span class="n">image</span><span class="p">,</span> <span class="n">question</span><span class="p">,</span> <span class="n">top_k</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+</code></pre></div>
+
+<ul>
+<li><strong>Deplot</strong>: プロットやチャートをテキストの要約に変換するよう学習された、ワンショットの視覚言語推論モデルです。これにより、LLM と統合して、人間が書いた新しいクエリでもデータについての複雑な質問に答えられます。DePlot は、プロットから表への変換タスクを標準化し、Pix2Struct アーキテクチャを活用することで、1つの例と LLM へのプロンプトだけで、チャート QA で従来の SOTA を上回っています。Deplot は Hugging Face で次のように使えます:</li>
+</ul>
+<div class="codehilite"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">transformers</span><span class="w"> </span><span class="kn">import</span> <span class="n">Pix2StructProcessor</span><span class="p">,</span> <span class="n">Pix2StructForConditionalGeneration</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">requests</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">PIL</span><span class="w"> </span><span class="kn">import</span> <span class="n">Image</span>
+
+<span class="n">processor</span> <span class="o">=</span> <span class="n">Pix2StructProcessor</span><span class="o">.</span><span class="n">from_pretrained</span><span class="p">(</span><span class="s2">"google/deplot"</span><span class="p">)</span>
+<span class="n">model</span> <span class="o">=</span> <span class="n">Pix2StructForConditionalGeneration</span><span class="o">.</span><span class="n">from_pretrained</span><span class="p">(</span><span class="s2">"google/deplot"</span><span class="p">)</span>
+
+<span class="n">url</span> <span class="o">=</span> <span class="s2">"https://raw.githubusercontent.com/vis-nlp/ChartQA/main/ChartQA%20Dataset/val/png/5090.png"</span>
+<span class="n">image</span> <span class="o">=</span> <span class="n">Image</span><span class="o">.</span><span class="n">open</span><span class="p">(</span><span class="n">requests</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">url</span><span class="p">,</span> <span class="n">stream</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span><span class="o">.</span><span class="n">raw</span><span class="p">)</span>
+
+<span class="n">inputs</span> <span class="o">=</span> <span class="n">processor</span><span class="p">(</span>
+    <span class="n">images</span><span class="o">=</span><span class="n">image</span><span class="p">,</span>
+    <span class="n">text</span><span class="o">=</span><span class="s2">"Generate underlying data table of the figure below:"</span><span class="p">,</span>
+    <span class="n">return_tensors</span><span class="o">=</span><span class="s2">"pt"</span><span class="p">,</span>
+<span class="p">)</span>
+<span class="n">predictions</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">generate</span><span class="p">(</span><span class="o">**</span><span class="n">inputs</span><span class="p">,</span> <span class="n">max_new_tokens</span><span class="o">=</span><span class="mi">512</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">processor</span><span class="o">.</span><span class="n">decode</span><span class="p">(</span><span class="n">predictions</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">skip_special_tokens</span><span class="o">=</span><span class="kc">True</span><span class="p">))</span>
+</code></pre></div>
+
+<ul>
+<li><strong>VLIT</strong>: 視覚・言語 Transformer（ViLT）モデルで、畳み込みや領域の教師なしに Transformer アーキテクチャを利用し、画像についての自然言語の質問に答えるために VQAv2 データセットでファインチューニングされたものです。ベースの ViLT モデルは大きなアーキテクチャ（B32 サイズ）を誇り、画像とテキストの共同学習を活用することで、さまざまな視覚言語タスク、特に VQA で効果的となり、競争力のある性能を達成しています。VLIT は Hugging Face で次のように使えます:</li>
+</ul>
+<div class="codehilite"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">transformers</span><span class="w"> </span><span class="kn">import</span> <span class="n">ViltProcessor</span><span class="p">,</span> <span class="n">ViltForQuestionAnswering</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">requests</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">PIL</span><span class="w"> </span><span class="kn">import</span> <span class="n">Image</span>
+
+<span class="c1"># 画像と質問を準備する</span>
+<span class="n">url</span> <span class="o">=</span> <span class="s2">"http://images.cocodataset.org/val2017/000000039769.jpg"</span>
+<span class="n">image</span> <span class="o">=</span> <span class="n">Image</span><span class="o">.</span><span class="n">open</span><span class="p">(</span><span class="n">requests</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">url</span><span class="p">,</span> <span class="n">stream</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span><span class="o">.</span><span class="n">raw</span><span class="p">)</span>
+<span class="n">text</span> <span class="o">=</span> <span class="s2">"How many cats are there?"</span>
+
+<span class="n">processor</span> <span class="o">=</span> <span class="n">ViltProcessor</span><span class="o">.</span><span class="n">from_pretrained</span><span class="p">(</span><span class="s2">"dandelin/vilt-b32-finetuned-vqa"</span><span class="p">)</span>
+<span class="n">model</span> <span class="o">=</span> <span class="n">ViltForQuestionAnswering</span><span class="o">.</span><span class="n">from_pretrained</span><span class="p">(</span><span class="s2">"dandelin/vilt-b32-finetuned-vqa"</span><span class="p">)</span>
+
+<span class="c1"># 入力を準備する</span>
+<span class="n">encoding</span> <span class="o">=</span> <span class="n">processor</span><span class="p">(</span><span class="n">image</span><span class="p">,</span> <span class="n">text</span><span class="p">,</span> <span class="n">return_tensors</span><span class="o">=</span><span class="s2">"pt"</span><span class="p">)</span>
+
+<span class="c1"># フォワードパス</span>
+<span class="n">outputs</span> <span class="o">=</span> <span class="n">model</span><span class="p">(</span><span class="o">**</span><span class="n">encoding</span><span class="p">)</span>
+<span class="n">logits</span> <span class="o">=</span> <span class="n">outputs</span><span class="o">.</span><span class="n">logits</span>
+<span class="n">idx</span> <span class="o">=</span> <span class="n">logits</span><span class="o">.</span><span class="n">argmax</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">)</span><span class="o">.</span><span class="n">item</span><span class="p">()</span>
+<span class="nb">print</span><span class="p">(</span><span class="s2">"Predicted answer:"</span><span class="p">,</span> <span class="n">model</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">id2label</span><span class="p">[</span><span class="n">idx</span><span class="p">])</span>
+</code></pre></div>
+
+<p>Hugging Face <code>transformers</code> ライブラリで VQA モデルを学習して使う方法は、<a href="https://huggingface.co/docs/transformers/v4.36.1/tasks/visual_question_answering">こちら</a>で詳しく学べます。</p>
+<h2>ドキュメント視覚的質問応答（DocVQA）</h2>
+<p><img alt="DocVQA" src="https://huggingface.co/datasets/hf-vision/course-assets/resolve/main/multimodal_fusion_text_vision/doc_vqa.jpg" />
+<em>Doc VQA モデルの入力（画像＋テキスト）と出力（テキスト）の例。 <a href="#doc-vqa-paper">[2]</a></em>
+- <strong>入力:</strong>
+    - ドキュメント画像: テキスト、レイアウト、視覚要素を含む、スキャンされた、あるいはデジタルなドキュメントの画像。
+    - ドキュメントについての質問: テキスト形式で提示された自然言語の質問。
+- <strong>タスク:</strong>
+    - 分析と理解: DocVQA モデルは、内容を完全に理解するために、ドキュメント内の視覚情報とテキスト情報の両方を処理しなければなりません。
+    - 推論と推測: モデルは、関連する結論を導くために、視覚要素、テキスト、質問の間の関係を確立する必要があります。
+    - 自然言語の答えを生成する: モデルは、自然言語のテキスト形式で、質問に対して明確で簡潔かつ正確な答えを生成しなければなりません。参考として上の例をご覧ください。</p>
+<ul>
+<li><strong>出力:</strong> 質問への答え: クエリに直接答え、ドキュメントで見つかった情報を正確に反映するテキストの応答。</li>
+</ul>
+<p>次に、Hugging Face の人気の DocVQA モデルをいくつか見てみましょう:
+- <strong>LayoutLM:</strong> ドキュメント画像を理解するために、テキストとそのレイアウトの両方を共同で分析する事前学習済みニューラルネットワークです。従来の NLP モデルとは異なり、フォントサイズ、位置、近接性といった要素を考慮して、単語とドキュメントの文脈における意味との関係を学習します。これにより、フォームの理解、レシートの分析、ドキュメント分類などのタスクに優れ、スキャンされたドキュメントから情報を抽出する強力なツールとなっています。LayoutLM は Hugging Face で次のように使えます:</p>
+<div class="codehilite"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">transformers</span><span class="w"> </span><span class="kn">import</span> <span class="n">pipeline</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">PIL</span><span class="w"> </span><span class="kn">import</span> <span class="n">Image</span>
+
+<span class="n">pipe</span> <span class="o">=</span> <span class="n">pipeline</span><span class="p">(</span><span class="s2">"document-question-answering"</span><span class="p">,</span> <span class="n">model</span><span class="o">=</span><span class="s2">"impira/layoutlm-document-qa"</span><span class="p">)</span>
+
+<span class="n">question</span> <span class="o">=</span> <span class="s2">"What is the purchase amount?"</span>
+<span class="n">image</span> <span class="o">=</span> <span class="n">Image</span><span class="o">.</span><span class="n">open</span><span class="p">(</span><span class="s2">"your-document.png"</span><span class="p">)</span>
+
+<span class="n">pipe</span><span class="p">(</span><span class="n">image</span><span class="o">=</span><span class="n">image</span><span class="p">,</span> <span class="n">question</span><span class="o">=</span><span class="n">question</span><span class="p">)</span>
+
+<span class="c1">## [{'answer': '20,000$'}]</span>
+</code></pre></div>
+
+<ul>
+<li><strong>Donut:</strong> OCR フリーのドキュメント理解 Transformer としても知られ、従来の光学文字認識（OCR）を介さず、ドキュメント画像を直接分析して内容を理解する最先端の画像処理モデルです。視覚エンコーダ（Swin Transformer）とテキストデコーダ（BART）を組み合わせて情報を抽出し、テキストの説明を生成します。ドキュメント分類、フォームの理解、視覚的質問応答などのタスクに優れています。その独自の強みは「エンドツーエンド」な性質にあり、別々の OCR ステップが持ち込む潜在的なエラーを避け、効率的な処理で優れた精度を達成します。Donut モデルは Hugging Face で次のように使えます:</li>
+</ul>
+<div class="codehilite"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">transformers</span><span class="w"> </span><span class="kn">import</span> <span class="n">pipeline</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">PIL</span><span class="w"> </span><span class="kn">import</span> <span class="n">Image</span>
+
+<span class="n">pipe</span> <span class="o">=</span> <span class="n">pipeline</span><span class="p">(</span>
+    <span class="s2">"document-question-answering"</span><span class="p">,</span> <span class="n">model</span><span class="o">=</span><span class="s2">"naver-clova-ix/donut-base-finetuned-docvqa"</span>
+<span class="p">)</span>
+
+<span class="n">question</span> <span class="o">=</span> <span class="s2">"What is the purchase amount?"</span>
+<span class="n">image</span> <span class="o">=</span> <span class="n">Image</span><span class="o">.</span><span class="n">open</span><span class="p">(</span><span class="s2">"your-document.png"</span><span class="p">)</span>
+
+<span class="n">pipe</span><span class="p">(</span><span class="n">image</span><span class="o">=</span><span class="n">image</span><span class="p">,</span> <span class="n">question</span><span class="o">=</span><span class="n">question</span><span class="p">)</span>
+
+<span class="c1">## [{'answer': '20,000$'}]</span>
+</code></pre></div>
+
+<ul>
+<li><strong>Nougat:</strong> 何百万もの学術論文で学習された視覚 Transformer モデルで、スキャンされた PDF を直接「読み」、数式や表のような複雑な要素も理解しながら、その内容を構造化されたマークアップ言語で出力できます。従来の光学文字認識を介さず、意味を保ちながら高い精度を達成し、PDF に蓄えられた科学的知識をより利用しやすくします。Nougat は Donut と同じアーキテクチャ、つまり画像 Transformer エンコーダと自己回帰型テキスト Transformer デコーダを使って、科学論文の PDF を Markdown に変換し、アクセスしやすくします。Nougat モデルは Hugging Face で次のように使えます:</li>
+</ul>
+<div class="codehilite"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">huggingface_hub</span><span class="w"> </span><span class="kn">import</span> <span class="n">hf_hub_download</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">re</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">PIL</span><span class="w"> </span><span class="kn">import</span> <span class="n">Image</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">transformers</span><span class="w"> </span><span class="kn">import</span> <span class="n">NougatProcessor</span><span class="p">,</span> <span class="n">VisionEncoderDecoderModel</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">datasets</span><span class="w"> </span><span class="kn">import</span> <span class="n">load_dataset</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">torch</span>
+
+<span class="n">processor</span> <span class="o">=</span> <span class="n">NougatProcessor</span><span class="o">.</span><span class="n">from_pretrained</span><span class="p">(</span><span class="s2">"facebook/nougat-base"</span><span class="p">)</span>
+<span class="n">model</span> <span class="o">=</span> <span class="n">VisionEncoderDecoderModel</span><span class="o">.</span><span class="n">from_pretrained</span><span class="p">(</span><span class="s2">"facebook/nougat-base"</span><span class="p">)</span>
+
+<span class="n">device</span> <span class="o">=</span> <span class="s2">"cuda"</span> <span class="k">if</span> <span class="n">torch</span><span class="o">.</span><span class="n">cuda</span><span class="o">.</span><span class="n">is_available</span><span class="p">()</span> <span class="k">else</span> <span class="s2">"cpu"</span>
+<span class="n">model</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="n">device</span><span class="p">)</span>
+<span class="c1"># モデルのために PDF 画像を準備する</span>
+<span class="n">filepath</span> <span class="o">=</span> <span class="n">hf_hub_download</span><span class="p">(</span>
+    <span class="n">repo_id</span><span class="o">=</span><span class="s2">"hf-internal-testing/fixtures_docvqa"</span><span class="p">,</span>
+    <span class="n">filename</span><span class="o">=</span><span class="s2">"nougat_paper.png"</span><span class="p">,</span>
+    <span class="n">repo_type</span><span class="o">=</span><span class="s2">"dataset"</span><span class="p">,</span>
+<span class="p">)</span>
+<span class="n">image</span> <span class="o">=</span> <span class="n">Image</span><span class="o">.</span><span class="n">open</span><span class="p">(</span><span class="n">filepath</span><span class="p">)</span>
+<span class="n">pixel_values</span> <span class="o">=</span> <span class="n">processor</span><span class="p">(</span><span class="n">image</span><span class="p">,</span> <span class="n">return_tensors</span><span class="o">=</span><span class="s2">"pt"</span><span class="p">)</span><span class="o">.</span><span class="n">pixel_values</span>
+
+<span class="c1"># 転写を生成する（ここでは 30 トークンだけ生成する）</span>
+<span class="n">outputs</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">generate</span><span class="p">(</span>
+    <span class="n">pixel_values</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="n">device</span><span class="p">),</span>
+    <span class="n">min_length</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span>
+    <span class="n">max_new_tokens</span><span class="o">=</span><span class="mi">30</span><span class="p">,</span>
+    <span class="n">bad_words_ids</span><span class="o">=</span><span class="p">[[</span><span class="n">processor</span><span class="o">.</span><span class="n">tokenizer</span><span class="o">.</span><span class="n">unk_token_id</span><span class="p">]],</span>
+<span class="p">)</span>
+
+<span class="n">sequence</span> <span class="o">=</span> <span class="n">processor</span><span class="o">.</span><span class="n">batch_decode</span><span class="p">(</span><span class="n">outputs</span><span class="p">,</span> <span class="n">skip_special_tokens</span><span class="o">=</span><span class="kc">True</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span>
+<span class="n">sequence</span> <span class="o">=</span> <span class="n">processor</span><span class="o">.</span><span class="n">post_process_generation</span><span class="p">(</span><span class="n">sequence</span><span class="p">,</span> <span class="n">fix_markdown</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+<span class="c1"># 注: ここでは \n 文字を出力するために repr を使っているが、そのまま sequence を print してもよい</span>
+<span class="nb">print</span><span class="p">(</span><span class="nb">repr</span><span class="p">(</span><span class="n">sequence</span><span class="p">))</span>
+</code></pre></div>
+
+<p>Hugging Face <code>transformers</code> ライブラリで DocVQA モデルを学習して使う方法は、<a href="https://huggingface.co/docs/transformers/tasks/document_question_answering">こちら</a>で詳しく学べます。</p>
+<h2>画像キャプション生成</h2>
+<p><img alt="画像キャプション生成" src="https://huggingface.co/datasets/hf-vision/course-assets/resolve/main/multimodal_fusion_text_vision/image_captioning.png" />
+<em>画像キャプション生成モデルの入力（画像）と出力（テキスト）の例。 <a href="#pretraining-paper">[1]</a></em>
+- <strong>入力:</strong>
+    - 画像: さまざまな形式（JPEG、PNG など）の画像。
+    - 事前学習済みの画像特徴抽出器（任意）: 畳み込みニューラルネットワーク（CNN）など、画像から意味のある特徴を抽出できる事前学習済みニューラルネットワーク。
+- <strong>出力:</strong> テキストのキャプション: 入力画像の内容を正確に説明する1文または1段落。物体、行動、関係、全体の文脈を捉えます。参考として上の例をご覧ください。
+- <strong>タスク:</strong> 画像の自然言語による説明を自動生成すること。これには、(1) 画像の視覚的内容（物体、行動、関係）を理解すること、(2) この情報を意味のある表現にエンコードすること、(3) この表現を、首尾一貫し、文法的に正しく、情報量のある文や句へデコードすることが含まれます。</p>
+<p>次に、Hugging Face の人気の画像キャプション生成モデルをいくつか見てみましょう:
+- <strong>ViT-GPT2:</strong> 画像キャプションを生成するための PyTorch モデルで、視覚特徴抽出のための Vision Transformer（ViT）とテキスト生成のための GPT-2 を組み合わせて構築されています。COCO データセットで学習され、豊かな画像の詳細をエンコードする ViT の能力と、言語生成における GPT-2 の流暢さを活かして、正確で説明的なキャプションを作ります。このオープンソースモデルは、画像理解とキャプション生成のタスクに効果的なソリューションを提供します。<strong>ViT-GPT2</strong> は Hugging Face で次のように使えます:</p>
+<div class="codehilite"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">transformers</span><span class="w"> </span><span class="kn">import</span> <span class="n">pipeline</span>
+
+<span class="n">image_to_text</span> <span class="o">=</span> <span class="n">pipeline</span><span class="p">(</span><span class="s2">"image-to-text"</span><span class="p">,</span> <span class="n">model</span><span class="o">=</span><span class="s2">"nlpconnect/vit-gpt2-image-captioning"</span><span class="p">)</span>
+
+<span class="n">image_to_text</span><span class="p">(</span><span class="s2">"https://ankur3107.github.io/assets/images/image-captioning-example.png"</span><span class="p">)</span>
+
+<span class="c1"># [{'generated_text': 'a soccer game with a player jumping to catch the ball '}]</span>
+</code></pre></div>
+
+<ul>
+<li><strong>BLIP-Image-Captioning:</strong> BLIP を基にした最先端の画像キャプション生成モデルです。BLIP は、視覚言語の理解と生成を統一するために、クリーンなウェブデータとノイズの多いウェブデータの両方で事前学習されたフレームワークです。ノイズの多いキャプションを除去するブートストラップ処理を使い、画像キャプション生成、画像・テキスト検索、VQA などのタスクで性能を向上させています。ViT-L バックボーンで構築されたこの large バージョンは、画像から正確で詳細なキャプションを生成することに優れています。BLIP 画像キャプション生成モデルは Hugging Face で次のように使えます:</li>
+</ul>
+<div class="codehilite"><pre><span></span><code><span class="kn">import</span><span class="w"> </span><span class="nn">requests</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">PIL</span><span class="w"> </span><span class="kn">import</span> <span class="n">Image</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">transformers</span><span class="w"> </span><span class="kn">import</span> <span class="n">BlipProcessor</span><span class="p">,</span> <span class="n">BlipForConditionalGeneration</span>
+
+<span class="n">processor</span> <span class="o">=</span> <span class="n">BlipProcessor</span><span class="o">.</span><span class="n">from_pretrained</span><span class="p">(</span><span class="s2">"Salesforce/blip-image-captioning-large"</span><span class="p">)</span>
+<span class="n">model</span> <span class="o">=</span> <span class="n">BlipForConditionalGeneration</span><span class="o">.</span><span class="n">from_pretrained</span><span class="p">(</span>
+    <span class="s2">"Salesforce/blip-image-captioning-large"</span>
+<span class="p">)</span>
+
+<span class="n">img_url</span> <span class="o">=</span> <span class="s2">"https://storage.googleapis.com/sfr-vision-language-research/BLIP/demo.jpg"</span>
+<span class="n">raw_image</span> <span class="o">=</span> <span class="n">Image</span><span class="o">.</span><span class="n">open</span><span class="p">(</span><span class="n">requests</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">img_url</span><span class="p">,</span> <span class="n">stream</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span><span class="o">.</span><span class="n">raw</span><span class="p">)</span><span class="o">.</span><span class="n">convert</span><span class="p">(</span><span class="s2">"RGB"</span><span class="p">)</span>
+
+<span class="c1"># 条件付き画像キャプション生成</span>
+<span class="n">text</span> <span class="o">=</span> <span class="s2">"a photography of"</span>
+<span class="n">inputs</span> <span class="o">=</span> <span class="n">processor</span><span class="p">(</span><span class="n">raw_image</span><span class="p">,</span> <span class="n">text</span><span class="p">,</span> <span class="n">return_tensors</span><span class="o">=</span><span class="s2">"pt"</span><span class="p">)</span>
+
+<span class="n">out</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">generate</span><span class="p">(</span><span class="o">**</span><span class="n">inputs</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">processor</span><span class="o">.</span><span class="n">decode</span><span class="p">(</span><span class="n">out</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">skip_special_tokens</span><span class="o">=</span><span class="kc">True</span><span class="p">))</span>
+
+<span class="c1"># 無条件の画像キャプション生成</span>
+<span class="n">inputs</span> <span class="o">=</span> <span class="n">processor</span><span class="p">(</span><span class="n">raw_image</span><span class="p">,</span> <span class="n">return_tensors</span><span class="o">=</span><span class="s2">"pt"</span><span class="p">)</span>
+
+<span class="n">out</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">generate</span><span class="p">(</span><span class="o">**</span><span class="n">inputs</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">processor</span><span class="o">.</span><span class="n">decode</span><span class="p">(</span><span class="n">out</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">skip_special_tokens</span><span class="o">=</span><span class="kc">True</span><span class="p">))</span>
+</code></pre></div>
+
+<ul>
+<li><strong>git-base:</strong> <code>microsoft/git-base</code> は GIT（GenerativeImage2Text）モデルのベースサイズ版です。GIT は、画像のテキスト説明を生成するよう学習された Transformer デコーダです。画像トークンとテキストトークンの両方を入力として受け取り、画像とこれまでのテキストの両方に基づいて次のテキストトークンを予測します。そのため、画像や動画のキャプション生成などのタスクに適しています。<code>microsoft/git-base-coco</code> や <code>microsoft/git-base-textcaps</code> のようなファインチューニング済みバージョンが特定のデータセット向けに存在し、ベースモデルはさらなるカスタマイズの出発点となります。git-base モデルは Hugging Face で次のように使えます:</li>
+</ul>
+<div class="codehilite"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">transformers</span><span class="w"> </span><span class="kn">import</span> <span class="n">AutoProcessor</span><span class="p">,</span> <span class="n">AutoModelForCausalLM</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">requests</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">PIL</span><span class="w"> </span><span class="kn">import</span> <span class="n">Image</span>
+
+<span class="n">processor</span> <span class="o">=</span> <span class="n">AutoProcessor</span><span class="o">.</span><span class="n">from_pretrained</span><span class="p">(</span><span class="s2">"microsoft/git-base-coco"</span><span class="p">)</span>
+<span class="n">model</span> <span class="o">=</span> <span class="n">AutoModelForCausalLM</span><span class="o">.</span><span class="n">from_pretrained</span><span class="p">(</span><span class="s2">"microsoft/git-base-coco"</span><span class="p">)</span>
+
+<span class="n">url</span> <span class="o">=</span> <span class="s2">"http://images.cocodataset.org/val2017/000000039769.jpg"</span>
+<span class="n">image</span> <span class="o">=</span> <span class="n">Image</span><span class="o">.</span><span class="n">open</span><span class="p">(</span><span class="n">requests</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">url</span><span class="p">,</span> <span class="n">stream</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span><span class="o">.</span><span class="n">raw</span><span class="p">)</span>
+
+<span class="n">pixel_values</span> <span class="o">=</span> <span class="n">processor</span><span class="p">(</span><span class="n">images</span><span class="o">=</span><span class="n">image</span><span class="p">,</span> <span class="n">return_tensors</span><span class="o">=</span><span class="s2">"pt"</span><span class="p">)</span><span class="o">.</span><span class="n">pixel_values</span>
+
+<span class="n">generated_ids</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">generate</span><span class="p">(</span><span class="n">pixel_values</span><span class="o">=</span><span class="n">pixel_values</span><span class="p">,</span> <span class="n">max_length</span><span class="o">=</span><span class="mi">50</span><span class="p">)</span>
+<span class="n">generated_caption</span> <span class="o">=</span> <span class="n">processor</span><span class="o">.</span><span class="n">batch_decode</span><span class="p">(</span><span class="n">generated_ids</span><span class="p">,</span> <span class="n">skip_special_tokens</span><span class="o">=</span><span class="kc">True</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">generated_caption</span><span class="p">)</span>
+</code></pre></div>
+
+<p>Hugging Face <code>transformers</code> ライブラリで画像キャプション生成モデルを学習して使う方法は、<a href="https://huggingface.co/docs/transformers/v4.36.1/en/tasks/image_captioning">こちら</a>で詳しく学べます。</p>
+<h2>画像・テキスト検索</h2>
+<p><img alt="画像・テキスト検索" src="https://huggingface.co/datasets/hf-vision/course-assets/resolve/main/multimodal_fusion_text_vision/image_text_retrieval.png" />
+<em>テキストから画像への検索の入力（テキストクエリ）と出力（画像）の例。 <a href="#pretraining-paper">[1]</a></em>
+- <strong>入力:</strong>
+    - 画像: さまざまな形式（JPEG、PNG など）の画像。
+    - テキスト: 通常、画像に関連付けられたキャプション、説明、キーワードの形の自然言語テキスト。
+- <strong>出力:</strong> 
+    - 関連する画像: テキストクエリが与えられると、システムはそのテキストに最も関連する画像の順位付きリストを返す。
+    - 関連するテキスト: 画像クエリが与えられると、システムはその画像を最もよく説明するテキストの説明やキャプションの順位付きリストを返す。
+- <strong>タスク:</strong>
+    - 画像からテキストへの検索: 画像を入力として、その内容を正確に説明するテキストの説明やキャプションを取得する。
+    - テキストから画像への検索: テキストクエリが与えられたとき、テキストで言及された概念や実体と視覚的に一致する画像を取得する。</p>
+<p>画像・テキスト検索で最も人気のモデルの1つが CLIP です。
+- <strong>CLIP（Contrastive Language-Image Pretraining）:</strong> 共有埋め込み空間を活用することで、画像・テキスト検索に優れています。対照学習により、大規模な画像とテキストのデータセットで事前学習され、モデルが多様な概念を共通の空間へマッピングできるようになります。CLIP は事前学習時に対照学習アプローチを活用し、画像とテキストを共有埋め込み空間へマッピングすることを学習します。この共有空間により、2つのモダリティ間の直接比較が可能になり、効率的で正確な検索タスクが実現します。画像・テキスト検索では、画像とテキストを共有埋め込み空間にエンコードすることで CLIP を適用でき、画像とテキストクエリの類似度は、それぞれの埋め込みの近さで測られます。このモデルの汎用性は、タスク固有のファインチューニングなしに意味的な関係を把握できる能力から生まれ、コンテンツベースの画像検索から、画像への自然言語クエリの解釈まで、幅広い応用で効率的に使えます。CLIP を Hugging Face で画像・テキスト検索に使う方法は次のとおりです:</p>
+<div class="codehilite"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">PIL</span><span class="w"> </span><span class="kn">import</span> <span class="n">Image</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">requests</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">transformers</span><span class="w"> </span><span class="kn">import</span> <span class="n">CLIPProcessor</span><span class="p">,</span> <span class="n">CLIPModel</span>
+
+<span class="n">model</span> <span class="o">=</span> <span class="n">CLIPModel</span><span class="o">.</span><span class="n">from_pretrained</span><span class="p">(</span><span class="s2">"openai/clip-vit-base-patch32"</span><span class="p">)</span>
+<span class="n">processor</span> <span class="o">=</span> <span class="n">CLIPProcessor</span><span class="o">.</span><span class="n">from_pretrained</span><span class="p">(</span><span class="s2">"openai/clip-vit-base-patch32"</span><span class="p">)</span>
+
+<span class="n">url</span> <span class="o">=</span> <span class="s2">"http://images.cocodataset.org/val2017/000000039769.jpg"</span>
+<span class="n">image</span> <span class="o">=</span> <span class="n">Image</span><span class="o">.</span><span class="n">open</span><span class="p">(</span><span class="n">requests</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">url</span><span class="p">,</span> <span class="n">stream</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span><span class="o">.</span><span class="n">raw</span><span class="p">)</span>
+
+<span class="n">inputs</span> <span class="o">=</span> <span class="n">processor</span><span class="p">(</span>
+    <span class="n">text</span><span class="o">=</span><span class="p">[</span><span class="s2">"a photo of a cat"</span><span class="p">,</span> <span class="s2">"a photo of a dog"</span><span class="p">],</span>
+    <span class="n">images</span><span class="o">=</span><span class="n">image</span><span class="p">,</span>
+    <span class="n">return_tensors</span><span class="o">=</span><span class="s2">"pt"</span><span class="p">,</span>
+    <span class="n">padding</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+<span class="p">)</span>
+
+<span class="n">outputs</span> <span class="o">=</span> <span class="n">model</span><span class="p">(</span><span class="o">**</span><span class="n">inputs</span><span class="p">)</span>
+<span class="n">logits_per_image</span> <span class="o">=</span> <span class="n">outputs</span><span class="o">.</span><span class="n">logits_per_image</span>  <span class="c1"># これは画像・テキストの類似度スコア</span>
+<span class="n">probs</span> <span class="o">=</span> <span class="n">logits_per_image</span><span class="o">.</span><span class="n">softmax</span><span class="p">(</span>
+    <span class="n">dim</span><span class="o">=</span><span class="mi">1</span>
+<span class="p">)</span>  <span class="c1"># softmax を取ってラベルの確率を得ることができる</span>
+</code></pre></div>
+
+<p>Hugging Face で CLIP を画像・テキスト検索に使う方法は、<a href="https://huggingface.co/docs/transformers/model_doc/clip#resources">こちら</a>で詳しく学べます。</p>
+<h2>視覚的グラウンディング</h2>
+<p><img alt="視覚的グラウンディング" src="https://huggingface.co/datasets/hf-vision/course-assets/resolve/main/multimodal_fusion_text_vision/visual_grounding.jpg" />
+<em>入力（画像＋テキスト）と出力（バウンディングボックス）の例。(a) フレーズグラウンディング (b) 表現理解。 <a href="#pretraining-paper">[1]</a></em>
+- <strong>入力:</strong>
+    - 画像: シーンや物体の視覚的表現。
+    - 自然言語クエリ: 画像の特定の部分を指すテキストの説明や質問。</p>
+<ul>
+<li><strong>出力:</strong> バウンディングボックスまたはセグメンテーションマスク: クエリで説明された物体や領域に対応する、画像内の空間領域。通常は座標やハイライトされた領域として表されます。</li>
+<li><strong>タスク:</strong> 関連する物体や領域の位置を特定する: モデルは、クエリに一致する画像の部分を正しく特定しなければなりません。これには、画像の視覚的内容とクエリの言語的意味の両方の理解が必要です。</li>
+</ul>
+<p>次に、Hugging Face の人気の視覚的グラウンディング（物体検出）モデルをいくつか見てみましょう。
+- <strong>OWL-ViT:</strong> OWL-ViT（Vision Transformer for Open-World Localization）は、標準的な Vision Transformer アーキテクチャの上に構築され、大規模な画像・テキストのペアで学習された強力な物体検出モデルです。「オープンボキャブラリ」な検出に優れ、テキストの説明に基づき、学習データに存在しない物体も特定できます。対照的な事前学習とファインチューニングを活用し、ゼロショット（テキスト誘導）検出タスクとワンショット（画像誘導）検出タスクの両方で優れた性能を達成し、画像内の柔軟な検索と特定のための多用途なツールとなっています。OWL-ViT は Hugging Face で次のように使えます:</p>
+<div class="codehilite"><pre><span></span><code><span class="kn">import</span><span class="w"> </span><span class="nn">requests</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">PIL</span><span class="w"> </span><span class="kn">import</span> <span class="n">Image</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">torch</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">transformers</span><span class="w"> </span><span class="kn">import</span> <span class="n">OwlViTProcessor</span><span class="p">,</span> <span class="n">OwlViTForObjectDetection</span>
+
+<span class="n">processor</span> <span class="o">=</span> <span class="n">OwlViTProcessor</span><span class="o">.</span><span class="n">from_pretrained</span><span class="p">(</span><span class="s2">"google/owlvit-base-patch32"</span><span class="p">)</span>
+<span class="n">model</span> <span class="o">=</span> <span class="n">OwlViTForObjectDetection</span><span class="o">.</span><span class="n">from_pretrained</span><span class="p">(</span><span class="s2">"google/owlvit-base-patch32"</span><span class="p">)</span>
+
+<span class="n">url</span> <span class="o">=</span> <span class="s2">"http://images.cocodataset.org/val2017/000000039769.jpg"</span>
+<span class="n">image</span> <span class="o">=</span> <span class="n">Image</span><span class="o">.</span><span class="n">open</span><span class="p">(</span><span class="n">requests</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">url</span><span class="p">,</span> <span class="n">stream</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span><span class="o">.</span><span class="n">raw</span><span class="p">)</span>
+<span class="n">texts</span> <span class="o">=</span> <span class="p">[[</span><span class="s2">"a photo of a cat"</span><span class="p">,</span> <span class="s2">"a photo of a dog"</span><span class="p">]]</span>
+<span class="n">inputs</span> <span class="o">=</span> <span class="n">processor</span><span class="p">(</span><span class="n">text</span><span class="o">=</span><span class="n">texts</span><span class="p">,</span> <span class="n">images</span><span class="o">=</span><span class="n">image</span><span class="p">,</span> <span class="n">return_tensors</span><span class="o">=</span><span class="s2">"pt"</span><span class="p">)</span>
+<span class="n">outputs</span> <span class="o">=</span> <span class="n">model</span><span class="p">(</span><span class="o">**</span><span class="n">inputs</span><span class="p">)</span>
+
+<span class="c1"># バウンディングボックス予測をリスケールするための対象画像サイズ（高さ、幅）[batch_size, 2]</span>
+<span class="n">target_sizes</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">([</span><span class="n">image</span><span class="o">.</span><span class="n">size</span><span class="p">[::</span><span class="o">-</span><span class="mi">1</span><span class="p">]])</span>
+<span class="c1"># 出力（バウンディングボックスとクラスのロジット）を COCO API へ変換する</span>
+<span class="n">results</span> <span class="o">=</span> <span class="n">processor</span><span class="o">.</span><span class="n">post_process_object_detection</span><span class="p">(</span>
+    <span class="n">outputs</span><span class="o">=</span><span class="n">outputs</span><span class="p">,</span> <span class="n">threshold</span><span class="o">=</span><span class="mf">0.1</span><span class="p">,</span> <span class="n">target_sizes</span><span class="o">=</span><span class="n">target_sizes</span>
+<span class="p">)</span>
+
+<span class="n">i</span> <span class="o">=</span> <span class="mi">0</span>  <span class="c1"># 対応するテキストクエリについて、最初の画像の予測を取得する</span>
+<span class="n">text</span> <span class="o">=</span> <span class="n">texts</span><span class="p">[</span><span class="n">i</span><span class="p">]</span>
+<span class="n">boxes</span><span class="p">,</span> <span class="n">scores</span><span class="p">,</span> <span class="n">labels</span> <span class="o">=</span> <span class="n">results</span><span class="p">[</span><span class="n">i</span><span class="p">][</span><span class="s2">"boxes"</span><span class="p">],</span> <span class="n">results</span><span class="p">[</span><span class="n">i</span><span class="p">][</span><span class="s2">"scores"</span><span class="p">],</span> <span class="n">results</span><span class="p">[</span><span class="n">i</span><span class="p">][</span><span class="s2">"labels"</span><span class="p">]</span>
+
+<span class="c1"># 検出された物体とリスケールされたボックス座標を出力する</span>
+<span class="k">for</span> <span class="n">box</span><span class="p">,</span> <span class="n">score</span><span class="p">,</span> <span class="n">label</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="n">boxes</span><span class="p">,</span> <span class="n">scores</span><span class="p">,</span> <span class="n">labels</span><span class="p">):</span>
+    <span class="n">box</span> <span class="o">=</span> <span class="p">[</span><span class="nb">round</span><span class="p">(</span><span class="n">i</span><span class="p">,</span> <span class="mi">2</span><span class="p">)</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">box</span><span class="o">.</span><span class="n">tolist</span><span class="p">()]</span>
+    <span class="nb">print</span><span class="p">(</span>
+        <span class="sa">f</span><span class="s2">"Detected </span><span class="si">{</span><span class="n">text</span><span class="p">[</span><span class="n">label</span><span class="p">]</span><span class="si">}</span><span class="s2"> with confidence </span><span class="si">{</span><span class="nb">round</span><span class="p">(</span><span class="n">score</span><span class="o">.</span><span class="n">item</span><span class="p">(),</span><span class="w"> </span><span class="mi">3</span><span class="p">)</span><span class="si">}</span><span class="s2"> at location </span><span class="si">{</span><span class="n">box</span><span class="si">}</span><span class="s2">"</span>
+    <span class="p">)</span>
+</code></pre></div>
+
+<ul>
+<li><strong>Grounding DINO<a href="#grounding-dino">[3]</a>:</strong> Transformer ベースの物体検出器（DINO）と「grounded な事前学習」を組み合わせ、最先端のゼロショット物体検出モデルを作り上げたものです。画像と人間の言語入力（カテゴリ名や説明など）の両方を理解できるため、学習データになかった物体でも特定できます。そのアーキテクチャは、テキストと画像のバックボーン、特徴エンハンサ、言語誘導型クエリ選択、クロスモダリティデコーダを組み合わせ、COCO や LVIS のようなベンチマークで優れた結果を達成しています。本質的に、Grounding DINO は視覚情報を取り込み、テキストの説明と結びつけ、その理解を使ってまったく新しいカテゴリの中でも物体を特定します。
+Grounding DINO モデルは、Google Colab の<a href="https://colab.research.google.com/github/roboflow-ai/notebooks/blob/main/notebooks/zero-shot-object-detection-with-grounding-dino.ipynb">こちら</a>で試せます。</li>
+</ul>
+<h2>テキストからの画像生成</h2>
+<p><img alt="テキスト・画像生成" src="https://huggingface.co/datasets/hf-vision/course-assets/resolve/main/multimodal_fusion_text_vision/text_image_generation.png" />
+<em>テキスト・画像生成のための自己回帰モデルと拡散モデルの図。<a href="#pretraining-paper">[1]</a></em>
+- <strong>自己回帰モデル:</strong> これらのモデルは、このタスクを、言語モデルが文を生成するのと同様に、テキストの説明を画像トークンの列へ変換するものとして扱います。パズルのピースのように、VQ-VAE のような画像トークナイザで作られたこれらのトークンは、基本的な画像特徴を表します。このモデルはエンコーダ・デコーダアーキテクチャを使います。エンコーダはテキストプロンプトから情報を抽出し、デコーダはその情報に誘導されながら、一度に1つの画像トークンを予測し、最終的な画像をピクセル単位で徐々に構築します。このアプローチは高い制御性と詳細さを可能にしますが、長く複雑なプロンプトの取り扱いに課題があり、拡散モデルのような代替手法より遅くなることがあります。生成プロセスは上の図 (a) に示されています。</p>
+<ul>
+<li><strong>Stable Diffusion モデル:</strong> Stable Diffusion モデルは「潜在拡散（Latent Diffusion）」の手法を使います。テキストプロンプトと凍結された CLIP テキストエンコーダに誘導されながら、ノイズから徐々にノイズ除去して画像を構築します。UNet バックボーンと CLIP エンコーダを備えた軽量なアーキテクチャにより GPU を使った画像生成が可能で、潜在空間に焦点を当てることでメモリ消費を減らします。この独自の構成は多様な芸術的表現を可能にし、テキスト入力を写実的で想像力豊かなビジュアルへ変換します。生成プロセスは上の図 (b) に示されています。</li>
+</ul>
+<p>次に、Hugging Face でテキスト・画像生成モデルをどう使うかを見てみましょう。</p>
+<p><code>diffusers</code> ライブラリをインストールします:</p>
+<div class="codehilite"><pre><span></span><code>pip<span class="w"> </span>install<span class="w"> </span>diffusers<span class="w"> </span>--upgrade
+</code></pre></div>
+
+<p>さらに、transformers、safetensors、accelerate と、invisible watermark もインストールしてください:</p>
+<div class="codehilite"><pre><span></span><code>pip<span class="w"> </span>install<span class="w"> </span>invisible_watermark<span class="w"> </span>transformers<span class="w"> </span>accelerate<span class="w"> </span>safetensors
+</code></pre></div>
+
+<p>ベースモデルを使うだけなら、次のように実行できます:</p>
+<div class="codehilite"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">diffusers</span><span class="w"> </span><span class="kn">import</span> <span class="n">DiffusionPipeline</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">torch</span>
+
+<span class="n">pipe</span> <span class="o">=</span> <span class="n">DiffusionPipeline</span><span class="o">.</span><span class="n">from_pretrained</span><span class="p">(</span>
+    <span class="s2">"stabilityai/stable-diffusion-xl-base-1.0"</span><span class="p">,</span>
+    <span class="n">torch_dtype</span><span class="o">=</span><span class="n">torch</span><span class="o">.</span><span class="n">float16</span><span class="p">,</span>
+    <span class="n">use_safetensors</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+    <span class="n">variant</span><span class="o">=</span><span class="s2">"fp16"</span><span class="p">,</span>
+<span class="p">)</span>
+<span class="n">pipe</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="s2">"cuda"</span><span class="p">)</span>
+
+<span class="n">prompt</span> <span class="o">=</span> <span class="s2">"An astronaut riding a unicorn"</span>
+
+<span class="n">images</span> <span class="o">=</span> <span class="n">pipe</span><span class="p">(</span><span class="n">prompt</span><span class="o">=</span><span class="n">prompt</span><span class="p">)</span><span class="o">.</span><span class="n">images</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+</code></pre></div>
+
+<p>テキスト・画像生成モデルについてもっと知りたい方は、Hugging Face の <a href="https://huggingface.co/docs/diffusers/training/overview">Diffusers Course</a> を参照してください。</p>
+<p>これで、画像とテキストのモダリティを含む人気のタスクとモデルの一部が分かりました。しかし、上記のタスクのためにどう学習やファインチューニングをするのか、気になっているかもしれません。そこで、視覚言語モデルの学習を少しのぞいてみましょう。</p>
+<h2>視覚言語事前学習済みモデルの一端</h2>
+<p><img alt="VLP フレームワーク" src="https://huggingface.co/datasets/hf-vision/course-assets/resolve/main/multimodal_fusion_text_vision/vlp_framework.png" />
+<em>Transformer ベースの視覚言語モデルの一般的なフレームワーク。 <a href="#pretraining-paper">[1]</a></em></p>
+<p>画像・テキストのペアが与えられると、視覚言語モデルはまず、テキストエンコーダと視覚エンコーダでそれぞれテキスト特徴と視覚特徴を抽出します。テキスト特徴と視覚特徴は次にマルチモーダル融合モジュールに送られ、クロスモーダルな表現を生成します。その後、任意でデコーダに送られて最終的な出力を生成します。この一般的なフレームワークの図は上の図に示されています。多くの場合、画像／テキストのバックボーン、マルチモーダル融合モジュール、デコーダの間に明確な境界はありません。</p>
+<p>お疲れさまでした！ 最後までたどり着きました。次は、視覚言語事前学習済みモデルについての次のセクションへ進みましょう。</p>
+<h2>参考文献</h2>
+<ol>
+<li><a href="https://arxiv.org/abs/2210.09263">Vision-Language Pre-training: Basics, Recent Advances, and Future Trends</a><a id="pretraining-paper"></a></li>
+<li><a href="https://arxiv.org/abs/2104.14336">Document Collection Visual Question Answering</a><a id="doc-vqa-paper"></a></li>
+<li><a href="https://arxiv.org/abs/2303.05499">Grounding DINO: Marrying DINO with Grounded Pre-Training for Open-Set Object Detection</a><a id="grounding-dino"></a></li>
+</ol>
+</article>
+<nav class="page-nav"><a class="nav-link prev" href="vlm-intro.html">← 前へ: 視覚言語モデル入門</a><a class="nav-link toc-link" href="../../index.html">目次へ</a><a class="nav-link next" href="clip-and-relatives/Introduction.html">次へ →: CLIP とその仲間たち</a></nav>
+</main>
+<footer class="site-footer">
+  <p>原典: Hugging Face huggingface/computer-vision-course（<a href="https://github.com/huggingface/computer-vision-course">https://github.com/huggingface/computer-vision-course</a>）</p>
+  <p>日本語版の翻訳・公開: 霞ヶ関京 / 連絡先: GitHub <a href="https://github.com/yanikasumin">@yanikasumin</a> / YouTube <a href="https://www.youtube.com/@KASUMI_MOF">@KASUMI_MOF</a></p>
+  <p class="demo-note">このサイトはデモ版です。内容は順次更新されます。</p>
+</footer>
+<script src="../../../site.js"></script>
+</body>
+</html>

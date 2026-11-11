@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>はじめに | Hugging Face コース日本語版（デモ版）</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Shippori+Mincho:wght@500;700&family=Zen+Kaku+Gothic+New:wght@400;500;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../../../style.css">
+<script>
+window.MathJax = { tex: { inlineMath: [['$', '$'], ['\\(', '\\)']], displayMath: [['$$', '$$'], ['\\[', '\\]']] }, options: { skipHtmlTags: ['script','noscript','style','textarea','pre','code'] } };
+</script>
+<script async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml.js"></script>
+</head>
+<body>
+<header class="site-header">
+  <div class="header-inner">
+    <a class="site-title" href="../../../index.html">Hugging Face コース日本語版</a>
+    <span class="demo-badge">デモ版</span>
+  </div>
+</header>
+<main class="container">
+<p class="course-crumb"><a href="../../index.html">Community CV コース</a>
+<span class="badge badge-qa-wip">翻訳済み・QA進行中（未検証の部分を含みます）</span></p>
+<nav class="page-nav"><a class="nav-link prev" href="../../unit6/basic-cv-tasks/segmentation.html">← 前へ: 画像セグメンテーション</a><a class="nav-link toc-link" href="../../index.html">目次へ</a><a class="nav-link next" href="video-processing-basics.html">次へ →: ビデオ処理の基礎</a></nav>
+<article class="content">
+<h1>はじめに</h1>
+<p>ビデオとビデオ処理のユニットへようこそ。ここまでのコースでは、主に標準的な静止した2D画像を扱ってきました。
+もちろん、コンピュータビジョンの実世界にはもっと多くの可能性があります。ビデオは、ソーシャルメディア、放送、監視カメラといった応用のおかげで、私たちの世界で最もよく使われるメディアの1つです。</p>
+<p>社会的にも研究的にも重要なメディアであるため、このコースでも取り上げます。この導入章では、ビデオ処理を詳しく見る前に、ビデオの背後にあるごく基本的な理論を学びます。</p>
+<h2>ビデオとは？</h2>
+<p>画像は、視覚データを2進数で表した2次元（2D）の表現です。ビデオは、これらのフレームや画像を順番に表示するマルチメディア形式です。</p>
+<p>技術的に言えば、フレームはそれぞれ独立した絵です。そのため、これらのフレームを通常の速度で連続して保存・再生するとビデオができあがり、動きの錯覚を与えます（パラパラ漫画と同じです）。
+ビデオは、情報、娯楽、会話を伝えるための人気の高い、広く使われるメディアです。ビデオや写真は、ビデオカメラやスマートフォンなどの画像取得機器で撮影されます。</p>
+<h3>ビデオの特徴</h3>
+<ul>
+<li>
+<p><strong>解像度:</strong>
+ビデオの解像度は、各フレームのピクセル数、言い換えればビデオの各フレームの大きさを指します。標準サイズである必要はありませんが、ビデオには一般的なサイズがあります。よく使われるビデオ解像度には、HD（1280x720ピクセル）、フルHD（1920x1080ピクセル）、ウルトラHD（4K、3840x2160ピクセル）などがあります。
+解像度が1920x1080ピクセルのビデオとは、要するに幅が1920ピクセル、高さが1080ピクセルのビデオということです。
+高解像度のビデオはより詳細ですが、その分ストレージ容量と処理能力を多く必要とします。</p>
+</li>
+<li>
+<p><strong>フレームレート:</strong>
+ビデオは複数の独立したフレーム、つまり画像で構成されています。動きの印象を与えるため、これらのフレームが次々と素早く表示されます。
+ 1秒間に表示されるフレーム数を「フレームレート」と呼びます。一般的なフレームレートには、24、30、60フレーム毎秒（fps）、あるいはヘルツ（周波数の一般的な単位）があります。フレームレートが高いほど、動きは滑らかになります。</p>
+</li>
+<li>
+<p><strong>ビットレート:</strong>
+音声とビデオを表すのに必要なデータ量をビットレートと呼びます。ビットレートが高いほど高品質になりますが、ストレージ容量とストリーミングの帯域幅を多く必要とします。</p>
+</li>
+</ul>
+<p>ビデオのビットレートは通常、メガバイト毎秒（mbps）やキロバイト毎秒（kbps）で表されます。</p>
+<ul>
+<li><strong>コーデック:</strong>
+コーデックは「compressor-decompressor」の略で、デジタルメディアを圧縮・伸長するソフトウェアまたはハードウェアのコンポーネントです。メディアファイルのサイズを小さくし、許容できる品質を保ちながら、保存や伝送を扱いやすくします。
+コーデックには主に2種類あり、「可逆（lossless）コーデック」と「非可逆（lossy）コーデック」です。可逆コーデックは品質を一切落とさずにデータを圧縮するよう設計されており、非可逆コーデックはデータの一部を取り除いて圧縮し、品質の低下を伴うよう設計されています。</li>
+</ul>
+<p>まとめると、ビデオは一連の個々のフレーム、音声、しばしば追加のメタデータを組み合わせた動的なマルチメディア形式です。娯楽、教育、コミュニケーション、分析など、幅広い応用で使われ、目的に応じて調整できます。</p>
+<h2>ビデオ処理とは？</h2>
+<p>コンピュータビジョン（CV）と人工知能（AI）の研究分野では、ビデオ処理とは、時間的特徴と空間的特徴の両方を理解・解釈するために、ビデオデータを自動的に分析することです。ビデオデータは、単に時間を追って変化する画像の列であり、情報は空間的にも時間的にもデジタル化されています。これにより、ビデオの各フレーム内のコンテンツを詳細に分析・操作できます。</p>
+<p>ビデオ処理は、深層学習（DL）とAIの急速な進歩により、今日のテクノロジー主導の世界でますます重要になっています。従来、DL研究は画像、音声、テキストに焦点を当ててきましたが、ビデオデータはその膨大な量と複雑さゆえに、研究にとってユニークで価値ある機会を提供します。YouTubeのようなプラットフォームには毎日何百万ものビデオがアップロードされており、ビデオデータは豊富なリソースとなって、AI研究を牽引し、画期的な応用を可能にしています。</p>
+<h3>ビデオ処理の応用</h3>
+<ul>
+<li>
+<p><strong>監視システム:</strong>
+ビデオ処理は、公共の安全、犯罪防止、交通監視において重要な役割を果たします。不審な行動の自動検出を可能にし、人物の特定を助け、監視システムの効率を高めます。</p>
+</li>
+<li>
+<p><strong>自動運転:</strong>
+自動運転の領域では、ビデオ処理はナビゲーション、障害物検出、意思決定プロセスに不可欠です。自動運転車が周囲を理解し、道路標識を認識し、変化する環境に反応することを可能にし、安全で効率的な交通を確保します。</p>
+</li>
+<li>
+<p><strong>ヘルスケア:</strong>
+ビデオ処理は、医療診断、手術、患者モニタリングなど、ヘルスケアに重要な応用があります。医療画像の分析を助け、手術中にリアルタイムのフィードバックを提供し、患者を継続的にモニタリングして異常や緊急事態を検出します。</p>
+</li>
+</ul>
+<h3>ビデオ処理の課題</h3>
+<ul>
+<li>
+<p><strong>計算負荷:</strong>
+リアルタイムのビデオ分析には大きな処理能力が必要であり、効率的なビデオ処理システムの開発とデプロイに大きな課題をもたらします。これらの要求に応えるには、高性能な計算リソースが不可欠です。</p>
+</li>
+<li>
+<p><strong>ストレージ要件:</strong>
+高解像度のビデオは大量のデータを生成し、ストレージの課題につながります。膨大な量のビデオデータを扱うには、効率的なデータ圧縮と管理の技術が必要です。</p>
+</li>
+<li>
+<p><strong>プライバシーと倫理上の懸念:</strong>
+ビデオ処理、特に監視やヘルスケアでは、機微な情報を扱います。プライバシーの確保と、ビデオデータの悪用に関する倫理上の懸念への対処は、慎重に管理しなければならない重要な検討事項です。</p>
+</li>
+</ul>
+<h2>まとめ</h2>
+<p>ビデオ処理はAIとCVの中で動的かつ重要な領域であり、多くの応用を提供すると同時に、特有の課題も提示します。深層学習の進歩とビデオデータの利用可能性の高まりを背景に、現代テクノロジーにおけるその重要性は増し続けています。続くセクションでは、ビデオ処理のための深層学習をさらに深掘りします。3D CNNやTransformerといった最先端のモデルを探究します。</p>
+<p>さらに、物体追跡、行動認識、ビデオの手ぶれ補正、キャプション生成、要約、背景差分といったさまざまなタスクも取り上げます。これらのトピックを通して、深層学習モデルがさまざまなビデオ処理の課題や応用にどう使われるかを包括的に理解できます。</p>
+<p>さあ、始めましょう！ 🤓</p>
+</article>
+<nav class="page-nav"><a class="nav-link prev" href="../../unit6/basic-cv-tasks/segmentation.html">← 前へ: 画像セグメンテーション</a><a class="nav-link toc-link" href="../../index.html">目次へ</a><a class="nav-link next" href="video-processing-basics.html">次へ →: ビデオ処理の基礎</a></nav>
+</main>
+<footer class="site-footer">
+  <p>原典: Hugging Face huggingface/computer-vision-course（<a href="https://github.com/huggingface/computer-vision-course">https://github.com/huggingface/computer-vision-course</a>）</p>
+  <p>日本語版の翻訳・公開: 霞ヶ関京 / 連絡先: GitHub <a href="https://github.com/yanikasumin">@yanikasumin</a> / YouTube <a href="https://www.youtube.com/@KASUMI_MOF">@KASUMI_MOF</a></p>
+  <p class="demo-note">このサイトはデモ版です。内容は順次更新されます。</p>
+</footer>
+<script src="../../../site.js"></script>
+</body>
+</html>

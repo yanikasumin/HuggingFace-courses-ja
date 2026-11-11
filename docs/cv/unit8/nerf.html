@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Neural Radiance Fields（NeRF） | Hugging Face コース日本語版（デモ版）</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Shippori+Mincho:wght@500;700&family=Zen+Kaku+Gothic+New:wght@400;500;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../../style.css">
+<script>
+window.MathJax = { tex: { inlineMath: [['$', '$'], ['\\(', '\\)']], displayMath: [['$$', '$$'], ['\\[', '\\]']] }, options: { skipHtmlTags: ['script','noscript','style','textarea','pre','code'] } };
+</script>
+<script async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml.js"></script>
+</head>
+<body>
+<header class="site-header">
+  <div class="header-inner">
+    <a class="site-title" href="../../index.html">Hugging Face コース日本語版</a>
+    <span class="demo-badge">デモ版</span>
+  </div>
+</header>
+<main class="container">
+<p class="course-crumb"><a href="../index.html">Community CV コース</a>
+<span class="badge badge-qa-wip">翻訳済み・QA進行中（未検証の部分を含みます）</span></p>
+<nav class="page-nav"><a class="nav-link prev" href="3d_measurements_stereo_vision.html">← 前へ: はじめに</a><a class="nav-link toc-link" href="../index.html">目次へ</a><a class="nav-link next" href="../unit9/intro_to_model_optimization.html">次へ →: デプロイのためのモデル最適化入門</a></nav>
+<article class="content">
+<h1>Neural Radiance Fields（NeRF）</h1>
+<p>Neural Radiance Fields は、3Dシーンをニューラルネットワークの中に格納する方法です。シーンのパラメータが土台となる多層パーセプトロン（MLP）によって完全に表現されるため、このシーンの格納・表現方法はしばしば陰的な表現（implicit representation）と呼ばれます。
+（色や密度といったシーンのパラメータをボクセルグリッドに明示的に格納する、明示的な表現とは対照的です。）
+この新しいシーンの表現方法は、訓練セットにないカメラ視点からの新規視点を補間するタスクである<a href="https://en.wikipedia.org/wiki/View_synthesis">新規視点合成</a>のタスクで、非常に印象的な結果を示しました。
+さらに、明示的な表現よりも小さなメモリフットプリントで大規模なシーンを格納できます。ボクセルグリッドはメモリサイズが3次の項で増加しますが、こちらはニューラルネットワークの重みを格納するだけで済むためです。</p>
+<h2>簡単な歴史 📖</h2>
+<p>NeRF の分野は比較的若く、最初の論文である <a href="https://www.matthewtancik.com/nerf">Mildenhall et al.</a> は2020年に発表されました。
+それ以来、膨大な数の論文が発表され、急速な進歩が遂げられてきました。
+2020年以降、620を超えるプレプリントと論文が公開され、GitHub には250を超えるリポジトリがあります。<em>（2023年12月時点、<a href="https://paperswithcode.com/method/nerf">paperswithcode.com</a> の統計より）</em>。</p>
+<p>NeRF の最初の定式化は長い訓練時間（高性能な GPU でも数日に及ぶ）を必要としたため、訓練と推論の高速化に向けた進歩が数多くなされてきました。
+重要な飛躍は、2022年に発表された NVIDIA の <a href="https://nvlabs.github.io/instant-ngp/">Instant-ngp</a> でした。
+このアプローチで使われるモデルアーキテクチャは既存のものと似ていますが、著者らは訓練可能なハッシュテーブルを使う新しいエンコーディング手法を導入しました。
+この種のエンコーディングのおかげで、再構成の品質を損なうことなく MLP を大幅に小型化できます。
+この新しいアプローチは、当時の最先端手法と同等の品質を保ちながら、訓練もクエリも高速でした。
+同じく2022年に発表された <a href="https://jonbarron.info/mipnerf360/">Mipnerf-360</a> も言及に値します。
+やはりモデルアーキテクチャはほとんどの NeRF と同じですが、著者らは新しいシーン圧縮（scene contraction）を導入し、あらゆる方向に境界のないシーンを表現できるようにしました。これは実世界の応用にとって重要です。
+2023年に発表された <a href="https://jonbarron.info/zipnerf/">Zip-NeRF</a> は、<a href="https://nvlabs.github.io/instant-ngp/">Instant-ngp</a> のエンコーディングや <a href="https://jonbarron.info/mipnerf360/">Mipnerf-360</a> のシーン圧縮といった最近の進歩を組み合わせ、実世界の状況に対応しながら訓練時間を1時間未満に短縮しました。
+<em>（公平を期すと、これも高性能な GPU で測った値ではあります）</em>。</p>
+<p>NeRF の分野は急速に進化しているため、末尾に、最新の研究と NeRF の今後の方向性を予告するセクションを追加しました。</p>
+<p>歴史の話はこのくらいにして、NeRF の本質に踏み込みましょう！ 🚀🚀</p>
+<h2>基本的なアプローチ（Vanilla NeRF） 📘🔍</h2>
+<p>NeRF の背後にある基本的な考え方は、シーンを、位置 \( \mathbf{x} \in \mathbb{R}^{3} \) と視方向 \( \boldsymbol{\theta} \in \mathbb{R}^{2} \) を色 \( \mathbf{c} \in \mathbb{R}^{3} \) と体積密度 \( \sigma \in \mathbb{R}^{1}\) に写像する連続関数として表現することです。
+ニューラルネットワークは万能関数近似器として機能するため、シーンを表すこの連続関数を、単純な多層パーセプトロン（MLP）\( F_{\mathrm{\Theta}} : (\mathbf{x}, \boldsymbol{\theta}) \to (\mathbf{c},\sigma) \) で近似できます。</p>
+<p>単純な NeRF のパイプラインは、次の図にまとめられます。</p>
+<div style="display: flex; flex-direction: column; align-items: center;">
+  <img src="https://huggingface.co/datasets/hf-vision/course-assets/resolve/main/nerf_pipeline.png" alt="NeRF のパイプライン" />
+  <p>画像の出典: <a href="https://www.matthewtancik.com/nerf">Mildenhall et al. (2020)</a></p>
+</div>
+
+<p><strong>(a)</strong> カメラの光線に沿って点と視方向をサンプリングし、ネットワークに通します。</p>
+<p><strong>(b)</strong> ネットワークは、各サンプルについて色ベクトルと密度値を出力します。</p>
+<p><strong>(c)</strong> ネットワークの出力をボリュームレンダリングで組み合わせ、3D空間内の離散的なサンプルから2D画像を得ます。</p>
+<p><strong>(d)</strong> 損失を計算し、バックプロパゲーションによってネットワークの勾配を更新してシーンを表現します。</p>
+<p>これは非常に大まかな概要なので、よりよく理解するために、ボリュームレンダリングと使用する損失関数の詳細に入っていきましょう。</p>
+<p><strong>ボリュームレンダリング</strong></p>
+<p>ボリュームレンダリングの処理の背後にある原理は、古典的なコンピュータグラフィックスのパイプラインで確立されたものであり、NeRF に由来するものではありません。
+NeRF の用途で重要なのは、バックプロパゲーションを可能にするために、このステップが<strong>微分可能</strong>であることです。NeRF における最も単純な形のボリュームレンダリングは、次のように定式化できます。</p>
+<p>$$\mathbf{C}(\mathbf{r}) = \int_{t_n}^{t_f}T(t)\sigma(\mathbf{r}(t))\mathbf{c}(\mathbf{r}(t),\mathbf{d})dt$$</p>
+<p>上の方程式において、\( \mathbf{C}(\mathbf{r}) \) はカメラの光線 \( \mathbf{r}(t)=\mathbf{o}+t\mathbf{d} \) の期待される色です。ここで \( \mathbf{o} \in \mathbb{R}^{3} \) はカメラの原点、\( \boldsymbol{d} \in \mathbb{R}^{3} \) は3D単位ベクトルとしての視方向、\( t \in \mathbb{R}_+ \) は光線に沿った距離です。
+\( t_n \) と \( t_f \) はそれぞれ、光線の手前側（near）と奥側（far）の境界を表します。
+\( T(t) \) は、光線 \( \mathbf{r}(t) \) に沿って \( t_n \) から \( t \) までの累積透過率を表します。</p>
+<p>離散化すると、上の方程式は次の和として計算できます。</p>
+<p>$$\boldsymbol{\hat{C}}(\mathbf{r})=\sum_{i=1}^{N}T_i (1-\exp(-\sigma_i \delta_i)) \mathbf{c}<em j="1">i\,, \textrm{ where }T_i=\exp \bigg(-\sum</em> \sigma_j \delta_j \bigg)$$}^{i-1</p>
+<p>以下では、上の変数の感覚をつかむために、離散化されたカメラの光線の模式図を見ることができます。</p>
+<p><img alt="光線の図" src="https://huggingface.co/datasets/hf-vision/course-assets/resolve/main/nerf_ray_visualisation.png" /></p>
+<p><strong>損失の定式化</strong></p>
+<p>離散化されたボリュームレンダリングの方程式は完全に微分可能なので、土台となるニューラルネットワークの重みは、レンダリングされたピクセルに対する再構成損失を使って訓練できます。
+多くの NeRF のアプローチは、次のように書けるピクセルごとの誤差項を使います。</p>
+<p>$$\mathcal{L}_{\rm recon}(\boldsymbol{\hat{C}},\boldsymbol{C^<em>}) = \left|\boldsymbol{\hat{C}}-\boldsymbol{C^</em>}\right|^2$$</p>
+<p>ここで \( \boldsymbol{\hat{C}} \) はレンダリングされたピクセルの色、\( \boldsymbol{C}^* \) は正解（ground truth）のピクセルの色です。</p>
+<p><strong>補足</strong></p>
+<p>NeRF のパイプライン全体を1つの章で詳細に説明するのは非常に困難です。
+上記の説明は基本概念を理解するうえで重要であり、すべての NeRF モデルで似ているか、同一ですらあります。
+ただし、性能の良いモデルを得るには、いくつかの追加の工夫が必要です。</p>
+<p>まず、色や形状の高周波な変化を捉えるために、入力信号をエンコードする必要があります。
+入力をニューラルネットワークに通す前にエンコードする手法は、NeRF の分野に固有のものではなく、自然言語処理（NLP）のような他の ML 分野でも広く採用されています。
+入力をより高次元の空間に写像し、シーンのパラメータの高周波な変化を捉えられるようにする非常に単純なエンコーディングは、次のようになります。</p>
+<div class="codehilite"><pre><span></span><code><span class="kn">import</span><span class="w"> </span><span class="nn">torch</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">mediapy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">media</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">positional_encoding</span><span class="p">(</span><span class="n">in_tensor</span><span class="p">,</span> <span class="n">num_frequencies</span><span class="p">,</span> <span class="n">min_freq_exp</span><span class="p">,</span> <span class="n">max_freq_exp</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">"""位置エンコーディングのための関数。"""</span>
+    <span class="c1"># 入力テンソルを [0, 2 * pi] にスケーリングする</span>
+    <span class="n">scaled_in_tensor</span> <span class="o">=</span> <span class="mi">2</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">pi</span> <span class="o">*</span> <span class="n">in_tensor</span>
+    <span class="c1"># 周波数スペクトルを生成する</span>
+    <span class="n">freqs</span> <span class="o">=</span> <span class="mi">2</span> <span class="o">**</span> <span class="n">torch</span><span class="o">.</span><span class="n">linspace</span><span class="p">(</span>
+        <span class="n">min_freq_exp</span><span class="p">,</span> <span class="n">max_freq_exp</span><span class="p">,</span> <span class="n">num_frequencies</span><span class="p">,</span> <span class="n">device</span><span class="o">=</span><span class="n">in_tensor</span><span class="o">.</span><span class="n">device</span>
+    <span class="p">)</span>
+    <span class="c1"># エンコーディングを生成する</span>
+    <span class="n">scaled_inputs</span> <span class="o">=</span> <span class="n">scaled_in_tensor</span><span class="o">.</span><span class="n">unsqueeze</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">)</span> <span class="o">*</span> <span class="n">freqs</span>
+    <span class="n">encoded_inputs</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">cat</span><span class="p">(</span>
+        <span class="p">[</span><span class="n">torch</span><span class="o">.</span><span class="n">sin</span><span class="p">(</span><span class="n">scaled_inputs</span><span class="p">),</span> <span class="n">torch</span><span class="o">.</span><span class="n">cos</span><span class="p">(</span><span class="n">scaled_inputs</span><span class="p">)],</span> <span class="n">dim</span><span class="o">=-</span><span class="mi">1</span>
+    <span class="p">)</span>
+    <span class="k">return</span> <span class="n">encoded_inputs</span><span class="o">.</span><span class="n">view</span><span class="p">(</span><span class="o">*</span><span class="n">in_tensor</span><span class="o">.</span><span class="n">shape</span><span class="p">[:</span><span class="o">-</span><span class="mi">1</span><span class="p">],</span> <span class="o">-</span><span class="mi">1</span><span class="p">)</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">visualize_grid</span><span class="p">(</span><span class="n">grid</span><span class="p">,</span> <span class="n">encoded_images</span><span class="p">,</span> <span class="n">resolution</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">"""グリッドを可視化するヘルパー関数。"""</span>
+    <span class="c1"># グリッドを x と y の別々のチャンネルに分割する</span>
+    <span class="n">x_channel</span><span class="p">,</span> <span class="n">y_channel</span> <span class="o">=</span> <span class="n">grid</span><span class="p">[</span><span class="o">...</span><span class="p">,</span> <span class="mi">0</span><span class="p">],</span> <span class="n">grid</span><span class="p">[</span><span class="o">...</span><span class="p">,</span> <span class="mi">1</span><span class="p">]</span>
+    <span class="c1"># 元のグリッドを表示する</span>
+    <span class="nb">print</span><span class="p">(</span><span class="s2">"Input Values:"</span><span class="p">)</span>
+    <span class="n">media</span><span class="o">.</span><span class="n">show_images</span><span class="p">([</span><span class="n">x_channel</span><span class="p">,</span> <span class="n">y_channel</span><span class="p">],</span> <span class="n">cmap</span><span class="o">=</span><span class="s2">"plasma"</span><span class="p">,</span> <span class="n">border</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+    <span class="c1"># エンコードされたグリッドを表示する</span>
+    <span class="nb">print</span><span class="p">(</span><span class="s2">"Encoded Values:"</span><span class="p">)</span>
+    <span class="n">num_channels_to_visualize</span> <span class="o">=</span> <span class="nb">min</span><span class="p">(</span>
+        <span class="mi">8</span><span class="p">,</span> <span class="n">encoded_images</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+    <span class="p">)</span>  <span class="c1"># 最大で8チャンネルまで可視化する</span>
+    <span class="n">encoded_images_to_show</span> <span class="o">=</span> <span class="n">encoded_images</span><span class="o">.</span><span class="n">view</span><span class="p">(</span><span class="n">resolution</span><span class="p">,</span> <span class="n">resolution</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">)</span><span class="o">.</span><span class="n">permute</span><span class="p">(</span>
+        <span class="mi">2</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">1</span>
+    <span class="p">)[:</span><span class="n">num_channels_to_visualize</span><span class="p">]</span>
+    <span class="n">media</span><span class="o">.</span><span class="n">show_images</span><span class="p">(</span><span class="n">encoded_images_to_show</span><span class="p">,</span> <span class="n">vmin</span><span class="o">=-</span><span class="mi">1</span><span class="p">,</span> <span class="n">vmax</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">cmap</span><span class="o">=</span><span class="s2">"plasma"</span><span class="p">,</span> <span class="n">border</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+
+
+<span class="c1"># NeRFEncoding の例と同様のパラメータ</span>
+<span class="n">num_frequencies</span> <span class="o">=</span> <span class="mi">4</span>
+<span class="n">min_freq_exp</span> <span class="o">=</span> <span class="mi">0</span>
+<span class="n">max_freq_exp</span> <span class="o">=</span> <span class="mi">6</span>
+<span class="n">resolution</span> <span class="o">=</span> <span class="mi">128</span>
+
+<span class="c1"># [0, 1] の範囲の点の2Dグリッドを生成する</span>
+<span class="n">x_samples</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">linspace</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="n">resolution</span><span class="p">)</span>
+<span class="n">y_samples</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">linspace</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="n">resolution</span><span class="p">)</span>
+<span class="n">grid</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">stack</span><span class="p">(</span>
+    <span class="n">torch</span><span class="o">.</span><span class="n">meshgrid</span><span class="p">(</span><span class="n">x_samples</span><span class="p">,</span> <span class="n">y_samples</span><span class="p">),</span> <span class="n">dim</span><span class="o">=-</span><span class="mi">1</span>
+<span class="p">)</span>  <span class="c1"># [resolution, resolution, 2]</span>
+
+<span class="c1"># 位置エンコーディングを適用する</span>
+<span class="n">encoded_grid</span> <span class="o">=</span> <span class="n">positional_encoding</span><span class="p">(</span><span class="n">grid</span><span class="p">,</span> <span class="n">num_frequencies</span><span class="p">,</span> <span class="n">min_freq_exp</span><span class="p">,</span> <span class="n">max_freq_exp</span><span class="p">)</span>
+
+<span class="c1"># 結果を可視化する</span>
+<span class="n">visualize_grid</span><span class="p">(</span><span class="n">grid</span><span class="p">,</span> <span class="n">encoded_grid</span><span class="p">,</span> <span class="n">resolution</span><span class="p">)</span>
+</code></pre></div>
+
+<p>出力は、以下の画像のようになるはずです。</p>
+<p><img alt="エンコーディング結果" src="https://huggingface.co/datasets/hf-vision/course-assets/resolve/main/nerf_encodings.png" /></p>
+<p>言及に値する2つ目の工夫は、ほとんどの手法が空間内の点を賢くサンプリングするアプローチを取っていることです。
+本質的には、シーンが空の領域でのサンプリングを避けたいのです。
+最終画像への寄与が最も大きい領域にサンプルを集中させる方法はさまざまありますが、最も有力なのは、計算を無駄にしないために <em>proposal network</em> とよく呼ばれる2つ目のネットワークを使う方法です。
+そのような <em>proposal network</em> の内部の仕組みと最適化に興味があれば、それが初めて提案された <a href="https://jonbarron.info/mipnerf360/">Mipnerf-360</a> の論文を掘り下げてみてください。</p>
+<h2>自分で NeRF を訓練する</h2>
+<p>最初の NeRF を訓練する体験を存分に味わうには、<a href="https://colab.research.google.com/github/nerfstudio-project/nerfstudio/blob/main/colab/demo.ipynb">nerfstudio チームによる素晴らしい Google Colab ノートブック</a> を見ることをおすすめします。
+そこでは、好きなシーンの画像をアップロードして NeRF を訓練できます。たとえば、自分のリビングルームを表現するモデルをフィッティングすることもできます。 🎉🎉</p>
+<h2>この分野の現在の進歩</h2>
+<p>この分野は急速に進化しており、新しい論文の数は爆発的と言ってよいほどです。
+訓練とレンダリングの速度に関しては、<a href="https://vr-nerf.github.io">VR-NeRF</a> と <a href="https://smerf-3d.github.io">SMERF</a> が非常に有望な結果を示しています。
+私たちは、近いうちに実世界のシーンをエッジデバイス上でリアルタイムにストリーミングできるようになると信じています。これは、現実的な<em>メタバース</em>に向けた大きな飛躍です。
+ただし、NeRF 分野の研究は訓練と推論の速度だけに焦点を当てているわけではなく、Generative NeRFs、Pose Estimation、Deformable NeRFs、Compositionality など、さまざまな方向を含んでいます。
+NeRF の論文のキュレーションされたリストに興味があれば、<a href="https://github.com/awesome-NeRF/awesome-NeRF">Awesome-NeRF</a> をチェックしてみてください。</p>
+</article>
+<nav class="page-nav"><a class="nav-link prev" href="3d_measurements_stereo_vision.html">← 前へ: はじめに</a><a class="nav-link toc-link" href="../index.html">目次へ</a><a class="nav-link next" href="../unit9/intro_to_model_optimization.html">次へ →: デプロイのためのモデル最適化入門</a></nav>
+</main>
+<footer class="site-footer">
+  <p>原典: Hugging Face huggingface/computer-vision-course（<a href="https://github.com/huggingface/computer-vision-course">https://github.com/huggingface/computer-vision-course</a>）</p>
+  <p>日本語版の翻訳・公開: 霞ヶ関京 / 連絡先: GitHub <a href="https://github.com/yanikasumin">@yanikasumin</a> / YouTube <a href="https://www.youtube.com/@KASUMI_MOF">@KASUMI_MOF</a></p>
+  <p class="demo-note">このサイトはデモ版です。内容は順次更新されます。</p>
+</footer>
+<script src="../../site.js"></script>
+</body>
+</html>

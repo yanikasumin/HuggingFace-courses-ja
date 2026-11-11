@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>画像分類のための Vision Transformer の転移学習とファインチューニング | Hugging Face コース日本語版（デモ版）</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Shippori+Mincho:wght@500;700&family=Zen+Kaku+Gothic+New:wght@400;500;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../../../style.css">
+<script>
+window.MathJax = { tex: { inlineMath: [['$', '$'], ['\\(', '\\)']], displayMath: [['$$', '$$'], ['\\[', '\\]']] }, options: { skipHtmlTags: ['script','noscript','style','textarea','pre','code'] } };
+</script>
+<script async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml.js"></script>
+</head>
+<body>
+<header class="site-header">
+  <div class="header-inner">
+    <a class="site-title" href="../../../index.html">Hugging Face コース日本語版</a>
+    <span class="demo-badge">デモ版</span>
+  </div>
+</header>
+<main class="container">
+<p class="course-crumb"><a href="../../index.html">Community CV コース</a>
+<span class="badge badge-qa-wip">翻訳済み・QA進行中（未検証の部分を含みます）</span></p>
+<nav class="page-nav"><a class="nav-link prev" href="../../unit2/cnns/yolo.html">← 前へ: YOLO</a><a class="nav-link toc-link" href="../../index.html">目次へ</a><a class="nav-link next" href="swin-transformer.html">次へ →: Swin Transformer</a></nav>
+<article class="content">
+<h1>画像分類のための Vision Transformer の転移学習とファインチューニング</h1>
+<h2>はじめに</h2>
+<p>Transformers アーキテクチャは、自然言語処理でうまくスケールしました。そこで、同じアーキテクチャを画像にも適用する試みが生まれました。画像を小さなパッチに分割し、トークンとして扱う方法です。その結果生まれたのが Vision Transformer（ViT）です。転移学習とファインチューニングの概念に入る前に、畳み込みニューラルネットワーク（CNN）と Vision Transformer を比較します。</p>
+<h2>Vision Transformer（VT）の概要</h2>
+<p>まとめると、Vision Transformer では画像をパッチの2次元グリッドとして再構成します。モデルはそのパッチで学習します。</p>
+<p>中心となる考え方は、次の図で示されています。
+<img alt="Vision Transformer" src="https://huggingface.co/datasets/hf-vision/course-assets/resolve/main/Screenshot%20from%202024-12-27%2014-25-49.png" /></p>
+<p>ただし、落とし穴があります。CNN は、VT にはない前提をもとに設計されています。その前提は、人間が画像の中の物体をどのように知覚するかに関わるものです。次のセクションで説明します。</p>
+<h2>CNN と Vision Transformer の違いは何ですか？</h2>
+<h3>帰納バイアス</h3>
+<p>帰納バイアスは機械学習の用語です。学習アルゴリズムが予測を行うために使う前提の集合を指します。簡単に言えば、帰納バイアスは近道のようなものです。これまでに見た情報をもとに、機械学習モデルが根拠のある推測を行う助けになります。</p>
+<p>CNN で見られる帰納バイアスには、次のようなものがあります。</p>
+<ul>
+<li>並進同変性：物体は画像のどこに現れてもよく、CNN はその特徴を検出できます。</li>
+<li>局所性：画像のピクセルは、主に周辺のピクセルと相互作用して特徴を形成します。</li>
+</ul>
+<p>CNN モデルは、この2つのバイアスをとてもうまく扱えます。ViT にはこの前提がありません。そのため、データセットの規模がある閾値までは、実際には CNN の方が ViT より優れています。しかし、ViT には別の強みがあります。
+Transformer アーキテクチャは（主に）異なる種類の線形関数で構成されています。そのため、ViT は拡張性が非常に高くなります。そしてその拡張性によって、膨大な量のデータを使えば、上記の2つの帰納バイアスを持たないという問題を克服できます。</p>
+<h3>では、誰もが大規模なデータセットを利用できるのでしょうか？</h3>
+<p>優れた性能を得るために何百万枚もの画像で Vision Transformer を学習させることは、誰にでもできることではありません。代わりに、<a href="https://huggingface.co/models?sort=trending">Hugging Face Hub</a> のような場所で公開されているモデルの重みを利用できます。</p>
+<p>事前学習済みモデルをどう使うのでしょうか。転移学習を適用してファインチューニングします。</p>
+<h2>画像分類のための転移学習とファインチューニング</h2>
+<p>転移学習の考え方はシンプルです。非常に大規模なデータセットで学習した Vision Transformer が獲得した特徴を活用し、その特徴を自分のデータセットに適用します。これにより、モデルの性能が大きく向上することがあります。特に、学習に使えるデータが限られているデータセットでは効果的です。</p>
+<p>学習済みの特徴を活用するため、モデル全体を更新する必要もありません。重みの大部分を凍結すれば、一部の層だけを学習するだけで、学習時間を短くし、GPU の消費も抑えながら優れた性能が得られます。</p>
+<h3>マルチクラス画像分類</h3>
+<p>Vision Transformer を使った画像分類の転移学習チュートリアルは、次のノートブックで進められます。</p>
+<p>&lt;a
+  target="_blank"
+  href="https://colab.research.google.com/github/huggingface/computer-vision-course/blob/main/notebooks/Unit%203%20-%20Vision%20Transformers/transfer-learning-image-classification.ipynb"</p>
+<blockquote>
+<p><img
+    src="https://colab.research.google.com/assets/colab-badge.svg"
+    alt="Open In Colab"
+  />
+</a></p>
+</blockquote>
+<p>ここでは、犬と猫の品種を見分ける画像分類器を作ります。</p>
+<p><iframe
+  src="https://shreydan-oxford-iiit-pets-classifier.hf.space"
+  frameborder="0"
+  width="850"
+  height="450"
+></iframe>
+</p>
+<hr />
+<p>データセットのドメインが、事前学習済みモデルのデータセットとあまり似ていない場合もあります。それでも、Vision Transformer をゼロから学習するのではなく、事前学習済みモデル全体の重みを、より低い学習率で更新するという選択肢があります。これにより、自分のデータでうまく動作するようモデルを「ファインチューニング」できます。</p>
+<div class="callout callout-tip">
+<p>ただし、ほとんどの場面では、Vision Transformers の場合、転移学習を適用するだけで十分です。</p>
+</div>
+<h3>マルチラベル画像分類</h3>
+<p>上記のチュートリアルでは、各画像にクラスが1つだけ割り当てられるマルチクラス画像分類を扱いました。では、マルチクラスのデータセットで、各画像に複数のラベルが付く場合はどうでしょうか。</p>
+<p>次のノートブックでは、Vision Transformer を使ったマルチラベル画像分類のファインチューニングチュートリアルを進めます。</p>
+<p>&lt;a
+  target="_blank"
+  href="https://colab.research.google.com/github/huggingface/computer-vision-course/blob/main/notebooks/Unit%203%20-%20Vision%20Transformers/fine-tuning-multilabel-image-classification.ipynb"</p>
+<blockquote>
+<p><img
+    src="https://colab.research.google.com/assets/colab-badge.svg"
+    alt="Open In Colab"
+  />
+</a></p>
+</blockquote>
+<p>カスタム学習ループの書き方として、<a href="https://huggingface.co/docs/accelerate/index">Hugging Face Accelerate</a> の使い方も学びます。
+マルチラベル分類チュートリアルの成果として、次のようなものが得られます。</p>
+<p><iframe
+  src="https://shreydan-pascal-multilabel-classifier.hf.space"
+  frameborder="0"
+  width="850"
+  height="450"
+></iframe>
+</p>
+<hr />
+<h3>参考資料</h3>
+<ul>
+<li>元の Vision Transformers 論文：<em>An Image is Worth 16x16 Words: Transformers for Image Recognition at Scale <a href="https://huggingface.co/papers/2010.11929">論文</a></em></li>
+<li>Swin Transformers 論文：<em>Swin Transformer: Hierarchical Vision Transformer using Shifted Windows <a href="https://huggingface.co/papers/2103.14030">論文</a></em></li>
+<li>Vision Transformers における学習データ量、正則化、データ拡張、モデルサイズ、計算予算の相互作用をよりよく理解するための体系的な実証研究：<em>How to train your Vision Transformers? Data, Augmentation, and Regularization in Vision Transformers <a href="https://huggingface.co/papers/2106.10270">論文</a></em></li>
+</ul>
+</article>
+<nav class="page-nav"><a class="nav-link prev" href="../../unit2/cnns/yolo.html">← 前へ: YOLO</a><a class="nav-link toc-link" href="../../index.html">目次へ</a><a class="nav-link next" href="swin-transformer.html">次へ →: Swin Transformer</a></nav>
+</main>
+<footer class="site-footer">
+  <p>原典: Hugging Face huggingface/computer-vision-course（<a href="https://github.com/huggingface/computer-vision-course">https://github.com/huggingface/computer-vision-course</a>）</p>
+  <p>日本語版の翻訳・公開: 霞ヶ関京 / 連絡先: GitHub <a href="https://github.com/yanikasumin">@yanikasumin</a> / YouTube <a href="https://www.youtube.com/@KASUMI_MOF">@KASUMI_MOF</a></p>
+  <p class="demo-note">このサイトはデモ版です。内容は順次更新されます。</p>
+</footer>
+<script src="../../../site.js"></script>
+</body>
+</html>

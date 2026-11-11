@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>変分オートエンコーダ | Hugging Face コース日本語版（デモ版）</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Shippori+Mincho:wght@500;700&family=Zen+Kaku+Gothic+New:wght@400;500;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../../../style.css">
+<script>
+window.MathJax = { tex: { inlineMath: [['$', '$'], ['\\(', '\\)']], displayMath: [['$$', '$$'], ['\\[', '\\]']] }, options: { skipHtmlTags: ['script','noscript','style','textarea','pre','code'] } };
+</script>
+<script async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml.js"></script>
+</head>
+<body>
+<header class="site-header">
+  <div class="header-inner">
+    <a class="site-title" href="../../../index.html">Hugging Face コース日本語版</a>
+    <span class="demo-badge">デモ版</span>
+  </div>
+</header>
+<main class="container">
+<p class="course-crumb"><a href="../../index.html">Community CV コース</a>
+<span class="badge badge-qa-wip">翻訳済み・QA進行中（未検証の部分を含みます）</span></p>
+<nav class="page-nav"><a class="nav-link prev" href="introduction/introduction.html">← 前へ: はじめに</a><a class="nav-link toc-link" href="../../index.html">目次へ</a><a class="nav-link next" href="gans.html">次へ →: 敵対的生成ネットワーク</a></nav>
+<article class="content">
+<h1>変分オートエンコーダ</h1>
+<h2>オートエンコーダ入門</h2>
+<p>オートエンコーダは、主に教師なし学習と次元削減に使われるニューラルネットワークの一種です。オートエンコーダの基本的なアイデアは、入力データを低次元の表現にエンコードし、それを元のデータにデコードして戻すことで、再構成誤差を最小化することです。オートエンコーダの基本アーキテクチャは、<code>エンコーダ（encoder）</code> と <code>デコーダ（decoder）</code> の2つの主要な要素から構成されます。
+* <strong>エンコーダ:</strong> エンコーダは、入力データを圧縮された表現、すなわち潜在表現に変換する役割を担います。通常、入力の次元を段階的に削減していく1つ以上のニューロン層で構成されます。
+* <strong>デコーダ:</strong> 一方デコーダは、エンコーダが生成した圧縮表現を受け取り、元の入力データの再構成を試みます。エンコーダと同様に1つ以上の層で構成されることが多いですが、逆の順序で、次元を段階的に増やしていきます。</p>
+<p><img alt="バニラオートエンコーダの画像 - Lilian Weng のブログ" src="https://huggingface.co/datasets/hf-vision/course-assets/resolve/main/generative_models/autoencoder.png" /></p>
+<p>このオートエンコーダモデルは、エンコーダネットワーク（$g_\phi$ と表されます）とデコーダネットワーク（$f_\theta$ と表されます）で構成されます。低次元表現はボトルネック層で $z$ として学習され、再構成された出力は $x' = f_\theta(g_\phi(x))$ と表され、$x \approx x'$ を目指します。</p>
+<p>このようなバニラオートエンコーダでよく使われる損失関数は</p>
+<p>$$L(\theta, \phi) = \frac{1}{n}\sum_{i=1}^n (\mathbf{x}^{(i)} - f_\theta(g_\phi(\mathbf{x}^{(i)})))^2$$ </p>
+<p>で、元の画像と再構成された画像の誤差を最小化しようとします。これは <code>再構成損失（reconstruction loss）</code> とも呼ばれます。</p>
+<p>オートエンコーダは、データのノイズ除去、特徴学習、圧縮などのタスクに役立ちます。しかし、従来のオートエンコーダには、VAE を特に興味深く、生成タスクにも有用なものにしている確率的な性質がありません。</p>
+<h2>変分オートエンコーダ（VAE）の概要</h2>
+<p>変分オートエンコーダ（VAE）は、エンコードとデコードに <code>確率的なアプローチ</code> を導入することで、従来のオートエンコーダの限界の一部に対処します。VAE の動機は、潜在空間の学習済み分布からサンプリングすることで新しいデータサンプルを生成できる点にあります。バニラオートエンコーダのように潜在ベクトルから生成するのではなく分布からサンプリングするため、生成タスクに適しています。
+* <strong>確率的な性質:</strong> 決定論的なオートエンコーダとは異なり、VAE は潜在空間を確率分布としてモデル化します。これにより、入力のエンコーディングに対して、単一の固定ベクトルではなく確率分布関数が得られます。これにより、データの不確実性をより細やかに表現できます。その後、デコーダはこの確率分布からサンプリングを行います。
+* <strong>潜在空間の役割:</strong> VAE の潜在空間は、入力データの連続的で構造化された表現として機能します。設計上連続であるため、補間が容易です。潜在空間の各点は潜在的な出力に対応し、異なるデータ点同士の滑らかな遷移を可能にします。また、潜在空間でより近い点同士が似た生成結果につながることも保証します。</p>
+<p>この概念は、以下に示す分かりやすい例で説明できます。ニューラルネットワーク内のエンコーダは、入力画像の表現をベクトルの形で獲得する役目を担います。このベクトルには、被写体の笑顔、髪の色、性別、年齢など、さまざまな特徴が [0.4, 0.03, 0.032, ...] のようなベクトルとして含まれます。この例では、潜在表現を1つに絞り、具体的には「笑顔」という属性に注目します。
+<img alt="オートエンコーダと VAE の比較 - Sciforce の Medium" src="https://huggingface.co/datasets/hf-vision/course-assets/resolve/main/generative_models/comparison.png" />
+バニラオートエンコーダ（AE）の場合、笑顔の特徴は固定された決定論的な値として表現されます。対照的に、変分オートエンコーダ（VAE）は、この特徴を確率分布として表現するよう意図的に設計されています。この設計上の選択により、指定された確率分布から値をサンプリングできるため、生成画像に多様性を持たせることができます。</p>
+<h2>VAE の背後にある数学</h2>
+<p>VAE の背後にある数学的な概念を理解するには、確率的モデリングと変分推論の原理をつかむ必要があります。
+<img alt="変分オートエンコーダ - Lilian Weng のブログ" src="https://huggingface.co/datasets/hf-vision/course-assets/resolve/main/generative_models/vae.png" />
+* <strong>確率的モデリング:</strong> VAE では、潜在空間は確率分布としてモデル化され、多変量ガウス分布が仮定されることが多いです。この分布は平均ベクトルと標準偏差ベクトルによってパラメータ化され、これらは確率的エンコーダ \( q_\phi(z|x) \) の出力です。これは学習された表現 z から構成され、さらにデコーダとして \(p_\theta(x|z) \) からのサンプリングに使われます。
+* <strong>損失関数:</strong> VAE の損失関数は2つの要素から構成されます。バニラオートエンコーダと同様の再構成損失（モデルが入力をどれだけうまく再構成できるかを測るもの）と、KL ダイバージェンス（学習された分布が、通常はガウス分布である選ばれた事前分布にどれだけ近いかを測るもの）です。これらの要素の組み合わせにより、モデルはデータ分布と指定された事前分布の両方を捉えた潜在表現を学習するよう促されます。
+* <strong>意味のある潜在表現の促進:</strong> 損失関数に KL ダイバージェンス項を組み込むことで、VAE は似たデータ点同士が近くなる潜在空間を学習するよう促され、意味のある構造化された表現が保証されます。オートエンコーダの損失関数は、再構成損失と潜在損失の両方を最小化することを目指します。潜在損失が小さいということは、そうでなければ再構成損失を改善するはずの情報のエンコードが制限されることを意味します。その結果、変分オートエンコーダ（VAE）は潜在損失と再構成損失の間の微妙なバランスの中に置かれます。この均衡は極めて重要で、<code>潜在損失が小さい</code> と、生成画像は学習セットに存在する画像によく似るものの視覚的な品質に欠ける傾向があります。逆に、<code>再構成損失が小さい</code> と、学習時には画像がうまく再構成されますが、学習セットから大きく外れた新しい画像の生成が妨げられます。画像の再構成と生成の両方で望ましい結果を得るには、この2つの側面の調和のとれたバランスを取ることが不可欠です。</p>
+<p>まとめると、VAE は単なるデータの再構成を超えて、新しいサンプルを生成し、潜在表現を理解するための確率的なフレームワークを提供します。モデルのアーキテクチャに確率的な要素が含まれている点が、VAE を従来のオートエンコーダと区別しています。従来のオートエンコーダと比べて、VAE はデータ分布のより豊かな理解をもたらすため、生成タスクにおいて特に強力です。</p>
+<h2>参考文献</h2>
+<ol>
+<li><a href="https://lilianweng.github.io/posts/2018-08-12-vae/">Lilian Weng's Awesome Blog on Autoencoders</a></li>
+<li><a href="https://medium.com/sciforce/generative-models-under-a-microscope-comparing-vaes-gans-and-flow-based-models-344f20085d83">Generative models under a microscope: Comparing VAEs, GANs, and Flow-Based Models</a></li>
+<li><a href="https://medium.com/@rushikesh.shende/autoencoders-variational-autoencoders-vae-and-%CE%B2-vae-ceba9998773d">Autoencoders, Variational Autoencoders (VAE) and β-VAE</a></li>
+</ol>
+</article>
+<nav class="page-nav"><a class="nav-link prev" href="introduction/introduction.html">← 前へ: はじめに</a><a class="nav-link toc-link" href="../../index.html">目次へ</a><a class="nav-link next" href="gans.html">次へ →: 敵対的生成ネットワーク</a></nav>
+</main>
+<footer class="site-footer">
+  <p>原典: Hugging Face huggingface/computer-vision-course（<a href="https://github.com/huggingface/computer-vision-course">https://github.com/huggingface/computer-vision-course</a>）</p>
+  <p>日本語版の翻訳・公開: 霞ヶ関京 / 連絡先: GitHub <a href="https://github.com/yanikasumin">@yanikasumin</a> / YouTube <a href="https://www.youtube.com/@KASUMI_MOF">@KASUMI_MOF</a></p>
+  <p class="demo-note">このサイトはデモ版です。内容は順次更新されます。</p>
+</footer>
+<script src="../../../site.js"></script>
+</body>
+</html>

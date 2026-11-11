@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>敵対的生成ネットワーク | Hugging Face コース日本語版（デモ版）</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Shippori+Mincho:wght@500;700&family=Zen+Kaku+Gothic+New:wght@400;500;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../../../style.css">
+<script>
+window.MathJax = { tex: { inlineMath: [['$', '$'], ['\\(', '\\)']], displayMath: [['$$', '$$'], ['\\[', '\\]']] }, options: { skipHtmlTags: ['script','noscript','style','textarea','pre','code'] } };
+</script>
+<script async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml.js"></script>
+</head>
+<body>
+<header class="site-header">
+  <div class="header-inner">
+    <a class="site-title" href="../../../index.html">Hugging Face コース日本語版</a>
+    <span class="demo-badge">デモ版</span>
+  </div>
+</header>
+<main class="container">
+<p class="course-crumb"><a href="../../index.html">Community CV コース</a>
+<span class="badge badge-qa-wip">翻訳済み・QA進行中（未検証の部分を含みます）</span></p>
+<nav class="page-nav"><a class="nav-link prev" href="variational_autoencoders.html">← 前へ: 変分オートエンコーダ</a><a class="nav-link toc-link" href="../../index.html">目次へ</a><a class="nav-link next" href="gans-vaes/stylegan.html">次へ →: StyleGAN のバリエーション</a></nav>
+<article class="content">
+<h1>敵対的生成ネットワーク</h1>
+<h2>はじめに</h2>
+<p>敵対的生成ネットワーク（GAN）は、2014年に <a href="https://scholar.google.ca/citations?user=iYN86KEAAAAJ&amp;hl=en">Ian Goodfellow</a> とその同僚によって導入された深層学習モデルの一種です。GAN の核となるアイデアは、実データと見分けがつかないデータを生成するよう生成ネットワークを学習させることであり、同時に、実データと生成データを見分けるよう識別ネットワークを学習させます。
+* <strong>アーキテクチャの概要:</strong> GAN は、<code>生成器（generator）</code> と <code>識別器（discriminator）</code> の2つの主要な要素から構成されます。
+* <strong>生成器:</strong> 生成器はランダムノイズ \(z\) を入力として受け取り、合成データサンプルを生成します。その目標は、識別器を欺けるほど現実的なデータを作ることです。
+* <strong>識別器:</strong> 識別器は探偵のような役割で、与えられたサンプルが本物（実際のデータセット由来）か偽物（生成器が生成したもの）かを評価します。その目標は、実サンプルと生成サンプルをますます正確に見分けられるようになることです。</p>
+<p>オンラインでよく見かける一般的な例えは、絵画を偽造しようとする贋作画家（生成器）と、その限界を見抜こうとする美術捜査官／批評家（識別器）というものです。</p>
+<p><img alt="Lilian Weng の GAN の図" src="https://huggingface.co/datasets/hf-vision/course-assets/resolve/main/generative_models/GAN.png" /></p>
+<h2>GAN と VAE の比較</h2>
+<p>GAN と VAE はどちらも機械学習でよく使われる生成モデルですが、長所と短所が異なります。どちらが「優れている」かは、具体的なタスクや要件によって異なります。以下に、それぞれの長所と短所をまとめます。
+* <strong>画像生成:</strong>
+    - <strong>GAN:</strong>
+        * <strong>長所:</strong> より高品質な画像を生成でき、特にシャープなディテールや現実的なテクスチャを持つ複雑なデータで優れています。
+        * <strong>短所:</strong> 学習が難しく、不安定になりやすい傾向があります。
+        * <strong>例:</strong> GAN で生成された寝室の画像は本物と見分けがつかないほどである可能性が高い一方、VAE で生成された寝室はぼやけていたり、照明が非現実的だったりすることがあります。
+        <img alt="GAN で生成された寝室の例（Unsupervised Representation Learning with Deep Convolutional Generative Adversarial Networks, 2015 より）" src="https://huggingface.co/datasets/hf-vision/course-assets/resolve/main/generative_models/bedroom.png" />
+    - <strong>VAE:</strong>
+        * <strong>長所:</strong> GAN よりも学習が容易で安定しています。
+        * <strong>短所:</strong> ぼやけていてディテールに乏しく、非現実的な特徴を持つ画像を生成することがあります。
+* <strong>その他のタスク:</strong>
+    - <strong>GAN:</strong>
+        * <strong>長所:</strong> 超解像や画像変換（image-to-image translation）のようなタスクに使えます。
+        * <strong>短所:</strong> データ点同士の滑らかな遷移が必要なタスクには最適な選択とはいえません。
+    - <strong>VAE:</strong>
+        * <strong>長所:</strong> 画像のノイズ除去や異常検知のようなタスクで広く使われています。
+        * <strong>短所:</strong> 高品質な画像生成が必要なタスクでは、GAN ほど効果的ではない場合があります。</p>
+<p>主な違いを表にまとめます。</p>
+<table>
+<thead>
+<tr>
+<th>特徴</th>
+<th>GAN</th>
+<th>VAE</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>画質</td>
+<td>高い</td>
+<td>低い</td>
+</tr>
+<tr>
+<td>学習の容易さ</td>
+<td>難しい</td>
+<td>易しい</td>
+</tr>
+<tr>
+<td>安定性</td>
+<td>低め</td>
+<td>高め</td>
+</tr>
+<tr>
+<td>用途</td>
+<td>画像生成、超解像、画像変換</td>
+<td>画像ノイズ除去、異常検知、信号解析</td>
+</tr>
+</tbody>
+</table>
+<p>最終的に、最良の選択は具体的なニーズと優先順位次第です。現実的な顔や風景を生成するようなタスクで高品質な画像が必要なら、GAN の方が良い選択でしょう。一方、学習が容易で安定したモデルが必要なら、VAE の方が良い選択肢かもしれません。</p>
+<h2>GAN の学習</h2>
+<p>GAN の学習は、生成器と識別器が追いかけっこを繰り広げる、独特な敵対的プロセスです。</p>
+<ul>
+<li><strong>敵対的学習プロセス:</strong> 生成器と識別器は同時に学習します。生成器は実データと見分けがつかないデータを生成することを目指し、識別器は本物と偽物を見分ける能力を向上させようとします。</li>
+<li><strong>目的関数:</strong> 学習プロセスは、生成器と識別器の両方を最適化するために使われる、min-max ゲーム型の目的関数によって導かれます。生成器は、識別器が生成サンプルを偽物と正しく分類する確率を最小化しようとし、識別器はこの確率を最大化しようとします。この目的関数は次のように表されます。
+$$\min_G \max_D L(D, G)=\mathbb{E}<em r>{x \sim p</em> [\log(1 - D(x))]$$
+ここで、識別器はこの損失関数を最大化しようとし、生成器は最小化しようとします。これが敵対的な性質の由来です。}(x)} [\log D(x)] + \mathbb{E}_{x \sim p_g(x)</li>
+<li><strong>反復的な改善:</strong> 学習が進むにつれて、生成器は現実的なサンプルを生成するのが上手くなり、識別器はより目が利くようになります。この敵対的なループは、生成器が実データと実質的に見分けがつかないデータを生成できるようになるまで続きます。</li>
+</ul>
+<h2>参考文献</h2>
+<ol>
+<li><a href="https://lilianweng.github.io/posts/2017-08-20-gan/">Lilian Weng's Awesome Blog on GANs</a></li>
+<li><a href="https://jonathan-hui.medium.com/gan-whats-generative-adversarial-networks-and-its-application-f39ed278ef09">GAN — What is Generative Adversarial Networks</a></li>
+<li><a href="https://ai.stackexchange.com/questions/25601/what-are-the-fundamental-differences-between-vae-and-gan-for-image-generation">What are the fundamental differences between VAE and GAN for image generation?</a></li>
+<li><a href="https://stats.stackexchange.com/questions/541775/issues-with-gan-and-vae-models">Issues with GAN and VAE models</a></li>
+<li><a href="https://www.baeldung.com/cs/vae-vs-gan-image-generation">VAE Vs. GAN For Image Generation</a></li>
+<li><a href="https://towardsai.net/p/machine-learning/diffusion-models-vs-gans-vs-vaes-comparison-of-deep-generative-models">Diffusion Models vs. GANs vs. VAEs: Comparison of Deep Generative Models</a></li>
+</ol>
+</article>
+<nav class="page-nav"><a class="nav-link prev" href="variational_autoencoders.html">← 前へ: 変分オートエンコーダ</a><a class="nav-link toc-link" href="../../index.html">目次へ</a><a class="nav-link next" href="gans-vaes/stylegan.html">次へ →: StyleGAN のバリエーション</a></nav>
+</main>
+<footer class="site-footer">
+  <p>原典: Hugging Face huggingface/computer-vision-course（<a href="https://github.com/huggingface/computer-vision-course">https://github.com/huggingface/computer-vision-course</a>）</p>
+  <p>日本語版の翻訳・公開: 霞ヶ関京 / 連絡先: GitHub <a href="https://github.com/yanikasumin">@yanikasumin</a> / YouTube <a href="https://www.youtube.com/@KASUMI_MOF">@KASUMI_MOF</a></p>
+  <p class="demo-note">このサイトはデモ版です。内容は順次更新されます。</p>
+</footer>
+<script src="../../../site.js"></script>
+</body>
+</html>

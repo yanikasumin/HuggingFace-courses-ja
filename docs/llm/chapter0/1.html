@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>はじめに | Hugging Face コース日本語版（デモ版）</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Shippori+Mincho:wght@500;700&family=Zen+Kaku+Gothic+New:wght@400;500;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../../style.css">
+<script>
+window.MathJax = { tex: { inlineMath: [['$', '$'], ['\\(', '\\)']], displayMath: [['$$', '$$'], ['\\[', '\\]']] }, options: { skipHtmlTags: ['script','noscript','style','textarea','pre','code'] } };
+</script>
+<script async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml.js"></script>
+</head>
+<body>
+<header class="site-header">
+  <div class="header-inner">
+    <a class="site-title" href="../../index.html">Hugging Face コース日本語版</a>
+    <span class="demo-badge">デモ版</span>
+  </div>
+</header>
+<main class="container">
+<p class="course-crumb"><a href="../index.html">LLM コース</a>
+<span class="badge badge-qa-pass">翻訳QA 最終合格</span></p>
+<nav class="page-nav"><span class="nav-link prev disabled"></span><a class="nav-link toc-link" href="../index.html">目次へ</a><a class="nav-link next" href="../chapter1/1.html">次へ →: はじめに</a></nav>
+<article class="content">
+<h1>はじめに</h1>
+<p>Hugging Face コースへようこそ！このページでは、作業環境のセットアップ方法を案内します。コースを始めたばかりの方は、まず <a href="../chapter1/1.html">第1章</a> に目を通してから、ここに戻って環境をセットアップし、実際にコードを試してみるのがおすすめです。</p>
+<p>このコースで使うライブラリはすべて Python パッケージとして提供されているので、ここでは Python 環境のセットアップと、必要なライブラリのインストール方法を紹介します。</p>
+<p>作業環境のセットアップには、Colab ノートブックを使う方法と、Python の仮想環境を使う方法があります。ここでは、この2つの方法を紹介します。自分に合った方を選んでください。初心者の方は、まず Colab ノートブックから始めるのがおすすめです。</p>
+<p>なお、このコースでは Windows での環境構築は扱いません。Windows を使っている方は、Colab ノートブックで進めるのがおすすめです。Linux か macOS であれば、このページで紹介するどちらの方法でも進められます。</p>
+<p>コースの大部分では Hugging Face アカウントが必要になります。まだの方は、今のうちに<a href="https://huggingface.co/join">アカウントを作成</a>しておきましょう。</p>
+<h2>Google Colab ノートブックを使う</h2>
+<p>Colab ノートブックを使うのが、作業環境を整える最も手軽な方法です。ブラウザでノートブックを開けば、すぐにコーディングを始められます！</p>
+<p>Colab に慣れていない方は、まず<a href="https://colab.research.google.com/notebooks/intro.ipynb">入門ノートブック</a>で基本的な操作を学ぶのがおすすめです。Colab では GPU や TPU といったアクセラレータを使えますし、小規模なワークロードなら無料で利用できます。</p>
+<p>Colab の操作に慣れてきたら、新しいノートブックを作成して、セットアップを始めましょう。</p>
+<div class="flex justify-center">
+<img src="https://huggingface.co/datasets/huggingface-course/documentation-images/resolve/main/en/chapter0/new_colab.png" alt="空の Colab ノートブック" width="80%"/>
+</div>
+
+<p>次に、このコースで使うライブラリをインストールします。インストールには、Python のパッケージマネージャーである <code>pip</code> を使います。ノートブックでは、コマンドの前に <code>!</code> を付けるとシステムコマンドを実行できるので、🤗 Transformers ライブラリは次のようにインストールできます。</p>
+<div class="codehilite"><pre><span></span><code>!pip install transformers
+</code></pre></div>
+
+<p>パッケージが正しくインストールされたかどうかは、Python からインポートしてみれば確認できます。</p>
+<div class="codehilite"><pre><span></span><code>import transformers
+</code></pre></div>
+
+<div class="flex justify-center">
+<img src="https://huggingface.co/datasets/huggingface-course/documentation-images/resolve/main/en/chapter0/install.gif" alt="上の2つのコマンド（インストールとインポート）の実行結果を示す GIF" width="80%"/>
+</div>
+
+<p>これでインストールされるのは、とても軽量なバージョンの 🤗 Transformers です。PyTorch や TensorFlow のような機械学習フレームワークは含まれません。このコースでは 🤗 Transformers のさまざまな機能を使うため、ほぼあらゆる用途に必要な依存パッケージがそろう開発版をインストールすることをおすすめします。</p>
+<div class="codehilite"><pre><span></span><code>!pip install transformers[sentencepiece]
+</code></pre></div>
+
+<p>少し時間がかかりますが、これで残りのコースを進める準備が整います！</p>
+<h2>Python の仮想環境を使う</h2>
+<p>Python の仮想環境を使いたい場合は、まずシステムに Python をインストールします。手始めに<a href="https://realpython.com/installing-python/">このガイド</a>に沿って進めるのがおすすめです。</p>
+<p>Python をインストールしたら、ターミナルで Python のコマンドを実行できるようになっているはずです。次に進む前に、<code>python --version</code> コマンドを実行して、Python が正しくインストールされているか確認しておきましょう。システムで使える Python のバージョンが表示されるはずです。</p>
+<p>ターミナルで <code>python --version</code> のような Python コマンドを実行するとき、呼び出される Python は、システムの「メイン」の Python だと考えてください。このメインの Python にはパッケージを直接入れず、作業するアプリケーションごとに別々の環境を作るために使うのがおすすめです。そうすれば、アプリケーションごとに依存関係やパッケージを分離でき、ほかのアプリケーションとの互換性の問題を心配する必要がなくなります。</p>
+<p>Python ではこれを<a href="https://docs.python.org/3/tutorial/venv.html">仮想環境</a>で実現します。仮想環境とは、特定のバージョンの Python 本体と、アプリケーションに必要なすべてのパッケージをまとめた、独立したディレクトリ構造です。仮想環境を作るツールはいくつかありますが、ここでは Python 公式のパッケージである <a href="https://docs.python.org/3/library/venv.html#module-venv"><code>venv</code></a> を使います。</p>
+<p>まず、アプリケーションを置くディレクトリを作成します。たとえば、ホームディレクトリ直下に <em>transformers-course</em> という新しいディレクトリを作るといいでしょう。</p>
+<div class="codehilite"><pre><span></span><code>mkdir ~/transformers-course
+cd ~/transformers-course
+</code></pre></div>
+
+<p>このディレクトリの中で、Python の <code>venv</code> モジュールを使って仮想環境を作成します。</p>
+<div class="codehilite"><pre><span></span><code>python -m venv .env
+</code></pre></div>
+
+<p>これで、空だったフォルダの中に <em>.env</em> というディレクトリができているはずです。</p>
+<div class="codehilite"><pre><span></span><code>ls -a
+</code></pre></div>
+
+<div class="codehilite"><pre><span></span><code>.      ..    .env
+</code></pre></div>
+
+<p>仮想環境の有効化と無効化は、<code>activate</code> スクリプトと <code>deactivate</code> スクリプトで行います。</p>
+<div class="codehilite"><pre><span></span><code># 仮想環境を有効化する
+source .env/bin/activate
+
+# 仮想環境を無効化する
+deactivate
+</code></pre></div>
+
+<p>環境が有効化されているかどうかは、<code>which python</code> コマンドで確認できます。表示されたパスが仮想環境の中を指していれば、有効化できています！</p>
+<div class="codehilite"><pre><span></span><code>which python
+</code></pre></div>
+
+<div class="codehilite"><pre><span></span><code>/home/&lt;user&gt;/transformers-course/.env/bin/python
+</code></pre></div>
+
+<h3>依存関係のインストール</h3>
+<p>前のセクション（Google Colab）と同様に、ここでもコースの続きを進めるために必要なパッケージをインストールします。🤗 Transformers の開発版は、パッケージ管理ツールの <code>pip</code> を使ってインストールできます。</p>
+<div class="codehilite"><pre><span></span><code>pip install "transformers[sentencepiece]"
+</code></pre></div>
+
+<p>これでセットアップは完了です。さっそく始めましょう！</p>
+</article>
+<nav class="page-nav"><span class="nav-link prev disabled"></span><a class="nav-link toc-link" href="../index.html">目次へ</a><a class="nav-link next" href="../chapter1/1.html">次へ →: はじめに</a></nav>
+</main>
+<footer class="site-footer">
+  <p>原典: Hugging Face huggingface/course（<a href="https://github.com/huggingface/course">https://github.com/huggingface/course</a>）</p>
+  <p>日本語版の翻訳・公開: 霞ヶ関京 / 連絡先: GitHub <a href="https://github.com/yanikasumin">@yanikasumin</a> / YouTube <a href="https://www.youtube.com/@KASUMI_MOF">@KASUMI_MOF</a></p>
+  <p class="demo-note">このサイトはデモ版です。内容は順次更新されます。</p>
+</footer>
+<script src="../../site.js"></script>
+</body>
+</html>
