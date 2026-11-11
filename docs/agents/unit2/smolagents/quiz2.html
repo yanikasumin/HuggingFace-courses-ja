@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>小クイズ（採点なし） | Hugging Face コース日本語版（デモ版）</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Shippori+Mincho:wght@500;700&family=Zen+Kaku+Gothic+New:wght@400;500;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../../../style.css">
+<script>
+window.MathJax = { tex: { inlineMath: [['$', '$'], ['\\(', '\\)']], displayMath: [['$$', '$$'], ['\\[', '\\]']] }, options: { skipHtmlTags: ['script','noscript','style','textarea','pre','code'] } };
+</script>
+<script async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml.js"></script>
+</head>
+<body>
+<header class="site-header">
+  <div class="header-inner">
+    <a class="site-title" href="../../../index.html">Hugging Face コース日本語版</a>
+    <span class="demo-badge">デモ版</span>
+  </div>
+</header>
+<main class="container">
+<p class="course-crumb"><a href="../../index.html">Agents コース</a>
+<span class="badge badge-qa-wip">翻訳済み・QA進行中（未検証の部分を含みます）</span></p>
+<nav class="page-nav"><a class="nav-link prev" href="retrieval_agents.html">← 前へ: Agentic RAG システムを作る</a><a class="nav-link toc-link" href="../../index.html">目次へ</a><a class="nav-link next" href="multi_agent_systems.html">次へ →: マルチエージェントシステム</a></nav>
+<article class="content">
+<h1>小クイズ（採点なし）</h1>
+<p><em>Code Agents</em>、<em>Tool Calling Agents</em>、<em>Tools</em> の各セクションの理解度を試す時間です。このクイズは任意で、採点されません。</p>
+<hr />
+<h3>Q1: smolagents で、<code>@tool</code> デコレータでツールを作成することと、<code>Tool</code> のサブクラスを作成することの主な違いは何ですか？</h3>
+<p>ツールを定義するこれら2つのアプローチの区別を最もよく表す記述はどれですか？</p>
+<div class="quiz">
+<div class="quiz-choices">
+<button type="button" class="quiz-choice" data-correct="false" data-quiz-idx="0"><code>@tool</code> デコレータの使用は検索ベースのツールでは必須であり、<code>Tool</code> のサブクラスはテキスト生成タスク専用である</button>
+<div class="quiz-explain-src" id="qe-125591344526720-0" hidden>どちらのアプローチも、検索ベースやテキスト生成など、あらゆる種類のツールに使えます。</div>
+<button type="button" class="quiz-choice" data-correct="true" data-quiz-idx="1"><code>@tool</code> デコレータはシンプルな関数ベースのツールに推奨され、<code>Tool</code> のサブクラスは複雑な機能やカスタムのメタデータに対してより柔軟性を提供する</button>
+<div class="quiz-explain-src" id="qe-125591344526720-1" hidden>正解です。デコレータのアプローチはよりシンプルですが、サブクラス化により振る舞いをよりカスタマイズできます。</div>
+<button type="button" class="quiz-choice" data-correct="false" data-quiz-idx="2"><code>@tool</code> はマルチエージェントシステムでのみ使え、<code>Tool</code> サブクラスの作成はシングルエージェントのシナリオ専用である</button>
+<div class="quiz-explain-src" id="qe-125591344526720-2" hidden>すべてのエージェント（シングルでもマルチでも）は、ツールの定義にどちらのアプローチも使えます。そのような制限はありません。</div>
+<button type="button" class="quiz-choice" data-correct="false" data-quiz-idx="3">関数に <code>@tool</code> でデコレートすると docstring が不要になるが、サブクラスは docstring を含めてはならない</button>
+<div class="quiz-explain-src" id="qe-125591344526720-3" hidden>どちらの方法も、明確な docstring の恩恵を受けます。デコレータが docstring を置き換えるわけではなく、サブクラスも docstring を持てます。</div>
+</div><div class="quiz-feedback" hidden></div></div>
+<hr />
+<h3>Q2: CodeAgent は ReAct（Reason + Act）アプローチを使ってマルチステップのタスクをどう処理しますか？</h3>
+<p>CodeAgent がタスクを解くために一連のステップをどう実行するかを正しく表す記述はどれですか？</p>
+<div class="quiz">
+<div class="quiz-choices">
+<button type="button" class="quiz-choice" data-correct="false" data-quiz-idx="0">マルチエージェントシステム内の異なるエージェントに各ステップを渡し、結果を組み合わせる</button>
+<div class="quiz-explain-src" id="qe-125591344619584-0" hidden>マルチエージェントシステムはタスクを分散できますが、CodeAgent 自体が ReAct を使って複数のステップを自分で処理できます。</div>
+<button type="button" class="quiz-choice" data-correct="false" data-quiz-idx="1">すべてのアクションを JSON に保存して簡単にパースできるようにし、まとめて一度に実行する</button>
+<div class="quiz-explain-src" id="qe-125591344619584-1" hidden>この振る舞いは ToolCallingAgent の JSON ベースのアプローチに一致し、CodeAgent のものではありません。</div>
+<button type="button" class="quiz-choice" data-correct="true" data-quiz-idx="2">内部の思考を書き、Python コードを生成し、そのコードを実行し、最終的な答えにたどり着くまで結果を記録する、というサイクルを繰り返す</button>
+<div class="quiz-explain-src" id="qe-125591344619584-2" hidden>正解です。これは、反復的な推論とコード実行を含む、CodeAgent が使う ReAct パターンを表しています。</div>
+<button type="button" class="quiz-choice" data-correct="false" data-quiz-idx="3">次のステップに進む前に、コード出力を検証するためにビジョンモジュールに依存する</button>
+<div class="quiz-explain-src" id="qe-125591344619584-3" hidden>ビジョン機能は smolagents でサポートされていますが、CodeAgent や ReAct アプローチのデフォルトの要件ではありません。</div>
+</div><div class="quiz-feedback" hidden></div></div>
+<hr />
+<h3>Q3: 次のうち、ツールを Hugging Face Hub で共有する主な利点はどれですか？</h3>
+<p>開発者が自分のカスタムツールをアップロードして共有する理由として最も適切なものを選んでください。</p>
+<div class="quiz">
+<div class="quiz-choices">
+<button type="button" class="quiz-choice" data-correct="false" data-quiz-idx="0">ツールが自動的に MultiStepAgent と統合され、検索拡張生成（RAG）が行えるようになる</button>
+<div class="quiz-explain-src" id="qe-125591344526720-0" hidden>ツールを共有しても、検索やマルチステップのロジックが自動的に設定されるわけではありません。ツールを利用可能にするだけです。</div>
+<button type="button" class="quiz-choice" data-correct="true" data-quiz-idx="1">他の人があなたのツールを見つけ、再利用し、追加のセットアップなしに自分の smolagents に統合できるようになる</button>
+<div class="quiz-explain-src" id="qe-125591344526720-1" hidden>はい。Hub で共有すると、誰もが（自分自身も含めて）ツールをダウンロードして素早く再利用できるようになります。</div>
+<button type="button" class="quiz-choice" data-correct="false" data-quiz-idx="2">CodeAgents だけがそのツールを呼び出せることが保証され、ToolCallingAgents は呼び出せなくなる</button>
+<div class="quiz-explain-src" id="qe-125591344526720-2" hidden>CodeAgents と ToolCallingAgents の両方が、共有されたツールを呼び出せます。エージェントタイプによる制限はありません。</div>
+<button type="button" class="quiz-choice" data-correct="false" data-quiz-idx="3">ツールが画像処理用の完全なビジョン対応関数に変換される</button>
+<div class="quiz-explain-src" id="qe-125591344526720-3" hidden>ツールの共有によって、ツールの機能が変わったり、ビジョン機能が自動的に追加されたりすることはありません。</div>
+</div><div class="quiz-feedback" hidden></div></div>
+<hr />
+<h3>Q4: ToolCallingAgent は、アクションの実行方法の点で CodeAgent と異なります。正しい記述はどれですか？</h3>
+<p>ToolCallingAgent の仕組みを正確に表す選択肢を選んでください。</p>
+<div class="quiz">
+<div class="quiz-choices">
+<button type="button" class="quiz-choice" data-correct="false" data-quiz-idx="0">ToolCallingAgent はマルチエージェントシステムでのみ互換性があり、CodeAgent は単独で実行できる</button>
+<div class="quiz-explain-src" id="qe-125591344619584-0" hidden>どちらのエージェントも、単独でもマルチエージェントシステムの一部としても使えます。</div>
+<button type="button" class="quiz-choice" data-correct="false" data-quiz-idx="1">ToolCallingAgent はすべての推論を別の検索エージェントに委譲し、その後、最終的な答えを返す</button>
+<div class="quiz-explain-src" id="qe-125591344619584-1" hidden>ToolCallingAgent は推論にメインの LLM を引き続き使います。検索エージェントだけに依存するわけではありません。</div>
+<button type="button" class="quiz-choice" data-correct="true" data-quiz-idx="2">ToolCallingAgent は、ツール呼び出しと引数を指定する JSON の指示を出力し、それがパースされて実行される</button>
+<div class="quiz-explain-src" id="qe-125591344619584-2" hidden>正解です。ToolCallingAgent は、ツール呼び出しの定義に JSON のアプローチを使います。</div>
+<button type="button" class="quiz-choice" data-correct="false" data-quiz-idx="3">ToolCallingAgent はシングルステップのタスク専用であり、ひとつのツールを呼んだ後に自動的に停止する</button>
+<div class="quiz-explain-src" id="qe-125591344619584-3" hidden>ToolCallingAgent は、CodeAgent と同様に、必要に応じて複数のステップを実行できます。</div>
+</div><div class="quiz-feedback" hidden></div></div>
+<hr />
+<h3>Q5: smolagents のデフォルトのツールボックスには何が含まれ、なぜ使うのですか？</h3>
+<p>smolagents のデフォルトのツールボックスの目的と内容を最もよく表す記述はどれですか？</p>
+<div class="quiz">
+<div class="quiz-choices">
+<button type="button" class="quiz-choice" data-correct="true" data-quiz-idx="0">DuckDuckGo 検索、PythonInterpreterTool、最終回答ツールなど、素早いプロトタイピングのためのよく使うツール一式を提供する</button>
+<div class="quiz-explain-src" id="qe-125591344526720-0" hidden>正解です。デフォルトのツールボックスには、エージェントを構築する際に簡単に統合できる、こうした既製のツールが含まれます。</div>
+<button type="button" class="quiz-choice" data-correct="false" data-quiz-idx="1">デフォルトでは、画像分類や OCR のようなビジョンベースのタスクのみをサポートする</button>
+<div class="quiz-explain-src" id="qe-125591344526720-1" hidden>smolagents はビジョンベースの機能を統合できますが、デフォルトのツールボックスはビジョン専用というわけではありません。</div>
+<button type="button" class="quiz-choice" data-correct="false" data-quiz-idx="2">マルチエージェントシステム専用であり、単一の CodeAgent とは互換性がない</button>
+<div class="quiz-explain-src" id="qe-125591344526720-2" hidden>デフォルトのツールボックスは、シングルでもマルチでも、あらゆるエージェントタイプで使えます。</div>
+<button type="button" class="quiz-choice" data-correct="false" data-quiz-idx="3">ベクトルストアからの大規模な質問応答のために、高度な検索ベースの機能を追加する</button>
+<div class="quiz-explain-src" id="qe-125591344526720-3" hidden>検索ツールを構築することはできますが、デフォルトのツールボックスが高度な RAG 機能を自動的に提供するわけではありません。</div>
+</div><div class="quiz-feedback" hidden></div></div>
+<hr />
+<p>このクイズの完了、おめでとうございます！ 🎉 苦労した問題があった場合は、理解を強固にするために <em>Code Agents</em>、<em>Tool Calling Agents</em>、<em>Tools</em> の各セクションを振り返ってください。完璧に解けた場合は、堅牢な smolagents アプリケーションを構築する道を順調に進んでいます！</p>
+</article>
+<nav class="page-nav"><a class="nav-link prev" href="retrieval_agents.html">← 前へ: Agentic RAG システムを作る</a><a class="nav-link toc-link" href="../../index.html">目次へ</a><a class="nav-link next" href="multi_agent_systems.html">次へ →: マルチエージェントシステム</a></nav>
+</main>
+<footer class="site-footer">
+  <p>原典: Hugging Face huggingface/agents-course（<a href="https://github.com/huggingface/agents-course">https://github.com/huggingface/agents-course</a>）</p>
+  <p>日本語版の翻訳・公開: 霞ヶ関京 / 連絡先: GitHub <a href="https://github.com/yanikasumin">@yanikasumin</a> / YouTube <a href="https://www.youtube.com/@KASUMI_MOF">@KASUMI_MOF</a></p>
+  <p class="demo-note">このサイトはデモ版です。内容は順次更新されます。</p>
+</footer>
+<script src="../../../site.js"></script>
+</body>
+</html>

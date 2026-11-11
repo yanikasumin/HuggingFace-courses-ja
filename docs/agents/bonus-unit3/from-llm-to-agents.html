@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>LLM から AI エージェントへ | Hugging Face コース日本語版（デモ版）</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Shippori+Mincho:wght@500;700&family=Zen+Kaku+Gothic+New:wght@400;500;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../../style.css">
+<script>
+window.MathJax = { tex: { inlineMath: [['$', '$'], ['\\(', '\\)']], displayMath: [['$$', '$$'], ['\\[', '\\]']] }, options: { skipHtmlTags: ['script','noscript','style','textarea','pre','code'] } };
+</script>
+<script async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml.js"></script>
+</head>
+<body>
+<header class="site-header">
+  <div class="header-inner">
+    <a class="site-title" href="../../index.html">Hugging Face コース日本語版</a>
+    <span class="demo-badge">デモ版</span>
+  </div>
+</header>
+<main class="container">
+<p class="course-crumb"><a href="../index.html">Agents コース</a>
+<span class="badge badge-qa-wip">翻訳済み・QA進行中（未検証の部分を含みます）</span></p>
+<nav class="page-nav"><a class="nav-link prev" href="state-of-art.html">← 前へ: ゲームにおける LLM 活用の最先端</a><a class="nav-link toc-link" href="../index.html">目次へ</a><a class="nav-link next" href="building_your_pokemon_agent.html">次へ →: 自分だけの Pokémon バトルエージェントを作ろう</a></nav>
+<article class="content">
+<h1>LLM から AI エージェントへ</h1>
+<p>このコースの<a href="https://huggingface.co/learn/agents-course/unit1/introduction">最初のユニット</a>で、AI エージェントは計画を立て、意思決定ができると学びました。<br />
+LLM によって NPC とのやり取りはより自然になりましたが、エージェンティック AI はさらに一歩進み、キャラクターが意思決定し、アクションを計画し、変化する環境に適応できるようにします。</p>
+<p>違いを分かりやすくするために、古典的な RPG の NPC を考えてみましょう。</p>
+<ul>
+<li>LLM の場合: NPC はプレイヤーの質問に、より自然で変化に富んだ応答を返すかもしれません。会話には優れていますが、NPC 自体は静的で、プレイヤーが何かするまでは行動しません。</li>
+<li>エージェンティック AI の場合: NPC は、プレイヤーが直接関わっていなくても、助けを探しに行く、罠を仕掛ける、あるいはプレイヤーを完全に避けるといった判断ができます。</li>
+</ul>
+<p>この小さな変化が、すべてを変えます。台本どおりに応答する存在から、ゲーム世界の自律的なアクターへと移行するのです。</p>
+<p>この変化により、NPC は目標指向の振る舞いを通じて環境と直接関われるようになり、結果として、よりダイナミックで予測不能なゲームプレイが生まれます。</p>
+<p>エージェンティック AI は、NPC に次を与えます。</p>
+<ul>
+<li><strong>自律性（Autonomy）</strong>: ゲームの状態に基づく、独立した意思決定。</li>
+<li><strong>適応性（Adaptability）</strong>: プレイヤーのアクションに応じて戦略を調整すること。</li>
+<li><strong>持続性（Persistence）</strong>: 過去のやり取りを記憶し、将来の振る舞いに活かすこと。</li>
+</ul>
+<p>これにより、NPC は（プレイヤーの入力に）反応する存在から、ゲーム世界の能動的な参加者へと変わり、革新的なゲームプレイへの扉が開かれます。</p>
+<h2>エージェントの大きな限界: <strong>（今のところ）遅い</strong>こと</h2>
+<p>しかし、まだ楽観しすぎてはいけません。その可能性にもかかわらず、エージェンティック AI は現在、リアルタイム用途では課題を抱えています。 </p>
+<p>推論と計画のプロセスはレイテンシを生むため、<em>Doom</em> や <em>Super Mario Bros.</em> のようなテンポの速いゲームには向いていません。</p>
+<p><a href="https://www.twitch.tv/claudeplayspokemon"><em>Claude Plays Pokémon</em></a> の例を考えてみましょう。<strong>思考</strong>に必要なトークン数に、<strong>行動</strong>に必要なトークン数を加えて考えると、リアルタイムプレイを可能にするには、まったく異なるデコーディング戦略が必要になることは明らかです。</p>
+<p><img src="https://huggingface.co/datasets/agents-course/course-images/resolve/main/en/bonus-unit3/claude-plays-pokemon.png" alt="Pokémon をプレイする Claude"/></p>
+<p>多くのゲームは 30 FPS 前後で動作する必要があります。つまり、リアルタイム AI エージェントは 1 秒に 30 回行動しなければならず、現在のエージェンティック LLM では実現できません。</p>
+<p>一方で、<em>Pokémon</em> のようなターン制ゲームは理想的な候補です。AI がじっくり考えて戦略的な判断を下す時間を確保できるからです。</p>
+<p>そのため、次のセクションでは、ポケモン風のターン制バトルで戦う、あなた自身の AI エージェントを構築します。自分で挑戦することもできます。さあ、始めましょう！</p>
+</article>
+<nav class="page-nav"><a class="nav-link prev" href="state-of-art.html">← 前へ: ゲームにおける LLM 活用の最先端</a><a class="nav-link toc-link" href="../index.html">目次へ</a><a class="nav-link next" href="building_your_pokemon_agent.html">次へ →: 自分だけの Pokémon バトルエージェントを作ろう</a></nav>
+</main>
+<footer class="site-footer">
+  <p>原典: Hugging Face huggingface/agents-course（<a href="https://github.com/huggingface/agents-course">https://github.com/huggingface/agents-course</a>）</p>
+  <p>日本語版の翻訳・公開: 霞ヶ関京 / 連絡先: GitHub <a href="https://github.com/yanikasumin">@yanikasumin</a> / YouTube <a href="https://www.youtube.com/@KASUMI_MOF">@KASUMI_MOF</a></p>
+  <p class="demo-note">このサイトはデモ版です。内容は順次更新されます。</p>
+</footer>
+<script src="../../site.js"></script>
+</body>
+</html>

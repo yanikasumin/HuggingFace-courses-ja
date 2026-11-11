@@ -1,0 +1,385 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>マルチエージェントシステム | Hugging Face コース日本語版（デモ版）</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Shippori+Mincho:wght@500;700&family=Zen+Kaku+Gothic+New:wght@400;500;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../../../style.css">
+<script>
+window.MathJax = { tex: { inlineMath: [['$', '$'], ['\\(', '\\)']], displayMath: [['$$', '$$'], ['\\[', '\\]']] }, options: { skipHtmlTags: ['script','noscript','style','textarea','pre','code'] } };
+</script>
+<script async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml.js"></script>
+</head>
+<body>
+<header class="site-header">
+  <div class="header-inner">
+    <a class="site-title" href="../../../index.html">Hugging Face コース日本語版</a>
+    <span class="demo-badge">デモ版</span>
+  </div>
+</header>
+<main class="container">
+<p class="course-crumb"><a href="../../index.html">Agents コース</a>
+<span class="badge badge-qa-wip">翻訳済み・QA進行中（未検証の部分を含みます）</span></p>
+<nav class="page-nav"><a class="nav-link prev" href="quiz2.html">← 前へ: 小クイズ（採点なし）</a><a class="nav-link toc-link" href="../../index.html">目次へ</a><a class="nav-link next" href="vision_agents.html">次へ →: smolagents の Vision エージェント</a></nav>
+<article class="content">
+<h1>マルチエージェントシステム</h1>
+<p>マルチエージェントシステムにより、<strong>専門化されたエージェントが複雑なタスクで協働</strong>でき、モジュール性、スケーラビリティ、堅牢性が向上します。単一のエージェントに頼るのではなく、タスクは異なる能力を持つエージェントに分散されます。</p>
+<p><strong>smolagents</strong> では、Python コードの生成、外部ツールの呼び出し、Web 検索の実行などを行うさまざまなエージェントを組み合わせることができます。これらのエージェントをオーケストレーションすることで、強力なワークフローを作れます。</p>
+<p>典型的な構成には次のようなものがあります。
+- タスク委任のための <strong>Manager Agent</strong><br />
+- コード実行のための <strong>Code Interpreter Agent</strong><br />
+- 情報検索のための <strong>Web Search Agent</strong>  </p>
+<p>下の図は、シンプルなマルチエージェントアーキテクチャを示しています。<strong>Manager Agent</strong> が <strong>Code Interpreter Tool</strong> と <strong>Web Search Agent</strong> を調整し、Web Search Agent は <code>DuckDuckGoSearchTool</code> や <code>VisitWebpageTool</code> のようなツールを利用して関連情報を収集します。</p>
+<p><img src="https://mermaid.ink/img/pako:eNp1kc1qhTAQRl9FUiQb8wIpdNO76eKubrmFks1oRg3VSYgjpYjv3lFL_2hnMWQOJwn5sqgmelRWleUSKLAtFs09jqhtoWuYUFfFAa6QA9QDTnpzamheuhxn8pt40-6l13UtS0ddhtQXj6dbR4XUGQg6zEYasTF393KjeSDGnDJKNxzj8I_7hLW5IOSmP9CH9hv_NL-d94d4DVNg84p1EnK4qlIj5hGClySWbadT-6OdsrL02MI8sFOOVkciw8zx8kaNspxnrJQE0fXKtjBMMs3JA-MpgOQwftIE9Bzj14w-cMznI_39E9Z3p0uFoA?type=png" style='background: white;'></p>
+<h2>マルチエージェントシステムの実践</h2>
+<p>マルチエージェントシステムは、<strong>Orchestrator Agent</strong> の調整のもとで協働する、複数の専門化されたエージェントで構成されます。このアプローチにより、異なる役割を持つエージェントにタスクを分散させて、複雑なワークフローを実現できます。</p>
+<p>たとえば、<strong>マルチエージェント RAG システム</strong>は次のものを統合できます。
+- インターネットを閲覧する <strong>Web Agent</strong>。<br />
+- ナレッジベースから情報を取得する <strong>Retriever Agent</strong>。<br />
+- ビジュアルを生み出す <strong>Image Generation Agent</strong>。  </p>
+<p>これらすべてのエージェントは、タスクの委任とインタラクションを管理するオーケストレーターのもとで動作します。</p>
+<h2>マルチエージェントの階層で複雑なタスクを解く</h2>
+<div class="callout callout-tip">
+<p class="callout-title">💡 ヒント</p>
+<p>コードは、Google Colab で実行できる<a href="https://huggingface.co/agents-course/notebooks/blob/main/unit2/smolagents/multiagent_notebook.ipynb" target="_blank">このノートブック</a>で追うことができます。</p>
+</div>
+<p>レセプションが近づいています。皆さんの助けにより、アルフレッドは準備の仕上げに近づきました。</p>
+<p>しかし、今、問題が起きました。バットモービルが消えてしまったのです。アルフレッドは代替品を見つける必要があり、しかも急いでいます。</p>
+<p>幸い、ブルース・ウェインの人生については伝記映画がいくつか作られているので、映画の撮影セットに残された車を手に入れ、完全な自動運転オプションも含む現代の標準に合わせて改造できるかもしれません。</p>
+<p>しかし、撮影場所は世界中のどこかかもしれません。その数は多い可能性があります。</p>
+<p>そこでアルフレッドはあなたの助けを求めています。このタスクを解けるエージェントを作ってもらえますか？</p>
+<blockquote>
+<p>👉 世界中のバットマンの撮影場所をすべて見つけ、そこまでの船での移動時間を計算し、船での移動時間に応じて色が変わる地図に表してください。また、同じ船での移動時間のスーパーカー工場もいくつか表してください。</p>
+</blockquote>
+<p>さあ、作りましょう！</p>
+<p>この例には追加のパッケージが必要なので、まずそれらをインストールします。</p>
+<div class="codehilite"><pre><span></span><code>pip<span class="w"> </span>install<span class="w"> </span><span class="s1">'smolagents[litellm]'</span><span class="w"> </span>plotly<span class="w"> </span>geopandas<span class="w"> </span>shapely<span class="w"> </span>kaleido<span class="w"> </span>-q
+</code></pre></div>
+
+<h3>まず、貨物機での移動時間を取得するツールを作ります</h3>
+<div class="codehilite"><pre><span></span><code><span class="kn">import</span><span class="w"> </span><span class="nn">math</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Optional</span><span class="p">,</span> <span class="n">Tuple</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">smolagents</span><span class="w"> </span><span class="kn">import</span> <span class="n">tool</span>
+
+
+<span class="nd">@tool</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">calculate_cargo_travel_time</span><span class="p">(</span>
+    <span class="n">origin_coords</span><span class="p">:</span> <span class="n">Tuple</span><span class="p">[</span><span class="nb">float</span><span class="p">,</span> <span class="nb">float</span><span class="p">],</span>
+    <span class="n">destination_coords</span><span class="p">:</span> <span class="n">Tuple</span><span class="p">[</span><span class="nb">float</span><span class="p">,</span> <span class="nb">float</span><span class="p">],</span>
+    <span class="n">cruising_speed_kmh</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">float</span><span class="p">]</span> <span class="o">=</span> <span class="mf">750.0</span><span class="p">,</span>  <span class="c1"># Average speed for cargo planes</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">float</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""</span>
+<span class="sd">    Calculate the travel time for a cargo plane between two points on Earth using great-circle distance.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        origin_coords: Tuple of (latitude, longitude) for the starting point</span>
+<span class="sd">        destination_coords: Tuple of (latitude, longitude) for the destination</span>
+<span class="sd">        cruising_speed_kmh: Optional cruising speed in km/h (defaults to 750 km/h for typical cargo planes)</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        float: The estimated travel time in hours</span>
+
+<span class="sd">    Example:</span>
+<span class="sd">        &gt;&gt;&gt; # Chicago (41.8781° N, 87.6298° W) to Sydney (33.8688° S, 151.2093° E)</span>
+<span class="sd">        &gt;&gt;&gt; result = calculate_cargo_travel_time((41.8781, -87.6298), (-33.8688, 151.2093))</span>
+<span class="sd">    """</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">to_radians</span><span class="p">(</span><span class="n">degrees</span><span class="p">:</span> <span class="nb">float</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">float</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">degrees</span> <span class="o">*</span> <span class="p">(</span><span class="n">math</span><span class="o">.</span><span class="n">pi</span> <span class="o">/</span> <span class="mi">180</span><span class="p">)</span>
+
+    <span class="c1"># Extract coordinates</span>
+    <span class="n">lat1</span><span class="p">,</span> <span class="n">lon1</span> <span class="o">=</span> <span class="nb">map</span><span class="p">(</span><span class="n">to_radians</span><span class="p">,</span> <span class="n">origin_coords</span><span class="p">)</span>
+    <span class="n">lat2</span><span class="p">,</span> <span class="n">lon2</span> <span class="o">=</span> <span class="nb">map</span><span class="p">(</span><span class="n">to_radians</span><span class="p">,</span> <span class="n">destination_coords</span><span class="p">)</span>
+
+    <span class="c1"># Earth's radius in kilometers</span>
+    <span class="n">EARTH_RADIUS_KM</span> <span class="o">=</span> <span class="mf">6371.0</span>
+
+    <span class="c1"># Calculate great-circle distance using the haversine formula</span>
+    <span class="n">dlon</span> <span class="o">=</span> <span class="n">lon2</span> <span class="o">-</span> <span class="n">lon1</span>
+    <span class="n">dlat</span> <span class="o">=</span> <span class="n">lat2</span> <span class="o">-</span> <span class="n">lat1</span>
+
+    <span class="n">a</span> <span class="o">=</span> <span class="p">(</span>
+        <span class="n">math</span><span class="o">.</span><span class="n">sin</span><span class="p">(</span><span class="n">dlat</span> <span class="o">/</span> <span class="mi">2</span><span class="p">)</span> <span class="o">**</span> <span class="mi">2</span>
+        <span class="o">+</span> <span class="n">math</span><span class="o">.</span><span class="n">cos</span><span class="p">(</span><span class="n">lat1</span><span class="p">)</span> <span class="o">*</span> <span class="n">math</span><span class="o">.</span><span class="n">cos</span><span class="p">(</span><span class="n">lat2</span><span class="p">)</span> <span class="o">*</span> <span class="n">math</span><span class="o">.</span><span class="n">sin</span><span class="p">(</span><span class="n">dlon</span> <span class="o">/</span> <span class="mi">2</span><span class="p">)</span> <span class="o">**</span> <span class="mi">2</span>
+    <span class="p">)</span>
+    <span class="n">c</span> <span class="o">=</span> <span class="mi">2</span> <span class="o">*</span> <span class="n">math</span><span class="o">.</span><span class="n">asin</span><span class="p">(</span><span class="n">math</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="n">a</span><span class="p">))</span>
+    <span class="n">distance</span> <span class="o">=</span> <span class="n">EARTH_RADIUS_KM</span> <span class="o">*</span> <span class="n">c</span>
+
+    <span class="c1"># Add 10% to account for non-direct routes and air traffic controls</span>
+    <span class="n">actual_distance</span> <span class="o">=</span> <span class="n">distance</span> <span class="o">*</span> <span class="mf">1.1</span>
+
+    <span class="c1"># Calculate flight time</span>
+    <span class="c1"># Add 1 hour for takeoff and landing procedures</span>
+    <span class="n">flight_time</span> <span class="o">=</span> <span class="p">(</span><span class="n">actual_distance</span> <span class="o">/</span> <span class="n">cruising_speed_kmh</span><span class="p">)</span> <span class="o">+</span> <span class="mf">1.0</span>
+
+    <span class="c1"># Format the results</span>
+    <span class="k">return</span> <span class="nb">round</span><span class="p">(</span><span class="n">flight_time</span><span class="p">,</span> <span class="mi">2</span><span class="p">)</span>
+
+
+<span class="nb">print</span><span class="p">(</span><span class="n">calculate_cargo_travel_time</span><span class="p">((</span><span class="mf">41.8781</span><span class="p">,</span> <span class="o">-</span><span class="mf">87.6298</span><span class="p">),</span> <span class="p">(</span><span class="o">-</span><span class="mf">33.8688</span><span class="p">,</span> <span class="mf">151.2093</span><span class="p">)))</span>
+</code></pre></div>
+
+<h3>エージェントのセットアップ</h3>
+<p>モデルプロバイダーには、Hub の新しい<a href="https://huggingface.co/blog/inference-providers">推論プロバイダー</a>のひとつである Together AI を使います！</p>
+<p>GoogleSearchTool は Web 検索に <a href="https://serper.dev">Serper API</a> を使うため、環境変数 <code>SERPAPI_API_KEY</code> を設定して <code>provider="serpapi"</code> を渡すか、<code>SERPER_API_KEY</code> を用意して <code>provider=serper</code> を渡す必要があります。</p>
+<p>Serp API プロバイダーのセットアップが何もない場合は、<code>DuckDuckGoSearchTool</code> を使えますが、レート制限がある点に注意してください。</p>
+<div class="codehilite"><pre><span></span><code><span class="kn">import</span><span class="w"> </span><span class="nn">os</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">PIL</span><span class="w"> </span><span class="kn">import</span> <span class="n">Image</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">smolagents</span><span class="w"> </span><span class="kn">import</span> <span class="n">CodeAgent</span><span class="p">,</span> <span class="n">GoogleSearchTool</span><span class="p">,</span> <span class="n">InferenceClientModel</span><span class="p">,</span> <span class="n">VisitWebpageTool</span>
+
+<span class="n">model</span> <span class="o">=</span> <span class="n">InferenceClientModel</span><span class="p">(</span><span class="n">model_id</span><span class="o">=</span><span class="s2">"Qwen/Qwen2.5-Coder-32B-Instruct"</span><span class="p">,</span> <span class="n">provider</span><span class="o">=</span><span class="s2">"together"</span><span class="p">)</span>
+</code></pre></div>
+
+<p>ベースラインとして、シンプルなレポートを出すシンプルなエージェントを作ることから始められます。</p>
+<div class="codehilite"><pre><span></span><code><span class="n">task</span> <span class="o">=</span> <span class="s2">"""Find all Batman filming locations in the world, calculate the time to transfer via cargo plane to here (we're in Gotham, 40.7128° N, 74.0060° W), and return them to me as a pandas dataframe.</span>
+<span class="s2">Also give me some supercar factories with the same cargo plane transfer time."""</span>
+</code></pre></div>
+
+<div class="codehilite"><pre><span></span><code><span class="n">agent</span> <span class="o">=</span> <span class="n">CodeAgent</span><span class="p">(</span>
+    <span class="n">model</span><span class="o">=</span><span class="n">model</span><span class="p">,</span>
+    <span class="n">tools</span><span class="o">=</span><span class="p">[</span><span class="n">GoogleSearchTool</span><span class="p">(</span><span class="s2">"serper"</span><span class="p">),</span> <span class="n">VisitWebpageTool</span><span class="p">(),</span> <span class="n">calculate_cargo_travel_time</span><span class="p">],</span>
+    <span class="n">additional_authorized_imports</span><span class="o">=</span><span class="p">[</span><span class="s2">"pandas"</span><span class="p">],</span>
+    <span class="n">max_steps</span><span class="o">=</span><span class="mi">20</span><span class="p">,</span>
+<span class="p">)</span>
+</code></pre></div>
+
+<div class="codehilite"><pre><span></span><code><span class="n">result</span> <span class="o">=</span> <span class="n">agent</span><span class="o">.</span><span class="n">run</span><span class="p">(</span><span class="n">task</span><span class="p">)</span>
+</code></pre></div>
+
+<div class="codehilite"><pre><span></span><code><span class="n">result</span>
+</code></pre></div>
+
+<p>私たちの場合、次の出力が生成されました。</p>
+<div class="codehilite"><pre><span></span><code><span class="o">|</span>  <span class="o">|</span> <span class="n">Location</span>                                             <span class="o">|</span> <span class="n">Travel</span> <span class="n">Time</span> <span class="n">to</span> <span class="n">Gotham</span> <span class="p">(</span><span class="n">hours</span><span class="p">)</span> <span class="o">|</span>
+<span class="o">|--|------------------------------------------------------|------------------------------|</span>
+<span class="o">|</span> <span class="mi">0</span>  <span class="o">|</span> <span class="n">Necropolis</span> <span class="n">Cemetery</span><span class="p">,</span> <span class="n">Glasgow</span><span class="p">,</span> <span class="n">Scotland</span><span class="p">,</span> <span class="n">UK</span>         <span class="o">|</span> <span class="mf">8.60</span>                         <span class="o">|</span>
+<span class="o">|</span> <span class="mi">1</span>  <span class="o">|</span> <span class="n">St</span><span class="o">.</span> <span class="n">George</span><span class="s1">'s Hall, Liverpool, England, UK         | 8.81                         |</span>
+<span class="o">|</span> <span class="mi">2</span>  <span class="o">|</span> <span class="n">Two</span> <span class="n">Temple</span> <span class="n">Place</span><span class="p">,</span> <span class="n">London</span><span class="p">,</span> <span class="n">England</span><span class="p">,</span> <span class="n">UK</span>             <span class="o">|</span> <span class="mf">9.17</span>                         <span class="o">|</span>
+<span class="o">|</span> <span class="mi">3</span>  <span class="o">|</span> <span class="n">Wollaton</span> <span class="n">Hall</span><span class="p">,</span> <span class="n">Nottingham</span><span class="p">,</span> <span class="n">England</span><span class="p">,</span> <span class="n">UK</span>           <span class="o">|</span> <span class="mf">9.00</span>                         <span class="o">|</span>
+<span class="o">|</span> <span class="mi">4</span>  <span class="o">|</span> <span class="n">Knebworth</span> <span class="n">House</span><span class="p">,</span> <span class="n">Knebworth</span><span class="p">,</span> <span class="n">Hertfordshire</span><span class="p">,</span> <span class="n">UK</span>    <span class="o">|</span> <span class="mf">9.15</span>                         <span class="o">|</span>
+<span class="o">|</span> <span class="mi">5</span>  <span class="o">|</span> <span class="n">Acton</span> <span class="n">Lane</span> <span class="n">Power</span> <span class="n">Station</span><span class="p">,</span> <span class="n">Acton</span> <span class="n">Lane</span><span class="p">,</span> <span class="n">Acton</span><span class="p">,</span> <span class="n">UK</span>  <span class="o">|</span> <span class="mf">9.16</span>                         <span class="o">|</span>
+<span class="o">|</span> <span class="mi">6</span>  <span class="o">|</span> <span class="n">Queensboro</span> <span class="n">Bridge</span><span class="p">,</span> <span class="n">New</span> <span class="n">York</span> <span class="n">City</span><span class="p">,</span> <span class="n">USA</span>            <span class="o">|</span> <span class="mf">1.01</span>                         <span class="o">|</span>
+<span class="o">|</span> <span class="mi">7</span>  <span class="o">|</span> <span class="n">Wall</span> <span class="n">Street</span><span class="p">,</span> <span class="n">New</span> <span class="n">York</span> <span class="n">City</span><span class="p">,</span> <span class="n">USA</span>                  <span class="o">|</span> <span class="mf">1.00</span>                         <span class="o">|</span>
+<span class="o">|</span> <span class="mi">8</span>  <span class="o">|</span> <span class="n">Mehrangarh</span> <span class="n">Fort</span><span class="p">,</span> <span class="n">Jodhpur</span><span class="p">,</span> <span class="n">Rajasthan</span><span class="p">,</span> <span class="n">India</span>       <span class="o">|</span> <span class="mf">18.34</span>                        <span class="o">|</span>
+<span class="o">|</span> <span class="mi">9</span>  <span class="o">|</span> <span class="n">Turda</span> <span class="n">Gorge</span><span class="p">,</span> <span class="n">Turda</span><span class="p">,</span> <span class="n">Romania</span>                      <span class="o">|</span> <span class="mf">11.89</span>                        <span class="o">|</span>
+<span class="o">|</span> <span class="mi">10</span> <span class="o">|</span> <span class="n">Chicago</span><span class="p">,</span> <span class="n">USA</span>                                     <span class="o">|</span> <span class="mf">2.68</span>                         <span class="o">|</span>
+<span class="o">|</span> <span class="mi">11</span> <span class="o">|</span> <span class="n">Hong</span> <span class="n">Kong</span><span class="p">,</span> <span class="n">China</span>                                 <span class="o">|</span> <span class="mf">19.99</span>                        <span class="o">|</span>
+<span class="o">|</span> <span class="mi">12</span> <span class="o">|</span> <span class="n">Cardington</span> <span class="n">Studios</span><span class="p">,</span> <span class="n">Northamptonshire</span><span class="p">,</span> <span class="n">UK</span>        <span class="o">|</span> <span class="mf">9.10</span>                         <span class="o">|</span>
+<span class="o">|</span> <span class="mi">13</span> <span class="o">|</span> <span class="n">Warner</span> <span class="n">Bros</span><span class="o">.</span> <span class="n">Leavesden</span> <span class="n">Studios</span><span class="p">,</span> <span class="n">Hertfordshire</span><span class="p">,</span> <span class="n">UK</span> <span class="o">|</span> <span class="mf">9.13</span>                         <span class="o">|</span>
+<span class="o">|</span> <span class="mi">14</span> <span class="o">|</span> <span class="n">Westwood</span><span class="p">,</span> <span class="n">Los</span> <span class="n">Angeles</span><span class="p">,</span> <span class="n">CA</span><span class="p">,</span> <span class="n">USA</span>                  <span class="o">|</span> <span class="mf">6.79</span>                         <span class="o">|</span>
+<span class="o">|</span> <span class="mi">15</span> <span class="o">|</span> <span class="n">Woking</span><span class="p">,</span> <span class="n">UK</span> <span class="p">(</span><span class="n">McLaren</span><span class="p">)</span>                             <span class="o">|</span> <span class="mf">9.13</span>                         <span class="o">|</span>
+</code></pre></div>
+
+<p>これは、専用の計画ステップを取り入れたり、プロンプトを追加したりすることで、もう少し改善できそうです。</p>
+<p>計画ステップにより、エージェントは先を見越して次のステップを計画でき、複雑なタスクに役立ちます。</p>
+<div class="codehilite"><pre><span></span><code><span class="n">agent</span><span class="o">.</span><span class="n">planning_interval</span> <span class="o">=</span> <span class="mi">4</span>
+
+<span class="n">detailed_report</span> <span class="o">=</span> <span class="n">agent</span><span class="o">.</span><span class="n">run</span><span class="p">(</span><span class="sa">f</span><span class="s2">"""</span>
+<span class="s2">You're an expert analyst. You make comprehensive reports after visiting many websites.</span>
+<span class="s2">Don't hesitate to search for many queries at once in a for loop.</span>
+<span class="s2">For each data point that you find, visit the source url to confirm numbers.</span>
+
+<span class="si">{</span><span class="n">task</span><span class="si">}</span>
+<span class="s2">"""</span><span class="p">)</span>
+
+<span class="nb">print</span><span class="p">(</span><span class="n">detailed_report</span><span class="p">)</span>
+</code></pre></div>
+
+<div class="codehilite"><pre><span></span><code><span class="n">detailed_report</span>
+</code></pre></div>
+
+<p>私たちの場合、次の出力が生成されました。</p>
+<div class="codehilite"><pre><span></span><code><span class="o">|</span>  <span class="o">|</span> <span class="n">Location</span>                                         <span class="o">|</span> <span class="n">Travel</span> <span class="n">Time</span> <span class="p">(</span><span class="n">hours</span><span class="p">)</span> <span class="o">|</span>
+<span class="o">|--|--------------------------------------------------|---------------------|</span>
+<span class="o">|</span> <span class="mi">0</span>  <span class="o">|</span> <span class="n">Bridge</span> <span class="n">of</span> <span class="n">Sighs</span><span class="p">,</span> <span class="n">Glasgow</span> <span class="n">Necropolis</span><span class="p">,</span> <span class="n">Glasgow</span><span class="p">,</span> <span class="n">UK</span> <span class="o">|</span> <span class="mf">8.6</span>                 <span class="o">|</span>
+<span class="o">|</span> <span class="mi">1</span>  <span class="o">|</span> <span class="n">Wishart</span> <span class="n">Street</span><span class="p">,</span> <span class="n">Glasgow</span><span class="p">,</span> <span class="n">Scotland</span><span class="p">,</span> <span class="n">UK</span>         <span class="o">|</span> <span class="mf">8.6</span>                 <span class="o">|</span>
+</code></pre></div>
+
+<p>こうした素早い変更のおかげで、エージェントに詳しいプロンプトを与え、計画能力を持たせるだけで、はるかに簡潔なレポートが得られました！</p>
+<p>モデルのコンテキストウィンドウはすぐに埋まってしまいます。そのため、<strong>詳細な検索の結果を別のものと組み合わせるようエージェントに頼むと、動作は遅くなり、トークンとコストが急速に増えます</strong>。</p>
+<p>➡️ システムの構造を改善する必要があります。</p>
+<h3>✌️ タスクを2つのエージェントに分割する</h3>
+<p>マルチエージェントの構造により、異なるサブタスクのあいだでメモリを分離でき、2つの大きな利点が得られます。
+- 各エージェントが自分のコアタスクにより集中でき、性能が高まる
+- メモリを分離することで、各ステップの入力トークン数が減り、レイテンシとコストが下がる</p>
+<p>専用の Web 検索エージェントを持つチームを作り、別のエージェントに管理させましょう。</p>
+<p>マネージャーエージェントは、最終レポートを書くためのプロット能力を持つべきです。そのため、<code>plotly</code> に加え、空間プロットのための <code>geopandas</code> と <code>shapely</code> を含む、追加のインポートへのアクセスを与えます。</p>
+<div class="codehilite"><pre><span></span><code><span class="n">model</span> <span class="o">=</span> <span class="n">InferenceClientModel</span><span class="p">(</span>
+    <span class="s2">"Qwen/Qwen2.5-Coder-32B-Instruct"</span><span class="p">,</span> <span class="n">provider</span><span class="o">=</span><span class="s2">"together"</span><span class="p">,</span> <span class="n">max_tokens</span><span class="o">=</span><span class="mi">8096</span>
+<span class="p">)</span>
+
+<span class="n">web_agent</span> <span class="o">=</span> <span class="n">CodeAgent</span><span class="p">(</span>
+    <span class="n">model</span><span class="o">=</span><span class="n">model</span><span class="p">,</span>
+    <span class="n">tools</span><span class="o">=</span><span class="p">[</span>
+        <span class="n">GoogleSearchTool</span><span class="p">(</span><span class="n">provider</span><span class="o">=</span><span class="s2">"serper"</span><span class="p">),</span>
+        <span class="n">VisitWebpageTool</span><span class="p">(),</span>
+        <span class="n">calculate_cargo_travel_time</span><span class="p">,</span>
+    <span class="p">],</span>
+    <span class="n">name</span><span class="o">=</span><span class="s2">"web_agent"</span><span class="p">,</span>
+    <span class="n">description</span><span class="o">=</span><span class="s2">"Browses the web to find information"</span><span class="p">,</span>
+    <span class="n">verbosity_level</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span>
+    <span class="n">max_steps</span><span class="o">=</span><span class="mi">10</span><span class="p">,</span>
+<span class="p">)</span>
+</code></pre></div>
+
+<p>マネージャーエージェントには、かなりの思考作業が必要になります。</p>
+<p>そこで、より強力なモデルである <a href="https://huggingface.co/deepseek-ai/DeepSeek-R1">DeepSeek-R1</a> を与え、さらに <code>planning_interval</code> も加えます。</p>
+<div class="codehilite"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">smolagents.utils</span><span class="w"> </span><span class="kn">import</span> <span class="n">encode_image_base64</span><span class="p">,</span> <span class="n">make_image_url</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">smolagents</span><span class="w"> </span><span class="kn">import</span> <span class="n">OpenAIServerModel</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">check_reasoning_and_plot</span><span class="p">(</span><span class="n">final_answer</span><span class="p">,</span> <span class="n">agent_memory</span><span class="p">):</span>
+    <span class="n">multimodal_model</span> <span class="o">=</span> <span class="n">OpenAIServerModel</span><span class="p">(</span><span class="s2">"gpt-4o"</span><span class="p">,</span> <span class="n">max_tokens</span><span class="o">=</span><span class="mi">8096</span><span class="p">)</span>
+    <span class="n">filepath</span> <span class="o">=</span> <span class="s2">"saved_map.png"</span>
+    <span class="k">assert</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="n">filepath</span><span class="p">),</span> <span class="s2">"Make sure to save the plot under saved_map.png!"</span>
+    <span class="n">image</span> <span class="o">=</span> <span class="n">Image</span><span class="o">.</span><span class="n">open</span><span class="p">(</span><span class="n">filepath</span><span class="p">)</span>
+    <span class="n">prompt</span> <span class="o">=</span> <span class="p">(</span>
+        <span class="sa">f</span><span class="s2">"Here is a user-given task and the agent steps: </span><span class="si">{</span><span class="n">agent_memory</span><span class="o">.</span><span class="n">get_succinct_steps</span><span class="p">()</span><span class="si">}</span><span class="s2">. Now here is the plot that was made."</span>
+        <span class="s2">"Please check that the reasoning process and plot are correct: do they correctly answer the given task?"</span>
+        <span class="s2">"First list reasons why yes/no, then write your final decision: PASS in caps lock if it is satisfactory, FAIL if it is not."</span>
+        <span class="s2">"Don't be harsh: if the plot mostly solves the task, it should pass."</span>
+        <span class="s2">"To pass, a plot should be made using px.scatter_map and not any other method (scatter_map looks nicer)."</span>
+    <span class="p">)</span>
+    <span class="n">messages</span> <span class="o">=</span> <span class="p">[</span>
+        <span class="p">{</span>
+            <span class="s2">"role"</span><span class="p">:</span> <span class="s2">"user"</span><span class="p">,</span>
+            <span class="s2">"content"</span><span class="p">:</span> <span class="p">[</span>
+                <span class="p">{</span>
+                    <span class="s2">"type"</span><span class="p">:</span> <span class="s2">"text"</span><span class="p">,</span>
+                    <span class="s2">"text"</span><span class="p">:</span> <span class="n">prompt</span><span class="p">,</span>
+                <span class="p">},</span>
+                <span class="p">{</span>
+                    <span class="s2">"type"</span><span class="p">:</span> <span class="s2">"image_url"</span><span class="p">,</span>
+                    <span class="s2">"image_url"</span><span class="p">:</span> <span class="p">{</span><span class="s2">"url"</span><span class="p">:</span> <span class="n">make_image_url</span><span class="p">(</span><span class="n">encode_image_base64</span><span class="p">(</span><span class="n">image</span><span class="p">))},</span>
+                <span class="p">},</span>
+            <span class="p">],</span>
+        <span class="p">}</span>
+    <span class="p">]</span>
+    <span class="n">output</span> <span class="o">=</span> <span class="n">multimodal_model</span><span class="p">(</span><span class="n">messages</span><span class="p">)</span><span class="o">.</span><span class="n">content</span>
+    <span class="nb">print</span><span class="p">(</span><span class="s2">"Feedback: "</span><span class="p">,</span> <span class="n">output</span><span class="p">)</span>
+    <span class="k">if</span> <span class="s2">"FAIL"</span> <span class="ow">in</span> <span class="n">output</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="n">output</span><span class="p">)</span>
+    <span class="k">return</span> <span class="kc">True</span>
+
+
+<span class="n">manager_agent</span> <span class="o">=</span> <span class="n">CodeAgent</span><span class="p">(</span>
+    <span class="n">model</span><span class="o">=</span><span class="n">InferenceClientModel</span><span class="p">(</span><span class="s2">"deepseek-ai/DeepSeek-R1"</span><span class="p">,</span> <span class="n">provider</span><span class="o">=</span><span class="s2">"together"</span><span class="p">,</span> <span class="n">max_tokens</span><span class="o">=</span><span class="mi">8096</span><span class="p">),</span>
+    <span class="n">tools</span><span class="o">=</span><span class="p">[</span><span class="n">calculate_cargo_travel_time</span><span class="p">],</span>
+    <span class="n">managed_agents</span><span class="o">=</span><span class="p">[</span><span class="n">web_agent</span><span class="p">],</span>
+    <span class="n">additional_authorized_imports</span><span class="o">=</span><span class="p">[</span>
+        <span class="s2">"geopandas"</span><span class="p">,</span>
+        <span class="s2">"plotly"</span><span class="p">,</span>
+        <span class="s2">"shapely"</span><span class="p">,</span>
+        <span class="s2">"json"</span><span class="p">,</span>
+        <span class="s2">"pandas"</span><span class="p">,</span>
+        <span class="s2">"numpy"</span><span class="p">,</span>
+    <span class="p">],</span>
+    <span class="n">planning_interval</span><span class="o">=</span><span class="mi">5</span><span class="p">,</span>
+    <span class="n">verbosity_level</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span>
+    <span class="n">final_answer_checks</span><span class="o">=</span><span class="p">[</span><span class="n">check_reasoning_and_plot</span><span class="p">],</span>
+    <span class="n">max_steps</span><span class="o">=</span><span class="mi">15</span><span class="p">,</span>
+<span class="p">)</span>
+</code></pre></div>
+
+<p>このチームがどのようなものか確認してみましょう。</p>
+<div class="codehilite"><pre><span></span><code><span class="n">manager_agent</span><span class="o">.</span><span class="n">visualize</span><span class="p">()</span>
+</code></pre></div>
+
+<p>すると次のようなものが生成され、使われているエージェントとツールの構造と関係を理解する助けになります。</p>
+<div class="codehilite"><pre><span></span><code><span class="n">CodeAgent</span> <span class="o">|</span> <span class="n">deepseek</span><span class="o">-</span><span class="n">ai</span><span class="o">/</span><span class="n">DeepSeek</span><span class="o">-</span><span class="n">R1</span>
+<span class="err">├──</span> <span class="err">✅</span> <span class="n">Authorized</span> <span class="n">imports</span><span class="p">:</span> <span class="p">[</span><span class="s1">'geopandas'</span><span class="p">,</span> <span class="s1">'plotly'</span><span class="p">,</span> <span class="s1">'shapely'</span><span class="p">,</span> <span class="s1">'json'</span><span class="p">,</span> <span class="s1">'pandas'</span><span class="p">,</span> <span class="s1">'numpy'</span><span class="p">]</span>
+<span class="err">├──</span> <span class="err">🛠️</span> <span class="n">Tools</span><span class="p">:</span>
+<span class="err">│</span>   <span class="err">┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓</span>
+<span class="err">│</span>   <span class="err">┃</span> <span class="n">Name</span>                        <span class="err">┃</span> <span class="n">Description</span>                           <span class="err">┃</span> <span class="n">Arguments</span>                             <span class="err">┃</span>
+<span class="err">│</span>   <span class="err">┡━━━━━━━━━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┩</span>
+<span class="err">│</span>   <span class="err">│</span> <span class="n">calculate_cargo_travel_time</span> <span class="err">│</span> <span class="n">Calculate</span> <span class="n">the</span> <span class="n">travel</span> <span class="n">time</span> <span class="k">for</span> <span class="n">a</span> <span class="n">cargo</span> <span class="err">│</span> <span class="n">origin_coords</span> <span class="p">(</span><span class="err">`</span><span class="n">array</span><span class="err">`</span><span class="p">):</span> <span class="n">Tuple</span> <span class="n">of</span>     <span class="err">│</span>
+<span class="err">│</span>   <span class="err">│</span>                             <span class="err">│</span> <span class="n">plane</span> <span class="n">between</span> <span class="n">two</span> <span class="n">points</span> <span class="n">on</span> <span class="n">Earth</span>     <span class="err">│</span> <span class="p">(</span><span class="n">latitude</span><span class="p">,</span> <span class="n">longitude</span><span class="p">)</span> <span class="k">for</span> <span class="n">the</span>         <span class="err">│</span>
+<span class="err">│</span>   <span class="err">│</span>                             <span class="err">│</span> <span class="n">using</span> <span class="n">great</span><span class="o">-</span><span class="n">circle</span> <span class="n">distance</span><span class="o">.</span>          <span class="err">│</span> <span class="n">starting</span> <span class="n">point</span>                        <span class="err">│</span>
+<span class="err">│</span>   <span class="err">│</span>                             <span class="err">│</span>                                       <span class="err">│</span> <span class="n">destination_coords</span> <span class="p">(</span><span class="err">`</span><span class="n">array</span><span class="err">`</span><span class="p">):</span> <span class="n">Tuple</span>   <span class="err">│</span>
+<span class="err">│</span>   <span class="err">│</span>                             <span class="err">│</span>                                       <span class="err">│</span> <span class="n">of</span> <span class="p">(</span><span class="n">latitude</span><span class="p">,</span> <span class="n">longitude</span><span class="p">)</span> <span class="k">for</span> <span class="n">the</span>      <span class="err">│</span>
+<span class="err">│</span>   <span class="err">│</span>                             <span class="err">│</span>                                       <span class="err">│</span> <span class="n">destination</span>                           <span class="err">│</span>
+<span class="err">│</span>   <span class="err">│</span>                             <span class="err">│</span>                                       <span class="err">│</span> <span class="n">cruising_speed_kmh</span> <span class="p">(</span><span class="err">`</span><span class="n">number</span><span class="err">`</span><span class="p">):</span>        <span class="err">│</span>
+<span class="err">│</span>   <span class="err">│</span>                             <span class="err">│</span>                                       <span class="err">│</span> <span class="n">Optional</span> <span class="n">cruising</span> <span class="n">speed</span> <span class="ow">in</span> <span class="n">km</span><span class="o">/</span><span class="n">h</span>       <span class="err">│</span>
+<span class="err">│</span>   <span class="err">│</span>                             <span class="err">│</span>                                       <span class="err">│</span> <span class="p">(</span><span class="n">defaults</span> <span class="n">to</span> <span class="mi">750</span> <span class="n">km</span><span class="o">/</span><span class="n">h</span> <span class="k">for</span> <span class="n">typical</span>     <span class="err">│</span>
+<span class="err">│</span>   <span class="err">│</span>                             <span class="err">│</span>                                       <span class="err">│</span> <span class="n">cargo</span> <span class="n">planes</span><span class="p">)</span>                         <span class="err">│</span>
+<span class="err">│</span>   <span class="err">│</span> <span class="n">final_answer</span>                <span class="err">│</span> <span class="n">Provides</span> <span class="n">a</span> <span class="n">final</span> <span class="n">answer</span> <span class="n">to</span> <span class="n">the</span> <span class="n">given</span>  <span class="err">│</span> <span class="n">answer</span> <span class="p">(</span><span class="err">`</span><span class="nb">any</span><span class="err">`</span><span class="p">):</span> <span class="n">The</span> <span class="n">final</span> <span class="n">answer</span> <span class="n">to</span>   <span class="err">│</span>
+<span class="err">│</span>   <span class="err">│</span>                             <span class="err">│</span> <span class="n">problem</span><span class="o">.</span>                              <span class="err">│</span> <span class="n">the</span> <span class="n">problem</span>                           <span class="err">│</span>
+<span class="err">│</span>   <span class="err">└─────────────────────────────┴───────────────────────────────────────┴───────────────────────────────────────┘</span>
+<span class="err">└──</span> <span class="err">🤖</span> <span class="n">Managed</span> <span class="n">agents</span><span class="p">:</span>
+    <span class="err">└──</span> <span class="n">web_agent</span> <span class="o">|</span> <span class="n">CodeAgent</span> <span class="o">|</span> <span class="n">Qwen</span><span class="o">/</span><span class="n">Qwen2</span><span class="mf">.5</span><span class="o">-</span><span class="n">Coder</span><span class="o">-</span><span class="mi">32</span><span class="n">B</span><span class="o">-</span><span class="n">Instruct</span>
+        <span class="err">├──</span> <span class="err">✅</span> <span class="n">Authorized</span> <span class="n">imports</span><span class="p">:</span> <span class="p">[]</span>
+        <span class="err">├──</span> <span class="err">📝</span> <span class="n">Description</span><span class="p">:</span> <span class="n">Browses</span> <span class="n">the</span> <span class="n">web</span> <span class="n">to</span> <span class="n">find</span> <span class="n">information</span>
+        <span class="err">└──</span> <span class="err">🛠️</span> <span class="n">Tools</span><span class="p">:</span>
+            <span class="err">┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓</span>
+            <span class="err">┃</span> <span class="n">Name</span>                        <span class="err">┃</span> <span class="n">Description</span>                       <span class="err">┃</span> <span class="n">Arguments</span>                         <span class="err">┃</span>
+            <span class="err">┡━━━━━━━━━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┩</span>
+            <span class="err">│</span> <span class="n">web_search</span>                  <span class="err">│</span> <span class="n">Performs</span> <span class="n">a</span> <span class="n">google</span> <span class="n">web</span> <span class="n">search</span> <span class="k">for</span>  <span class="err">│</span> <span class="n">query</span> <span class="p">(</span><span class="err">`</span><span class="n">string</span><span class="err">`</span><span class="p">):</span> <span class="n">The</span> <span class="n">search</span>      <span class="err">│</span>
+            <span class="err">│</span>                             <span class="err">│</span> <span class="n">your</span> <span class="n">query</span> <span class="n">then</span> <span class="n">returns</span> <span class="n">a</span> <span class="n">string</span>  <span class="err">│</span> <span class="n">query</span> <span class="n">to</span> <span class="n">perform</span><span class="o">.</span>                 <span class="err">│</span>
+            <span class="err">│</span>                             <span class="err">│</span> <span class="n">of</span> <span class="n">the</span> <span class="n">top</span> <span class="n">search</span> <span class="n">results</span><span class="o">.</span>        <span class="err">│</span> <span class="n">filter_year</span> <span class="p">(</span><span class="err">`</span><span class="n">integer</span><span class="err">`</span><span class="p">):</span>          <span class="err">│</span>
+            <span class="err">│</span>                             <span class="err">│</span>                                   <span class="err">│</span> <span class="n">Optionally</span> <span class="n">restrict</span> <span class="n">results</span> <span class="n">to</span> <span class="n">a</span>  <span class="err">│</span>
+            <span class="err">│</span>                             <span class="err">│</span>                                   <span class="err">│</span> <span class="n">certain</span> <span class="n">year</span>                      <span class="err">│</span>
+            <span class="err">│</span> <span class="n">visit_webpage</span>               <span class="err">│</span> <span class="n">Visits</span> <span class="n">a</span> <span class="n">webpage</span> <span class="n">at</span> <span class="n">the</span> <span class="n">given</span> <span class="n">url</span> <span class="err">│</span> <span class="n">url</span> <span class="p">(</span><span class="err">`</span><span class="n">string</span><span class="err">`</span><span class="p">):</span> <span class="n">The</span> <span class="n">url</span> <span class="n">of</span> <span class="n">the</span>    <span class="err">│</span>
+            <span class="err">│</span>                             <span class="err">│</span> <span class="ow">and</span> <span class="n">reads</span> <span class="n">its</span> <span class="n">content</span> <span class="k">as</span> <span class="n">a</span>        <span class="err">│</span> <span class="n">webpage</span> <span class="n">to</span> <span class="n">visit</span><span class="o">.</span>                 <span class="err">│</span>
+            <span class="err">│</span>                             <span class="err">│</span> <span class="n">markdown</span> <span class="n">string</span><span class="o">.</span> <span class="n">Use</span> <span class="n">this</span> <span class="n">to</span>      <span class="err">│</span>                                   <span class="err">│</span>
+            <span class="err">│</span>                             <span class="err">│</span> <span class="n">browse</span> <span class="n">webpages</span><span class="o">.</span>                  <span class="err">│</span>                                   <span class="err">│</span>
+            <span class="err">│</span> <span class="n">calculate_cargo_travel_time</span> <span class="err">│</span> <span class="n">Calculate</span> <span class="n">the</span> <span class="n">travel</span> <span class="n">time</span> <span class="k">for</span> <span class="n">a</span>   <span class="err">│</span> <span class="n">origin_coords</span> <span class="p">(</span><span class="err">`</span><span class="n">array</span><span class="err">`</span><span class="p">):</span> <span class="n">Tuple</span> <span class="n">of</span> <span class="err">│</span>
+            <span class="err">│</span>                             <span class="err">│</span> <span class="n">cargo</span> <span class="n">plane</span> <span class="n">between</span> <span class="n">two</span> <span class="n">points</span> <span class="n">on</span> <span class="err">│</span> <span class="p">(</span><span class="n">latitude</span><span class="p">,</span> <span class="n">longitude</span><span class="p">)</span> <span class="k">for</span> <span class="n">the</span>     <span class="err">│</span>
+            <span class="err">│</span>                             <span class="err">│</span> <span class="n">Earth</span> <span class="n">using</span> <span class="n">great</span><span class="o">-</span><span class="n">circle</span>          <span class="err">│</span> <span class="n">starting</span> <span class="n">point</span>                    <span class="err">│</span>
+            <span class="err">│</span>                             <span class="err">│</span> <span class="n">distance</span><span class="o">.</span>                         <span class="err">│</span> <span class="n">destination_coords</span> <span class="p">(</span><span class="err">`</span><span class="n">array</span><span class="err">`</span><span class="p">):</span>     <span class="err">│</span>
+            <span class="err">│</span>                             <span class="err">│</span>                                   <span class="err">│</span> <span class="n">Tuple</span> <span class="n">of</span> <span class="p">(</span><span class="n">latitude</span><span class="p">,</span> <span class="n">longitude</span><span class="p">)</span>    <span class="err">│</span>
+            <span class="err">│</span>                             <span class="err">│</span>                                   <span class="err">│</span> <span class="k">for</span> <span class="n">the</span> <span class="n">destination</span>               <span class="err">│</span>
+            <span class="err">│</span>                             <span class="err">│</span>                                   <span class="err">│</span> <span class="n">cruising_speed_kmh</span> <span class="p">(</span><span class="err">`</span><span class="n">number</span><span class="err">`</span><span class="p">):</span>    <span class="err">│</span>
+            <span class="err">│</span>                             <span class="err">│</span>                                   <span class="err">│</span> <span class="n">Optional</span> <span class="n">cruising</span> <span class="n">speed</span> <span class="ow">in</span> <span class="n">km</span><span class="o">/</span><span class="n">h</span>   <span class="err">│</span>
+            <span class="err">│</span>                             <span class="err">│</span>                                   <span class="err">│</span> <span class="p">(</span><span class="n">defaults</span> <span class="n">to</span> <span class="mi">750</span> <span class="n">km</span><span class="o">/</span><span class="n">h</span> <span class="k">for</span> <span class="n">typical</span> <span class="err">│</span>
+            <span class="err">│</span>                             <span class="err">│</span>                                   <span class="err">│</span> <span class="n">cargo</span> <span class="n">planes</span><span class="p">)</span>                     <span class="err">│</span>
+            <span class="err">│</span> <span class="n">final_answer</span>                <span class="err">│</span> <span class="n">Provides</span> <span class="n">a</span> <span class="n">final</span> <span class="n">answer</span> <span class="n">to</span> <span class="n">the</span>    <span class="err">│</span> <span class="n">answer</span> <span class="p">(</span><span class="err">`</span><span class="nb">any</span><span class="err">`</span><span class="p">):</span> <span class="n">The</span> <span class="n">final</span> <span class="n">answer</span>  <span class="err">│</span>
+            <span class="err">│</span>                             <span class="err">│</span> <span class="n">given</span> <span class="n">problem</span><span class="o">.</span>                    <span class="err">│</span> <span class="n">to</span> <span class="n">the</span> <span class="n">problem</span>                    <span class="err">│</span>
+            <span class="err">└─────────────────────────────┴───────────────────────────────────┴───────────────────────────────────┘</span>
+</code></pre></div>
+
+<div class="codehilite"><pre><span></span><code><span class="n">manager_agent</span><span class="o">.</span><span class="n">run</span><span class="p">(</span><span class="s2">"""</span>
+<span class="s2">Find all Batman filming locations in the world, calculate the time to transfer via cargo plane to here (we're in Gotham, 40.7128° N, 74.0060° W).</span>
+<span class="s2">Also give me some supercar factories with the same cargo plane transfer time. You need at least 6 points in total.</span>
+<span class="s2">Represent this as spatial map of the world, with the locations represented as scatter points with a color that depends on the travel time, and save it to saved_map.png!</span>
+
+<span class="s2">Here's an example of how to plot and return a map:</span>
+<span class="s2">import plotly.express as px</span>
+<span class="s2">df = px.data.carshare()</span>
+<span class="s2">fig = px.scatter_map(df, lat="centroid_lat", lon="centroid_lon", text="name", color="peak_hour", size=100,</span>
+<span class="s2">     color_continuous_scale=px.colors.sequential.Magma, size_max=15, zoom=1)</span>
+<span class="s2">fig.show()</span>
+<span class="s2">fig.write_image("saved_image.png")</span>
+<span class="s2">final_answer(fig)</span>
+
+<span class="s2">Never try to process strings using code: when you have a string to read, just print it and you'll see it.</span>
+<span class="s2">"""</span><span class="p">)</span>
+</code></pre></div>
+
+<p>皆さんの実行ではどうなったか分かりませんが、私の実行では、マネージャーエージェントが web エージェントに与えるタスクを <code>1. Search for Batman filming locations</code>、次に <code>2. Find supercar factories</code> と巧みに分割し、その後でリストを集約して地図をプロットしました。</p>
+<p>エージェントの状態から直接調べて、地図がどうなったか見てみましょう。</p>
+<div class="codehilite"><pre><span></span><code><span class="n">manager_agent</span><span class="o">.</span><span class="n">python_executor</span><span class="o">.</span><span class="n">state</span><span class="p">[</span><span class="s2">"fig"</span><span class="p">]</span>
+</code></pre></div>
+
+<p>これにより地図が出力されます。</p>
+<p><img alt="マルチエージェントシステムの出力例の地図" src="https://huggingface.co/datasets/agents-course/course-images/resolve/main/en/unit2/smolagents/output_map.png" /></p>
+<h2>リソース</h2>
+<ul>
+<li><a href="https://huggingface.co/docs/smolagents/main/en/examples/multiagents">Multi-Agent Systems</a> – マルチエージェントシステムの概要。  </li>
+<li><a href="https://weaviate.io/blog/what-is-agentic-rag">What is Agentic RAG?</a> – Agentic RAG の紹介。  </li>
+<li><a href="https://huggingface.co/learn/cookbook/multiagent_rag_system">Multi-Agent RAG System 🤖🤝🤖 Recipe</a> – マルチエージェント RAG システムを構築するためのステップバイステップガイド。  </li>
+</ul>
+</article>
+<nav class="page-nav"><a class="nav-link prev" href="quiz2.html">← 前へ: 小クイズ（採点なし）</a><a class="nav-link toc-link" href="../../index.html">目次へ</a><a class="nav-link next" href="vision_agents.html">次へ →: smolagents の Vision エージェント</a></nav>
+</main>
+<footer class="site-footer">
+  <p>原典: Hugging Face huggingface/agents-course（<a href="https://github.com/huggingface/agents-course">https://github.com/huggingface/agents-course</a>）</p>
+  <p>日本語版の翻訳・公開: 霞ヶ関京 / 連絡先: GitHub <a href="https://github.com/yanikasumin">@yanikasumin</a> / YouTube <a href="https://www.youtube.com/@KASUMI_MOF">@KASUMI_MOF</a></p>
+  <p class="demo-note">このサイトはデモ版です。内容は順次更新されます。</p>
+</footer>
+<script src="../../../site.js"></script>
+</body>
+</html>

@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>LangGraph の理解度をテストする | Hugging Face コース日本語版（デモ版）</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Shippori+Mincho:wght@500;700&family=Zen+Kaku+Gothic+New:wght@400;500;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../../../style.css">
+<script>
+window.MathJax = { tex: { inlineMath: [['$', '$'], ['\\(', '\\)']], displayMath: [['$$', '$$'], ['\\[', '\\]']] }, options: { skipHtmlTags: ['script','noscript','style','textarea','pre','code'] } };
+</script>
+<script async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml.js"></script>
+</head>
+<body>
+<header class="site-header">
+  <div class="header-inner">
+    <a class="site-title" href="../../../index.html">Hugging Face コース日本語版</a>
+    <span class="demo-badge">デモ版</span>
+  </div>
+</header>
+<main class="container">
+<p class="course-crumb"><a href="../../index.html">Agents コース</a>
+<span class="badge badge-qa-wip">翻訳済み・QA進行中（未検証の部分を含みます）</span></p>
+<nav class="page-nav"><a class="nav-link prev" href="document_analysis_agent.html">← 前へ: ドキュメント分析グラフ</a><a class="nav-link toc-link" href="../../index.html">目次へ</a><a class="nav-link next" href="conclusion.html">次へ →: まとめ</a></nav>
+<article class="content">
+<h1>LangGraph の理解度をテストする</h1>
+<p>簡単なクイズで <code>LangGraph</code> の理解度をテストしましょう。これまで扱った重要概念の定着に役立ちます。</p>
+<p>このクイズは任意で、採点はされません。</p>
+<h3>Q1: LangGraph の主な目的は何ですか？</h3>
+<p>LangGraph が何のために設計されたものを最もよく表している文はどれですか？</p>
+<div class="quiz">
+<div class="quiz-choices">
+<button type="button" class="quiz-choice" data-correct="true" data-quiz-idx="0">LLM を含むアプリケーションの制御フローを構築するためのフレームワーク</button>
+<div class="quiz-explain-src" id="qe-125591345130880-0" hidden>LangGraph は、LLM を使うアプリケーションの制御フローを構築し、管理するために特別に設計されています。</div>
+<button type="button" class="quiz-choice" data-correct="false" data-quiz-idx="1">さまざまな LLM モデルとやり取りするためのインターフェースを提供するライブラリ</button>
+<div class="quiz-explain-src" id="qe-125591345130880-1" hidden>これはむしろ LangChain の役割を表しています。LangChain は、モデルとのやり取りのための標準インターフェースを提供します。LangGraph は制御フローに重点を置きます。</div>
+<button type="button" class="quiz-choice" data-correct="false" data-quiz-idx="2">ツール呼び出しのためのエージェントライブラリ</button>
+<div class="quiz-explain-src" id="qe-125591345130880-2" hidden>LangGraph はエージェントとも連携しますが、LangGraph の主な目的は「オーケストレーション」です。</div>
+</div><div class="quiz-feedback" hidden></div></div>
+<hr />
+<h3>Q2: 「制御と自由」のトレードオフの観点では、LangGraph はどのような位置づけですか？</h3>
+<p>エージェント設計に対する LangGraph のアプローチを最もよく表している文はどれですか？</p>
+<div class="quiz">
+<div class="quiz-choices">
+<button type="button" class="quiz-choice" data-correct="false" data-quiz-idx="0">LangGraph は自由度を最大化し、LLM がすべての意思決定を独立して行えるようにする</button>
+<div class="quiz-explain-src" id="qe-125591345019264-0" hidden>LangGraph は実際には自由よりも制御に重点を置いており、LLM のワークフローに構造を与えます。</div>
+<button type="button" class="quiz-choice" data-correct="true" data-quiz-idx="1">LangGraph は実行フローに対する強い制御を提供しつつ、意思決定には LLM の能力も活用する</button>
+<div class="quiz-explain-src" id="qe-125591345019264-1" hidden>LangGraph は、エージェントの実行に対する制御が必要なときに真価を発揮し、構造化されたワークフローによって予測可能な動作を実現します。</div>
+</div><div class="quiz-feedback" hidden></div></div>
+<hr />
+<h3>Q3: LangGraph において State はどのような役割を果たしますか？</h3>
+<p>LangGraph における State の説明として、最も正確なものを選んでください。</p>
+<div class="quiz">
+<div class="quiz-choices">
+<button type="button" class="quiz-choice" data-correct="false" data-quiz-idx="0">State は LLM による最新の生成結果である</button>
+<div class="quiz-explain-src" id="qe-125591345130880-0" hidden>State は LangGraph においてユーザーが定義するクラスであり、LLM が生成するものではありません。そのフィールドはユーザーが定義し、値には LLM が入力したものが入る場合があります</div>
+<button type="button" class="quiz-choice" data-correct="false" data-quiz-idx="1">State は実行中のエラーを追跡するためだけに使われる</button>
+<div class="quiz-explain-src" id="qe-125591345130880-1" hidden>State には、エラーの追跡よりもはるかに広い目的があります。ただし、それも役には立ちます。</div>
+<button type="button" class="quiz-choice" data-correct="true" data-quiz-idx="2">State は、エージェントアプリケーションの中を流れる情報を表す</button>
+<div class="quiz-explain-src" id="qe-125591345130880-2" hidden>State は LangGraph の中心であり、ステップ間の意思決定に必要な情報をすべて含みます。計算に必要なフィールドを用意しておけば、ノードがその値を変更して分岐を判断できます。</div>
+<button type="button" class="quiz-choice" data-correct="false" data-quiz-idx="3">State は外部 API を扱うときにだけ関係する</button>
+<div class="quiz-explain-src" id="qe-125591345130880-3" hidden>State は、外部 API を扱うものだけでなく、すべての LangGraph アプリケーションの基礎です。</div>
+</div><div class="quiz-feedback" hidden></div></div>
+<h3>Q4: LangGraph における条件付きエッジ（Conditional Edge）とは何ですか？</h3>
+<p>最も正確な説明を選んでください。</p>
+<div class="quiz">
+<div class="quiz-choices">
+<button type="button" class="quiz-choice" data-correct="true" data-quiz-idx="0">条件を評価した結果に基づいて、次に実行するノードを決めるエッジ</button>
+<div class="quiz-explain-src" id="qe-125591345019264-0" hidden>条件付きエッジにより、グラフは現在の State に基づいて動的なルーティングの判断を行え、ワークフローに分岐ロジックが生まれます。</div>
+<button type="button" class="quiz-choice" data-correct="false" data-quiz-idx="1">特定の条件が発生したときにだけたどられるエッジ</button>
+<div class="quiz-explain-src" id="qe-125591345019264-1" hidden>条件付きエッジは、アプリケーションのフローを、その入力ではなく出力に基づいて制御します。</div>
+<button type="button" class="quiz-choice" data-correct="false" data-quiz-idx="2">進む前にユーザーの確認を必要とするエッジ</button>
+<div class="quiz-explain-src" id="qe-125591345019264-2" hidden>条件付きエッジは、ユーザーとのやり取りの要件ではなく、プログラム上の条件に基づきます。</div>
+</div><div class="quiz-feedback" hidden></div></div>
+<hr />
+<h3>Q5: LangGraph は、LLM のハルシネーションの問題への対処にどのように役立ちますか？</h3>
+<p>最も適切な答えを選んでください。</p>
+<div class="quiz">
+<div class="quiz-choices">
+<button type="button" class="quiz-choice" data-correct="false" data-quiz-idx="0">LangGraph は LLM の応答を制限することで、ハルシネーションを完全になくす</button>
+<div class="quiz-explain-src" id="qe-125591345130880-0" hidden>どのフレームワークでも LLM のハルシネーションを完全になくすことはできず、LangGraph も例外ではありません。</div>
+<button type="button" class="quiz-choice" data-correct="true" data-quiz-idx="1">LangGraph は、LLM の出力を検証し、確認できる構造化されたワークフローを提供する</button>
+<div class="quiz-explain-src" id="qe-125591345130880-1" hidden>検証ステップ、確認ノード、エラー処理の経路を備えた構造化されたワークフローを作ることで、LangGraph はハルシネーションの影響を軽減するのに役立ちます。</div>
+<button type="button" class="quiz-choice" data-correct="false" data-quiz-idx="2">LangGraph はハルシネーションに何の影響も与えない</button>
+<div class="quiz-explain-src" id="qe-125591345130880-2" hidden>LangGraph の構造化されたワークフローのアプローチは、速度と引き換えに、ハルシネーションの緩和に大きく役立ちます。</div>
+</div><div class="quiz-feedback" hidden></div></div>
+<p>クイズの完了、おめでとうございます！ 🎉 解けなかった問題があった場合は、前のセクションを見直して理解を深めることを検討してください。次は、LangGraph のより高度な機能を探り、より複雑なエージェントワークフローの構築方法を見ていきます。</p>
+</article>
+<nav class="page-nav"><a class="nav-link prev" href="document_analysis_agent.html">← 前へ: ドキュメント分析グラフ</a><a class="nav-link toc-link" href="../../index.html">目次へ</a><a class="nav-link next" href="conclusion.html">次へ →: まとめ</a></nav>
+</main>
+<footer class="site-footer">
+  <p>原典: Hugging Face huggingface/agents-course（<a href="https://github.com/huggingface/agents-course">https://github.com/huggingface/agents-course</a>）</p>
+  <p>日本語版の翻訳・公開: 霞ヶ関京 / 連絡先: GitHub <a href="https://github.com/yanikasumin">@yanikasumin</a> / YouTube <a href="https://www.youtube.com/@KASUMI_MOF">@KASUMI_MOF</a></p>
+  <p class="demo-note">このサイトはデモ版です。内容は順次更新されます。</p>
+</footer>
+<script src="../../../site.js"></script>
+</body>
+</html>

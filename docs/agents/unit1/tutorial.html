@@ -1,0 +1,235 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>smolagents を使って初めてのエージェントを作成しましょう | Hugging Face コース日本語版（デモ版）</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Shippori+Mincho:wght@500;700&family=Zen+Kaku+Gothic+New:wght@400;500;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../../style.css">
+<script>
+window.MathJax = { tex: { inlineMath: [['$', '$'], ['\\(', '\\)']], displayMath: [['$$', '$$'], ['\\[', '\\]']] }, options: { skipHtmlTags: ['script','noscript','style','textarea','pre','code'] } };
+</script>
+<script async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml.js"></script>
+</head>
+<body>
+<header class="site-header">
+  <div class="header-inner">
+    <a class="site-title" href="../../index.html">Hugging Face コース日本語版</a>
+    <span class="demo-badge">デモ版</span>
+  </div>
+</header>
+<main class="container">
+<p class="course-crumb"><a href="../index.html">Agents コース</a>
+<span class="badge badge-qa-wip">翻訳済み・QA進行中（未検証の部分を含みます）</span></p>
+<nav class="page-nav"><a class="nav-link prev" href="dummy-agent-library.html">← 前へ: ダミーエージェントライブラリ</a><a class="nav-link toc-link" href="../index.html">目次へ</a><a class="nav-link next" href="final-quiz.html">次へ →: ユニット1 クイズ</a></nav>
+<article class="content">
+<h1>smolagents を使って初めてのエージェントを作成しましょう</h1>
+<p>前回のセクションでは、Python コードを使ってゼロからエージェントを作成する方法を学び、<strong>そのプロセスがいかに面倒かも分かりました</strong>。幸いなことに、多くのエージェントライブラリは、<strong>大変な作業の多くを代わりに処理して</strong> この作業を簡素化してくれます。</p>
+<p>このチュートリアルでは、画像生成、Web 検索、タイムゾーンの確認など、さまざまなアクションを実行できる <strong>初めてのエージェントを作成します</strong>！</p>
+<p>さらに、エージェントを <strong>Hugging Face Space に公開し、友人や同僚と共有できるように</strong> もします。</p>
+<p>さあ、始めましょう！</p>
+<h2>smolagents とは何か？</h2>
+<p><img src="https://huggingface.co/datasets/agents-course/course-images/resolve/main/en/unit1/smolagents.png" alt="smolagents"/></p>
+<p>このエージェントを作るために、<code>smolagents</code> を使います。これは、<strong>エージェントを簡単に開発するためのフレームワークを提供する</strong> ライブラリです。</p>
+<p>この軽量ライブラリはシンプルさのために設計されていますが、エージェント構築の複雑さの多くを抽象化してくれるため、エージェントの振る舞いの設計に集中できます。</p>
+<p>smolagents については、次のユニットでさらに深く掘り下げます。その間、こちらの <a href="https://huggingface.co/blog/smolagents" target="_blank">ブログ記事</a> や、ライブラリの <a href="https://github.com/huggingface/smolagents" target="_blank">GitHub リポジトリ</a> もご覧ください。</p>
+<p>要するに、<code>smolagents</code> は <strong>codeAgent</strong> に焦点を当てたライブラリです。codeAgent は、コードブロックを通じて <strong>「アクション（Actions）」</strong> を実行し、コードを実行することで結果を <strong>「観察（Observes）」</strong> するタイプのエージェントです。</p>
+<p>これから構築するものの例がこちらです！</p>
+<p>エージェントに <strong>画像生成ツール</strong> を提供し、猫の画像を生成するよう頼みました。</p>
+<p><code>smolagents</code> 内のエージェントは、<strong>以前に構築したカスタムエージェントと同じ振る舞い</strong> をします。最終回答に到達するまで、<strong>サイクルで考え、行動し、観察します</strong>。</p>
+<iframe width="560" height="315" src="https://www.youtube.com/embed/PQDKcWiuln4?si=ysSTDZoi8y55FVvA" title="YouTube 動画プレーヤー" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe>
+
+<p>ワクワクしますね？</p>
+<h2>エージェントを構築しましょう！</h2>
+<p>まず、この Space を複製してください: <a href="https://huggingface.co/spaces/agents-course/First_agent_template" target="_blank">https://huggingface.co/spaces/agents-course/First_agent_template</a></p>
+<blockquote>
+<p>このテンプレートを提供してくれた <a href="https://huggingface.co/m-ric" target="_blank">Aymeric</a> に感謝します！ 🙌</p>
+</blockquote>
+<p>この Space を複製することは、<strong>自分のプロフィール上にローカルコピーを作成する</strong> ことを意味します。
+<img src="https://huggingface.co/datasets/agents-course/course-images/resolve/main/en/unit1/duplicate-space.gif" alt="複製"/></p>
+<p>Space を複製したあとは、エージェントがモデル API にアクセスできるよう、Hugging Face API トークンを追加する必要があります。</p>
+<ol>
+<li>まず、まだ持っていない場合は、<a href="https://hf.co/settings/tokens">https://hf.co/settings/tokens</a> から推論の権限を持つ Hugging Face トークンを取得します</li>
+<li>複製した Space に移動し、<strong>Settings</strong> タブをクリックします</li>
+<li><strong>Variables and Secrets</strong> セクションまでスクロールし、<strong>New Secret</strong> をクリックします</li>
+<li>名前が <code>HF_TOKEN</code> のシークレットを作成し、値をとしてトークンを貼り付けます</li>
+<li><strong>Save</strong> をクリックして、トークンを安全に保存します</li>
+</ol>
+<p>このレッスンを通じて、変更する必要があるファイルは（現在は不完全な）<strong>"app.py"</strong> だけです。テンプレート内の <a href="https://huggingface.co/spaces/agents-course/First_agent_template/blob/main/app.py">元のファイル</a> がこちらで確認できます。自分のファイルを見つけるには、Space のコピーに移動し、<code>Files</code> タブをクリックして、ディレクトリ一覧の <code>app.py</code> をクリックします。</p>
+<p>コードを一緒に分解していきましょう。</p>
+<ul>
+<li>ファイルは、シンプルですが必要なライブラリのインポートから始まります</li>
+</ul>
+<div class="codehilite"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">smolagents</span><span class="w"> </span><span class="kn">import</span> <span class="n">CodeAgent</span><span class="p">,</span> <span class="n">DuckDuckGoSearchTool</span><span class="p">,</span> <span class="n">FinalAnswerTool</span><span class="p">,</span> <span class="n">InferenceClientModel</span><span class="p">,</span> <span class="n">load_tool</span><span class="p">,</span> <span class="n">tool</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">datetime</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">requests</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">pytz</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">yaml</span>
+</code></pre></div>
+
+<p>先に概説したように、<strong>smolagents</strong> の <strong>CodeAgent</strong> クラスを直接使います。</p>
+<h3>ツール</h3>
+<p>では、ツールに入りましょう！ツールについて復習したい場合は、遠慮なくコースの <a href="tools.html">ツール</a> セクションに戻ってください。</p>
+<div class="codehilite"><pre><span></span><code><span class="nd">@tool</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">my_custom_tool</span><span class="p">(</span><span class="n">arg1</span><span class="p">:</span><span class="nb">str</span><span class="p">,</span> <span class="n">arg2</span><span class="p">:</span><span class="nb">int</span><span class="p">)</span><span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span> <span class="c1"># 戻り値の型を指定することが重要です</span>
+    <span class="c1"># ツールの説明/引数の説明にはこの形式を保ちつつ、ツール自体は自由に変更してください</span>
+<span class="w">    </span><span class="sd">"""A tool that does nothing yet </span>
+<span class="sd">    Args:</span>
+<span class="sd">        arg1: the first argument</span>
+<span class="sd">        arg2: the second argument</span>
+<span class="sd">    """</span>
+    <span class="k">return</span> <span class="s2">"What magic will you build ?"</span>
+
+<span class="nd">@tool</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">get_current_time_in_timezone</span><span class="p">(</span><span class="n">timezone</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""A tool that fetches the current local time in a specified timezone.</span>
+<span class="sd">    Args:</span>
+<span class="sd">        timezone: A string representing a valid timezone (e.g., 'America/New_York').</span>
+<span class="sd">    """</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="c1"># タイムゾーンオブジェクトを作成する</span>
+        <span class="n">tz</span> <span class="o">=</span> <span class="n">pytz</span><span class="o">.</span><span class="n">timezone</span><span class="p">(</span><span class="n">timezone</span><span class="p">)</span>
+        <span class="c1"># そのタイムゾーンの現在時刻を取得する</span>
+        <span class="n">local_time</span> <span class="o">=</span> <span class="n">datetime</span><span class="o">.</span><span class="n">datetime</span><span class="o">.</span><span class="n">now</span><span class="p">(</span><span class="n">tz</span><span class="p">)</span><span class="o">.</span><span class="n">strftime</span><span class="p">(</span><span class="s2">"%Y-%m-</span><span class="si">%d</span><span class="s2"> %H:%M:%S"</span><span class="p">)</span>
+        <span class="k">return</span> <span class="sa">f</span><span class="s2">"The current local time in </span><span class="si">{</span><span class="n">timezone</span><span class="si">}</span><span class="s2"> is: </span><span class="si">{</span><span class="n">local_time</span><span class="si">}</span><span class="s2">"</span>
+    <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+        <span class="k">return</span> <span class="sa">f</span><span class="s2">"Error fetching time for timezone '</span><span class="si">{</span><span class="n">timezone</span><span class="si">}</span><span class="s2">': </span><span class="si">{</span><span class="nb">str</span><span class="p">(</span><span class="n">e</span><span class="p">)</span><span class="si">}</span><span class="s2">"</span>
+</code></pre></div>
+
+<p>ツールは、このセクションで皆さんに構築してもらいたいものです！2つの例を示します。</p>
+<ol>
+<li>変更して有用なものにできる、<strong>動作しないダミーツール</strong>。</li>
+<li>世界のどこかの現在時刻を取得する、<strong>実際に動作するツール</strong>。</li>
+</ol>
+<p>ツールを定義する際は、次が重要です。</p>
+<ol>
+<li><code>get_current_time_in_timezone(timezone: str) -&gt; str:</code> のように、関数の入力と出力の型を提供すること</li>
+<li><strong>適切に整形された docstring</strong>。<code>smolagents</code> は、すべての引数が <strong>docstring 内にテキストによる説明</strong> を持つことを期待しています。</li>
+</ol>
+<h3>エージェント</h3>
+<p>LLM エンジンとして <a href="https://huggingface.co/Qwen/Qwen2.5-Coder-32B-Instruct"><code>Qwen/Qwen2.5-Coder-32B-Instruct</code></a> を使います。これは非常に有能なモデルで、サーバーレス API 経由でアクセスします。</p>
+<div class="codehilite"><pre><span></span><code><span class="n">final_answer</span> <span class="o">=</span> <span class="n">FinalAnswerTool</span><span class="p">()</span>
+<span class="n">model</span> <span class="o">=</span> <span class="n">InferenceClientModel</span><span class="p">(</span>
+    <span class="n">max_tokens</span><span class="o">=</span><span class="mi">2096</span><span class="p">,</span>
+    <span class="n">temperature</span><span class="o">=</span><span class="mf">0.5</span><span class="p">,</span>
+    <span class="n">model_id</span><span class="o">=</span><span class="s1">'Qwen/Qwen2.5-Coder-32B-Instruct'</span><span class="p">,</span>
+    <span class="n">custom_role_conversions</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+<span class="p">)</span>
+
+<span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="s2">"prompts.yaml"</span><span class="p">,</span> <span class="s1">'r'</span><span class="p">)</span> <span class="k">as</span> <span class="n">stream</span><span class="p">:</span>
+    <span class="n">prompt_templates</span> <span class="o">=</span> <span class="n">yaml</span><span class="o">.</span><span class="n">safe_load</span><span class="p">(</span><span class="n">stream</span><span class="p">)</span>
+
+<span class="c1"># CodeAgent を作成します</span>
+<span class="n">agent</span> <span class="o">=</span> <span class="n">CodeAgent</span><span class="p">(</span>
+    <span class="n">model</span><span class="o">=</span><span class="n">model</span><span class="p">,</span>
+    <span class="n">tools</span><span class="o">=</span><span class="p">[</span><span class="n">final_answer</span><span class="p">],</span> <span class="c1"># ここにツールを追加してください（final_answer は削除しないでください）</span>
+    <span class="n">max_steps</span><span class="o">=</span><span class="mi">6</span><span class="p">,</span>
+    <span class="n">verbosity_level</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span>
+    <span class="n">grammar</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+    <span class="n">planning_interval</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+    <span class="n">name</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+    <span class="n">description</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+    <span class="n">prompt_templates</span><span class="o">=</span><span class="n">prompt_templates</span>
+<span class="p">)</span>
+
+<span class="n">GradioUI</span><span class="p">(</span><span class="n">agent</span><span class="p">)</span><span class="o">.</span><span class="n">launch</span><span class="p">()</span>
+</code></pre></div>
+
+<p>このエージェントは、前のセクションで見た <code>InferenceClient</code> を、<strong>InferenceClientModel</strong> クラスの背後で今も使っています！</p>
+<p>フレームワークを紹介するユニット2では、より詳細な例を示します。今のところは、エージェントの <code>tools</code> パラメータを使って <strong>ツールのリストに新しいツールを追加する</strong> ことに集中してください。</p>
+<p>たとえば、コードの1行目でインポートされた <code>DuckDuckGoSearchTool</code> を使ったり、コードの後半で Hub から読み込まれる <code>image_generation_tool</code> を調べたりできます。</p>
+<p><strong>ツールを追加すると、エージェントに新しい能力が与えられます</strong>。ここでは創造的になってみてください！</p>
+<h3>システムプロンプト</h3>
+<p>エージェントのシステムプロンプトは、別の <code>prompts.yaml</code> ファイルに保存されています。このファイルには、エージェントの振る舞いを導く事前定義された指示が含まれています。</p>
+<p>プロンプトを YAML ファイルに保存すると、異なるエージェントやユースケース間で簡単にカスタマイズや再利用ができます。</p>
+<p><a href="https://huggingface.co/spaces/agents-course/First_agent_template/tree/main">Space のファイル構造</a> を確認すると、<code>prompts.yaml</code> ファイルの場所と、プロジェクト内での構成が分かります。</p>
+<p>完全な "app.py" は次のとおりです。</p>
+<div class="codehilite"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">smolagents</span><span class="w"> </span><span class="kn">import</span> <span class="n">CodeAgent</span><span class="p">,</span> <span class="n">DuckDuckGoSearchTool</span><span class="p">,</span> <span class="n">InferenceClientModel</span><span class="p">,</span> <span class="n">load_tool</span><span class="p">,</span> <span class="n">tool</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">datetime</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">requests</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">pytz</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">yaml</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">tools.final_answer</span><span class="w"> </span><span class="kn">import</span> <span class="n">FinalAnswerTool</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">Gradio_UI</span><span class="w"> </span><span class="kn">import</span> <span class="n">GradioUI</span>
+
+<span class="c1"># 以下は、何もしないツールの例です。あなたの創造性で私たちを驚かせてください！</span>
+<span class="nd">@tool</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">my_custom_tool</span><span class="p">(</span><span class="n">arg1</span><span class="p">:</span><span class="nb">str</span><span class="p">,</span> <span class="n">arg2</span><span class="p">:</span><span class="nb">int</span><span class="p">)</span><span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span> <span class="c1"># 戻り値の型を指定することが重要です</span>
+    <span class="c1"># ツールの説明/引数の説明にはこの形式を保ちつつ、ツール自体は自由に変更してください</span>
+<span class="w">    </span><span class="sd">"""A tool that does nothing yet </span>
+<span class="sd">    Args:</span>
+<span class="sd">        arg1: the first argument</span>
+<span class="sd">        arg2: the second argument</span>
+<span class="sd">    """</span>
+    <span class="k">return</span> <span class="s2">"What magic will you build ?"</span>
+
+<span class="nd">@tool</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">get_current_time_in_timezone</span><span class="p">(</span><span class="n">timezone</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""A tool that fetches the current local time in a specified timezone.</span>
+<span class="sd">    Args:</span>
+<span class="sd">        timezone: A string representing a valid timezone (e.g., 'America/New_York').</span>
+<span class="sd">    """</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="c1"># タイムゾーンオブジェクトを作成する</span>
+        <span class="n">tz</span> <span class="o">=</span> <span class="n">pytz</span><span class="o">.</span><span class="n">timezone</span><span class="p">(</span><span class="n">timezone</span><span class="p">)</span>
+        <span class="c1"># そのタイムゾーンの現在時刻を取得する</span>
+        <span class="n">local_time</span> <span class="o">=</span> <span class="n">datetime</span><span class="o">.</span><span class="n">datetime</span><span class="o">.</span><span class="n">now</span><span class="p">(</span><span class="n">tz</span><span class="p">)</span><span class="o">.</span><span class="n">strftime</span><span class="p">(</span><span class="s2">"%Y-%m-</span><span class="si">%d</span><span class="s2"> %H:%M:%S"</span><span class="p">)</span>
+        <span class="k">return</span> <span class="sa">f</span><span class="s2">"The current local time in </span><span class="si">{</span><span class="n">timezone</span><span class="si">}</span><span class="s2"> is: </span><span class="si">{</span><span class="n">local_time</span><span class="si">}</span><span class="s2">"</span>
+    <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+        <span class="k">return</span> <span class="sa">f</span><span class="s2">"Error fetching time for timezone '</span><span class="si">{</span><span class="n">timezone</span><span class="si">}</span><span class="s2">': </span><span class="si">{</span><span class="nb">str</span><span class="p">(</span><span class="n">e</span><span class="p">)</span><span class="si">}</span><span class="s2">"</span>
+
+
+<span class="n">final_answer</span> <span class="o">=</span> <span class="n">FinalAnswerTool</span><span class="p">()</span>
+<span class="n">model</span> <span class="o">=</span> <span class="n">InferenceClientModel</span><span class="p">(</span>
+    <span class="n">max_tokens</span><span class="o">=</span><span class="mi">2096</span><span class="p">,</span>
+    <span class="n">temperature</span><span class="o">=</span><span class="mf">0.5</span><span class="p">,</span>
+    <span class="n">model_id</span><span class="o">=</span><span class="s1">'Qwen/Qwen2.5-Coder-32B-Instruct'</span><span class="p">,</span>
+    <span class="n">custom_role_conversions</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+<span class="p">)</span>
+
+
+<span class="c1"># Hub からツールをインポートする</span>
+<span class="n">image_generation_tool</span> <span class="o">=</span> <span class="n">load_tool</span><span class="p">(</span><span class="s2">"agents-course/text-to-image"</span><span class="p">,</span> <span class="n">trust_remote_code</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+
+<span class="c1"># prompt.yaml ファイルからシステムプロンプトを読み込む</span>
+<span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="s2">"prompts.yaml"</span><span class="p">,</span> <span class="s1">'r'</span><span class="p">)</span> <span class="k">as</span> <span class="n">stream</span><span class="p">:</span>
+    <span class="n">prompt_templates</span> <span class="o">=</span> <span class="n">yaml</span><span class="o">.</span><span class="n">safe_load</span><span class="p">(</span><span class="n">stream</span><span class="p">)</span>
+
+<span class="n">agent</span> <span class="o">=</span> <span class="n">CodeAgent</span><span class="p">(</span>
+    <span class="n">model</span><span class="o">=</span><span class="n">model</span><span class="p">,</span>
+    <span class="n">tools</span><span class="o">=</span><span class="p">[</span><span class="n">final_answer</span><span class="p">],</span> <span class="c1"># ここにツールを追加してください（final_answer は削除しないでください）</span>
+    <span class="n">max_steps</span><span class="o">=</span><span class="mi">6</span><span class="p">,</span>
+    <span class="n">verbosity_level</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span>
+    <span class="n">grammar</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+    <span class="n">planning_interval</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+    <span class="n">name</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+    <span class="n">description</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+    <span class="n">prompt_templates</span><span class="o">=</span><span class="n">prompt_templates</span> <span class="c1"># システムプロンプトを CodeAgent に渡す</span>
+<span class="p">)</span>
+
+
+<span class="n">GradioUI</span><span class="p">(</span><span class="n">agent</span><span class="p">)</span><span class="o">.</span><span class="n">launch</span><span class="p">()</span>
+</code></pre></div>
+
+<p>あなたの <strong>目標</strong> は、Space とエージェントに慣れることです。</p>
+<p>現在、テンプレート内のエージェントは <strong>ツールを使っていないので、既製のツールのいくつかを提供したり、自分で新しいツールを作ったりしてみてください！</strong></p>
+<p>Discord チャンネル <strong>#agents-course-showcase</strong> で、皆さんの素晴らしいエージェントの出力を心待ちにしています！</p>
+<hr />
+<p>おめでとうございます。初めてのエージェントを構築しました！遠慮なく友人や同僚と共有してください。</p>
+<p>初めての試みなので、少しバグがあったり遅かったりしても全く普通のことです。今後のユニットでは、さらに優れたエージェントの構築方法を学びます。</p>
+<p>学ぶ最良の方法は試すことです。遠慮なく更新したり、ツールを追加したり、別のモデルで試したりしてください。</p>
+<p>次のセクションでは、最終クイズに答えて認定証を取得します！</p>
+</article>
+<nav class="page-nav"><a class="nav-link prev" href="dummy-agent-library.html">← 前へ: ダミーエージェントライブラリ</a><a class="nav-link toc-link" href="../index.html">目次へ</a><a class="nav-link next" href="final-quiz.html">次へ →: ユニット1 クイズ</a></nav>
+</main>
+<footer class="site-footer">
+  <p>原典: Hugging Face huggingface/agents-course（<a href="https://github.com/huggingface/agents-course">https://github.com/huggingface/agents-course</a>）</p>
+  <p>日本語版の翻訳・公開: 霞ヶ関京 / 連絡先: GitHub <a href="https://github.com/yanikasumin">@yanikasumin</a> / YouTube <a href="https://www.youtube.com/@KASUMI_MOF">@KASUMI_MOF</a></p>
+  <p class="demo-note">このサイトはデモ版です。内容は順次更新されます。</p>
+</footer>
+<script src="../../site.js"></script>
+</body>
+</html>

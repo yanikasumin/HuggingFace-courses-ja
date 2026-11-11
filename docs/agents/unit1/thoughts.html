@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>思考（Thought）：内部推論と ReAct アプローチ | Hugging Face コース日本語版（デモ版）</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Shippori+Mincho:wght@500;700&family=Zen+Kaku+Gothic+New:wght@400;500;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../../style.css">
+<script>
+window.MathJax = { tex: { inlineMath: [['$', '$'], ['\\(', '\\)']], displayMath: [['$$', '$$'], ['\\[', '\\]']] }, options: { skipHtmlTags: ['script','noscript','style','textarea','pre','code'] } };
+</script>
+<script async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml.js"></script>
+</head>
+<body>
+<header class="site-header">
+  <div class="header-inner">
+    <a class="site-title" href="../../index.html">Hugging Face コース日本語版</a>
+    <span class="demo-badge">デモ版</span>
+  </div>
+</header>
+<main class="container">
+<p class="course-crumb"><a href="../index.html">Agents コース</a>
+<span class="badge badge-qa-wip">翻訳済み・QA進行中（未検証の部分を含みます）</span></p>
+<nav class="page-nav"><a class="nav-link prev" href="agent-steps-and-structure.html">← 前へ: 思考・アクション・観察のサイクルを通して AI エージェントを理解する</a><a class="nav-link toc-link" href="../index.html">目次へ</a><a class="nav-link next" href="actions.html">次へ →: アクション（Actions）：エージェントが環境と関わるための手段</a></nav>
+<article class="content">
+<h1>思考（Thought）：内部推論と ReAct アプローチ</h1>
+<div class="callout callout-tip">
+<p class="callout-title">💡 ヒント</p>
+<p>このセクションでは、AI エージェントの内部の働き、つまり推論と計画の能力に踏み込みます。エージェントが内部対話を活用して情報を分析し、複雑な問題を扱いやすいステップに分解し、次に取るべきアクションを決める方法を探ります。</p>
+<p>さらに、モデルに行動する前に「ステップバイステップで考える」よう促すプロンプト手法である ReAct アプローチも紹介します。</p>
+</div>
+<p>思考（Thought）は、タスクを解決するための <strong>エージェントの内部推論と計画のプロセス</strong> を表します。</p>
+<p>これは、エージェントの大規模言語モデル（LLM）が、<strong>プロンプトに提示された情報を分析する</strong> 能力を活用するもので、本質的には問題に取り組む際の内なる独り言です。</p>
+<p>エージェントの思考は、現在の観察を評価し、次のアクションが何であるべきかを判断するのに役立ちます。このプロセスを通じて、エージェントは <strong>複雑な問題をより小さく扱いやすいステップに分解し</strong>、過去の経験を振り返り、新しい情報に基づいて計画を継続的に調整できます。</p>
+<h2>🧠 よくある思考タイプの例</h2>
+<table>
+<thead>
+<tr>
+<th>思考のタイプ</th>
+<th>例</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>計画（Planning）</td>
+<td>"I need to break this task into three steps: 1) gather data, 2) analyze trends, 3) generate report"（このタスクを3つのステップに分解する必要がある。1) データを集める、2) 傾向を分析する、3) レポートを生成する）</td>
+</tr>
+<tr>
+<td>分析（Analysis）</td>
+<td>"Based on the error message, the issue appears to be with the database connection parameters"（エラーメッセージから判断すると、問題はデータベース接続パラメータにあるようだ）</td>
+</tr>
+<tr>
+<td>意思決定（Decision Making）</td>
+<td>"Given the user's budget constraints, I should recommend the mid-tier option"（ユーザーの予算制約を考えると、中位の選択肢を勧めるべきだ）</td>
+</tr>
+<tr>
+<td>問題解決（Problem Solving）</td>
+<td>"To optimize this code, I should first profile it to identify bottlenecks"（このコードを最適化するには、まずプロファイリングしてボトルネックを特定すべきだ）</td>
+</tr>
+<tr>
+<td>記憶の統合（Memory Integration）</td>
+<td>"The user mentioned their preference for Python earlier, so I'll provide examples in Python"（ユーザーは先ほど Python が好みだと言っていたので、例は Python で示そう）</td>
+</tr>
+<tr>
+<td>自己省察（Self-Reflection）</td>
+<td>"My last approach didn't work well, I should try a different strategy"（前回のアプローチはうまくいかなかった。別の戦略を試すべきだ）</td>
+</tr>
+<tr>
+<td>目標設定（Goal Setting）</td>
+<td>"To complete this task, I need to first establish the acceptance criteria"（このタスクを完了するには、まず受け入れ基準を定める必要がある）</td>
+</tr>
+<tr>
+<td>優先順位付け（Prioritization）</td>
+<td>"The security vulnerability should be addressed before adding new features"（新機能を追加する前に、セキュリティ脆弱性に対処すべきだ）</td>
+</tr>
+</tbody>
+</table>
+<blockquote>
+<p><strong>注意:</strong> function calling 向けにファインチューニングされた LLM の場合、思考プロセスは任意です。詳細はアクションのセクションで扱います。</p>
+</blockquote>
+<h2>🔗 Chain-of-Thought (CoT)</h2>
+<p><strong>Chain-of-Thought (CoT)</strong> は、モデルに <strong>最終回答を出す前に、問題をステップバイステップで考える</strong> よう導くプロンプト手法です。</p>
+<p>通常は次の一文から始まります。  </p>
+<blockquote>
+<p><em>"Let's think step by step."</em></p>
+</blockquote>
+<p>このアプローチは、モデルが <strong>内部で推論する</strong> のを助けます。特に論理的・数学的なタスクで、<strong>外部ツールとやり取りすることなく</strong> 推論できます。</p>
+<h3>✅ 例（CoT）</h3>
+<div class="codehilite"><pre><span></span><code>Question: What is 15% of 200?
+Thought: Let's think step by step. 10% of 200 is 20, and 5% of 200 is 10, so 15% is 30.
+Answer: 30
+</code></pre></div>
+
+<h2>⚙️ ReAct: Reasoning + Acting</h2>
+<p>重要な手法が <strong>ReAct アプローチ</strong> です。これは「Reasoning（推論）」と「Acting（行動）」を組み合わせたものです。</p>
+<p>ReAct は、モデルにステップバイステップで考えるよう促し、推論ステップの間にアクション（ツールの使用など）を挟み込むプロンプト手法です。</p>
+<p>これにより、エージェントは次を交互に繰り返して、複雑なマルチステップタスクを解決できます。
+- Thought: 内部推論
+- Action: ツールの使用
+- Observation: ツールの出力を受け取る</p>
+<h3>🔄 例（ReAct）</h3>
+<div class="codehilite"><pre><span></span><code>Thought: I need to find the latest weather in Paris.
+Action: Search["weather in Paris"]
+Observation: It's 18°C and cloudy.
+Thought: Now that I know the weather...
+Action: Finish["It's 18°C and cloudy in Paris."]
+</code></pre></div>
+
+<figure>
+  <img src="https://huggingface.co/datasets/agents-course/course-images/resolve/main/en/unit1/ReAct.png" alt="ReAct"/>
+  <figcaption>
+    (d) は ReAct アプローチの例です。"Let's think step by step" とプロンプトし、モデルが思考の間に行動します。
+  </figcaption>
+</figure>
+
+<h2>🔁 比較: ReAct vs. CoT</h2>
+<table>
+<thead>
+<tr>
+<th>機能</th>
+<th>Chain-of-Thought (CoT)</th>
+<th>ReAct</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>ステップバイステップの論理</td>
+<td>✅ Yes</td>
+<td>✅ Yes</td>
+</tr>
+<tr>
+<td>外部ツール</td>
+<td>❌ No</td>
+<td>✅ Yes (Actions + Observations)</td>
+</tr>
+<tr>
+<td>適した用途</td>
+<td>論理、数学、内部タスク</td>
+<td>情報探索、動的なマルチステップタスク</td>
+</tr>
+</tbody>
+</table>
+<div class="callout callout-tip">
+<p class="callout-title">💡 ヒント</p>
+<p><strong>Deepseek R1</strong> や <strong>OpenAI の o1</strong> のような最近のモデルは、<em>答える前に考える</em> ようファインチューニングされています。<code>&lt;think&gt;</code> と <code>&lt;/think&gt;</code> のような構造化トークンを使い、推論フェーズと最終回答を明示的に分離します。</p>
+<p>プロンプト戦略である ReAct や CoT とは異なり、これは <strong>訓練レベルの手法</strong> であり、モデルが例を通じて考え方を学びます。</p>
+</div>
+</article>
+<nav class="page-nav"><a class="nav-link prev" href="agent-steps-and-structure.html">← 前へ: 思考・アクション・観察のサイクルを通して AI エージェントを理解する</a><a class="nav-link toc-link" href="../index.html">目次へ</a><a class="nav-link next" href="actions.html">次へ →: アクション（Actions）：エージェントが環境と関わるための手段</a></nav>
+</main>
+<footer class="site-footer">
+  <p>原典: Hugging Face huggingface/agents-course（<a href="https://github.com/huggingface/agents-course">https://github.com/huggingface/agents-course</a>）</p>
+  <p>日本語版の翻訳・公開: 霞ヶ関京 / 連絡先: GitHub <a href="https://github.com/yanikasumin">@yanikasumin</a> / YouTube <a href="https://www.youtube.com/@KASUMI_MOF">@KASUMI_MOF</a></p>
+  <p class="demo-note">このサイトはデモ版です。内容は順次更新されます。</p>
+</footer>
+<script src="../../site.js"></script>
+</body>
+</html>

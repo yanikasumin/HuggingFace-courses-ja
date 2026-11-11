@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>`LangGraph` とは？ | Hugging Face コース日本語版（デモ版）</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Shippori+Mincho:wght@500;700&family=Zen+Kaku+Gothic+New:wght@400;500;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../../../style.css">
+<script>
+window.MathJax = { tex: { inlineMath: [['$', '$'], ['\\(', '\\)']], displayMath: [['$$', '$$'], ['\\[', '\\]']] }, options: { skipHtmlTags: ['script','noscript','style','textarea','pre','code'] } };
+</script>
+<script async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml.js"></script>
+</head>
+<body>
+<header class="site-header">
+  <div class="header-inner">
+    <a class="site-title" href="../../../index.html">Hugging Face コース日本語版</a>
+    <span class="demo-badge">デモ版</span>
+  </div>
+</header>
+<main class="container">
+<p class="course-crumb"><a href="../../index.html">Agents コース</a>
+<span class="badge badge-qa-wip">翻訳済み・QA進行中（未検証の部分を含みます）</span></p>
+<nav class="page-nav"><a class="nav-link prev" href="introduction.html">← 前へ: `LangGraph` 入門</a><a class="nav-link toc-link" href="../../index.html">目次へ</a><a class="nav-link next" href="building_blocks.html">次へ →: LangGraph の構成要素</a></nav>
+<article class="content">
+<h1><code>LangGraph</code> とは？</h1>
+<p><code>LangGraph</code> は <a href="https://www.langchain.com/">LangChain</a> が開発したフレームワークで、<strong>LLM を組み込んだアプリケーションの制御フローを管理する</strong> ためのものです。</p>
+<h2><code>LangGraph</code> は <code>LangChain</code> と違うのですか？</h2>
+<p>LangChain は、モデルやその他のコンポーネントとやり取りするための標準インターフェースを提供し、検索、LLM の呼び出し、ツールの呼び出しなどに役立ちます。
+LangChain のクラスは LangGraph で使うこともできますが、必ず使わなければならないわけではありません。</p>
+<p>これらのパッケージは別物で、それぞれ単独でも使えますが、結局のところ、オンラインで見つかるリソースはどれも両方のパッケージを組み合わせて使っています。</p>
+<h2><code>LangGraph</code> はいつ使うべきですか？</h2>
+<h3>制御と自由</h3>
+<p>AI アプリケーションを設計する際には、<strong>制御</strong> と <strong>自由</strong> の間にある根本的なトレードオフに直面します。</p>
+<ul>
+<li><strong>自由</strong> があれば、LLM はより創造的に振る舞い、予期しない問題にも取り組めます。</li>
+<li><strong>制御</strong> があれば、予測可能な動作を確保し、ガードレールを維持できます。</li>
+</ul>
+<p><em>smolagents</em> で見られるような Code Agent は、非常に自由度が高いのが特徴です。1 回のアクションステップで複数のツールを呼び出したり、自分でツールを作成したりできます。ただし、その分、JSON を使って動作する通常の Agent と比べて予測しにくく、制御もしにくくなります！</p>
+<p><code>LangGraph</code> はその対極にあります。エージェントの実行に対して <strong>「制御」</strong> が必要な場面で真価を発揮します。</p>
+<p>LangGraph は、<strong>アプリケーションに対する制御</strong> が必要な場合に特に役立ちます。LLM の力を活かしながら、予測可能なプロセスに従うアプリケーションを構築するためのツールを提供します。</p>
+<p>簡単に言えば、アプリケーションが特定の方法でオーケストレーションすべき一連のステップから構成され、各分岐点で意思決定を行う必要がある場合、<strong>LangGraph が必要な構造を提供します</strong>。</p>
+<p>例として、ドキュメントに関する質問に答えられる LLM アシスタントを構築する場合を考えてみましょう。</p>
+<p>LLM が最も得意とするのはテキストの理解です。そのため、質問に答える前に、他の複雑なモダリティ（グラフや表など）をテキストに変換する必要があります。ただし、その方法は、扱うドキュメントの種類によって変わります！</p>
+<p>この分岐を図で表すと、次のようになります。</p>
+<p><img src="https://huggingface.co/datasets/agents-course/course-images/resolve/main/en/unit2/LangGraph/flow.png" alt="制御フロー"/></p>
+<blockquote>
+<p>💡 <strong>ヒント:</strong> 左側の部分は、ツールの呼び出しが発生しないためエージェントではありません。一方、右側の部分では、xls をクエリするためにコードを書く必要があります（pandas に変換して操作します）。</p>
+</blockquote>
+<p>この分岐は決定的ですが、LLM の出力に基づいて条件付けされる分岐を設計することもでき、その場合は非決定的な分岐になります。</p>
+<p>LangGraph が真価を発揮する主なシナリオは次のとおりです。</p>
+<ul>
+<li>フローに対する明示的な制御が必要な <strong>多段階の推論プロセス</strong></li>
+<li>ステップ間で <strong>状態の永続化が必要なアプリケーション</strong></li>
+<li><strong>決定論的なロジックと AI の機能を組み合わせたシステム</strong></li>
+<li><strong>human-in-the-loop による介入が必要なワークフロー</strong></li>
+<li>複数のコンポーネントが連携する <strong>複雑なエージェントアーキテクチャ</strong></li>
+</ul>
+<p>要するに、可能な限り、<strong>人間として</strong>、各アクションの出力に基づいてアクションのフローを設計し、それに応じて次に実行するものを決めてください。そのような場合に、LangGraph が最適なフレームワークです！</p>
+<p>私見では、<code>LangGraph</code> は市場で最も本番環境に対応したエージェントフレームワークです。</p>
+<h2>LangGraph の仕組み</h2>
+<p>LangGraph の核となるのは、有向グラフ構造を使ってアプリケーションのフローを定義することです。</p>
+<ul>
+<li><strong>ノード</strong> は個々の処理ステップを表します（LLM の呼び出し、ツールの使用、意思決定など）。</li>
+<li><strong>エッジ</strong> はステップ間の遷移の可能性を定義します。</li>
+<li><strong>状態（State）</strong> はユーザーが定義し、保持され、実行中にノード間で受け渡されます。次にどのノードへ進むかを決める際には、この現在の状態を参照します。</li>
+</ul>
+<p>これらの基本的な構成要素については、次の章で詳しく見ていきます！</p>
+<h2>通常の Python とは何が違うのですか？なぜ LangGraph が必要なのですか？</h2>
+<p>「if-else 文を使った通常の Python コードで、これらのフローをすべて処理できるのではないか」と思うかもしれません。</p>
+<p>技術的にはそのとおりですが、複雑なシステムを構築するうえでは、LangGraph には通常の Python にはない <strong>利点</strong> があります。LangGraph なしでも同じアプリケーションは構築できますが、LangGraph はより扱いやすいツールや抽象化を提供します。</p>
+<p>状態管理、可視化、ログ（トレース）、組み込みの human-in-the-loop など、さまざまな機能が含まれています。</p>
+</article>
+<nav class="page-nav"><a class="nav-link prev" href="introduction.html">← 前へ: `LangGraph` 入門</a><a class="nav-link toc-link" href="../../index.html">目次へ</a><a class="nav-link next" href="building_blocks.html">次へ →: LangGraph の構成要素</a></nav>
+</main>
+<footer class="site-footer">
+  <p>原典: Hugging Face huggingface/agents-course（<a href="https://github.com/huggingface/agents-course">https://github.com/huggingface/agents-course</a>）</p>
+  <p>日本語版の翻訳・公開: 霞ヶ関京 / 連絡先: GitHub <a href="https://github.com/yanikasumin">@yanikasumin</a> / YouTube <a href="https://www.youtube.com/@KASUMI_MOF">@KASUMI_MOF</a></p>
+  <p class="demo-note">このサイトはデモ版です。内容は順次更新されます。</p>
+</footer>
+<script src="../../../site.js"></script>
+</body>
+</html>

@@ -1,0 +1,380 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Bonus Unit 2: エージェントのオブザーバビリティと評価 | Hugging Face コース日本語版（デモ版）</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Shippori+Mincho:wght@500;700&family=Zen+Kaku+Gothic+New:wght@400;500;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../../style.css">
+<script>
+window.MathJax = { tex: { inlineMath: [['$', '$'], ['\\(', '\\)']], displayMath: [['$$', '$$'], ['\\[', '\\]']] }, options: { skipHtmlTags: ['script','noscript','style','textarea','pre','code'] } };
+</script>
+<script async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml.js"></script>
+</head>
+<body>
+<header class="site-header">
+  <div class="header-inner">
+    <a class="site-title" href="../../index.html">Hugging Face コース日本語版</a>
+    <span class="demo-badge">デモ版</span>
+  </div>
+</header>
+<main class="container">
+<p class="course-crumb"><a href="../index.html">Agents コース</a>
+<span class="badge badge-qa-wip">翻訳済み・QA進行中（未検証の部分を含みます）</span></p>
+<nav class="page-nav"><a class="nav-link prev" href="what-is-agent-observability-and-evaluation.html">← 前へ: AI エージェントのオブザーバビリティと評価</a><a class="nav-link toc-link" href="../index.html">目次へ</a><a class="nav-link next" href="quiz.html">次へ →: クイズ: AI エージェントの評価</a></nav>
+<article class="content">
+<h1>Bonus Unit 2: エージェントのオブザーバビリティと評価</h1>
+<div class="callout callout-tip">
+<p class="callout-title">💡 ヒント</p>
+<p>コードは、Google Colab で実行できる<a href="https://colab.research.google.com/#fileId=https%3A//huggingface.co/agents-course/notebooks/blob/main/bonus-unit2/monitoring-and-evaluating-agents.ipynb">このノートブック</a>で確認できます。</p>
+</div>
+<p>このノートブックでは、オープンソースのオブザーバビリティツールを使って、<strong>AI エージェントの内部ステップ（トレース）を監視し</strong>、<strong>パフォーマンスを評価する</strong>方法を学びます。</p>
+<p>エージェントの振る舞いを観測し、評価できることは、次のために不可欠です。
+- タスクが失敗したり、最適でない結果を出したりしたときの問題のデバッグ
+- コストとパフォーマンスのリアルタイム監視
+- 継続的なフィードバックによる信頼性と安全性の向上</p>
+<h2>演習の前提条件 🏗️</h2>
+<p>このノートブックを実行する前に、次を確認してください。</p>
+<p>🔲 📚  <strong><a href="https://huggingface.co/learn/agents-course/unit1/introduction">Introduction to Agents</a> を学習済みであること</strong></p>
+<p>🔲 📚  <strong><a href="https://huggingface.co/learn/agents-course/unit2/smolagents/introduction">smolagents フレームワーク</a> を学習済みであること</strong></p>
+<h2>Step 0: 必要なライブラリをインストールする</h2>
+<p>エージェントの実行、監視、評価に必要なライブラリがいくつかあります。</p>
+<div class="codehilite"><pre><span></span><code><span class="o">%</span><span class="n">pip</span> <span class="n">install</span> <span class="n">langfuse</span> <span class="s1">'smolagents[telemetry]'</span> <span class="n">openinference</span><span class="o">-</span><span class="n">instrumentation</span><span class="o">-</span><span class="n">smolagents</span> <span class="n">datasets</span> <span class="s1">'smolagents[gradio]'</span> <span class="n">gradio</span> <span class="o">--</span><span class="n">upgrade</span>
+</code></pre></div>
+
+<h2>Step 1: エージェントに計装する</h2>
+<p>このノートブックでは、オブザーバビリティツールとして <a href="https://langfuse.com/">Langfuse</a> を使いますが、<strong>OpenTelemetry 互換の他のサービス</strong>でも構いません。以下のコードは、Langfuse（または任意の OTel エンドポイント）向けの環境変数の設定方法と、smolagent への計装方法を示しています。</p>
+<p><strong>Note:</strong> LlamaIndex や LangGraph を使っている場合は、それぞれの計装方法のドキュメントが<a href="https://langfuse.com/docs/integrations/llama-index/workflows">こちら</a>と<a href="https://langfuse.com/docs/integrations/langchain/example-python-langgraph">こちら</a>にあります。 </p>
+<p>まず、Langfuse の認証情報を環境変数に設定します。Langfuse API キーは、<a href="https://cloud.langfuse.com">Langfuse Cloud</a> にサインアップするか、<a href="https://langfuse.com/self-hosting">Langfuse をセルフホスティング</a>して取得してください。</p>
+<div class="codehilite"><pre><span></span><code><span class="kn">import</span><span class="w"> </span><span class="nn">os</span>
+<span class="c1"># プロジェクト設定ページからプロジェクトのキーを取得する: https://cloud.langfuse.com</span>
+<span class="n">os</span><span class="o">.</span><span class="n">environ</span><span class="p">[</span><span class="s2">"LANGFUSE_PUBLIC_KEY"</span><span class="p">]</span> <span class="o">=</span> <span class="s2">"pk-lf-..."</span> 
+<span class="n">os</span><span class="o">.</span><span class="n">environ</span><span class="p">[</span><span class="s2">"LANGFUSE_SECRET_KEY"</span><span class="p">]</span> <span class="o">=</span> <span class="s2">"sk-lf-..."</span> 
+<span class="n">os</span><span class="o">.</span><span class="n">environ</span><span class="p">[</span><span class="s2">"LANGFUSE_HOST"</span><span class="p">]</span> <span class="o">=</span> <span class="s2">"https://cloud.langfuse.com"</span> <span class="c1"># 🇪🇺 EU リージョン</span>
+<span class="c1"># os.environ["LANGFUSE_HOST"] = "https://us.cloud.langfuse.com" # 🇺🇸 US リージョン</span>
+</code></pre></div>
+
+<p>推論呼び出しに使う Hugging Face トークンも設定する必要があります。</p>
+<div class="codehilite"><pre><span></span><code><span class="c1"># Hugging Face やその他のトークン/シークレットを環境変数に設定する</span>
+<span class="n">os</span><span class="o">.</span><span class="n">environ</span><span class="p">[</span><span class="s2">"HF_TOKEN"</span><span class="p">]</span> <span class="o">=</span> <span class="s2">"hf_..."</span> 
+</code></pre></div>
+
+<p>環境変数を設定したら、Langfuse クライアントを初期化できます。<code>get_client()</code> は、環境変数で指定された認証情報を使って Langfuse クライアントを初期化します。</p>
+<div class="codehilite"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">langfuse</span><span class="w"> </span><span class="kn">import</span> <span class="n">get_client</span>
+
+<span class="n">langfuse</span> <span class="o">=</span> <span class="n">get_client</span><span class="p">()</span>
+
+<span class="c1"># 接続を確認する</span>
+<span class="k">if</span> <span class="n">langfuse</span><span class="o">.</span><span class="n">auth_check</span><span class="p">():</span>
+    <span class="nb">print</span><span class="p">(</span><span class="s2">"Langfuse client is authenticated and ready!"</span><span class="p">)</span>
+<span class="k">else</span><span class="p">:</span>
+    <span class="nb">print</span><span class="p">(</span><span class="s2">"Authentication failed. Please check your credentials and host."</span><span class="p">)</span>
+</code></pre></div>
+
+<p>次に、<code>SmolagentsInstrumentor()</code> を設定して、smolagent に計装し、トレースを Langfuse へ送信します。</p>
+<div class="codehilite"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">openinference.instrumentation.smolagents</span><span class="w"> </span><span class="kn">import</span> <span class="n">SmolagentsInstrumentor</span>
+
+<span class="n">SmolagentsInstrumentor</span><span class="p">()</span><span class="o">.</span><span class="n">instrument</span><span class="p">()</span>
+</code></pre></div>
+
+<h2>Step 2: 計装をテストする</h2>
+<p><code>1+1</code> を計算する、smolagents のシンプルな CodeAgent です。実行して、計装が正しく動作しているか確認します。すべて正しく設定されていれば、オブザーバビリティのダッシュボードにログやスパンが表示されます。</p>
+<div class="codehilite"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">smolagents</span><span class="w"> </span><span class="kn">import</span> <span class="n">InferenceClientModel</span><span class="p">,</span> <span class="n">CodeAgent</span>
+
+<span class="c1"># 計装をテストするためのシンプルなエージェントを作成する</span>
+<span class="n">agent</span> <span class="o">=</span> <span class="n">CodeAgent</span><span class="p">(</span>
+    <span class="n">tools</span><span class="o">=</span><span class="p">[],</span>
+    <span class="n">model</span><span class="o">=</span><span class="n">InferenceClientModel</span><span class="p">()</span>
+<span class="p">)</span>
+
+<span class="n">agent</span><span class="o">.</span><span class="n">run</span><span class="p">(</span><span class="s2">"1+1="</span><span class="p">)</span>
+</code></pre></div>
+
+<p><a href="https://cloud.langfuse.com">Langfuse のトレースダッシュボード</a>（または選択したオブザーバビリティツール）を確認し、スパンとログが記録されていることを確かめてください。</p>
+<p>Langfuse の表示例:</p>
+<p><img alt="Langfuse のトレースの例" src="https://huggingface.co/datasets/agents-course/course-images/resolve/main/en/bonus-unit2/first-example-trace.png" /></p>
+<p><em><a href="https://cloud.langfuse.com/project/cloramnkj0002jz088vzn1ja4/traces/1b94d6888258e0998329cdb72a371155?timestamp=2025-03-10T11%3A59%3A41.743Z">トレースへのリンク</a></em></p>
+<h2>Step 3: より複雑なエージェントを観測し、評価する</h2>
+<p>計装が動作することを確認できたので、次はより複雑なクエリを試し、高度なメトリクス（トークン使用量、レイテンシ、コストなど）がどう追跡されるか見てみましょう。</p>
+<div class="codehilite"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">smolagents</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span><span class="n">CodeAgent</span><span class="p">,</span> <span class="n">DuckDuckGoSearchTool</span><span class="p">,</span> <span class="n">InferenceClientModel</span><span class="p">)</span>
+
+<span class="n">search_tool</span> <span class="o">=</span> <span class="n">DuckDuckGoSearchTool</span><span class="p">()</span>
+<span class="n">agent</span> <span class="o">=</span> <span class="n">CodeAgent</span><span class="p">(</span><span class="n">tools</span><span class="o">=</span><span class="p">[</span><span class="n">search_tool</span><span class="p">],</span> <span class="n">model</span><span class="o">=</span><span class="n">InferenceClientModel</span><span class="p">())</span>
+
+<span class="n">agent</span><span class="o">.</span><span class="n">run</span><span class="p">(</span><span class="s2">"How many Rubik's Cubes could you fit inside the Notre Dame Cathedral?"</span><span class="p">)</span>
+</code></pre></div>
+
+<h3>トレースの構造</h3>
+<p>多くのオブザーバビリティツールは、各ステップを表す<strong>スパン</strong>を含む<strong>トレース</strong>を記録します。ここでのトレースには、エージェントの実行全体と、次のサブスパンが含まれます。
+- ツール呼び出し（DuckDuckGoSearchTool）
+- LLM 呼び出し（InferenceClientModel）</p>
+<p>これらを調べることで、どこに時間がかかっているか、トークンが何個使われているかなどが正確に分かります。</p>
+<p><img alt="Langfuse のトレースツリー" src="https://huggingface.co/datasets/agents-course/course-images/resolve/main/en/bonus-unit2/trace-tree.png" /></p>
+<p><em><a href="https://cloud.langfuse.com/project/cloramnkj0002jz088vzn1ja4/traces/1ac33b89ffd5e75d4265b62900c348ed?timestamp=2025-03-07T13%3A45%3A09.149Z&amp;display=preview">トレースへのリンク</a></em></p>
+<h2>オンライン評価</h2>
+<p>前のセクションでは、オンライン評価とオフライン評価の違いを学びました。ここでは、本番環境でエージェントを監視し、ライブで評価する方法を見ていきます。</p>
+<h3>本番環境で追跡すべき代表的なメトリクス</h3>
+<ol>
+<li><strong>コスト</strong> — smolagents の計装はトークン使用量を取得します。トークンあたりの価格を設定することで、おおよそのコストに変換できます。</li>
+<li><strong>レイテンシ</strong> — 各ステップ、または実行全体にかかる時間を観測します。</li>
+<li><strong>ユーザーフィードバック</strong> — ユーザーは直接フィードバック（いいね／よくない）を提供でき、エージェントの改善や修正に役立ちます。</li>
+<li><strong>LLM-as-a-Judge</strong> — 別の LLM を使って、エージェントの出力をほぼリアルタイムに評価します（毒性や正確さのチェックなど）。</li>
+</ol>
+<p>以下で、これらのメトリクスの例を示します。</p>
+<h4>1. コスト</h4>
+<p>以下は、<code>Qwen2.5-Coder-32B-Instruct</code> の呼び出しにおける使用量を示すスクリーンショットです。コストのかかるステップを確認し、エージェントを最適化するのに役立ちます。 </p>
+<p><img alt="コスト" src="https://huggingface.co/datasets/agents-course/course-images/resolve/main/en/bonus-unit2/smolagents-costs.png" /></p>
+<p><em><a href="https://cloud.langfuse.com/project/cloramnkj0002jz088vzn1ja4/traces/1ac33b89ffd5e75d4265b62900c348ed?timestamp=2025-03-07T13%3A45%3A09.149Z&amp;display=preview">トレースへのリンク</a></em></p>
+<h4>2. レイテンシ</h4>
+<p>各ステップの完了にかかった時間も確認できます。下の例では、会話全体で 32 秒かかっており、ステップごとに分解できます。ボトルネックの特定と、エージェントの最適化に役立ちます。</p>
+<p><img alt="レイテンシ" src="https://huggingface.co/datasets/agents-course/course-images/resolve/main/en/bonus-unit2/smolagents-latency.png" /></p>
+<p><em><a href="https://cloud.langfuse.com/project/cloramnkj0002jz088vzn1ja4/traces/1ac33b89ffd5e75d4265b62900c348ed?timestamp=2025-03-07T13%3A45%3A09.149Z&amp;display=preview">トレースへのリンク</a></em></p>
+<h4>3. 追加の属性</h4>
+<p>スパンに追加の属性を渡すこともできます。<code>user_id</code>、<code>tags</code>、<code>session_id</code>、カスタムメタデータなどが含まれます。こうした詳細でトレースを充実させることは、異なるユーザーやセッションにまたがるアプリケーションの振る舞いの分析、デバッグ、監視に重要です。</p>
+<div class="codehilite"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">smolagents</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span><span class="n">CodeAgent</span><span class="p">,</span> <span class="n">DuckDuckGoSearchTool</span><span class="p">,</span> <span class="n">InferenceClientModel</span><span class="p">)</span>
+
+<span class="n">search_tool</span> <span class="o">=</span> <span class="n">DuckDuckGoSearchTool</span><span class="p">()</span>
+<span class="n">agent</span> <span class="o">=</span> <span class="n">CodeAgent</span><span class="p">(</span>
+    <span class="n">tools</span><span class="o">=</span><span class="p">[</span><span class="n">search_tool</span><span class="p">],</span>
+    <span class="n">model</span><span class="o">=</span><span class="n">InferenceClientModel</span><span class="p">()</span>
+<span class="p">)</span>
+
+<span class="k">with</span> <span class="n">langfuse</span><span class="o">.</span><span class="n">start_as_current_span</span><span class="p">(</span>
+    <span class="n">name</span><span class="o">=</span><span class="s2">"Smolagent-Trace"</span><span class="p">,</span>
+    <span class="p">)</span> <span class="k">as</span> <span class="n">span</span><span class="p">:</span>
+
+    <span class="c1"># ここでアプリケーションを実行する</span>
+    <span class="n">response</span> <span class="o">=</span> <span class="n">agent</span><span class="o">.</span><span class="n">run</span><span class="p">(</span><span class="s2">"What is the capital of Germany?"</span><span class="p">)</span>
+
+    <span class="c1"># スパンに追加の属性を渡す</span>
+    <span class="n">span</span><span class="o">.</span><span class="n">update_trace</span><span class="p">(</span>
+        <span class="nb">input</span><span class="o">=</span><span class="s2">"What is the capital of Germany?"</span><span class="p">,</span>
+        <span class="n">output</span><span class="o">=</span><span class="n">response</span><span class="p">,</span>
+        <span class="n">user_id</span><span class="o">=</span><span class="s2">"smolagent-user-123"</span><span class="p">,</span>
+        <span class="n">session_id</span><span class="o">=</span><span class="s2">"smolagent-session-123456789"</span><span class="p">,</span>
+        <span class="n">tags</span><span class="o">=</span><span class="p">[</span><span class="s2">"city-question"</span><span class="p">,</span> <span class="s2">"testing-agents"</span><span class="p">],</span>
+        <span class="n">metadata</span><span class="o">=</span><span class="p">{</span><span class="s2">"email"</span><span class="p">:</span> <span class="s2">"user@langfuse.com"</span><span class="p">},</span>
+        <span class="p">)</span>
+
+<span class="c1"># 短命なアプリケーションではイベントをフラッシュする</span>
+<span class="n">langfuse</span><span class="o">.</span><span class="n">flush</span><span class="p">()</span>
+</code></pre></div>
+
+<p><img alt="追加メトリクスによるエージェント実行の強化" src="https://huggingface.co/datasets/agents-course/course-images/resolve/main/en/bonus-unit2/smolagents-attributes.png" /></p>
+<h4>4. ユーザーフィードバック</h4>
+<p>エージェントがユーザーインターフェースに組み込まれている場合、ユーザーの直接フィードバック（チャット UI のいいね／よくないなど）を記録できます。以下は、シンプルなフィードバック機能を持つチャットを埋め込む、<a href="https://gradio.app/">Gradio</a> を使った例です。</p>
+<p>以下のコードでは、ユーザーがチャットメッセージを送信すると、トレースを Langfuse に記録します。ユーザーが最後の回答にいいね／よくないを付けると、そのスコアをトレースに紐付けます。</p>
+<div class="codehilite"><pre><span></span><code><span class="kn">import</span><span class="w"> </span><span class="nn">gradio</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">gr</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">smolagents</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span><span class="n">CodeAgent</span><span class="p">,</span> <span class="n">InferenceClientModel</span><span class="p">)</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">langfuse</span><span class="w"> </span><span class="kn">import</span> <span class="n">get_client</span>
+
+<span class="n">langfuse</span> <span class="o">=</span> <span class="n">get_client</span><span class="p">()</span>
+
+<span class="n">model</span> <span class="o">=</span> <span class="n">InferenceClientModel</span><span class="p">()</span>
+<span class="n">agent</span> <span class="o">=</span> <span class="n">CodeAgent</span><span class="p">(</span><span class="n">tools</span><span class="o">=</span><span class="p">[],</span> <span class="n">model</span><span class="o">=</span><span class="n">model</span><span class="p">,</span> <span class="n">add_base_tools</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+
+<span class="n">trace_id</span> <span class="o">=</span> <span class="kc">None</span>
+
+<span class="k">def</span><span class="w"> </span><span class="nf">respond</span><span class="p">(</span><span class="n">prompt</span><span class="p">,</span> <span class="n">history</span><span class="p">):</span>
+    <span class="k">with</span> <span class="n">langfuse</span><span class="o">.</span><span class="n">start_as_current_span</span><span class="p">(</span>
+        <span class="n">name</span><span class="o">=</span><span class="s2">"Smolagent-Trace"</span><span class="p">):</span>
+
+        <span class="c1"># ここでアプリケーションを実行する</span>
+        <span class="n">output</span> <span class="o">=</span> <span class="n">agent</span><span class="o">.</span><span class="n">run</span><span class="p">(</span><span class="n">prompt</span><span class="p">)</span>
+
+        <span class="k">global</span> <span class="n">trace_id</span>
+        <span class="n">trace_id</span> <span class="o">=</span> <span class="n">langfuse</span><span class="o">.</span><span class="n">get_current_trace_id</span><span class="p">()</span>
+
+    <span class="n">history</span><span class="o">.</span><span class="n">append</span><span class="p">({</span><span class="s2">"role"</span><span class="p">:</span> <span class="s2">"assistant"</span><span class="p">,</span> <span class="s2">"content"</span><span class="p">:</span> <span class="nb">str</span><span class="p">(</span><span class="n">output</span><span class="p">)})</span>
+    <span class="k">return</span> <span class="n">history</span>
+
+<span class="k">def</span><span class="w"> </span><span class="nf">handle_like</span><span class="p">(</span><span class="n">data</span><span class="p">:</span> <span class="n">gr</span><span class="o">.</span><span class="n">LikeData</span><span class="p">):</span>
+    <span class="c1"># デモ用に、ユーザーフィードバックを 1（いいね）または 0（よくない）にマッピングする</span>
+    <span class="k">if</span> <span class="n">data</span><span class="o">.</span><span class="n">liked</span><span class="p">:</span>
+        <span class="n">langfuse</span><span class="o">.</span><span class="n">create_score</span><span class="p">(</span>
+            <span class="n">value</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span>
+            <span class="n">name</span><span class="o">=</span><span class="s2">"user-feedback"</span><span class="p">,</span>
+            <span class="n">trace_id</span><span class="o">=</span><span class="n">trace_id</span>
+        <span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">langfuse</span><span class="o">.</span><span class="n">create_score</span><span class="p">(</span>
+            <span class="n">value</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span>
+            <span class="n">name</span><span class="o">=</span><span class="s2">"user-feedback"</span><span class="p">,</span>
+            <span class="n">trace_id</span><span class="o">=</span><span class="n">trace_id</span>
+        <span class="p">)</span>
+
+<span class="k">with</span> <span class="n">gr</span><span class="o">.</span><span class="n">Blocks</span><span class="p">()</span> <span class="k">as</span> <span class="n">demo</span><span class="p">:</span>
+    <span class="n">chatbot</span> <span class="o">=</span> <span class="n">gr</span><span class="o">.</span><span class="n">Chatbot</span><span class="p">(</span><span class="n">label</span><span class="o">=</span><span class="s2">"Chat"</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="s2">"messages"</span><span class="p">)</span>
+    <span class="n">prompt_box</span> <span class="o">=</span> <span class="n">gr</span><span class="o">.</span><span class="n">Textbox</span><span class="p">(</span><span class="n">placeholder</span><span class="o">=</span><span class="s2">"Type your message..."</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="s2">"Your message"</span><span class="p">)</span>
+
+    <span class="c1"># ユーザーがプロンプトで Enter を押したら 'respond' を実行する</span>
+    <span class="n">prompt_box</span><span class="o">.</span><span class="n">submit</span><span class="p">(</span>
+        <span class="n">fn</span><span class="o">=</span><span class="n">respond</span><span class="p">,</span>
+        <span class="n">inputs</span><span class="o">=</span><span class="p">[</span><span class="n">prompt_box</span><span class="p">,</span> <span class="n">chatbot</span><span class="p">],</span>
+        <span class="n">outputs</span><span class="o">=</span><span class="n">chatbot</span>
+    <span class="p">)</span>
+
+    <span class="c1"># ユーザーがメッセージの「いいね」ボタンをクリックしたら 'handle_like' を実行する</span>
+    <span class="n">chatbot</span><span class="o">.</span><span class="n">like</span><span class="p">(</span><span class="n">handle_like</span><span class="p">,</span> <span class="kc">None</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
+
+<span class="n">demo</span><span class="o">.</span><span class="n">launch</span><span class="p">()</span>
+</code></pre></div>
+
+<p>ユーザーフィードバックは、オブザーバビリティツールに次のように記録されます。</p>
+<p><img alt="Langfuse に記録されるユーザーフィードバック" src="https://huggingface.co/datasets/agents-course/course-images/resolve/main/en/bonus-unit2/user-feedback-gradio.png" /></p>
+<h4>5. LLM-as-a-Judge</h4>
+<p>LLM-as-a-Judge は、エージェントの出力を自動的に評価するもう一つの方法です。別の LLM 呼び出しを設定し、出力の正確さ、毒性、スタイルなど、気になる任意の基準で評価させることができます。</p>
+<p><strong>ワークフロー</strong>:
+1. <strong>評価テンプレート</strong>を定義します。たとえば「テキストに毒性があるかチェックする」などです。
+2. エージェントが出力を生成するたびに、その出力とテンプレートを「ジャッジ」LLM に渡します。
+3. ジャッジ LLM が評価やラベルを返し、それをオブザーバビリティツールに記録します。</p>
+<p>Langfuse の例:</p>
+<p><img alt="LLM-as-a-Judge の評価テンプレート" src="https://huggingface.co/datasets/agents-course/course-images/resolve/main/en/bonus-unit2/evaluator-template.png" />
+<img alt="LLM-as-a-Judge の評価器" src="https://huggingface.co/datasets/agents-course/course-images/resolve/main/en/bonus-unit2/evaluator.png" /></p>
+<div class="codehilite"><pre><span></span><code><span class="c1"># 例: エージェントの出力に毒性があるかどうかをチェックする</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">smolagents</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span><span class="n">CodeAgent</span><span class="p">,</span> <span class="n">DuckDuckGoSearchTool</span><span class="p">,</span> <span class="n">InferenceClientModel</span><span class="p">)</span>
+
+<span class="n">search_tool</span> <span class="o">=</span> <span class="n">DuckDuckGoSearchTool</span><span class="p">()</span>
+<span class="n">agent</span> <span class="o">=</span> <span class="n">CodeAgent</span><span class="p">(</span><span class="n">tools</span><span class="o">=</span><span class="p">[</span><span class="n">search_tool</span><span class="p">],</span> <span class="n">model</span><span class="o">=</span><span class="n">InferenceClientModel</span><span class="p">())</span>
+
+<span class="n">agent</span><span class="o">.</span><span class="n">run</span><span class="p">(</span><span class="s2">"Can eating carrots improve your vision?"</span><span class="p">)</span>
+</code></pre></div>
+
+<p>この例の回答は「not toxic（有害でない）」と判定されていることが分かります。</p>
+<p><img alt="LLM-as-a-Judge の評価スコア" src="https://huggingface.co/datasets/agents-course/course-images/resolve/main/en/bonus-unit2/llm-as-a-judge-score.png" /></p>
+<h4>6. オブザーバビリティメトリクスの概要</h4>
+<p>これらのメトリクスはすべて、ダッシュボードでまとめて可視化できます。これにより、多くのセッションにわたってエージェントのパフォーマンスを素早く把握し、品質メトリクスの経時変化を追跡できます。</p>
+<p><img alt="オブザーバビリティメトリクスの概要" src="https://huggingface.co/datasets/agents-course/course-images/resolve/main/en/bonus-unit2/langfuse-dashboard.png" /></p>
+<h2>オフライン評価</h2>
+<p>オンライン評価はライブフィードバックに不可欠ですが、<strong>オフライン評価</strong>、つまり開発前や開発中の体系的なチェックも必要です。これにより、変更を本番環境へ投入する前に、品質と信頼性を保つことができます。</p>
+<h3>データセットによる評価</h3>
+<p>オフライン評価では、通常は次の手順を行います。
+1. ベンチマークデータセット（プロンプトと期待される出力のペア）を用意する
+2. そのデータセットでエージェントを実行する
+3. 出力を期待される結果と比較するか、追加の採点方法を使う</p>
+<p>以下では、数学の質問と解答を含む <a href="https://huggingface.co/datasets/openai/gsm8k">GSM8K データセット</a> でこのアプローチを示します。</p>
+<div class="codehilite"><pre><span></span><code><span class="kn">import</span><span class="w"> </span><span class="nn">pandas</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">pd</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">datasets</span><span class="w"> </span><span class="kn">import</span> <span class="n">load_dataset</span>
+
+<span class="c1"># Hugging Face から GSM8K を取得する</span>
+<span class="n">dataset</span> <span class="o">=</span> <span class="n">load_dataset</span><span class="p">(</span><span class="s2">"openai/gsm8k"</span><span class="p">,</span> <span class="s1">'main'</span><span class="p">,</span> <span class="n">split</span><span class="o">=</span><span class="s1">'train'</span><span class="p">)</span>
+<span class="n">df</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">(</span><span class="n">dataset</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="s2">"First few rows of GSM8K dataset:"</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">df</span><span class="o">.</span><span class="n">head</span><span class="p">())</span>
+</code></pre></div>
+
+<p>次に、実行を追跡するために Langfuse にデータセットエンティティを作成します。そして、データセットの各アイテムをシステムに追加します。（Langfuse を使わない場合は、分析用に自分のデータベースやローカルファイルへ保存すればよいでしょう。）</p>
+<div class="codehilite"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">langfuse</span><span class="w"> </span><span class="kn">import</span> <span class="n">get_client</span>
+<span class="n">langfuse</span> <span class="o">=</span> <span class="n">get_client</span><span class="p">()</span>
+
+<span class="n">langfuse_dataset_name</span> <span class="o">=</span> <span class="s2">"gsm8k_dataset_huggingface"</span>
+
+<span class="c1"># Langfuse にデータセットを作成する</span>
+<span class="n">langfuse</span><span class="o">.</span><span class="n">create_dataset</span><span class="p">(</span>
+    <span class="n">name</span><span class="o">=</span><span class="n">langfuse_dataset_name</span><span class="p">,</span>
+    <span class="n">description</span><span class="o">=</span><span class="s2">"GSM8K benchmark dataset uploaded from Huggingface"</span><span class="p">,</span>
+    <span class="n">metadata</span><span class="o">=</span><span class="p">{</span>
+        <span class="s2">"date"</span><span class="p">:</span> <span class="s2">"2025-03-10"</span><span class="p">,</span> 
+        <span class="s2">"type"</span><span class="p">:</span> <span class="s2">"benchmark"</span>
+    <span class="p">}</span>
+<span class="p">)</span>
+</code></pre></div>
+
+<div class="codehilite"><pre><span></span><code><span class="k">for</span> <span class="n">idx</span><span class="p">,</span> <span class="n">row</span> <span class="ow">in</span> <span class="n">df</span><span class="o">.</span><span class="n">iterrows</span><span class="p">():</span>
+    <span class="n">langfuse</span><span class="o">.</span><span class="n">create_dataset_item</span><span class="p">(</span>
+        <span class="n">dataset_name</span><span class="o">=</span><span class="n">langfuse_dataset_name</span><span class="p">,</span>
+        <span class="nb">input</span><span class="o">=</span><span class="p">{</span><span class="s2">"text"</span><span class="p">:</span> <span class="n">row</span><span class="p">[</span><span class="s2">"question"</span><span class="p">]},</span>
+        <span class="n">expected_output</span><span class="o">=</span><span class="p">{</span><span class="s2">"text"</span><span class="p">:</span> <span class="n">row</span><span class="p">[</span><span class="s2">"answer"</span><span class="p">]},</span>
+        <span class="n">metadata</span><span class="o">=</span><span class="p">{</span><span class="s2">"source_index"</span><span class="p">:</span> <span class="n">idx</span><span class="p">}</span>
+    <span class="p">)</span>
+    <span class="k">if</span> <span class="n">idx</span> <span class="o">&gt;=</span> <span class="mi">9</span><span class="p">:</span> <span class="c1"># デモ用に最初の 10 件だけをアップロードする</span>
+        <span class="k">break</span>
+</code></pre></div>
+
+<p><img alt="Langfuse のデータセットアイテム" src="https://huggingface.co/datasets/agents-course/course-images/resolve/main/en/bonus-unit2/example-dataset.png" /></p>
+<h4>データセットでエージェントを実行する</h4>
+<p>ヘルパー関数 <code>run_smolagent()</code> を定義します。この関数は次の処理を行います。
+1. Langfuse のスパンを開始する
+2. プロンプトでエージェントを実行する
+3. Langfuse にトレース ID を記録する</p>
+<p>その後、データセットの各アイテムをループしてエージェントを実行し、トレースをデータセットアイテムに紐付けます。必要に応じて、簡易な評価スコアを付けることもできます。</p>
+<div class="codehilite"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">opentelemetry.trace</span><span class="w"> </span><span class="kn">import</span> <span class="n">format_trace_id</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">smolagents</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span><span class="n">CodeAgent</span><span class="p">,</span> <span class="n">InferenceClientModel</span><span class="p">,</span> <span class="n">LiteLLMModel</span><span class="p">)</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">langfuse</span><span class="w"> </span><span class="kn">import</span> <span class="n">get_client</span>
+
+<span class="n">langfuse</span> <span class="o">=</span> <span class="n">get_client</span><span class="p">()</span>
+
+
+<span class="c1"># 例: InferenceClientModel や LiteLLMModel を使うと、OpenAI、Anthropic、Gemini などのモデルにアクセスできる</span>
+<span class="n">model</span> <span class="o">=</span> <span class="n">InferenceClientModel</span><span class="p">()</span>
+
+<span class="n">agent</span> <span class="o">=</span> <span class="n">CodeAgent</span><span class="p">(</span>
+    <span class="n">tools</span><span class="o">=</span><span class="p">[],</span>
+    <span class="n">model</span><span class="o">=</span><span class="n">model</span><span class="p">,</span>
+    <span class="n">add_base_tools</span><span class="o">=</span><span class="kc">True</span>
+<span class="p">)</span>
+
+<span class="n">dataset_name</span> <span class="o">=</span> <span class="s2">"gsm8k_dataset_huggingface"</span>
+<span class="n">current_run_name</span> <span class="o">=</span> <span class="s2">"smolagent-notebook-run-01"</span> <span class="c1"># この評価実行を識別する名前</span>
+
+<span class="c1"># 'run_smolagent' を、計装済みのアプリケーション関数とする</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">run_smolagent</span><span class="p">(</span><span class="n">question</span><span class="p">):</span>
+    <span class="k">with</span> <span class="n">langfuse</span><span class="o">.</span><span class="n">start_as_current_generation</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="s2">"qna-llm-call"</span><span class="p">)</span> <span class="k">as</span> <span class="n">generation</span><span class="p">:</span>
+        <span class="c1"># LLM 呼び出しをシミュレートする</span>
+        <span class="n">result</span> <span class="o">=</span> <span class="n">agent</span><span class="o">.</span><span class="n">run</span><span class="p">(</span><span class="n">question</span><span class="p">)</span>
+
+        <span class="c1"># トレースに入力と出力を記録する</span>
+        <span class="n">generation</span><span class="o">.</span><span class="n">update_trace</span><span class="p">(</span>
+            <span class="nb">input</span><span class="o">=</span> <span class="n">question</span><span class="p">,</span>
+            <span class="n">output</span><span class="o">=</span><span class="n">result</span><span class="p">,</span>
+        <span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">result</span>
+
+<span class="n">dataset</span> <span class="o">=</span> <span class="n">langfuse</span><span class="o">.</span><span class="n">get_dataset</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="n">dataset_name</span><span class="p">)</span> <span class="c1"># 用意済みのデータセットを取得する</span>
+
+<span class="k">for</span> <span class="n">item</span> <span class="ow">in</span> <span class="n">dataset</span><span class="o">.</span><span class="n">items</span><span class="p">:</span>
+
+    <span class="c1"># item.run() コンテキストマネージャを使う</span>
+    <span class="k">with</span> <span class="n">item</span><span class="o">.</span><span class="n">run</span><span class="p">(</span>
+        <span class="n">run_name</span><span class="o">=</span><span class="n">current_run_name</span><span class="p">,</span>
+        <span class="n">run_metadata</span><span class="o">=</span><span class="p">{</span><span class="s2">"model_provider"</span><span class="p">:</span> <span class="s2">"Hugging Face"</span><span class="p">,</span> <span class="s2">"temperature_setting"</span><span class="p">:</span> <span class="mf">0.7</span><span class="p">},</span>
+        <span class="n">run_description</span><span class="o">=</span><span class="s2">"Evaluation run for GSM8K dataset"</span>
+    <span class="p">)</span> <span class="k">as</span> <span class="n">root_span</span><span class="p">:</span> <span class="c1"># root_span は、このアイテムと実行に対する新しいトレースのルートスパン</span>
+        <span class="c1"># このブロック内の後続の langfuse 操作はすべてこのトレースに属する</span>
+
+        <span class="c1"># アプリケーションのロジックを呼び出す</span>
+        <span class="n">generated_answer</span> <span class="o">=</span> <span class="n">run_smolagent</span><span class="p">(</span><span class="n">question</span><span class="o">=</span><span class="n">item</span><span class="o">.</span><span class="n">input</span><span class="p">[</span><span class="s2">"text"</span><span class="p">])</span>
+
+        <span class="nb">print</span><span class="p">(</span><span class="n">item</span><span class="o">.</span><span class="n">input</span><span class="p">)</span>
+</code></pre></div>
+
+<p>異なる次の要素で、このプロセスを繰り返すことができます。
+- モデル（OpenAI GPT、ローカル LLM など）
+- ツール（検索あり vs. 検索なし）
+- プロンプト（異なるシステムメッセージ）</p>
+<p>その後、オブザーバビリティツールで並べて比較できます。</p>
+<p><img alt="データセット実行の概要" src="https://huggingface.co/datasets/agents-course/course-images/resolve/main/en/bonus-unit2/dataset_runs.png" />
+<img alt="データセット実行の比較" src="https://huggingface.co/datasets/agents-course/course-images/resolve/main/en/bonus-unit2/dataset-run-comparison.png" /></p>
+<h2>まとめ</h2>
+<p>このノートブックでは、次を扱いました。
+1. smolagents + OpenTelemetry エクスポータで <strong>オブザーバビリティを設定する</strong>
+2. シンプルなエージェントを実行して <strong>計装を確認する</strong>
+3. オブザーバビリティツールを通して <strong>詳細なメトリクス</strong>（コスト、レイテンシなど）<strong>を取得する</strong>
+4. Gradio インターフェースで <strong>ユーザーフィードバックを収集する</strong>
+5. <strong>LLM-as-a-Judge を使う</strong> ことで出力を自動評価する
+6. ベンチマークデータセットで <strong>オフライン評価を行う</strong></p>
+<p>🤗 ハッピーコーディング！</p>
+</article>
+<nav class="page-nav"><a class="nav-link prev" href="what-is-agent-observability-and-evaluation.html">← 前へ: AI エージェントのオブザーバビリティと評価</a><a class="nav-link toc-link" href="../index.html">目次へ</a><a class="nav-link next" href="quiz.html">次へ →: クイズ: AI エージェントの評価</a></nav>
+</main>
+<footer class="site-footer">
+  <p>原典: Hugging Face huggingface/agents-course（<a href="https://github.com/huggingface/agents-course">https://github.com/huggingface/agents-course</a>）</p>
+  <p>日本語版の翻訳・公開: 霞ヶ関京 / 連絡先: GitHub <a href="https://github.com/yanikasumin">@yanikasumin</a> / YouTube <a href="https://www.youtube.com/@KASUMI_MOF">@KASUMI_MOF</a></p>
+  <p class="demo-note">このサイトはデモ版です。内容は順次更新されます。</p>
+</footer>
+<script src="../../site.js"></script>
+</body>
+</html>

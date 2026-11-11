@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>LlamaHub 入門 | Hugging Face コース日本語版（デモ版）</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Shippori+Mincho:wght@500;700&family=Zen+Kaku+Gothic+New:wght@400;500;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../../../style.css">
+<script>
+window.MathJax = { tex: { inlineMath: [['$', '$'], ['\\(', '\\)']], displayMath: [['$$', '$$'], ['\\[', '\\]']] }, options: { skipHtmlTags: ['script','noscript','style','textarea','pre','code'] } };
+</script>
+<script async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml.js"></script>
+</head>
+<body>
+<header class="site-header">
+  <div class="header-inner">
+    <a class="site-title" href="../../../index.html">Hugging Face コース日本語版</a>
+    <span class="demo-badge">デモ版</span>
+  </div>
+</header>
+<main class="container">
+<p class="course-crumb"><a href="../../index.html">Agents コース</a>
+<span class="badge badge-qa-wip">翻訳済み・QA進行中（未検証の部分を含みます）</span></p>
+<nav class="page-nav"><a class="nav-link prev" href="introduction.html">← 前へ: LlamaIndex 入門</a><a class="nav-link toc-link" href="../../index.html">目次へ</a><a class="nav-link next" href="components.html">次へ →: LlamaIndex のコンポーネントとは</a></nav>
+<article class="content">
+<h1>LlamaHub 入門</h1>
+<p><strong>LlamaHub は、LlamaIndex の中で使える数百ものインテグレーション、エージェント、ツールを集めたレジストリです。</strong></p>
+<p><img alt="LlamaHub" src="https://huggingface.co/datasets/agents-course/course-images/resolve/main/en/unit2/llama-index/llama-hub.png" /></p>
+<p>このコースではさまざまなインテグレーションを使っていくので、まず LlamaHub と、それがどのように役立つのかを見ていきましょう。</p>
+<p>必要なコンポーネントの依存関係を見つけてインストールする方法を確認します。</p>
+<h2>インストール</h2>
+<p>LlamaIndex のインストール手順は、<strong><a href="https://llamahub.ai/">LlamaHub</a> 上の概要</strong>として分かりやすく整理されています。
+最初は少し圧倒されるかもしれませんが、ほとんどの<strong>インストールコマンドは、覚えやすい形式</strong>に従っています。</p>
+<div class="codehilite"><pre><span></span><code>pip<span class="w"> </span>install<span class="w"> </span>llama-index-<span class="o">{</span>component-type<span class="o">}</span>-<span class="o">{</span>framework-name<span class="o">}</span>
+</code></pre></div>
+
+<p><a href="https://llamahub.ai/l/llms/llama-index-llms-huggingface-api?from=llms">Hugging Face inference API integration</a> を使って、LLM コンポーネントと embedding コンポーネントの依存関係をインストールしてみましょう。</p>
+<div class="codehilite"><pre><span></span><code>pip<span class="w"> </span>install<span class="w"> </span>llama-index-llms-huggingface-api<span class="w"> </span>llama-index-embeddings-huggingface
+</code></pre></div>
+
+<h2>使い方</h2>
+<p>インストールが終われば、使い方のパターンを確認できます。インポートパスがインストールコマンドに対応していることに気づくでしょう。
+以下では、<strong>LLM コンポーネント向けの Hugging Face inference API</strong> の使用例を見ていきます。</p>
+<div class="codehilite"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">llama_index.llms.huggingface_api</span><span class="w"> </span><span class="kn">import</span> <span class="n">HuggingFaceInferenceAPI</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">os</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">dotenv</span><span class="w"> </span><span class="kn">import</span> <span class="n">load_dotenv</span>
+
+<span class="c1"># .env ファイルを読み込む</span>
+<span class="n">load_dotenv</span><span class="p">()</span>
+
+<span class="c1"># 環境変数から HF_TOKEN を取得する</span>
+<span class="n">hf_token</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">getenv</span><span class="p">(</span><span class="s2">"HF_TOKEN"</span><span class="p">)</span>
+
+<span class="n">llm</span> <span class="o">=</span> <span class="n">HuggingFaceInferenceAPI</span><span class="p">(</span>
+    <span class="n">model_name</span><span class="o">=</span><span class="s2">"Qwen/Qwen2.5-Coder-32B-Instruct"</span><span class="p">,</span>
+    <span class="n">temperature</span><span class="o">=</span><span class="mf">0.7</span><span class="p">,</span>
+    <span class="n">max_tokens</span><span class="o">=</span><span class="mi">100</span><span class="p">,</span>
+    <span class="n">token</span><span class="o">=</span><span class="n">hf_token</span><span class="p">,</span>
+    <span class="n">provider</span><span class="o">=</span><span class="s2">"auto"</span>
+<span class="p">)</span>
+
+<span class="n">response</span> <span class="o">=</span> <span class="n">llm</span><span class="o">.</span><span class="n">complete</span><span class="p">(</span><span class="s2">"Hello, how are you?"</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">response</span><span class="p">)</span>
+<span class="c1"># I am good, how can I help you today?</span>
+</code></pre></div>
+
+<p>これで、必要なコンポーネントのインテグレーションを見つけ、インストールし、使う方法が分かりました。
+<strong>コンポーネントについてさらに深く掘り下げ</strong>、それらを使って独自のエージェントを構築する方法を見ていきましょう。</p>
+</article>
+<nav class="page-nav"><a class="nav-link prev" href="introduction.html">← 前へ: LlamaIndex 入門</a><a class="nav-link toc-link" href="../../index.html">目次へ</a><a class="nav-link next" href="components.html">次へ →: LlamaIndex のコンポーネントとは</a></nav>
+</main>
+<footer class="site-footer">
+  <p>原典: Hugging Face huggingface/agents-course（<a href="https://github.com/huggingface/agents-course">https://github.com/huggingface/agents-course</a>）</p>
+  <p>日本語版の翻訳・公開: 霞ヶ関京 / 連絡先: GitHub <a href="https://github.com/yanikasumin">@yanikasumin</a> / YouTube <a href="https://www.youtube.com/@KASUMI_MOF">@KASUMI_MOF</a></p>
+  <p class="demo-note">このサイトはデモ版です。内容は順次更新されます。</p>
+</footer>
+<script src="../../../site.js"></script>
+</body>
+</html>

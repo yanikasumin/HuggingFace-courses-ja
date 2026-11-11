@@ -1,0 +1,328 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ツールとは何か？ | Hugging Face コース日本語版（デモ版）</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Shippori+Mincho:wght@500;700&family=Zen+Kaku+Gothic+New:wght@400;500;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../../style.css">
+<script>
+window.MathJax = { tex: { inlineMath: [['$', '$'], ['\\(', '\\)']], displayMath: [['$$', '$$'], ['\\[', '\\]']] }, options: { skipHtmlTags: ['script','noscript','style','textarea','pre','code'] } };
+</script>
+<script async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml.js"></script>
+</head>
+<body>
+<header class="site-header">
+  <div class="header-inner">
+    <a class="site-title" href="../../index.html">Hugging Face コース日本語版</a>
+    <span class="demo-badge">デモ版</span>
+  </div>
+</header>
+<main class="container">
+<p class="course-crumb"><a href="../index.html">Agents コース</a>
+<span class="badge badge-qa-wip">翻訳済み・QA進行中（未検証の部分を含みます）</span></p>
+<nav class="page-nav"><a class="nav-link prev" href="messages-and-special-tokens.html">← 前へ: メッセージと特殊トークン</a><a class="nav-link toc-link" href="../index.html">目次へ</a><a class="nav-link next" href="quiz2.html">次へ →: 簡単なセルフチェック（採点なし）</a></nav>
+<article class="content">
+<h1>ツールとは何か？</h1>
+<p><img src="https://huggingface.co/datasets/agents-course/course-images/resolve/main/en/unit1/whiteboard-check-2.jpg" alt="ユニット1の計画"/></p>
+<p>AI エージェントの重要な側面の1つは、<strong>アクション</strong> を取る能力です。見てきたように、これは <strong>ツール</strong> の使用を通じて起こります。</p>
+<p>このセクションでは、ツールとは何か、ツールを効果的に設計する方法、そしてシステムメッセージ経由でエージェントに統合する方法を学びます。</p>
+<p>エージェントに適切なツールを与え、それらのツールの仕組みを明確に記述することで、AI が達成できることを劇的に増やすことができます。さあ、始めましょう！</p>
+<h2>AI ツールとは何か？</h2>
+<p><strong>ツールとは、LLM に与えられる関数</strong> です。この関数は <strong>明確な目的</strong> を果たすべきです。</p>
+<p>AI エージェントでよく使われるツールをいくつか挙げます。</p>
+<table>
+<thead>
+<tr>
+<th>ツール</th>
+<th>説明</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Web 検索（Web Search）</td>
+<td>エージェントがインターネットから最新情報を取得できる。</td>
+</tr>
+<tr>
+<td>画像生成（Image Generation）</td>
+<td>テキストの説明に基づいて画像を作成する。</td>
+</tr>
+<tr>
+<td>検索・取得（Retrieval）</td>
+<td>外部の情報源から情報を取得する。</td>
+</tr>
+<tr>
+<td>API インターフェース（API Interface）</td>
+<td>外部 API（GitHub、YouTube、Spotify など）とやり取りする。</td>
+</tr>
+</tbody>
+</table>
+<p>これらは単なる例であり、実際にはあらゆるユースケース向けにツールを作成できます！</p>
+<p>良いツールは、<strong>LLM の力を補完する</strong> ものであるべきです。</p>
+<p>たとえば、算術演算を行う必要がある場合、モデルのネイティブな能力に頼るよりも、LLM に <strong>計算機ツール</strong> を与える方が良い結果が得られます。</p>
+<p>さらに、<strong>LLM は訓練データに基づいてプロンプトの補完を予測します</strong>。つまり、その内部知識には訓練より前の出来事しか含まれていません。したがって、エージェントが最新データを必要とする場合、何らかのツールを通じて提供しなければなりません。</p>
+<p>たとえば、（検索ツールなしで）LLM に今日の天気を直接尋ねると、LLM はランダムな天気をハルシネーションする可能性があります。</p>
+<p><img src="https://huggingface.co/datasets/agents-course/course-images/resolve/main/en/unit1/weather.jpg" alt="天気"/></p>
+<ul>
+<li>
+<p>ツールには次が含まれるべきです。</p>
+</li>
+<li>
+<p><strong>関数が何をするかのテキストによる説明</strong>。</p>
+</li>
+<li><em>Callable</em>（アクションを実行するもの）。</li>
+<li>型付けされた <em>引数（Arguments）</em>。</li>
+<li>（任意）型付けされた出力（Outputs）。</li>
+</ul>
+<h2>ツールはどう動作するのか？</h2>
+<p>見てきたように、LLM はテキスト入力を受け取り、テキスト出力を生成することしかできません。自分でツールを呼び出す方法はありません。エージェントにツールを提供すると言うとき、それは LLM にこれらのツールの存在を教え、必要なときにテキストベースの呼び出しを生成するよう指示することを意味します。</p>
+<p>たとえば、インターネットからある場所の天気を確認するツールを提供し、LLM にパリの天気を尋ねると、LLM はこれが「天気」ツールを使う好機であることを認識します。LLM は天気データを自分で取得する代わりに、call weather_tool('Paris') のようなツール呼び出しを表すテキストを生成します。</p>
+<p>すると <strong>エージェント</strong> がこの応答を読み取り、ツール呼び出しが必要であることを特定し、LLM に代わってツールを実行して、実際の天気データを取得します。</p>
+<p>ツール呼び出しのステップは通常、ユーザーには表示されません。エージェントはそれらを新しいメッセージとして追加してから、更新された会話を再び LLM に渡します。LLM はこの追加のコンテキストを処理し、ユーザー向けに自然に聞こえる応答を生成します。ユーザーの視点からは、LLM がツールと直接やり取りしたように見えますが、実際にはエージェントがバックグラウンドで実行プロセス全体を処理していました。</p>
+<p>このプロセスについては、今後のセッションでたくさん話します。</p>
+<h2>LLM にツールをどうやって与えるのか？</h2>
+<p>完全な答えは圧倒されるように思えるかもしれませんが、本質的にはシステムプロンプトを使って、利用可能なツールのテキストによる説明をモデルに提供します。</p>
+<p><img src="https://huggingface.co/datasets/agents-course/course-images/resolve/main/en/unit1/Agent_system_prompt.png" alt="ツール用のシステムプロンプト"/></p>
+<p>これが機能するためには、次について非常に正確でなければなりません。</p>
+<ol>
+<li><strong>ツールが何をするか</strong></li>
+<li><strong>正確にどんな入力を期待するか</strong></li>
+</ol>
+<p>これが、ツールの説明が通常、コンピュータ言語や JSON のような表現力がありながら正確な構造を使って提供される理由です。そうする <em>必要</em> はなく、正確で一貫した形式であれば何でも機能します。</p>
+<p>これがあまりにも理論的に思える場合は、具体的な例を通して理解しましょう。</p>
+<p>2つの整数を乗算するだけの、簡略化された <strong>計算機</strong> ツールを実装します。Python による実装は次のようになります。</p>
+<div class="codehilite"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">calculator</span><span class="p">(</span><span class="n">a</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">b</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""Multiply two integers."""</span>
+    <span class="k">return</span> <span class="n">a</span> <span class="o">*</span> <span class="n">b</span>
+</code></pre></div>
+
+<p>私たちのツールは <code>calculator</code> と呼ばれ、<strong>2つの整数を乗算し</strong>、次の入力を必要とします。</p>
+<ul>
+<li><strong><code>a</code></strong> (<em>int</em>): 整数。</li>
+<li><strong><code>b</code></strong> (<em>int</em>): 整数。</li>
+</ul>
+<p>ツールの出力は別の整数で、次のように記述できます。
+- (<em>int</em>): <code>a</code> と <code>b</code> の積。</p>
+<p>これらの詳細はすべて重要です。LLM が理解できるよう、ツールを説明するテキスト文字列にまとめましょう。</p>
+<div class="codehilite"><pre><span></span><code>Tool Name: calculator, Description: Multiply two integers., Arguments: a: int, b: int, Outputs: int
+</code></pre></div>
+
+<blockquote>
+<p><strong>リマインダー:</strong> このテキストによる説明は、<em>ツールについて LLM に知ってほしいこと</em> です。</p>
+</blockquote>
+<p>上記の文字列を LLM への入力の一部として渡すと、モデルはそれをツールとして認識し、入力として何を渡す必要があり、出力から何を期待できるかを知ります。</p>
+<p>追加のツールを提供したい場合は、一貫性を保ち、常に同じ形式を使わなければなりません。このプロセスは壊れやすく、うっかり詳細を見落とすことがあります。</p>
+<p>もっと良い方法はあるでしょうか？</p>
+<h3>ツールセクションの自動整形</h3>
+<p>私たちのツールは Python で書かれており、実装には必要なものがすべてすでに揃っています。</p>
+<ul>
+<li>何をするかの説明的な名前: <code>calculator</code></li>
+<li>関数の docstring コメントで提供される、より長い説明: <code>Multiply two integers.</code></li>
+<li>入力とその型: 関数は2つの <code>int</code> を明確に期待しています。</li>
+<li>出力の型。</li>
+</ul>
+<p>人々がプログラミング言語を使うのには理由があります。表現力があり、簡潔で、正確だからです。</p>
+<p>LLM 向けのツールの <em>仕様</em> として Python のソースコードを提供することもできますが、ツールの実装方法は問題ではありません。重要なのは、その名前、何をするか、期待する入力、そして提供する出力だけです。</p>
+<p>Python のイントロスペクション機能を活用してソースコードを利用し、ツール説明を自動的に構築します。必要なのは、ツール実装が型ヒント、docstring、適切な関数名を使うことだけです。ソースコードから関連部分を抽出するコードを書きます。</p>
+<p>完了したら、Python のデコレータを使って <code>calculator</code> 関数がツールであることを示すだけで済みます。</p>
+<div class="codehilite"><pre><span></span><code><span class="nd">@tool</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">calculator</span><span class="p">(</span><span class="n">a</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">b</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""Multiply two integers."""</span>
+    <span class="k">return</span> <span class="n">a</span> <span class="o">*</span> <span class="n">b</span>
+
+<span class="nb">print</span><span class="p">(</span><span class="n">calculator</span><span class="o">.</span><span class="n">to_string</span><span class="p">())</span>
+</code></pre></div>
+
+<p>関数定義の前にある <code>@tool</code> デコレータに注目してください。</p>
+<p>次に見る実装により、デコレータが提供する <code>to_string()</code> 関数経由で、ソースコードから次のテキストを自動的に取得できるようになります。</p>
+<div class="codehilite"><pre><span></span><code>Tool Name: calculator, Description: Multiply two integers., Arguments: a: int, b: int, Outputs: int
+</code></pre></div>
+
+<p>見てのとおり、前に手動で書いたものと同じです！</p>
+<h3>汎用的なツール実装</h3>
+<p>必要に応じてツールを再利用できる、汎用的な <code>Tool</code> クラスを作成します。</p>
+<blockquote>
+<p><strong>免責事項:</strong> この実装例は架空のものですが、ほとんどのライブラリの実際の実装によく似ています。</p>
+</blockquote>
+<div class="codehilite"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Callable</span>
+
+
+<span class="k">class</span><span class="w"> </span><span class="nc">Tool</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""</span>
+<span class="sd">    A class representing a reusable piece of code (Tool).</span>
+
+<span class="sd">    Attributes:</span>
+<span class="sd">        name (str): Name of the tool.</span>
+<span class="sd">        description (str): A textual description of what the tool does.</span>
+<span class="sd">        func (callable): The function this tool wraps.</span>
+<span class="sd">        arguments (list): A list of arguments.</span>
+<span class="sd">        outputs (str or list): The return type(s) of the wrapped function.</span>
+<span class="sd">    """</span>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span>
+                 <span class="n">name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+                 <span class="n">description</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+                 <span class="n">func</span><span class="p">:</span> <span class="n">Callable</span><span class="p">,</span>
+                 <span class="n">arguments</span><span class="p">:</span> <span class="nb">list</span><span class="p">,</span>
+                 <span class="n">outputs</span><span class="p">:</span> <span class="nb">str</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">name</span> <span class="o">=</span> <span class="n">name</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">description</span> <span class="o">=</span> <span class="n">description</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">func</span> <span class="o">=</span> <span class="n">func</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">arguments</span> <span class="o">=</span> <span class="n">arguments</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">outputs</span> <span class="o">=</span> <span class="n">outputs</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">to_string</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">"""</span>
+<span class="sd">        Return a string representation of the tool,</span>
+<span class="sd">        including its name, description, arguments, and outputs.</span>
+<span class="sd">        """</span>
+        <span class="n">args_str</span> <span class="o">=</span> <span class="s2">", "</span><span class="o">.</span><span class="n">join</span><span class="p">([</span>
+            <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">arg_name</span><span class="si">}</span><span class="s2">: </span><span class="si">{</span><span class="n">arg_type</span><span class="si">}</span><span class="s2">"</span> <span class="k">for</span> <span class="n">arg_name</span><span class="p">,</span> <span class="n">arg_type</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">arguments</span>
+        <span class="p">])</span>
+
+        <span class="k">return</span> <span class="p">(</span>
+            <span class="sa">f</span><span class="s2">"Tool Name: </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="s2">,"</span>
+            <span class="sa">f</span><span class="s2">" Description: </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">description</span><span class="si">}</span><span class="s2">,"</span>
+            <span class="sa">f</span><span class="s2">" Arguments: </span><span class="si">{</span><span class="n">args_str</span><span class="si">}</span><span class="s2">,"</span>
+            <span class="sa">f</span><span class="s2">" Outputs: </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">outputs</span><span class="si">}</span><span class="s2">"</span>
+        <span class="p">)</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__call__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">"""</span>
+<span class="sd">        Invoke the underlying function (callable) with provided arguments.</span>
+<span class="sd">        """</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">func</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+</code></pre></div>
+
+<p>複雑に見えるかもしれませんが、ゆっくり見ていけば何をしているかが分かります。次を含む <strong><code>Tool</code></strong> クラスを定義します。</p>
+<ul>
+<li><strong><code>name</code></strong> (<em>str</em>): ツールの名前。</li>
+<li><strong><code>description</code></strong> (<em>str</em>): ツールが何をするかの簡単な説明。</li>
+<li><strong><code>function</code></strong> (<em>callable</em>): ツールが実行する関数。</li>
+<li><strong><code>arguments</code></strong> (<em>list</em>): 期待される入力パラメータ。</li>
+<li><strong><code>outputs</code></strong> (<em>str</em> or <em>list</em>): ツールの期待される出力。</li>
+<li><strong><code>__call__()</code></strong>: ツールインスタンスが呼び出されたときに関数を呼び出す。</li>
+<li><strong><code>to_string()</code></strong>: ツールの属性をテキスト表現に変換する。</li>
+</ul>
+<p>このクラスを使って、次のようなコードでツールを作成できます。</p>
+<div class="codehilite"><pre><span></span><code><span class="n">calculator_tool</span> <span class="o">=</span> <span class="n">Tool</span><span class="p">(</span>
+    <span class="s2">"calculator"</span><span class="p">,</span>                   <span class="c1"># 名前</span>
+    <span class="s2">"Multiply two integers."</span><span class="p">,</span>       <span class="c1"># 説明</span>
+    <span class="n">calculator</span><span class="p">,</span>                     <span class="c1"># 呼び出す関数</span>
+    <span class="p">[(</span><span class="s2">"a"</span><span class="p">,</span> <span class="s2">"int"</span><span class="p">),</span> <span class="p">(</span><span class="s2">"b"</span><span class="p">,</span> <span class="s2">"int"</span><span class="p">)],</span>   <span class="c1"># 入力（名前と型）</span>
+    <span class="s2">"int"</span><span class="p">,</span>                          <span class="c1"># 出力</span>
+<span class="p">)</span>
+</code></pre></div>
+
+<p>しかし、Python の <code>inspect</code> モジュールを使って、すべての情報を自動的に取得することもできます！これが <code>@tool</code> デコレータの役割です。</p>
+<blockquote>
+<p>興味がある場合は、次のセクションを開いてデコレータの実装を確認できます。</p>
+</blockquote>
+<details>
+<summary> デコレータのコード</summary>
+
+
+<div class="codehilite"><pre><span></span><code><span class="kn">import</span><span class="w"> </span><span class="nn">inspect</span>
+
+<span class="k">def</span><span class="w"> </span><span class="nf">tool</span><span class="p">(</span><span class="n">func</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">"""</span>
+<span class="sd">    A decorator that creates a Tool instance from the given function.</span>
+<span class="sd">    """</span>
+    <span class="c1"># 関数のシグネチャを取得する</span>
+    <span class="n">signature</span> <span class="o">=</span> <span class="n">inspect</span><span class="o">.</span><span class="n">signature</span><span class="p">(</span><span class="n">func</span><span class="p">)</span>
+
+    <span class="c1"># 入力用に (param_name, param_annotation) のペアを抽出する</span>
+    <span class="n">arguments</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="k">for</span> <span class="n">param</span> <span class="ow">in</span> <span class="n">signature</span><span class="o">.</span><span class="n">parameters</span><span class="o">.</span><span class="n">values</span><span class="p">():</span>
+        <span class="n">annotation_name</span> <span class="o">=</span> <span class="p">(</span>
+            <span class="n">param</span><span class="o">.</span><span class="n">annotation</span><span class="o">.</span><span class="vm">__name__</span>
+            <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">param</span><span class="o">.</span><span class="n">annotation</span><span class="p">,</span> <span class="s1">'__name__'</span><span class="p">)</span>
+            <span class="k">else</span> <span class="nb">str</span><span class="p">(</span><span class="n">param</span><span class="o">.</span><span class="n">annotation</span><span class="p">)</span>
+        <span class="p">)</span>
+        <span class="n">arguments</span><span class="o">.</span><span class="n">append</span><span class="p">((</span><span class="n">param</span><span class="o">.</span><span class="n">name</span><span class="p">,</span> <span class="n">annotation_name</span><span class="p">))</span>
+
+    <span class="c1"># 戻り値のアノテーションを決定する</span>
+    <span class="n">return_annotation</span> <span class="o">=</span> <span class="n">signature</span><span class="o">.</span><span class="n">return_annotation</span>
+    <span class="k">if</span> <span class="n">return_annotation</span> <span class="ow">is</span> <span class="n">inspect</span><span class="o">.</span><span class="n">_empty</span><span class="p">:</span>
+        <span class="n">outputs</span> <span class="o">=</span> <span class="s2">"No return annotation"</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">outputs</span> <span class="o">=</span> <span class="p">(</span>
+            <span class="n">return_annotation</span><span class="o">.</span><span class="vm">__name__</span>
+            <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">return_annotation</span><span class="p">,</span> <span class="s1">'__name__'</span><span class="p">)</span>
+            <span class="k">else</span> <span class="nb">str</span><span class="p">(</span><span class="n">return_annotation</span><span class="p">)</span>
+        <span class="p">)</span>
+
+    <span class="c1"># 関数の docstring を説明として使う（None の場合はデフォルト）</span>
+    <span class="n">description</span> <span class="o">=</span> <span class="n">func</span><span class="o">.</span><span class="vm">__doc__</span> <span class="ow">or</span> <span class="s2">"No description provided."</span>
+
+    <span class="c1"># 関数名がツール名になる</span>
+    <span class="n">name</span> <span class="o">=</span> <span class="n">func</span><span class="o">.</span><span class="vm">__name__</span>
+
+    <span class="c1"># 新しい Tool インスタンスを返す</span>
+    <span class="k">return</span> <span class="n">Tool</span><span class="p">(</span>
+        <span class="n">name</span><span class="o">=</span><span class="n">name</span><span class="p">,</span>
+        <span class="n">description</span><span class="o">=</span><span class="n">description</span><span class="p">,</span>
+        <span class="n">func</span><span class="o">=</span><span class="n">func</span><span class="p">,</span>
+        <span class="n">arguments</span><span class="o">=</span><span class="n">arguments</span><span class="p">,</span>
+        <span class="n">outputs</span><span class="o">=</span><span class="n">outputs</span>
+    <span class="p">)</span>
+</code></pre></div>
+
+
+
+</details>
+
+<p>繰り返しになりますが、このデコレータがあれば、ツールは次のように実装できます。</p>
+<div class="codehilite"><pre><span></span><code><span class="nd">@tool</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">calculator</span><span class="p">(</span><span class="n">a</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">b</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""Multiply two integers."""</span>
+    <span class="k">return</span> <span class="n">a</span> <span class="o">*</span> <span class="n">b</span>
+
+<span class="nb">print</span><span class="p">(</span><span class="n">calculator</span><span class="o">.</span><span class="n">to_string</span><span class="p">())</span>
+</code></pre></div>
+
+<p>そして、<code>Tool</code> の <code>to_string</code> メソッドを使って、LLM 向けのツール説明として使うのに適したテキストを自動的に取得できます。</p>
+<div class="codehilite"><pre><span></span><code>Tool Name: calculator, Description: Multiply two integers., Arguments: a: int, b: int, Outputs: int
+</code></pre></div>
+
+<p>説明はシステムプロンプトに <strong>挿入（injected）</strong> されます。このセクションの冒頭で始めた例を取り、<code>tools_description</code> を置き換えたあとがどう見えるかを示します。</p>
+<p><img src="https://huggingface.co/datasets/agents-course/course-images/resolve/main/en/unit1/Agent_system_prompt_tools.png" alt="ツール用のシステムプロンプト"/></p>
+<p><a href="actions.html">アクション</a> のセクションでは、エージェントが今作成したこのツールをどう <strong>呼び出す（Call）</strong> かについてさらに学びます。</p>
+<h3>Model Context Protocol (MCP): 統一されたツールインターフェース</h3>
+<p>Model Context Protocol (MCP) は、アプリケーションが <strong>LLM にツールを提供する</strong> 方法を標準化する <strong>オープンプロトコル</strong> です。
+MCP は次を提供します。</p>
+<ul>
+<li>LLM が直接接続できる、事前に構築されたインテグレーションの増え続けるリスト</li>
+<li>LLM プロバイダーやベンダーを切り替える柔軟性</li>
+<li>インフラストラクチャ内でデータを保護するためのベストプラクティス</li>
+</ul>
+<p>つまり、<strong>MCP を実装するフレームワークはすべて、プロトコル内で定義されたツールを活用でき</strong>、フレームワークごとに同じツールインターフェースを再実装する必要がなくなります。</p>
+<p>MCP についてさらに深く知りたい場合は、<a href="https://huggingface.co/learn/mcp-course/">無料の MCP コース</a> をご覧ください。</p>
+<hr />
+<p>ツールは、AI エージェントの能力を高める上で重要な役割を果たします。</p>
+<p>まとめとして、次を学びました。</p>
+<ul>
+<li>
+<p><em>ツールとは何か</em>: 計算の実行や外部データへのアクセスなど、LLM に追加の能力を与える関数。</p>
+</li>
+<li>
+<p><em>ツールをどう定義するか</em>: 明確なテキストによる説明、入力、出力、そして呼び出し可能な関数を提供することで。</p>
+</li>
+<li>
+<p><em>なぜツールが不可欠なのか</em>: 静的なモデル訓練の限界をエージェントが克服し、リアルタイムのタスクを処理し、専門的なアクションを実行できるようにするから。</p>
+</li>
+</ul>
+<p>では、<a href="agent-steps-and-structure.html">エージェントのワークフロー</a> に進みましょう。そこでは、エージェントが観察し、考え、行動する様子を見ます。これは <strong>これまで扱ってきたすべてを結びつけ</strong>、完全に機能する独自の AI エージェントを作成するための舞台を整えます。</p>
+<p>しかしその前に、もう1つ短いクイズの時間です！</p>
+</article>
+<nav class="page-nav"><a class="nav-link prev" href="messages-and-special-tokens.html">← 前へ: メッセージと特殊トークン</a><a class="nav-link toc-link" href="../index.html">目次へ</a><a class="nav-link next" href="quiz2.html">次へ →: 簡単なセルフチェック（採点なし）</a></nav>
+</main>
+<footer class="site-footer">
+  <p>原典: Hugging Face huggingface/agents-course（<a href="https://github.com/huggingface/agents-course">https://github.com/huggingface/agents-course</a>）</p>
+  <p>日本語版の翻訳・公開: 霞ヶ関京 / 連絡先: GitHub <a href="https://github.com/yanikasumin">@yanikasumin</a> / YouTube <a href="https://www.youtube.com/@KASUMI_MOF">@KASUMI_MOF</a></p>
+  <p class="demo-note">このサイトはデモ版です。内容は順次更新されます。</p>
+</footer>
+<script src="../../site.js"></script>
+</body>
+</html>

@@ -1,0 +1,259 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>LlamaIndex のコンポーネントとは | Hugging Face コース日本語版（デモ版）</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Shippori+Mincho:wght@500;700&family=Zen+Kaku+Gothic+New:wght@400;500;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../../../style.css">
+<script>
+window.MathJax = { tex: { inlineMath: [['$', '$'], ['\\(', '\\)']], displayMath: [['$$', '$$'], ['\\[', '\\]']] }, options: { skipHtmlTags: ['script','noscript','style','textarea','pre','code'] } };
+</script>
+<script async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml.js"></script>
+</head>
+<body>
+<header class="site-header">
+  <div class="header-inner">
+    <a class="site-title" href="../../../index.html">Hugging Face コース日本語版</a>
+    <span class="demo-badge">デモ版</span>
+  </div>
+</header>
+<main class="container">
+<p class="course-crumb"><a href="../../index.html">Agents コース</a>
+<span class="badge badge-qa-wip">翻訳済み・QA進行中（未検証の部分を含みます）</span></p>
+<nav class="page-nav"><a class="nav-link prev" href="llama-hub.html">← 前へ: LlamaHub 入門</a><a class="nav-link toc-link" href="../../index.html">目次へ</a><a class="nav-link next" href="tools.html">次へ →: LlamaIndex でツールを使う</a></nav>
+<article class="content">
+<h1>LlamaIndex のコンポーネントとは</h1>
+<p>Unit 1 に登場した、頼れる執事エージェントの Alfred を覚えていますか？
+Alfred が私たちを効果的にサポートするには、私たちのリクエストを理解し、<strong>タスクの完了に役立つ関連情報を準備し、見つけ、活用する</strong>必要があります。
+ここで LlamaIndex のコンポーネントが役立ちます。</p>
+<p>LlamaIndex には多くのコンポーネントがありますが、<strong>ここでは特に <code>QueryEngine</code> コンポーネントに焦点を当てます。</strong>
+なぜでしょうか。<code>QueryEngine</code> は、エージェント向けの Retrieval-Augmented Generation（RAG）ツールとして使えるからです。</p>
+<p>では、RAG とは何でしょうか。LLM は膨大なデータで学習し、一般的な知識を身につけています。
+しかし、関連性が高く最新のデータで学習しているとは限りません。
+RAG は、自分のデータから関連情報を検索して取得し、それを LLM に渡すことで、この問題を解決します。</p>
+<p><img alt="RAG" src="https://huggingface.co/datasets/agents-course/course-images/resolve/main/en/unit2/llama-index/rag.png" /></p>
+<p>ここで、Alfred の働き方を考えてみましょう。</p>
+<ol>
+<li>ディナーパーティーの計画を Alfred に依頼します</li>
+<li>Alfred はカレンダーや食事の好み、過去に好評だったメニューを確認する必要があります</li>
+<li><code>QueryEngine</code> が Alfred の情報検索を助け、その情報をもとにディナーパーティーを計画できるようにします</li>
+</ol>
+<p>このため、<code>QueryEngine</code> は <strong>LlamaIndex でエージェンティックな RAG ワークフローを構築するための重要なコンポーネント</strong>です。
+Alfred が役に立つためには家庭の情報を検索する必要があるように、どのエージェントにも関連データを見つけて理解する方法が必要です。
+<code>QueryEngine</code> はまさにその機能を提供します。</p>
+<p>それでは、コンポーネントについてもう少し深く見ていき、<strong>コンポーネントを組み合わせて RAG パイプラインを作成する方法</strong>を確認しましょう。</p>
+<h2>コンポーネントを使って RAG パイプラインを作成する</h2>
+<div class="callout callout-tip">
+<p class="callout-title">💡 ヒント</p>
+<p>コードは Google Colab で実行できる <a href="https://huggingface.co/agents-course/notebooks/blob/main/unit2/llama-index/components.ipynb" target="_blank">このノートブック</a> で確認できます。</p>
+</div>
+<p>RAG には 5 つの重要なステージがあり、これらは皆さんが構築するほとんどの大規模なアプリケーションの一部にもなります。具体的には次のとおりです。</p>
+<ol>
+<li><strong>Loading</strong>: テキストファイルや PDF、別の Web サイト、データベース、API など、データが存在する場所からワークフローへデータを取り込むことです。LlamaHub には、選べる統合が数百も用意されています。</li>
+<li><strong>Indexing</strong>: データをクエリできるようにするデータ構造を作成することです。LLM の場合、これはほとんどの場合、ベクトル埋め込みを作成することを意味します。ベクトル埋め込みは、データの意味を数値で表したものです。Indexing は、プロパティに基づいて文脈的に関連するデータを正確に見つけやすくするための、その他さまざまなメタデータ戦略を指すこともあります。</li>
+<li><strong>Storing</strong>: データをインデックス化したら、再インデックス化しなくて済むように、インデックスやその他のメタデータを保存しておく必要があります。</li>
+<li><strong>Querying</strong>: インデックス化の戦略ごとに、LLM と LlamaIndex のデータ構造を使ってクエリを実行する方法は数多くあります。サブクエリやマルチステップクエリ、ハイブリッドな戦略などが含まれます。</li>
+<li><strong>Evaluation</strong>: どのフローでも重要なステップは、他の戦略と比べて、あるいは変更を加えたときに、どれだけ効果的かを確認することです。Evaluation では、クエリへの応答がどれだけ正確で、忠実で、高速かを客観的に測る指標が得られます。</li>
+</ol>
+<p>次に、コンポーネントを使ってこれらのステージを再現する方法を見ていきましょう。</p>
+<h3>ドキュメントの読み込みと埋め込み</h3>
+<p>先ほど述べたように、LlamaIndex は自分のデータの上で動作できますが、<strong>データにアクセスする前に、まず読み込む必要があります。</strong>
+LlamaIndex にデータを読み込む主な方法は、次の 3 つです。</p>
+<ol>
+<li><code>SimpleDirectoryReader</code>: ローカルディレクトリからさまざまなファイル形式を読み込むための、組み込みのローダーです。</li>
+<li><code>LlamaParse</code>: PDF の解析に使う LlamaIndex 公式ツールで、マネージド API として提供されています。</li>
+<li><code>LlamaHub</code>: あらゆるソースからデータを取り込むための、数百ものデータ読み込みライブラリを集めたレジストリです。</li>
+</ol>
+<div class="callout callout-tip">
+<p class="callout-title">💡 ヒント</p>
+<p>より複雑なデータソースについては、<a href="https://docs.llamaindex.ai/en/stable/module_guides/loading/connector/">LlamaHub</a> のローダーと <a href="https://github.com/run-llama/llama_cloud_services/blob/main/parse.md">LlamaParse</a> のパーサーに慣れておきましょう。</p>
+</div>
+<p><strong>データを読み込む最も簡単な方法は <code>SimpleDirectoryReader</code> を使うことです。</strong>
+この汎用的なコンポーネントは、フォルダからさまざまなファイル形式を読み込み、LlamaIndex が扱える <code>Document</code> オブジェクトに変換できます。
+フォルダからデータを読み込むために <code>SimpleDirectoryReader</code> をどう使うか見ていきましょう。</p>
+<div class="codehilite"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">llama_index.core</span><span class="w"> </span><span class="kn">import</span> <span class="n">SimpleDirectoryReader</span>
+
+<span class="n">reader</span> <span class="o">=</span> <span class="n">SimpleDirectoryReader</span><span class="p">(</span><span class="n">input_dir</span><span class="o">=</span><span class="s2">"path/to/directory"</span><span class="p">)</span>
+<span class="n">documents</span> <span class="o">=</span> <span class="n">reader</span><span class="o">.</span><span class="n">load_data</span><span class="p">()</span>
+</code></pre></div>
+
+<p>ドキュメントを読み込んだら、<code>Node</code> オブジェクトと呼ばれる小さな断片に分割する必要があります。
+<code>Node</code> は元のドキュメントから切り出したテキストの塊で、AI が扱いやすくなっていますが、元の <code>Document</code> オブジェクトへの参照は保持されています。</p>
+<p><code>IngestionPipeline</code> は、2 つの重要な変換を通して、これらのノードを作成するのを助けます。
+1. <code>SentenceSplitter</code> は、自然な文の区切りで分割し、ドキュメントを扱いやすい塊に分けます。
+2. <code>HuggingFaceEmbedding</code> は、各塊を数値埋め込みに変換します。これは、AI が効率的に処理できる形で意味的な内容を捉えたベクトル表現です。</p>
+<p>このプロセスにより、検索や分析に使いやすい形でドキュメントを整理できます。</p>
+<div class="codehilite"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">llama_index.core</span><span class="w"> </span><span class="kn">import</span> <span class="n">Document</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">llama_index.embeddings.huggingface</span><span class="w"> </span><span class="kn">import</span> <span class="n">HuggingFaceEmbedding</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">llama_index.core.node_parser</span><span class="w"> </span><span class="kn">import</span> <span class="n">SentenceSplitter</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">llama_index.core.ingestion</span><span class="w"> </span><span class="kn">import</span> <span class="n">IngestionPipeline</span>
+
+<span class="c1"># 変換処理を指定してパイプラインを作成します</span>
+<span class="n">pipeline</span> <span class="o">=</span> <span class="n">IngestionPipeline</span><span class="p">(</span>
+    <span class="n">transformations</span><span class="o">=</span><span class="p">[</span>
+        <span class="n">SentenceSplitter</span><span class="p">(</span><span class="n">chunk_overlap</span><span class="o">=</span><span class="mi">0</span><span class="p">),</span>
+        <span class="n">HuggingFaceEmbedding</span><span class="p">(</span><span class="n">model_name</span><span class="o">=</span><span class="s2">"BAAI/bge-small-en-v1.5"</span><span class="p">),</span>
+    <span class="p">]</span>
+<span class="p">)</span>
+
+<span class="n">nodes</span> <span class="o">=</span> <span class="k">await</span> <span class="n">pipeline</span><span class="o">.</span><span class="n">arun</span><span class="p">(</span><span class="n">documents</span><span class="o">=</span><span class="p">[</span><span class="n">Document</span><span class="o">.</span><span class="n">example</span><span class="p">()])</span>
+</code></pre></div>
+
+<h3>ドキュメントの保存とインデックス化</h3>
+<p><code>Node</code> オブジェクトを作成したら、検索できるようにインデックス化する必要がありますが、その前にデータを保存する場所が必要です。</p>
+<p>取り込みパイプラインを使っているので、ベクトルストアをパイプラインに直接接続して、データを格納できます。
+ここでは、ドキュメントの保存に <code>Chroma</code> を使います。</p>
+<details>
+<summary>ChromaDB をインストールする</summary>
+
+<a href="llama-hub.html">LlamaHub に関するセクション</a>で紹介したように、ChromaDB のベクトルストアは次のコマンドでインストールできます。
+
+
+<div class="codehilite"><pre><span></span><code>pip<span class="w"> </span>install<span class="w"> </span>llama-index-vector-stores-chroma
+</code></pre></div>
+
+
+</details>
+
+<div class="codehilite"><pre><span></span><code><span class="kn">import</span><span class="w"> </span><span class="nn">chromadb</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">llama_index.vector_stores.chroma</span><span class="w"> </span><span class="kn">import</span> <span class="n">ChromaVectorStore</span>
+
+<span class="n">db</span> <span class="o">=</span> <span class="n">chromadb</span><span class="o">.</span><span class="n">PersistentClient</span><span class="p">(</span><span class="n">path</span><span class="o">=</span><span class="s2">"./alfred_chroma_db"</span><span class="p">)</span>
+<span class="n">chroma_collection</span> <span class="o">=</span> <span class="n">db</span><span class="o">.</span><span class="n">get_or_create_collection</span><span class="p">(</span><span class="s2">"alfred"</span><span class="p">)</span>
+<span class="n">vector_store</span> <span class="o">=</span> <span class="n">ChromaVectorStore</span><span class="p">(</span><span class="n">chroma_collection</span><span class="o">=</span><span class="n">chroma_collection</span><span class="p">)</span>
+
+<span class="n">pipeline</span> <span class="o">=</span> <span class="n">IngestionPipeline</span><span class="p">(</span>
+    <span class="n">transformations</span><span class="o">=</span><span class="p">[</span>
+        <span class="n">SentenceSplitter</span><span class="p">(</span><span class="n">chunk_size</span><span class="o">=</span><span class="mi">25</span><span class="p">,</span> <span class="n">chunk_overlap</span><span class="o">=</span><span class="mi">0</span><span class="p">),</span>
+        <span class="n">HuggingFaceEmbedding</span><span class="p">(</span><span class="n">model_name</span><span class="o">=</span><span class="s2">"BAAI/bge-small-en-v1.5"</span><span class="p">),</span>
+    <span class="p">],</span>
+    <span class="n">vector_store</span><span class="o">=</span><span class="n">vector_store</span><span class="p">,</span>
+<span class="p">)</span>
+</code></pre></div>
+
+<div class="callout callout-tip">
+<p class="callout-title">💡 ヒント</p>
+<p>さまざまなベクトルストアの概要は、<a href="https://docs.llamaindex.ai/en/stable/module_guides/storing/vector_stores/">LlamaIndex のドキュメント</a>で確認できます。</p>
+</div>
+<p>ここでベクトル埋め込みが活躍します。クエリとノードの両方を同じベクトル空間に埋め込むことで、関連する一致を見つけられるようになります。
+<code>VectorStoreIndex</code> がこの処理を担い、一貫性を保つために、取り込み時に使ったのと同じ埋め込みモデルを使います。</p>
+<p>ベクトルストアと埋め込みからこのインデックスを作成する方法を見ていきましょう。</p>
+<div class="codehilite"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">llama_index.core</span><span class="w"> </span><span class="kn">import</span> <span class="n">VectorStoreIndex</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">llama_index.embeddings.huggingface</span><span class="w"> </span><span class="kn">import</span> <span class="n">HuggingFaceEmbedding</span>
+
+<span class="n">embed_model</span> <span class="o">=</span> <span class="n">HuggingFaceEmbedding</span><span class="p">(</span><span class="n">model_name</span><span class="o">=</span><span class="s2">"BAAI/bge-small-en-v1.5"</span><span class="p">)</span>
+<span class="n">index</span> <span class="o">=</span> <span class="n">VectorStoreIndex</span><span class="o">.</span><span class="n">from_vector_store</span><span class="p">(</span><span class="n">vector_store</span><span class="p">,</span> <span class="n">embed_model</span><span class="o">=</span><span class="n">embed_model</span><span class="p">)</span>
+</code></pre></div>
+
+<p>すべての情報は、<code>ChromaVectorStore</code> オブジェクトと、渡したディレクトリパスの中に自動的に永続化されます。</p>
+<p>インデックスを簡単に保存・読み込みできるようになりました。次は、さまざまな方法でクエリを実行する方法を見ていきましょう。</p>
+<h3>プロンプトと LLM を使って VectorStoreIndex にクエリを実行する</h3>
+<p>インデックスにクエリを実行する前に、クエリ用のインターフェースに変換する必要があります。最も一般的な変換オプションは次のとおりです。</p>
+<ul>
+<li><code>as_retriever</code>: 基本的なドキュメント検索用です。類似度スコア付きの <code>NodeWithScore</code> オブジェクトのリストを返します</li>
+<li><code>as_query_engine</code>: 1 回の質問応答のやり取り用です。文章による応答を返します</li>
+<li><code>as_chat_engine</code>: 複数のメッセージにわたって記憶を保持する会話形式のやり取り用です。チャット履歴とインデックス化された文脈を使って、文章による応答を返します</li>
+</ul>
+<p>ここでは、エージェント的なやり取りでより一般的なクエリエンジンに焦点を当てます。
+また、応答に使う LLM もクエリエンジンに渡します。</p>
+<div class="codehilite"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">llama_index.llms.huggingface_api</span><span class="w"> </span><span class="kn">import</span> <span class="n">HuggingFaceInferenceAPI</span>
+
+<span class="n">llm</span> <span class="o">=</span> <span class="n">HuggingFaceInferenceAPI</span><span class="p">(</span><span class="n">model_name</span><span class="o">=</span><span class="s2">"Qwen/Qwen2.5-Coder-32B-Instruct"</span><span class="p">)</span>
+<span class="n">query_engine</span> <span class="o">=</span> <span class="n">index</span><span class="o">.</span><span class="n">as_query_engine</span><span class="p">(</span>
+    <span class="n">llm</span><span class="o">=</span><span class="n">llm</span><span class="p">,</span>
+    <span class="n">response_mode</span><span class="o">=</span><span class="s2">"tree_summarize"</span><span class="p">,</span>
+<span class="p">)</span>
+<span class="n">query_engine</span><span class="o">.</span><span class="n">query</span><span class="p">(</span><span class="s2">"What is the meaning of life?"</span><span class="p">)</span>
+<span class="c1"># The meaning of life is 42</span>
+</code></pre></div>
+
+<h3>応答の処理</h3>
+<p>内部では、クエリエンジンは質問に答えるために LLM を使うだけでなく、応答を処理する戦略として <code>ResponseSynthesizer</code> も使っています。
+こちらも完全にカスタマイズできますが、そのまま使ってうまく機能する主な戦略が 3 つあります。</p>
+<ul>
+<li><code>refine</code>: 取得した各テキストチャンクを順番にたどりながら、回答を作成し、洗練させます。Node／取得したチャンクごとに個別に LLM を呼び出します。</li>
+<li><code>compact</code>（デフォルト）: refine と似ていますが、事前にチャンクを連結するため、LLM の呼び出し回数が少なくなります。</li>
+<li><code>tree_summarize</code>: 取得した各テキストチャンクをたどり、回答のツリー構造を作成することで、詳細な回答を作ります。</li>
+</ul>
+<div class="callout callout-tip">
+<p class="callout-title">💡 ヒント</p>
+<p><a href="https://docs.llamaindex.ai/en/stable/module_guides/deploying/query_engine/usage_pattern/#low-level-composition-api">low-level composition API</a> を使うと、クエリのワークフローをきめ細かく制御できます。この API を使うと、クエリ処理のすべてのステップを、正確なニーズに合わせてカスタマイズし微調整できます。<a href="https://docs.llamaindex.ai/en/stable/module_guides/workflow/">Workflows</a> との相性も優れています</p>
+</div>
+<p>言語モデルは常に予測可能な動きをするとは限らないため、得られた回答が常に正しいとは限りません。この問題には、<strong>回答の品質を評価する</strong>ことで対処できます。</p>
+<h3>評価と可観測性</h3>
+<p>LlamaIndex には、<strong>応答の品質を評価するための組み込みの評価ツール</strong>が用意されています。
+これらの評価器は LLM を活用し、さまざまな観点から応答を分析します。
+利用できる主な 3 つの評価器を見ていきましょう。</p>
+<ul>
+<li><code>FaithfulnessEvaluator</code>: 回答が文脈に裏付けられているかを確認し、回答の忠実さを評価します。</li>
+<li><code>AnswerRelevancyEvaluator</code>: 回答が質問に関連しているかを確認し、回答の関連性を評価します。</li>
+<li><code>CorrectnessEvaluator</code>: 回答が正しいかを確認し、回答の正確さを評価します。</li>
+</ul>
+<div class="callout callout-tip">
+<p class="callout-title">💡 ヒント</p>
+<p>エージェントの可観測性と評価についてもっと学びたい場合は、<a href="https://huggingface.co/learn/agents-course/bonus-unit2/introduction">Bonus Unit 2</a> で学習を続けてください。</p>
+</div>
+<div class="codehilite"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">llama_index.core.evaluation</span><span class="w"> </span><span class="kn">import</span> <span class="n">FaithfulnessEvaluator</span>
+
+<span class="n">query_engine</span> <span class="o">=</span> <span class="c1"># 前のセクションで作成したもの</span>
+<span class="n">llm</span> <span class="o">=</span> <span class="c1"># 前のセクションで作成したもの</span>
+
+<span class="c1"># インデックスにクエリを実行します</span>
+<span class="n">evaluator</span> <span class="o">=</span> <span class="n">FaithfulnessEvaluator</span><span class="p">(</span><span class="n">llm</span><span class="o">=</span><span class="n">llm</span><span class="p">)</span>
+<span class="n">response</span> <span class="o">=</span> <span class="n">query_engine</span><span class="o">.</span><span class="n">query</span><span class="p">(</span>
+    <span class="s2">"What battles took place in New York City in the American Revolution?"</span>
+<span class="p">)</span>
+<span class="n">eval_result</span> <span class="o">=</span> <span class="n">evaluator</span><span class="o">.</span><span class="n">evaluate_response</span><span class="p">(</span><span class="n">response</span><span class="o">=</span><span class="n">response</span><span class="p">)</span>
+<span class="n">eval_result</span><span class="o">.</span><span class="n">passing</span>
+</code></pre></div>
+
+<p>直接評価しなくても、<strong>可観測性を通して、システムがどのように動作しているかについての知見</strong>が得られます。
+これは、より複雑なワークフローを構築し、各コンポーネントがどのように動作しているかを理解したい場合に特に役立ちます。</p>
+<details>
+<summary>LlamaTrace をインストールする</summary>
+
+<a href="llama-hub.html">LlamaHub に関するセクション</a>で紹介したように、Arize Phoenix の LlamaTrace コールバックは次のコマンドでインストールできます。
+
+
+<div class="codehilite"><pre><span></span><code>pip<span class="w"> </span>install<span class="w"> </span>-U<span class="w"> </span>llama-index-callbacks-arize-phoenix
+</code></pre></div>
+
+
+
+さらに、`PHOENIX_API_KEY` 環境変数に LlamaTrace の API キーを設定する必要があります。取得方法は次のとおりです。
+- [LlamaTrace](https://llamatrace.com/login) でアカウントを作成します
+- アカウント設定で API キーを生成します
+- 以下のコードでその API キーを使ってトレーシングを有効化します
+
+</details>
+
+<div class="codehilite"><pre><span></span><code><span class="kn">import</span><span class="w"> </span><span class="nn">llama_index</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">os</span>
+
+<span class="n">PHOENIX_API_KEY</span> <span class="o">=</span> <span class="s2">"&lt;PHOENIX_API_KEY&gt;"</span>
+<span class="n">os</span><span class="o">.</span><span class="n">environ</span><span class="p">[</span><span class="s2">"OTEL_EXPORTER_OTLP_HEADERS"</span><span class="p">]</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">"api_key=</span><span class="si">{</span><span class="n">PHOENIX_API_KEY</span><span class="si">}</span><span class="s2">"</span>
+<span class="n">llama_index</span><span class="o">.</span><span class="n">core</span><span class="o">.</span><span class="n">set_global_handler</span><span class="p">(</span>
+    <span class="s2">"arize_phoenix"</span><span class="p">,</span>
+    <span class="n">endpoint</span><span class="o">=</span><span class="s2">"https://llamatrace.com/v1/traces"</span>
+<span class="p">)</span>
+</code></pre></div>
+
+<div class="callout callout-tip">
+<p class="callout-title">💡 ヒント</p>
+<p>コンポーネントとその使い方についてもっと学びたい場合は、<a href="https://docs.llamaindex.ai/en/stable/module_guides/">Components Guides</a> や <a href="https://docs.llamaindex.ai/en/stable/understanding/rag/">Guide on RAG</a> で学習を続けてください。</p>
+</div>
+<p>コンポーネントを使って <code>QueryEngine</code> を作成する方法を見てきました。次は、<strong><code>QueryEngine</code> をエージェントのツールとして使う方法</strong>を見ていきましょう！</p>
+</article>
+<nav class="page-nav"><a class="nav-link prev" href="llama-hub.html">← 前へ: LlamaHub 入門</a><a class="nav-link toc-link" href="../../index.html">目次へ</a><a class="nav-link next" href="tools.html">次へ →: LlamaIndex でツールを使う</a></nav>
+</main>
+<footer class="site-footer">
+  <p>原典: Hugging Face huggingface/agents-course（<a href="https://github.com/huggingface/agents-course">https://github.com/huggingface/agents-course</a>）</p>
+  <p>日本語版の翻訳・公開: 霞ヶ関京 / 連絡先: GitHub <a href="https://github.com/yanikasumin">@yanikasumin</a> / YouTube <a href="https://www.youtube.com/@KASUMI_MOF">@KASUMI_MOF</a></p>
+  <p class="demo-note">このサイトはデモ版です。内容は順次更新されます。</p>
+</footer>
+<script src="../../../site.js"></script>
+</body>
+</html>

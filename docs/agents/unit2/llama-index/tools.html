@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>LlamaIndex でツールを使う | Hugging Face コース日本語版（デモ版）</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Shippori+Mincho:wght@500;700&family=Zen+Kaku+Gothic+New:wght@400;500;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../../../style.css">
+<script>
+window.MathJax = { tex: { inlineMath: [['$', '$'], ['\\(', '\\)']], displayMath: [['$$', '$$'], ['\\[', '\\]']] }, options: { skipHtmlTags: ['script','noscript','style','textarea','pre','code'] } };
+</script>
+<script async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml.js"></script>
+</head>
+<body>
+<header class="site-header">
+  <div class="header-inner">
+    <a class="site-title" href="../../../index.html">Hugging Face コース日本語版</a>
+    <span class="demo-badge">デモ版</span>
+  </div>
+</header>
+<main class="container">
+<p class="course-crumb"><a href="../../index.html">Agents コース</a>
+<span class="badge badge-qa-wip">翻訳済み・QA進行中（未検証の部分を含みます）</span></p>
+<nav class="page-nav"><a class="nav-link prev" href="components.html">← 前へ: LlamaIndex のコンポーネントとは</a><a class="nav-link toc-link" href="../../index.html">目次へ</a><a class="nav-link next" href="quiz1.html">次へ →: 小さなクイズ（採点なし）</a></nav>
+<article class="content">
+<h1>LlamaIndex でツールを使う</h1>
+<p><strong>明確なツールのセットを定義することは、性能を左右する重要な要素です。</strong> <a href="../../unit1/tools.html">ユニット 1</a> で述べたように、ツールのインターフェースが分かりやすければ、LLM にとっても使いやすくなります。
+人間のエンジニア向けのソフトウェア API と同じで、仕組みが理解しやすいツールほど、その力を引き出せるのです。</p>
+<p><strong>LlamaIndex のツールには、主に次の 4 種類があります。</strong></p>
+<p><img alt="ツール" src="https://huggingface.co/datasets/agents-course/course-images/resolve/main/en/unit2/llama-index/tools.png" /></p>
+<ol>
+<li><code>FunctionTool</code>: 任意の Python 関数を、エージェントが使えるツールに変換します。関数の仕組みは自動で把握されます。</li>
+<li><code>QueryEngineTool</code>: エージェントがクエリエンジンを使えるようにするツールです。エージェントはクエリエンジンを土台に構築されるため、ほかのエージェントをツールとして使うこともできます。</li>
+<li><code>Toolspecs</code>: コミュニティが作成したツールのセットで、Gmail のような特定のサービス向けのツールを含むことがよくあります。</li>
+<li><code>Utility Tools</code>: ほかのツールから得られる大量のデータを扱うのに役立つ、特殊なツールです。</li>
+</ol>
+<p>以下では、それぞれを詳しく見ていきます。</p>
+<h2>FunctionTool を作成する</h2>
+<div class="callout callout-tip">
+<p class="callout-title">💡 ヒント</p>
+<p>コードは、Google Colab で実行できる <a href="https://huggingface.co/agents-course/notebooks/blob/main/unit2/llama-index/tools.ipynb" target="_blank">このノートブック</a> で確認できます。</p>
+</div>
+<p>FunctionTool を使えば、任意の Python 関数を簡単にラップして、エージェントから利用できるようにできます。
+ツールには同期関数・非同期関数のどちらでも渡せます。任意で <code>name</code> パラメータと <code>description</code> パラメータも指定できます。
+名前と説明は特に重要です。エージェントが、ツールをいつ、どのように使えばよいかを理解する手がかりになるからです。
+以下で FunctionTool の作成方法を見てから、実際に呼び出してみましょう。</p>
+<div class="codehilite"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">llama_index.core.tools</span><span class="w"> </span><span class="kn">import</span> <span class="n">FunctionTool</span>
+
+<span class="k">def</span><span class="w"> </span><span class="nf">get_weather</span><span class="p">(</span><span class="n">location</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""Useful for getting the weather for a given location."""</span>
+    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Getting weather for </span><span class="si">{</span><span class="n">location</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+    <span class="k">return</span> <span class="sa">f</span><span class="s2">"The weather in </span><span class="si">{</span><span class="n">location</span><span class="si">}</span><span class="s2"> is sunny"</span>
+
+<span class="n">tool</span> <span class="o">=</span> <span class="n">FunctionTool</span><span class="o">.</span><span class="n">from_defaults</span><span class="p">(</span>
+    <span class="n">get_weather</span><span class="p">,</span>
+    <span class="n">name</span><span class="o">=</span><span class="s2">"my_weather_tool"</span><span class="p">,</span>
+    <span class="n">description</span><span class="o">=</span><span class="s2">"Useful for getting the weather for a given location."</span><span class="p">,</span>
+<span class="p">)</span>
+<span class="n">tool</span><span class="o">.</span><span class="n">call</span><span class="p">(</span><span class="s2">"New York"</span><span class="p">)</span>
+</code></pre></div>
+
+<div class="callout callout-tip">
+<p class="callout-title">💡 ヒント</p>
+<p>関数呼び出しに対応したエージェントや LLM を使う場合、どのツールが選ばれるか（そして、そのツールへの引数がどう書かれるか）は、ツールの名前と、ツールの目的や引数についての説明に大きく左右されます。関数呼び出しの詳細は <a href="https://docs.llamaindex.ai/en/stable/examples/workflow/function_calling_agent/">Function Calling Guide</a> を参照してください。</p>
+</div>
+<h2>QueryEngineTool を作成する</h2>
+<p>前のユニットで定義した <code>QueryEngine</code> は、<code>QueryEngineTool</code> クラスを使えば簡単にツールへ変換できます。
+以下の例で、<code>QueryEngine</code> から <code>QueryEngineTool</code> を作成する方法を見てみましょう。</p>
+<div class="codehilite"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">llama_index.core</span><span class="w"> </span><span class="kn">import</span> <span class="n">VectorStoreIndex</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">llama_index.core.tools</span><span class="w"> </span><span class="kn">import</span> <span class="n">QueryEngineTool</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">llama_index.llms.huggingface_api</span><span class="w"> </span><span class="kn">import</span> <span class="n">HuggingFaceInferenceAPI</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">llama_index.embeddings.huggingface</span><span class="w"> </span><span class="kn">import</span> <span class="n">HuggingFaceEmbedding</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">llama_index.vector_stores.chroma</span><span class="w"> </span><span class="kn">import</span> <span class="n">ChromaVectorStore</span>
+
+<span class="n">embed_model</span> <span class="o">=</span> <span class="n">HuggingFaceEmbedding</span><span class="p">(</span><span class="s2">"BAAI/bge-small-en-v1.5"</span><span class="p">)</span>
+
+<span class="n">db</span> <span class="o">=</span> <span class="n">chromadb</span><span class="o">.</span><span class="n">PersistentClient</span><span class="p">(</span><span class="n">path</span><span class="o">=</span><span class="s2">"./alfred_chroma_db"</span><span class="p">)</span>
+<span class="n">chroma_collection</span> <span class="o">=</span> <span class="n">db</span><span class="o">.</span><span class="n">get_or_create_collection</span><span class="p">(</span><span class="s2">"alfred"</span><span class="p">)</span>
+<span class="n">vector_store</span> <span class="o">=</span> <span class="n">ChromaVectorStore</span><span class="p">(</span><span class="n">chroma_collection</span><span class="o">=</span><span class="n">chroma_collection</span><span class="p">)</span>
+
+<span class="n">index</span> <span class="o">=</span> <span class="n">VectorStoreIndex</span><span class="o">.</span><span class="n">from_vector_store</span><span class="p">(</span><span class="n">vector_store</span><span class="p">,</span> <span class="n">embed_model</span><span class="o">=</span><span class="n">embed_model</span><span class="p">)</span>
+
+<span class="n">llm</span> <span class="o">=</span> <span class="n">HuggingFaceInferenceAPI</span><span class="p">(</span><span class="n">model_name</span><span class="o">=</span><span class="s2">"Qwen/Qwen2.5-Coder-32B-Instruct"</span><span class="p">)</span>
+<span class="n">query_engine</span> <span class="o">=</span> <span class="n">index</span><span class="o">.</span><span class="n">as_query_engine</span><span class="p">(</span><span class="n">llm</span><span class="o">=</span><span class="n">llm</span><span class="p">)</span>
+<span class="n">tool</span> <span class="o">=</span> <span class="n">QueryEngineTool</span><span class="o">.</span><span class="n">from_defaults</span><span class="p">(</span><span class="n">query_engine</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="s2">"some useful name"</span><span class="p">,</span> <span class="n">description</span><span class="o">=</span><span class="s2">"some useful description"</span><span class="p">)</span>
+</code></pre></div>
+
+<h2>Toolspecs を作成する</h2>
+<p><code>ToolSpecs</code> は、互いに調和して動作するツールの集合だと考えてください。よく整理されたプロの道具箱のようなものです。
+整備士の道具箱に、車両の修理で連携する相補的な道具が揃っているように、<code>ToolSpec</code> は特定の目的に向けた関連ツールを組み合わせます。
+たとえば、経理エージェントの <code>ToolSpec</code> であれば、表計算の機能、メールの機能、計算ツールをうまく統合し、財務タスクを正確かつ効率的に処理できるでしょう。</p>
+<details>
+<summary>Google Toolspec をインストールする</summary>
+<a href="llama-hub.html">LlamaHub に関するセクション</a> で紹介したように、Google の toolspec は次のコマンドでインストールできます。
+
+
+<div class="codehilite"><pre><span></span><code><span class="n">pip</span> <span class="n">install</span> <span class="n">llama</span><span class="o">-</span><span class="n">index</span><span class="o">-</span><span class="n">tools</span><span class="o">-</span><span class="n">google</span>
+</code></pre></div>
+
+
+</details>
+
+<p>これで toolspec を読み込み、ツールのリストへ変換できます。</p>
+<div class="codehilite"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">llama_index.tools.google</span><span class="w"> </span><span class="kn">import</span> <span class="n">GmailToolSpec</span>
+
+<span class="n">tool_spec</span> <span class="o">=</span> <span class="n">GmailToolSpec</span><span class="p">()</span>
+<span class="n">tool_spec_list</span> <span class="o">=</span> <span class="n">tool_spec</span><span class="o">.</span><span class="n">to_tool_list</span><span class="p">()</span>
+</code></pre></div>
+
+<p>ツールをより詳しく確認するには、各ツールの <code>metadata</code> を見ます。</p>
+<div class="codehilite"><pre><span></span><code><span class="p">[(</span><span class="n">tool</span><span class="o">.</span><span class="n">metadata</span><span class="o">.</span><span class="n">name</span><span class="p">,</span> <span class="n">tool</span><span class="o">.</span><span class="n">metadata</span><span class="o">.</span><span class="n">description</span><span class="p">)</span> <span class="k">for</span> <span class="n">tool</span> <span class="ow">in</span> <span class="n">tool_spec_list</span><span class="p">]</span>
+</code></pre></div>
+
+<h3>LlamaIndex における Model Context Protocol（MCP）</h3>
+<p>LlamaIndex では、<a href="https://llamahub.ai/l/tools/llama-index-tools-mcp?from=">LlamaHub 上の ToolSpec</a> を通じて MCP ツールも使えます。
+MCP サーバーを起動すれば、次の実装でそのまま利用を開始できます。</p>
+<p>MCP についてさらに深く知りたい場合は、<a href="https://huggingface.co/learn/mcp-course/">無料の MCP コース</a> を確認してください。</p>
+<details>
+<summary>MCP Toolspec をインストールする</summary>
+<a href="llama-hub.html">LlamaHub に関するセクション</a> で紹介したように、MCP の toolspec は次のコマンドでインストールできます。
+
+
+<div class="codehilite"><pre><span></span><code><span class="n">pip</span> <span class="n">install</span> <span class="n">llama</span><span class="o">-</span><span class="n">index</span><span class="o">-</span><span class="n">tools</span><span class="o">-</span><span class="n">mcp</span>
+</code></pre></div>
+
+
+</details>
+
+<div class="codehilite"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">llama_index.tools.mcp</span><span class="w"> </span><span class="kn">import</span> <span class="n">BasicMCPClient</span><span class="p">,</span> <span class="n">McpToolSpec</span>
+
+<span class="c1"># 127.0.0.1:8000 で MCP サーバーが動作しているものとします。MCP クライアントを使って、自分の MCP サーバーに接続することもできます。</span>
+<span class="n">mcp_client</span> <span class="o">=</span> <span class="n">BasicMCPClient</span><span class="p">(</span><span class="s2">"http://127.0.0.1:8000/sse"</span><span class="p">)</span>
+<span class="n">mcp_tool</span> <span class="o">=</span> <span class="n">McpToolSpec</span><span class="p">(</span><span class="n">client</span><span class="o">=</span><span class="n">mcp_client</span><span class="p">)</span>
+
+<span class="c1"># エージェントを取得する</span>
+<span class="n">agent</span> <span class="o">=</span> <span class="k">await</span> <span class="n">get_agent</span><span class="p">(</span><span class="n">mcp_tool</span><span class="p">)</span>
+
+<span class="c1"># エージェントのコンテキストを作成する</span>
+<span class="n">agent_context</span> <span class="o">=</span> <span class="n">Context</span><span class="p">(</span><span class="n">agent</span><span class="p">)</span>
+</code></pre></div>
+
+<h2>ユーティリティツール</h2>
+<p>API を直接クエリすると、<strong>過剰な量のデータが返ってくる</strong>ことがよくあります。その中には無関係なものが含まれていたり、LLM のコンテキストウィンドウに収まりきらなかったり、使用するトークン数が不必要に増えたりします。
+以下では、主要な 2 つのユーティリティツールを確認します。</p>
+<ol>
+<li><code>OnDemandToolLoader</code>: 既存の任意の LlamaIndex データローダー（BaseReader クラス）を、エージェントが使えるツールに変換するツールです。このツールは、データローダーの <code>load_data</code> を実行するために必要なパラメータすべてと、自然言語のクエリ文字列を使って呼び出せます。実行時には、まずデータローダーからデータを読み込み、インデックス化し（たとえばベクトルストアを使って）、そのうえで「オンデマンド」にクエリします。これら 3 つのステップはすべて、1 回のツール呼び出しの中で行われます。</li>
+<li><code>LoadAndSearchToolSpec</code>: LoadAndSearchToolSpec は、既存の任意のツールを入力として受け取ります。ツールスペックとして <code>to_tool_list</code> を実装しており、この関数を呼び出すと、読み込み用ツールと検索用ツールの 2 つが返されます。読み込み用ツールを実行すると、内部のツールが呼び出され、その出力がインデックス化されます（デフォルトではベクトルインデックスを使います）。検索用ツールを実行すると、クエリ文字列を入力として受け取り、内部のインデックスを呼び出します。</li>
+</ol>
+<div class="callout callout-tip">
+<p class="callout-title">💡 ヒント</p>
+<p>toolspec とユーティリティツールは <a href="https://llamahub.ai/">LlamaHub</a> で見つけられます。</p>
+</div>
+<p>LlamaIndex におけるエージェントとツールの基礎が分かったところで、次は <strong>LlamaIndex を使って、設定可能で管理しやすいワークフローを作成する方法</strong> を見ていきましょう。</p>
+</article>
+<nav class="page-nav"><a class="nav-link prev" href="components.html">← 前へ: LlamaIndex のコンポーネントとは</a><a class="nav-link toc-link" href="../../index.html">目次へ</a><a class="nav-link next" href="quiz1.html">次へ →: 小さなクイズ（採点なし）</a></nav>
+</main>
+<footer class="site-footer">
+  <p>原典: Hugging Face huggingface/agents-course（<a href="https://github.com/huggingface/agents-course">https://github.com/huggingface/agents-course</a>）</p>
+  <p>日本語版の翻訳・公開: 霞ヶ関京 / 連絡先: GitHub <a href="https://github.com/yanikasumin">@yanikasumin</a> / YouTube <a href="https://www.youtube.com/@KASUMI_MOF">@KASUMI_MOF</a></p>
+  <p class="demo-note">このサイトはデモ版です。内容は順次更新されます。</p>
+</footer>
+<script src="../../../site.js"></script>
+</body>
+</html>

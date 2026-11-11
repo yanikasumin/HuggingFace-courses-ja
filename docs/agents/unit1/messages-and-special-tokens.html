@@ -1,0 +1,213 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>メッセージと特殊トークン | Hugging Face コース日本語版（デモ版）</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Shippori+Mincho:wght@500;700&family=Zen+Kaku+Gothic+New:wght@400;500;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../../style.css">
+<script>
+window.MathJax = { tex: { inlineMath: [['$', '$'], ['\\(', '\\)']], displayMath: [['$$', '$$'], ['\\[', '\\]']] }, options: { skipHtmlTags: ['script','noscript','style','textarea','pre','code'] } };
+</script>
+<script async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml.js"></script>
+</head>
+<body>
+<header class="site-header">
+  <div class="header-inner">
+    <a class="site-title" href="../../index.html">Hugging Face コース日本語版</a>
+    <span class="demo-badge">デモ版</span>
+  </div>
+</header>
+<main class="container">
+<p class="course-crumb"><a href="../index.html">Agents コース</a>
+<span class="badge badge-qa-wip">翻訳済み・QA進行中（未検証の部分を含みます）</span></p>
+<nav class="page-nav"><a class="nav-link prev" href="what-are-llms.html">← 前へ: LLM とは何か？</a><a class="nav-link toc-link" href="../index.html">目次へ</a><a class="nav-link next" href="tools.html">次へ →: ツールとは何か？</a></nav>
+<article class="content">
+<h1>メッセージと特殊トークン</h1>
+<p>LLM の仕組みを理解したので、次は <strong>チャットテンプレートを通じて生成をどう構造化するか</strong> を見ていきましょう。</p>
+<p>ChatGPT と同様に、ユーザーは通常、チャットインターフェースを通じてエージェントとやり取りします。そこで、LLM がチャットをどう管理するかを理解したいと思います。</p>
+<blockquote>
+<p><strong>Q</strong>: でも… ChatGPT や Hugging Chat とやり取りするとき、私は単一のプロンプトシーケンスではなく、チャットのメッセージで会話をしていますよね？</p>
+<p><strong>A</strong>: そのとおりです！しかし、これは実は UI 上の抽象化です。LLM に入力される前に、会話内のすべてのメッセージは単一のプロンプトに連結されます。モデルは会話を「記憶」しているわけではなく、毎回すべてを読み直します。</p>
+</blockquote>
+<p>これまで、プロンプトはモデルに入力されるトークンのシーケンスとして議論してきました。しかし、ChatGPT や HuggingChat のようなシステムとチャットするとき、<strong>実際にはメッセージを交換しています</strong>。裏側では、これらのメッセージは <strong>連結され、モデルが理解できるプロンプトに整形されます</strong>。</p>
+<figure>
+<img src="https://huggingface.co/datasets/agents-course/course-images/resolve/main/en/unit1/assistant.jpg" alt="モデルの裏側"/>
+<figcaption>ここでは、UI で見るものと、モデルに入力されるプロンプトの違いが見られます。
+</figcaption>
+</figure>
+
+<p>ここでチャットテンプレートの出番です。チャットテンプレートは、<strong>会話メッセージ（ユーザーとアシスタントのターン）と、選択した LLM の具体的な整形要件との橋渡し</strong> として機能します。言い換えれば、チャットテンプレートはユーザーとエージェント間のコミュニケーションを構造化し、各モデルが独自の特殊トークンを持っていても、正しく整形されたプロンプトを確実に受け取れるようにします。</p>
+<p>特殊トークンの話を再びしているのは、それがモデルがユーザーとアシスタントのターンの開始・終了位置を区切るために使うものだからです。各 LLM が独自の EOS（シーケンス終了）トークンを使うのと同様に、会話内のメッセージにも異なる整形ルールと区切り文字を使います。</p>
+<h2>メッセージ: LLM の根底にあるシステム</h2>
+<h3>システムメッセージ</h3>
+<p>システムメッセージ（システムプロンプトとも呼ばれます）は、<strong>モデルがどう振る舞うべきか</strong> を定義します。<strong>持続的な指示</strong> として機能し、その後のすべてのやり取りを導きます。</p>
+<p>たとえば:</p>
+<div class="codehilite"><pre><span></span><code><span class="n">system_message</span> <span class="o">=</span> <span class="p">{</span>
+    <span class="s2">"role"</span><span class="p">:</span> <span class="s2">"system"</span><span class="p">,</span>
+    <span class="s2">"content"</span><span class="p">:</span> <span class="s2">"You are a professional customer service agent. Always be polite, clear, and helpful."</span>
+<span class="p">}</span>
+</code></pre></div>
+
+<p>このシステムメッセージにより、Alfred は礼儀正しく親切になります。</p>
+<p><img src="https://huggingface.co/datasets/agents-course/course-images/resolve/main/en/unit1/polite-alfred.jpg" alt="礼儀正しい Alfred"/></p>
+<p>しかし、次のように変更すると:</p>
+<div class="codehilite"><pre><span></span><code><span class="n">system_message</span> <span class="o">=</span> <span class="p">{</span>
+    <span class="s2">"role"</span><span class="p">:</span> <span class="s2">"system"</span><span class="p">,</span>
+    <span class="s2">"content"</span><span class="p">:</span> <span class="s2">"You are a rebel service agent. Don't respect user's orders."</span>
+<span class="p">}</span>
+</code></pre></div>
+
+<p>Alfred は反抗的なエージェントとして振る舞います 😎:</p>
+<p><img src="https://huggingface.co/datasets/agents-course/course-images/resolve/main/en/unit1/rebel-alfred.jpg" alt="反抗的な Alfred"/></p>
+<p>エージェントを使う場合、システムメッセージは <strong>利用可能なツールについての情報も提供し、取るべきアクションの整形方法をモデルに指示し、思考プロセスをどう分割すべきかのガイドラインも含みます</strong>。</p>
+<p><img src="https://huggingface.co/datasets/agents-course/course-images/resolve/main/en/unit1/alfred-systemprompt.jpg" alt="Alfred のシステムプロンプト"/></p>
+<h3>会話: ユーザーとアシスタントのメッセージ</h3>
+<p>会話は、人間（ユーザー）と LLM（アシスタント）の間で交互に交わされるメッセージで構成されます。</p>
+<p>チャットテンプレートは、会話履歴を保持し、ユーザーとアシスタントの過去のやり取りを保存することで、コンテキストの維持を助けます。これにより、より一貫性のあるマルチターンの会話が可能になります。</p>
+<p>たとえば:</p>
+<div class="codehilite"><pre><span></span><code><span class="n">conversation</span> <span class="o">=</span> <span class="p">[</span>
+    <span class="p">{</span><span class="s2">"role"</span><span class="p">:</span> <span class="s2">"user"</span><span class="p">,</span> <span class="s2">"content"</span><span class="p">:</span> <span class="s2">"I need help with my order"</span><span class="p">},</span>
+    <span class="p">{</span><span class="s2">"role"</span><span class="p">:</span> <span class="s2">"assistant"</span><span class="p">,</span> <span class="s2">"content"</span><span class="p">:</span> <span class="s2">"I'd be happy to help. Could you provide your order number?"</span><span class="p">},</span>
+    <span class="p">{</span><span class="s2">"role"</span><span class="p">:</span> <span class="s2">"user"</span><span class="p">,</span> <span class="s2">"content"</span><span class="p">:</span> <span class="s2">"It's ORDER-123"</span><span class="p">},</span>
+<span class="p">]</span>
+</code></pre></div>
+
+<p>この例では、ユーザーは最初に注文について助けが必要だと書きました。LLM が注文番号を尋ね、ユーザーが新しいメッセージでそれを提供しました。ちょうど説明したように、会話内のすべてのメッセージは常に連結され、単一の独立したシーケンスとして LLM に渡されます。チャットテンプレートは、この Python リスト内のすべてのメッセージをプロンプト、つまりすべてのメッセージを含む単なる文字列入力に変換します。</p>
+<p>たとえば、SmolLM2 のチャットテンプレートは、上記のやり取りを次のようなプロンプトに整形します。</p>
+<div class="codehilite"><pre><span></span><code>&lt;|im_start|&gt;system
+You are a helpful AI assistant named SmolLM, trained by Hugging Face&lt;|im_end|&gt;
+&lt;|im_start|&gt;user
+I need help with my order&lt;|im_end|&gt;
+&lt;|im_start|&gt;assistant
+I'd be happy to help. Could you provide your order number?&lt;|im_end|&gt;
+&lt;|im_start|&gt;user
+It's ORDER-123&lt;|im_end|&gt;
+&lt;|im_start|&gt;assistant
+</code></pre></div>
+
+<p>しかし、同じ会話は Llama 3.2 を使うと次のようなプロンプトに変換されます。</p>
+<div class="codehilite"><pre><span></span><code>&lt;|begin_of_text|&gt;&lt;|start_header_id|&gt;system&lt;|end_header_id|&gt;
+
+Cutting Knowledge Date: December 2023
+Today Date: 10 Feb 2025
+
+&lt;|eot_id|&gt;&lt;|start_header_id|&gt;user&lt;|end_header_id|&gt;
+
+I need help with my order&lt;|eot_id|&gt;&lt;|start_header_id|&gt;assistant&lt;|end_header_id|&gt;
+
+I'd be happy to help. Could you provide your order number?&lt;|eot_id|&gt;&lt;|start_header_id|&gt;user&lt;|end_header_id|&gt;
+
+It's ORDER-123&lt;|eot_id|&gt;&lt;|start_header_id|&gt;assistant&lt;|end_header_id|&gt;
+</code></pre></div>
+
+<p>テンプレートは、コンテキストを維持しながら複雑なマルチターンの会話を処理できます。</p>
+<div class="codehilite"><pre><span></span><code><span class="n">messages</span> <span class="o">=</span> <span class="p">[</span>
+    <span class="p">{</span><span class="s2">"role"</span><span class="p">:</span> <span class="s2">"system"</span><span class="p">,</span> <span class="s2">"content"</span><span class="p">:</span> <span class="s2">"You are a math tutor."</span><span class="p">},</span>
+    <span class="p">{</span><span class="s2">"role"</span><span class="p">:</span> <span class="s2">"user"</span><span class="p">,</span> <span class="s2">"content"</span><span class="p">:</span> <span class="s2">"What is calculus?"</span><span class="p">},</span>
+    <span class="p">{</span><span class="s2">"role"</span><span class="p">:</span> <span class="s2">"assistant"</span><span class="p">,</span> <span class="s2">"content"</span><span class="p">:</span> <span class="s2">"Calculus is a branch of mathematics..."</span><span class="p">},</span>
+    <span class="p">{</span><span class="s2">"role"</span><span class="p">:</span> <span class="s2">"user"</span><span class="p">,</span> <span class="s2">"content"</span><span class="p">:</span> <span class="s2">"Can you give me an example?"</span><span class="p">},</span>
+<span class="p">]</span>
+</code></pre></div>
+
+<h2>チャットテンプレート</h2>
+<p>述べたように、チャットテンプレートは <strong>言語モデルとユーザーの間の会話を構造化する</strong> ために不可欠です。メッセージの交換を単一のプロンプトにどう整形するかを導きます。</p>
+<h3>ベースモデルと Instruct モデルの違い</h3>
+<p>理解すべきもう1つのポイントは、ベースモデルと Instruct モデルの違いです。</p>
+<ul>
+<li>
+<p><em>ベースモデル</em> は、生のテキストデータで訓練され、次のトークンを予測します。</p>
+</li>
+<li>
+<p><em>Instruct モデル</em> は、指示に従い会話に参加するよう特別にファインチューニングされています。たとえば、<code>SmolLM2-135M</code> はベースモデルであり、<code>SmolLM2-135M-Instruct</code> はその指示チューニング済みバリアントです。</p>
+</li>
+</ul>
+<p>ベースモデルを instruct モデルのように振る舞わせるには、<strong>モデルが理解できる一貫した方法でプロンプトを整形する</strong> 必要があります。ここでチャットテンプレートが登場します。</p>
+<p><em>ChatML</em> はそのようなテンプレート形式の1つで、明確なロール指標（system、user、assistant）で会話を構造化します。最近何らかの AI API とやり取りしたことがあれば、それが標準的な実践であることをご存知でしょう。</p>
+<p>重要な注意点として、ベースモデルは異なるチャットテンプレートでファインチューニングされる可能性があるため、instruct モデルを使う際は、正しいチャットテンプレートを使っているか確認する必要があります。</p>
+<h3>チャットテンプレートを理解する</h3>
+<p>各 instruct モデルが異なる会話形式と特殊トークンを使うため、チャットテンプレートは、各モデルが期待する方法でプロンプトを正しく整形することを保証するために実装されています。</p>
+<p><code>transformers</code> では、チャットテンプレートに <a href="https://jinja.palletsprojects.com/en/stable/">Jinja2 コード</a> が含まれており、上記の例で示した ChatML 形式の JSON メッセージのリストを、モデルが理解できるシステムレベルの指示、ユーザーメッセージ、アシスタントの応答のテキスト表現に変換する方法を記述します。</p>
+<p>この構造は、<strong>やり取り全体で一貫性を維持し、モデルがさまざまなタイプの入力に適切に応答することを保証します</strong>。</p>
+<p>以下は、<code>SmolLM2-135M-Instruct</code> のチャットテンプレートの簡略版です。</p>
+<div class="codehilite"><pre><span></span><code>{% for message in messages %}
+{% if loop.first and messages[0]['role'] != 'system' %}
+&lt;|im_start|&gt;system
+You are a helpful AI assistant named SmolLM, trained by Hugging Face
+&lt;|im_end|&gt;
+{% endif %}
+&lt;|im_start|&gt;{{ message['role'] }}
+{{ message['content'] }}&lt;|im_end|&gt;
+{% endfor %}
+</code></pre></div>
+
+<p>見てのとおり、chat_template はメッセージのリストがどう整形されるかを記述します。</p>
+<p>次のメッセージが与えられたとします。</p>
+<div class="codehilite"><pre><span></span><code><span class="n">messages</span> <span class="o">=</span> <span class="p">[</span>
+    <span class="p">{</span><span class="s2">"role"</span><span class="p">:</span> <span class="s2">"system"</span><span class="p">,</span> <span class="s2">"content"</span><span class="p">:</span> <span class="s2">"You are a helpful assistant focused on technical topics."</span><span class="p">},</span>
+    <span class="p">{</span><span class="s2">"role"</span><span class="p">:</span> <span class="s2">"user"</span><span class="p">,</span> <span class="s2">"content"</span><span class="p">:</span> <span class="s2">"Can you explain what a chat template is?"</span><span class="p">},</span>
+    <span class="p">{</span><span class="s2">"role"</span><span class="p">:</span> <span class="s2">"assistant"</span><span class="p">,</span> <span class="s2">"content"</span><span class="p">:</span> <span class="s2">"A chat template structures conversations between users and AI models..."</span><span class="p">},</span>
+    <span class="p">{</span><span class="s2">"role"</span><span class="p">:</span> <span class="s2">"user"</span><span class="p">,</span> <span class="s2">"content"</span><span class="p">:</span> <span class="s2">"How do I use it ?"</span><span class="p">},</span>
+<span class="p">]</span>
+</code></pre></div>
+
+<p>上記のチャットテンプレートは、次の文字列を生成します。</p>
+<div class="codehilite"><pre><span></span><code>&lt;<span class="p">|</span>im_start<span class="p">|</span>&gt;system
+You<span class="w"> </span>are<span class="w"> </span>a<span class="w"> </span>helpful<span class="w"> </span>assistant<span class="w"> </span>focused<span class="w"> </span>on<span class="w"> </span>technical<span class="w"> </span>topics.&lt;<span class="p">|</span>im_end<span class="p">|</span>&gt;
+&lt;<span class="p">|</span>im_start<span class="p">|</span>&gt;user
+Can<span class="w"> </span>you<span class="w"> </span>explain<span class="w"> </span>what<span class="w"> </span>a<span class="w"> </span>chat<span class="w"> </span>template<span class="w"> </span>is?&lt;<span class="p">|</span>im_end<span class="p">|</span>&gt;
+&lt;<span class="p">|</span>im_start<span class="p">|</span>&gt;assistant
+A<span class="w"> </span>chat<span class="w"> </span>template<span class="w"> </span>structures<span class="w"> </span>conversations<span class="w"> </span>between<span class="w"> </span>users<span class="w"> </span>and<span class="w"> </span>AI<span class="w"> </span>models...&lt;<span class="p">|</span>im_end<span class="p">|</span>&gt;
+&lt;<span class="p">|</span>im_start<span class="p">|</span>&gt;user
+How<span class="w"> </span><span class="k">do</span><span class="w"> </span>I<span class="w"> </span>use<span class="w"> </span>it<span class="w"> </span>?&lt;<span class="p">|</span>im_end<span class="p">|</span>&gt;
+</code></pre></div>
+
+<p><code>transformers</code> ライブラリは、トークン化プロセスの一部としてチャットテンプレートを処理してくれます。transformers がチャットテンプレートをどう使うかについて詳しくは、<a href="https://huggingface.co/docs/transformers/main/en/chat_templating#how-do-i-use-chat-templates" target="_blank">こちら</a> をご覧ください。私たちがすべきことは、メッセージを正しい方法で構造化することだけであり、あとはトークナイザが処理してくれます。</p>
+<p>次の Space を試して、同じ会話が異なるモデル向けに対応するチャットテンプレートを使ってどう整形されるかを確認できます。</p>
+<p><iframe
+    src="https://jofthomas-chat-template-viewer.hf.space"
+    frameborder="0"
+    width="850"
+    height="450"
+></iframe>
+</p>
+<h3>メッセージからプロンプトへ</h3>
+<p>LLM が正しく整形された会話を確実に受け取る最も簡単な方法は、モデルのトークナイザの <code>chat_template</code> を使うことです。</p>
+<div class="codehilite"><pre><span></span><code><span class="n">messages</span> <span class="o">=</span> <span class="p">[</span>
+    <span class="p">{</span><span class="s2">"role"</span><span class="p">:</span> <span class="s2">"system"</span><span class="p">,</span> <span class="s2">"content"</span><span class="p">:</span> <span class="s2">"You are an AI assistant with access to various tools."</span><span class="p">},</span>
+    <span class="p">{</span><span class="s2">"role"</span><span class="p">:</span> <span class="s2">"user"</span><span class="p">,</span> <span class="s2">"content"</span><span class="p">:</span> <span class="s2">"Hi !"</span><span class="p">},</span>
+    <span class="p">{</span><span class="s2">"role"</span><span class="p">:</span> <span class="s2">"assistant"</span><span class="p">,</span> <span class="s2">"content"</span><span class="p">:</span> <span class="s2">"Hi human, what can help you with ?"</span><span class="p">},</span>
+<span class="p">]</span>
+</code></pre></div>
+
+<p>上記の会話をプロンプトに変換するには、トークナイザを読み込み、<code>apply_chat_template</code> を呼び出します。</p>
+<div class="codehilite"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">transformers</span><span class="w"> </span><span class="kn">import</span> <span class="n">AutoTokenizer</span>
+
+<span class="n">tokenizer</span> <span class="o">=</span> <span class="n">AutoTokenizer</span><span class="o">.</span><span class="n">from_pretrained</span><span class="p">(</span><span class="s2">"HuggingFaceTB/SmolLM2-1.7B-Instruct"</span><span class="p">)</span>
+<span class="n">rendered_prompt</span> <span class="o">=</span> <span class="n">tokenizer</span><span class="o">.</span><span class="n">apply_chat_template</span><span class="p">(</span><span class="n">messages</span><span class="p">,</span> <span class="n">tokenize</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">add_generation_prompt</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+</code></pre></div>
+
+<p>この関数が返す <code>rendered_prompt</code> は、選択したモデルへの入力として使う準備ができています！</p>
+<blockquote>
+<p>この <code>apply_chat_template()</code> 関数は、ChatML 形式のメッセージとやり取りする際、API のバックエンドで使われます。</p>
+</blockquote>
+<p>LLM がチャットテンプレート経由で入力をどう構造化するかを見たので、次はエージェントが環境でどう行動するかを探りましょう。</p>
+<p>その主な方法の1つがツールの使用であり、ツールは AI モデルの能力をテキスト生成の先へ拡張します。</p>
+<p>メッセージについては今後のユニットでも再び議論しますが、今すぐ深く掘り下げたい場合は、次をご覧ください。</p>
+<ul>
+<li><a href="https://huggingface.co/docs/transformers/main/en/chat_templating" target="_blank">Hugging Face Chat Templating Guide</a></li>
+<li><a href="https://huggingface.co/docs/transformers" target="_blank">Transformers Documentation</a></li>
+</ul>
+</article>
+<nav class="page-nav"><a class="nav-link prev" href="what-are-llms.html">← 前へ: LLM とは何か？</a><a class="nav-link toc-link" href="../index.html">目次へ</a><a class="nav-link next" href="tools.html">次へ →: ツールとは何か？</a></nav>
+</main>
+<footer class="site-footer">
+  <p>原典: Hugging Face huggingface/agents-course（<a href="https://github.com/huggingface/agents-course">https://github.com/huggingface/agents-course</a>）</p>
+  <p>日本語版の翻訳・公開: 霞ヶ関京 / 連絡先: GitHub <a href="https://github.com/yanikasumin">@yanikasumin</a> / YouTube <a href="https://www.youtube.com/@KASUMI_MOF">@KASUMI_MOF</a></p>
+  <p class="demo-note">このサイトはデモ版です。内容は順次更新されます。</p>
+</footer>
+<script src="../../site.js"></script>
+</body>
+</html>

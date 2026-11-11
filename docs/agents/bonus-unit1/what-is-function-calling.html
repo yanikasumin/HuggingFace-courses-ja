@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Function Calling とは？ | Hugging Face コース日本語版（デモ版）</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Shippori+Mincho:wght@500;700&family=Zen+Kaku+Gothic+New:wght@400;500;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../../style.css">
+<script>
+window.MathJax = { tex: { inlineMath: [['$', '$'], ['\\(', '\\)']], displayMath: [['$$', '$$'], ['\\[', '\\]']] }, options: { skipHtmlTags: ['script','noscript','style','textarea','pre','code'] } };
+</script>
+<script async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml.js"></script>
+</head>
+<body>
+<header class="site-header">
+  <div class="header-inner">
+    <a class="site-title" href="../../index.html">Hugging Face コース日本語版</a>
+    <span class="demo-badge">デモ版</span>
+  </div>
+</header>
+<main class="container">
+<p class="course-crumb"><a href="../index.html">Agents コース</a>
+<span class="badge badge-qa-wip">翻訳済み・QA進行中（未検証の部分を含みます）</span></p>
+<nav class="page-nav"><a class="nav-link prev" href="introduction.html">← 前へ: イントロダクション</a><a class="nav-link toc-link" href="../index.html">目次へ</a><a class="nav-link next" href="fine-tuning.html">次へ →: Function-Calling のためにモデルをファインチューニングしよう</a></nav>
+<article class="content">
+<h1>Function Calling とは？</h1>
+<p>Function-calling は、<strong>LLM が環境に対して行動を起こすための仕組み</strong>です。<a href="https://openai.com/index/function-calling-and-other-api-updates/">GPT-4 で初めて導入され</a>、その後、他のモデルにも再現されました。</p>
+<p>エージェントの Tools と同じように、Function-calling はモデルに<strong>環境に対して行動を起こす</strong>能力を与えます。ただし、Function-calling の能力は<strong>モデルが学習によって身につける</strong>もので、他のエージェント手法よりも<strong>プロンプトへの依存が小さい</strong>のが特徴です。</p>
+<p>ユニット 1 の間、エージェントは <strong>Tools の使い方を学習したわけではありません</strong>。私たちは単に一覧を提供し、モデルが<strong>それらの Tools を使った計画を立てられるよう汎化できる</strong>ことに頼っていました。</p>
+<p>一方こちらでは、<strong>Function-calling によって、エージェントは Tools を使うようファインチューニング（訓練）されます</strong>。</p>
+<h2>モデルはどうやって行動を起こすことを「学ぶ」のか？</h2>
+<p>ユニット 1 では、エージェントの一般的なワークフローを探りました。ユーザーがエージェントにいくつかのツールを与え、クエリでプロンプトすると、モデルは次のサイクルを回します。</p>
+<ol>
+<li><em>Think（考える）</em>: 目的を達成するために、どんなアクションを取る必要があるか。</li>
+<li><em>Act（行動する）</em>: 正しいパラメータでアクションを整形し、生成を止める。</li>
+<li><em>Observe（観察する）</em>: 実行結果を受け取る。</li>
+</ol>
+<p>API 経由のモデルとの「典型的な」会話では、会話は次のようにユーザーとアシスタントのメッセージを交互に繰り返します。</p>
+<div class="codehilite"><pre><span></span><code><span class="n">conversation</span> <span class="o">=</span> <span class="p">[</span>
+    <span class="p">{</span><span class="s2">"role"</span><span class="p">:</span> <span class="s2">"user"</span><span class="p">,</span> <span class="s2">"content"</span><span class="p">:</span> <span class="s2">"I need help with my order"</span><span class="p">},</span>
+    <span class="p">{</span><span class="s2">"role"</span><span class="p">:</span> <span class="s2">"assistant"</span><span class="p">,</span> <span class="s2">"content"</span><span class="p">:</span> <span class="s2">"I'd be happy to help. Could you provide your order number?"</span><span class="p">},</span>
+    <span class="p">{</span><span class="s2">"role"</span><span class="p">:</span> <span class="s2">"user"</span><span class="p">,</span> <span class="s2">"content"</span><span class="p">:</span> <span class="s2">"It's ORDER-123"</span><span class="p">},</span>
+<span class="p">]</span>
+</code></pre></div>
+
+<p>Function-calling は<strong>会話に新しいロールを持ち込みます</strong>！</p>
+<ol>
+<li><strong>Action</strong> 用の新しいロール</li>
+<li><strong>Observation</strong> 用の新しいロール</li>
+</ol>
+<p><a href="https://docs.mistral.ai/capabilities/function_calling/">Mistral API</a> を例に取ると、次のようになります。</p>
+<div class="codehilite"><pre><span></span><code><span class="n">conversation</span> <span class="o">=</span> <span class="p">[</span>
+    <span class="p">{</span>
+        <span class="s2">"role"</span><span class="p">:</span> <span class="s2">"user"</span><span class="p">,</span>
+        <span class="s2">"content"</span><span class="p">:</span> <span class="s2">"What's the status of my transaction T1001?"</span>
+    <span class="p">},</span>
+    <span class="p">{</span>
+        <span class="s2">"role"</span><span class="p">:</span> <span class="s2">"assistant"</span><span class="p">,</span>
+        <span class="s2">"content"</span><span class="p">:</span> <span class="s2">""</span><span class="p">,</span>
+        <span class="s2">"function_call"</span><span class="p">:</span> <span class="p">{</span>
+            <span class="s2">"name"</span><span class="p">:</span> <span class="s2">"retrieve_payment_status"</span><span class="p">,</span>
+            <span class="s2">"arguments"</span><span class="p">:</span> <span class="s2">"{</span><span class="se">\"</span><span class="s2">transaction_id</span><span class="se">\"</span><span class="s2">: </span><span class="se">\"</span><span class="s2">T1001</span><span class="se">\"</span><span class="s2">}"</span>
+        <span class="p">}</span>
+    <span class="p">},</span>
+    <span class="p">{</span>
+        <span class="s2">"role"</span><span class="p">:</span> <span class="s2">"tool"</span><span class="p">,</span>
+        <span class="s2">"name"</span><span class="p">:</span> <span class="s2">"retrieve_payment_status"</span><span class="p">,</span>
+        <span class="s2">"content"</span><span class="p">:</span> <span class="s2">"{</span><span class="se">\"</span><span class="s2">status</span><span class="se">\"</span><span class="s2">: </span><span class="se">\"</span><span class="s2">Paid</span><span class="se">\"</span><span class="s2">}"</span>
+    <span class="p">},</span>
+    <span class="p">{</span>
+        <span class="s2">"role"</span><span class="p">:</span> <span class="s2">"assistant"</span><span class="p">,</span>
+        <span class="s2">"content"</span><span class="p">:</span> <span class="s2">"Your transaction T1001 has been successfully paid."</span>
+    <span class="p">}</span>
+<span class="p">]</span>
+</code></pre></div>
+
+<blockquote>
+<p>…でも、関数呼び出し用の新しいロールがあると言いましたよね？</p>
+</blockquote>
+<p><strong>半分正解で半分違います</strong>。このケースや他の多くの API では、モデルは取るべきアクションを「assistant」メッセージとして整形します。その後、チャットテンプレートがこれを Function-calling 用の<strong>特殊トークン</strong>として表現します。</p>
+<ul>
+<li><code>[AVAILABLE_TOOLS]</code> – 利用可能なツールの一覧の開始</li>
+<li><code>[/AVAILABLE_TOOLS]</code> – 利用可能なツールの一覧の終了</li>
+<li><code>[TOOL_CALLS]</code> – ツールへの呼び出しを行う（つまり「Action」を取る）</li>
+<li><code>[TOOL_RESULTS]</code> – アクションの結果を「Observe」する</li>
+<li><code>[/TOOL_RESULTS]</code> – 観測の終了（つまり、モデルは再びデコードできる）</li>
+</ul>
+<p>このコースでは Function-calling について改めて取り上げますが、より深く知りたい場合は<a href="https://docs.mistral.ai/capabilities/function_calling/">この優れたドキュメントセクション</a>を確認してください。</p>
+<hr />
+<p>Function-calling とは何か、どう働くかを学んだところで、<strong>まだその能力を持っていないモデルに Function-calling の能力を追加</strong>しましょう。対象は <a href="https://huggingface.co/google/gemma-2-2b-it">google/gemma-2-2b-it</a> で、新しい特殊トークンをモデルに追加します。</p>
+<p>それを行うには、<strong>まずファインチューニングと LoRA を理解する</strong>必要があります。</p>
+</article>
+<nav class="page-nav"><a class="nav-link prev" href="introduction.html">← 前へ: イントロダクション</a><a class="nav-link toc-link" href="../index.html">目次へ</a><a class="nav-link next" href="fine-tuning.html">次へ →: Function-Calling のためにモデルをファインチューニングしよう</a></nav>
+</main>
+<footer class="site-footer">
+  <p>原典: Hugging Face huggingface/agents-course（<a href="https://github.com/huggingface/agents-course">https://github.com/huggingface/agents-course</a>）</p>
+  <p>日本語版の翻訳・公開: 霞ヶ関京 / 連絡先: GitHub <a href="https://github.com/yanikasumin">@yanikasumin</a> / YouTube <a href="https://www.youtube.com/@KASUMI_MOF">@KASUMI_MOF</a></p>
+  <p class="demo-note">このサイトはデモ版です。内容は順次更新されます。</p>
+</footer>
+<script src="../../site.js"></script>
+</body>
+</html>

@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>イントロダクション | Hugging Face コース日本語版（デモ版）</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Shippori+Mincho:wght@500;700&family=Zen+Kaku+Gothic+New:wght@400;500;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../../style.css">
+<script>
+window.MathJax = { tex: { inlineMath: [['$', '$'], ['\\(', '\\)']], displayMath: [['$$', '$$'], ['\\[', '\\]']] }, options: { skipHtmlTags: ['script','noscript','style','textarea','pre','code'] } };
+</script>
+<script async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml.js"></script>
+</head>
+<body>
+<header class="site-header">
+  <div class="header-inner">
+    <a class="site-title" href="../../index.html">Hugging Face コース日本語版</a>
+    <span class="demo-badge">デモ版</span>
+  </div>
+</header>
+<main class="container">
+<p class="course-crumb"><a href="../index.html">Agents コース</a>
+<span class="badge badge-qa-wip">翻訳済み・QA進行中（未検証の部分を含みます）</span></p>
+<nav class="page-nav"><a class="nav-link prev" href="../unit4/additional-readings.html">← 前へ: この先、何を学ぶべきか？</a><a class="nav-link toc-link" href="../index.html">目次へ</a><a class="nav-link next" href="what-is-function-calling.html">次へ →: Function Calling とは？</a></nav>
+<article class="content">
+<h1>イントロダクション</h1>
+<p><img alt="ボーナスユニット 1 のサムネイル" src="https://huggingface.co/datasets/agents-course/course-images/resolve/main/en/bonus-unit1/thumbnail.jpg" /></p>
+<p>最初の<strong>ボーナスユニット</strong>へようこそ。ここでは、<strong>Function-calling（関数呼び出し）のために大規模言語モデル（LLM）をファインチューニングする</strong>方法を学びます。</p>
+<p>LLM の文脈では、Function-calling は急速に<em>必須の</em>テクニックになりつつあります。</p>
+<p>考え方はこうです。ユニット 1 で行ったようなプロンプトベースのアプローチだけに頼るのではなく、Function-calling では<strong>訓練フェーズのうちに、行動を起こし、観測を解釈できるようモデルを訓練</strong>し、AI をより堅牢にします。</p>
+<blockquote>
+<p><strong>このボーナスユニットはいつやるべきですか？</strong></p>
+<p>このセクションは<strong>任意</strong>で、ユニット 1 より高度な内容です。今すぐ取り組んでもよいし、このコースで知識が深まってから戻ってきても構いません。</p>
+<p>ただし心配はいりません。このボーナスユニットには必要な情報がすべてそろっているので、ファインチューニングの内部の仕組みをまだ学んでいなくても、Function-calling 用にモデルをファインチューニングする核心的な概念を一つずつ案内します。</p>
+</blockquote>
+<p>このボーナスユニットを進めるうえで最適なのは、次の状態でいることです。</p>
+<ol>
+<li>
+<p>Transformers を使った LLM のファインチューニング方法を知っていること。分からない場合は<a href="https://huggingface.co/learn/nlp-course/chapter3/1?fw=pt">こちらを確認してください</a>。</p>
+</li>
+<li>
+<p>モデルのファインチューニングに <code>SFTTrainer</code> を使う方法を知っていること。詳しくは<a href="https://huggingface.co/learn/nlp-course/en/chapter11/1">こちらのドキュメント</a>を確認してください。</p>
+</li>
+</ol>
+<hr />
+<h2>学ぶこと</h2>
+<ol>
+<li>
+<p><strong>Function Calling</strong><br />
+   最新の LLM が会話を効果的に構造化し、<strong>Tools</strong> を発動できるようにする仕組み。</p>
+</li>
+<li>
+<p><strong>LoRA（Low-Rank Adaptation）</strong><br />
+   計算とストレージのオーバーヘッドを抑える、<strong>軽量で効率的な</strong>ファインチューニング手法。LoRA により、大規模モデルの訓練が<em>より速く、より安く、よりデプロイしやすく</em>なります。</p>
+</li>
+<li>
+<p>Function Calling モデルにおける <strong>Thought → Act → Observe サイクル</strong><br />
+   モデルがいつ（そしてどうやって）関数を呼び出すかを決め、中間ステップを追跡し、外部の Tools や API からの結果を解釈する仕組みを構造化する、シンプルながら強力なアプローチ。</p>
+</li>
+<li>
+<p><strong>新しい特殊トークン</strong><br />
+   モデルが次のものを区別するのに役立つ<strong>特殊なマーカー</strong>を紹介します。
+   - 内部の「chain-of-thought」推論
+   - 外部への関数呼び出し
+   - 外部ツールから返ってくる応答</p>
+</li>
+</ol>
+<hr />
+<p>このボーナスユニットを終える頃には、次のことができるようになります。</p>
+<ul>
+<li>Tools に関わる API の内部の仕組みを<strong>理解する</strong>。</li>
+<li>LoRA の手法を使ってモデルを<strong>ファインチューニングする</strong>。</li>
+<li>Thought → Act → Observe サイクルを<strong>実装</strong>・<strong>変更</strong>して、堅牢で保守しやすい Function-calling のワークフローを作る。</li>
+<li>特殊トークンを<strong>設計・活用</strong>して、モデルの内部推論と外部アクションをシームレスに分離する。</li>
+</ul>
+<p>そして、<strong>Function-calling ができるよう自分のモデルをファインチューニング</strong>し終えているはずです。🔥</p>
+<p>さあ、<strong>Function-calling</strong>に飛び込みましょう！</p>
+</article>
+<nav class="page-nav"><a class="nav-link prev" href="../unit4/additional-readings.html">← 前へ: この先、何を学ぶべきか？</a><a class="nav-link toc-link" href="../index.html">目次へ</a><a class="nav-link next" href="what-is-function-calling.html">次へ →: Function Calling とは？</a></nav>
+</main>
+<footer class="site-footer">
+  <p>原典: Hugging Face huggingface/agents-course（<a href="https://github.com/huggingface/agents-course">https://github.com/huggingface/agents-course</a>）</p>
+  <p>日本語版の翻訳・公開: 霞ヶ関京 / 連絡先: GitHub <a href="https://github.com/yanikasumin">@yanikasumin</a> / YouTube <a href="https://www.youtube.com/@KASUMI_MOF">@KASUMI_MOF</a></p>
+  <p class="demo-note">このサイトはデモ版です。内容は順次更新されます。</p>
+</footer>
+<script src="../../site.js"></script>
+</body>
+</html>

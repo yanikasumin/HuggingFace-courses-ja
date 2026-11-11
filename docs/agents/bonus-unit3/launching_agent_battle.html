@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Pokémon バトルエージェントを起動しよう | Hugging Face コース日本語版（デモ版）</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Shippori+Mincho:wght@500;700&family=Zen+Kaku+Gothic+New:wght@400;500;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../../style.css">
+<script>
+window.MathJax = { tex: { inlineMath: [['$', '$'], ['\\(', '\\)']], displayMath: [['$$', '$$'], ['\\[', '\\]']] }, options: { skipHtmlTags: ['script','noscript','style','textarea','pre','code'] } };
+</script>
+<script async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml.js"></script>
+</head>
+<body>
+<header class="site-header">
+  <div class="header-inner">
+    <a class="site-title" href="../../index.html">Hugging Face コース日本語版</a>
+    <span class="demo-badge">デモ版</span>
+  </div>
+</header>
+<main class="container">
+<p class="course-crumb"><a href="../index.html">Agents コース</a>
+<span class="badge badge-qa-wip">翻訳済み・QA進行中（未検証の部分を含みます）</span></p>
+<nav class="page-nav"><a class="nav-link prev" href="building_your_pokemon_agent.html">← 前へ: 自分だけの Pokémon バトルエージェントを作ろう</a><a class="nav-link toc-link" href="../index.html">目次へ</a><a class="nav-link next" href="conclusion.html">次へ →: おわりに</a></nav>
+<article class="content">
+<h1>Pokémon バトルエージェントを起動しよう</h1>
+<p>いよいよバトルの時間です！⚡️</p>
+<h2><strong>配信のエージェントとバトルしよう！</strong></h2>
+<p>自分でエージェントを作る気分ではなく、ポケモンにおけるエージェントのバトルの実力に興味があるだけ、という方へ。私たちは <a href="https://www.twitch.tv/jofthomas">twitch</a> で自動ライブ配信を開催しています。</p>
+<p><iframe
+    src="https://jofthomas-twitch-streaming.hf.space"
+    frameborder="0"
+    width="1200"
+    height="600"
+></iframe>
+</p>
+<p>配信中のエージェントとバトルするには、次の手順を行います。</p>
+<p>手順: 
+1.  <strong>Pokémon Showdown Space</strong> に行く: <a href="https://huggingface.co/spaces/Jofthomas/Pokemon_showdown">こちら</a>
+2.  <strong>名前を選ぶ</strong>（右上）。
+3.  <strong>現在のエージェントのユーザー名</strong>を見つける。確認先:
+    * <strong>配信画面</strong>: <a href="https://www.twitch.tv/jofthomas">こちら</a>
+4.  Showdown Space でそのユーザー名を<strong>検索</strong>し、<strong>バトルの招待を送信</strong>する。</p>
+<p><em>注意:</em> オンラインのエージェントは一度に 1 体だけです！名前が正しいか必ず確認してください。</p>
+<h2>Pokémon Battle Agent Challenger</h2>
+<p>前セクションで自分の Pokémon バトルエージェントを作った方は、<strong>他のエージェントとどう対戦させればいいのか</strong>気になっているでしょう。見ていきましょう！</p>
+<p>この目的のための専用 <a href="https://huggingface.co/spaces/PShowdown/pokemon_agents">Hugging Face Space</a> を用意しています。</p>
+<p><iframe
+    src="https://pshowdown-pokemon-agents.hf.space"
+    frameborder="0"
+    width="1200"
+    height="600"
+></iframe>
+</p>
+<p>この Space は私たち自身の <strong>Pokémon Showdown サーバー</strong>に接続されており、あなたのエージェントが AI 駆動の壮大なバトルで他のエージェントと対戦できます。</p>
+<h3>エージェントを起動する方法</h3>
+<p>次の手順に従って、エージェントをアリーナに送り込みましょう。</p>
+<ol>
+<li>
+<p><strong>Space を複製する</strong><br />
+   Space の右上メニューにある 3 つの点をクリックし、「Duplicate this Space」を選択します。</p>
+</li>
+<li>
+<p><strong>エージェントのコードを <code>agent.py</code> に追加する</strong><br />
+   ファイルを開き、エージェントの実装を貼り付けます。この<a href="https://huggingface.co/spaces/PShowdown/pokemon_agents/blob/main/agents.py">例</a>に従うか、<a href="https://huggingface.co/spaces/PShowdown/pokemon_agents/tree/main">プロジェクト構成</a>を確認してください。</p>
+</li>
+<li>
+<p><strong>エージェントを <code>app.py</code> に登録する</strong><br />
+   エージェントの名前とロジックをドロップダウンメニューに追加します。参考に<a href="https://huggingface.co/spaces/PShowdown/pokemon_agents/blob/main/app.py">このスニペット</a>を見てください。</p>
+</li>
+<li>
+<p><strong>エージェントを選択する</strong><br />
+   追加すると、エージェントが「Select Agent」ドロップダウンメニューに表示されます。リストから選びましょう！✅</p>
+</li>
+<li>
+<p><strong>Pokémon Showdown のユーザー名を入力する</strong><br />
+   ユーザー名が、iframe の <strong>"Choose name"</strong> 入力欄に表示されるものと一致していることを確認してください。公式アカウントで接続することもできます。</p>
+</li>
+<li>
+<p><strong>「Send Battle Invitation」をクリックする</strong><br />
+   エージェントが、選択した対戦相手に招待を送信します。画面に表示されるはずです！</p>
+</li>
+<li>
+<p><strong>バトルを受けて、戦いを楽しむ！</strong><br />
+   バトル開始です！最も賢いエージェントが勝ちますように</p>
+</li>
+</ol>
+<p>自分の作品が実際に動く様子を見る準備はできましたか？AI の頂上決戦、開始です！🥊</p>
+</article>
+<nav class="page-nav"><a class="nav-link prev" href="building_your_pokemon_agent.html">← 前へ: 自分だけの Pokémon バトルエージェントを作ろう</a><a class="nav-link toc-link" href="../index.html">目次へ</a><a class="nav-link next" href="conclusion.html">次へ →: おわりに</a></nav>
+</main>
+<footer class="site-footer">
+  <p>原典: Hugging Face huggingface/agents-course（<a href="https://github.com/huggingface/agents-course">https://github.com/huggingface/agents-course</a>）</p>
+  <p>日本語版の翻訳・公開: 霞ヶ関京 / 連絡先: GitHub <a href="https://github.com/yanikasumin">@yanikasumin</a> / YouTube <a href="https://www.youtube.com/@KASUMI_MOF">@KASUMI_MOF</a></p>
+  <p class="demo-note">このサイトはデモ版です。内容は順次更新されます。</p>
+</footer>
+<script src="../../site.js"></script>
+</body>
+</html>

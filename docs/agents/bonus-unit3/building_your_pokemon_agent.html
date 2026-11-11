@@ -1,0 +1,282 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>自分だけの Pokémon バトルエージェントを作ろう | Hugging Face コース日本語版（デモ版）</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Shippori+Mincho:wght@500;700&family=Zen+Kaku+Gothic+New:wght@400;500;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../../style.css">
+<script>
+window.MathJax = { tex: { inlineMath: [['$', '$'], ['\\(', '\\)']], displayMath: [['$$', '$$'], ['\\[', '\\]']] }, options: { skipHtmlTags: ['script','noscript','style','textarea','pre','code'] } };
+</script>
+<script async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml.js"></script>
+</head>
+<body>
+<header class="site-header">
+  <div class="header-inner">
+    <a class="site-title" href="../../index.html">Hugging Face コース日本語版</a>
+    <span class="demo-badge">デモ版</span>
+  </div>
+</header>
+<main class="container">
+<p class="course-crumb"><a href="../index.html">Agents コース</a>
+<span class="badge badge-qa-wip">翻訳済み・QA進行中（未検証の部分を含みます）</span></p>
+<nav class="page-nav"><a class="nav-link prev" href="from-llm-to-agents.html">← 前へ: LLM から AI エージェントへ</a><a class="nav-link toc-link" href="../index.html">目次へ</a><a class="nav-link next" href="launching_agent_battle.html">次へ →: Pokémon バトルエージェントを起動しよう</a></nav>
+<article class="content">
+<h1>自分だけの Pokémon バトルエージェントを作ろう</h1>
+<p>ゲームにおけるエージェンティック AI の可能性と限界を探ってきたので、次は実践です。このセクションでは、コースを通じて学んだすべてを使い、<strong>ポケモン風のターン制バトルで戦う、あなた自身の AI エージェントを構築します</strong>。</p>
+<p>システムを、4 つの重要な構成要素に分けます。</p>
+<ul>
+<li>
+<p><strong>Poke-env:</strong> ルールベースまたは強化学習の Pokémon ボットを訓練するために設計された Python ライブラリ。</p>
+</li>
+<li>
+<p><strong>Pokémon Showdown:</strong> エージェントが戦う、オンラインバトルシミュレータ。</p>
+</li>
+<li>
+<p><strong>LLMAgentBase:</strong> LLM と Poke-env のバトル環境を接続するために用意した、カスタムの Python クラス。</p>
+</li>
+<li>
+<p><strong>TemplateAgent:</strong> 独自のバトルエージェントを作るために完成させる、スターターテンプレート。</p>
+</li>
+</ul>
+<p>それぞれのコンポーネントを、詳しく見ていきましょう。</p>
+<h2>🧠 Poke-env</h2>
+<p><img alt="バトルの GIF" src="https://github.com/hsahovic/poke-env/raw/master/rl-gif.gif" /></p>
+<p><a href="https://github.com/hsahovic/poke-env">Poke-env</a> は、もともと <a href="https://huggingface.co/hsahovic">Haris Sahovic</a> が強化学習ボットの訓練用に構築した Python インターフェースですが、ここではエージェンティック AI 用に転用します。<br />
+シンプルな API を通じて、エージェントが Pokémon Showdown とやり取りできるようにします。</p>
+<p>グラフィカルインターフェースとの通信に必要なすべてを備えた <code>Player</code> クラスを提供しており、エージェントはこれを継承します。</p>
+<p><strong>ドキュメント</strong>: <a href="https://poke-env.readthedocs.io/en/stable/">poke-env.readthedocs.io</a><br />
+<strong>リポジトリ</strong>: <a href="https://github.com/hsahovic/poke-env">github.com/hsahovic/poke-env</a></p>
+<h2>⚔️ Pokémon Showdown</h2>
+<p><a href="https://pokemonshowdown.com/">Pokémon Showdown</a> は、エージェントが実際の Pokémon バトルをプレイする、<a href="https://github.com/smogon/Pokemon-Showdown">オープンソース</a>のバトルシミュレータです。<br />
+バトルをリアルタイムにシミュレーションし、表示するための完全なインターフェースを提供します。このチャレンジでは、ボットは人間のプレイヤーとまったく同じように、ターンごとに技を選んで行動します。</p>
+<p>参加者全員がバトルに使うサーバーを用意しました。最高の AI バトルエージェントを作るのは誰か、競い合いましょう。</p>
+<p><strong>リポジトリ</strong>: <a href="https://github.com/smogon/Pokemon-Showdown">github.com/smogon/Pokemon-Showdown</a><br />
+<strong>ウェブサイト</strong>: <a href="https://pokemonshowdown.com/">pokemonshowdown.com</a></p>
+<h2>🔌 LLMAgentBase</h2>
+<p><code>LLMAgentBase</code> は、<strong>Poke-env</strong> の <code>Player</code> クラスを拡張した Python クラスです。<br />
+<strong>LLM</strong> と <strong>Pokémon バトルシミュレータ</strong>の橋渡し役を務め、入出力の整形とバトルのコンテキストの保持を担当します。</p>
+<p>このベースエージェントは、環境とやり取りするためのツール群（<code>STANDARD_TOOL_SCHEMA</code> で定義）を提供します。</p>
+<ul>
+<li><code>choose_move</code>: バトル中の技の選択用  </li>
+<li><code>choose_switch</code>: ポケモンの交代用  </li>
+</ul>
+<p>LLM は、対戦中の意思決定にこれらのツールを使う必要があります。</p>
+<h3>🧠 コアロジック</h3>
+<ul>
+<li><code>choose_move(battle: Battle)</code>: 毎ターン呼び出されるメインメソッドです。<code>Battle</code> オブジェクトを受け取り、LLM の出力に基づいた行動文字列を返します。</li>
+</ul>
+<h3>🔧 主要な内部メソッド</h3>
+<ul>
+<li>
+<p><code>_format_battle_state(battle)</code>: 現在のバトルの状態を文字列に変換し、LLM に送れる形にします。</p>
+</li>
+<li>
+<p><code>_find_move_by_name(battle, move_name)</code>: 名前で技を探します。<code>choose_move</code> を呼び出す LLM の応答で使われます。</p>
+</li>
+<li>
+<p><code>_find_pokemon_by_name(battle, pokemon_name)</code>: LLM の交代コマンドに基づき、交代先のポケモンを特定します。</p>
+</li>
+<li>
+<p><code>_get_llm_decision(battle_state)</code>: ベースクラスでは抽象メソッドです。次のセクションで説明するように、自分のエージェントで実装する必要があります。そこでは、LLM への問い合わせ方法と、その応答の解析方法を定義します。</p>
+</li>
+</ul>
+<p>その意思決定の仕組みを示す抜粋がこちらです。</p>
+<div class="codehilite"><pre><span></span><code><span class="n">STANDARD_TOOL_SCHEMA</span> <span class="o">=</span> <span class="p">{</span>
+    <span class="s2">"choose_move"</span><span class="p">:</span> <span class="p">{</span>
+        <span class="o">...</span>
+    <span class="p">},</span>
+    <span class="s2">"choose_switch"</span><span class="p">:</span> <span class="p">{</span>
+        <span class="o">...</span>
+    <span class="p">},</span>
+<span class="p">}</span>
+
+<span class="k">class</span><span class="w"> </span><span class="nc">LLMAgentBase</span><span class="p">(</span><span class="n">Player</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">standard_tools</span> <span class="o">=</span> <span class="n">STANDARD_TOOL_SCHEMA</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">battle_history</span> <span class="o">=</span> <span class="p">[]</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_format_battle_state</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">battle</span><span class="p">:</span> <span class="n">Battle</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+        <span class="n">active_pkmn</span> <span class="o">=</span> <span class="n">battle</span><span class="o">.</span><span class="n">active_pokemon</span>
+        <span class="n">active_pkmn_info</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">"Your active Pokemon: </span><span class="si">{</span><span class="n">active_pkmn</span><span class="o">.</span><span class="n">species</span><span class="si">}</span><span class="s2"> "</span> \
+                           <span class="sa">f</span><span class="s2">"(Type: </span><span class="si">{</span><span class="s1">'/'</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="nb">map</span><span class="p">(</span><span class="nb">str</span><span class="p">,</span><span class="w"> </span><span class="n">active_pkmn</span><span class="o">.</span><span class="n">types</span><span class="p">))</span><span class="si">}</span><span class="s2">) "</span> \
+                           <span class="sa">f</span><span class="s2">"HP: </span><span class="si">{</span><span class="n">active_pkmn</span><span class="o">.</span><span class="n">current_hp_fraction</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="mi">100</span><span class="si">:</span><span class="s2">.1f</span><span class="si">}</span><span class="s2">% "</span> \
+                           <span class="sa">f</span><span class="s2">"Status: </span><span class="si">{</span><span class="n">active_pkmn</span><span class="o">.</span><span class="n">status</span><span class="o">.</span><span class="n">name</span><span class="w"> </span><span class="k">if</span><span class="w"> </span><span class="n">active_pkmn</span><span class="o">.</span><span class="n">status</span><span class="w"> </span><span class="k">else</span><span class="w"> </span><span class="s1">'None'</span><span class="si">}</span><span class="s2"> "</span> \
+                           <span class="sa">f</span><span class="s2">"Boosts: </span><span class="si">{</span><span class="n">active_pkmn</span><span class="o">.</span><span class="n">boosts</span><span class="si">}</span><span class="s2">"</span>
+
+        <span class="n">opponent_pkmn</span> <span class="o">=</span> <span class="n">battle</span><span class="o">.</span><span class="n">opponent_active_pokemon</span>
+        <span class="n">opp_info_str</span> <span class="o">=</span> <span class="s2">"Unknown"</span>
+        <span class="k">if</span> <span class="n">opponent_pkmn</span><span class="p">:</span>
+            <span class="n">opp_info_str</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">opponent_pkmn</span><span class="o">.</span><span class="n">species</span><span class="si">}</span><span class="s2"> "</span> \
+                           <span class="sa">f</span><span class="s2">"(Type: </span><span class="si">{</span><span class="s1">'/'</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="nb">map</span><span class="p">(</span><span class="nb">str</span><span class="p">,</span><span class="w"> </span><span class="n">opponent_pkmn</span><span class="o">.</span><span class="n">types</span><span class="p">))</span><span class="si">}</span><span class="s2">) "</span> \
+                           <span class="sa">f</span><span class="s2">"HP: </span><span class="si">{</span><span class="n">opponent_pkmn</span><span class="o">.</span><span class="n">current_hp_fraction</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="mi">100</span><span class="si">:</span><span class="s2">.1f</span><span class="si">}</span><span class="s2">% "</span> \
+                           <span class="sa">f</span><span class="s2">"Status: </span><span class="si">{</span><span class="n">opponent_pkmn</span><span class="o">.</span><span class="n">status</span><span class="o">.</span><span class="n">name</span><span class="w"> </span><span class="k">if</span><span class="w"> </span><span class="n">opponent_pkmn</span><span class="o">.</span><span class="n">status</span><span class="w"> </span><span class="k">else</span><span class="w"> </span><span class="s1">'None'</span><span class="si">}</span><span class="s2"> "</span> \
+                           <span class="sa">f</span><span class="s2">"Boosts: </span><span class="si">{</span><span class="n">opponent_pkmn</span><span class="o">.</span><span class="n">boosts</span><span class="si">}</span><span class="s2">"</span>
+        <span class="n">opponent_pkmn_info</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">"Opponent's active Pokemon: </span><span class="si">{</span><span class="n">opp_info_str</span><span class="si">}</span><span class="s2">"</span>
+
+        <span class="n">available_moves_info</span> <span class="o">=</span> <span class="s2">"Available moves:</span><span class="se">\n</span><span class="s2">"</span>
+        <span class="k">if</span> <span class="n">battle</span><span class="o">.</span><span class="n">available_moves</span><span class="p">:</span>
+            <span class="n">available_moves_info</span> <span class="o">+=</span> <span class="s2">"</span><span class="se">\n</span><span class="s2">"</span><span class="o">.</span><span class="n">join</span><span class="p">(</span>
+                <span class="p">[</span><span class="sa">f</span><span class="s2">"- </span><span class="si">{</span><span class="n">move</span><span class="o">.</span><span class="n">id</span><span class="si">}</span><span class="s2"> (Type: </span><span class="si">{</span><span class="n">move</span><span class="o">.</span><span class="n">type</span><span class="si">}</span><span class="s2">, BP: </span><span class="si">{</span><span class="n">move</span><span class="o">.</span><span class="n">base_power</span><span class="si">}</span><span class="s2">, Acc: </span><span class="si">{</span><span class="n">move</span><span class="o">.</span><span class="n">accuracy</span><span class="si">}</span><span class="s2">, PP: </span><span class="si">{</span><span class="n">move</span><span class="o">.</span><span class="n">current_pp</span><span class="si">}</span><span class="s2">/</span><span class="si">{</span><span class="n">move</span><span class="o">.</span><span class="n">max_pp</span><span class="si">}</span><span class="s2">, Cat: </span><span class="si">{</span><span class="n">move</span><span class="o">.</span><span class="n">category</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="s2">)"</span>
+                 <span class="k">for</span> <span class="n">move</span> <span class="ow">in</span> <span class="n">battle</span><span class="o">.</span><span class="n">available_moves</span><span class="p">]</span>
+            <span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+             <span class="n">available_moves_info</span> <span class="o">+=</span> <span class="s2">"- None (Must switch or Struggle)"</span>
+
+        <span class="n">available_switches_info</span> <span class="o">=</span> <span class="s2">"Available switches:</span><span class="se">\n</span><span class="s2">"</span>
+        <span class="k">if</span> <span class="n">battle</span><span class="o">.</span><span class="n">available_switches</span><span class="p">:</span>
+              <span class="n">available_switches_info</span> <span class="o">+=</span> <span class="s2">"</span><span class="se">\n</span><span class="s2">"</span><span class="o">.</span><span class="n">join</span><span class="p">(</span>
+                  <span class="p">[</span><span class="sa">f</span><span class="s2">"- </span><span class="si">{</span><span class="n">pkmn</span><span class="o">.</span><span class="n">species</span><span class="si">}</span><span class="s2"> (HP: </span><span class="si">{</span><span class="n">pkmn</span><span class="o">.</span><span class="n">current_hp_fraction</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="mi">100</span><span class="si">:</span><span class="s2">.1f</span><span class="si">}</span><span class="s2">%, Status: </span><span class="si">{</span><span class="n">pkmn</span><span class="o">.</span><span class="n">status</span><span class="o">.</span><span class="n">name</span><span class="w"> </span><span class="k">if</span><span class="w"> </span><span class="n">pkmn</span><span class="o">.</span><span class="n">status</span><span class="w"> </span><span class="k">else</span><span class="w"> </span><span class="s1">'None'</span><span class="si">}</span><span class="s2">)"</span>
+                   <span class="k">for</span> <span class="n">pkmn</span> <span class="ow">in</span> <span class="n">battle</span><span class="o">.</span><span class="n">available_switches</span><span class="p">]</span>
+              <span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">available_switches_info</span> <span class="o">+=</span> <span class="s2">"- None"</span>
+
+        <span class="n">state_str</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">active_pkmn_info</span><span class="si">}</span><span class="se">\n</span><span class="s2">"</span> \
+                    <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">opponent_pkmn_info</span><span class="si">}</span><span class="se">\n\n</span><span class="s2">"</span> \
+                    <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">available_moves_info</span><span class="si">}</span><span class="se">\n\n</span><span class="s2">"</span> \
+                    <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">available_switches_info</span><span class="si">}</span><span class="se">\n\n</span><span class="s2">"</span> \
+                    <span class="sa">f</span><span class="s2">"Weather: </span><span class="si">{</span><span class="n">battle</span><span class="o">.</span><span class="n">weather</span><span class="si">}</span><span class="se">\n</span><span class="s2">"</span> \
+                    <span class="sa">f</span><span class="s2">"Terrains: </span><span class="si">{</span><span class="n">battle</span><span class="o">.</span><span class="n">fields</span><span class="si">}</span><span class="se">\n</span><span class="s2">"</span> \
+                    <span class="sa">f</span><span class="s2">"Your Side Conditions: </span><span class="si">{</span><span class="n">battle</span><span class="o">.</span><span class="n">side_conditions</span><span class="si">}</span><span class="se">\n</span><span class="s2">"</span> \
+                    <span class="sa">f</span><span class="s2">"Opponent Side Conditions: </span><span class="si">{</span><span class="n">battle</span><span class="o">.</span><span class="n">opponent_side_conditions</span><span class="si">}</span><span class="s2">"</span>
+        <span class="k">return</span> <span class="n">state_str</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_find_move_by_name</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">battle</span><span class="p">:</span> <span class="n">Battle</span><span class="p">,</span> <span class="n">move_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Move</span><span class="p">]:</span>
+        <span class="n">normalized_name</span> <span class="o">=</span> <span class="n">normalize_name</span><span class="p">(</span><span class="n">move_name</span><span class="p">)</span>
+        <span class="c1"># 完全な ID 一致を優先する</span>
+        <span class="k">for</span> <span class="n">move</span> <span class="ow">in</span> <span class="n">battle</span><span class="o">.</span><span class="n">available_moves</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">move</span><span class="o">.</span><span class="n">id</span> <span class="o">==</span> <span class="n">normalized_name</span><span class="p">:</span>
+                <span class="k">return</span> <span class="n">move</span>
+        <span class="c1"># フォールバック: 表示名で確認する（信頼性は低め）</span>
+        <span class="k">for</span> <span class="n">move</span> <span class="ow">in</span> <span class="n">battle</span><span class="o">.</span><span class="n">available_moves</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">move</span><span class="o">.</span><span class="n">name</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span> <span class="o">==</span> <span class="n">move_name</span><span class="o">.</span><span class="n">lower</span><span class="p">():</span>
+                <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Warning: Matched move by display name '</span><span class="si">{</span><span class="n">move</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="s2">' instead of ID '</span><span class="si">{</span><span class="n">move</span><span class="o">.</span><span class="n">id</span><span class="si">}</span><span class="s2">'. Input was '</span><span class="si">{</span><span class="n">move_name</span><span class="si">}</span><span class="s2">'."</span><span class="p">)</span>
+                <span class="k">return</span> <span class="n">move</span>
+        <span class="k">return</span> <span class="kc">None</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_find_pokemon_by_name</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">battle</span><span class="p">:</span> <span class="n">Battle</span><span class="p">,</span> <span class="n">pokemon_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Pokemon</span><span class="p">]:</span>
+        <span class="n">normalized_name</span> <span class="o">=</span> <span class="n">normalize_name</span><span class="p">(</span><span class="n">pokemon_name</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">pkmn</span> <span class="ow">in</span> <span class="n">battle</span><span class="o">.</span><span class="n">available_switches</span><span class="p">:</span>
+            <span class="c1"># 比較のために種族名を正規化する</span>
+            <span class="k">if</span> <span class="n">normalize_name</span><span class="p">(</span><span class="n">pkmn</span><span class="o">.</span><span class="n">species</span><span class="p">)</span> <span class="o">==</span> <span class="n">normalized_name</span><span class="p">:</span>
+                <span class="k">return</span> <span class="n">pkmn</span>
+        <span class="k">return</span> <span class="kc">None</span>
+
+    <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">choose_move</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">battle</span><span class="p">:</span> <span class="n">Battle</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+        <span class="n">battle_state_str</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_format_battle_state</span><span class="p">(</span><span class="n">battle</span><span class="p">)</span>
+        <span class="n">decision_result</span> <span class="o">=</span> <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_llm_decision</span><span class="p">(</span><span class="n">battle_state_str</span><span class="p">)</span>
+        <span class="nb">print</span><span class="p">(</span><span class="n">decision_result</span><span class="p">)</span>
+        <span class="n">decision</span> <span class="o">=</span> <span class="n">decision_result</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"decision"</span><span class="p">)</span>
+        <span class="n">error_message</span> <span class="o">=</span> <span class="n">decision_result</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"error"</span><span class="p">)</span>
+        <span class="n">action_taken</span> <span class="o">=</span> <span class="kc">False</span>
+        <span class="n">fallback_reason</span> <span class="o">=</span> <span class="s2">""</span>
+
+        <span class="k">if</span> <span class="n">decision</span><span class="p">:</span>
+            <span class="n">function_name</span> <span class="o">=</span> <span class="n">decision</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"name"</span><span class="p">)</span>
+            <span class="n">args</span> <span class="o">=</span> <span class="n">decision</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"arguments"</span><span class="p">,</span> <span class="p">{})</span>
+            <span class="k">if</span> <span class="n">function_name</span> <span class="o">==</span> <span class="s2">"choose_move"</span><span class="p">:</span>
+                <span class="n">move_name</span> <span class="o">=</span> <span class="n">args</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"move_name"</span><span class="p">)</span>
+                <span class="k">if</span> <span class="n">move_name</span><span class="p">:</span>
+                    <span class="n">chosen_move</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_find_move_by_name</span><span class="p">(</span><span class="n">battle</span><span class="p">,</span> <span class="n">move_name</span><span class="p">)</span>
+                    <span class="k">if</span> <span class="n">chosen_move</span> <span class="ow">and</span> <span class="n">chosen_move</span> <span class="ow">in</span> <span class="n">battle</span><span class="o">.</span><span class="n">available_moves</span><span class="p">:</span>
+                        <span class="n">action_taken</span> <span class="o">=</span> <span class="kc">True</span>
+                        <span class="n">chat_msg</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">"AI Decision: Using move '</span><span class="si">{</span><span class="n">chosen_move</span><span class="o">.</span><span class="n">id</span><span class="si">}</span><span class="s2">'."</span>
+                        <span class="nb">print</span><span class="p">(</span><span class="n">chat_msg</span><span class="p">)</span>
+                        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">create_order</span><span class="p">(</span><span class="n">chosen_move</span><span class="p">)</span>
+                    <span class="k">else</span><span class="p">:</span>
+                        <span class="n">fallback_reason</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">"LLM chose unavailable/invalid move '</span><span class="si">{</span><span class="n">move_name</span><span class="si">}</span><span class="s2">'."</span>
+                <span class="k">else</span><span class="p">:</span>
+                     <span class="n">fallback_reason</span> <span class="o">=</span> <span class="s2">"LLM 'choose_move' called without 'move_name'."</span>
+            <span class="k">elif</span> <span class="n">function_name</span> <span class="o">==</span> <span class="s2">"choose_switch"</span><span class="p">:</span>
+                <span class="n">pokemon_name</span> <span class="o">=</span> <span class="n">args</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"pokemon_name"</span><span class="p">)</span>
+                <span class="k">if</span> <span class="n">pokemon_name</span><span class="p">:</span>
+                    <span class="n">chosen_switch</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_find_pokemon_by_name</span><span class="p">(</span><span class="n">battle</span><span class="p">,</span> <span class="n">pokemon_name</span><span class="p">)</span>
+                    <span class="k">if</span> <span class="n">chosen_switch</span> <span class="ow">and</span> <span class="n">chosen_switch</span> <span class="ow">in</span> <span class="n">battle</span><span class="o">.</span><span class="n">available_switches</span><span class="p">:</span>
+                        <span class="n">action_taken</span> <span class="o">=</span> <span class="kc">True</span>
+                        <span class="n">chat_msg</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">"AI Decision: Switching to '</span><span class="si">{</span><span class="n">chosen_switch</span><span class="o">.</span><span class="n">species</span><span class="si">}</span><span class="s2">'."</span>
+                        <span class="nb">print</span><span class="p">(</span><span class="n">chat_msg</span><span class="p">)</span>
+                        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">create_order</span><span class="p">(</span><span class="n">chosen_switch</span><span class="p">)</span>
+                    <span class="k">else</span><span class="p">:</span>
+                        <span class="n">fallback_reason</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">"LLM chose unavailable/invalid switch '</span><span class="si">{</span><span class="n">pokemon_name</span><span class="si">}</span><span class="s2">'."</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="n">fallback_reason</span> <span class="o">=</span> <span class="s2">"LLM 'choose_switch' called without 'pokemon_name'."</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">fallback_reason</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">"LLM called unknown function '</span><span class="si">{</span><span class="n">function_name</span><span class="si">}</span><span class="s2">'."</span>
+
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">action_taken</span><span class="p">:</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="n">fallback_reason</span><span class="p">:</span>
+                 <span class="k">if</span> <span class="n">error_message</span><span class="p">:</span>
+                     <span class="n">fallback_reason</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">"API Error: </span><span class="si">{</span><span class="n">error_message</span><span class="si">}</span><span class="s2">"</span>
+                 <span class="k">elif</span> <span class="n">decision</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+                      <span class="n">fallback_reason</span> <span class="o">=</span> <span class="s2">"LLM did not provide a valid function call."</span>
+                 <span class="k">else</span><span class="p">:</span>
+                      <span class="n">fallback_reason</span> <span class="o">=</span> <span class="s2">"Unknown error processing LLM decision."</span>
+
+            <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Warning: </span><span class="si">{</span><span class="n">fallback_reason</span><span class="si">}</span><span class="s2"> Choosing random action."</span><span class="p">)</span>
+
+            <span class="k">if</span> <span class="n">battle</span><span class="o">.</span><span class="n">available_moves</span> <span class="ow">or</span> <span class="n">battle</span><span class="o">.</span><span class="n">available_switches</span><span class="p">:</span>
+                 <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">choose_random_move</span><span class="p">(</span><span class="n">battle</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                 <span class="nb">print</span><span class="p">(</span><span class="s2">"AI Fallback: No moves or switches available. Using Struggle/Default."</span><span class="p">)</span>
+                 <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">choose_default_move</span><span class="p">(</span><span class="n">battle</span><span class="p">)</span>
+
+    <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">_get_llm_decision</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">battle_state</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]:</span>
+        <span class="k">raise</span> <span class="ne">NotImplementedError</span><span class="p">(</span><span class="s2">"Subclasses must implement _get_llm_decision"</span><span class="p">)</span>
+</code></pre></div>
+
+<p><strong>完全なソースコード</strong>: <a href="https://huggingface.co/spaces/Jofthomas/twitch_streaming/blob/main/agents.py">agents.py</a></p>
+<h2>🧪 TemplateAgent</h2>
+<p>いよいよ楽しい部分です。LLMAgentBase を土台にして、リーダーボードを駆け上がる独自の戦略を持った、あなた自身のエージェントを実装しましょう。</p>
+<p>このテンプレートを出発点に、独自のロジックを構築します。手引きとして、<strong>OpenAI</strong>、<strong>Mistral</strong>、<strong>Gemini</strong> のモデルを使った <a href="https://huggingface.co/spaces/Jofthomas/twitch_streaming/blob/main/agents.py">3 つの完全な例</a>も用意しています。</p>
+<p>テンプレートの簡略版がこちらです。</p>
+<div class="codehilite"><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">TemplateAgent</span><span class="p">(</span><span class="n">LLMAgentBase</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">"""意思決定に Template AI API を使う。"""</span>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">api_key</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">model</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">"model-name"</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">model</span> <span class="o">=</span> <span class="n">model</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">template_client</span> <span class="o">=</span> <span class="n">TemplateModelProvider</span><span class="p">(</span><span class="n">api_key</span><span class="o">=...</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">template_tools</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">standard_tools</span><span class="o">.</span><span class="n">values</span><span class="p">())</span>
+
+    <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">_get_llm_decision</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">battle_state</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]:</span>
+<span class="w">        </span><span class="sd">"""状態を LLM に送り、関数呼び出しの意思決定結果を受け取る。"""</span>
+        <span class="n">system_prompt</span> <span class="o">=</span> <span class="p">(</span>
+            <span class="s2">"You are a ..."</span>
+        <span class="p">)</span>
+        <span class="n">user_prompt</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">"..."</span>
+
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">response</span> <span class="o">=</span> <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">template_client</span><span class="o">.</span><span class="n">chat</span><span class="o">.</span><span class="n">completions</span><span class="o">.</span><span class="n">create</span><span class="p">(</span>
+                <span class="n">model</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="p">,</span>
+                <span class="n">messages</span><span class="o">=</span><span class="p">[</span>
+                    <span class="p">{</span><span class="s2">"role"</span><span class="p">:</span> <span class="s2">"system"</span><span class="p">,</span> <span class="s2">"content"</span><span class="p">:</span> <span class="n">system_prompt</span><span class="p">},</span>
+                    <span class="p">{</span><span class="s2">"role"</span><span class="p">:</span> <span class="s2">"user"</span><span class="p">,</span> <span class="s2">"content"</span><span class="p">:</span> <span class="n">user_prompt</span><span class="p">},</span>
+                <span class="p">],</span>
+            <span class="p">)</span>
+            <span class="n">message</span> <span class="o">=</span> <span class="n">response</span><span class="o">.</span><span class="n">choices</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">message</span>
+
+            <span class="k">return</span> <span class="p">{</span><span class="s2">"decision"</span><span class="p">:</span> <span class="p">{</span><span class="s2">"name"</span><span class="p">:</span> <span class="n">function_name</span><span class="p">,</span> <span class="s2">"arguments"</span><span class="p">:</span> <span class="n">arguments</span><span class="p">}}</span>
+
+        <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+            <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Unexpected error during call: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+            <span class="k">return</span> <span class="p">{</span><span class="s2">"error"</span><span class="p">:</span> <span class="sa">f</span><span class="s2">"Unexpected error: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">"</span><span class="p">}</span>
+</code></pre></div>
+
+<p>このコードはそのままでは動きません。カスタムロジックのための設計図です。</p>
+<p>すべての部品がそろったので、競争力のあるエージェントを作る番です。次のセクションでは、エージェントを私たちのサーバーにデプロイし、リアルタイムで他のエージェントと対戦させる方法を紹介します。</p>
+<p>バトル開始です！🔥</p>
+</article>
+<nav class="page-nav"><a class="nav-link prev" href="from-llm-to-agents.html">← 前へ: LLM から AI エージェントへ</a><a class="nav-link toc-link" href="../index.html">目次へ</a><a class="nav-link next" href="launching_agent_battle.html">次へ →: Pokémon バトルエージェントを起動しよう</a></nav>
+</main>
+<footer class="site-footer">
+  <p>原典: Hugging Face huggingface/agents-course（<a href="https://github.com/huggingface/agents-course">https://github.com/huggingface/agents-course</a>）</p>
+  <p>日本語版の翻訳・公開: 霞ヶ関京 / 連絡先: GitHub <a href="https://github.com/yanikasumin">@yanikasumin</a> / YouTube <a href="https://www.youtube.com/@KASUMI_MOF">@KASUMI_MOF</a></p>
+  <p class="demo-note">このサイトはデモ版です。内容は順次更新されます。</p>
+</footer>
+<script src="../../site.js"></script>
+</body>
+</html>

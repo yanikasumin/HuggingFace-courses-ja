@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>思考・アクション・観察のサイクルを通して AI エージェントを理解する | Hugging Face コース日本語版（デモ版）</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Shippori+Mincho:wght@500;700&family=Zen+Kaku+Gothic+New:wght@400;500;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../../style.css">
+<script>
+window.MathJax = { tex: { inlineMath: [['$', '$'], ['\\(', '\\)']], displayMath: [['$$', '$$'], ['\\[', '\\]']] }, options: { skipHtmlTags: ['script','noscript','style','textarea','pre','code'] } };
+</script>
+<script async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml.js"></script>
+</head>
+<body>
+<header class="site-header">
+  <div class="header-inner">
+    <a class="site-title" href="../../index.html">Hugging Face コース日本語版</a>
+    <span class="demo-badge">デモ版</span>
+  </div>
+</header>
+<main class="container">
+<p class="course-crumb"><a href="../index.html">Agents コース</a>
+<span class="badge badge-qa-wip">翻訳済み・QA進行中（未検証の部分を含みます）</span></p>
+<nav class="page-nav"><a class="nav-link prev" href="quiz2.html">← 前へ: 簡単なセルフチェック（採点なし）</a><a class="nav-link toc-link" href="../index.html">目次へ</a><a class="nav-link next" href="thoughts.html">次へ →: 思考（Thought）：内部推論と ReAct アプローチ</a></nav>
+<article class="content">
+<h1>思考・アクション・観察のサイクルを通して AI エージェントを理解する</h1>
+<p><img src="https://huggingface.co/datasets/agents-course/course-images/resolve/main/en/unit1/whiteboard-check-3.jpg" alt="ユニット1の計画"/></p>
+<p>前のセクションでは次を学びました。</p>
+<ul>
+<li><strong>ツールがシステムプロンプトでエージェントにどう提供されるか</strong>。</li>
+<li><strong>AI エージェントが「推論」し、計画し、環境とやり取りできるシステムであること</strong>。</li>
+</ul>
+<p>このセクションでは、<strong>完全な AI エージェントのワークフローを探ります</strong>。これは思考・アクション・観察として定義したサイクルです。</p>
+<p>そのあと、これらの各ステップにさらに深く踏み込みます。</p>
+<h2>中核コンポーネント</h2>
+<p>エージェントの仕事は、<strong>思考（Thought）→ 行動（Act）→ 観察（Observe）</strong> の連続したサイクルです。</p>
+<p>これらのアクションを一緒に分解してみましょう。</p>
+<ol>
+<li><strong>思考（Thought）</strong>: エージェントの LLM 部分が、次のステップが何であるべきかを決定する。</li>
+<li><strong>アクション（Action）:</strong> エージェントが、関連する引数でツールを呼び出してアクションを取る。</li>
+<li><strong>観察（Observation）:</strong> モデルがツールからの応答を振り返る。</li>
+</ol>
+<h2>思考・アクション・観察のサイクル</h2>
+<p>3つのコンポーネントは、連続したループで一緒に動作します。プログラミングの例えを使うと、エージェントは <strong>while ループ</strong> を使います。ループは、エージェントの目的が果たされるまで続きます。</p>
+<p>視覚的には、次のようになります。</p>
+<p><img src="https://huggingface.co/datasets/agents-course/course-images/resolve/main/en/unit1/AgentCycle.gif" alt="思考、行動、観察のサイクル"/></p>
+<p>多くのエージェントフレームワークでは、<strong>ルールとガイドラインがシステムプロンプトに直接埋め込まれており</strong>、すべてのサイクルが定義された論理に従うことが保証されます。</p>
+<p>簡略化したバージョンでは、システムプロンプトは次のようになるでしょう。</p>
+<p><img src="https://huggingface.co/datasets/agents-course/course-images/resolve/main/en/unit1/system_prompt_cycle.png" alt="思考、行動、観察のサイクル"/></p>
+<p>ここでは、システムメッセージで次を定義したことが分かります。</p>
+<ul>
+<li><em>エージェントの振る舞い</em>。</li>
+<li>前のセクションで説明した、<em>エージェントがアクセスできるツール</em>。</li>
+<li>LLM の指示に組み込む、<em>思考・アクション・観察のサイクル</em>。</li>
+</ul>
+<p>プロセスの各ステップに深く入る前に、小さな例を通してプロセスを理解しましょう。</p>
+<h2>Alfred、天気エージェント</h2>
+<p>天気エージェントの Alfred を作成しました。</p>
+<p>ユーザーが Alfred に「ニューヨークの現在の天気は？」と尋ねます。</p>
+<p><img src="https://huggingface.co/datasets/agents-course/course-images/resolve/main/en/unit1/alfred-agent.jpg" alt="Alfred エージェント"/></p>
+<p>Alfred の仕事は、天気 API ツールを使ってこのクエリに答えることです。</p>
+<p>サイクルは次のように展開します。</p>
+<h3>思考（Thought）</h3>
+<p><strong>内部推論:</strong></p>
+<p>クエリを受け取ると、Alfred の内部対話は次のようになるかもしれません。</p>
+<p><em>「ユーザーはニューヨークの現在の天気情報を必要としています。天気データを取得するツールにアクセスできます。まず、最新の詳細を得るために天気 API を呼び出す必要があります。」</em></p>
+<p>このステップは、エージェントが問題をステップに分解する様子を示しています。まず、必要なデータを集めることです。</p>
+<p><img src="https://huggingface.co/datasets/agents-course/course-images/resolve/main/en/unit1/alfred-agent-1.jpg" alt="Alfred エージェント"/></p>
+<h3>アクション（Action）</h3>
+<p><strong>ツールの使用:</strong></p>
+<p>推論と、Alfred が <code>get_weather</code> ツールを知っているという事実に基づいて、Alfred は天気 API ツールを呼び出す JSON 形式のコマンドを準備します。たとえば、最初のアクションは次のようになるでしょう。</p>
+<p>Thought: I need to check the current weather for New York.</p>
+<p><code>{
+      "action": "get_weather",
+      "action_input": {
+        "location": "New York"
+      }
+    }</code></p>
+<p>ここで、アクションは呼び出すツール（例: get_weather）と渡すパラメータ（"location": "New York"）を明確に指定しています。</p>
+<p><img src="https://huggingface.co/datasets/agents-course/course-images/resolve/main/en/unit1/alfred-agent-2.jpg" alt="Alfred エージェント"/></p>
+<h3>観察（Observation）</h3>
+<p><strong>環境からのフィードバック:</strong></p>
+<p>ツール呼び出しのあと、Alfred は観察を受け取ります。これは API からの生の天気データかもしれません。たとえば次のようなものです。</p>
+<p><em>"Current weather in New York: partly cloudy, 15°C, 60% humidity."</em>（ニューヨークの現在の天気: ところどころ曇り、15°C、湿度60%）</p>
+<p><img src="https://huggingface.co/datasets/agents-course/course-images/resolve/main/en/unit1/alfred-agent-3.jpg" alt="Alfred エージェント"/></p>
+<p>この観察は、追加のコンテキストとしてプロンプトに追加されます。現実世界のフィードバックとして機能し、アクションが成功したかどうかを確認し、必要な詳細を提供します。</p>
+<h3>更新された思考</h3>
+<p><strong>振り返り:</strong></p>
+<p>観察を手にすると、Alfred は内部推論を更新します。</p>
+<p><em>「ニューヨークの天気データが得られたので、ユーザー向けの回答をまとめられます。」</em></p>
+<p><img src="https://huggingface.co/datasets/agents-course/course-images/resolve/main/en/unit1/alfred-agent-4.jpg" alt="Alfred エージェント"/></p>
+<h3>最終アクション</h3>
+<p>Alfred は、私たちが指示したとおりの形式で最終応答を生成します。</p>
+<p>Thought: I have the weather data now. The current weather in New York is partly cloudy with a temperature of 15°C and 60% humidity."</p>
+<p>Final answer : The current weather in New York is partly cloudy with a temperature of 15°C and 60% humidity.</p>
+<p>この最終アクションは、回答をユーザーに送り返し、ループを閉じます。</p>
+<p><img src="https://huggingface.co/datasets/agents-course/course-images/resolve/main/en/unit1/alfred-agent-5.jpg" alt="Alfred エージェント"/></p>
+<p>この例で分かることは次のとおりです。</p>
+<ul>
+<li><strong>エージェントは目的が果たされるまでループを繰り返します:</strong></li>
+</ul>
+<p><strong>Alfred のプロセスは循環的です</strong>。思考から始まり、ツールを呼び出して行動し、最後に結果を観察します。観察がエラーや不完全なデータを示していた場合、Alfred はアプローチを修正するためにサイクルに再び入ることができました。</p>
+<ul>
+<li><strong>ツールの統合:</strong></li>
+</ul>
+<p>ツール（天気 API など）を呼び出す能力により、Alfred は <strong>静的な知識を超えてリアルタイムデータを取得でき</strong>、これは多くの AI エージェントにとって不可欠な側面です。</p>
+<ul>
+<li><strong>動的な適応:</strong></li>
+</ul>
+<p>各サイクルにより、エージェントは新しい情報（観察）を推論（思考）に取り込むことができ、最終回答が十分な情報に基づいて正確であることが保証されます。</p>
+<p>この例は、<em>ReAct サイクル</em>（次のセクションで展開する概念）の背後にある中核概念を示しています。<strong>思考、アクション、観察の相互作用により、AI エージェントは複雑なタスクを反復的に解決できます</strong>。</p>
+<p>これらの原則を理解し応用することで、タスクについて推論するだけでなく、<strong>外部ツールを効果的に利用してタスクを完了する</strong> エージェントを設計できます。その間ずっと、環境からのフィードバックに基づいて出力を継続的に改善し続けます。</p>
+<hr />
+<p>では次に、プロセスの個別のステップとして、思考、アクション、観察にさらに深く踏み込みましょう。</p>
+</article>
+<nav class="page-nav"><a class="nav-link prev" href="quiz2.html">← 前へ: 簡単なセルフチェック（採点なし）</a><a class="nav-link toc-link" href="../index.html">目次へ</a><a class="nav-link next" href="thoughts.html">次へ →: 思考（Thought）：内部推論と ReAct アプローチ</a></nav>
+</main>
+<footer class="site-footer">
+  <p>原典: Hugging Face huggingface/agents-course（<a href="https://github.com/huggingface/agents-course">https://github.com/huggingface/agents-course</a>）</p>
+  <p>日本語版の翻訳・公開: 霞ヶ関京 / 連絡先: GitHub <a href="https://github.com/yanikasumin">@yanikasumin</a> / YouTube <a href="https://www.youtube.com/@KASUMI_MOF">@KASUMI_MOF</a></p>
+  <p class="demo-note">このサイトはデモ版です。内容は順次更新されます。</p>
+</footer>
+<script src="../../site.js"></script>
+</body>
+</html>

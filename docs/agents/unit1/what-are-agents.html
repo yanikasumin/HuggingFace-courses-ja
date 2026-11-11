@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>エージェントとは何か？ | Hugging Face コース日本語版（デモ版）</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Shippori+Mincho:wght@500;700&family=Zen+Kaku+Gothic+New:wght@400;500;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../../style.css">
+<script>
+window.MathJax = { tex: { inlineMath: [['$', '$'], ['\\(', '\\)']], displayMath: [['$$', '$$'], ['\\[', '\\]']] }, options: { skipHtmlTags: ['script','noscript','style','textarea','pre','code'] } };
+</script>
+<script async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml.js"></script>
+</head>
+<body>
+<header class="site-header">
+  <div class="header-inner">
+    <a class="site-title" href="../../index.html">Hugging Face コース日本語版</a>
+    <span class="demo-badge">デモ版</span>
+  </div>
+</header>
+<main class="container">
+<p class="course-crumb"><a href="../index.html">Agents コース</a>
+<span class="badge badge-qa-wip">翻訳済み・QA進行中（未検証の部分を含みます）</span></p>
+<nav class="page-nav"><a class="nav-link prev" href="introduction.html">← 前へ: エージェント入門</a><a class="nav-link toc-link" href="../index.html">目次へ</a><a class="nav-link next" href="quiz1.html">次へ →: Quick Quiz 1</a></nav>
+<article class="content">
+<h1>エージェントとは何か？</h1>
+<p><img src="https://huggingface.co/datasets/agents-course/course-images/resolve/main/en/unit1/whiteboard-no-check.jpg" alt="ユニット1の計画"/></p>
+<p>このセクションを終えるころには、エージェントという概念と、その AI におけるさまざまな応用に慣れているはずです。</p>
+<p>エージェントとは何かを説明するために、まず例え話から始めましょう。</p>
+<h2>全体像：エージェント Alfred</h2>
+<p>Alfred を紹介します。Alfred は <strong>エージェント</strong> です。</p>
+<p><img src="https://huggingface.co/datasets/agents-course/course-images/resolve/main/en/unit1/this-is-alfred.jpg" alt="これが Alfred です"/></p>
+<p>Alfred が <strong>命令を受ける</strong> ところを想像してください。たとえば「Alfred、コーヒーをお願い」といった命令です。</p>
+<p><img src="https://huggingface.co/datasets/agents-course/course-images/resolve/main/en/unit1/coffee-please.jpg" alt="コーヒーをお願いします"/></p>
+<p>Alfred は <strong>自然言語を理解できる</strong> ので、私たちの依頼をすぐに把握します。</p>
+<p>注文を果たす前に、Alfred は <strong>推論と計画</strong> を行い、必要な手順とツールを考えます。</p>
+<ol>
+<li>キッチンへ行く  </li>
+<li>コーヒーマシンを使う  </li>
+<li>コーヒーを淹れる  </li>
+<li>コーヒーを持って戻る</li>
+</ol>
+<p><img src="https://huggingface.co/datasets/agents-course/course-images/resolve/main/en/unit1/reason-and-plan.jpg" alt="推論と計画"/></p>
+<p>計画ができたら、<strong>行動しなければなりません</strong>。計画を実行するために、<strong>自分が知っているツールの一覧からツールを使うことができます</strong>。</p>
+<p>この場合、コーヒーを作るためにコーヒーマシンを使います。コーヒーマシンを起動してコーヒーを淹れます。</p>
+<p><img src="https://huggingface.co/datasets/agents-course/course-images/resolve/main/en/unit1/make-coffee.jpg" alt="コーヒーを作る"/></p>
+<p>最後に、Alfred は淹れたてのコーヒーを私たちのところへ持ってきます。</p>
+<p><img src="https://huggingface.co/datasets/agents-course/course-images/resolve/main/en/unit1/bring-coffee.jpg" alt="コーヒーを持ってくる"/></p>
+<p>これがエージェントです。<strong>推論し、計画し、環境とやり取りできる AI モデル</strong> です。</p>
+<p>エージェントと呼ばれるのは、<em>agency</em>（主体性）、つまり環境とやり取りする能力を持っているからです。</p>
+<p><img src="https://huggingface.co/datasets/agents-course/course-images/resolve/main/en/unit1/process.jpg" alt="エージェントのプロセス"/></p>
+<h2>もう少し形式的に</h2>
+<p>全体像をつかんだところで、より正確な定義を見てみましょう。</p>
+<blockquote>
+<p>エージェントとは、ユーザーが定義した目的を達成するために、AI モデルを活用して環境とやり取りするシステムです。推論、計画、アクションの実行（多くの場合、外部ツール経由）を組み合わせてタスクを果たします。</p>
+</blockquote>
+<p>エージェントは主に2つの部分から成ると考えてください。</p>
+<ol>
+<li><strong>頭脳（AI モデル）</strong></li>
+</ol>
+<p>思考がすべて行われる場所です。AI モデルが <strong>推論と計画を担います</strong>。
+状況に基づいて <strong>どのアクションを取るかを決定します</strong>。</p>
+<ol start="2">
+<li><strong>身体（能力とツール）</strong></li>
+</ol>
+<p>エージェントが実行できることのすべてを表す部分です。</p>
+<p><strong>可能なアクションの範囲</strong> は、エージェントが <strong>何を備えているか</strong> に依存します。たとえば、人間には翼がないため「飛ぶ」という <strong>アクション</strong> は実行できませんが、「歩く」「走る」「跳ぶ」「掴む」といった <strong>アクション</strong> は実行できます。</p>
+<h3>「主体性（Agency）」のスペクトラム</h3>
+<p>この定義に従うと、エージェントは主体性が高まる連続的なスペクトラム上に存在します。</p>
+<table>
+<thead>
+<tr>
+<th>主体性レベル</th>
+<th>説明</th>
+<th>呼び名</th>
+<th>パターンの例</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>☆☆☆</td>
+<td>エージェントの出力がプログラムの流れに影響しない</td>
+<td>Simple processor</td>
+<td><code>process_llm_output(llm_response)</code></td>
+</tr>
+<tr>
+<td>★☆☆</td>
+<td>エージェントの出力が基本的な制御フローを決める</td>
+<td>Router</td>
+<td><code>if llm_decision(): path_a() else: path_b()</code></td>
+</tr>
+<tr>
+<td>★★☆</td>
+<td>エージェントの出力が関数の実行を決める</td>
+<td>Tool caller</td>
+<td><code>run_function(llm_chosen_tool, llm_chosen_args)</code></td>
+</tr>
+<tr>
+<td>★★★</td>
+<td>エージェントの出力が反復とプログラムの継続を制御する</td>
+<td>Multi-step Agent</td>
+<td><code>while llm_should_continue(): execute_next_step()</code></td>
+</tr>
+<tr>
+<td>★★★</td>
+<td>あるエージェンティックなワークフローが別のワークフローを開始できる</td>
+<td>Multi-Agent</td>
+<td><code>if llm_trigger(): execute_agent()</code></td>
+</tr>
+</tbody>
+</table>
+<p><a href="https://huggingface.co/docs/smolagents/conceptual_guides/intro_agents">smolagents の概念ガイド</a> の表より。</p>
+<h2>エージェントにはどんな AI モデルを使うのか？</h2>
+<p>エージェントで最もよく使われる AI モデルは LLM（大規模言語モデル）です。<strong>テキスト</strong> を入力として受け取り、<strong>テキスト</strong> を出力します。</p>
+<p>よく知られた例として、<strong>OpenAI</strong> の <strong>GPT-4</strong>、<strong>Meta</strong> の <strong>Llama</strong>、<strong>Google</strong> の <strong>Gemini</strong> などがあります。これらのモデルは膨大な量のテキストで訓練されており、高い汎化能力を持ちます。LLM については <a href="what-are-llms.html">次のセクション</a> で詳しく学びます。</p>
+<div class="callout callout-tip">
+<p class="callout-title">💡 ヒント</p>
+<p>エージェントの中核モデルとして、他の入力を受け付けるモデルを使うこともできます。たとえば Vision Language Model（VLM）は、LLM のようなものですが、画像も入力として理解できます。今は LLM に集中し、他の選択肢は後で議論します。</p>
+</div>
+<h2>AI はどうやって環境に働きかけるのか？</h2>
+<p>LLM は素晴らしいモデルですが、<strong>テキストしか生成できません</strong>。</p>
+<p>しかし、HuggingChat や ChatGPT のような有名なチャットアプリに画像の生成を頼むと、実際に生成できます。これはどういうことでしょうか？</p>
+<p>答えは、HuggingChat や ChatGPT などの開発者が、LLM が画像を作成するために使える追加機能（<strong>ツール</strong> と呼びます）を実装したからです。</p>
+<figure>
+<img src="https://huggingface.co/datasets/agents-course/course-images/resolve/main/en/unit1/eiffel_brocolis.jpg" alt="エッフェル・ブロッコリー"/>
+<figcaption>モデルは画像生成ツールを使ってこの画像を生成しました。
+</figcaption>
+</figure>
+
+<p>ツールについては <a href="tools.html">ツール</a> のセクションで詳しく学びます。</p>
+<h2>エージェントはどんなタスクを実行できるのか？</h2>
+<p>エージェントは、<strong>ツール</strong> を通じて <strong>アクション</strong> を完了することで、私たちが実装したあらゆるタスクを実行できます。</p>
+<p>たとえば、コンピュータ上でパーソナルアシスタント（Siri のようなもの）として動作するエージェントを書き、「マネージャーにメールを送って、今日の会議を延期してもらえるよう頼んで」と依頼したとします。このとき、メールを送信するコードを渡すことができます。これが、メールを送る必要があるときにエージェントが使える新しいツールになります。Python で書くと次のようになります。</p>
+<div class="codehilite"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">send_message_to</span><span class="p">(</span><span class="n">recipient</span><span class="p">,</span> <span class="n">message</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">"""宛先にメールメッセージを送るために使う"""</span>
+    <span class="o">...</span>
+</code></pre></div>
+
+<p>後で見るように、LLM は必要に応じてツールを実行するコードを生成し、望んだタスクを果たします。</p>
+<div class="codehilite"><pre><span></span><code><span class="n">send_message_to</span><span class="p">(</span><span class="s2">"Manager"</span><span class="p">,</span> <span class="s2">"Can we postpone today's meeting?"</span><span class="p">)</span>
+</code></pre></div>
+
+<p><strong>ツールの設計は非常に重要で、エージェントの品質に大きな影響を与えます</strong>。タスクによっては非常に特殊なツールを仕立てる必要がありますが、"web_search" のような汎用ツールで解決できるものもあります。</p>
+<blockquote>
+<p>なお、<strong>アクションとツールは同じものではありません</strong>。たとえば、1つのアクションを完了するために複数のツールを使う場合があります。</p>
+</blockquote>
+<p>エージェントが環境とやり取りできるようにすることで、<strong>企業や個人の実生活での利用が可能になります</strong>。</p>
+<h3>例1: パーソナル仮想アシスタント</h3>
+<p>Siri、Alexa、Google アシスタントのような仮想アシスタントは、ユーザーのデジタル環境を使ってユーザーに代わってやり取りするとき、エージェントとして動作します。</p>
+<p>ユーザーのクエリを受け取り、コンテキストを分析し、データベースから情報を取得して、応答を提供したりアクションを開始したりします（リマインダーの設定、メッセージの送信、スマートデバイスの制御など）。</p>
+<h3>例2: カスタマーサービスチャットボット</h3>
+<p>多くの企業は、自然言語で顧客とやり取りするエージェントとしてチャットボットを導入しています。</p>
+<p>これらのエージェントは、質問に答えたり、トラブルシューティングの手順にユーザーを案内したり、内部データベースに課題を登録したり、取引を完了させたりできます。</p>
+<p>あらかじめ定義された目的には、ユーザー満足度の向上、待ち時間の短縮、売上コンバージョン率の向上などが含まれます。顧客と直接やり取りし、対話から学び、応答を時間とともに適応させることで、エージェントの核となる原則を実践しています。</p>
+<h3>例3: ビデオゲームの AI ノンプレイヤーキャラクター</h3>
+<p>LLM を活用した AI エージェントは、ノンプレイヤーキャラクター（NPC）をより動的で予測不能なものにできます。</p>
+<p>硬直したビヘイビアツリーに従う代わりに、<strong>文脈に応じて応答し、プレイヤーとのやり取りに適応し</strong>、よりニュアンスのある対話を生成できます。この柔軟性により、プレイヤーの行動とともに進化する、より生き生きとした魅力的なキャラクターを作り出せます。</p>
+<hr />
+<p>まとめると、エージェントとは、中核の推論エンジンとして AI モデル（通常は LLM）を使うシステムで、次のことを行います。</p>
+<ul>
+<li><strong>自然言語を理解する:</strong> 人間の指示を意味のある形で解釈し、応答する。</li>
+<li><strong>推論し計画する:</strong> 情報を分析し、意思決定を行い、問題を解決する戦略を立てる。</li>
+<li><strong>環境とやり取りする:</strong> 情報を集め、アクションを取り、そのアクションの結果を観察する。</li>
+</ul>
+<p>エージェントとは何かをしっかりつかめたので、短い採点なしクイズで理解を固めましょう。そのあとは、エージェントの「頭脳」である <a href="what-are-llms.html">LLM</a> に踏み込みます。</p>
+</article>
+<nav class="page-nav"><a class="nav-link prev" href="introduction.html">← 前へ: エージェント入門</a><a class="nav-link toc-link" href="../index.html">目次へ</a><a class="nav-link next" href="quiz1.html">次へ →: Quick Quiz 1</a></nav>
+</main>
+<footer class="site-footer">
+  <p>原典: Hugging Face huggingface/agents-course（<a href="https://github.com/huggingface/agents-course">https://github.com/huggingface/agents-course</a>）</p>
+  <p>日本語版の翻訳・公開: 霞ヶ関京 / 連絡先: GitHub <a href="https://github.com/yanikasumin">@yanikasumin</a> / YouTube <a href="https://www.youtube.com/@KASUMI_MOF">@KASUMI_MOF</a></p>
+  <p class="demo-note">このサイトはデモ版です。内容は順次更新されます。</p>
+</footer>
+<script src="../../site.js"></script>
+</body>
+</html>

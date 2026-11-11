@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Agentic フレームワーク入門 | Hugging Face コース日本語版（デモ版）</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Shippori+Mincho:wght@500;700&family=Zen+Kaku+Gothic+New:wght@400;500;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../../style.css">
+<script>
+window.MathJax = { tex: { inlineMath: [['$', '$'], ['\\(', '\\)']], displayMath: [['$$', '$$'], ['\\[', '\\]']] }, options: { skipHtmlTags: ['script','noscript','style','textarea','pre','code'] } };
+</script>
+<script async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml.js"></script>
+</head>
+<body>
+<header class="site-header">
+  <div class="header-inner">
+    <a class="site-title" href="../../index.html">Hugging Face コース日本語版</a>
+    <span class="demo-badge">デモ版</span>
+  </div>
+</header>
+<main class="container">
+<p class="course-crumb"><a href="../index.html">Agents コース</a>
+<span class="badge badge-qa-wip">翻訳済み・QA進行中（未検証の部分を含みます）</span></p>
+<nav class="page-nav"><a class="nav-link prev" href="../unit1/conclusion.html">← 前へ: まとめ</a><a class="nav-link toc-link" href="../index.html">目次へ</a><a class="nav-link next" href="smolagents/introduction.html">次へ →: `smolagents` 入門</a></nav>
+<article class="content">
+<h1>Agentic フレームワーク入門</h1>
+<p><img src="https://huggingface.co/datasets/agents-course/course-images/resolve/main/en/unit2/thumbnail.jpg" alt="サムネイル"/></p>
+<p>2つ目の Unit へようこそ。この Unit では、強力な agentic アプリケーションを構築するために使える、<strong>さまざまなエージェントフレームワーク</strong>を学びます。</p>
+<p>学ぶ内容は次のとおりです。</p>
+<ul>
+<li>Unit 2.1: <a href="https://huggingface.co/docs/smolagents/en/index">smolagents</a>  </li>
+<li>Unit 2.2: <a href="https://www.llamaindex.ai/">LlamaIndex</a></li>
+<li>Unit 2.3: <a href="https://www.langchain.com/langgraph">LangGraph</a></li>
+</ul>
+<p>さっそく始めましょう！ 🕵</p>
+<h2>エージェントフレームワークを使うべきとき</h2>
+<p>LLM を中心にしたアプリケーションを作るとき、エージェントフレームワークが<strong>常に必要とは限りません</strong>。フレームワークは、特定のタスクを効率よく解くためのワークフローの柔軟性を提供してくれますが、必須ではない場合もあります。</p>
+<p>ユーザーのリクエストに応えるには、<strong>事前に決められたワークフローで十分</strong>なこともあり、エージェントフレームワークが本当に必要とは限りません。プロンプトを連鎖させるようなシンプルなエージェントであれば、素のコードで十分な場合もあります。その利点は、抽象化に頼らず、<strong>開発者がシステムを完全に制御し、理解できる</strong>ことです。</p>
+<p>一方で、LLM に関数を呼び出させたり、複数のエージェントを使ったりしてワークフローが複雑になってくると、こうした抽象化が役に立ち始めます。</p>
+<p>これらを踏まえると、必要になる機能が見えてきます。</p>
+<ul>
+<li>システムを動かす <em>LLM エンジン</em></li>
+<li>エージェントがアクセスできる<em>ツールのリスト</em>  </li>
+<li>LLM の出力からツール呼び出しを抽出する<em>パーサー</em></li>
+<li>パーサーと同期した<em>システムプロンプト</em></li>
+<li><em>メモリシステム</em></li>
+<li>LLM のミスを制御するための<em>エラーログとリトライの仕組み</em></li>
+</ul>
+<p>これらのテーマが、<code>smolagents</code>、<code>LlamaIndex</code>、<code>LangGraph</code> などの各種フレームワークでどう解決されているかを見ていきます。</p>
+<h2>Agentic フレームワークの Unit 一覧</h2>
+<table>
+<thead>
+<tr>
+<th>フレームワーク</th>
+<th>説明</th>
+<th>Unit の著者</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><a href="smolagents/introduction.html">smolagents</a></td>
+<td>Hugging Face が開発したエージェントフレームワーク。</td>
+<td>Sergio Paniego - <a href="https://huggingface.co/sergiopaniego">HF</a> - <a href="https://x.com/sergiopaniego">X</a> - <a href="https://www.linkedin.com/in/sergio-paniego-blanco">Linkedin</a></td>
+</tr>
+<tr>
+<td><a href="llama-index/introduction.html">Llama-Index</a></td>
+<td>コンテキストで拡張された AI エージェントを本番環境に届けるためのエンドツーエンドのツール群</td>
+<td>David Berenstein - <a href="https://huggingface.co/davidberenstein1957">HF</a> - <a href="https://x.com/davidberenstei">X</a> - <a href="https://www.linkedin.com/in/davidberenstein">Linkedin</a></td>
+</tr>
+<tr>
+<td><a href="langgraph/introduction.html">LangGraph</a></td>
+<td>エージェントのステートフルなオーケストレーションを可能にするエージェント</td>
+<td>Joffrey THOMAS - <a href="https://huggingface.co/Jofthomas">HF</a> - <a href="https://x.com/Jthmas404">X</a> - <a href="https://www.linkedin.com/in/joffrey-thomas">Linkedin</a></td>
+</tr>
+</tbody>
+</table>
+</article>
+<nav class="page-nav"><a class="nav-link prev" href="../unit1/conclusion.html">← 前へ: まとめ</a><a class="nav-link toc-link" href="../index.html">目次へ</a><a class="nav-link next" href="smolagents/introduction.html">次へ →: `smolagents` 入門</a></nav>
+</main>
+<footer class="site-footer">
+  <p>原典: Hugging Face huggingface/agents-course（<a href="https://github.com/huggingface/agents-course">https://github.com/huggingface/agents-course</a>）</p>
+  <p>日本語版の翻訳・公開: 霞ヶ関京 / 連絡先: GitHub <a href="https://github.com/yanikasumin">@yanikasumin</a> / YouTube <a href="https://www.youtube.com/@KASUMI_MOF">@KASUMI_MOF</a></p>
+  <p class="demo-note">このサイトはデモ版です。内容は順次更新されます。</p>
+</footer>
+<script src="../../site.js"></script>
+</body>
+</html>

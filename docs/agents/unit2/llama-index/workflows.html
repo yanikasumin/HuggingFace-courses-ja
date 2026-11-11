@@ -1,0 +1,285 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>LlamaIndex でエージェントワークフローを作成する | Hugging Face コース日本語版（デモ版）</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Shippori+Mincho:wght@500;700&family=Zen+Kaku+Gothic+New:wght@400;500;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../../../style.css">
+<script>
+window.MathJax = { tex: { inlineMath: [['$', '$'], ['\\(', '\\)']], displayMath: [['$$', '$$'], ['\\[', '\\]']] }, options: { skipHtmlTags: ['script','noscript','style','textarea','pre','code'] } };
+</script>
+<script async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml.js"></script>
+</head>
+<body>
+<header class="site-header">
+  <div class="header-inner">
+    <a class="site-title" href="../../../index.html">Hugging Face コース日本語版</a>
+    <span class="demo-badge">デモ版</span>
+  </div>
+</header>
+<main class="container">
+<p class="course-crumb"><a href="../../index.html">Agents コース</a>
+<span class="badge badge-qa-wip">翻訳済み・QA進行中（未検証の部分を含みます）</span></p>
+<nav class="page-nav"><a class="nav-link prev" href="agents.html">← 前へ: LlamaIndex でエージェントを使う</a><a class="nav-link toc-link" href="../../index.html">目次へ</a><a class="nav-link next" href="quiz2.html">次へ →: 簡単なセルフチェック（採点なし）</a></nav>
+<article class="content">
+<h1>LlamaIndex でエージェントワークフローを作成する</h1>
+<p>LlamaIndex のワークフローを使うと、コードを順序立てられた管理しやすいステップへ構造化できます。</p>
+<p>ワークフローは、<code>Events</code> によってトリガーされる <code>Steps</code> を定義することで作成します。各ステップは、さらに次のステップをトリガーする <code>Events</code> を自ら発行します。
+RAG タスク向けの LlamaIndex ワークフローを示す Alfred の例を見てみましょう。</p>
+<p><img alt="ワークフローの模式図" src="https://huggingface.co/datasets/agents-course/course-images/resolve/main/en/unit2/llama-index/workflows.png" /></p>
+<p><strong>ワークフローには、次のような重要な利点があります。</strong></p>
+<ul>
+<li>コードを独立したステップへ明確に整理できる</li>
+<li>柔軟な制御フローを実現するイベント駆動アーキテクチャ</li>
+<li>ステップ間で型安全に通信できる</li>
+<li>状態管理が組み込まれている</li>
+<li>シンプルなエージェント連携から複雑なエージェント連携まで対応できる</li>
+</ul>
+<p>お察しのとおり、<strong>ワークフローは、エージェントの自律性を活かしながら、ワークフロー全体の制御も維持できる、絶妙なバランスを実現します。</strong></p>
+<p>では、自分でワークフローを作成する方法を学びましょう。</p>
+<h2>ワークフローを作成する</h2>
+<div class="callout callout-tip">
+<p class="callout-title">💡 ヒント</p>
+<p>コードは、Google Colab で実行できる <a href="https://huggingface.co/agents-course/notebooks/blob/main/unit2/llama-index/workflows.ipynb" target="_blank">このノートブック</a> で確認できます。</p>
+</div>
+<h3>基本的なワークフローの作成</h3>
+<details>
+<summary>Workflow パッケージをインストールする</summary>
+<a href="llama-hub.html">LlamaHub に関するセクション</a> で紹介したように、Workflow パッケージは次のコマンドでインストールできます。
+
+
+<div class="codehilite"><pre><span></span><code><span class="n">pip</span> <span class="n">install</span> <span class="n">llama</span><span class="o">-</span><span class="n">index</span><span class="o">-</span><span class="n">utils</span><span class="o">-</span><span class="n">workflow</span>
+</code></pre></div>
+
+
+</details>
+
+<p><code>Workflow</code> を継承したクラスを定義し、関数に <code>@step</code> デコレータを付けることで、1 ステップのワークフローを作成できます。
+あわせて、ワークフローの開始と終了を示すための特殊なイベントである <code>StartEvent</code> と <code>StopEvent</code> も必要です。</p>
+<div class="codehilite"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">llama_index.core.workflow</span><span class="w"> </span><span class="kn">import</span> <span class="n">StartEvent</span><span class="p">,</span> <span class="n">StopEvent</span><span class="p">,</span> <span class="n">Workflow</span><span class="p">,</span> <span class="n">step</span>
+
+<span class="k">class</span><span class="w"> </span><span class="nc">MyWorkflow</span><span class="p">(</span><span class="n">Workflow</span><span class="p">):</span>
+    <span class="nd">@step</span>
+    <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">my_step</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">ev</span><span class="p">:</span> <span class="n">StartEvent</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">StopEvent</span><span class="p">:</span>
+        <span class="c1"># ここで何らかの処理を行う</span>
+        <span class="k">return</span> <span class="n">StopEvent</span><span class="p">(</span><span class="n">result</span><span class="o">=</span><span class="s2">"Hello, world!"</span><span class="p">)</span>
+
+
+<span class="n">w</span> <span class="o">=</span> <span class="n">MyWorkflow</span><span class="p">(</span><span class="n">timeout</span><span class="o">=</span><span class="mi">10</span><span class="p">,</span> <span class="n">verbose</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+<span class="n">result</span> <span class="o">=</span> <span class="k">await</span> <span class="n">w</span><span class="o">.</span><span class="n">run</span><span class="p">()</span>
+</code></pre></div>
+
+<p>ご覧のとおり、<code>w.run()</code> を呼び出すことでワークフローを実行できます。</p>
+<h3>複数のステップをつなげる</h3>
+<p>複数のステップをつなげるには、<strong>ステップ間でデータを運ぶカスタムイベントを作成します。</strong>
+そのためには、ステップ間で受け渡される <code>Event</code> を追加し、最初のステップの出力を 2 番目のステップへ渡せるようにします。</p>
+<div class="codehilite"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">llama_index.core.workflow</span><span class="w"> </span><span class="kn">import</span> <span class="n">Event</span>
+
+<span class="k">class</span><span class="w"> </span><span class="nc">ProcessingEvent</span><span class="p">(</span><span class="n">Event</span><span class="p">):</span>
+    <span class="n">intermediate_result</span><span class="p">:</span> <span class="nb">str</span>
+
+<span class="k">class</span><span class="w"> </span><span class="nc">MultiStepWorkflow</span><span class="p">(</span><span class="n">Workflow</span><span class="p">):</span>
+    <span class="nd">@step</span>
+    <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">step_one</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">ev</span><span class="p">:</span> <span class="n">StartEvent</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">ProcessingEvent</span><span class="p">:</span>
+        <span class="c1"># 初期データを処理する</span>
+        <span class="k">return</span> <span class="n">ProcessingEvent</span><span class="p">(</span><span class="n">intermediate_result</span><span class="o">=</span><span class="s2">"Step 1 complete"</span><span class="p">)</span>
+
+    <span class="nd">@step</span>
+    <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">step_two</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">ev</span><span class="p">:</span> <span class="n">ProcessingEvent</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">StopEvent</span><span class="p">:</span>
+        <span class="c1"># 中間結果を使う</span>
+        <span class="n">final_result</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">"Finished processing: </span><span class="si">{</span><span class="n">ev</span><span class="o">.</span><span class="n">intermediate_result</span><span class="si">}</span><span class="s2">"</span>
+        <span class="k">return</span> <span class="n">StopEvent</span><span class="p">(</span><span class="n">result</span><span class="o">=</span><span class="n">final_result</span><span class="p">)</span>
+
+<span class="n">w</span> <span class="o">=</span> <span class="n">MultiStepWorkflow</span><span class="p">(</span><span class="n">timeout</span><span class="o">=</span><span class="mi">10</span><span class="p">,</span> <span class="n">verbose</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+<span class="n">result</span> <span class="o">=</span> <span class="k">await</span> <span class="n">w</span><span class="o">.</span><span class="n">run</span><span class="p">()</span>
+<span class="n">result</span>
+</code></pre></div>
+
+<p>ここでは型ヒントが重要です。ワークフローが正しく実行されることを保証する役割を果たします。もう少し複雑な例にしてみましょう。</p>
+<h3>ループと分岐</h3>
+<p>型ヒントはワークフローの最も強力な部分です。これにより分岐、ループ、合流を作成でき、より複雑なワークフローを実現できます。</p>
+<p>和集合演算子 <code>|</code> を使って<strong>ループを作成する</strong>例を示します。
+以下の例では、<code>LoopEvent</code> がステップへの入力として受け取られ、出力として返すこともできる様子が分かります。</p>
+<div class="codehilite"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">llama_index.core.workflow</span><span class="w"> </span><span class="kn">import</span> <span class="n">Event</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">random</span>
+
+
+<span class="k">class</span><span class="w"> </span><span class="nc">ProcessingEvent</span><span class="p">(</span><span class="n">Event</span><span class="p">):</span>
+    <span class="n">intermediate_result</span><span class="p">:</span> <span class="nb">str</span>
+
+
+<span class="k">class</span><span class="w"> </span><span class="nc">LoopEvent</span><span class="p">(</span><span class="n">Event</span><span class="p">):</span>
+    <span class="n">loop_output</span><span class="p">:</span> <span class="nb">str</span>
+
+
+<span class="k">class</span><span class="w"> </span><span class="nc">MultiStepWorkflow</span><span class="p">(</span><span class="n">Workflow</span><span class="p">):</span>
+    <span class="nd">@step</span>
+    <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">step_one</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">ev</span><span class="p">:</span> <span class="n">StartEvent</span> <span class="o">|</span> <span class="n">LoopEvent</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">ProcessingEvent</span> <span class="o">|</span> <span class="n">LoopEvent</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">random</span><span class="o">.</span><span class="n">randint</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="nb">print</span><span class="p">(</span><span class="s2">"Bad thing happened"</span><span class="p">)</span>
+            <span class="k">return</span> <span class="n">LoopEvent</span><span class="p">(</span><span class="n">loop_output</span><span class="o">=</span><span class="s2">"Back to step one."</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="nb">print</span><span class="p">(</span><span class="s2">"Good thing happened"</span><span class="p">)</span>
+            <span class="k">return</span> <span class="n">ProcessingEvent</span><span class="p">(</span><span class="n">intermediate_result</span><span class="o">=</span><span class="s2">"First step complete."</span><span class="p">)</span>
+
+    <span class="nd">@step</span>
+    <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">step_two</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">ev</span><span class="p">:</span> <span class="n">ProcessingEvent</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">StopEvent</span><span class="p">:</span>
+        <span class="c1"># 中間結果を使う</span>
+        <span class="n">final_result</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">"Finished processing: </span><span class="si">{</span><span class="n">ev</span><span class="o">.</span><span class="n">intermediate_result</span><span class="si">}</span><span class="s2">"</span>
+        <span class="k">return</span> <span class="n">StopEvent</span><span class="p">(</span><span class="n">result</span><span class="o">=</span><span class="n">final_result</span><span class="p">)</span>
+
+
+<span class="n">w</span> <span class="o">=</span> <span class="n">MultiStepWorkflow</span><span class="p">(</span><span class="n">verbose</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+<span class="n">result</span> <span class="o">=</span> <span class="k">await</span> <span class="n">w</span><span class="o">.</span><span class="n">run</span><span class="p">()</span>
+<span class="n">result</span>
+</code></pre></div>
+
+<h3>ワークフローを描画する</h3>
+<p>ワークフローを描画することもできます。<code>draw_all_possible_flows</code> 関数を使ってワークフローを描いてみましょう。描画結果は HTML ファイルに保存されます。</p>
+<div class="codehilite"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">llama_index.utils.workflow</span><span class="w"> </span><span class="kn">import</span> <span class="n">draw_all_possible_flows</span>
+
+<span class="n">w</span> <span class="o">=</span> <span class="o">...</span> <span class="c1"># 前のセクションで定義したとおり</span>
+<span class="n">draw_all_possible_flows</span><span class="p">(</span><span class="n">w</span><span class="p">,</span> <span class="s2">"flow.html"</span><span class="p">)</span>
+</code></pre></div>
+
+<p><img alt="ワークフローの描画" src="https://huggingface.co/datasets/agents-course/course-images/resolve/main/en/unit2/llama-index/workflow-draw.png" /></p>
+<p>このコースで扱う最後の便利な工夫として、ワークフローに状態を追加できる仕組みを取り上げます。</p>
+<h3>状態管理</h3>
+<p>状態管理は、ワークフローの状態を追跡し、すべてのステップが同じ状態にアクセスできるようにしたい場合に役立ちます。
+ステップ関数のパラメータに <code>Context</code> の型ヒントを追加することで実現できます。</p>
+<div class="codehilite"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">llama_index.core.workflow</span><span class="w"> </span><span class="kn">import</span> <span class="n">Context</span><span class="p">,</span> <span class="n">StartEvent</span><span class="p">,</span> <span class="n">StopEvent</span>
+
+
+<span class="nd">@step</span>
+<span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">query</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">ctx</span><span class="p">:</span> <span class="n">Context</span><span class="p">,</span> <span class="n">ev</span><span class="p">:</span> <span class="n">StartEvent</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">StopEvent</span><span class="p">:</span>
+    <span class="c1"># クエリをコンテキストに保存する</span>
+    <span class="k">await</span> <span class="n">ctx</span><span class="o">.</span><span class="n">store</span><span class="o">.</span><span class="n">set</span><span class="p">(</span><span class="s2">"query"</span><span class="p">,</span> <span class="s2">"What is the capital of France?"</span><span class="p">)</span>
+
+    <span class="c1"># コンテキストとイベントを使って何らかの処理を行う</span>
+    <span class="n">val</span> <span class="o">=</span> <span class="o">...</span>
+
+    <span class="c1"># コンテキストからクエリを取り出す</span>
+    <span class="n">query</span> <span class="o">=</span> <span class="k">await</span> <span class="n">ctx</span><span class="o">.</span><span class="n">store</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"query"</span><span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">StopEvent</span><span class="p">(</span><span class="n">result</span><span class="o">=</span><span class="n">val</span><span class="p">)</span>
+</code></pre></div>
+
+<p>これで、LlamaIndex で基本的なワークフローを作成する方法が分かりました。</p>
+<div class="callout callout-tip">
+<p class="callout-title">💡 ヒント</p>
+<p>ワークフローにはさらに複雑なニュアンスもあります。詳細は <a href="https://docs.llamaindex.ai/en/stable/understanding/workflows/">LlamaIndex のドキュメント</a> で学べます。</p>
+</div>
+<p>ただし、ワークフローを作成する別の方法もあります。<code>AgentWorkflow</code> クラスを使う方法です。このクラスを使ってマルチエージェントワークフローを作成する方法を見てみましょう。</p>
+<h2>AgentWorkflow でワークフローを自動化する</h2>
+<p>手動でワークフローを作成する代わりに、<strong><code>AgentWorkflow</code> クラスを使ってマルチエージェントワークフローを作成できます</strong>。
+<code>AgentWorkflow</code> は Workflow Agents を使い、それぞれの専門能力に応じて連携したりタスクを引き継いだりできる、1 つ以上のエージェントからなるシステムを作成できるようにします。
+これにより、異なるエージェントがタスクの異なる側面を担当する、複雑なエージェントシステムを構築できます。
+エージェントのクラスは、<code>llama_index.core.agent</code> からではなく、<code>llama_index.core.agent.workflow</code> からインポートします。
+<code>AgentWorkflow</code> のコンストラクタでは、1 つのエージェントをルートエージェントとして指定しなければなりません。
+ユーザーメッセージが届くと、まずルートエージェントへ振り分けられます。</p>
+<p>各エージェントは、次のいずれかを行えます。</p>
+<ul>
+<li>自分のツールを使ってリクエストを直接処理する</li>
+<li>そのタスクにより適した別のエージェントへ引き継ぐ</li>
+<li>ユーザーへ応答を返す</li>
+</ul>
+<p>マルチエージェントワークフローの作成方法を見てみましょう。</p>
+<div class="codehilite"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">llama_index.core.agent.workflow</span><span class="w"> </span><span class="kn">import</span> <span class="n">AgentWorkflow</span><span class="p">,</span> <span class="n">ReActAgent</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">llama_index.llms.huggingface_api</span><span class="w"> </span><span class="kn">import</span> <span class="n">HuggingFaceInferenceAPI</span>
+
+<span class="c1"># ツールをいくつか定義する</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">add</span><span class="p">(</span><span class="n">a</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">b</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""Add two numbers."""</span>
+    <span class="k">return</span> <span class="n">a</span> <span class="o">+</span> <span class="n">b</span>
+
+<span class="k">def</span><span class="w"> </span><span class="nf">multiply</span><span class="p">(</span><span class="n">a</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">b</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""Multiply two numbers."""</span>
+    <span class="k">return</span> <span class="n">a</span> <span class="o">*</span> <span class="n">b</span>
+
+<span class="n">llm</span> <span class="o">=</span> <span class="n">HuggingFaceInferenceAPI</span><span class="p">(</span><span class="n">model_name</span><span class="o">=</span><span class="s2">"Qwen/Qwen2.5-Coder-32B-Instruct"</span><span class="p">)</span>
+
+<span class="c1"># FunctionTool を使わずに関数を直接渡すことができる。関数と docstring から名前と説明が解析される</span>
+<span class="n">multiply_agent</span> <span class="o">=</span> <span class="n">ReActAgent</span><span class="p">(</span>
+    <span class="n">name</span><span class="o">=</span><span class="s2">"multiply_agent"</span><span class="p">,</span>
+    <span class="n">description</span><span class="o">=</span><span class="s2">"Is able to multiply two integers"</span><span class="p">,</span>
+    <span class="n">system_prompt</span><span class="o">=</span><span class="s2">"A helpful assistant that can use a tool to multiply numbers."</span><span class="p">,</span>
+    <span class="n">tools</span><span class="o">=</span><span class="p">[</span><span class="n">multiply</span><span class="p">],</span>
+    <span class="n">llm</span><span class="o">=</span><span class="n">llm</span><span class="p">,</span>
+<span class="p">)</span>
+
+<span class="n">addition_agent</span> <span class="o">=</span> <span class="n">ReActAgent</span><span class="p">(</span>
+    <span class="n">name</span><span class="o">=</span><span class="s2">"add_agent"</span><span class="p">,</span>
+    <span class="n">description</span><span class="o">=</span><span class="s2">"Is able to add two integers"</span><span class="p">,</span>
+    <span class="n">system_prompt</span><span class="o">=</span><span class="s2">"A helpful assistant that can use a tool to add numbers."</span><span class="p">,</span>
+    <span class="n">tools</span><span class="o">=</span><span class="p">[</span><span class="n">add</span><span class="p">],</span>
+    <span class="n">llm</span><span class="o">=</span><span class="n">llm</span><span class="p">,</span>
+<span class="p">)</span>
+
+<span class="c1"># ワークフローを作成する</span>
+<span class="n">workflow</span> <span class="o">=</span> <span class="n">AgentWorkflow</span><span class="p">(</span>
+    <span class="n">agents</span><span class="o">=</span><span class="p">[</span><span class="n">multiply_agent</span><span class="p">,</span> <span class="n">addition_agent</span><span class="p">],</span>
+    <span class="n">root_agent</span><span class="o">=</span><span class="s2">"multiply_agent"</span><span class="p">,</span>
+<span class="p">)</span>
+
+<span class="c1"># システムを実行する</span>
+<span class="n">response</span> <span class="o">=</span> <span class="k">await</span> <span class="n">workflow</span><span class="o">.</span><span class="n">run</span><span class="p">(</span><span class="n">user_msg</span><span class="o">=</span><span class="s2">"Can you add 5 and 3?"</span><span class="p">)</span>
+</code></pre></div>
+
+<p>エージェントツールは、先ほど触れたワークフローの状態を変更することもできます。ワークフローを開始する前に、すべてのエージェントが利用できる初期状態の dict を渡せます。
+状態はワークフローコンテキストの state キーに保存されます。そして、新しいユーザーメッセージごとに付加される state_prompt へ注入されます。</p>
+<p>前の例を変更して、関数呼び出しの回数を数えるカウンタを注入してみましょう。</p>
+<div class="codehilite"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">llama_index.core.workflow</span><span class="w"> </span><span class="kn">import</span> <span class="n">Context</span>
+
+<span class="c1"># ツールをいくつか定義する</span>
+<span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">add</span><span class="p">(</span><span class="n">ctx</span><span class="p">:</span> <span class="n">Context</span><span class="p">,</span> <span class="n">a</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">b</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""Add two numbers."""</span>
+    <span class="c1"># カウンタを更新する</span>
+    <span class="n">cur_state</span> <span class="o">=</span> <span class="k">await</span> <span class="n">ctx</span><span class="o">.</span><span class="n">store</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"state"</span><span class="p">)</span>
+    <span class="n">cur_state</span><span class="p">[</span><span class="s2">"num_fn_calls"</span><span class="p">]</span> <span class="o">+=</span> <span class="mi">1</span>
+    <span class="k">await</span> <span class="n">ctx</span><span class="o">.</span><span class="n">store</span><span class="o">.</span><span class="n">set</span><span class="p">(</span><span class="s2">"state"</span><span class="p">,</span> <span class="n">cur_state</span><span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">a</span> <span class="o">+</span> <span class="n">b</span>
+
+<span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">multiply</span><span class="p">(</span><span class="n">ctx</span><span class="p">:</span> <span class="n">Context</span><span class="p">,</span> <span class="n">a</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">b</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""Multiply two numbers."""</span>
+    <span class="c1"># カウンタを更新する</span>
+    <span class="n">cur_state</span> <span class="o">=</span> <span class="k">await</span> <span class="n">ctx</span><span class="o">.</span><span class="n">store</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"state"</span><span class="p">)</span>
+    <span class="n">cur_state</span><span class="p">[</span><span class="s2">"num_fn_calls"</span><span class="p">]</span> <span class="o">+=</span> <span class="mi">1</span>
+    <span class="k">await</span> <span class="n">ctx</span><span class="o">.</span><span class="n">store</span><span class="o">.</span><span class="n">set</span><span class="p">(</span><span class="s2">"state"</span><span class="p">,</span> <span class="n">cur_state</span><span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">a</span> <span class="o">*</span> <span class="n">b</span>
+
+<span class="o">...</span>
+
+<span class="n">workflow</span> <span class="o">=</span> <span class="n">AgentWorkflow</span><span class="p">(</span>
+    <span class="n">agents</span><span class="o">=</span><span class="p">[</span><span class="n">multiply_agent</span><span class="p">,</span> <span class="n">addition_agent</span><span class="p">],</span>
+    <span class="n">root_agent</span><span class="o">=</span><span class="s2">"multiply_agent"</span><span class="p">,</span>
+    <span class="n">initial_state</span><span class="o">=</span><span class="p">{</span><span class="s2">"num_fn_calls"</span><span class="p">:</span> <span class="mi">0</span><span class="p">},</span>
+    <span class="n">state_prompt</span><span class="o">=</span><span class="s2">"Current state: </span><span class="si">{state}</span><span class="s2">. User message: </span><span class="si">{msg}</span><span class="s2">"</span><span class="p">,</span>
+<span class="p">)</span>
+
+<span class="c1"># コンテキスト付きでワークフローを実行する</span>
+<span class="n">ctx</span> <span class="o">=</span> <span class="n">Context</span><span class="p">(</span><span class="n">workflow</span><span class="p">)</span>
+<span class="n">response</span> <span class="o">=</span> <span class="k">await</span> <span class="n">workflow</span><span class="o">.</span><span class="n">run</span><span class="p">(</span><span class="n">user_msg</span><span class="o">=</span><span class="s2">"Can you add 5 and 3?"</span><span class="p">,</span> <span class="n">ctx</span><span class="o">=</span><span class="n">ctx</span><span class="p">)</span>
+
+<span class="c1"># 状態を取り出して確認する</span>
+<span class="n">state</span> <span class="o">=</span> <span class="k">await</span> <span class="n">ctx</span><span class="o">.</span><span class="n">store</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"state"</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">state</span><span class="p">[</span><span class="s2">"num_fn_calls"</span><span class="p">])</span>
+</code></pre></div>
+
+<p>おめでとうございます。これで LlamaIndex におけるエージェントの基礎をマスターしました。🎉</p>
+<p>最後に、知識を定着させるためのクイズに進みましょう。🚀</p>
+</article>
+<nav class="page-nav"><a class="nav-link prev" href="agents.html">← 前へ: LlamaIndex でエージェントを使う</a><a class="nav-link toc-link" href="../../index.html">目次へ</a><a class="nav-link next" href="quiz2.html">次へ →: 簡単なセルフチェック（採点なし）</a></nav>
+</main>
+<footer class="site-footer">
+  <p>原典: Hugging Face huggingface/agents-course（<a href="https://github.com/huggingface/agents-course">https://github.com/huggingface/agents-course</a>）</p>
+  <p>日本語版の翻訳・公開: 霞ヶ関京 / 連絡先: GitHub <a href="https://github.com/yanikasumin">@yanikasumin</a> / YouTube <a href="https://www.youtube.com/@KASUMI_MOF">@KASUMI_MOF</a></p>
+  <p class="demo-note">このサイトはデモ版です。内容は順次更新されます。</p>
+</footer>
+<script src="../../../site.js"></script>
+</body>
+</html>

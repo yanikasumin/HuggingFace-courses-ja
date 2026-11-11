@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>簡単なセルフチェック（採点なし） | Hugging Face コース日本語版（デモ版）</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Shippori+Mincho:wght@500;700&family=Zen+Kaku+Gothic+New:wght@400;500;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../../../style.css">
+<script>
+window.MathJax = { tex: { inlineMath: [['$', '$'], ['\\(', '\\)']], displayMath: [['$$', '$$'], ['\\[', '\\]']] }, options: { skipHtmlTags: ['script','noscript','style','textarea','pre','code'] } };
+</script>
+<script async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml.js"></script>
+</head>
+<body>
+<header class="site-header">
+  <div class="header-inner">
+    <a class="site-title" href="../../../index.html">Hugging Face コース日本語版</a>
+    <span class="demo-badge">デモ版</span>
+  </div>
+</header>
+<main class="container">
+<p class="course-crumb"><a href="../../index.html">Agents コース</a>
+<span class="badge badge-qa-wip">翻訳済み・QA進行中（未検証の部分を含みます）</span></p>
+<nav class="page-nav"><a class="nav-link prev" href="workflows.html">← 前へ: LlamaIndex でエージェントワークフローを作成する</a><a class="nav-link toc-link" href="../../index.html">目次へ</a><a class="nav-link next" href="conclusion.html">次へ →: まとめ</a></nav>
+<article class="content">
+<h1>簡単なセルフチェック（採点なし）</h1>
+<p>えっ、またクイズですか？ その気持ちは分かります…… 😅 でも、この短い採点なしのクイズは、<strong>今学んだばかりの重要な概念を定着させるためのもの</strong>です。</p>
+<p>このクイズでは、効果的な AI エージェントを構築するうえで欠かせない、エージェントのワークフローとインタラクションを扱います。</p>
+<h3>Q1: LlamaIndex の AgentWorkflow の目的は何ですか？</h3>
+<div class="quiz">
+<div class="quiz-choices">
+<button type="button" class="quiz-choice" data-correct="true" data-quiz-idx="0">ツールを使うエージェントを1つ以上実行することです。</button>
+<div class="quiz-explain-src" id="qe-125591345214784-0" hidden>はい。AgentWorkflow は、1つ以上のエージェントからなるシステムを手早く作成するための主な方法です。</div>
+<button type="button" class="quiz-choice" data-correct="false" data-quiz-idx="1">メモリなしでデータを検索できる、単一のエージェントを作成することです。</button>
+<div class="quiz-explain-src" id="qe-125591345214784-1" hidden>いいえ。AgentWorkflow にはそれ以上のことができます。データに対する単純なクエリには QueryEngine を使います。</div>
+<button type="button" class="quiz-choice" data-correct="false" data-quiz-idx="2">エージェント用のツールを自動的に構築することです。</button>
+<div class="quiz-explain-src" id="qe-125591345214784-2" hidden>AgentWorkflow がツールを構築することはありません。ツールの構築は開発者の仕事です。</div>
+<button type="button" class="quiz-choice" data-correct="false" data-quiz-idx="3">エージェントのメモリと状態を管理することです。</button>
+<div class="quiz-explain-src" id="qe-125591345214784-3" hidden>メモリと状態の管理は、AgentWorkflow の主な目的ではありません。</div>
+</div><div class="quiz-feedback" hidden></div></div>
+<hr />
+<h3>Q2: ワークフローの状態を追跡するために使うオブジェクトはどれですか？</h3>
+<div class="quiz">
+<div class="quiz-choices">
+<button type="button" class="quiz-choice" data-correct="false" data-quiz-idx="0">State</button>
+<div class="quiz-explain-src" id="qe-125591345125248-0" hidden>State は、ワークフローの状態管理に使う正しいオブジェクトではありません。</div>
+<button type="button" class="quiz-choice" data-correct="true" data-quiz-idx="1">Context</button>
+<div class="quiz-explain-src" id="qe-125591345125248-1" hidden>Context が、ワークフローの状態を追跡するために使う正しいオブジェクトです。</div>
+<button type="button" class="quiz-choice" data-correct="false" data-quiz-idx="2">WorkflowState</button>
+<div class="quiz-explain-src" id="qe-125591345125248-2" hidden>WorkflowState は正しいオブジェクトではありません。</div>
+<button type="button" class="quiz-choice" data-correct="false" data-quiz-idx="3">Management</button>
+<div class="quiz-explain-src" id="qe-125591345125248-3" hidden>Management は、ワークフローの状態に使える有効なオブジェクトではありません。</div>
+</div><div class="quiz-feedback" hidden></div></div>
+<hr />
+<h3>Q3: エージェントに過去のインタラクションを記憶させたい場合、どのメソッドを使うべきですか？</h3>
+<div class="quiz">
+<div class="quiz-choices">
+<button type="button" class="quiz-choice" data-correct="false" data-quiz-idx="0">run(query_str)</button>
+<div class="quiz-explain-src" id="qe-125591345214784-0" hidden>.run(query_str) では会話履歴は保持されません。</div>
+<button type="button" class="quiz-choice" data-correct="false" data-quiz-idx="1">chat(query_str, ctx=ctx)</button>
+<div class="quiz-explain-src" id="qe-125591345214784-1" hidden>chat() はワークフローで使える有効なメソッドではありません。</div>
+<button type="button" class="quiz-choice" data-correct="false" data-quiz-idx="2">interact(query_str)</button>
+<div class="quiz-explain-src" id="qe-125591345214784-2" hidden>interact() は、エージェントとのインタラクションに使える有効なメソッドではありません。</div>
+<button type="button" class="quiz-choice" data-correct="true" data-quiz-idx="3">run(query_str, ctx=ctx)</button>
+<div class="quiz-explain-src" id="qe-125591345214784-3" hidden>コンテキストを渡して維持することで、状態を保持できます。</div>
+</div><div class="quiz-feedback" hidden></div></div>
+<hr />
+<h3>Q4: Agentic RAG の主な特徴は何ですか？</h3>
+<div class="quiz">
+<div class="quiz-choices">
+<button type="button" class="quiz-choice" data-correct="false" data-quiz-idx="0">RAG ワークフローで質問に答えるために、ドキュメントベースのツールしか使えません。</button>
+<div class="quiz-explain-src" id="qe-125591345125248-0" hidden>Agentic RAG は、ドキュメントベースのツールを含む、さまざまなツールを使うことができます。</div>
+<button type="button" class="quiz-choice" data-correct="false" data-quiz-idx="1">チャットボットのように、ツールを使わずに自動的に質問に答えます。</button>
+<div class="quiz-explain-src" id="qe-125591345125248-1" hidden>Agentic RAG は、質問に答えるためにツールを使います。</div>
+<button type="button" class="quiz-choice" data-correct="true" data-quiz-idx="2">RAG ツールを含む、あらゆるツールを使って質問に答えるかどうかを判断できます。</button>
+<div class="quiz-explain-src" id="qe-125591345125248-2" hidden>Agentic RAG には、さまざまなツールを使って質問に答えられる柔軟さがあります。</div>
+<button type="button" class="quiz-choice" data-correct="false" data-quiz-idx="3">Function Calling Agents でしか動作しません。</button>
+<div class="quiz-explain-src" id="qe-125591345125248-3" hidden>Agentic RAG は Function Calling Agents に限定されません。</div>
+</div><div class="quiz-feedback" hidden></div></div>
+<hr />
+<p>分かりましたか？ それでは、<strong>このユニットを簡単に振り返りましょう</strong>。</p>
+</article>
+<nav class="page-nav"><a class="nav-link prev" href="workflows.html">← 前へ: LlamaIndex でエージェントワークフローを作成する</a><a class="nav-link toc-link" href="../../index.html">目次へ</a><a class="nav-link next" href="conclusion.html">次へ →: まとめ</a></nav>
+</main>
+<footer class="site-footer">
+  <p>原典: Hugging Face huggingface/agents-course（<a href="https://github.com/huggingface/agents-course">https://github.com/huggingface/agents-course</a>）</p>
+  <p>日本語版の翻訳・公開: 霞ヶ関京 / 連絡先: GitHub <a href="https://github.com/yanikasumin">@yanikasumin</a> / YouTube <a href="https://www.youtube.com/@KASUMI_MOF">@KASUMI_MOF</a></p>
+  <p class="demo-note">このサイトはデモ版です。内容は順次更新されます。</p>
+</footer>
+<script src="../../../site.js"></script>
+</body>
+</html>

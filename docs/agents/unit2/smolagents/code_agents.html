@@ -1,0 +1,353 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>コードを使うエージェントを作る | Hugging Face コース日本語版（デモ版）</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Shippori+Mincho:wght@500;700&family=Zen+Kaku+Gothic+New:wght@400;500;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../../../style.css">
+<script>
+window.MathJax = { tex: { inlineMath: [['$', '$'], ['\\(', '\\)']], displayMath: [['$$', '$$'], ['\\[', '\\]']] }, options: { skipHtmlTags: ['script','noscript','style','textarea','pre','code'] } };
+</script>
+<script async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml.js"></script>
+</head>
+<body>
+<header class="site-header">
+  <div class="header-inner">
+    <a class="site-title" href="../../../index.html">Hugging Face コース日本語版</a>
+    <span class="demo-badge">デモ版</span>
+  </div>
+</header>
+<main class="container">
+<p class="course-crumb"><a href="../../index.html">Agents コース</a>
+<span class="badge badge-qa-wip">翻訳済み・QA進行中（未検証の部分を含みます）</span></p>
+<nav class="page-nav"><a class="nav-link prev" href="quiz1.html">← 前へ: 小クイズ（採点なし）</a><a class="nav-link toc-link" href="../../index.html">目次へ</a><a class="nav-link next" href="tool_calling_agents.html">次へ →: アクションをコードスニペットや JSON blob で書く</a></nav>
+<article class="content">
+<h1>コードを使うエージェントを作る</h1>
+<p>Code Agent は <code>smolagents</code> のデフォルトのエージェントタイプです。アクションを実行するために Python のツール呼び出しを生成し、効率的で表現力豊か、かつ正確なアクション表現を実現します。</p>
+<p>その合理化されたアプローチにより、必要なアクションの数が減り、複雑な操作が簡単になり、既存のコード関数を再利用できます。<code>smolagents</code> は、約1,000行のコードで実装された、コードエージェントを構築するための軽量なフレームワークを提供します。</p>
+<p><img alt="コードと JSON のアクション比較" src="https://huggingface.co/datasets/huggingface/documentation-images/resolve/main/transformers/code_vs_json_actions.png" />
+図は論文 <a href="https://huggingface.co/papers/2402.01030">Executable Code Actions Elicit Better LLM Agents</a> から</p>
+<div class="callout callout-tip">
+<p class="callout-title">💡 ヒント</p>
+<p>コードエージェントが効果的な理由をもっと知りたい場合は、smolagents ドキュメントの<a href="https://huggingface.co/docs/smolagents/en/conceptual_guides/intro_agents#code-agents" target="_blank">このガイド</a>をご覧ください。</p>
+</div>
+<h2>なぜ Code Agent なのか？</h2>
+<p>マルチステップエージェントのプロセスでは、LLM がアクションを書いて実行します。通常は外部のツール呼び出しを伴います。従来のアプローチは、ツール名と引数を文字列として指定する JSON 形式を使いますが、<strong>どのツールを実行するかを決めるために、システムがそれをパースしなければなりません</strong>。</p>
+<p>しかし研究によれば、<strong>ツール呼び出しを行う LLM は、コードを直接扱うほうが効果的に働きます</strong>。これは <code>smolagents</code> の核となる原則であり、上記の論文 <a href="https://huggingface.co/papers/2402.01030">Executable Code Actions Elicit Better LLM Agents</a> の図が示すとおりです。</p>
+<p>アクションを JSON ではなくコードで書くことには、いくつかの重要な利点があります。</p>
+<ul>
+<li><strong>合成可能性（Composability）</strong>: アクションを簡単に組み合わせ、再利用できる</li>
+<li><strong>オブジェクト管理</strong>: 画像のような複雑な構造を直接扱える</li>
+<li><strong>汎用性</strong>: 計算可能なあらゆるタスクを表現できる</li>
+<li><strong>LLM にとって自然</strong>: 高品質なコードは、すでに LLM の訓練データに含まれている</li>
+</ul>
+<h2>Code Agent の仕組み</h2>
+<p><img alt="https://huggingface.co/docs/smolagents/conceptual_guides/react から" src="https://huggingface.co/datasets/huggingface/documentation-images/resolve/main/smolagents/codeagent_docs.png" /></p>
+<p>上の図は、<code>CodeAgent.run()</code> が Unit 1 で触れた ReAct フレームワークに従ってどう動作するかを示しています。<code>smolagents</code> におけるエージェントの主な抽象化は <code>MultiStepAgent</code> で、それが中核となる構成要素です。<code>CodeAgent</code> は <code>MultiStepAgent</code> の特殊な種類であり、以下の例で見ていきます。</p>
+<p><code>CodeAgent</code> はステップのサイクルを通じてアクションを実行します。既存の変数や知識はエージェントのコンテキストに取り込まれ、実行ログとして保持されます。</p>
+<ol>
+<li>
+<p>システムプロンプトは <code>SystemPromptStep</code> に格納され、ユーザーのクエリは <code>TaskStep</code> に記録されます。</p>
+</li>
+<li>
+<p>次に、以下の while ループが実行されます。</p>
+<p>2.1 メソッド <code>agent.write_memory_to_messages()</code> が、エージェントのログを LLM が読める<a href="https://huggingface.co/docs/transformers/main/en/chat_templating">チャットメッセージ</a>のリストに書き出します。</p>
+<p>2.2 これらのメッセージが <code>Model</code> に送られ、補完が生成されます。</p>
+<p>2.3 補完がパースされ、アクションが抽出されます。<code>CodeAgent</code> を使っているので、この場合はコードスニペットのはずです。</p>
+<p>2.4 アクションが実行されます。</p>
+<p>2.5 結果が <code>ActionStep</code> としてメモリに記録されます。</p>
+</li>
+</ol>
+<p>各ステップの終わりに、エージェントに関数呼び出し（<code>agent.step_callback</code> 内）が含まれていれば、それらが実行されます。</p>
+<h2>例を見てみましょう</h2>
+<div class="callout callout-tip">
+<p class="callout-title">💡 ヒント</p>
+<p>コードは、Google Colab で実行できる<a href="https://huggingface.co/agents-course/notebooks/blob/main/unit2/smolagents/code_agents.ipynb" target="_blank">このノートブック</a>で追うことができます。</p>
+</div>
+<p>アルフレッドはウェイン家の邸宅でパーティーを計画していて、すべてが円滑に進むよう手伝いが必要です。彼を助けるために、マルチステップの <code>CodeAgent</code> の仕組みについて学んだことを応用しましょう。</p>
+<p><img src="https://huggingface.co/datasets/agents-course/course-images/resolve/main/en/unit2/smolagents/alfred-party.jpg" alt="アルフレッドのパーティー"/></p>
+<p>まだ <code>smolagents</code> をインストールしていない場合は、次のコマンドでインストールできます。</p>
+<div class="codehilite"><pre><span></span><code>pip<span class="w"> </span>install<span class="w"> </span>smolagents<span class="w"> </span>-U
+</code></pre></div>
+
+<p>Serverless Inference API にアクセスするために、Hugging Face Hub にもログインしましょう。</p>
+<div class="codehilite"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">huggingface_hub</span><span class="w"> </span><span class="kn">import</span> <span class="n">login</span>
+
+<span class="n">login</span><span class="p">()</span>
+</code></pre></div>
+
+<h3><code>smolagents</code> を使ってパーティーのプレイリストを選ぶ</h3>
+<p>音楽はパーティーを成功させるうえで欠かせない要素です。アルフレッドはプレイリスト選びの手伝いが必要です。幸い、<code>smolagents</code> が助けてくれます。DuckDuckGo を使って Web を検索できるエージェントを構築できます。このツールへのアクセスをエージェントに与えるには、エージェント作成時にツールリストに含めます。</p>
+<p><img src="https://huggingface.co/datasets/agents-course/course-images/resolve/main/en/unit2/smolagents/alfred-playlist.jpg" alt="アルフレッドのプレイリスト"/></p>
+<p>モデルには、Hugging Face の <a href="https://huggingface.co/docs/api-inference/index">Serverless Inference API</a> へのアクセスを提供する <code>InferenceClientModel</code> を使います。デフォルトのモデルは <code>"Qwen/Qwen2.5-Coder-32B-Instruct"</code> で、性能が高く高速な推論が可能ですが、Hub の互換性のあるモデルならどれでも選べます。</p>
+<p>エージェントの実行はとても簡単です。</p>
+<div class="codehilite"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">smolagents</span><span class="w"> </span><span class="kn">import</span> <span class="n">CodeAgent</span><span class="p">,</span> <span class="n">DuckDuckGoSearchTool</span><span class="p">,</span> <span class="n">InferenceClientModel</span>
+
+<span class="n">agent</span> <span class="o">=</span> <span class="n">CodeAgent</span><span class="p">(</span><span class="n">tools</span><span class="o">=</span><span class="p">[</span><span class="n">DuckDuckGoSearchTool</span><span class="p">()],</span> <span class="n">model</span><span class="o">=</span><span class="n">InferenceClientModel</span><span class="p">())</span>
+
+<span class="n">agent</span><span class="o">.</span><span class="n">run</span><span class="p">(</span><span class="s2">"Search for the best music recommendations for a party at the Wayne's mansion."</span><span class="p">)</span>
+</code></pre></div>
+
+<p>この例を実行すると、出力には<strong>実行されるワークフローのステップのトレースが表示</strong>されます。対応する Python コードも、次のメッセージとともに表示されます。</p>
+<div class="codehilite"><pre><span></span><code> <span class="err">─</span> <span class="n">Executing</span> <span class="n">parsed</span> <span class="n">code</span><span class="p">:</span> <span class="err">────────────────────────────────────────────────────────────────────────────────────────</span> 
+  <span class="n">results</span> <span class="o">=</span> <span class="n">web_search</span><span class="p">(</span><span class="n">query</span><span class="o">=</span><span class="s2">"best music for a Batman party"</span><span class="p">)</span>                                                      
+  <span class="nb">print</span><span class="p">(</span><span class="n">results</span><span class="p">)</span>                                                                                                   
+ <span class="err">─────────────────────────────────────────────────────────────────────────────────────────────────────────────────</span> 
+</code></pre></div>
+
+<p>数ステップののち、アルフレッドがパーティーで使えるプレイリストが生成されます！ 🎵</p>
+<h3>カスタムツールを使ってメニューを用意する</h3>
+<p><img src="https://huggingface.co/datasets/agents-course/course-images/resolve/main/en/unit2/smolagents/alfred-menu.jpg" alt="アルフレッドのメニュー"/></p>
+<p>プレイリストが選べたので、次はゲスト向けのメニューを整える必要があります。ここでもアルフレッドは <code>smolagents</code> を活用できます。ここでは <code>@tool</code> デコレータを使って、ツールとして機能するカスタム関数を定義します。ツールの作り方は後ほど詳しく扱うので、ここではコードを実行するだけで構いません。</p>
+<p>以下の例で分かるように、<code>@tool</code> デコレータでツールを作成し、<code>tools</code> リストに含めます。</p>
+<div class="codehilite"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">smolagents</span><span class="w"> </span><span class="kn">import</span> <span class="n">CodeAgent</span><span class="p">,</span> <span class="n">tool</span><span class="p">,</span> <span class="n">InferenceClientModel</span>
+
+<span class="c1"># 場面に応じたメニューを提案するツール</span>
+<span class="nd">@tool</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">suggest_menu</span><span class="p">(</span><span class="n">occasion</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""</span>
+<span class="sd">    Suggests a menu based on the occasion.</span>
+<span class="sd">    Args:</span>
+<span class="sd">        occasion (str): The type of occasion for the party. Allowed values are:</span>
+<span class="sd">                        - "casual": Menu for casual party.</span>
+<span class="sd">                        - "formal": Menu for formal party.</span>
+<span class="sd">                        - "superhero": Menu for superhero party.</span>
+<span class="sd">                        - "custom": Custom menu.</span>
+<span class="sd">    """</span>
+    <span class="k">if</span> <span class="n">occasion</span> <span class="o">==</span> <span class="s2">"casual"</span><span class="p">:</span>
+        <span class="k">return</span> <span class="s2">"Pizza, snacks, and drinks."</span>
+    <span class="k">elif</span> <span class="n">occasion</span> <span class="o">==</span> <span class="s2">"formal"</span><span class="p">:</span>
+        <span class="k">return</span> <span class="s2">"3-course dinner with wine and dessert."</span>
+    <span class="k">elif</span> <span class="n">occasion</span> <span class="o">==</span> <span class="s2">"superhero"</span><span class="p">:</span>
+        <span class="k">return</span> <span class="s2">"Buffet with high-energy and healthy food."</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="k">return</span> <span class="s2">"Custom menu for the butler."</span>
+
+<span class="c1"># 執事のアルフレッドがパーティーのメニューを用意する</span>
+<span class="n">agent</span> <span class="o">=</span> <span class="n">CodeAgent</span><span class="p">(</span><span class="n">tools</span><span class="o">=</span><span class="p">[</span><span class="n">suggest_menu</span><span class="p">],</span> <span class="n">model</span><span class="o">=</span><span class="n">InferenceClientModel</span><span class="p">())</span>
+
+<span class="c1"># パーティーのメニューを用意する</span>
+<span class="n">agent</span><span class="o">.</span><span class="n">run</span><span class="p">(</span><span class="s2">"Prepare a formal menu for the party."</span><span class="p">)</span>
+</code></pre></div>
+
+<p>エージェントは答えを見つけるまで数ステップ実行されます。docstring に許容値を明記しておくと、エージェントが実在する <code>occasion</code> 引数の値を使うよう誘導でき、ハルシネーションを抑えられます。</p>
+<p>メニューの準備ができました！ 🥗</p>
+<h3>エージェントの中で Python のインポートを使う</h3>
+<p>プレイリストとメニューは準備できましたが、もうひとつ重要な詳細を確認する必要があります。それは準備にかかる時間です。</p>
+<p>アルフレッドは、今から準備を始めた場合にすべてが何時に整うのかを計算する必要があります。他のスーパーヒーローの助けが必要になる場合に備えてです。</p>
+<p><code>smolagents</code> は、Python コードスニペットを書いて実行するエージェントに特化しており、セキュリティのためにサンドボックス実行を提供します。</p>
+<p><strong>コード実行には厳格なセキュリティ対策があります</strong>。事前に定義された安全なリストにないインポートは、デフォルトでブロックされます。ただし、<code>additional_authorized_imports</code> に文字列として渡すことで、追加のインポートを許可できます。
+安全なコード実行の詳細については、公式の<a href="https://huggingface.co/docs/smolagents/tutorials/secure_code_execution">ガイド</a>をご覧ください。</p>
+<p>エージェントを作成するとき、<code>additional_authorized_imports</code> を使って <code>datetime</code> モジュールのインポートを許可します。</p>
+<div class="codehilite"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">smolagents</span><span class="w"> </span><span class="kn">import</span> <span class="n">CodeAgent</span><span class="p">,</span> <span class="n">InferenceClientModel</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">time</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">datetime</span>
+
+<span class="n">agent</span> <span class="o">=</span> <span class="n">CodeAgent</span><span class="p">(</span><span class="n">tools</span><span class="o">=</span><span class="p">[],</span> <span class="n">model</span><span class="o">=</span><span class="n">InferenceClientModel</span><span class="p">(),</span> <span class="n">additional_authorized_imports</span><span class="o">=</span><span class="p">[</span><span class="s1">'datetime'</span><span class="p">])</span>
+
+<span class="n">agent</span><span class="o">.</span><span class="n">run</span><span class="p">(</span>
+<span class="w">    </span><span class="sd">"""</span>
+<span class="sd">    Alfred needs to prepare for the party. Here are the tasks:</span>
+<span class="sd">    1. Prepare the drinks - 30 minutes</span>
+<span class="sd">    2. Decorate the mansion - 60 minutes</span>
+<span class="sd">    3. Set up the menu - 45 minutes</span>
+<span class="sd">    4. Prepare the music and playlist - 45 minutes</span>
+
+<span class="sd">    If we start right now, at what time will the party be ready?</span>
+<span class="sd">    """</span>
+<span class="p">)</span>
+</code></pre></div>
+
+<p>これらの例は、コードエージェントでできることのほんの始まりにすぎませんが、パーティーの準備における有用性はすでに見え始めています。
+コードエージェントの作り方についてさらに学ぶには、<a href="https://huggingface.co/docs/smolagents">smolagents のドキュメント</a>をご覧ください。</p>
+<p>まとめると、<code>smolagents</code> は Python コードスニペットを書いて実行するエージェントに特化し、セキュリティのためのサンドボックス実行を提供します。ローカルモデルと API ベースの言語モデルの両方をサポートしており、さまざまな開発環境に適応できます。</p>
+<h3>カスタムのパーティー準備エージェントを Hub に共有する</h3>
+<p>私たち自身のアルフレッドエージェントをコミュニティと共有できたら<strong>素晴らしいと思いませんか</strong>。共有すれば、誰でも Hub からエージェントを簡単にダウンロードして使え、ゴッサム究極のパーティープランナーを手元で活用できます。やってみましょう！ 🎉</p>
+<p><code>smolagents</code> ライブラリでは、完全なエージェントをコミュニティと共有したり、他の人のエージェントをダウンロードしてすぐに使ったりできます。次のように簡単です。</p>
+<div class="codehilite"><pre><span></span><code><span class="c1"># 自分のユーザー名とリポジトリ名に変更してください</span>
+<span class="n">agent</span><span class="o">.</span><span class="n">push_to_hub</span><span class="p">(</span><span class="s1">'sergiopaniego/AlfredAgent'</span><span class="p">)</span>
+</code></pre></div>
+
+<p>エージェントを再びダウンロードするには、次のコードを使います。</p>
+<div class="codehilite"><pre><span></span><code><span class="c1"># 自分のユーザー名とリポジトリ名に変更してください</span>
+<span class="n">alfred_agent</span> <span class="o">=</span> <span class="n">agent</span><span class="o">.</span><span class="n">from_hub</span><span class="p">(</span><span class="s1">'sergiopaniego/AlfredAgent'</span><span class="p">,</span> <span class="n">trust_remote_code</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+
+<span class="n">alfred_agent</span><span class="o">.</span><span class="n">run</span><span class="p">(</span><span class="s2">"Give me the best playlist for a party at Wayne's mansion. The party idea is a 'villain masquerade' theme"</span><span class="p">)</span>  
+</code></pre></div>
+
+<p>さらに素晴らしいことに、共有されたエージェントは Hugging Face Spaces として直接利用でき、リアルタイムにやり取りできます。他のエージェントは<a href="https://huggingface.co/spaces/davidberenstein1957/smolagents-and-tools">こちら</a>で探索できます。</p>
+<p>たとえば、<em>AlfredAgent</em> は<a href="https://huggingface.co/spaces/sergiopaniego/AlfredAgent">こちら</a>で利用できます。以下で直接試すことができます。</p>
+<p><iframe
+    src="https://sergiopaniego-alfredagent.hf.space/"
+    frameborder="0"
+    width="850"
+    height="450"
+></iframe>
+</p>
+<p>アルフレッドが <code>smolagents</code> を使ってどうやってこのようなエージェントを作ったのか、気になるかもしれません。いくつかのツールを統合することで、次のようにエージェントを生成できます。ツールについては心配いりません。この Unit の後半に、詳しく探る専用のセクションがあります。</p>
+<div class="codehilite"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">smolagents</span><span class="w"> </span><span class="kn">import</span> <span class="n">CodeAgent</span><span class="p">,</span> <span class="n">DuckDuckGoSearchTool</span><span class="p">,</span> <span class="n">FinalAnswerTool</span><span class="p">,</span> <span class="n">InferenceClientModel</span><span class="p">,</span> <span class="n">Tool</span><span class="p">,</span> <span class="n">tool</span><span class="p">,</span> <span class="n">VisitWebpageTool</span>
+
+<span class="nd">@tool</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">suggest_menu</span><span class="p">(</span><span class="n">occasion</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""</span>
+<span class="sd">    Suggests a menu based on the occasion.</span>
+<span class="sd">    Args:</span>
+<span class="sd">        occasion: The type of occasion for the party.</span>
+<span class="sd">    """</span>
+    <span class="k">if</span> <span class="n">occasion</span> <span class="o">==</span> <span class="s2">"casual"</span><span class="p">:</span>
+        <span class="k">return</span> <span class="s2">"Pizza, snacks, and drinks."</span>
+    <span class="k">elif</span> <span class="n">occasion</span> <span class="o">==</span> <span class="s2">"formal"</span><span class="p">:</span>
+        <span class="k">return</span> <span class="s2">"3-course dinner with wine and dessert."</span>
+    <span class="k">elif</span> <span class="n">occasion</span> <span class="o">==</span> <span class="s2">"superhero"</span><span class="p">:</span>
+        <span class="k">return</span> <span class="s2">"Buffet with high-energy and healthy food."</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="k">return</span> <span class="s2">"Custom menu for the butler."</span>
+
+<span class="nd">@tool</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">catering_service_tool</span><span class="p">(</span><span class="n">query</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""</span>
+<span class="sd">    This tool returns the highest-rated catering service in Gotham City.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        query: A search term for finding catering services.</span>
+<span class="sd">    """</span>
+    <span class="c1"># ケータリングサービスとその評価の例</span>
+    <span class="n">services</span> <span class="o">=</span> <span class="p">{</span>
+        <span class="s2">"Gotham Catering Co."</span><span class="p">:</span> <span class="mf">4.9</span><span class="p">,</span>
+        <span class="s2">"Wayne Manor Catering"</span><span class="p">:</span> <span class="mf">4.8</span><span class="p">,</span>
+        <span class="s2">"Gotham City Events"</span><span class="p">:</span> <span class="mf">4.7</span><span class="p">,</span>
+    <span class="p">}</span>
+
+    <span class="c1"># 最も評価の高いケータリングサービスを探す（検索クエリによるフィルタリングをシミュレーション）</span>
+    <span class="n">best_service</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="n">services</span><span class="p">,</span> <span class="n">key</span><span class="o">=</span><span class="n">services</span><span class="o">.</span><span class="n">get</span><span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">best_service</span>
+
+<span class="k">class</span><span class="w"> </span><span class="nc">SuperheroPartyThemeTool</span><span class="p">(</span><span class="n">Tool</span><span class="p">):</span>
+    <span class="n">name</span> <span class="o">=</span> <span class="s2">"superhero_party_theme_generator"</span>
+    <span class="n">description</span> <span class="o">=</span> <span class="s2">"""</span>
+<span class="s2">    This tool suggests creative superhero-themed party ideas based on a category.</span>
+<span class="s2">    It returns a unique party theme idea."""</span>
+
+    <span class="n">inputs</span> <span class="o">=</span> <span class="p">{</span>
+        <span class="s2">"category"</span><span class="p">:</span> <span class="p">{</span>
+            <span class="s2">"type"</span><span class="p">:</span> <span class="s2">"string"</span><span class="p">,</span>
+            <span class="s2">"description"</span><span class="p">:</span> <span class="s2">"The type of superhero party (e.g., 'classic heroes', 'villain masquerade', 'futuristic Gotham')."</span><span class="p">,</span>
+        <span class="p">}</span>
+    <span class="p">}</span>
+
+    <span class="n">output_type</span> <span class="o">=</span> <span class="s2">"string"</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">forward</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">category</span><span class="p">:</span> <span class="nb">str</span><span class="p">):</span>
+        <span class="n">themes</span> <span class="o">=</span> <span class="p">{</span>
+            <span class="s2">"classic heroes"</span><span class="p">:</span> <span class="s2">"Justice League Gala: Guests come dressed as their favorite DC heroes with themed cocktails like 'The Kryptonite Punch'."</span><span class="p">,</span>
+            <span class="s2">"villain masquerade"</span><span class="p">:</span> <span class="s2">"Gotham Rogues' Ball: A mysterious masquerade where guests dress as classic Batman villains."</span><span class="p">,</span>
+            <span class="s2">"futuristic gotham"</span><span class="p">:</span> <span class="s2">"Neo-Gotham Night: A cyberpunk-style party inspired by Batman Beyond, with neon decorations and futuristic gadgets."</span>
+        <span class="p">}</span>
+
+        <span class="k">return</span> <span class="n">themes</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">category</span><span class="o">.</span><span class="n">lower</span><span class="p">(),</span> <span class="s2">"Themed party idea not found. Try 'classic heroes', 'villain masquerade', or 'futuristic Gotham'."</span><span class="p">)</span>
+
+
+<span class="c1"># 執事のアルフレッドがパーティーのメニューを用意する</span>
+<span class="n">agent</span> <span class="o">=</span> <span class="n">CodeAgent</span><span class="p">(</span>
+    <span class="n">tools</span><span class="o">=</span><span class="p">[</span>
+        <span class="n">DuckDuckGoSearchTool</span><span class="p">(),</span> 
+        <span class="n">VisitWebpageTool</span><span class="p">(),</span>
+        <span class="n">suggest_menu</span><span class="p">,</span>
+        <span class="n">catering_service_tool</span><span class="p">,</span>
+        <span class="n">SuperheroPartyThemeTool</span><span class="p">(),</span>
+    <span class="n">FinalAnswerTool</span><span class="p">()</span>
+    <span class="p">],</span> 
+    <span class="n">model</span><span class="o">=</span><span class="n">InferenceClientModel</span><span class="p">(),</span>
+    <span class="n">max_steps</span><span class="o">=</span><span class="mi">10</span><span class="p">,</span>
+    <span class="n">verbosity_level</span><span class="o">=</span><span class="mi">2</span>
+<span class="p">)</span>
+
+<span class="n">agent</span><span class="o">.</span><span class="n">run</span><span class="p">(</span><span class="s2">"Give me the best playlist for a party at the Wayne's mansion. The party idea is a 'villain masquerade' theme"</span><span class="p">)</span>
+</code></pre></div>
+
+<p>このように、いくつかのツールでエージェントの機能を強化した <code>CodeAgent</code> を作成し、コミュニティと共有できる究極のパーティープランナーに仕上げました！ 🎉</p>
+<p>今度はあなたの番です。学んだ知識を使って、自分自身のエージェントを作り、コミュニティと共有しましょう！ 🕵️‍♂️💡</p>
+<div class="callout callout-tip">
+<p class="callout-title">💡 ヒント</p>
+<p>エージェントプロジェクトを共有したい場合は、Space を作り、Hugging Face Hub で <a href="https://huggingface.co/agents-course">agents-course</a> をタグ付けしてください。皆さんの作品を楽しみにしています！</p>
+</div>
+<h3>OpenTelemetry と Langfuse でパーティー準備エージェントを検査する 📡</h3>
+<p>アルフレッドは Party Preparator Agent を微調整するなかで、その実行のデバッグに疲れてきています。エージェントは本質的に予測が難しく、検査も困難です。しかし、究極の Party Preparator Agent を構築して本番環境にデプロイすることを目指す以上、将来の監視と分析のために堅牢なトレーサビリティが必要です。</p>
+<p>ここでも <code>smolagents</code> が助けてくれます。エージェントの実行を計測するための <a href="https://opentelemetry.io/">OpenTelemetry</a> 標準を取り入れており、シームレスな検査とロギングが可能です。<a href="https://langfuse.com/">Langfuse</a> と <code>SmolagentsInstrumentor</code> の助けを借りて、アルフレッドはエージェントの振る舞いを簡単に追跡・分析できます。</p>
+<p>セットアップは簡単です！</p>
+<p>まず、必要な依存関係をインストールします。</p>
+<div class="codehilite"><pre><span></span><code>pip<span class="w"> </span>install<span class="w"> </span>opentelemetry-sdk<span class="w"> </span>opentelemetry-exporter-otlp<span class="w"> </span>openinference-instrumentation-smolagents<span class="w"> </span>langfuse
+</code></pre></div>
+
+<p>次に、アルフレッドはすでに Langfuse のアカウントを作成し、API キーの準備ができています。まだの場合は、Langfuse Cloud に<a href="https://cloud.langfuse.com/">こちら</a>からサインアップするか、<a href="https://huggingface.co/docs/smolagents/tutorials/inspect_runs">代替手段</a>を探ってください。</p>
+<p>API キーを取得したら、次のように適切に設定する必要があります。</p>
+<div class="codehilite"><pre><span></span><code><span class="kn">import</span><span class="w"> </span><span class="nn">os</span>
+
+<span class="c1"># プロジェクトのキーはプロジェクト設定ページから取得します: https://cloud.langfuse.com</span>
+<span class="n">os</span><span class="o">.</span><span class="n">environ</span><span class="p">[</span><span class="s2">"LANGFUSE_PUBLIC_KEY"</span><span class="p">]</span> <span class="o">=</span> <span class="s2">"pk-lf-..."</span> 
+<span class="n">os</span><span class="o">.</span><span class="n">environ</span><span class="p">[</span><span class="s2">"LANGFUSE_SECRET_KEY"</span><span class="p">]</span> <span class="o">=</span> <span class="s2">"sk-lf-..."</span> 
+<span class="n">os</span><span class="o">.</span><span class="n">environ</span><span class="p">[</span><span class="s2">"LANGFUSE_HOST"</span><span class="p">]</span> <span class="o">=</span> <span class="s2">"https://cloud.langfuse.com"</span> <span class="c1"># 🇪🇺 EU リージョン</span>
+<span class="c1"># os.environ["LANGFUSE_HOST"] = "https://us.cloud.langfuse.com" # 🇺🇸 US リージョン</span>
+</code></pre></div>
+
+<p>環境変数を設定したら、Langfuse クライアントを初期化できます。get_client() は、環境変数に与えられた認証情報を使って Langfuse クライアントを初期化します。</p>
+<div class="codehilite"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">langfuse</span><span class="w"> </span><span class="kn">import</span> <span class="n">get_client</span>
+
+<span class="n">langfuse</span> <span class="o">=</span> <span class="n">get_client</span><span class="p">()</span>
+
+<span class="c1"># 接続を確認</span>
+<span class="k">if</span> <span class="n">langfuse</span><span class="o">.</span><span class="n">auth_check</span><span class="p">():</span>
+    <span class="nb">print</span><span class="p">(</span><span class="s2">"Langfuse client is authenticated and ready!"</span><span class="p">)</span>
+<span class="k">else</span><span class="p">:</span>
+    <span class="nb">print</span><span class="p">(</span><span class="s2">"Authentication failed. Please check your credentials and host."</span><span class="p">)</span>
+</code></pre></div>
+
+<p>最後に、アルフレッドは <code>SmolagentsInstrumentor</code> を初期化し、エージェントのパフォーマンスの追跡を開始する準備が整いました。</p>
+<div class="codehilite"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">openinference.instrumentation.smolagents</span><span class="w"> </span><span class="kn">import</span> <span class="n">SmolagentsInstrumentor</span>
+
+<span class="n">SmolagentsInstrumentor</span><span class="p">()</span><span class="o">.</span><span class="n">instrument</span><span class="p">()</span>
+</code></pre></div>
+
+<p>アルフレッドが接続できました 🔌！ <code>smolagents</code> の実行が Langfuse に記録され、エージェントの振る舞いを完全に把握できます。このセットアップにより、過去の実行を振り返って Party Preparator Agent をさらに改良する準備が整いました。</p>
+<div class="callout callout-tip">
+<p class="callout-title">💡 ヒント</p>
+<p>エージェントのトレース方法や、収集したデータでパフォーマンスを評価する方法については、<a href="https://huggingface.co/learn/agents-course/bonus-unit2/introduction">Bonus Unit 2</a> をご覧ください。</p>
+</div>
+<div class="codehilite"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">smolagents</span><span class="w"> </span><span class="kn">import</span> <span class="n">CodeAgent</span><span class="p">,</span> <span class="n">InferenceClientModel</span>
+
+<span class="n">agent</span> <span class="o">=</span> <span class="n">CodeAgent</span><span class="p">(</span><span class="n">tools</span><span class="o">=</span><span class="p">[],</span> <span class="n">model</span><span class="o">=</span><span class="n">InferenceClientModel</span><span class="p">())</span>
+<span class="n">alfred_agent</span> <span class="o">=</span> <span class="n">agent</span><span class="o">.</span><span class="n">from_hub</span><span class="p">(</span><span class="s1">'sergiopaniego/AlfredAgent'</span><span class="p">,</span> <span class="n">trust_remote_code</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+<span class="n">alfred_agent</span><span class="o">.</span><span class="n">run</span><span class="p">(</span><span class="s2">"Give me the best playlist for a party at Wayne's mansion. The party idea is a 'villain masquerade' theme"</span><span class="p">)</span>  
+</code></pre></div>
+
+<p>アルフレッドは<a href="https://cloud.langfuse.com/project/cm7bq0abj025rad078ak3luwi/traces/995fc019255528e4f48cf6770b0ce27b?timestamp=2025-02-19T10%3A28%3A36.929Z">こちら</a>のログにアクセスして、確認と分析を行えます。</p>
+<div class="callout callout-tip">
+<p class="callout-title">💡 ヒント</p>
+<p>実は、実行中に小さなエラーが発生しました。ログの中で見つけられますか？ エージェントがそれをどのように処理し、それでも有効な答えを返すかを追ってみてください。答え合わせをしたい場合は、エラーへの直接リンクが<a href="https://cloud.langfuse.com/project/cm7bq0abj025rad078ak3luwi/traces/995fc019255528e4f48cf6770b0ce27b?timestamp=2025-02-19T10%3A28%3A36.929Z&observation=80ca57ace4f69b52">こちら</a>です。もちろん、そのエラーはすでに修正されています。詳細はこちらの <a href="https://github.com/huggingface/smolagents/issues/838">issue</a> をご覧ください。</p>
+</div>
+<p>一方、<a href="https://open.spotify.com/playlist/0gZMMHjuxMrrybQ7wTMTpw">おすすめのプレイリスト</a>が、パーティーの準備にぴったりの雰囲気を作ってくれます。素敵ですよね？ 🎶  </p>
+<hr />
+<p>最初の Code Agent を作成できたので、次は <code>smolagents</code> で使える2つ目のエージェントタイプである <strong>Tool Calling Agents の作り方を学びましょう</strong>。</p>
+<h2>リソース</h2>
+<ul>
+<li><a href="https://huggingface.co/blog/smolagents">smolagents Blog</a> - smolagents とコードインタラクションの紹介</li>
+<li><a href="https://huggingface.co/docs/smolagents/tutorials/building_good_agents">smolagents: Building Good Agents</a> - 信頼性の高いエージェントのためのベストプラクティス</li>
+<li><a href="https://www.anthropic.com/research/building-effective-agents">Building Effective Agents - Anthropic</a> - エージェントの設計原則</li>
+<li><a href="https://huggingface.co/docs/smolagents/tutorials/inspect_runs">Sharing runs with OpenTelemetry</a> - エージェントの追跡のために OpenTelemetry をセットアップする方法の詳細</li>
+</ul>
+</article>
+<nav class="page-nav"><a class="nav-link prev" href="quiz1.html">← 前へ: 小クイズ（採点なし）</a><a class="nav-link toc-link" href="../../index.html">目次へ</a><a class="nav-link next" href="tool_calling_agents.html">次へ →: アクションをコードスニペットや JSON blob で書く</a></nav>
+</main>
+<footer class="site-footer">
+  <p>原典: Hugging Face huggingface/agents-course（<a href="https://github.com/huggingface/agents-course">https://github.com/huggingface/agents-course</a>）</p>
+  <p>日本語版の翻訳・公開: 霞ヶ関京 / 連絡先: GitHub <a href="https://github.com/yanikasumin">@yanikasumin</a> / YouTube <a href="https://www.youtube.com/@KASUMI_MOF">@KASUMI_MOF</a></p>
+  <p class="demo-note">このサイトはデモ版です。内容は順次更新されます。</p>
+</footer>
+<script src="../../../site.js"></script>
+</body>
+</html>

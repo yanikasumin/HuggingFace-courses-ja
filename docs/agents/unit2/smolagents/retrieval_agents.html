@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Agentic RAG システムを作る | Hugging Face コース日本語版（デモ版）</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Shippori+Mincho:wght@500;700&family=Zen+Kaku+Gothic+New:wght@400;500;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../../../style.css">
+<script>
+window.MathJax = { tex: { inlineMath: [['$', '$'], ['\\(', '\\)']], displayMath: [['$$', '$$'], ['\\[', '\\]']] }, options: { skipHtmlTags: ['script','noscript','style','textarea','pre','code'] } };
+</script>
+<script async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml.js"></script>
+</head>
+<body>
+<header class="site-header">
+  <div class="header-inner">
+    <a class="site-title" href="../../../index.html">Hugging Face コース日本語版</a>
+    <span class="demo-badge">デモ版</span>
+  </div>
+</header>
+<main class="container">
+<p class="course-crumb"><a href="../../index.html">Agents コース</a>
+<span class="badge badge-qa-wip">翻訳済み・QA進行中（未検証の部分を含みます）</span></p>
+<nav class="page-nav"><a class="nav-link prev" href="tools.html">← 前へ: ツール</a><a class="nav-link toc-link" href="../../index.html">目次へ</a><a class="nav-link next" href="quiz2.html">次へ →: 小クイズ（採点なし）</a></nav>
+<article class="content">
+<h1>Agentic RAG システムを作る</h1>
+<div class="callout callout-tip">
+<p class="callout-title">💡 ヒント</p>
+<p>コードは、Google Colab で実行できる<a href="https://huggingface.co/agents-course/notebooks/blob/main/unit2/smolagents/retrieval_agents.ipynb" target="_blank">このノートブック</a>で追うことができます。</p>
+</div>
+<p>Retrieval Augmented Generation (RAG) システムは、データ検索と生成モデルの能力を組み合わせ、コンテキストを意識した応答を提供します。たとえば、ユーザーのクエリが検索エンジンに渡され、取得された結果がクエリとともにモデルに与えられます。モデルはそのクエリと取得した情報にもとづいて応答を生成します。</p>
+<p>Agentic RAG (Retrieval-Augmented Generation) は、<strong>自律的なエージェントと動的な知識検索を組み合わせる</strong>ことで、従来の RAG システムを拡張したものです。</p>
+<p>従来の RAG システムが、取得したデータをもとに LLM でクエリに答えるのに対し、Agentic RAG は<strong>検索と生成の両方のプロセスをインテリジェントに制御</strong>でき、効率と精度が向上します。</p>
+<p>従来の RAG システムは、<strong>単一の検索ステップに依存する</strong>ことや、ユーザーのクエリとの直接的な意味的類似性に注目するために、関連情報を見落とすことがある、といった重要な限界に直面しています。</p>
+<p>Agentic RAG は、エージェントが自律的に検索クエリを作成し、取得した結果を批評し、複数の検索ステップを実行できるようにすることでこれらの問題に対処し、より的確で包括的な出力を実現します。</p>
+<h2>DuckDuckGo による基本的な検索</h2>
+<p>DuckDuckGo を使って Web を検索できるシンプルなエージェントを作りましょう。このエージェントは情報を取得し、応答を統合してクエリに答えます。Agentic RAG を使えば、アルフレッドのエージェントは次のことができます。</p>
+<ul>
+<li>最新のスーパーヒーローパーティーのトレンドを検索する</li>
+<li>豪華な要素を含むよう結果を絞り込む</li>
+<li>情報を完全な計画に統合する</li>
+</ul>
+<p>アルフレッドのエージェントがこれを実現する方法は次のとおりです。</p>
+<div class="codehilite"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">smolagents</span><span class="w"> </span><span class="kn">import</span> <span class="n">CodeAgent</span><span class="p">,</span> <span class="n">DuckDuckGoSearchTool</span><span class="p">,</span> <span class="n">InferenceClientModel</span>
+
+<span class="c1"># 検索ツールを初期化する</span>
+<span class="n">search_tool</span> <span class="o">=</span> <span class="n">DuckDuckGoSearchTool</span><span class="p">()</span>
+
+<span class="c1"># モデルを初期化する</span>
+<span class="n">model</span> <span class="o">=</span> <span class="n">InferenceClientModel</span><span class="p">()</span>
+
+<span class="n">agent</span> <span class="o">=</span> <span class="n">CodeAgent</span><span class="p">(</span>
+    <span class="n">model</span><span class="o">=</span><span class="n">model</span><span class="p">,</span>
+    <span class="n">tools</span><span class="o">=</span><span class="p">[</span><span class="n">search_tool</span><span class="p">],</span>
+<span class="p">)</span>
+
+<span class="c1"># 使用例</span>
+<span class="n">response</span> <span class="o">=</span> <span class="n">agent</span><span class="o">.</span><span class="n">run</span><span class="p">(</span>
+    <span class="s2">"Search for luxury superhero-themed party ideas, including decorations, entertainment, and catering."</span>
+<span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">response</span><span class="p">)</span>
+</code></pre></div>
+
+<p>エージェントは次のプロセスに従います。</p>
+<ol>
+<li><strong>リクエストを分析する:</strong> アルフレッドのエージェントは、クエリの主要な要素、つまり装飾、エンターテイメント、ケータリングに焦点を当てた、豪華なスーパーヒーローをテーマにしたパーティーの計画を特定します。</li>
+<li><strong>検索を実行する:</strong> エージェントは DuckDuckGo を活用して、最も関連性が高く最新の情報を検索し、豪華なイベントを求めるアルフレッドの洗練された好みに沿うようにします。</li>
+<li><strong>情報を統合する:</strong> 結果を集めたあと、エージェントはそれらを、パーティーのあらゆる側面をカバーする一貫した実行可能な計画に加工します。</li>
+<li><strong>将来の参照のために保存する:</strong> エージェントは取得した情報を保存し、将来のイベント計画の際に簡単にアクセスできるようにして、その後のタスクの効率を最適化します。</li>
+</ol>
+<h2>カスタムナレッジベースのツール</h2>
+<p>専門的なタスクでは、カスタムのナレッジベースが非常に貴重です。技術ドキュメントや専門知識のベクトルデータベースに問い合わせるツールを作りましょう。セマンティック検索を使うことで、エージェントはアルフレッドのニーズに最も関連する情報を見つけられます。</p>
+<p>ベクトルデータベースは、機械学習モデルによって作成された、テキストやその他のデータの数値表現（埋め込み）を格納します。高次元空間で似た意味を特定することで、セマンティック検索を可能にします。</p>
+<p>このアプローチは、事前定義された知識とセマンティック検索を組み合わせ、イベント計画のためのコンテキストを意識したソリューションを提供します。専門知識へのアクセスにより、アルフレッドはパーティーのあらゆる細部を完璧に仕上げられます。</p>
+<p>この例では、カスタムのナレッジベースからパーティー計画のアイデアを取得するツールを作ります。BM25 リトリーバーを使ってナレッジベースを検索して上位の結果を返し、<code>RecursiveCharacterTextSplitter</code> でドキュメントをより小さいチャンクに分割して、検索を効率化します。</p>
+<div class="codehilite"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">langchain_community.docstore.document</span><span class="w"> </span><span class="kn">import</span> <span class="n">Document</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">langchain_text_splitters</span><span class="w"> </span><span class="kn">import</span> <span class="n">RecursiveCharacterTextSplitter</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">smolagents</span><span class="w"> </span><span class="kn">import</span> <span class="n">Tool</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">langchain_community.retrievers</span><span class="w"> </span><span class="kn">import</span> <span class="n">BM25Retriever</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">smolagents</span><span class="w"> </span><span class="kn">import</span> <span class="n">CodeAgent</span><span class="p">,</span> <span class="n">InferenceClientModel</span>
+
+<span class="k">class</span><span class="w"> </span><span class="nc">PartyPlanningRetrieverTool</span><span class="p">(</span><span class="n">Tool</span><span class="p">):</span>
+    <span class="n">name</span> <span class="o">=</span> <span class="s2">"party_planning_retriever"</span>
+    <span class="n">description</span> <span class="o">=</span> <span class="s2">"Uses semantic search to retrieve relevant party planning ideas for Alfred’s superhero-themed party at Wayne Manor."</span>
+    <span class="n">inputs</span> <span class="o">=</span> <span class="p">{</span>
+        <span class="s2">"query"</span><span class="p">:</span> <span class="p">{</span>
+            <span class="s2">"type"</span><span class="p">:</span> <span class="s2">"string"</span><span class="p">,</span>
+            <span class="s2">"description"</span><span class="p">:</span> <span class="s2">"The query to perform. This should be a query related to party planning or superhero themes."</span><span class="p">,</span>
+        <span class="p">}</span>
+    <span class="p">}</span>
+    <span class="n">output_type</span> <span class="o">=</span> <span class="s2">"string"</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">docs</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">retriever</span> <span class="o">=</span> <span class="n">BM25Retriever</span><span class="o">.</span><span class="n">from_documents</span><span class="p">(</span>
+            <span class="n">docs</span><span class="p">,</span> <span class="n">k</span><span class="o">=</span><span class="mi">5</span>  <span class="c1"># 上位5件のドキュメントを取得する</span>
+        <span class="p">)</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">forward</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">query</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+        <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">query</span><span class="p">,</span> <span class="nb">str</span><span class="p">),</span> <span class="s2">"Your search query must be a string"</span>
+
+        <span class="n">docs</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">retriever</span><span class="o">.</span><span class="n">invoke</span><span class="p">(</span>
+            <span class="n">query</span><span class="p">,</span>
+        <span class="p">)</span>
+        <span class="k">return</span> <span class="s2">"</span><span class="se">\n</span><span class="s2">Retrieved ideas:</span><span class="se">\n</span><span class="s2">"</span> <span class="o">+</span> <span class="s2">""</span><span class="o">.</span><span class="n">join</span><span class="p">(</span>
+            <span class="p">[</span>
+                <span class="sa">f</span><span class="s2">"</span><span class="se">\n\n</span><span class="s2">===== Idea </span><span class="si">{</span><span class="nb">str</span><span class="p">(</span><span class="n">i</span><span class="p">)</span><span class="si">}</span><span class="s2"> =====</span><span class="se">\n</span><span class="s2">"</span> <span class="o">+</span> <span class="n">doc</span><span class="o">.</span><span class="n">page_content</span>
+                <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">doc</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">docs</span><span class="p">)</span>
+            <span class="p">]</span>
+        <span class="p">)</span>
+
+<span class="c1"># パーティー計画に関するナレッジベースをシミュレーションする</span>
+<span class="n">party_ideas</span> <span class="o">=</span> <span class="p">[</span>
+    <span class="p">{</span><span class="s2">"text"</span><span class="p">:</span> <span class="s2">"A superhero-themed masquerade ball with luxury decor, including gold accents and velvet curtains."</span><span class="p">,</span> <span class="s2">"source"</span><span class="p">:</span> <span class="s2">"Party Ideas 1"</span><span class="p">},</span>
+    <span class="p">{</span><span class="s2">"text"</span><span class="p">:</span> <span class="s2">"Hire a professional DJ who can play themed music for superheroes like Batman and Wonder Woman."</span><span class="p">,</span> <span class="s2">"source"</span><span class="p">:</span> <span class="s2">"Entertainment Ideas"</span><span class="p">},</span>
+    <span class="p">{</span><span class="s2">"text"</span><span class="p">:</span> <span class="s2">"For catering, serve dishes named after superheroes, like 'The Hulk's Green Smoothie' and 'Iron Man's Power Steak.'"</span><span class="p">,</span> <span class="s2">"source"</span><span class="p">:</span> <span class="s2">"Catering Ideas"</span><span class="p">},</span>
+    <span class="p">{</span><span class="s2">"text"</span><span class="p">:</span> <span class="s2">"Decorate with iconic superhero logos and projections of Gotham and other superhero cities around the venue."</span><span class="p">,</span> <span class="s2">"source"</span><span class="p">:</span> <span class="s2">"Decoration Ideas"</span><span class="p">},</span>
+    <span class="p">{</span><span class="s2">"text"</span><span class="p">:</span> <span class="s2">"Interactive experiences with VR where guests can engage in superhero simulations or compete in themed games."</span><span class="p">,</span> <span class="s2">"source"</span><span class="p">:</span> <span class="s2">"Entertainment Ideas"</span><span class="p">}</span>
+<span class="p">]</span>
+
+<span class="n">source_docs</span> <span class="o">=</span> <span class="p">[</span>
+    <span class="n">Document</span><span class="p">(</span><span class="n">page_content</span><span class="o">=</span><span class="n">doc</span><span class="p">[</span><span class="s2">"text"</span><span class="p">],</span> <span class="n">metadata</span><span class="o">=</span><span class="p">{</span><span class="s2">"source"</span><span class="p">:</span> <span class="n">doc</span><span class="p">[</span><span class="s2">"source"</span><span class="p">]})</span>
+    <span class="k">for</span> <span class="n">doc</span> <span class="ow">in</span> <span class="n">party_ideas</span>
+<span class="p">]</span>
+
+<span class="c1"># より効率的な検索のために、ドキュメントを小さいチャンクに分割する</span>
+<span class="n">text_splitter</span> <span class="o">=</span> <span class="n">RecursiveCharacterTextSplitter</span><span class="p">(</span>
+    <span class="n">chunk_size</span><span class="o">=</span><span class="mi">500</span><span class="p">,</span>
+    <span class="n">chunk_overlap</span><span class="o">=</span><span class="mi">50</span><span class="p">,</span>
+    <span class="n">add_start_index</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+    <span class="n">strip_whitespace</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+    <span class="n">separators</span><span class="o">=</span><span class="p">[</span><span class="s2">"</span><span class="se">\n\n</span><span class="s2">"</span><span class="p">,</span> <span class="s2">"</span><span class="se">\n</span><span class="s2">"</span><span class="p">,</span> <span class="s2">"."</span><span class="p">,</span> <span class="s2">" "</span><span class="p">,</span> <span class="s2">""</span><span class="p">],</span>
+<span class="p">)</span>
+<span class="n">docs_processed</span> <span class="o">=</span> <span class="n">text_splitter</span><span class="o">.</span><span class="n">split_documents</span><span class="p">(</span><span class="n">source_docs</span><span class="p">)</span>
+
+<span class="c1"># リトリーバーツールを作成する</span>
+<span class="n">party_planning_retriever</span> <span class="o">=</span> <span class="n">PartyPlanningRetrieverTool</span><span class="p">(</span><span class="n">docs_processed</span><span class="p">)</span>
+
+<span class="c1"># エージェントを初期化する</span>
+<span class="n">agent</span> <span class="o">=</span> <span class="n">CodeAgent</span><span class="p">(</span><span class="n">tools</span><span class="o">=</span><span class="p">[</span><span class="n">party_planning_retriever</span><span class="p">],</span> <span class="n">model</span><span class="o">=</span><span class="n">InferenceClientModel</span><span class="p">())</span>
+
+<span class="c1"># 使用例</span>
+<span class="n">response</span> <span class="o">=</span> <span class="n">agent</span><span class="o">.</span><span class="n">run</span><span class="p">(</span>
+    <span class="s2">"Find ideas for a luxury superhero-themed party, including entertainment, catering, and decoration options."</span>
+<span class="p">)</span>
+
+<span class="nb">print</span><span class="p">(</span><span class="n">response</span><span class="p">)</span>
+</code></pre></div>
+
+<p>この強化されたエージェントは次のことが可能です。
+1. まずドキュメントで関連情報を確認する
+2. ナレッジベースからの洞察を組み合わせる
+3. 会話のコンテキストをメモリに保持する</p>
+<h2>強化された検索能力</h2>
+<p>Agentic RAG システムを構築する際、エージェントは次のような高度な戦略を採用できます。</p>
+<ol>
+<li><strong>クエリの再定式化（Query Reformulation）:</strong> ユーザーの生のクエリを使う代わりに、対象ドキュメントによりよく一致する最適化された検索語を作成する</li>
+<li><strong>クエリの分解（Query Decomposition）:</strong> ユーザークエリをそのまま使う代わりに、問い合わせるべき情報が複数含まれていれば、それを複数のクエリに分解する</li>
+<li><strong>クエリの拡張（Query Expansion）:</strong> クエリの再定式化と似ているが、クエリを複数の言い回しにしてすべて問い合わせるために複数回行う</li>
+<li><strong>リランキング（Reranking）:</strong> Cross-Encoder を使って、取得したドキュメントと検索クエリの間に、より包括的で意味的な関連性スコアを割り当てる</li>
+<li><strong>マルチステップ検索（Multi-Step Retrieval）:</strong> 初期の結果をその後のクエリに活かしながら、複数の検索を実行する</li>
+<li><strong>ソースの統合（Source Integration）:</strong> Web 検索やローカルのドキュメントなど、複数のソースから情報を組み合わせる</li>
+<li><strong>結果の検証（Result Validation）:</strong> 取得したコンテンツについて、応答に含める前に、関連性と正確さを分析する</li>
+</ol>
+<p>効果的な Agentic RAG システムには、いくつかの重要な観点への慎重な配慮が必要です。エージェントは、<strong>クエリの種類とコンテキストに基づいて、利用可能なツールの中から選択すべき</strong>です。メモリシステムは、会話履歴の保持や、重複した検索の回避に役立ちます。フォールバック戦略があれば、主要な検索方法が失敗しても、システムはなお価値を提供できます。さらに、検証ステップを実装することで、取得した情報の正確さと関連性を確保できます。</p>
+<h2>リソース</h2>
+<ul>
+<li><a href="https://huggingface.co/learn/cookbook/agent_rag">Agentic RAG: turbocharge your RAG with query reformulation and self-query! 🚀</a> - smolagents を使った Agentic RAG システム開発のレシピ。</li>
+</ul>
+</article>
+<nav class="page-nav"><a class="nav-link prev" href="tools.html">← 前へ: ツール</a><a class="nav-link toc-link" href="../../index.html">目次へ</a><a class="nav-link next" href="quiz2.html">次へ →: 小クイズ（採点なし）</a></nav>
+</main>
+<footer class="site-footer">
+  <p>原典: Hugging Face huggingface/agents-course（<a href="https://github.com/huggingface/agents-course">https://github.com/huggingface/agents-course</a>）</p>
+  <p>日本語版の翻訳・公開: 霞ヶ関京 / 連絡先: GitHub <a href="https://github.com/yanikasumin">@yanikasumin</a> / YouTube <a href="https://www.youtube.com/@KASUMI_MOF">@KASUMI_MOF</a></p>
+  <p class="demo-note">このサイトはデモ版です。内容は順次更新されます。</p>
+</footer>
+<script src="../../../site.js"></script>
+</body>
+</html>
