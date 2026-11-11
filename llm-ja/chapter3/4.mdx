@@ -84,7 +84,7 @@ for batch in train_dataloader:
 
 学習用データローダでは `shuffle=True` を設定し、バッチ内の最大長に合わせてパディングしているため、実際の形状はおそらく少し異なります。
 
-データの前処理が完全に終わりました（ML 実務者にとっては、達成できるとうれしいものの、なかなか手の届かない目標です）。次はモデルです。前のセクションとまったく同じようにインスタンス化します。
+これでデータの前処理は完全に終わりました（ML 実務者にとっては、達成できればうれしいものの、なかなか手の届かない目標です）。次はモデルです。前のセクションとまったく同じようにインスタンス化します。
 
 ```py
 from transformers import AutoModelForSequenceClassification
@@ -157,7 +157,7 @@ device
 device(type='cuda')
 ```
 
-これで学習の準備が整いました。学習がいつ終わるか見当をつけるために、`tqdm` ライブラリを使って、学習ステップ数に対するプログレスバーを追加します。
+これで学習の準備が整いました。学習がいつ終わるか見当をつけるために、`tqdm` ライブラリを使って、学習ステップ数分のプログレスバーを追加します。
 
 ```py
 from tqdm.auto import tqdm
@@ -188,12 +188,12 @@ for epoch in range(num_epochs):
 >
 > 🔧 **実装ガイド**: これらの最適化の詳しい例は、[🤗 Transformers の効率的な学習ガイド](https://huggingface.co/docs/transformers/main/en/perf_train_gpu_one) と [オプティマイザの一覧](https://huggingface.co/docs/transformers/main/en/optimizers) を参照してください。
 
-学習ループの核となる部分は、入門編で見たものとよく似ていることがわかります。レポート出力は指定していないので、この学習ループではモデルの調子はわかりません。それには評価ループを追加する必要があります。
+学習ループの核となる部分は、入門編で見たものとよく似ていることがわかります。レポート出力は指定していないため、この学習ループではモデルがどの程度うまくいっているかはわかりません。それには評価ループを追加する必要があります。
 
 
 ### 評価ループ[[the-evaluation-loop]]
 
-前と同じく、🤗 Evaluate ライブラリが提供する指標を使います。`metric.compute()` メソッドはすでに見ましたが、指標は `add_batch()` メソッドで、予測ループを回しながらバッチを蓄積することもできます。すべてのバッチを蓄積したら、`metric.compute()` で最終結果が得られます。評価ループでの実装は次のとおりです。
+前と同じく、🤗 Evaluate ライブラリが提供する指標を使います。`metric.compute()` メソッドはすでに見ましたが、指標は `add_batch()` メソッドを使えば、予測ループを回しながらバッチを蓄積することもできます。すべてのバッチを蓄積したら、`metric.compute()` で最終結果が得られます。評価ループでの実装は次のとおりです。
 
 > [!TIP]
 > 📊 **評価のベストプラクティス**: より高度な評価戦略と指標については、[🤗 Evaluate のドキュメント](https://huggingface.co/docs/evaluate/) と [包括的な評価クックブック](https://github.com/huggingface/evaluation-guidebook) を参照してください。
@@ -271,9 +271,9 @@ for epoch in range(num_epochs):
         progress_bar.update(1)
 ```
 
-追加する1行目は import 文です。2行目では `Accelerator` オブジェクトをインスタンス化します。これが環境を確認し、適切な分散セットアップを初期化します。デバイス配置は 🤗 Accelerate が処理してくれるので、モデルをデバイスに載せる行は削除できます（残したい場合は、`device` の代わりに `accelerator.device` を使うよう変更してください）。
+最初に追加する行は import 文です。次に追加する行では `Accelerator` オブジェクトをインスタンス化します。これが環境を確認し、適切な分散セットアップを初期化します。デバイス配置は 🤗 Accelerate が処理してくれるので、モデルをデバイスに載せる行は削除できます（残したい場合は、`device` の代わりに `accelerator.device` を使うよう変更してください）。
 
-作業の中心は、データローダ、モデル、オプティマイザを `accelerator.prepare()` に渡す行です。これにより各オブジェクトが適切なコンテナでラップされ、分散学習が意図どおりに動作します。残りの変更は、バッチを `device` に載せる行の削除（これも残したい場合は `accelerator.device` を使うよう変更できます）と、`loss.backward()` を `accelerator.backward(loss)` に置き換えることです。
+作業の中心は、データローダ、モデル、オプティマイザを `accelerator.prepare()` に渡す行です。これにより各オブジェクトが分散学習に適した形でラップされ、分散学習が意図どおりに動作します。残りの変更は、バッチを `device` に載せる行の削除（これも残したい場合は `accelerator.device` を使うよう変更できます）と、`loss.backward()` を `accelerator.backward(loss)` に置き換えることです。
 
 > [!TIP]
 > ⚠️ Cloud TPU による高速化の恩恵を受けるには、トークナイザの `padding="max_length"` 引数と `max_length` 引数を使って、サンプルを固定長にパディングすることをおすすめします。
@@ -357,7 +357,7 @@ notebook_launcher(training_function)
 
 **モデルの共有**: 学習が終わったら、モデルを Hugging Face Hub で共有し、コミュニティが使えるようにしてください。
 
-**効率化**: 大きなモデルでは、勾配チェックポイント、パラメータ効率のよいファインチューニング（LoRA、AdaLoRA）、量子化といった手法を検討してください。
+**効率化**: 大きなモデルでは、勾配チェックポインティング、パラメータ効率のよいファインチューニング（LoRA、AdaLoRA）、量子化といった手法を検討してください。
 
 カスタム学習ループによるファインチューニングの詳細な解説は以上です。ここで学んだスキルは、学習プロセスを完全に制御したい場合や、`Trainer` API の範囲を超えるカスタム学習ロジックを実装したい場合に役立ちます。
 
@@ -519,7 +519,7 @@ notebook_launcher(training_function)
 		},
 		{
 			text: "主要なオブジェクトを accelerator.prepare() でラップし、loss.backward() の代わりに accelerator.backward() を使います。",
-			explain: "正解です！主な変更はこの2点で、オブジェクトを prepare し、適切な分散学習のために accelerator.backward() を使います。",
+			explain: "正解です！主な変更はこの2点で、オブジェクトを accelerator.prepare() でラップし、分散学習を適切に行うために accelerator.backward() を使います。",
             correct: true
 		},
 		{

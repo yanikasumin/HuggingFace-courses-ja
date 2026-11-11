@@ -324,7 +324,7 @@ tokenized_dataset = drug_dataset.map(slow_tokenize_function, batched=True, num_p
 `batched=True`, `num_proc=8`  | 6.52s          | 41.3s
 `batched=False`, `num_proc=8` | 9.49s          | 45.2s
 
-低速トークナイザでも、はるかに現実的な数値が得られましたが、高速トークナイザの性能も大幅に向上しました。ただし、常にそうなるとは限りません。8以外の `num_proc` の値では、そのオプションなしで `batched=True` を使うほうが速いという結果がテストで示されました。一般に、`batched=True` と高速トークナイザの組み合わせに Python のマルチプロセッシングを使うことはおすすめしません。
+低速トークナイザでも、実行時間が大幅に短縮され、より実用的な水準になりましたが、高速トークナイザの性能も大幅に向上しました。ただし、常にそうなるとは限りません。8以外の `num_proc` の値では、そのオプションなしで `batched=True` を使うほうが速いという結果がテストで示されました。一般に、`batched=True` と高速トークナイザの組み合わせに Python のマルチプロセッシングを使うことはおすすめしません。
 
 > [!TIP]
 > `num_proc` を使って処理を高速化するのは、通常は良い考えです。ただし、使用している関数自体が既に何らかのマルチプロセッシングを行っていない場合に限ります。
@@ -367,7 +367,7 @@ tokenized_dataset = drug_dataset.map(tokenize_and_split, batched=True)
 ArrowInvalid: Column 1 named condition expected length 1463 but got length 1000
 ```
 
-おっと、うまくいきませんでした！なぜでしょうか。エラーメッセージが手がかりになります。列の長さに不一致があり、一方は長さ1,463、もう一方は長さ1,000です。`Dataset.map()` の[ドキュメント](https://huggingface.co/docs/datasets/package_reference/main_classes#datasets.Dataset.map)を見たことがあれば、関数に渡されるサンプルの数が、そのままマッピングの対象になることを思い出すかもしれません。ここでは、その1,000件のサンプルから1,463件の新しい特徴量が得られ、形状エラーになりました。
+おっと、うまくいきませんでした！なぜでしょうか。エラーメッセージが手がかりになります。列の長さに不一致があり、一方は長さ1,463、もう一方は長さ1,000です。`Dataset.map()` の[ドキュメント](https://huggingface.co/docs/datasets/package_reference/main_classes#datasets.Dataset.map)を見たことがあれば、マッピング関数にはバッチ内のサンプルがまとめて渡されることを思い出すかもしれません。ここでは、渡された1,000件のサンプルから1,463件の新しい特徴量が得られ、列の長さが一致せずエラーになりました。
 
 問題は、サイズの異なる2つのデータセットを混ぜようとしていることです。元のデータセットの列には1,000件の値があります。一方、`return_overflowing_tokens=True` によって長いレビューが分割されるため、新しい列には1,463件の値が生成されます。`Dataset` ではこれは成り立たないため、古いデータセットの列を取り除くか、新しいデータセットと同じサイズにする必要があります。前者は `remove_columns` 引数で行えます。
 

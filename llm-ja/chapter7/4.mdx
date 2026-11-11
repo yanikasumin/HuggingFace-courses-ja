@@ -922,7 +922,7 @@ for epoch in range(num_train_epochs):
         metric.add_batch(predictions=decoded_preds, references=decoded_labels)
 
     results = metric.compute()
-    print(f"epoch {epoch}, BLEU score: {results['score']:.2f}")
+    print(f"エポック {epoch}, BLEU スコア: {results['score']:.2f}")
 
     # 保存とアップロード
     accelerator.wait_for_everyone()
@@ -936,9 +936,9 @@ for epoch in range(num_train_epochs):
 ```
 
 ```python out
-epoch 0, BLEU score: 53.47
-epoch 1, BLEU score: 54.24
-epoch 2, BLEU score: 54.44
+エポック 0, BLEU スコア: 53.47
+エポック 1, BLEU スコア: 54.24
+エポック 2, BLEU スコア: 54.44
 ```
 
 これが完了すると、`Seq2SeqTrainer` で学習したモデルとかなり似た結果を持つモデルが得られるはずです。このコードで学習したモデルは [*huggingface-course/marian-finetuned-kde4-en-to-fr-accelerate*](https://huggingface.co/huggingface-course/marian-finetuned-kde4-en-to-fr-accelerate) で確認できます。学習ループへの微調整を試したい場合は、上に示したコードを編集して直接実装できます！
