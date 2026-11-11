@@ -1,0 +1,116 @@
+# ロボット運動学を理解する
+
+このセクションでは、具体例を順を追って考えながら、ロボット運動学の基本的な考え方を身に付けます。運動学は、関節角度とエンドエフェクタの位置との数学的な関係を扱います。関節のコンフィギュレーションが決まったとき、ロボットの手はどこに位置するのでしょうか。この基本概念を、単純化した代表的な例を使って説明します。
+
+従来のロボティクスがロボット制御にどう取り組むかを、ステップごとに追える具体例で見ていきましょう。
+
+## 複雑なものから単純なものへ: SO-100 の例
+
+まず、よく知られたロボットプラットフォームを取り上げ、段階的に構造を単純化します。こうすることで、余計な複雑さにとらわれず、運動学の基本原理に集中できます。
+
+<img src="https://huggingface.co/robotics-course/images/resolve/main/ch2/ch2-so100-to-planar-manipulator.png" alt="SO-100 から平面マニピュレータへ" style="width: 70%;" />
+
+一部の関節を固定することで、SO-100 アームを2次元の平面マニピュレータに単純化したものです。
+
+SO-100 は6自由度（6-DOF）のロボットアームです。原理を理解するために、一部の関節を固定して **2自由度の平面マニピュレータ** に単純化しましょう。
+
+## 単純化したロボット
+
+<!-- TODO: Reimplement this in vanilla python -->
+
+数式を分かりやすくするため、ロボットの構造を次のように単純化します。
+- 角度 θ₁ と θ₂ を持つ **2つの関節**  
+- 長さ *l* が等しい **2つのリンク**
+- **コンフィギュレーション** q = [θ₁, θ₂] ∈ [-π, +π]²
+
+## 順運動学: 関節から位置へ
+
+**質問:** 関節角度 θ₁ と θ₂ が与えられたとき、エンドエフェクタはどこにありますか。
+
+**答え:** エンドエフェクタの位置は数学的に計算できます。
+
+$$p(q) = \begin{pmatrix} l \cos(\theta_1) + l \cos(\theta_1 + \theta_2) \\ l \sin(\theta_1) + l \sin(\theta_1 + \theta_2) \end{pmatrix}$$
+
+これは **順運動学（FK）** と呼ばれます。関節空間からタスク空間への写像です。
+
+<!-- TODO: Small diagram: two-link arm in the plane with angles θ₁, θ₂ and link length l, showing how the two vector contributions add head-to-tail to reach p(q). -->
+
+> [!TIP]
+> **数式の読み方:** この式は基本的な三角関数から導かれます。
+> - 1つ目のリンク: 端点は $(l \cos(\theta_1), l \sin(\theta_1))$
+> - 2つ目のリンク: 1つ目のリンクの端点から始まり、$\theta_1 + \theta_2$ だけ回転します
+> - 最終位置: 両リンクの寄与の合計
+>
+> **なぜ重要か:** 単純なロボットでは FK は比較的簡単です。関節角度が分かれば、ロボットの手の位置は常に計算できます。より複雑なロボット、例えば器用なハンドなどは、モデリングがはるかに難しくなります。
+
+## 逆運動学: 位置から関節へ
+
+今度は写像を逆向きにたどります。望ましい手の位置が与えられたとき、それを実現する関節コンフィギュレーションは何でしょうか。
+
+**質問:** 望ましいエンドエフェクタ位置 p* が与えられたとき、どの関節角度を使えばよいですか。
+
+**答え:** これが **逆運動学（IK）** です。順運動学関数のヤコビアン行列を扱うため、一般に解くのがより複雑です。
+
+解くべき式は $p(q) = p^*$ です。
+
+一般には、これは最適化問題になります。
+$$\min_{q \in \mathcal{Q}} \|p(q) - p^*\|_2^2$$
+
+<!-- TODO: Workspace sketch: a reachable annulus for a 2‑link arm (inner radius |l₁−l₂|, outer radius l₁+l₂), with an in‑workspace and out‑of‑workspace target p*. -->
+
+> [!WARNING]
+> **IK が難しい理由:**
+> - **解が複数ある** — 同じ手の位置に、異なる関節角度で到達できます
+>
+> - **非線形方程式** — 解析的に解くのが難しい関数が現れます
+> - **制約** — 関節の可動範囲や障害物が問題をさらに複雑にします
+>
+> ロボットエンジニアが IK アルゴリズムに多くの時間を費やすのはこのためです。
+
+## 制約の難しさ
+
+<img src="https://huggingface.co/robotics-course/images/resolve/main/ch2/ch2-planar-manipulator-free.png" alt="自由な運動" style="width: 100%; max-width: 200px;" />
+
+*自由に動ける*
+
+<img src="https://huggingface.co/robotics-course/images/resolve/main/ch2/ch2-planar-manipulator-floor.png" alt="床による制約" style="width: 100%; max-width: 200px;" />
+
+*床によって動きが制限される*
+
+<img src="https://huggingface.co/robotics-course/images/resolve/main/ch2/ch2-planar-manipulator-floor-shelf.png" alt="複数の障害物" style="width: 100%; max-width: 200px;" />
+
+*複数の障害物*
+
+実際のロボットは **制約** に直面します。
+- **物理的な限界** — 床を突き抜けては動けません
+- **障害物** — 衝突を避けなければなりません  
+- **関節の可動範囲** — 動ける範囲には限りがあります
+
+こうした制約により、到達可能なコンフィギュレーション空間 $\mathcal{Q}$ ははるかに複雑になります。
+
+## 重要な洞察
+
+この **単純な2自由度ロボット** でさえ、制約付きの IK を解くのは簡単ではありません。実際のロボットには次のような要素があります。
+- **6以上の自由度**
+- **複雑なジオメトリ**  
+- **動的な環境**
+- **不確かなモデル**
+
+従来の手法では、ケースごとに **膨大な数学的モデリング** と **専門知識** が必要です。
+
+> [!TIP]
+> 考え方: FK は関節角度から位置を求める直接計算（q → p）なので、通常は比較的簡単です。一方、IK は目標位置を実現する関節角度を探す問題（p → q）であり、ワークスペースの制限、障害物、関節の可動範囲などの制約が加わると難しくなります。IK を直接解くのが難しい場合は、次に紹介する速度ベースの方法（微分逆運動学）を使います。
+
+## 参考文献
+
+参考文献の全リストは[チュートリアル](https://huggingface.co/spaces/lerobot/robot-learning-tutorial)を確認してください。
+
+- **Modern Robotics: Mechanics, Planning, and Control** (2017)  
+  Kevin M. Lynch and Frank C. Park  
+  第4章では順運動学を豊富な例とともに詳しく扱い、第6章では逆運動学を解析的・数値的両方のアプローチで扱っています。  
+  [書籍サイト](http://hades.mech.northwestern.edu/index.php/Modern_Robotics)
+
+- **Introduction to Robotics: Mechanics and Control** (2005)  
+  John J. Craig  
+  ロボット運動学を詳しく扱った古典的な教科書で、Denavit-Hartenberg 記法や、順運動学・逆運動学問題への体系的なアプローチを含みます。  
+  [出版社のページ](https://www.pearson.com/en-us/subject-catalog/p/introduction-to-robotics-mechanics-and-control/P200000003519)

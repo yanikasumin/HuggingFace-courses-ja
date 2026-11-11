@@ -1,0 +1,52 @@
+# ロボットの運動の種類
+
+<img src="https://huggingface.co/robotics-course/images/resolve/main/ch2/ch2-platforms.png" alt="ロボットのプラットフォーム" style="width: 70%;" />
+
+ロボットの運動の種類が違えば、必要なプラットフォームも大きく異なります。左から右、上から下の順に、ViperX、SO-100、Boston Dynamics の Spot、Open-Duck、1X の NEO、Boston Dynamics の Atlas です。
+
+このセクションでは、ロボットのさまざまな動作を分類します。これにより、取り組む問題の種類を見分け、適切なツールを選べるようになります。
+
+ロボティクスでは多くの場合、剛体リンクをつなぐ関節を制御して運動を生み出します。運動の種類を区別するうえで重要なのは、ロボットが何を変化させようとしているかです。周囲の環境なのか、環境内でのロボット自身の位置なのか、それともその両方なのかによって分類できます。
+
+ほとんどの問題は、次の3つのカテゴリのいずれかに当てはまります。
+
+**マニピュレーション**とは、ロボットが一定の場所にとどまりながら、周囲の環境を変化させる操作です。物体をつかむ、部品を組み立てる、道具を使うといった動作が含まれます。例えば、工場で部品を持ち上げて組み立てるロボットアームがこれに当たります。
+
+**ロコモーション**とは、ロボット自身が周囲の環境の中を移動することです。移動ベースや自動運転車などの車輪型ロボットと、歩行ロボットや四足歩行ロボットなどの脚型ロボットによる移動が含まれます。
+
+**モバイルマニピュレーション**は、ロコモーションとマニピュレーションを組み合わせたものです。ロボットが移動しながら物体を操作できるようにします。移動と操作を別々に行う場合よりも多くの制御変数を協調させる必要があるため、制御はさらに複雑になります。
+
+<!-- TODO: Diagram: three side-by-side boxes (Manipulation, Locomotion, Mobile Manipulation) with 1–2 examples each (e.g., pick-and-place; quadruped walking; mobile base with arm). Include typical observations (RGB, depth, proprioception) and action spaces (joint velocities vs base velocity). -->
+
+> [!TIP]
+> 簡単な見分け方: 「何が最も大きく変化するか」を考えます。主に周囲の物体の位置・姿勢や状態が変化するならマニピュレーション、主にロボット自身の位置・姿勢が変化するならロコモーション、両方が密接に連動して変化するならモバイルマニピュレーションです。この分類をもとに、記録すべきセンサデータと、方策が予測する行動空間を決められます。
+
+最近では、ALOHA、ALOHA-2、SO-100/SO-101 といった低価格マニピュレータの登場により、Franka Emika Panda アームのような従来のプラットフォームと比べて入手しやすくなり、ロボティクスへの参入障壁が大きく下がりました。
+
+<img src="https://huggingface.co/robotics-course/images/resolve/main/ch2/ch2-cost-accessibility.png" alt="ロボットのコスト比較" style="width: 40%;" />
+
+予算や設備が限られた環境では、安価で入手しやすいロボットの普及が進み、Panda アームのような従来のプラットフォームに迫りつつあります。特に SO-100 は数百ユーロで入手でき、数時間で全体を3Dプリントできます。一方、工業製品として製造される Panda アームは数万ユーロと高価で、オープンな形では提供されていません。
+
+ロボティクスの黎明期から積み重ねられてきた従来の研究は、近年、学習ベースの手法によって補完されるようになっています。機械学習は、ロボットの制御システム全体に大きな変革をもたらしました。当初は状態推定の精度を高めることで従来の計画手法を改善していましたが、その後は制御器自体をエンドツーエンドの学習モデルに置き換え、センサによる知覚情報から直接行動を決定する手法も実現しました。
+
+明示的なモデルは、現代ロボティクスの発展における重要な成果を実現するうえで、不可欠な役割を果たしてきました。一方、暗黙的なモデルを利用する近年の研究では、学習によって従来の手法が抱えていた拡張性や適用範囲の限界を克服できる可能性が示されています。
+
+<img src="https://huggingface.co/datasets/huggingface/documentation-images/resolve/main/robotics-course/classical-vs-robot-learning.png"  
+     alt="古典的手法とロボット学習の比較"  
+     width="600" height="200">  
+
+この分類は後のユニットでも再利用します。各カテゴリについて、データセット（記録するモダリティ）と方策（予測する行動チャンク）を議論するときに使います。
+
+## 参考文献
+
+参考文献の全リストは[チュートリアル](https://huggingface.co/spaces/lerobot/robot-learning-tutorial)を確認してください。
+
+- **ALOHA 2: An Enhanced Low-Cost Hardware for Bimanual Teleoperation** (2024)  
+  Jorge Aldaco et al.  
+  手頃な価格のマニピュレーション用プラットフォームの発展を紹介した論文です。低価格のハードウェアによって、さまざまなマニピュレーションタスクの研究が可能になることを示しています。  
+  [プロジェクトページ](https://aloha-2.github.io/)
+
+- **Learning Agile and Dynamic Motor Skills for Legged Robots** (2019)  
+  Joonho Hwangbo et al.  
+  学習ベースのロコモーション手法を示した重要な論文で、強化学習によって四足歩行ロボットが複雑で動的な運動を行えるようになることを示しています。  
+  [arXiv:1901.08652](https://huggingface.co/papers/1901.08652)
