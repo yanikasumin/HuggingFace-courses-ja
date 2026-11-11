@@ -1,0 +1,329 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>MCP の機能（Capabilities）を理解する | Hugging Face コース日本語版（デモ版）</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Shippori+Mincho:wght@500;700&family=Zen+Kaku+Gothic+New:wght@400;500;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../../style.css">
+<script>
+window.MathJax = { tex: { inlineMath: [['$', '$'], ['\\(', '\\)']], displayMath: [['$$', '$$'], ['\\[', '\\]']] }, options: { skipHtmlTags: ['script','noscript','style','textarea','pre','code'] } };
+</script>
+<script async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml.js"></script>
+</head>
+<body>
+<header class="site-header">
+  <div class="header-inner">
+    <a class="site-title" href="../../index.html">Hugging Face コース日本語版</a>
+    <span class="demo-badge">デモ版</span>
+  </div>
+</header>
+<main class="container">
+<p class="course-crumb"><a href="../index.html">MCP コース</a>
+<span class="badge badge-qa-wip">翻訳済み・QA進行中（未検証の部分を含みます）</span></p>
+<nav class="page-nav"><a class="nav-link prev" href="communication-protocol.html">← 前へ: 通信プロトコル</a><a class="nav-link toc-link" href="../index.html">目次へ</a><a class="nav-link next" href="sdk.html">次へ →: MCP SDK</a></nav>
+<article class="content">
+<h1>MCP の機能（Capabilities）を理解する</h1>
+<p>MCP サーバーは、通信プロトコルを通じてさまざまな機能をクライアントに公開します。これらの機能は4つの主要なカテゴリに分かれ、それぞれに異なる特徴とユースケースがあります。MCP の機能の基盤をなすこれらのコアプリミティブを探っていきましょう。</p>
+<div class="callout callout-tip">
+<p class="callout-title">💡 ヒント</p>
+<p>この節では、例を各言語のフレームワークに依存しない関数として示します。これは、特定のフレームワークの複雑さではなく、概念とその連携の仕方に焦点を当てるためです。</p>
+<p>次のユニットでは、これらの概念が MCP 固有のコードでどう実装されるかを示します。</p>
+</div>
+<h2>ツール（Tools）</h2>
+<p>ツールは、AI モデルが MCP プロトコルを通じて呼び出せる実行可能な関数やアクションです。</p>
+<ul>
+<li><strong>制御</strong>: ツールは通常<strong>モデル制御</strong>です。つまり、AI モデル（LLM）がユーザーのリクエストとコンテキストに基づいて、ツールをいつ呼び出すかを判断します。</li>
+<li><strong>安全性</strong>: 副作用を伴うアクションを実行できるため、ツールの実行は危険な場合があります。そのため、通常は明示的なユーザーの承認が必要です。</li>
+<li><strong>ユースケース</strong>: メッセージの送信、チケットの作成、API のクエリ、計算の実行など。</li>
+</ul>
+<p><strong>例</strong>: 指定した場所の現在の天気データを取得する天気ツール:</p>
+<div class="hfoptions">
+<section class="hfoption" markdown="block">
+<p class="hfoption-label">python</p>
+
+
+
+<div class="codehilite"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">get_weather</span><span class="p">(</span><span class="n">location</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""指定した場所の現在の天気を取得します。"""</span>
+    <span class="c1"># 天気 API に接続してデータを取得する</span>
+    <span class="k">return</span> <span class="p">{</span>
+        <span class="s2">"temperature"</span><span class="p">:</span> <span class="mi">72</span><span class="p">,</span>
+        <span class="s2">"conditions"</span><span class="p">:</span> <span class="s2">"Sunny"</span><span class="p">,</span>
+        <span class="s2">"humidity"</span><span class="p">:</span> <span class="mi">45</span>
+    <span class="p">}</span>
+</code></pre></div>
+
+
+
+</section>
+<section class="hfoption" markdown="block">
+<p class="hfoption-label">javascript</p>
+
+
+
+<div class="codehilite"><pre><span></span><code><span class="kd">function</span><span class="w"> </span><span class="nx">getWeather</span><span class="p">(</span><span class="nx">location</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="c1">// 天気 API に接続してデータを取得する</span>
+<span class="w">    </span><span class="k">return</span><span class="w"> </span><span class="p">{</span>
+<span class="w">        </span><span class="nx">temperature</span><span class="o">:</span><span class="w"> </span><span class="mf">72</span><span class="p">,</span>
+<span class="w">        </span><span class="nx">conditions</span><span class="o">:</span><span class="w"> </span><span class="s1">'Sunny'</span><span class="p">,</span>
+<span class="w">        </span><span class="nx">humidity</span><span class="o">:</span><span class="w"> </span><span class="mf">45</span>
+<span class="w">    </span><span class="p">};</span>
+<span class="p">}</span>
+</code></pre></div>
+
+
+
+</section>
+</div>
+
+<h2>リソース（Resources）</h2>
+<p>リソースはデータソースへの読み取り専用アクセスを提供し、AI モデルが複雑なロジックを実行することなくコンテキストを取得できるようにします。</p>
+<ul>
+<li><strong>制御</strong>: リソースは<strong>アプリケーション制御</strong>です。つまり、通常はホストアプリケーションがいつアクセスするかを判断します。</li>
+<li><strong>性質</strong>: REST API の GET エンドポイントと同様に、最小限の計算でデータを取得するよう設計されています。</li>
+<li><strong>安全性</strong>: 読み取り専用であるため、通常はツールよりセキュリティリスクが低くなります。</li>
+<li><strong>ユースケース</strong>: ファイル内容へのアクセス、データベースレコードの取得、設定情報の読み取りなど。</li>
+</ul>
+<p><strong>例</strong>: ファイル内容へのアクセスを提供するリソース:</p>
+<div class="hfoptions">
+<section class="hfoption" markdown="block">
+<p class="hfoption-label">python</p>
+
+
+
+<div class="codehilite"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">read_file</span><span class="p">(</span><span class="n">file_path</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""指定したパスのファイルの内容を読み取ります。"""</span>
+    <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">file_path</span><span class="p">,</span> <span class="s1">'r'</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">f</span><span class="o">.</span><span class="n">read</span><span class="p">()</span>
+</code></pre></div>
+
+
+
+</section>
+<section class="hfoption" markdown="block">
+<p class="hfoption-label">javascript</p>
+
+
+
+<div class="codehilite"><pre><span></span><code><span class="kd">function</span><span class="w"> </span><span class="nx">readFile</span><span class="p">(</span><span class="nx">filePath</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="c1">// fs.readFile を使ってファイル内容を読み取る</span>
+<span class="w">    </span><span class="kd">const</span><span class="w"> </span><span class="nx">fs</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nx">require</span><span class="p">(</span><span class="s1">'fs'</span><span class="p">);</span>
+<span class="w">    </span><span class="k">return</span><span class="w"> </span><span class="ow">new</span><span class="w"> </span><span class="nb">Promise</span><span class="p">((</span><span class="nx">resolve</span><span class="p">,</span><span class="w"> </span><span class="nx">reject</span><span class="p">)</span><span class="w"> </span><span class="p">=&gt;</span><span class="w"> </span><span class="p">{</span>
+<span class="w">        </span><span class="nx">fs</span><span class="p">.</span><span class="nx">readFile</span><span class="p">(</span><span class="nx">filePath</span><span class="p">,</span><span class="w"> </span><span class="s1">'utf8'</span><span class="p">,</span><span class="w"> </span><span class="p">(</span><span class="nx">err</span><span class="p">,</span><span class="w"> </span><span class="nx">data</span><span class="p">)</span><span class="w"> </span><span class="p">=&gt;</span><span class="w"> </span><span class="p">{</span>
+<span class="w">            </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="nx">err</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">                </span><span class="nx">reject</span><span class="p">(</span><span class="nx">err</span><span class="p">);</span>
+<span class="w">                </span><span class="k">return</span><span class="p">;</span>
+<span class="w">            </span><span class="p">}</span>
+<span class="w">            </span><span class="nx">resolve</span><span class="p">(</span><span class="nx">data</span><span class="p">);</span>
+<span class="w">        </span><span class="p">});</span>
+<span class="w">    </span><span class="p">});</span>
+<span class="p">}</span>
+</code></pre></div>
+
+
+
+</section>
+</div>
+
+<h2>プロンプト（Prompts）</h2>
+<p>プロンプトは、ユーザー、AI モデル、サーバーの機能の間のやり取りをガイドする、事前に定義されたテンプレートやワークフローです。</p>
+<ul>
+<li><strong>制御</strong>: プロンプトは<strong>ユーザー制御</strong>であり、多くの場合、ホストアプリケーションの UI に選択肢として提示されます。</li>
+<li><strong>目的</strong>: 利用可能なツールやリソースを最適に使えるよう、やり取りを構造化します。</li>
+<li><strong>選択</strong>: 通常、ユーザーが AI モデルの処理開始前にプロンプトを選択し、やり取りのコンテキストを設定します。</li>
+<li><strong>ユースケース</strong>: 一般的なワークフロー、専門タスクのテンプレート、ガイド付きのやり取りなど。</li>
+</ul>
+<p><strong>例</strong>: コードレビューを生成するためのプロンプトテンプレート:</p>
+<div class="hfoptions">
+<section class="hfoption" markdown="block">
+<p class="hfoption-label">python</p>
+
+
+
+<div class="codehilite"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">code_review</span><span class="p">(</span><span class="n">code</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">language</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""提供されたコードスニペットのコードレビューを生成します。"""</span>
+    <span class="k">return</span> <span class="p">[</span>
+        <span class="p">{</span>
+            <span class="s2">"role"</span><span class="p">:</span> <span class="s2">"system"</span><span class="p">,</span>
+            <span class="s2">"content"</span><span class="p">:</span> <span class="sa">f</span><span class="s2">"You are a code reviewer examining </span><span class="si">{</span><span class="n">language</span><span class="si">}</span><span class="s2"> code. Provide a detailed review highlighting best practices, potential issues, and suggestions for improvement."</span>
+        <span class="p">},</span>
+        <span class="p">{</span>
+            <span class="s2">"role"</span><span class="p">:</span> <span class="s2">"user"</span><span class="p">,</span>
+            <span class="s2">"content"</span><span class="p">:</span> <span class="sa">f</span><span class="s2">"Please review this </span><span class="si">{</span><span class="n">language</span><span class="si">}</span><span class="s2"> code:</span><span class="se">\n\n</span><span class="s2">```</span><span class="si">{</span><span class="n">language</span><span class="si">}</span><span class="se">\n</span><span class="si">{</span><span class="n">code</span><span class="si">}</span><span class="se">\n</span><span class="s2">```"</span>
+        <span class="p">}</span>
+    <span class="p">]</span>
+</code></pre></div>
+
+
+
+</section>
+<section class="hfoption" markdown="block">
+<p class="hfoption-label">javascript</p>
+
+
+
+<div class="codehilite"><pre><span></span><code><span class="kd">function</span><span class="w"> </span><span class="nx">codeReview</span><span class="p">(</span><span class="nx">code</span><span class="p">,</span><span class="w"> </span><span class="nx">language</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="k">return</span><span class="w"> </span><span class="p">[</span>
+<span class="w">        </span><span class="p">{</span>
+<span class="w">            </span><span class="nx">role</span><span class="o">:</span><span class="w"> </span><span class="s1">'system'</span><span class="p">,</span>
+<span class="w">            </span><span class="nx">content</span><span class="o">:</span><span class="w"> </span><span class="sb">`You are a code reviewer examining </span><span class="si">${</span><span class="nx">language</span><span class="si">}</span><span class="sb"> code. Provide a detailed review highlighting best practices, potential issues, and suggestions for improvement.`</span>
+<span class="w">        </span><span class="p">},</span>
+<span class="w">        </span><span class="p">{</span>
+<span class="w">            </span><span class="nx">role</span><span class="o">:</span><span class="w"> </span><span class="s1">'user'</span><span class="p">,</span>
+<span class="w">            </span><span class="nx">content</span><span class="o">:</span><span class="w"> </span><span class="sb">`Please review this </span><span class="si">${</span><span class="nx">language</span><span class="si">}</span><span class="sb"> code:\n\n\`\`\`</span><span class="si">${</span><span class="nx">language</span><span class="si">}</span><span class="sb">\n</span><span class="si">${</span><span class="nx">code</span><span class="si">}</span><span class="sb">\n\`\`\``</span>
+<span class="w">        </span><span class="p">}</span>
+<span class="w">    </span><span class="p">];</span>
+<span class="p">}</span>
+</code></pre></div>
+
+
+
+</section>
+</div>
+
+<h2>サンプリング（Sampling）</h2>
+<p>サンプリングにより、サーバーはクライアント（具体的にはホストアプリケーション）に LLM とのやり取りの実行をリクエストできます。</p>
+<ul>
+<li><strong>制御</strong>: サンプリングは<strong>サーバーから開始</strong>されますが、クライアント/ホストの仲介が必要です。</li>
+<li><strong>目的</strong>: サーバー駆動のエージェント的な振る舞いや、再帰的・複数ステップのやり取りを可能にします。</li>
+<li><strong>安全性</strong>: ツールと同様、サンプリング操作には通常、ユーザーの承認が必要です。</li>
+<li><strong>ユースケース</strong>: 複雑な複数ステップのタスク、自律エージェントのワークフロー、インタラクティブなプロセスなど。</li>
+</ul>
+<p><strong>例</strong>: サーバーが、処理したデータの分析をクライアントにリクエストすることがあります:</p>
+<div class="hfoptions">
+<section class="hfoption" markdown="block">
+<p class="hfoption-label">python</p>
+
+
+
+<div class="codehilite"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">request_sampling</span><span class="p">(</span><span class="n">messages</span><span class="p">,</span> <span class="n">system_prompt</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">include_context</span><span class="o">=</span><span class="s2">"none"</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">"""クライアントに LLM サンプリングをリクエストします。"""</span>
+    <span class="c1"># 実際の実装では、これはクライアントにリクエストを送信します</span>
+    <span class="k">return</span> <span class="p">{</span>
+        <span class="s2">"role"</span><span class="p">:</span> <span class="s2">"assistant"</span><span class="p">,</span>
+        <span class="s2">"content"</span><span class="p">:</span> <span class="s2">"Analysis of the provided data..."</span>
+    <span class="p">}</span>
+</code></pre></div>
+
+
+
+</section>
+<section class="hfoption" markdown="block">
+<p class="hfoption-label">javascript</p>
+
+
+
+<div class="codehilite"><pre><span></span><code><span class="kd">function</span><span class="w"> </span><span class="nx">requestSampling</span><span class="p">(</span><span class="nx">messages</span><span class="p">,</span><span class="w"> </span><span class="nx">systemPrompt</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="kc">null</span><span class="p">,</span><span class="w"> </span><span class="nx">includeContext</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s1">'none'</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="c1">// 実際の実装では、これはクライアントにリクエストを送信します</span>
+<span class="w">    </span><span class="k">return</span><span class="w"> </span><span class="p">{</span>
+<span class="w">        </span><span class="nx">role</span><span class="o">:</span><span class="w"> </span><span class="s1">'assistant'</span><span class="p">,</span>
+<span class="w">        </span><span class="nx">content</span><span class="o">:</span><span class="w"> </span><span class="s1">'Analysis of the provided data...'</span>
+<span class="w">    </span><span class="p">};</span>
+<span class="p">}</span>
+
+<span class="kd">function</span><span class="w"> </span><span class="nx">handleSamplingRequest</span><span class="p">(</span><span class="nx">request</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="kd">const</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="nx">messages</span><span class="p">,</span><span class="w"> </span><span class="nx">systemPrompt</span><span class="p">,</span><span class="w"> </span><span class="nx">includeContext</span><span class="w"> </span><span class="p">}</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nx">request</span><span class="p">;</span>
+<span class="w">    </span><span class="c1">// 実際の実装では、これはリクエストを処理してレスポンスを返します</span>
+<span class="w">    </span><span class="k">return</span><span class="w"> </span><span class="p">{</span>
+<span class="w">        </span><span class="nx">role</span><span class="o">:</span><span class="w"> </span><span class="s1">'assistant'</span><span class="p">,</span>
+<span class="w">        </span><span class="nx">content</span><span class="o">:</span><span class="w"> </span><span class="s1">'Response to the sampling request...'</span>
+<span class="w">    </span><span class="p">};</span>
+<span class="p">}</span>
+</code></pre></div>
+
+
+
+</section>
+</div>
+
+<p>サンプリングのフローは次のステップに従います。
+1. サーバーが <code>sampling/createMessage</code> リクエストをクライアントに送信する
+2. クライアントがリクエストを確認し、必要に応じて変更する
+3. クライアントが LLM からサンプリングする
+4. クライアントが補完結果を確認する
+5. クライアントが結果をサーバーに返す</p>
+<div class="callout callout-tip">
+<p class="callout-title">💡 ヒント</p>
+<p>この human-in-the-loop の設計により、ユーザーは LLM が何を見て何を生成するかをコントロールし続けられます。サンプリングを実装する際は、明確で構造化されたプロンプトを提供し、関連するコンテキストを含めることが重要です。</p>
+</div>
+<h2>機能はどう連携するか</h2>
+<p>これらの機能が連携して複雑なやり取りを可能にする様子を見てみましょう。次の表では、機能、制御主体、制御の方向、その他の詳細をまとめています。</p>
+<table>
+<thead>
+<tr>
+<th>Capability</th>
+<th>Controlled By</th>
+<th>Direction</th>
+<th>Side Effects</th>
+<th>Approval Needed</th>
+<th>Typical Use Cases</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Tools</td>
+<td>Model (LLM)</td>
+<td>Client → Server</td>
+<td>Yes (potentially)</td>
+<td>Yes</td>
+<td>アクション、API 呼び出し、データ操作</td>
+</tr>
+<tr>
+<td>Resources</td>
+<td>Application</td>
+<td>Client → Server</td>
+<td>No (read-only)</td>
+<td>Typically no</td>
+<td>データ取得、コンテキスト収集</td>
+</tr>
+<tr>
+<td>Prompts</td>
+<td>User</td>
+<td>Server → Client</td>
+<td>No</td>
+<td>No (selected by user)</td>
+<td>ガイド付きワークフロー、専門テンプレート</td>
+</tr>
+<tr>
+<td>Sampling</td>
+<td>Server</td>
+<td>Server → Client → Server</td>
+<td>Indirectly</td>
+<td>Yes</td>
+<td>複数ステップのタスク、エージェント的な振る舞い</td>
+</tr>
+</tbody>
+</table>
+<p>これらの機能は、互いに補完し合うよう設計されています。</p>
+<ol>
+<li>ユーザーが専門ワークフローを開始するために<strong>プロンプト</strong>を選択する</li>
+<li>そのプロンプトには<strong>リソース</strong>からのコンテキストが含まれる</li>
+<li>処理中に、AI モデルが特定のアクションを実行するために<strong>ツール</strong>を呼び出す</li>
+<li>複雑な操作では、サーバーが<strong>サンプリング</strong>を使って追加の LLM 処理をリクエストする</li>
+</ol>
+<p>これらのプリミティブの区別が MCP のやり取りに明確な構造を与え、AI モデルが適切な制御の境界を維持しながら情報にアクセスし、アクションを実行し、複雑なワークフローに関与できるようにします。</p>
+<h2>ディスカバリプロセス</h2>
+<p>MCP の重要な特徴の1つが、機能の動的な発見です。クライアントがサーバーに接続すると、特定の list メソッドを通じて利用可能なツール、リソース、プロンプトを問い合わせることができます。</p>
+<ul>
+<li><code>tools/list</code>: 利用可能なツールを発見する</li>
+<li><code>resources/list</code>: 利用可能なリソースを発見する</li>
+<li><code>prompts/list</code>: 利用可能なプロンプトを発見する</li>
+</ul>
+<p>この動的ディスカバリの仕組みにより、クライアントはサーバーの機能に関するハードコードされた知識を必要とせずに、各サーバーが提供する具体的な機能に適応できます。</p>
+<h2>まとめ</h2>
+<p>これらのコアプリミティブを理解することは、MCP を効果的に扱ううえで不可欠です。明確な制御の境界を持つ異なる種類の機能を提供することで、MCP は適切な安全性と制御の仕組みを維持しながら、AI モデルと外部システムの間の強力なやり取りを可能にします。</p>
+<p>次節では、Gradio が MCP とどう統合され、これらの機能に使いやすいインターフェースを提供するかを見ていきます。 </p>
+</article>
+<nav class="page-nav"><a class="nav-link prev" href="communication-protocol.html">← 前へ: 通信プロトコル</a><a class="nav-link toc-link" href="../index.html">目次へ</a><a class="nav-link next" href="sdk.html">次へ →: MCP SDK</a></nav>
+</main>
+<footer class="site-footer">
+  <p>原典: Hugging Face huggingface/mcp-course（<a href="https://github.com/huggingface/mcp-course">https://github.com/huggingface/mcp-course</a>）</p>
+  <p>日本語版の翻訳・公開: 霞ヶ関京 / 連絡先: GitHub <a href="https://github.com/yanikasumin">@yanikasumin</a> / YouTube <a href="https://www.youtube.com/@KASUMI_MOF">@KASUMI_MOF</a></p>
+  <p class="demo-note">このサイトはデモ版です。内容は順次更新されます。</p>
+</footer>
+<script src="../../site.js"></script>
+</body>
+</html>

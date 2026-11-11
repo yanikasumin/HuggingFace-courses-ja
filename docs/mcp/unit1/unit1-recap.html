@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Unit 1 のまとめ | Hugging Face コース日本語版（デモ版）</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Shippori+Mincho:wght@500;700&family=Zen+Kaku+Gothic+New:wght@400;500;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../../style.css">
+<script>
+window.MathJax = { tex: { inlineMath: [['$', '$'], ['\\(', '\\)']], displayMath: [['$$', '$$'], ['\\[', '\\]']] }, options: { skipHtmlTags: ['script','noscript','style','textarea','pre','code'] } };
+</script>
+<script async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml.js"></script>
+</head>
+<body>
+<header class="site-header">
+  <div class="header-inner">
+    <a class="site-title" href="../../index.html">Hugging Face コース日本語版</a>
+    <span class="demo-badge">デモ版</span>
+  </div>
+</header>
+<main class="container">
+<p class="course-crumb"><a href="../index.html">MCP コース</a>
+<span class="badge badge-qa-wip">翻訳済み・QA進行中（未検証の部分を含みます）</span></p>
+<nav class="page-nav"><a class="nav-link prev" href="gradio-mcp.html">← 前へ: Gradio の MCP 統合</a><a class="nav-link toc-link" href="../index.html">目次へ</a><a class="nav-link next" href="certificate.html">次へ →: 修了証を取得しましょう！</a></nav>
+<article class="content">
+<h1>Unit 1 のまとめ</h1>
+<h2>Model Context Protocol（MCP）</h2>
+<p>MCP は、AI モデルを外部のツール、データソース、環境に接続するために設計された標準化されたプロトコルです。相互運用性とリアルタイム情報へのアクセスを可能にすることで、既存の AI システムの制約を解消します。</p>
+<h2>主要な概念</h2>
+<h3>クライアント・サーバーアーキテクチャ</h3>
+<p>MCP は、クライアントがユーザーとサーバー間の通信を管理するクライアント・サーバーモデルに従います。このアーキテクチャはモジュール性を促進し、既存のホストに変更を加えることなく新しいサーバーを簡単に追加できます。</p>
+<h3>コンポーネント</h3>
+<h4>ホスト（Host）</h4>
+<p>エンドユーザーが操作する、ユーザー向けの AI アプリケーションです。</p>
+<h5>クライアント（Client）</h5>
+<p>ホストアプリケーション内のコンポーネントで、特定の MCP サーバーとの通信を管理します。クライアントはサーバーと 1:1 の接続を維持し、プロトコルレベルの詳細を処理します。</p>
+<h4>サーバー（Server）</h4>
+<p>MCP プロトコルを通じてツール、データソース、サービスへのアクセスを提供する外部のプログラムまたはサービスです。サーバーは既存の機能を軽量にラップするラッパーとして動作します。</p>
+<h3>機能（Capabilities）</h3>
+<h4>ツール（Tools）</h4>
+<p>アクションを実行できる関数です（例: メッセージの送信、API のクエリ）。ツールは通常モデル制御であり、副作用を伴うアクションを実行できるため、ユーザーの承認が必要です。</p>
+<h4>リソース（Resources）</h4>
+<p>大きな計算を伴わずにコンテキストを取得するための読み取り専用データソースです。リソースはアプリケーション制御であり、REST API の GET エンドポイントと同様のデータ取得のために設計されています。</p>
+<h4>プロンプト（Prompts）</h4>
+<p>ユーザー、AI モデル、利用可能な機能の間のやり取りをガイドする、事前に定義されたテンプレートやワークフローです。プロンプトはユーザー制御であり、やり取りのコンテキストを設定します。</p>
+<h4>サンプリング（Sampling）</h4>
+<p>サーバーから開始される LLM 処理へのリクエストです。サーバー駆動のエージェント的な振る舞いや、再帰的・複数ステップのやり取りを可能にします。サンプリング操作には通常、ユーザーの承認が必要です。</p>
+<h3>通信プロトコル</h3>
+<p>MCP プロトコルは、クライアントとサーバー間の通信のメッセージフォーマットとして JSON-RPC 2.0 を使用します。2つの主要なトランスポート機構がサポートされています。stdio（ローカル通信用）と HTTP+SSE（リモート通信用）です。メッセージにはリクエスト、レスポンス、通知が含まれます。</p>
+<h3>ディスカバリプロセス</h3>
+<p>MCP では、クライアントが list メソッド（例: <code>tools/list</code>）を通じて利用可能なツール、リソース、プロンプトを動的に発見できます。この動的ディスカバリの仕組みにより、クライアントはサーバーの機能に関するハードコードされた知識を必要とせずに、各サーバーが提供する具体的な機能に適応できます。</p>
+<h3>MCP SDK</h3>
+<p>MCP クライアントとサーバーを実装するための公式 SDK が、さまざまなプログラミング言語で提供されています。これらの SDK はプロトコルレベルの通信、機能の登録、エラーハンドリングを処理し、開発プロセスを簡素化します。</p>
+<h3>Gradio との統合</h3>
+<p>Gradio を使えば、機能を MCP プロトコルに公開する Web インターフェースを簡単に作成でき、人間と AI モデルの両方からアクセス可能になります。この統合により、最小限のコードで、人間に優しいインターフェースと AI からアクセス可能なツールを併せて提供できます。</p>
+<h3>Hugging Face の MCP 拡張</h3>
+<ul>
+<li>Hosted MCP Server がより多くのクライアント（VS Code、Cursor、Zed、Claude Desktop）と統合されるようになりました。</li>
+<li>モデル、データセット、Spaces、論文を検索するための厳選された組み込みツール。</li>
+<li><code>https://huggingface.co/settings/mcp</code> からワンクリックで設定スニペットを取得できます。</li>
+<li>設定から MCP 対応の Gradio Spaces を追加し、アシスタントから直接利用できます。</li>
+</ul>
+</article>
+<nav class="page-nav"><a class="nav-link prev" href="gradio-mcp.html">← 前へ: Gradio の MCP 統合</a><a class="nav-link toc-link" href="../index.html">目次へ</a><a class="nav-link next" href="certificate.html">次へ →: 修了証を取得しましょう！</a></nav>
+</main>
+<footer class="site-footer">
+  <p>原典: Hugging Face huggingface/mcp-course（<a href="https://github.com/huggingface/mcp-course">https://github.com/huggingface/mcp-course</a>）</p>
+  <p>日本語版の翻訳・公開: 霞ヶ関京 / 連絡先: GitHub <a href="https://github.com/yanikasumin">@yanikasumin</a> / YouTube <a href="https://www.youtube.com/@KASUMI_MOF">@KASUMI_MOF</a></p>
+  <p class="demo-note">このサイトはデモ版です。内容は順次更新されます。</p>
+</footer>
+<script src="../../site.js"></script>
+</body>
+</html>

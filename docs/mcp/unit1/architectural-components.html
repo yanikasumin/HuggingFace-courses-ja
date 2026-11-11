@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>MCP のアーキテクチャコンポーネント | Hugging Face コース日本語版（デモ版）</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Shippori+Mincho:wght@500;700&family=Zen+Kaku+Gothic+New:wght@400;500;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../../style.css">
+<script>
+window.MathJax = { tex: { inlineMath: [['$', '$'], ['\\(', '\\)']], displayMath: [['$$', '$$'], ['\\[', '\\]']] }, options: { skipHtmlTags: ['script','noscript','style','textarea','pre','code'] } };
+</script>
+<script async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml.js"></script>
+</head>
+<body>
+<header class="site-header">
+  <div class="header-inner">
+    <a class="site-title" href="../../index.html">Hugging Face コース日本語版</a>
+    <span class="demo-badge">デモ版</span>
+  </div>
+</header>
+<main class="container">
+<p class="course-crumb"><a href="../index.html">MCP コース</a>
+<span class="badge badge-qa-wip">翻訳済み・QA進行中（未検証の部分を含みます）</span></p>
+<nav class="page-nav"><a class="nav-link prev" href="key-concepts.html">← 前へ: 主要な概念と用語</a><a class="nav-link toc-link" href="../index.html">目次へ</a><a class="nav-link next" href="quiz1.html">次へ →: クイズ 1: MCP の基礎</a></nav>
+<article class="content">
+<h1>MCP のアーキテクチャコンポーネント</h1>
+<p>前節では、MCP の主要な概念と用語について説明しました。この節では、MCP エコシステムを構成するアーキテクチャコンポーネントをさらに深く掘り下げます。</p>
+<h2>ホスト、クライアント、サーバー</h2>
+<p>Model Context Protocol（MCP）は、AI モデルと外部システムの間の構造化された通信を可能にするクライアント・サーバーアーキテクチャの上に構築されています。 </p>
+<p><img alt="MCP のアーキテクチャ" src="https://huggingface.co/datasets/mcp-course/images/resolve/main/unit1/4.png" /></p>
+<p>MCP のアーキテクチャは3つの主要なコンポーネントで構成されており、それぞれに明確に定義された役割と責務があります。ホスト、クライアント、サーバーです。前節でも触れましたが、ここでは各コンポーネントとその責務を詳しく見ていきます。</p>
+<h3>ホスト（Host）</h3>
+<p><strong>ホスト</strong>は、エンドユーザーが直接操作するユーザー向けの AI アプリケーションです。 </p>
+<p>例として次のものがあります。
+- OpenAI ChatGPT や Anthropic の Claude Desktop のような AI チャットアプリ
+- Cursor のような AI 強化 IDE や、Continue.dev のようなツールへの統合
+- LangChain や smolagents のようなライブラリで構築されたカスタム AI エージェントやアプリケーション</p>
+<p>ホストの責務は次のとおりです。
+- ユーザーとのやり取りと権限の管理
+- MCP クライアントを介した MCP サーバーへの接続の開始
+- ユーザーのリクエスト、LLM の処理、外部ツールの間の全体的なフローの統括
+- 結果をわかりやすい形式でユーザーに表示すること</p>
+<p>多くの場合、ユーザーは自分のニーズや好みに合わせてホストアプリケーションを選択します。たとえば開発者は強力なコード編集機能を求めて Cursor を選ぶかもしれませんし、ドメイン専門家は smolagents で構築されたカスタムアプリケーションを使うかもしれません。</p>
+<h3>クライアント（Client）</h3>
+<p><strong>クライアント</strong>は、ホストアプリケーション内のコンポーネントで、特定の MCP サーバーとの通信を管理します。主な特徴は次のとおりです。</p>
+<ul>
+<li>各クライアントは単一のサーバーと 1:1 の接続を維持します</li>
+<li>MCP 通信のプロトコルレベルの詳細を処理します</li>
+<li>ホストのロジックと外部サーバーの間の仲介役として動作します</li>
+</ul>
+<h3>サーバー（Server）</h3>
+<p><strong>サーバー</strong>は、MCP プロトコルを通じて AI モデルに機能を公開する外部のプログラムまたはサービスです。サーバーは次の特徴を持ちます。</p>
+<ul>
+<li>特定の外部ツール、データソース、サービスへのアクセスを提供します</li>
+<li>既存の機能を軽量にラップするラッパーとして動作します</li>
+<li>ローカル（ホストと同じマシン上）でもリモート（ネットワーク越し）でも実行できます</li>
+<li>クライアントが発見して利用できる標準化された形式で機能を公開します</li>
+</ul>
+<h2>通信フロー</h2>
+<p>典型的な MCP ワークフローでこれらのコンポーネントがどのように連携するかを見てみましょう。</p>
+<div class="callout callout-tip">
+<p class="callout-title">💡 ヒント</p>
+<p>次節では、実用的な例とともに、これらのコンポーネントを可能にする通信プロトコルを詳しく見ていきます。</p>
+</div>
+<ol>
+<li>
+<p><strong>ユーザーインタラクション</strong>: ユーザーが<strong>ホスト</strong>アプリケーションを操作し、意図やクエリを伝えます。</p>
+</li>
+<li>
+<p><strong>ホストの処理</strong>: <strong>ホスト</strong>がユーザーの入力を処理します。場合によっては LLM を使ってリクエストを理解し、どの外部機能が必要になりそうかを判断します。</p>
+</li>
+<li>
+<p><strong>クライアントの接続</strong>: <strong>ホスト</strong>が、その<strong>クライアント</strong>コンポーネントに適切なサーバーへの接続を指示します。</p>
+</li>
+<li>
+<p><strong>機能の発見</strong>: <strong>クライアント</strong>が<strong>サーバー</strong>に問い合わせ、そのサーバーが提供する機能（ツール、リソース、プロンプト）を発見します。</p>
+</li>
+<li>
+<p><strong>機能の呼び出し</strong>: ユーザーのニーズや LLM の判断に基づき、ホストが<strong>クライアント</strong>に<strong>サーバー</strong>の特定の機能を呼び出すよう指示します。</p>
+</li>
+<li>
+<p><strong>サーバーの実行</strong>: <strong>サーバー</strong>がリクエストされた機能を実行し、結果を<strong>クライアント</strong>に返します。</p>
+</li>
+<li>
+<p><strong>結果の統合</strong>: <strong>クライアント</strong>がこれらの結果を<strong>ホスト</strong>に中継し、ホストはそれを LLM のコンテキストに組み込むか、ユーザーに直接提示します。</p>
+</li>
+</ol>
+<p>このアーキテクチャの重要な利点はモジュール性です。1つの<strong>ホスト</strong>が、異なる<strong>クライアント</strong>を介して複数の<strong>サーバー</strong>に同時に接続できます。既存の<strong>ホスト</strong>を変更することなく、新しい<strong>サーバー</strong>をエコシステムに追加できます。機能は異なる<strong>サーバー</strong>間で簡単に組み合わせられます。</p>
+<div class="callout callout-tip">
+<p class="callout-title">💡 ヒント</p>
+<p>前節で説明したとおり、このモジュール性により、従来の M×N 統合問題（M 個の AI アプリケーションが N 個のツール/サービスに接続する問題）は、より扱いやすい M+N 問題へと変わります。各ホストとサーバーは MCP 標準を一度だけ実装すればよいからです。</p>
+</div>
+<p>このアーキテクチャは一見シンプルに見えますが、その力は通信プロトコルの標準化と、コンポーネント間の責務の明確な分離にあります。この設計により、AI モデルが絶えず増え続ける外部ツールやデータソースへとシームレスに接続できる、まとまりのあるエコシステムが実現します。</p>
+<h2>まとめ</h2>
+<p>これらの相互作用のパターンは、MCP の設計と進化を形作るいくつかの重要な原則に基づいています。このプロトコルは、AI 接続のための汎用プロトコルを提供することで<strong>標準化</strong>を重視しつつ、コアプロトコルをわかりやすく保ちながら高度な機能を可能にすることで<strong>シンプルさ</strong>を維持します。<strong>安全性</strong>は、機密性の高い操作に明示的なユーザーの承認を必須とすることで優先されます。また、発見可能性（discoverability）により、機能の動的な発見が可能になります。このプロトコルは<strong>拡張性</strong>を念頭に置いて構築されており、バージョニングと機能ネゴシエーションによる進化をサポートし、異なる実装や環境間での<strong>相互運用性</strong>を保証します。</p>
+<p>次節では、これらのコンポーネントが効果的に連携できるようにする通信プロトコルを探ります。</p>
+</article>
+<nav class="page-nav"><a class="nav-link prev" href="key-concepts.html">← 前へ: 主要な概念と用語</a><a class="nav-link toc-link" href="../index.html">目次へ</a><a class="nav-link next" href="quiz1.html">次へ →: クイズ 1: MCP の基礎</a></nav>
+</main>
+<footer class="site-footer">
+  <p>原典: Hugging Face huggingface/mcp-course（<a href="https://github.com/huggingface/mcp-course">https://github.com/huggingface/mcp-course</a>）</p>
+  <p>日本語版の翻訳・公開: 霞ヶ関京 / 連絡先: GitHub <a href="https://github.com/yanikasumin">@yanikasumin</a> / YouTube <a href="https://www.youtube.com/@KASUMI_MOF">@KASUMI_MOF</a></p>
+  <p class="demo-note">このサイトはデモ版です。内容は順次更新されます。</p>
+</footer>
+<script src="../../site.js"></script>
+</body>
+</html>

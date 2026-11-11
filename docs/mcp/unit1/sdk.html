@@ -1,0 +1,267 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>MCP SDK | Hugging Face コース日本語版（デモ版）</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Shippori+Mincho:wght@500;700&family=Zen+Kaku+Gothic+New:wght@400;500;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../../style.css">
+<script>
+window.MathJax = { tex: { inlineMath: [['$', '$'], ['\\(', '\\)']], displayMath: [['$$', '$$'], ['\\[', '\\]']] }, options: { skipHtmlTags: ['script','noscript','style','textarea','pre','code'] } };
+</script>
+<script async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml.js"></script>
+</head>
+<body>
+<header class="site-header">
+  <div class="header-inner">
+    <a class="site-title" href="../../index.html">Hugging Face コース日本語版</a>
+    <span class="demo-badge">デモ版</span>
+  </div>
+</header>
+<main class="container">
+<p class="course-crumb"><a href="../index.html">MCP コース</a>
+<span class="badge badge-qa-wip">翻訳済み・QA進行中（未検証の部分を含みます）</span></p>
+<nav class="page-nav"><a class="nav-link prev" href="capabilities.html">← 前へ: MCP の機能（Capabilities）を理解する</a><a class="nav-link toc-link" href="../index.html">目次へ</a><a class="nav-link next" href="quiz2.html">次へ →: クイズ 2: MCP SDK</a></nav>
+<article class="content">
+<h1>MCP SDK</h1>
+<p>Model Context Protocol は、JavaScript、Python、その他の言語向けの公式 SDK を提供しています。これにより、アプリケーションに MCP クライアントとサーバーを簡単に実装できます。これらの SDK は低レベルのプロトコルの詳細を処理するため、アプリケーションの機能の構築に集中できます。</p>
+<h2>SDK の概要</h2>
+<p>両 SDK は、前に説明した MCP プロトコル仕様に従い、同様のコア機能を提供します。SDK が処理するのは次のとおりです。</p>
+<ul>
+<li>プロトコルレベルの通信</li>
+<li>機能の登録と発見</li>
+<li>メッセージのシリアライズ/デシリアライズ</li>
+<li>接続管理</li>
+<li>エラーハンドリング</li>
+</ul>
+<h2>コアプリミティブの実装</h2>
+<p>両 SDK を使って、コアプリミティブ（ツール、リソース、プロンプト）のそれぞれを実装する方法を見ていきましょう。</p>
+<div class="hfoptions">
+<section class="hfoption" markdown="block">
+<p class="hfoption-label">python</p>
+
+
+
+
+<div class="youtube-embed"><iframe src="https://www.youtube-nocookie.com/embed/exzrb5QNUis" title="YouTube video" loading="lazy" allowfullscreen referrerpolicy="strict-origin-when-cross-origin"></iframe></div>
+
+
+
+
+<div class="codehilite"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">mcp.server.fastmcp</span><span class="w"> </span><span class="kn">import</span> <span class="n">FastMCP</span>
+
+<span class="c1"># MCP サーバーを作成する</span>
+<span class="n">mcp</span> <span class="o">=</span> <span class="n">FastMCP</span><span class="p">(</span><span class="s2">"Weather Service"</span><span class="p">)</span>
+
+<span class="c1"># ツールの実装</span>
+<span class="nd">@mcp</span><span class="o">.</span><span class="n">tool</span><span class="p">()</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">get_weather</span><span class="p">(</span><span class="n">location</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""指定した場所の現在の天気を取得します。"""</span>
+    <span class="k">return</span> <span class="sa">f</span><span class="s2">"Weather in </span><span class="si">{</span><span class="n">location</span><span class="si">}</span><span class="s2">: Sunny, 72°F"</span>
+
+<span class="c1"># リソースの実装</span>
+<span class="nd">@mcp</span><span class="o">.</span><span class="n">resource</span><span class="p">(</span><span class="s2">"weather://</span><span class="si">{location}</span><span class="s2">"</span><span class="p">)</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">weather_resource</span><span class="p">(</span><span class="n">location</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""天気データをリソースとして提供します。"""</span>
+    <span class="k">return</span> <span class="sa">f</span><span class="s2">"Weather data for </span><span class="si">{</span><span class="n">location</span><span class="si">}</span><span class="s2">: Sunny, 72°F"</span>
+
+<span class="c1"># プロンプトの実装</span>
+<span class="nd">@mcp</span><span class="o">.</span><span class="n">prompt</span><span class="p">()</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">weather_report</span><span class="p">(</span><span class="n">location</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""天気レポートのプロンプトを作成します。"""</span>
+    <span class="k">return</span> <span class="sa">f</span><span class="s2">"""You are a weather reporter. Weather report for </span><span class="si">{</span><span class="n">location</span><span class="si">}</span><span class="s2">?"""</span>
+
+
+<span class="c1"># サーバーを実行する</span>
+<span class="k">if</span> <span class="vm">__name__</span> <span class="o">==</span> <span class="s2">"__main__"</span><span class="p">:</span>
+    <span class="n">mcp</span><span class="o">.</span><span class="n">run</span><span class="p">()</span>
+</code></pre></div>
+
+
+
+サーバーを実装したら、サーバースクリプトを実行して起動できます。
+
+
+<div class="codehilite"><pre><span></span><code>mcp<span class="w"> </span>dev<span class="w"> </span>server.py
+</code></pre></div>
+
+
+
+</section>
+<section class="hfoption" markdown="block">
+<p class="hfoption-label">javascript</p>
+
+
+
+<div class="codehilite"><pre><span></span><code><span class="c1">// index.mjs</span>
+<span class="k">import</span><span class="w"> </span><span class="p">{</span>
+<span class="w">  </span><span class="nx">McpServer</span><span class="p">,</span>
+<span class="w">  </span><span class="nx">ResourceTemplate</span><span class="p">,</span>
+<span class="p">}</span><span class="w"> </span><span class="kr">from</span><span class="w"> </span><span class="s2">"@modelcontextprotocol/sdk/server/mcp.js"</span><span class="p">;</span>
+<span class="k">import</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="nx">StdioServerTransport</span><span class="w"> </span><span class="p">}</span><span class="w"> </span><span class="kr">from</span><span class="w"> </span><span class="s2">"@modelcontextprotocol/sdk/server/stdio.js"</span><span class="p">;</span>
+<span class="k">import</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="nx">z</span><span class="w"> </span><span class="p">}</span><span class="w"> </span><span class="kr">from</span><span class="w"> </span><span class="s2">"zod"</span><span class="p">;</span>
+
+<span class="c1">// MCP サーバーを作成する</span>
+<span class="kd">const</span><span class="w"> </span><span class="nx">server</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="ow">new</span><span class="w"> </span><span class="nx">McpServer</span><span class="p">({</span>
+<span class="w">  </span><span class="nx">name</span><span class="o">:</span><span class="w"> </span><span class="s2">"Weather Service"</span><span class="p">,</span>
+<span class="w">  </span><span class="nx">version</span><span class="o">:</span><span class="w"> </span><span class="s2">"1.0.0"</span><span class="p">,</span>
+<span class="p">});</span>
+
+<span class="c1">// ツールの実装</span>
+<span class="nx">server</span><span class="p">.</span><span class="nx">tool</span><span class="p">(</span><span class="s2">"get_weather"</span><span class="p">,</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="nx">location</span><span class="o">:</span><span class="w"> </span><span class="nx">z</span><span class="p">.</span><span class="nx">string</span><span class="p">()</span><span class="w"> </span><span class="p">},</span><span class="w"> </span><span class="k">async</span><span class="w"> </span><span class="p">({</span><span class="w"> </span><span class="nx">location</span><span class="w"> </span><span class="p">})</span><span class="w"> </span><span class="p">=&gt;</span><span class="w"> </span><span class="p">({</span>
+<span class="w">  </span><span class="nx">content</span><span class="o">:</span><span class="w"> </span><span class="p">[</span>
+<span class="w">    </span><span class="p">{</span>
+<span class="w">      </span><span class="nx">type</span><span class="o">:</span><span class="w"> </span><span class="s2">"text"</span><span class="p">,</span>
+<span class="w">      </span><span class="nx">text</span><span class="o">:</span><span class="w"> </span><span class="sb">`Weather in </span><span class="si">${</span><span class="nx">location</span><span class="si">}</span><span class="sb">: Sunny, 72°F`</span><span class="p">,</span>
+<span class="w">    </span><span class="p">},</span>
+<span class="w">  </span><span class="p">],</span>
+<span class="p">}));</span>
+
+<span class="c1">// リソースの実装</span>
+<span class="nx">server</span><span class="p">.</span><span class="nx">resource</span><span class="p">(</span>
+<span class="w">  </span><span class="s2">"weather"</span><span class="p">,</span>
+<span class="w">  </span><span class="ow">new</span><span class="w"> </span><span class="nx">ResourceTemplate</span><span class="p">(</span><span class="s2">"weather://{location}"</span><span class="p">,</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="nx">list</span><span class="o">:</span><span class="w"> </span><span class="kc">undefined</span><span class="w"> </span><span class="p">}),</span>
+<span class="w">  </span><span class="k">async</span><span class="w"> </span><span class="p">(</span><span class="nx">uri</span><span class="p">,</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="nx">location</span><span class="w"> </span><span class="p">})</span><span class="w"> </span><span class="p">=&gt;</span><span class="w"> </span><span class="p">({</span>
+<span class="w">    </span><span class="nx">contents</span><span class="o">:</span><span class="w"> </span><span class="p">[</span>
+<span class="w">      </span><span class="p">{</span>
+<span class="w">        </span><span class="nx">uri</span><span class="o">:</span><span class="w"> </span><span class="nx">uri</span><span class="p">.</span><span class="nx">href</span><span class="p">,</span>
+<span class="w">        </span><span class="nx">text</span><span class="o">:</span><span class="w"> </span><span class="sb">`Weather data for </span><span class="si">${</span><span class="nx">location</span><span class="si">}</span><span class="sb">: Sunny, 72°F`</span><span class="p">,</span>
+<span class="w">      </span><span class="p">},</span>
+<span class="w">    </span><span class="p">],</span>
+<span class="w">  </span><span class="p">})</span>
+<span class="p">);</span>
+
+<span class="c1">// プロンプトの実装</span>
+<span class="nx">server</span><span class="p">.</span><span class="nx">prompt</span><span class="p">(</span>
+<span class="w">  </span><span class="s2">"weather_report"</span><span class="p">,</span>
+<span class="w">  </span><span class="p">{</span><span class="w"> </span><span class="nx">location</span><span class="o">:</span><span class="w"> </span><span class="nx">z</span><span class="p">.</span><span class="nx">string</span><span class="p">()</span><span class="w"> </span><span class="p">},</span>
+<span class="w">  </span><span class="k">async</span><span class="w"> </span><span class="p">({</span><span class="w"> </span><span class="nx">location</span><span class="w"> </span><span class="p">})</span><span class="w"> </span><span class="p">=&gt;</span><span class="w"> </span><span class="p">({</span>
+<span class="w">    </span><span class="nx">messages</span><span class="o">:</span><span class="w"> </span><span class="p">[</span>
+<span class="w">      </span><span class="p">{</span>
+<span class="w">        </span><span class="nx">role</span><span class="o">:</span><span class="w"> </span><span class="s2">"assistant"</span><span class="p">,</span>
+<span class="w">        </span><span class="nx">content</span><span class="o">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">          </span><span class="nx">type</span><span class="o">:</span><span class="w"> </span><span class="s2">"text"</span><span class="p">,</span>
+<span class="w">          </span><span class="nx">text</span><span class="o">:</span><span class="w"> </span><span class="s2">"You are a weather reporter."</span><span class="p">,</span>
+<span class="w">        </span><span class="p">},</span>
+<span class="w">      </span><span class="p">},</span>
+<span class="w">      </span><span class="p">{</span>
+<span class="w">        </span><span class="nx">role</span><span class="o">:</span><span class="w"> </span><span class="s2">"user"</span><span class="p">,</span>
+<span class="w">        </span><span class="nx">content</span><span class="o">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">          </span><span class="nx">type</span><span class="o">:</span><span class="w"> </span><span class="s2">"text"</span><span class="p">,</span>
+<span class="w">          </span><span class="nx">text</span><span class="o">:</span><span class="w"> </span><span class="sb">`Weather report for </span><span class="si">${</span><span class="nx">location</span><span class="si">}</span><span class="sb">?`</span><span class="p">,</span>
+<span class="w">        </span><span class="p">},</span>
+<span class="w">      </span><span class="p">},</span>
+<span class="w">    </span><span class="p">],</span>
+<span class="w">  </span><span class="p">})</span>
+<span class="p">);</span>
+
+<span class="c1">// サーバーを実行する</span>
+<span class="kd">const</span><span class="w"> </span><span class="nx">transport</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="ow">new</span><span class="w"> </span><span class="nx">StdioServerTransport</span><span class="p">();</span>
+<span class="k">await</span><span class="w"> </span><span class="nx">server</span><span class="p">.</span><span class="nx">connect</span><span class="p">(</span><span class="nx">transport</span><span class="p">);</span>
+</code></pre></div>
+
+
+
+サーバーを実装したら、サーバースクリプトを実行して起動できます。
+
+
+<div class="codehilite"><pre><span></span><code>npx<span class="w"> </span>@modelcontextprotocol/inspector<span class="w"> </span>node<span class="w"> </span>./index.mjs
+</code></pre></div>
+
+
+
+</section>
+</div>
+
+<p>これにより、<code>server.py</code> ファイルを実行する開発サーバーが初期化されます。そして、次の出力がログに記録されます。</p>
+<div class="codehilite"><pre><span></span><code>Starting<span class="w"> </span>MCP<span class="w"> </span>inspector...
+⚙️<span class="w"> </span>Proxy<span class="w"> </span>server<span class="w"> </span>listening<span class="w"> </span>on<span class="w"> </span>port<span class="w"> </span><span class="m">6277</span>
+Spawned<span class="w"> </span>stdio<span class="w"> </span>transport
+Connected<span class="w"> </span>MCP<span class="w"> </span>client<span class="w"> </span>to<span class="w"> </span>backing<span class="w"> </span>server<span class="w"> </span>transport
+Created<span class="w"> </span>web<span class="w"> </span>app<span class="w"> </span>transport
+Set<span class="w"> </span>up<span class="w"> </span>MCP<span class="w"> </span>proxy
+🔍<span class="w"> </span>MCP<span class="w"> </span>Inspector<span class="w"> </span>is<span class="w"> </span>up<span class="w"> </span>and<span class="w"> </span>running<span class="w"> </span>at<span class="w"> </span>http://127.0.0.1:6274<span class="w"> </span>🚀
+</code></pre></div>
+
+<p>その後、<a href="http://127.0.0.1:6274">http://127.0.0.1:6274</a> で MCP Inspector を開くと、サーバーの機能を確認したり、それらを操作したりできます。</p>
+<p>サーバーの機能と、UI を通じてそれらを呼び出す方法が表示されます。</p>
+<p><img alt="MCP Inspector" src="https://huggingface.co/datasets/mcp-course/images/resolve/main/unit1/6.png" /></p>
+<h2>MCP SDK 一覧</h2>
+<p>MCP は言語に依存しないよう設計されており、いくつかの人気プログラミング言語向けに公式 SDK が提供されています。</p>
+<table>
+<thead>
+<tr>
+<th>Language</th>
+<th>Repository</th>
+<th>Maintainer(s)</th>
+<th>Status</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>TypeScript</td>
+<td><a href="https://github.com/modelcontextprotocol/typescript-sdk">github.com/modelcontextprotocol/typescript-sdk</a></td>
+<td>Anthropic</td>
+<td>Active</td>
+</tr>
+<tr>
+<td>Python</td>
+<td><a href="https://github.com/modelcontextprotocol/python-sdk">github.com/modelcontextprotocol/python-sdk</a></td>
+<td>Anthropic</td>
+<td>Active</td>
+</tr>
+<tr>
+<td>Java</td>
+<td><a href="https://github.com/modelcontextprotocol/java-sdk">github.com/modelcontextprotocol/java-sdk</a></td>
+<td>Spring AI (VMware)</td>
+<td>Active</td>
+</tr>
+<tr>
+<td>Kotlin</td>
+<td><a href="https://github.com/modelcontextprotocol/kotlin-sdk">github.com/modelcontextprotocol/kotlin-sdk</a></td>
+<td>JetBrains</td>
+<td>Active</td>
+</tr>
+<tr>
+<td>C#</td>
+<td><a href="https://github.com/modelcontextprotocol/csharp-sdk">github.com/modelcontextprotocol/csharp-sdk</a></td>
+<td>Microsoft</td>
+<td>Active (Preview)</td>
+</tr>
+<tr>
+<td>Swift</td>
+<td><a href="https://github.com/modelcontextprotocol/swift-sdk">github.com/modelcontextprotocol/swift-sdk</a></td>
+<td>loopwork-ai</td>
+<td>Active</td>
+</tr>
+<tr>
+<td>Rust</td>
+<td><a href="https://github.com/modelcontextprotocol/rust-sdk">github.com/modelcontextprotocol/rust-sdk</a></td>
+<td>Anthropic/Community</td>
+<td>Active</td>
+</tr>
+<tr>
+<td>Dart</td>
+<td><a href="https://github.com/leehack/mcp_dart">https://github.com/leehack/mcp_dart</a></td>
+<td>Flutter Community</td>
+<td>Active</td>
+</tr>
+</tbody>
+</table>
+<p>これらの SDK は言語固有の抽象化を提供し、MCP プロトコルの扱いを簡素化します。そのため、低レベルのプロトコルの詳細に対処するのではなく、サーバーやクライアントのコアロジックの実装に集中できます。</p>
+<h2>次のステップ</h2>
+<p>MCP でできることのほんの一部に触れただけですが、すでに基本的なサーバーが動作しています。実際、ブラウザの MCP クライアントを使ってそれに接続もしました。</p>
+<p>次節では、LLM からサーバーに接続する方法を見ていきます。</p>
+</article>
+<nav class="page-nav"><a class="nav-link prev" href="capabilities.html">← 前へ: MCP の機能（Capabilities）を理解する</a><a class="nav-link toc-link" href="../index.html">目次へ</a><a class="nav-link next" href="quiz2.html">次へ →: クイズ 2: MCP SDK</a></nav>
+</main>
+<footer class="site-footer">
+  <p>原典: Hugging Face huggingface/mcp-course（<a href="https://github.com/huggingface/mcp-course">https://github.com/huggingface/mcp-course</a>）</p>
+  <p>日本語版の翻訳・公開: 霞ヶ関京 / 連絡先: GitHub <a href="https://github.com/yanikasumin">@yanikasumin</a> / YouTube <a href="https://www.youtube.com/@KASUMI_MOF">@KASUMI_MOF</a></p>
+  <p class="demo-note">このサイトはデモ版です。内容は順次更新されます。</p>
+</footer>
+<script src="../../site.js"></script>
+</body>
+</html>

@@ -1,0 +1,804 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>因果言語モデルをゼロから学習する | Hugging Face コース日本語版（デモ版）</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Shippori+Mincho:wght@500;700&family=Zen+Kaku+Gothic+New:wght@400;500;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../../style.css">
+<script>
+window.MathJax = { tex: { inlineMath: [['$', '$'], ['\\(', '\\)']], displayMath: [['$$', '$$'], ['\\[', '\\]']] }, options: { skipHtmlTags: ['script','noscript','style','textarea','pre','code'] } };
+</script>
+<script async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml.js"></script>
+</head>
+<body>
+<header class="site-header">
+  <div class="header-inner">
+    <a class="site-title" href="../../index.html">Hugging Face コース日本語版</a>
+    <span class="demo-badge">デモ版</span>
+  </div>
+</header>
+<main class="container">
+<p class="course-crumb"><a href="../index.html">LLM コース</a>
+<span class="badge badge-qa-pass">翻訳QA 最終合格</span></p>
+<nav class="page-nav"><a class="nav-link prev" href="5.html">← 前へ: 要約</a><a class="nav-link toc-link" href="../index.html">目次へ</a><a class="nav-link next" href="7.html">次へ →: 質問応答</a></nav>
+<article class="content">
+<h1>因果言語モデルをゼロから学習する</h1>
+<p>{#if fw === 'pt'}</p>
+<p>{:else}</p>
+<p>{/if}</p>
+<p>これまでは主に、事前学習済みモデルを使い、事前学習の重みを再利用して新しい用途向けにファインチューニングしてきました。<a href="../chapter1/1.html">Chapter 1</a> で見たように、これは一般に <em>転移学習</em> と呼ばれ、ラベル付きデータが少ない現実の用途のほとんどで Transformer モデルを活用するうえで非常に有効な戦略です。この章では別のアプローチを取り、新しいモデルを完全にゼロから学習します。データが大量にあり、利用可能なモデルの事前学習データとは大きく異なる場合には、この方法が適しています。ただし、言語モデルの事前学習には、既存モデルのファインチューニングと比べてかなり多くの計算リソースが必要です。新しいモデルの学習が意味を持つ例としては、楽譜のデータ、DNA のような分子配列、プログラミング言語のデータセットなどがあります。プログラミング言語は近年、OpenAI の Codex モデルを基盤とする TabNine や GitHub の Copilot のような、長いコード列を生成できるツールによって注目を集めています。このテキスト生成のタスクに最も適しているのは、GPT-2 のような自己回帰型の言語モデル、つまり因果言語モデルです。</p>
+<p>このセクションでは、コード生成モデルの縮小版を作ります。完全な関数やクラスではなく、1行の補完に焦点を当て、Python コードの一部を使います。Python でデータを扱う作業では、<code>matplotlib</code>、<code>seaborn</code>、<code>pandas</code>、<code>scikit-learn</code> といったライブラリからなる Python のデータサイエンススタックに頻繁に触れます。これらのフレームワークを使うときは特定のコマンドを調べる必要がよくあるので、モデルにこれらの呼び出しを補完してもらえると便利です。</p>
+<div class="youtube-embed"><iframe src="https://www.youtube-nocookie.com/embed/Vpjb1lu0MDk" title="YouTube video" loading="lazy" allowfullscreen referrerpolicy="strict-origin-when-cross-origin"></iframe></div>
+<p><a href="../chapter6/1.html">Chapter 6</a> では、Python のソースコードを処理するための効率的なトークナイザを作りました。しかし、モデルの事前学習に使う大規模なデータセットはまだ用意できていません。ここでは、GitHub のリポジトリから集めた Python コードのコーパスにこのトークナイザを適用します。その後、<code>Trainer</code> API と 🤗 Accelerate を使ってモデルを学習します。さっそく始めましょう！</p>
+<iframe src="https://course-demos-codeparrot-ds.hf.space" frameBorder="0" height="300" title="Gradio アプリ" class="block dark:hidden container p-0 flex-grow space-iframe" allow="accelerometer; ambient-light-sensor; autoplay; battery; camera; document-domain; encrypted-media; fullscreen; geolocation; gyroscope; layout-animations; legacy-image-formats; magnetometer; microphone; midi; oversized-images; payment; picture-in-picture; publickey-credentials-get; sync-xhr; usb; vr ; wake-lock; xr-spatial-tracking" sandbox="allow-forms allow-modals allow-popups allow-popups-to-escape-sandbox allow-same-origin allow-scripts allow-downloads"></iframe>
+
+<p>これは、このセクションで示すコードを使って実際に学習し、Hub にアップロードしたモデルを紹介するものです。<a href="https://huggingface.co/huggingface-course/codeparrot-ds?text=plt.imshow%28">こちら</a> で確認できます。テキスト生成にはランダム性があるため、得られる結果は少し異なるはずです。</p>
+<h2>データを集める</h2>
+<p>Python のコードは、GitHub のようなコードリポジトリに大量に存在します。すべての Python リポジトリをスクレイピングすれば、データセットを作ることができます。これは、大規模な GPT-2 モデルを事前学習するために <a href="https://learning.oreilly.com/library/view/natural-language-processing/9781098136789/">Transformers の教科書</a> で採用されたアプローチです。著者らは、約2,000万件の Python ファイルを含む約180 GB の GitHub ダンプ <code>codeparrot</code> からデータセットを構築し、<a href="https://huggingface.co/datasets/transformersbook/codeparrot">Hugging Face Hub</a> で共有しました。</p>
+<p>ただし、コーパス全体で学習すると時間と計算リソースを大量に消費します。また、必要なのは Python のデータサイエンススタックに関係するデータセットの部分だけです。そこで、まず <code>codeparrot</code> データセットを、このスタックのライブラリのいずれかを含むファイルだけに絞り込みます。データセットが大きいため、ダウンロードは避けたいところです。代わりに、ストリーミング機能を使ってその場で絞り込みます。先ほど挙げたライブラリを使っているコードサンプルを絞り込むために、次の関数を使います。</p>
+<div class="codehilite"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">any_keyword_in_string</span><span class="p">(</span><span class="n">string</span><span class="p">,</span> <span class="n">keywords</span><span class="p">):</span>
+    <span class="k">for</span> <span class="n">keyword</span> <span class="ow">in</span> <span class="n">keywords</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">keyword</span> <span class="ow">in</span> <span class="n">string</span><span class="p">:</span>
+            <span class="k">return</span> <span class="kc">True</span>
+    <span class="k">return</span> <span class="kc">False</span>
+</code></pre></div>
+
+<p>2つの例で試してみましょう。</p>
+<div class="codehilite"><pre><span></span><code><span class="n">filters</span> <span class="o">=</span> <span class="p">[</span><span class="s2">"pandas"</span><span class="p">,</span> <span class="s2">"sklearn"</span><span class="p">,</span> <span class="s2">"matplotlib"</span><span class="p">,</span> <span class="s2">"seaborn"</span><span class="p">]</span>
+<span class="n">example_1</span> <span class="o">=</span> <span class="s2">"import numpy as np"</span>
+<span class="n">example_2</span> <span class="o">=</span> <span class="s2">"import pandas as pd"</span>
+
+<span class="nb">print</span><span class="p">(</span>
+    <span class="n">any_keyword_in_string</span><span class="p">(</span><span class="n">example_1</span><span class="p">,</span> <span class="n">filters</span><span class="p">),</span> <span class="n">any_keyword_in_string</span><span class="p">(</span><span class="n">example_2</span><span class="p">,</span> <span class="n">filters</span><span class="p">)</span>
+<span class="p">)</span>
+</code></pre></div>
+
+<p>```python out
+False True</p>
+<div class="codehilite"><pre><span></span><code>これを使って、データセットをストリーミングしながら目的の要素を絞り込む関数を作れます。
+
+```py
+from collections import defaultdict
+from tqdm import tqdm
+from datasets import Dataset
+
+
+def filter_streaming_dataset(dataset, filters):
+    filtered_dict = defaultdict(list)
+    total = 0
+    for sample in tqdm(iter(dataset)):
+        total += 1
+        if any_keyword_in_string(sample["content"], filters):
+            for k, v in sample.items():
+                filtered_dict[k].append(v)
+    print(f"フィルタリング後のデータの割合: {len(filtered_dict['content'])/total:.2%}")
+    return Dataset.from_dict(filtered_dict)
+</code></pre></div>
+
+<p>あとは、この関数をストリーミングデータセットに適用するだけです。</p>
+<div class="codehilite"><pre><span></span><code><span class="c1"># このセルの実行には非常に長い時間がかかるので、スキップして</span>
+<span class="c1"># 次のセルに進んでください！</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">datasets</span><span class="w"> </span><span class="kn">import</span> <span class="n">load_dataset</span>
+
+<span class="n">split</span> <span class="o">=</span> <span class="s2">"train"</span>  <span class="c1"># "valid"</span>
+<span class="n">filters</span> <span class="o">=</span> <span class="p">[</span><span class="s2">"pandas"</span><span class="p">,</span> <span class="s2">"sklearn"</span><span class="p">,</span> <span class="s2">"matplotlib"</span><span class="p">,</span> <span class="s2">"seaborn"</span><span class="p">]</span>
+
+<span class="n">data</span> <span class="o">=</span> <span class="n">load_dataset</span><span class="p">(</span><span class="sa">f</span><span class="s2">"transformersbook/codeparrot-</span><span class="si">{</span><span class="n">split</span><span class="si">}</span><span class="s2">"</span><span class="p">,</span> <span class="n">split</span><span class="o">=</span><span class="n">split</span><span class="p">,</span> <span class="n">streaming</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+<span class="n">filtered_data</span> <span class="o">=</span> <span class="n">filter_streaming_dataset</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">filters</span><span class="p">)</span>
+</code></pre></div>
+
+<p>```python out
+フィルタリング後のデータの割合: 3.26%</p>
+<div class="codehilite"><pre><span></span><code>元のデータセットの約3%が残りますが、それでもかなり大きな規模です。得られたデータセットは 6 GB で、600,000件の Python スクリプトから構成されています！
+
+データセット全体の絞り込みには、マシンや帯域によっては2〜3時間かかることがあります。この長い処理を自分で実行したくない場合は、絞り込み済みのデータセットを Hub で提供しているので、そちらをダウンロードできます。
+
+```py
+from datasets import load_dataset, DatasetDict
+
+ds_train = load_dataset("huggingface-course/codeparrot-ds-train", split="train")
+ds_valid = load_dataset("huggingface-course/codeparrot-ds-valid", split="validation")
+
+raw_datasets = DatasetDict(
+    {
+        "train": ds_train,  # .shuffle().select(range(50000)),
+        "valid": ds_valid,  # .shuffle().select(range(500))
+    }
+)
+
+raw_datasets
+</code></pre></div>
+
+<p>```python out
+DatasetDict({
+    train: Dataset({
+        features: ['repo_name', 'path', 'copies', 'size', 'content', 'license'],
+        num_rows: 606720
+    })
+    valid: Dataset({
+        features: ['repo_name', 'path', 'copies', 'size', 'content', 'license'],
+        num_rows: 3322
+    })
+})</p>
+<div class="codehilite"><pre><span></span><code>&lt;div class="callout callout-tip" markdown="block"&gt;
+&lt;p class="callout-title"&gt;💡 ヒント&lt;/p&gt;
+言語モデルの事前学習には時間がかかります。まず、上の2行のコメントアウトを外してデータの一部で学習ループを実行し、学習が正常に完了してモデルが保存されることを確認しておくことをおすすめします。フォルダを作り忘れたり、学習ループの最後にタイプミスがあったりして、学習の実行が最後のステップで失敗することほど悔しいことはありません！
+&lt;/div&gt;
+
+
+データセットの例を見てみましょう。各フィールドの最初の200文字だけを表示します。
+
+```py
+for key in raw_datasets["train"][0]:
+    print(f"{key.upper()}: {raw_datasets['train'][0][key][:200]}")
+</code></pre></div>
+
+<p><code>``python out
+'REPO_NAME: kmike/scikit-learn'
+'PATH: sklearn/utils/__init__.py'
+'COPIES: 3'
+'SIZE: 10094'
+'''CONTENT: """
+The :mod:</code>sklearn.utils` module includes various utilites.
+"""</p>
+<p>from collections import Sequence</p>
+<p>import numpy as np
+from scipy.sparse import issparse
+import warnings</p>
+<p>from .murmurhash import murm
+LICENSE: bsd-3-clause'''</p>
+<div class="codehilite"><pre><span></span><code>`content` フィールドには、モデルに学習させたいコードが含まれていることがわかります。データセットが用意できたので、次はテキストを事前学習に適した形式に整える必要があります。
+
+## データセットを準備する
+
+
+
+<div class="youtube-embed"><iframe src="https://www.youtube-nocookie.com/embed/ma1TrR7gE7I" title="YouTube video" loading="lazy" allowfullscreen referrerpolicy="strict-origin-when-cross-origin"></iframe></div>
+
+
+
+最初のステップは、データをトークン化して学習に使えるようにすることです。主な目的は短い関数呼び出しの自動補完なので、コンテキストサイズは比較的小さくできます。そうすると、モデルをはるかに速く学習でき、必要なメモリも大幅に少なくて済みます。アプリケーションでより多くのコンテキストが必要な場合（たとえば、関数定義のあるファイルをもとにモデルにユニットテストを書かせたい場合）は、この数値を大きくしてください。ただし、その分 GPU メモリの使用量も増える点に注意してください。ここでは、GPT-2 の 1,024 や GPT-3 の 2,048 とは異なり、コンテキストサイズを128トークンに固定します。
+
+ほとんどのドキュメントは128トークンよりはるかに長いため、入力を最大長で単純に切り捨てると、データセットの大部分を失ってしまいます。代わりに、`return_overflowing_tokens` オプションを使って入力全体をトークン化し、[Chapter 6](/course/chapter6/4) で行ったように複数のチャンクに分割します。また、`return_length` オプションも使って、作成された各チャンクの長さを自動的に取得します。最後のチャンクはコンテキストサイズより小さくなることが多く、パディングの問題を避けるためにこれらの断片は除去します。データは十分にあるので、除去しても問題ありません。
+
+&lt;div class="flex justify-center"&gt;
+&lt;img class="block dark:hidden" src="https://huggingface.co/datasets/huggingface-course/documentation-images/resolve/main/en/chapter7/chunking_texts.svg" alt="長いテキストをいくつかのピースに分割する。"/&gt;
+&lt;img class="hidden dark:block" src="https://huggingface.co/datasets/huggingface-course/documentation-images/resolve/main/en/chapter7/chunking_texts-dark.svg" alt="長いテキストをいくつかのピースに分割する。"/&gt;
+&lt;/div&gt;
+
+最初の2つの例を見て、具体的にどう動くか確認しましょう。
+
+```py
+from transformers import AutoTokenizer
+
+context_length = 128
+tokenizer = AutoTokenizer.from_pretrained("huggingface-course/code-search-net-tokenizer")
+
+outputs = tokenizer(
+    raw_datasets["train"][:2]["content"],
+    truncation=True,
+    max_length=context_length,
+    return_overflowing_tokens=True,
+    return_length=True,
+)
+
+print(f"入力 ID の長さ: {len(outputs['input_ids'])}")
+print(f"入力チャンクの長さ: {(outputs['length'])}")
+print(f"チャンクの対応関係: {outputs['overflow_to_sample_mapping']}")
+</code></pre></div>
+
+<p>```python out
+入力 ID の長さ: 34
+入力チャンクの長さ: [128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 117, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 41]
+チャンクの対応関係: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1]</p>
+<div class="codehilite"><pre><span></span><code>この2つの例からは、合計34個のセグメントが得られたことがわかります。チャンクの長さを見ると、両ドキュメントの末尾のチャンクは128トークン未満（それぞれ117と41）です。これらは全チャンクのごく一部なので、安心して除去できます。`overflow_to_sample_mapping` フィールドを使えば、どのチャンクがどの入力サンプルに属していたかも復元できます。
+
+この操作では、🤗 Datasets の `Dataset.map()` 関数の便利な特徴を使っています。1対1の対応を必要としない点です。[section 3](/course/chapter7/3) で見たように、入力バッチより多い、または少ない要素を持つバッチを作成できます。これは、データ拡張やデータの絞り込みなど、要素数を変える操作を行うときに便利です。今回のケースでは、各要素を指定したコンテキストサイズのチャンクにトークン化することで、各ドキュメントから多くのサンプルを作成しています。既存の列はサイズが競合するので、削除するのを忘れないようにしてください。保持したい場合は、適切に複製して `Dataset.map()` の呼び出しの中で返すこともできます。
+
+```py
+def tokenize(element):
+    outputs = tokenizer(
+        element["content"],
+        truncation=True,
+        max_length=context_length,
+        return_overflowing_tokens=True,
+        return_length=True,
+    )
+    input_batch = []
+    for length, input_ids in zip(outputs["length"], outputs["input_ids"]):
+        if length == context_length:
+            input_batch.append(input_ids)
+    return {"input_ids": input_batch}
+
+
+tokenized_datasets = raw_datasets.map(
+    tokenize, batched=True, remove_columns=raw_datasets["train"].column_names
+)
+tokenized_datasets
+</code></pre></div>
+
+<p>```python out
+DatasetDict({
+    train: Dataset({
+        features: ['input_ids'],
+        num_rows: 16702061
+    })
+    valid: Dataset({
+        features: ['input_ids'],
+        num_rows: 93164
+    })
+})</p>
+<div class="codehilite"><pre><span></span><code>これで、各128トークンのサンプルが1,670万件、合計で約21億トークンになりました。参考までに、OpenAI の GPT-3 と Codex の各モデルは、それぞれ3,000億と1,000億のトークンで学習されており、Codex のモデルは GPT-3 のチェックポイントから初期化されています。このセクションの目的は、長く首尾一貫したテキストを生成できるこれらのモデルと競うことではありません。データサイエンティスト向けに素早い自動補完機能を提供する、縮小版を作ることです。
+
+データセットの準備ができたので、モデルをセットアップしましょう！
+
+&lt;div class="callout callout-tip" markdown="block"&gt;
+&lt;p class="callout-title"&gt;💡 ヒント&lt;/p&gt;
+✏️ **試してみましょう！** ここではコンテキストウィンドウが小さいため、コンテキストサイズより小さいチャンクをすべて除去しても大きな問題にはなりませんでした。しかし、コンテキストサイズを大きくすると（あるいは短いドキュメントのコーパスの場合）、除去されるチャンクの割合も増えていきます。より効率的なデータ準備の方法は、バッチ内のトークン化されたすべてのサンプルを、`eos_token_id` トークンを挟んで連結し、連結されたシーケンスに対してチャンク分割を行うことです。演習として、そのアプローチを使うように `tokenize()` 関数を変更してみてください。その際、トークン ID の完全なシーケンスを得るために、`truncation=False` を設定し、トークナイザのほかの引数を取り除く必要があります。
+&lt;/div&gt;
+
+
+
+## 新しいモデルを初期化する
+
+最初のステップは、GPT-2 モデルを新しく初期化することです。モデルには小さい GPT-2 モデルと同じ構成を使います。事前学習済みの構成を読み込み、トークナイザのサイズがモデルの語彙サイズと一致することを確認し、`bos` と `eos`（シーケンスの開始と終了）のトークン ID を渡します。
+
+{#if fw === 'pt'}
+
+```py
+from transformers import AutoTokenizer, GPT2LMHeadModel, AutoConfig
+
+config = AutoConfig.from_pretrained(
+    "gpt2",
+    vocab_size=len(tokenizer),
+    n_ctx=context_length,
+    bos_token_id=tokenizer.bos_token_id,
+    eos_token_id=tokenizer.eos_token_id,
+)
+</code></pre></div>
+
+<p>その構成で、新しいモデルを読み込めます。モデルを自分で初期化するため、<code>from_pretrained()</code> 関数を使わないのは今回が初めてである点に注目してください。</p>
+<div class="codehilite"><pre><span></span><code><span class="n">model</span> <span class="o">=</span> <span class="n">GPT2LMHeadModel</span><span class="p">(</span><span class="n">config</span><span class="p">)</span>
+<span class="n">model_size</span> <span class="o">=</span> <span class="nb">sum</span><span class="p">(</span><span class="n">t</span><span class="o">.</span><span class="n">numel</span><span class="p">()</span> <span class="k">for</span> <span class="n">t</span> <span class="ow">in</span> <span class="n">model</span><span class="o">.</span><span class="n">parameters</span><span class="p">())</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"GPT-2 のサイズ: </span><span class="si">{</span><span class="n">model_size</span><span class="o">/</span><span class="mi">1000</span><span class="o">**</span><span class="mi">2</span><span class="si">:</span><span class="s2">.1f</span><span class="si">}</span><span class="s2">M パラメータ"</span><span class="p">)</span>
+</code></pre></div>
+
+<p>```python out
+GPT-2 のサイズ: 124.2M パラメータ</p>
+<div class="codehilite"><pre><span></span><code>{:else}
+
+```py
+from transformers import AutoTokenizer, TFGPT2LMHeadModel, AutoConfig
+
+config = AutoConfig.from_pretrained(
+    "gpt2",
+    vocab_size=len(tokenizer),
+    n_ctx=context_length,
+    bos_token_id=tokenizer.bos_token_id,
+    eos_token_id=tokenizer.eos_token_id,
+)
+</code></pre></div>
+
+<p>その構成で、新しいモデルを読み込めます。モデルを自分で初期化するため、<code>from_pretrained()</code> 関数を使わないのは今回が初めてである点に注目してください。</p>
+<div class="codehilite"><pre><span></span><code><span class="n">model</span> <span class="o">=</span> <span class="n">TFGPT2LMHeadModel</span><span class="p">(</span><span class="n">config</span><span class="p">)</span>
+<span class="n">model</span><span class="p">(</span><span class="n">model</span><span class="o">.</span><span class="n">dummy_inputs</span><span class="p">)</span>  <span class="c1"># モデルを構築する</span>
+<span class="n">model</span><span class="o">.</span><span class="n">summary</span><span class="p">()</span>
+</code></pre></div>
+
+<p>```python out</p>
+<hr />
+<h1>Layer (type)                 Output Shape              Param #</h1>
+<h1>transformer (TFGPT2MainLayer multiple                  124242432</h1>
+<p>Total params: 124,242,432
+Trainable params: 124,242,432
+Non-trainable params: 0</p>
+<hr />
+<div class="codehilite"><pre><span></span><code>{/if}
+
+モデルには1億2,400万個のパラメータがあり、これらを調整していきます。学習を始める前に、バッチの作成を担うデータコレータをセットアップする必要があります。その名のとおり言語モデリング専用に設計された `DataCollatorForLanguageModeling` コレータが使えます。このコレータは、バッチのスタックとパディングに加えて、言語モデルのラベルの作成も担います。因果言語モデリングでは、入力がそのままラベルにもなります（要素を1つずらしただけです）。このデータコレータは学習中にラベルをその場で作成するので、`input_ids` を複製する必要はありません。
+
+`DataCollatorForLanguageModeling` は、マスク言語モデリング（MLM）と因果言語モデリング（CLM）の両方に対応している点に注意してください。デフォルトでは MLM 用のデータを準備しますが、引数 `mlm=False` を設定すると CLM に切り替えられます。
+
+{#if fw === 'pt'}
+
+```py
+from transformers import DataCollatorForLanguageModeling
+
+tokenizer.pad_token = tokenizer.eos_token
+data_collator = DataCollatorForLanguageModeling(tokenizer, mlm=False)
+</code></pre></div>
+
+<p>{:else}</p>
+<div class="codehilite"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">transformers</span><span class="w"> </span><span class="kn">import</span> <span class="n">DataCollatorForLanguageModeling</span>
+
+<span class="n">tokenizer</span><span class="o">.</span><span class="n">pad_token</span> <span class="o">=</span> <span class="n">tokenizer</span><span class="o">.</span><span class="n">eos_token</span>
+<span class="n">data_collator</span> <span class="o">=</span> <span class="n">DataCollatorForLanguageModeling</span><span class="p">(</span><span class="n">tokenizer</span><span class="p">,</span> <span class="n">mlm</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">return_tensors</span><span class="o">=</span><span class="s2">"tf"</span><span class="p">)</span>
+</code></pre></div>
+
+<p>{/if}</p>
+<p>例を見てみましょう。</p>
+<div class="codehilite"><pre><span></span><code><span class="n">out</span> <span class="o">=</span> <span class="n">data_collator</span><span class="p">([</span><span class="n">tokenized_datasets</span><span class="p">[</span><span class="s2">"train"</span><span class="p">][</span><span class="n">i</span><span class="p">]</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">5</span><span class="p">)])</span>
+<span class="k">for</span> <span class="n">key</span> <span class="ow">in</span> <span class="n">out</span><span class="p">:</span>
+    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">key</span><span class="si">}</span><span class="s2"> の形状: </span><span class="si">{</span><span class="n">out</span><span class="p">[</span><span class="n">key</span><span class="p">]</span><span class="o">.</span><span class="n">shape</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+</code></pre></div>
+
+<p>{#if fw === 'pt'}</p>
+<p>```python out
+input_ids の形状: torch.Size([5, 128])
+attention_mask の形状: torch.Size([5, 128])
+labels の形状: torch.Size([5, 128])</p>
+<div class="codehilite"><pre><span></span><code>{:else}
+
+```python out
+input_ids の形状: (5, 128)
+attention_mask の形状: (5, 128)
+labels の形状: (5, 128)
+</code></pre></div>
+
+<p>{/if}</p>
+<p>サンプルがスタックされ、すべてのテンソルの形状が同じになっていることがわかります。</p>
+<p>{#if fw === 'tf'}</p>
+<p>ここで <code>prepare_tf_dataset()</code> メソッドを使うと、上で作成したデータコレータでデータセットを TensorFlow のデータセットに変換できます。</p>
+<div class="codehilite"><pre><span></span><code><span class="n">tf_train_dataset</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">prepare_tf_dataset</span><span class="p">(</span>
+    <span class="n">tokenized_datasets</span><span class="p">[</span><span class="s2">"train"</span><span class="p">],</span>
+    <span class="n">collate_fn</span><span class="o">=</span><span class="n">data_collator</span><span class="p">,</span>
+    <span class="n">shuffle</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+    <span class="n">batch_size</span><span class="o">=</span><span class="mi">32</span><span class="p">,</span>
+<span class="p">)</span>
+<span class="n">tf_eval_dataset</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">prepare_tf_dataset</span><span class="p">(</span>
+    <span class="n">tokenized_datasets</span><span class="p">[</span><span class="s2">"valid"</span><span class="p">],</span>
+    <span class="n">collate_fn</span><span class="o">=</span><span class="n">data_collator</span><span class="p">,</span>
+    <span class="n">shuffle</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+    <span class="n">batch_size</span><span class="o">=</span><span class="mi">32</span><span class="p">,</span>
+<span class="p">)</span>
+</code></pre></div>
+
+<p>{/if}</p>
+<div class="callout callout-warning">
+<p class="callout-title">⚠️ 注意</p>
+<p>⚠️ 入力とラベルを揃えるためのシフトはモデルの内部で行われるため、データコレータは入力をコピーしてラベルを作成するだけです。</p>
+</div>
+<p>これで、実際にモデルを学習する準備がすべて整いました。思ったほど大変ではなかったはずです！学習を始める前に、Hugging Face にログインしておきましょう。ノートブックで作業している場合は、次のユーティリティ関数でログインできます。</p>
+<div class="codehilite"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">huggingface_hub</span><span class="w"> </span><span class="kn">import</span> <span class="n">notebook_login</span>
+
+<span class="n">notebook_login</span><span class="p">()</span>
+</code></pre></div>
+
+<p>Hugging Face のログイン認証情報を入力できるウィジェットが表示されます。</p>
+<p>ノートブックで作業していない場合は、ターミナルに次の行を入力してください。</p>
+<div class="codehilite"><pre><span></span><code>huggingface-cli<span class="w"> </span>login
+</code></pre></div>
+
+<p>{#if fw === 'pt'}</p>
+<p>残る作業は、学習の引数を設定して <code>Trainer</code> を起動することだけです。ウォームアップ付きのコサイン学習率スケジュールを使い、実効バッチサイズは256（<code>per_device_train_batch_size</code> × <code>gradient_accumulation_steps</code>）にします。勾配累積は、単一のバッチがメモリに収まらない場合に使い、複数の順伝播・逆伝播を重ねて勾配を少しずつ蓄積します。🤗 Accelerate で学習ループを作成するときに、実際に動く様子を確認します。</p>
+<div class="codehilite"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">transformers</span><span class="w"> </span><span class="kn">import</span> <span class="n">Trainer</span><span class="p">,</span> <span class="n">TrainingArguments</span>
+
+<span class="n">args</span> <span class="o">=</span> <span class="n">TrainingArguments</span><span class="p">(</span>
+    <span class="n">output_dir</span><span class="o">=</span><span class="s2">"codeparrot-ds"</span><span class="p">,</span>
+    <span class="n">per_device_train_batch_size</span><span class="o">=</span><span class="mi">32</span><span class="p">,</span>
+    <span class="n">per_device_eval_batch_size</span><span class="o">=</span><span class="mi">32</span><span class="p">,</span>
+    <span class="n">evaluation_strategy</span><span class="o">=</span><span class="s2">"steps"</span><span class="p">,</span>
+    <span class="n">eval_steps</span><span class="o">=</span><span class="mi">5_000</span><span class="p">,</span>
+    <span class="n">logging_steps</span><span class="o">=</span><span class="mi">5_000</span><span class="p">,</span>
+    <span class="n">gradient_accumulation_steps</span><span class="o">=</span><span class="mi">8</span><span class="p">,</span>
+    <span class="n">num_train_epochs</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span>
+    <span class="n">weight_decay</span><span class="o">=</span><span class="mf">0.1</span><span class="p">,</span>
+    <span class="n">warmup_steps</span><span class="o">=</span><span class="mi">1_000</span><span class="p">,</span>
+    <span class="n">lr_scheduler_type</span><span class="o">=</span><span class="s2">"cosine"</span><span class="p">,</span>
+    <span class="n">learning_rate</span><span class="o">=</span><span class="mf">5e-4</span><span class="p">,</span>
+    <span class="n">save_steps</span><span class="o">=</span><span class="mi">5_000</span><span class="p">,</span>
+    <span class="n">fp16</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+    <span class="n">push_to_hub</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+<span class="p">)</span>
+
+<span class="n">trainer</span> <span class="o">=</span> <span class="n">Trainer</span><span class="p">(</span>
+    <span class="n">model</span><span class="o">=</span><span class="n">model</span><span class="p">,</span>
+    <span class="n">tokenizer</span><span class="o">=</span><span class="n">tokenizer</span><span class="p">,</span>
+    <span class="n">args</span><span class="o">=</span><span class="n">args</span><span class="p">,</span>
+    <span class="n">data_collator</span><span class="o">=</span><span class="n">data_collator</span><span class="p">,</span>
+    <span class="n">train_dataset</span><span class="o">=</span><span class="n">tokenized_datasets</span><span class="p">[</span><span class="s2">"train"</span><span class="p">],</span>
+    <span class="n">eval_dataset</span><span class="o">=</span><span class="n">tokenized_datasets</span><span class="p">[</span><span class="s2">"valid"</span><span class="p">],</span>
+<span class="p">)</span>
+</code></pre></div>
+
+<p>あとは <code>Trainer</code> を起動して、学習が終わるのを待つだけです。学習セット全体で実行するか一部で実行するかにより、それぞれ20時間または2時間かかります。コーヒーを何杯かと、読むための良い本を用意しておきましょう！</p>
+<div class="codehilite"><pre><span></span><code><span class="n">trainer</span><span class="o">.</span><span class="n">train</span><span class="p">()</span>
+</code></pre></div>
+
+<p>学習が完了したら、モデルとトークナイザを Hub にプッシュできます。</p>
+<div class="codehilite"><pre><span></span><code><span class="n">trainer</span><span class="o">.</span><span class="n">push_to_hub</span><span class="p">()</span>
+</code></pre></div>
+
+<p>{:else}</p>
+<p>残る作業は、学習のハイパーパラメータを設定して <code>compile()</code> と <code>fit()</code> を呼ぶことだけです。学習の安定性を高めるため、ウォームアップ付きの学習率スケジュールを使います。</p>
+<div class="codehilite"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">transformers</span><span class="w"> </span><span class="kn">import</span> <span class="n">create_optimizer</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">tensorflow</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">tf</span>
+
+<span class="n">num_train_steps</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">tf_train_dataset</span><span class="p">)</span>
+<span class="n">optimizer</span><span class="p">,</span> <span class="n">schedule</span> <span class="o">=</span> <span class="n">create_optimizer</span><span class="p">(</span>
+    <span class="n">init_lr</span><span class="o">=</span><span class="mf">5e-5</span><span class="p">,</span>
+    <span class="n">num_warmup_steps</span><span class="o">=</span><span class="mi">1_000</span><span class="p">,</span>
+    <span class="n">num_train_steps</span><span class="o">=</span><span class="n">num_train_steps</span><span class="p">,</span>
+    <span class="n">weight_decay_rate</span><span class="o">=</span><span class="mf">0.01</span><span class="p">,</span>
+<span class="p">)</span>
+<span class="n">model</span><span class="o">.</span><span class="n">compile</span><span class="p">(</span><span class="n">optimizer</span><span class="o">=</span><span class="n">optimizer</span><span class="p">)</span>
+
+<span class="c1"># 混合精度 float16 で学習する</span>
+<span class="n">tf</span><span class="o">.</span><span class="n">keras</span><span class="o">.</span><span class="n">mixed_precision</span><span class="o">.</span><span class="n">set_global_policy</span><span class="p">(</span><span class="s2">"mixed_float16"</span><span class="p">)</span>
+</code></pre></div>
+
+<p>あとは <code>model.fit()</code> を呼んで、学習が終わるのを待つだけです。学習セット全体で実行するか一部で実行するかにより、それぞれ20時間または2時間かかります。コーヒーを何杯かと、読むための良い本を用意しておきましょう！学習が完了したら、モデルとトークナイザを Hub にプッシュできます。</p>
+<div class="codehilite"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">transformers.keras_callbacks</span><span class="w"> </span><span class="kn">import</span> <span class="n">PushToHubCallback</span>
+
+<span class="n">callback</span> <span class="o">=</span> <span class="n">PushToHubCallback</span><span class="p">(</span><span class="n">output_dir</span><span class="o">=</span><span class="s2">"codeparrot-ds"</span><span class="p">,</span> <span class="n">tokenizer</span><span class="o">=</span><span class="n">tokenizer</span><span class="p">)</span>
+
+<span class="n">model</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">tf_train_dataset</span><span class="p">,</span> <span class="n">validation_data</span><span class="o">=</span><span class="n">tf_eval_dataset</span><span class="p">,</span> <span class="n">callbacks</span><span class="o">=</span><span class="p">[</span><span class="n">callback</span><span class="p">])</span>
+</code></pre></div>
+
+<p>{/if}</p>
+<div class="callout callout-tip">
+<p class="callout-title">💡 ヒント</p>
+<p>✏️ <strong>試してみましょう！</strong> 生のテキストから GPT-2 の学習まで、<code>TrainingArguments</code> に加えて約30行のコードで到達できました。自分のデータセットで試して、良い結果が得られるか確認してみてください！</p>
+</div>
+<div class="callout callout-tip">
+<p class="callout-title">💡 ヒント</p>
+<p>{#if fw === 'pt'}</p>
+<p>💡 複数の GPU を備えたマシンにアクセスできる場合は、そこでコードを実行してみてください。<code>Trainer</code> は複数のマシンを自動的に管理するので、学習を大幅に高速化できます。</p>
+<p>{:else}</p>
+<p>💡 複数の GPU を備えたマシンにアクセスできる場合は、<code>MirroredStrategy</code> コンテキストを使うと学習を大幅に高速化できます。<code>tf.distribute.MirroredStrategy</code> オブジェクトを作成し、<code>to_tf_dataset()</code> や <code>prepare_tf_dataset()</code> の各メソッド、モデルの作成、<code>fit()</code> の呼び出しがすべて、その <code>scope()</code> コンテキストの中で実行されるようにする必要があります。ドキュメントは<a href="https://www.tensorflow.org/guide/distributed_training#use_tfdistributestrategy_with_keras_modelfit">こちら</a>で確認できます。</p>
+<p>{/if}</p>
+</div>
+<h2>pipeline を使ったコード生成</h2>
+<p>今こそ真価が問われるときです。学習したモデルが実際にどれほどうまく動くか見てみましょう！ログでは損失が着実に下がっていることが確認できますが、モデルを試すために、いくつかのプロンプトに対する動作を見てみます。そのために、モデルをテキスト生成の <code>pipeline</code> でラップし、GPU が利用できる場合は高速な生成のために GPU 上に配置します。</p>
+<p>{#if fw === 'pt'}</p>
+<div class="codehilite"><pre><span></span><code><span class="kn">import</span><span class="w"> </span><span class="nn">torch</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">transformers</span><span class="w"> </span><span class="kn">import</span> <span class="n">pipeline</span>
+
+<span class="n">device</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">device</span><span class="p">(</span><span class="s2">"cuda"</span><span class="p">)</span> <span class="k">if</span> <span class="n">torch</span><span class="o">.</span><span class="n">cuda</span><span class="o">.</span><span class="n">is_available</span><span class="p">()</span> <span class="k">else</span> <span class="n">torch</span><span class="o">.</span><span class="n">device</span><span class="p">(</span><span class="s2">"cpu"</span><span class="p">)</span>
+<span class="n">pipe</span> <span class="o">=</span> <span class="n">pipeline</span><span class="p">(</span>
+    <span class="s2">"text-generation"</span><span class="p">,</span> <span class="n">model</span><span class="o">=</span><span class="s2">"huggingface-course/codeparrot-ds"</span><span class="p">,</span> <span class="n">device</span><span class="o">=</span><span class="n">device</span>
+<span class="p">)</span>
+</code></pre></div>
+
+<p>{:else}</p>
+<div class="codehilite"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">transformers</span><span class="w"> </span><span class="kn">import</span> <span class="n">pipeline</span>
+
+<span class="n">course_model</span> <span class="o">=</span> <span class="n">TFGPT2LMHeadModel</span><span class="o">.</span><span class="n">from_pretrained</span><span class="p">(</span><span class="s2">"huggingface-course/codeparrot-ds"</span><span class="p">)</span>
+<span class="n">course_tokenizer</span> <span class="o">=</span> <span class="n">AutoTokenizer</span><span class="o">.</span><span class="n">from_pretrained</span><span class="p">(</span><span class="s2">"huggingface-course/codeparrot-ds"</span><span class="p">)</span>
+<span class="n">pipe</span> <span class="o">=</span> <span class="n">pipeline</span><span class="p">(</span>
+    <span class="s2">"text-generation"</span><span class="p">,</span> <span class="n">model</span><span class="o">=</span><span class="n">course_model</span><span class="p">,</span> <span class="n">tokenizer</span><span class="o">=</span><span class="n">course_tokenizer</span><span class="p">,</span> <span class="n">device</span><span class="o">=</span><span class="mi">0</span>
+<span class="p">)</span>
+</code></pre></div>
+
+<p>{/if}</p>
+<p>まず、散布図を作るという単純なタスクから始めましょう。</p>
+<div class="codehilite"><pre><span></span><code><span class="n">txt</span> <span class="o">=</span> <span class="s2">"""</span><span class="se">\</span>
+<span class="s2"># create some data</span>
+<span class="s2">x = np.random.randn(100)</span>
+<span class="s2">y = np.random.randn(100)</span>
+
+<span class="s2"># create scatter plot with x, y</span>
+<span class="s2">"""</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">pipe</span><span class="p">(</span><span class="n">txt</span><span class="p">,</span> <span class="n">num_return_sequences</span><span class="o">=</span><span class="mi">1</span><span class="p">)[</span><span class="mi">0</span><span class="p">][</span><span class="s2">"generated_text"</span><span class="p">])</span>
+</code></pre></div>
+
+<p>```python out</p>
+<h1>create some data</h1>
+<p>x = np.random.randn(100)
+y = np.random.randn(100)</p>
+<h1>create scatter plot with x, y</h1>
+<p>plt.scatter(x, y)</p>
+<h1>create scatter</h1>
+<div class="codehilite"><pre><span></span><code>結果は正しそうです。`pandas` の操作でもうまくいくでしょうか。2つの配列から `DataFrame` を作れるか見てみましょう。
+
+```py
+txt = """\
+# create some data
+x = np.random.randn(100)
+y = np.random.randn(100)
+
+# create dataframe from x and y
+"""
+print(pipe(txt, num_return_sequences=1)[0]["generated_text"])
+</code></pre></div>
+
+<p>```python out</p>
+<h1>create some data</h1>
+<p>x = np.random.randn(100)
+y = np.random.randn(100)</p>
+<h1>create dataframe from x and y</h1>
+<p>df = pd.DataFrame({'x': x, 'y': y})
+df.insert(0,'x', x)
+for</p>
+<div class="codehilite"><pre><span></span><code>良いですね、正しい答えです。ただし、その後で列 `x` を再び挿入しています。生成されるトークン数に上限があるため、続く `for` ループは途中で切れています。もう少し複雑なことをして、モデルに `groupby` 操作の手助けをしてもらいましょう。
+
+```py
+txt = """\
+# dataframe with profession, income and name
+df = pd.DataFrame({'profession': x, 'income':y, 'name': z})
+
+# calculate the mean income per profession
+"""
+print(pipe(txt, num_return_sequences=1)[0]["generated_text"])
+</code></pre></div>
+
+<p>```python out</p>
+<h1>dataframe with profession, income and name</h1>
+<p>df = pd.DataFrame({'profession': x, 'income':y, 'name': z})</p>
+<h1>calculate the mean income per profession</h1>
+<p>profession = df.groupby(['profession']).mean()</p>
+<h1>compute the</h1>
+<div class="codehilite"><pre><span></span><code>悪くありません。正しいやり方です。最後に、`scikit-learn` でも使えるか、ランダムフォレストのモデルをセットアップできるか見てみましょう。
+
+```py
+txt = """
+# import random forest regressor from scikit-learn
+from sklearn.ensemble import RandomForestRegressor
+
+# fit random forest model with 300 estimators on X, y:
+"""
+print(pipe(txt, num_return_sequences=1)[0]["generated_text"])
+</code></pre></div>
+
+<p>```python out</p>
+<h1>import random forest regressor from scikit-learn</h1>
+<p>from sklearn.ensemble import RandomForestRegressor</p>
+<h1>fit random forest model with 300 estimators on X, y:</h1>
+<p>rf = RandomForestRegressor(n_estimators=300, random_state=random_state, max_depth=3)
+rf.fit(X, y)
+rf</p>
+<div class="codehilite"><pre><span></span><code>{#if fw === 'tf'}
+
+これらのいくつかの例を見る限り、モデルは Python のデータサイエンススタックの構文をある程度学習できているようです。もちろん、実世界にデプロイする前にはモデルをより徹底的に評価する必要がありますが、それでも印象的なプロトタイプです。
+
+{:else}
+
+これらのいくつかの例を見る限り、モデルは Python のデータサイエンススタックの構文をある程度学習できているようです（もちろん、モデルを実世界にデプロイする前には、より徹底的な評価が必要です）。ただし、用途によっては必要な性能を得るために、モデルの学習をさらにカスタマイズしなければならないこともあります。たとえば、バッチサイズを動的に更新したい場合や、不良サンプルをその場でスキップする条件付きの学習ループが欲しい場合はどうでしょうか。`Trainer` をサブクラス化して必要な変更を加える方法もありますが、学習ループをゼロから書くほうが簡単なこともあります。そこで登場するのが 🤗 Accelerate です。
+
+{/if}
+
+{#if fw === 'pt'}
+
+## 🤗 Accelerate で学習する
+
+`Trainer` を使ったモデルの学習方法は見てきました。ある程度のカスタマイズは可能です。しかし、学習ループを完全に制御したい場合や、標準的な学習処理にはない特殊な処理を組み込みたい場合もあります。そのような場合には 🤗 Accelerate が最適です。このセクションでは、それを使ってモデルを学習する手順を順に追っていきます。さらに面白くするために、学習ループに一工夫も加えます。
+
+
+
+<div class="youtube-embed"><iframe src="https://www.youtube-nocookie.com/embed/Hm8_PgVTFuc" title="YouTube video" loading="lazy" allowfullscreen referrerpolicy="strict-origin-when-cross-origin"></iframe></div>
+
+
+
+関心があるのは主にデータサイエンスライブラリに対する的確な自動補完なので、これらのライブラリを多く使う学習サンプルにより大きな重みを与えるのが理にかなっています。こうしたサンプルは、`plt`、`pd`、`sk`、`fit`、`predict` といったキーワードで簡単に識別できます。これらは `matplotlib.pyplot`、`pandas`、`sklearn` の最も頻繁なインポート名であり、後者の fit/predict パターンでもあります。これらがそれぞれ単一のトークンとして表現されるなら、入力シーケンスに含まれているかを簡単に確認できます。トークンには空白の接頭辞が付く場合もあるので、トークナイザの語彙ではそのバージョンも確認します。動作を検証するために、複数のトークンに分割されるはずのテスト用トークンを1つ追加します。
+
+```py
+keytoken_ids = []
+for keyword in [
+    "plt",
+    "pd",
+    "sk",
+    "fit",
+    "predict",
+    " plt",
+    " pd",
+    " sk",
+    " fit",
+    " predict",
+    "testtest",
+]:
+    ids = tokenizer([keyword]).input_ids[0]
+    if len(ids) == 1:
+        keytoken_ids.append(ids[0])
+    else:
+        print(f"単一トークンにならないキーワード: {keyword}")
+</code></pre></div>
+
+<p>```python out
+'単一トークンにならないキーワード: testtest'</p>
+<div class="codehilite"><pre><span></span><code>うまく動いているようです！入力シーケンス、ロジット、先ほど選んだキートークンを入力として受け取るカスタム損失関数を書くことができます。まず、ロジットと入力を揃える必要があります。次のトークンが現在のトークンのラベルになるため、入力シーケンスを右に1つずらしたものがラベルになります。モデルは最初のトークンについては予測を行わないので、ラベルを入力シーケンスの2番目のトークンから始めることでこれを実現できます。次に、入力シーケンス全体の後に続くトークンのラベルは存在しないため、最後のロジットを切り取ります。これで、サンプルごとの損失を計算し、各サンプル内のすべてのキーワードの出現回数を数えることができます。最後に、出現回数を重みとして、すべてのサンプルの重み付き平均を計算します。キーワードを含まないサンプルをすべて捨ててしまわないよう、重みには1を加えます。
+
+```py
+from torch.nn import CrossEntropyLoss
+import torch
+
+
+def keytoken_weighted_loss(inputs, logits, keytoken_ids, alpha=1.0):
+    # トークン &lt; n が n を予測するようにシフトする
+    shift_labels = inputs[..., 1:].contiguous()
+    shift_logits = logits[..., :-1, :].contiguous()
+    # トークンごとの損失を計算する
+    loss_fct = CrossEntropyLoss(reduce=False)
+    loss = loss_fct(shift_logits.view(-1, shift_logits.size(-1)), shift_labels.view(-1))
+    # 形状を変えて、サンプルごとに損失を平均する
+    loss_per_sample = loss.view(shift_logits.size(0), shift_logits.size(1)).mean(axis=1)
+    # 重み付けを計算してスケールする
+    weights = torch.stack([(inputs == kt).float() for kt in keytoken_ids]).sum(
+        axis=[0, 2]
+    )
+    weights = alpha * (1.0 + weights)
+    # 重み付き平均を計算する
+    weighted_loss = (loss_per_sample * weights).mean()
+    return weighted_loss
+</code></pre></div>
+
+<p>この素晴らしい新しい損失関数で学習を始める前に、いくつか準備が必要です。</p>
+<ul>
+<li>データをバッチ単位で読み込むデータローダが必要です。</li>
+<li>重み減衰のパラメータを設定する必要があります。</li>
+<li>定期的に評価したいので、評価コードを関数にまとめておくのがよいでしょう。</li>
+</ul>
+<p>データローダから始めましょう。データセットの形式を <code>"torch"</code> に設定し、適切なバッチサイズで PyTorch の <code>DataLoader</code> に渡すだけです。</p>
+<div class="codehilite"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">torch.utils.data.dataloader</span><span class="w"> </span><span class="kn">import</span> <span class="n">DataLoader</span>
+
+<span class="n">tokenized_datasets</span><span class="o">.</span><span class="n">set_format</span><span class="p">(</span><span class="s2">"torch"</span><span class="p">)</span>
+<span class="n">train_dataloader</span> <span class="o">=</span> <span class="n">DataLoader</span><span class="p">(</span><span class="n">tokenized_datasets</span><span class="p">[</span><span class="s2">"train"</span><span class="p">],</span> <span class="n">batch_size</span><span class="o">=</span><span class="mi">32</span><span class="p">,</span> <span class="n">shuffle</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+<span class="n">eval_dataloader</span> <span class="o">=</span> <span class="n">DataLoader</span><span class="p">(</span><span class="n">tokenized_datasets</span><span class="p">[</span><span class="s2">"valid"</span><span class="p">],</span> <span class="n">batch_size</span><span class="o">=</span><span class="mi">32</span><span class="p">)</span>
+</code></pre></div>
+
+<p>次に、オプティマイザがどのパラメータに追加の重み減衰を適用するか分かるように、パラメータをグループ化します。通常、すべてのバイアスと LayerNorm の重みはこの対象から外れます。その方法は次のとおりです。</p>
+<div class="codehilite"><pre><span></span><code><span class="n">weight_decay</span> <span class="o">=</span> <span class="mf">0.1</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">get_grouped_params</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="n">no_decay</span><span class="o">=</span><span class="p">[</span><span class="s2">"bias"</span><span class="p">,</span> <span class="s2">"LayerNorm.weight"</span><span class="p">]):</span>
+    <span class="n">params_with_wd</span><span class="p">,</span> <span class="n">params_without_wd</span> <span class="o">=</span> <span class="p">[],</span> <span class="p">[]</span>
+    <span class="k">for</span> <span class="n">n</span><span class="p">,</span> <span class="n">p</span> <span class="ow">in</span> <span class="n">model</span><span class="o">.</span><span class="n">named_parameters</span><span class="p">():</span>
+        <span class="k">if</span> <span class="nb">any</span><span class="p">(</span><span class="n">nd</span> <span class="ow">in</span> <span class="n">n</span> <span class="k">for</span> <span class="n">nd</span> <span class="ow">in</span> <span class="n">no_decay</span><span class="p">):</span>
+            <span class="n">params_without_wd</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">p</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">params_with_wd</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">p</span><span class="p">)</span>
+    <span class="k">return</span> <span class="p">[</span>
+        <span class="p">{</span><span class="s2">"params"</span><span class="p">:</span> <span class="n">params_with_wd</span><span class="p">,</span> <span class="s2">"weight_decay"</span><span class="p">:</span> <span class="n">weight_decay</span><span class="p">},</span>
+        <span class="p">{</span><span class="s2">"params"</span><span class="p">:</span> <span class="n">params_without_wd</span><span class="p">,</span> <span class="s2">"weight_decay"</span><span class="p">:</span> <span class="mf">0.0</span><span class="p">},</span>
+    <span class="p">]</span>
+</code></pre></div>
+
+<p>学習中に検証セットでモデルを定期的に評価したいので、そのための関数も書きましょう。評価用データローダを一巡し、すべてのプロセスにわたって損失を集めるだけです。</p>
+<div class="codehilite"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">evaluate</span><span class="p">():</span>
+    <span class="n">model</span><span class="o">.</span><span class="n">eval</span><span class="p">()</span>
+    <span class="n">losses</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="k">for</span> <span class="n">step</span><span class="p">,</span> <span class="n">batch</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">eval_dataloader</span><span class="p">):</span>
+        <span class="k">with</span> <span class="n">torch</span><span class="o">.</span><span class="n">no_grad</span><span class="p">():</span>
+            <span class="n">outputs</span> <span class="o">=</span> <span class="n">model</span><span class="p">(</span><span class="n">batch</span><span class="p">[</span><span class="s2">"input_ids"</span><span class="p">],</span> <span class="n">labels</span><span class="o">=</span><span class="n">batch</span><span class="p">[</span><span class="s2">"input_ids"</span><span class="p">])</span>
+
+        <span class="n">losses</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">accelerator</span><span class="o">.</span><span class="n">gather</span><span class="p">(</span><span class="n">outputs</span><span class="o">.</span><span class="n">loss</span><span class="p">))</span>
+    <span class="n">loss</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">torch</span><span class="o">.</span><span class="n">cat</span><span class="p">(</span><span class="n">losses</span><span class="p">))</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="n">perplexity</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">exp</span><span class="p">(</span><span class="n">loss</span><span class="p">)</span>
+    <span class="k">except</span> <span class="ne">OverflowError</span><span class="p">:</span>
+        <span class="n">perplexity</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="s2">"inf"</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">loss</span><span class="o">.</span><span class="n">item</span><span class="p">(),</span> <span class="n">perplexity</span><span class="o">.</span><span class="n">item</span><span class="p">()</span>
+</code></pre></div>
+
+<p><code>evaluate()</code> 関数を使えば、損失と<a href="3.html">パープレキシティ</a>を定期的に報告できます。次に、再びゼロから学習することを確実にするため、モデルを再定義します。</p>
+<div class="codehilite"><pre><span></span><code><span class="n">model</span> <span class="o">=</span> <span class="n">GPT2LMHeadModel</span><span class="p">(</span><span class="n">config</span><span class="p">)</span>
+</code></pre></div>
+
+<p>次に、先ほどの関数を使って重み減衰のためにパラメータを分割し、オプティマイザを定義できます。</p>
+<div class="codehilite"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">torch.optim</span><span class="w"> </span><span class="kn">import</span> <span class="n">AdamW</span>
+
+<span class="n">optimizer</span> <span class="o">=</span> <span class="n">AdamW</span><span class="p">(</span><span class="n">get_grouped_params</span><span class="p">(</span><span class="n">model</span><span class="p">),</span> <span class="n">lr</span><span class="o">=</span><span class="mf">5e-4</span><span class="p">)</span>
+</code></pre></div>
+
+<p>モデル、オプティマイザ、データローダを準備して、学習を開始できるようにしましょう。</p>
+<div class="codehilite"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">accelerate</span><span class="w"> </span><span class="kn">import</span> <span class="n">Accelerator</span>
+
+<span class="n">accelerator</span> <span class="o">=</span> <span class="n">Accelerator</span><span class="p">(</span><span class="n">fp16</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+
+<span class="n">model</span><span class="p">,</span> <span class="n">optimizer</span><span class="p">,</span> <span class="n">train_dataloader</span><span class="p">,</span> <span class="n">eval_dataloader</span> <span class="o">=</span> <span class="n">accelerator</span><span class="o">.</span><span class="n">prepare</span><span class="p">(</span>
+    <span class="n">model</span><span class="p">,</span> <span class="n">optimizer</span><span class="p">,</span> <span class="n">train_dataloader</span><span class="p">,</span> <span class="n">eval_dataloader</span>
+<span class="p">)</span>
+</code></pre></div>
+
+<div class="callout callout-tip">
+<p class="callout-title">💡 ヒント</p>
+<p>🚨 TPU で学習する場合は、上のセルから始まるすべてのコードを、専用の学習関数の中に移動する必要があります。詳しくは <a href="../chapter3/1.html">Chapter 3</a> を参照してください。</p>
+</div>
+<p><code>train_dataloader</code> を <code>accelerator.prepare()</code> に渡したので、その長さを使って学習ステップ数を計算できます。この長さは prepare メソッドの実行後に変わるため、必ずデータローダの準備後に計算することを忘れないでください。学習率を0まで下げる古典的な線形スケジュールを使います。</p>
+<div class="codehilite"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">transformers</span><span class="w"> </span><span class="kn">import</span> <span class="n">get_scheduler</span>
+
+<span class="n">num_train_epochs</span> <span class="o">=</span> <span class="mi">1</span>
+<span class="n">num_update_steps_per_epoch</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">train_dataloader</span><span class="p">)</span>
+<span class="n">num_training_steps</span> <span class="o">=</span> <span class="n">num_train_epochs</span> <span class="o">*</span> <span class="n">num_update_steps_per_epoch</span>
+
+<span class="n">lr_scheduler</span> <span class="o">=</span> <span class="n">get_scheduler</span><span class="p">(</span>
+    <span class="n">name</span><span class="o">=</span><span class="s2">"linear"</span><span class="p">,</span>
+    <span class="n">optimizer</span><span class="o">=</span><span class="n">optimizer</span><span class="p">,</span>
+    <span class="n">num_warmup_steps</span><span class="o">=</span><span class="mi">1_000</span><span class="p">,</span>
+    <span class="n">num_training_steps</span><span class="o">=</span><span class="n">num_training_steps</span><span class="p">,</span>
+<span class="p">)</span>
+</code></pre></div>
+
+<p>最後に、モデルを Hub にプッシュするために、作業フォルダ内に <code>Repository</code> オブジェクトを作成する必要があります。まだログインしていない場合は、まず Hugging Face Hub にログインしてください。リポジトリ名は、モデルに付けたいモデル ID から決めます（<code>repo_name</code> は自由に置き換えてかまいません。ユーザー名を含む必要があり、<code>get_full_repo_name()</code> 関数はまさにそれを行います）。</p>
+<div class="codehilite"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">huggingface_hub</span><span class="w"> </span><span class="kn">import</span> <span class="n">Repository</span><span class="p">,</span> <span class="n">get_full_repo_name</span>
+
+<span class="n">model_name</span> <span class="o">=</span> <span class="s2">"codeparrot-ds-accelerate"</span>
+<span class="n">repo_name</span> <span class="o">=</span> <span class="n">get_full_repo_name</span><span class="p">(</span><span class="n">model_name</span><span class="p">)</span>
+<span class="n">repo_name</span>
+</code></pre></div>
+
+<p>```python out
+'sgugger/codeparrot-ds-accelerate'</p>
+<div class="codehilite"><pre><span></span><code>次に、そのリポジトリをローカルフォルダにクローンできます。すでに存在する場合は、そのローカルフォルダは作業対象リポジトリの既存のクローンである必要があります。
+
+```py
+output_dir = "codeparrot-ds-accelerate"
+repo = Repository(output_dir, clone_from=repo_name)
+</code></pre></div>
+
+<p><code>repo.push_to_hub()</code> メソッドを呼ぶことで、<code>output_dir</code> に保存したものを何でもアップロードできるようになりました。これにより、各エポックの終了時に中間モデルをアップロードできます。</p>
+<p>学習の前に、評価関数が正しく動作するか簡単にテストしましょう。</p>
+<div class="codehilite"><pre><span></span><code><span class="n">evaluate</span><span class="p">()</span>
+</code></pre></div>
+
+<p>```python out
+(10.934126853942871, 56057.14453125)</p>
+<div class="codehilite"><pre><span></span><code>損失とパープレキシティは非常に高い値ですが、まだモデルを学習していないので驚くことではありません。これで、学習スクリプトの中核である学習ループを書く準備が整いました。学習ループでは、データローダを反復し、バッチをモデルに渡します。得られたロジットでカスタム損失関数を評価できます。ステップを集約したときに損失が大きくならないよう、損失は勾配累積のステップ数で割ってスケールします。最適化の前に、収束を良くするために勾配もクリッピングします。最後に、数ステップごとに新しい `evaluate()` 関数で評価セットに対するモデルの評価を行います。
+
+```py
+from tqdm.notebook import tqdm
+
+gradient_accumulation_steps = 8
+eval_steps = 5_000
+
+model.train()
+completed_steps = 0
+for epoch in range(num_train_epochs):
+    for step, batch in tqdm(
+        enumerate(train_dataloader, start=1), total=num_training_steps
+    ):
+        logits = model(batch["input_ids"]).logits
+        loss = keytoken_weighted_loss(batch["input_ids"], logits, keytoken_ids)
+        if step % 100 == 0:
+            accelerator.print(
+                {
+                    "samples": step * samples_per_step,
+                    "steps": completed_steps,
+                    "loss/train": loss.item() * gradient_accumulation_steps,
+                }
+            )
+        loss = loss / gradient_accumulation_steps
+        accelerator.backward(loss)
+        if step % gradient_accumulation_steps == 0:
+            accelerator.clip_grad_norm_(model.parameters(), 1.0)
+            optimizer.step()
+            lr_scheduler.step()
+            optimizer.zero_grad()
+            completed_steps += 1
+        if (step % (eval_steps * gradient_accumulation_steps)) == 0:
+            eval_loss, perplexity = evaluate()
+            accelerator.print({"loss/eval": eval_loss, "perplexity": perplexity})
+            model.train()
+            accelerator.wait_for_everyone()
+            unwrapped_model = accelerator.unwrap_model(model)
+            unwrapped_model.save_pretrained(output_dir, save_function=accelerator.save)
+            if accelerator.is_main_process:
+                tokenizer.save_pretrained(output_dir)
+                repo.push_to_hub(
+                    commit_message=f"Training in progress step {step}", blocking=False
+                )
+</code></pre></div>
+
+<p>これで完了です。GPT-2 のような因果言語モデル向けの、独自のカスタム学習ループが手に入りました。必要に応じてさらにカスタマイズできます。</p>
+<div class="callout callout-tip">
+<p class="callout-title">💡 ヒント</p>
+<p>✏️ <strong>試してみましょう！</strong> 自分の用途に合わせた独自のカスタム損失関数を作るか、学習ループに別のカスタムステップを追加してみてください。</p>
+</div>
+<div class="callout callout-tip">
+<p class="callout-title">💡 ヒント</p>
+<p>✏️ <strong>試してみましょう！</strong> 長時間の学習実験を実行するときは、TensorBoard や Weights &amp; Biases のようなツールで重要な指標を記録しておくのがよいでしょう。学習ループに適切なロギングを追加し、学習の進み具合をいつでも確認できるようにしてください。</p>
+</div>
+<p>{/if}</p>
+</article>
+<nav class="page-nav"><a class="nav-link prev" href="5.html">← 前へ: 要約</a><a class="nav-link toc-link" href="../index.html">目次へ</a><a class="nav-link next" href="7.html">次へ →: 質問応答</a></nav>
+</main>
+<footer class="site-footer">
+  <p>原典: Hugging Face huggingface/course（<a href="https://github.com/huggingface/course">https://github.com/huggingface/course</a>）</p>
+  <p>日本語版の翻訳・公開: 霞ヶ関京 / 連絡先: GitHub <a href="https://github.com/yanikasumin">@yanikasumin</a> / YouTube <a href="https://www.youtube.com/@KASUMI_MOF">@KASUMI_MOF</a></p>
+  <p class="demo-note">このサイトはデモ版です。内容は順次更新されます。</p>
+</footer>
+<script src="../../site.js"></script>
+</body>
+</html>

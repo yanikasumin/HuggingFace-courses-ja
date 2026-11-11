@@ -1,0 +1,411 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>AMD NPU と iGPU アクセラレーションによるローカル Tiny Agents | Hugging Face コース日本語版（デモ版）</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Shippori+Mincho:wght@500;700&family=Zen+Kaku+Gothic+New:wght@400;500;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../../style.css">
+<script>
+window.MathJax = { tex: { inlineMath: [['$', '$'], ['\\(', '\\)']], displayMath: [['$$', '$$'], ['\\[', '\\]']] }, options: { skipHtmlTags: ['script','noscript','style','textarea','pre','code'] } };
+</script>
+<script async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml.js"></script>
+</head>
+<body>
+<header class="site-header">
+  <div class="header-inner">
+    <a class="site-title" href="../../index.html">Hugging Face コース日本語版</a>
+    <span class="demo-badge">デモ版</span>
+  </div>
+</header>
+<main class="container">
+<p class="course-crumb"><a href="../index.html">MCP コース</a>
+<span class="badge badge-qa-wip">翻訳済み・QA進行中（未検証の部分を含みます）</span></p>
+<nav class="page-nav"><a class="nav-link prev" href="tiny-agents.html">← 前へ: Hugging Face Hub と MCP で Tiny Agents を構築する</a><a class="nav-link toc-link" href="../index.html">目次へ</a><a class="nav-link next" href="../unit3/introduction.html">次へ →: MCP 開発応用編：Claude Code 向けカスタムワークフローサーバーの構築</a></nav>
+<article class="content">
+<h1>AMD NPU と iGPU アクセラレーションによるローカル Tiny Agents</h1>
+<p>このセクションでは、AMD Neural Processing Unit (NPU) と統合 GPU (iGPU) を使って、エンドツーエンドの Tiny Agents アプリケーションを高速化する方法を紹介します。次に、ローカルファイルへのアクセスを可能にし、機密情報をローカルで処理するアシスタントを作成することで、エンドツーエンドアプリケーションを強化し、最大限のプライバシーを確保します。</p>
+<p>これを可能にするために、NPU と iGPU アクセラレーションでモデルをローカル実行するツールである Lemonade Server を使います。</p>
+<h2>セットアップ</h2>
+<h3>Lemonade Server のセットアップ</h3>
+<p>Lemonade Server は Windows と Linux の両方にインストールできます。追加のドキュメントは <a href="https://lemonade-server.ai/">lemonade-server.ai</a> で確認できます。</p>
+<div class="hfoptions">
+<section class="hfoption" markdown="block">
+<p class="hfoption-label">windows</p>
+
+
+Windows に Lemonade Server をインストールするには、最新のインストーラーを[こちら](https://github.com/lemonade-sdk/lemonade/releases/latest/download/Lemonade_Server_Installer.exe)からダウンロードして実行するだけです。
+
+Lemonade Server は、Windows x86/x64 上のすべてのプラットフォームとエンジンで CPU 推論をサポートします。GPU アクセラレーションは Vulkan を使う llamacpp エンジンで有効化され、AMD Ryzen™ AI 7000/8000/300 シリーズと AMD Radeon™ 7000/9000 シリーズに重点が置かれています。NPU アクセラレーションについては、ONNX Runtime GenAI (OGA) エンジンにより AMD Ryzen™ AI 300 シリーズデバイスがサポートされます。
+
+Lemonade Server をインストールしたら、デスクトップに追加された `Lemonade` アイコンをクリックして起動できます。
+
+</section>
+<section class="hfoption" markdown="block">
+<p class="hfoption-label">linux</p>
+
+
+Linux に Lemonade をインストールするには、まず venv を作成して有効化します。
+
+<div class="callout callout-tip" markdown="block">
+<p class="callout-title">💡 ヒント</p>
+`uv` がインストールされていない場合は、[こちら](https://docs.astral.sh/uv/getting-started/installation/) の手順に従ってインストールできます。
+</div>
+
+
+
+<div class="codehilite"><pre><span></span><code>uv<span class="w"> </span>venv<span class="w"> </span>--python<span class="w"> </span><span class="m">3</span>.11
+<span class="nb">source</span><span class="w"> </span>.venv/bin/activate
+</code></pre></div>
+
+
+
+次に、`lemonade-sdk` パッケージをインストールします。
+
+<div class="codehilite"><pre><span></span><code>uv<span class="w"> </span>pip<span class="w"> </span>install<span class="w"> </span>lemonade-sdk<span class="o">==</span><span class="m">8</span>.0.3
+</code></pre></div>
+
+
+
+あるいは、リポジトリをクローンしてパッケージをビルドすることで、ソースからインストールすることもできます。
+
+<div class="codehilite"><pre><span></span><code>git<span class="w"> </span>clone<span class="w"> </span>https://github.com/lemonade-sdk/lemonade-sdk.git
+<span class="nb">cd</span><span class="w"> </span>lemonade-sdk
+pip<span class="w"> </span>install<span class="w"> </span>-e<span class="w"> </span>.
+</code></pre></div>
+
+
+
+インストールが完了したら、次のコマンドを実行して Lemonade を起動できます。
+
+
+<div class="codehilite"><pre><span></span><code>lemonade-server-dev<span class="w"> </span>serve
+</code></pre></div>
+
+
+
+Lemonade Server は、Windows x86/x64 上のすべてのプラットフォームとエンジンで CPU 推論をサポートします。GPU アクセラレーションは llamacpp エンジン（Vulkan）を通じて有効化され、AMD Ryzen™ AI 7000/8000/300 シリーズと Radeon™ 7000/9000 シリーズに重点が置かれています。
+
+<div class="callout callout-tip" markdown="block">
+<p class="callout-title">💡 ヒント</p>
+*NPU アクセラレーションは、Windows 上の AMD Ryzen™ AI 300 シリーズでのみ利用できます。*
+</div>
+
+
+</section>
+</div>
+
+<h3>Tiny Agents と NPX のセットアップ</h3>
+<p>このコースのこのセクションでは、<code>npx</code> と <code>Tiny Agents</code> がすでにインストールされていることを前提とします。まだの場合は、コースの <a href="https://huggingface.co/learn/mcp-course/en/unit2/tiny-agents">Tiny Agents</a> セクションを参照してください。<code>huggingface_hub[mcp]==0.33.2</code> を使うようにしてください。</p>
+<h2>AMD NPU と iGPU で Tiny Agents アプリケーションを実行する</h2>
+<p>AMD NPU と iGPU で Tiny Agents アプリケーションを実行するには、<a href="https://huggingface.co/learn/mcp-course/en/unit2/tiny-agents">前のセクション</a> で作成した MCP サーバーを、次に示すように Lemonade Server に向けるだけです。</p>
+<div class="hfoptions">
+<section class="hfoption" markdown="block">
+<p class="hfoption-label">windows</p>
+
+
+
+<div class="codehilite"><pre><span></span><code><span class="p">{</span>
+<span class="w">  </span><span class="nt">"model"</span><span class="p">:</span><span class="w"> </span><span class="s2">"Qwen3-8B-GGUF"</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">"endpointUrl"</span><span class="p">:</span><span class="w"> </span><span class="s2">"http://localhost:8000/api/"</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">"servers"</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
+<span class="w">    </span><span class="p">{</span>
+<span class="w">      </span><span class="nt">"type"</span><span class="p">:</span><span class="w"> </span><span class="s2">"stdio"</span><span class="p">,</span>
+<span class="w">      </span><span class="nt">"command"</span><span class="p">:</span><span class="w"> </span><span class="s2">"C:\\Program Files\\nodejs\\npx.cmd"</span><span class="p">,</span>
+<span class="w">      </span><span class="nt">"args"</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
+<span class="w">        </span><span class="s2">"mcp-remote"</span><span class="p">,</span>
+<span class="w">        </span><span class="s2">"http://localhost:7860/gradio_api/mcp/sse"</span>
+<span class="w">      </span><span class="p">]</span>
+<span class="w">    </span><span class="p">}</span>
+<span class="w">  </span><span class="p">]</span>
+<span class="p">}</span>
+</code></pre></div>
+
+
+
+</section>
+<section class="hfoption" markdown="block">
+<p class="hfoption-label">linux</p>
+
+
+
+<div class="codehilite"><pre><span></span><code><span class="p">{</span>
+<span class="w">  </span><span class="nt">"model"</span><span class="p">:</span><span class="w"> </span><span class="s2">"Qwen3-8B-GGUF"</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">"endpointUrl"</span><span class="p">:</span><span class="w"> </span><span class="s2">"http://localhost:8000/api/"</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">"servers"</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
+<span class="w">    </span><span class="p">{</span>
+<span class="w">      </span><span class="nt">"type"</span><span class="p">:</span><span class="w"> </span><span class="s2">"stdio"</span><span class="p">,</span>
+<span class="w">      </span><span class="nt">"command"</span><span class="p">:</span><span class="w"> </span><span class="s2">"npx"</span><span class="p">,</span>
+<span class="w">      </span><span class="nt">"args"</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
+<span class="w">        </span><span class="s2">"mcp-remote"</span><span class="p">,</span>
+<span class="w">        </span><span class="s2">"http://localhost:7860/gradio_api/mcp/sse"</span>
+<span class="w">      </span><span class="p">]</span>
+<span class="w">    </span><span class="p">}</span>
+<span class="w">  </span><span class="p">]</span>
+<span class="p">}</span>
+</code></pre></div>
+
+
+
+</section>
+</div>
+
+<p>その後、ローカルマシンで実行するモデルをさまざまな選択肢から選べます。この例では、Vulkan アクセラレーションにより AMD GPU 上で効率的に動作する <a href="https://huggingface.co/Qwen/Qwen3-8B-GGUF"><code>Qwen3-8B-GGUF</code></a> モデルを使いました。サポートされるモデルのリストの確認や、独自モデルのインポートは、http://localhost:8000/#model-management にアクセスして行えます。</p>
+<h2>機密情報をローカルで処理するアシスタントを作成する</h2>
+<p><img alt="Lemonade Server のインターフェース" src="https://raw.githubusercontent.com/lemonade-sdk/assets/refs/heads/main/huggingface_course/hf_lemonade.png" /></p>
+<p>では、ローカルファイルへのアクセスを可能にし、機密情報をすべてデバイス上で処理するアシスタントを導入して、エンドツーエンドアプリケーションを強化しましょう。具体的には、このアシスタントは候補者の履歴書の評価を支援し、採用プロセスにおける意思決定をサポートします。その間、データはプライベートかつ安全に保たれます。</p>
+<p>そのために、<a href="https://github.com/wonderwhy-er/DesktopCommanderMCP">Desktop Commander</a> MCP サーバーを使います。これにより、ローカルマシン上でコマンドを実行でき、包括的なファイルシステムアクセス、ターミナル制御、コード編集機能が得られます。</p>
+<p>基本的な Tiny Agent を使ったプロジェクトをセットアップしましょう。</p>
+<div class="codehilite"><pre><span></span><code>mkdir<span class="w"> </span>file-assistant
+<span class="nb">cd</span><span class="w"> </span>file-assistant
+</code></pre></div>
+
+<p>次に、<code>file-assistant</code> フォルダ内に新しい <code>agent.json</code> ファイルを作成します。</p>
+<div class="hfoptions">
+<section class="hfoption" markdown="block">
+<p class="hfoption-label">windows</p>
+
+
+
+<div class="codehilite"><pre><span></span><code><span class="p">{</span>
+<span class="w">  </span><span class="nt">"model"</span><span class="p">:</span><span class="w"> </span><span class="s2">"user.jan-nano"</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">"endpointUrl"</span><span class="p">:</span><span class="w"> </span><span class="s2">"http://localhost:8000/api/"</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">"servers"</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
+<span class="w">    </span><span class="p">{</span>
+<span class="w">      </span><span class="nt">"type"</span><span class="p">:</span><span class="w"> </span><span class="s2">"stdio"</span><span class="p">,</span>
+<span class="w">      </span><span class="nt">"command"</span><span class="p">:</span><span class="w"> </span><span class="s2">"C:\\Program Files\\nodejs\\npx.cmd"</span><span class="p">,</span>
+<span class="w">      </span><span class="nt">"args"</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
+<span class="w">        </span><span class="s2">"-y"</span><span class="p">,</span>
+<span class="w">        </span><span class="s2">"@wonderwhy-er/desktop-commander"</span>
+<span class="w">      </span><span class="p">]</span>
+<span class="w">    </span><span class="p">}</span>
+<span class="w">  </span><span class="p">]</span>
+<span class="p">}</span>
+</code></pre></div>
+
+
+
+</section>
+<section class="hfoption" markdown="block">
+<p class="hfoption-label">linux</p>
+
+
+
+<div class="codehilite"><pre><span></span><code><span class="p">{</span>
+<span class="w">  </span><span class="nt">"model"</span><span class="p">:</span><span class="w"> </span><span class="s2">"user.jan-nano"</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">"endpointUrl"</span><span class="p">:</span><span class="w"> </span><span class="s2">"http://localhost:8000/api/"</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">"servers"</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
+<span class="w">    </span><span class="p">{</span>
+<span class="w">      </span><span class="nt">"type"</span><span class="p">:</span><span class="w"> </span><span class="s2">"stdio"</span><span class="p">,</span>
+<span class="w">      </span><span class="nt">"command"</span><span class="p">:</span><span class="w"> </span><span class="s2">"npx"</span><span class="p">,</span>
+<span class="w">      </span><span class="nt">"args"</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
+<span class="w">        </span><span class="s2">"-y"</span><span class="p">,</span>
+<span class="w">        </span><span class="s2">"@wonderwhy-er/desktop-commander"</span>
+<span class="w">      </span><span class="p">]</span>
+<span class="w">    </span><span class="p">}</span>
+<span class="w">  </span><span class="p">]</span>
+<span class="p">}</span>
+</code></pre></div>
+
+
+
+</section>
+</div>
+
+<p>最後に、<code>Jan Nano</code> モデルをダウンロードする必要があります。これは http://localhost:8000/#model-management, つまりモデル管理ページにアクセスし、<code>Add a Model</code> をクリックして、次の情報を入力することで行えます。</p>
+<div class="codehilite"><pre><span></span><code>Model Name: user.jan-nano
+Checkpoint: Menlo/Jan-nano-gguf:jan-nano-4b-Q4_0.gguf
+Recipe: llamacpp
+</code></pre></div>
+
+<p><img alt="カスタムモデル" src="https://raw.githubusercontent.com/lemonade-sdk/assets/refs/heads/main/huggingface_course/custom_model.png" /></p>
+<p>これで準備完了です！ では、試してみましょう。</p>
+<h3>実際に動かしてみる</h3>
+<p><img alt="動作の録画" src="https://raw.githubusercontent.com/lemonade-sdk/assets/refs/heads/main/huggingface_course/recording.gif" /></p>
+<p>目標は、機密情報をローカルで処理するのに役立つアシスタントを作成することです。そのために、まずアシスタントが作業するための求人票ファイルを作成します。</p>
+<p><code>file-assistant</code> フォルダ内に <code>job_description.md</code> というファイルを作成します。</p>
+<div class="codehilite"><pre><span></span><code><span class="gh"># Senior Food Technology Engineer</span>
+
+<span class="gu">## About the Role</span>
+We're seeking a culinary innovator to transform cooking processes into precise algorithms and AI systems.
+
+<span class="gu">## What You'll Do</span>
+<span class="k">-</span><span class="w"> </span>Convert cooking instructions into measurable algorithms
+<span class="k">-</span><span class="w"> </span>Develop AI-powered kitchen tools
+<span class="k">-</span><span class="w"> </span>Create food quality assessment systems
+<span class="k">-</span><span class="w"> </span>Build recipe-following AI models
+
+<span class="gu">## Requirements</span>
+<span class="k">-</span><span class="w"> </span>MS in Computer Science (food-related thesis preferred)
+<span class="k">-</span><span class="w"> </span>Python and PyTorch expertise
+<span class="k">-</span><span class="w"> </span>Proven experience combining food science with ML
+<span class="k">-</span><span class="w"> </span>Strong communication skills using culinary metaphors
+
+<span class="gu">## Perks</span>
+<span class="k">-</span><span class="w"> </span>Access to experimental kitchen
+<span class="k">-</span><span class="w"> </span>Continuous taste-testing opportunities
+<span class="k">-</span><span class="w"> </span>Collaborative tech-foodie team environment
+
+<span class="ge">*Note: Must attend conferences and publish on algorithmic cooking optimization.*</span>
+</code></pre></div>
+
+<p>次に、<code>file-assistant</code> フォルダ内に <code>candidates</code> フォルダを作成し、アシスタントが作業するためのサンプル履歴書ファイルを追加します。</p>
+<div class="codehilite"><pre><span></span><code>mkdir<span class="w"> </span>candidates
+touch<span class="w"> </span>candidates/john_resume.md
+</code></pre></div>
+
+<p>次のサンプル履歴書を追加するか、自分の履歴書を使ってください。</p>
+<div class="codehilite"><pre><span></span><code><span class="gh"># John Doe</span>
+
+<span class="gs">**Contact Information**</span>
+<span class="k">-</span><span class="w"> </span>Email: email@example.com
+<span class="k">-</span><span class="w"> </span>Phone: (+1) 123-456-7890
+<span class="k">-</span><span class="w"> </span>Location: 1234 Abc Street, Example, EX 01234
+<span class="k">-</span><span class="w"> </span>GitHub: github.com/example
+<span class="k">-</span><span class="w"> </span>LinkedIn: linkedin.com/in/example
+<span class="k">-</span><span class="w"> </span>Website: example.com
+
+<span class="gu">## Experience</span>
+
+<span class="gs">**Machine Learning Engineer Intern**</span> | Slow Feet Technology | Jul 2021 - Present
+<span class="k">-</span><span class="w"> </span>Developed food-agnostic formulation for cross-ingredient meal cooking
+<span class="k">-</span><span class="w"> </span>Created competitive cream of mushroom soup recipe, published in NeurIPS 2099
+<span class="k">-</span><span class="w"> </span>Built specialized pan for meal cooking research
+
+<span class="gs">**Research Intern**</span> | Paddling University | Aug 2020 - Present
+<span class="k">-</span><span class="w"> </span>Designed efficient mapo tofu quality estimation method using thermometer
+<span class="k">-</span><span class="w"> </span>Proposed fast stir frying algorithm for tofu cooking, published in CVPR 2077
+<span class="k">-</span><span class="w"> </span>Outperformed SOTA methods with improved efficiency
+
+<span class="gs">**Research Assistant**</span> | Huangdu Institute of Technology | Mar 2020 - Jun 2020
+<span class="k">-</span><span class="w"> </span>Developed novel framework using spoon and chopsticks for eating mapo tofu
+<span class="k">-</span><span class="w"> </span>Designed tofu filtering strategy inspired by beans grinding method
+<span class="k">-</span><span class="w"> </span>Created evaluation criteria for eating plan novelty and diversity
+
+<span class="gs">**Research Intern**</span> | Paddling University | Jul 2018 - Aug 2018
+<span class="k">-</span><span class="w"> </span>Designed dual sandwiches using traditional burger ingredients
+<span class="k">-</span><span class="w"> </span>Utilized structure duality to boost cooking speed for shared ingredients
+<span class="k">-</span><span class="w"> </span>Outperformed baselines on QWE'15 and ASDF'14 datasets
+
+<span class="gu">## Education</span>
+
+<span class="gs">**M.S. in Computer Science**</span> | University of Charles River | Sep 2021 - Jan 2023
+<span class="k">-</span><span class="w"> </span>Location: Boston, MA
+
+<span class="gs">**B.Eng. in Software Engineering**</span> | Huangdu Institute of Technology | Sep 2016 - Jul 2020
+<span class="k">-</span><span class="w"> </span>Location: Shanghai, China
+
+<span class="gu">## Skills</span>
+
+<span class="gs">**Programming Languages:**</span> Python, JavaScript/TypeScript, HTML/CSS, Java
+<span class="gs">**Tools and Frameworks:**</span> Git, PyTorch, Keras, scikit-learn, Linux, Vue, React, Django, LaTeX
+<span class="gs">**Languages:**</span> English (proficient), Indonesia (native)
+
+<span class="gu">## Awards and Honors</span>
+
+<span class="k">-</span><span class="w"> </span><span class="gs">**Gold**</span>, International Collegiate Catching Fish Contest (ICCFC) | 2018
+<span class="k">-</span><span class="w"> </span><span class="gs">**First Prize**</span>, China National Scholarship for Outstanding Culinary Skills | 2017, 2018
+
+<span class="gu">## Publications</span>
+
+<span class="gs">**Eating is All You Need**</span> | NeurIPS 2099
+<span class="k">-</span><span class="w"> </span>Authors: Haha Ha, San Zhang
+
+<span class="gs">**You Only Cook Once: Unified, Real-Time Mapo Tofu Recipe**</span> | CVPR 2077 (Best Paper Honorable Mention)
+<span class="k">-</span><span class="w"> </span>Authors: Haha Ha, San Zhang, Si Li, Wu Wang
+</code></pre></div>
+
+<p>その後、次のコマンドでエージェントを実行できます。</p>
+<div class="codehilite"><pre><span></span><code>tiny-agents<span class="w"> </span>run<span class="w"> </span>agent.json
+</code></pre></div>
+
+<p>次のような出力が表示されるはずです。</p>
+<div class="codehilite"><pre><span></span><code>Agent loaded with 18 tools:
+ • get_config
+ • set_config_value
+ • read_file
+ • read_multiple_files
+ • write_file
+ • create_directory
+ • list_directory
+ • move_file
+ • search_files
+ • search_code
+ • get_file_info
+ • edit_block
+ • execute_command
+ • read_output
+ • force_terminate
+ • list_sessions
+ • list_processes
+ • kill_process
+ »
+ ```
+
+では、開始するためにアシスタントへ情報を提供しましょう。
+</code></pre></div>
+
+<p>» Read the contents of C:\Users\your_username\file-assistant\job_description.md</p>
+<div class="codehilite"><pre><span></span><code>次のような出力が表示されるはずです。
+</code></pre></div>
+
+<p>&lt;Tool iNtxGmOuXHqZVBWmKnfxsc61xsJbsoAM&gt;read_file {"path":"C:\Users\your_username\file-assistant\job_description.md","length":23}</p>
+<p>Tool iNtxGmOuXHqZVBWmKnfxsc61xsJbsoAM
+[Reading 23 lines from start]</p>
+<p>(...)</p>
+<p>The job description for the Senior Food Technology Engineer position emphasizes the need for a candidate who can bridge the gap between food science and artificial intelligence (...). Candidates are also expected to attend conferences and publish research on algorithmic cooking optimization.</p>
+<div class="codehilite"><pre><span></span><code>&gt; [!TIP]
+&gt; デフォルトのシステムプロンプトを使っているため、アシスタントが一部のツールを複数回呼び出すことがあります。より積極的なアシスタントを作成するには、`agent.json` と同じディレクトリにカスタムの `PROMPT.md` ファイルを用意できます。
+
+すばらしい！ 次に、候補者の履歴書を読み取りましょう。
+</code></pre></div>
+
+<p>» Inside the same folder you can find a candidates folder. Check for john_resume.md and let me know if he is a good fit for the job.</p>
+<div class="codehilite"><pre><span></span><code>次のような出力が表示されるはずです。
+</code></pre></div>
+
+<p>&lt;Tool ll2oWo73YeGIft5VbOIpF9GNf0kevjEy&gt;read_file {"path":"C:\Users\your_username\file-assistant\candidates\john_resume.md"}</p>
+<p>Tool ll2oWo73YeGIft5VbOIpF9GNf0kevjEy
+[Reading 58 lines from start]</p>
+<p>(...)
+John Wayne is a <strong>strong fit</strong> for the Senior Food Technology Engineer role. His technical expertise in AI and machine learning, combined with his experience in food-related research and publications, makes him an excellent candidate. He also has the soft skills and cultural fit needed to thrive in a collaborative, innovative environment.</p>
+<div class="codehilite"><pre><span></span><code>見事です！ これで、候補者を面接に招待する段階に進めます。
+</code></pre></div>
+
+<p>» Create a file called "invitation.md" in the "file-assistant" folder and write a short invitation to John to come in for an interview.</p>
+<div class="codehilite"><pre><span></span><code>`invitation.md` ファイルには、次のような内容が書き込まれるはずです。
+
+```markdown
+# Interview Invitation
+
+Dear John,
+
+We would like to invite you for an interview for the Senior Food Technology Engineer position. The interview will be held on [insert date and time] at [insert location or virtual meeting details].
+
+Please confirm your availability and let us know if you need any additional information.
+
+Best regards,
+[Your Name]
+[Your Contact Information]
+</code></pre></div>
+
+<p>やりました！ 機密情報をローカルで処理するのに役立つアシスタントの作成に成功しました。</p>
+<h3>他のモデルとアクセラレーションオプションを探る</h3>
+<p>上記の例では、Jan-Nano モデルが Vulkan アクセラレーションを活用し、AMD GPU 上で効率的なローカル LLM 推論を行いました。http://localhost:8000/#model-management にアクセスするか、<a href="https://lemonade-server.ai/docs/server/server_models/">モデルのドキュメント</a> を確認することで、他のモデルやアクセラレーションオプションも試せます。</p>
+<p>簡潔なコンテキストが必要で、NPU + iGPU アクセラレーションの恩恵を受けられる Windows アプリケーションには、Lemonade Server で利用できる Hybrid モデル（AMD Ryzen AI 300 シリーズ PC 向けに最適化）を試せます。<code>Llama-xLAM-2-8b-fc-r-Hybrid</code> のようなモデルは、ツール呼び出し向けに特別にファインチューニングされており、高速で応答性の高いパフォーマンスを発揮します！</p>
+<h2>まとめ</h2>
+<p>このユニットでは、AMD NPU と iGPU を使ってエンドツーエンドの Tiny Agents アプリケーションを高速化する方法を紹介しました。また、機密情報をローカルで処理するアシスタントを作成する方法も紹介しました。</p>
+<p>Lemonade Server をローカルモデルの高速化やプライバシー重視のアプリケーションに活用する方法を学んだので、<a href="https://github.com/lemonade-sdk/lemonade">Lemonade の GitHub リポジトリ</a> でさらに多くの例や機能を探ることができます。このリポジトリには追加のドキュメントや実装例が含まれており、コミュニティによって活発にメンテナンスされています。</p>
+</article>
+<nav class="page-nav"><a class="nav-link prev" href="tiny-agents.html">← 前へ: Hugging Face Hub と MCP で Tiny Agents を構築する</a><a class="nav-link toc-link" href="../index.html">目次へ</a><a class="nav-link next" href="../unit3/introduction.html">次へ →: MCP 開発応用編：Claude Code 向けカスタムワークフローサーバーの構築</a></nav>
+</main>
+<footer class="site-footer">
+  <p>原典: Hugging Face huggingface/mcp-course（<a href="https://github.com/huggingface/mcp-course">https://github.com/huggingface/mcp-course</a>）</p>
+  <p>日本語版の翻訳・公開: 霞ヶ関京 / 連絡先: GitHub <a href="https://github.com/yanikasumin">@yanikasumin</a> / YouTube <a href="https://www.youtube.com/@KASUMI_MOF">@KASUMI_MOF</a></p>
+  <p class="demo-note">このサイトはデモ版です。内容は順次更新されます。</p>
+</footer>
+<script src="../../site.js"></script>
+</body>
+</html>

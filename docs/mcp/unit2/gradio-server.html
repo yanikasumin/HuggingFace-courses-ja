@@ -1,0 +1,229 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Gradio MCP サーバーを構築する | Hugging Face コース日本語版（デモ版）</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Shippori+Mincho:wght@500;700&family=Zen+Kaku+Gothic+New:wght@400;500;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../../style.css">
+<script>
+window.MathJax = { tex: { inlineMath: [['$', '$'], ['\\(', '\\)']], displayMath: [['$$', '$$'], ['\\[', '\\]']] }, options: { skipHtmlTags: ['script','noscript','style','textarea','pre','code'] } };
+</script>
+<script async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml.js"></script>
+</head>
+<body>
+<header class="site-header">
+  <div class="header-inner">
+    <a class="site-title" href="../../index.html">Hugging Face コース日本語版</a>
+    <span class="demo-badge">デモ版</span>
+  </div>
+</header>
+<main class="container">
+<p class="course-crumb"><a href="../index.html">MCP コース</a>
+<span class="badge badge-qa-wip">翻訳済み・QA進行中（未検証の部分を含みます）</span></p>
+<nav class="page-nav"><a class="nav-link prev" href="introduction.html">← 前へ: エンドツーエンドの MCP アプリケーションを作る</a><a class="nav-link toc-link" href="../index.html">目次へ</a><a class="nav-link next" href="clients.html">次へ →: MCP クライアントを構築する</a></nav>
+<article class="content">
+<h1>Gradio MCP サーバーを構築する</h1>
+<p>このセクションでは、Gradio を使って感情分析 MCP サーバーを作成します。このサーバーは、Web インターフェースを通じた人間のユーザーと、MCP プロトコルを通じた AI モデルの両方が使える感情分析ツールを公開します。</p>
+<h2>Gradio の MCP 統合の紹介</h2>
+<p>Gradio は、Python 関数を自動的に MCP ツールに変換することで、MCP サーバーを作成する簡単な方法を提供します。<code>launch()</code> で <code>mcp_server=True</code> を設定すると、Gradio は次の処理を行います。</p>
+<ol>
+<li>関数を自動的に MCP ツールに変換する</li>
+<li>入力コンポーネントをツールの引数スキーマにマッピングする</li>
+<li>出力コンポーネントからレスポンス形式を決定する</li>
+<li>クライアント・サーバー通信用に HTTP+SSE 上の JSON-RPC をセットアップする</li>
+<li>Web インターフェースと MCP サーバーエンドポイントの両方を作成する</li>
+</ol>
+<h2>プロジェクトのセットアップ</h2>
+<p>まず、プロジェクト用の新しいディレクトリを作成し、必要な依存関係をセットアップしましょう。</p>
+<div class="codehilite"><pre><span></span><code>mkdir<span class="w"> </span>mcp-sentiment
+<span class="nb">cd</span><span class="w"> </span>mcp-sentiment
+python<span class="w"> </span>-m<span class="w"> </span>venv<span class="w"> </span>venv
+<span class="nb">source</span><span class="w"> </span>venv/bin/activate<span class="w">  </span><span class="c1"># Windows の場合: venv\Scripts\activate</span>
+pip<span class="w"> </span>install<span class="w"> </span><span class="s2">"gradio[mcp]"</span><span class="w"> </span>textblob
+</code></pre></div>
+
+<h2>サーバーの作成</h2>
+<blockquote>
+<p>Hugging Face Spaces では、Space をビルドするために app.py ファイルが必要です。そのため、Python ファイルの名前は app.py でなければなりません。</p>
+</blockquote>
+<p><code>app.py</code> という新しいファイルを作成し、次のコードを記述します。</p>
+<div class="codehilite"><pre><span></span><code><span class="kn">import</span><span class="w"> </span><span class="nn">json</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">gradio</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">gr</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">textblob</span><span class="w"> </span><span class="kn">import</span> <span class="n">TextBlob</span>
+
+<span class="k">def</span><span class="w"> </span><span class="nf">sentiment_analysis</span><span class="p">(</span><span class="n">text</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""</span>
+<span class="sd">    与えられたテキストの感情を分析する。</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        text (str): 分析するテキスト</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        str: polarity、subjectivity、assessment を含む JSON 文字列</span>
+<span class="sd">    """</span>
+    <span class="n">blob</span> <span class="o">=</span> <span class="n">TextBlob</span><span class="p">(</span><span class="n">text</span><span class="p">)</span>
+    <span class="n">sentiment</span> <span class="o">=</span> <span class="n">blob</span><span class="o">.</span><span class="n">sentiment</span>
+
+    <span class="n">result</span> <span class="o">=</span> <span class="p">{</span>
+        <span class="s2">"polarity"</span><span class="p">:</span> <span class="nb">round</span><span class="p">(</span><span class="n">sentiment</span><span class="o">.</span><span class="n">polarity</span><span class="p">,</span> <span class="mi">2</span><span class="p">),</span>  <span class="c1"># -1（ネガティブ）から 1（ポジティブ）</span>
+        <span class="s2">"subjectivity"</span><span class="p">:</span> <span class="nb">round</span><span class="p">(</span><span class="n">sentiment</span><span class="o">.</span><span class="n">subjectivity</span><span class="p">,</span> <span class="mi">2</span><span class="p">),</span>  <span class="c1"># 0（客観的）から 1（主観的）</span>
+        <span class="s2">"assessment"</span><span class="p">:</span> <span class="s2">"positive"</span> <span class="k">if</span> <span class="n">sentiment</span><span class="o">.</span><span class="n">polarity</span> <span class="o">&gt;</span> <span class="mi">0</span> <span class="k">else</span> <span class="s2">"negative"</span> <span class="k">if</span> <span class="n">sentiment</span><span class="o">.</span><span class="n">polarity</span> <span class="o">&lt;</span> <span class="mi">0</span> <span class="k">else</span> <span class="s2">"neutral"</span>
+    <span class="p">}</span>
+
+    <span class="k">return</span> <span class="n">json</span><span class="o">.</span><span class="n">dumps</span><span class="p">(</span><span class="n">result</span><span class="p">)</span>
+
+<span class="c1"># Gradio インターフェースを作成する</span>
+<span class="n">demo</span> <span class="o">=</span> <span class="n">gr</span><span class="o">.</span><span class="n">Interface</span><span class="p">(</span>
+    <span class="n">fn</span><span class="o">=</span><span class="n">sentiment_analysis</span><span class="p">,</span>
+    <span class="n">inputs</span><span class="o">=</span><span class="n">gr</span><span class="o">.</span><span class="n">Textbox</span><span class="p">(</span><span class="n">placeholder</span><span class="o">=</span><span class="s2">"分析するテキストを入力..."</span><span class="p">),</span>
+    <span class="n">outputs</span><span class="o">=</span><span class="n">gr</span><span class="o">.</span><span class="n">Textbox</span><span class="p">(),</span>  <span class="c1"># gr.JSON() から gr.Textbox() に変更</span>
+    <span class="n">title</span><span class="o">=</span><span class="s2">"テキスト感情分析"</span><span class="p">,</span>
+    <span class="n">description</span><span class="o">=</span><span class="s2">"TextBlob を使ってテキストの感情を分析します"</span>
+<span class="p">)</span>
+
+<span class="c1"># インターフェースと MCP サーバーを起動する</span>
+<span class="k">if</span> <span class="vm">__name__</span> <span class="o">==</span> <span class="s2">"__main__"</span><span class="p">:</span>
+    <span class="n">demo</span><span class="o">.</span><span class="n">launch</span><span class="p">(</span><span class="n">mcp_server</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+</code></pre></div>
+
+<h2>コードの解説</h2>
+<p>主要なコンポーネントを分解して見ていきましょう。</p>
+<ol>
+<li>
+<p><strong>関数定義</strong>:
+   - <code>sentiment_analysis</code> 関数はテキスト入力を受け取り、JSON 辞書の文字列表現を返す
+   - TextBlob を使って感情を分析する
+   - docstring は、Gradio が MCP ツールのスキーマを生成する助けになるため重要である
+   - 型ヒント（<code>str</code> と <code>dict</code>）は入出力スキーマの定義に役立つ</p>
+</li>
+<li>
+<p><strong>Gradio インターフェース</strong>:
+   - <code>gr.Interface</code> は Web UI と MCP サーバーの両方を作成する
+   - 関数は自動的に MCP ツールとして公開される
+   - 入力・出力コンポーネントがツールのスキーマを定義する
+   - JSON 出力コンポーネントにより適切なシリアライゼーションが保証される</p>
+</li>
+<li>
+<p><strong>MCP サーバー</strong>:
+   - <code>mcp_server=True</code> を設定すると MCP サーバーが有効になる
+   - サーバーは <code>http://localhost:7860/gradio_api/mcp/sse</code> で利用可能になる
+   - 環境変数を使って有効にすることもできる:
+     <code>bash
+     export GRADIO_MCP_SERVER=True</code></p>
+</li>
+</ol>
+<h2>サーバーの実行</h2>
+<p>次のコマンドでサーバーを起動します。</p>
+<div class="codehilite"><pre><span></span><code>python<span class="w"> </span>app.py
+</code></pre></div>
+
+<p>Web インターフェースと MCP サーバーの両方が動作していることを示す出力が表示されるはずです。Web インターフェースは <code>http://localhost:7860</code>, MCP サーバーは <code>http://localhost:7860/gradio_api/mcp/sse</code> で利用できます。</p>
+<h2>サーバーのテスト</h2>
+<p>サーバーは2つの方法でテストできます。</p>
+<ol>
+<li>
+<p><strong>Web インターフェース</strong>:
+   - ブラウザで <code>http://localhost:7860</code> を開く
+   - テキストを入力して "Submit" をクリックする
+   - 感情分析の結果が表示されるはずです</p>
+</li>
+<li>
+<p><strong>MCP スキーマ</strong>:
+   - <code>http://localhost:7860/gradio_api/mcp/schema</code> にアクセスする
+   - クライアントが使う MCP ツールのスキーマが表示される
+   - これは Gradio アプリのフッターにある "View API" リンクからも確認できる</p>
+</li>
+</ol>
+<h2>トラブルシューティングのヒント</h2>
+<ol>
+<li>
+<p><strong>型ヒントと docstring</strong>:
+   - 関数のパラメータと戻り値には必ず型ヒントを付ける
+   - 各パラメータについて "Args:" ブロックを含む docstring を記述する
+   - これにより、Gradio が正確な MCP ツールスキーマを生成できる</p>
+</li>
+<li>
+<p><strong>文字列入力</strong>:
+   - 迷ったら、入力引数は <code>str</code> として受け取る
+   - 関数の中で目的の型に変換する
+   - これにより MCP クライアントとの互換性が高まる</p>
+</li>
+<li>
+<p><strong>SSE サポート</strong>:
+   - 一部の MCP クライアントは SSE ベースの MCP サーバーをサポートしていない
+   - その場合は <code>mcp-remote</code> を使う:
+     <code>json
+     {
+       "mcpServers": {
+         "gradio": {
+           "command": "npx",
+           "args": [
+             "mcp-remote",
+             "http://localhost:7860/gradio_api/mcp/sse"
+           ]
+         }
+       }
+     }</code></p>
+</li>
+<li>
+<p><strong>接続の問題</strong>:
+   - 接続の問題が発生した場合は、クライアントとサーバーの両方を再起動してみる
+   - サーバーが動作していてアクセス可能か確認する
+   - MCP スキーマが想定した URL で利用可能か確認する</p>
+</li>
+</ol>
+<h2>Hugging Face Spaces へのデプロイ</h2>
+<p>サーバーを他の人が使えるようにするには、Hugging Face Spaces にデプロイできます。</p>
+<ol>
+<li>
+<p>Hugging Face で新しい Space を作成する:
+   - <a href="https://huggingface.co/spaces">huggingface.co/spaces</a> にアクセスする
+   - "New Space" をクリックする
+   - Space に名前を付ける（例: "mcp-sentiment"）
+   - SDK として "Gradio" を選択する
+   - "Create Space" をクリックする</p>
+</li>
+<li>
+<p><code>requirements.txt</code> ファイルを作成する:</p>
+</li>
+</ol>
+<div class="codehilite"><pre><span></span><code>gradio[mcp]
+textblob
+</code></pre></div>
+
+<ol start="3">
+<li>コードを Space にプッシュする:</li>
+</ol>
+<div class="codehilite"><pre><span></span><code>git<span class="w"> </span>init
+git<span class="w"> </span>add<span class="w"> </span>app.py<span class="w"> </span>requirements.txt
+git<span class="w"> </span>commit<span class="w"> </span>-m<span class="w"> </span><span class="s2">"Initial commit"</span>
+git<span class="w"> </span>remote<span class="w"> </span>add<span class="w"> </span>origin<span class="w"> </span>https://huggingface.co/spaces/YOUR_USERNAME/mcp-sentiment
+git<span class="w"> </span>push<span class="w"> </span>-u<span class="w"> </span>origin<span class="w"> </span>main
+</code></pre></div>
+
+<p>これで MCP サーバーは次の URL で利用可能になります。</p>
+<div class="codehilite"><pre><span></span><code>https://YOUR_USERNAME-mcp-sentiment.hf.space/gradio_api/mcp/sse
+</code></pre></div>
+
+<h2>次のステップ</h2>
+<p>MCP サーバーが動作するようになったので、次にそれとやり取りするクライアントを作成します。次のセクションでは、以下を行います。</p>
+<ol>
+<li>Tiny Agents に着想を得た HuggingFace.js ベースのクライアントを作成する</li>
+<li>SmolAgents ベースの Python クライアントを実装する</li>
+<li>デプロイしたサーバーで両方のクライアントをテストする</li>
+</ol>
+<p>最初のクライアントの構築に進みましょう！</p>
+</article>
+<nav class="page-nav"><a class="nav-link prev" href="introduction.html">← 前へ: エンドツーエンドの MCP アプリケーションを作る</a><a class="nav-link toc-link" href="../index.html">目次へ</a><a class="nav-link next" href="clients.html">次へ →: MCP クライアントを構築する</a></nav>
+</main>
+<footer class="site-footer">
+  <p>原典: Hugging Face huggingface/mcp-course（<a href="https://github.com/huggingface/mcp-course">https://github.com/huggingface/mcp-course</a>）</p>
+  <p>日本語版の翻訳・公開: 霞ヶ関京 / 連絡先: GitHub <a href="https://github.com/yanikasumin">@yanikasumin</a> / YouTube <a href="https://www.youtube.com/@KASUMI_MOF">@KASUMI_MOF</a></p>
+  <p class="demo-note">このサイトはデモ版です。内容は順次更新されます。</p>
+</footer>
+<script src="../../site.js"></script>
+</body>
+</html>

@@ -1,0 +1,933 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>要約 | Hugging Face コース日本語版（デモ版）</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Shippori+Mincho:wght@500;700&family=Zen+Kaku+Gothic+New:wght@400;500;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../../style.css">
+<script>
+window.MathJax = { tex: { inlineMath: [['$', '$'], ['\\(', '\\)']], displayMath: [['$$', '$$'], ['\\[', '\\]']] }, options: { skipHtmlTags: ['script','noscript','style','textarea','pre','code'] } };
+</script>
+<script async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml.js"></script>
+</head>
+<body>
+<header class="site-header">
+  <div class="header-inner">
+    <a class="site-title" href="../../index.html">Hugging Face コース日本語版</a>
+    <span class="demo-badge">デモ版</span>
+  </div>
+</header>
+<main class="container">
+<p class="course-crumb"><a href="../index.html">LLM コース</a>
+<span class="badge badge-qa-pass">翻訳QA 最終合格</span></p>
+<nav class="page-nav"><a class="nav-link prev" href="4.html">← 前へ: 翻訳</a><a class="nav-link toc-link" href="../index.html">目次へ</a><a class="nav-link next" href="6.html">次へ →: 因果言語モデルをゼロから学習する</a></nav>
+<article class="content">
+<h1>要約</h1>
+<p>{#if fw === 'pt'}</p>
+<p>{:else}</p>
+<p>{/if}</p>
+<p>このセクションでは、Transformer モデルを使って、長い文書の要点を短い文章にまとめる方法、すなわち<em>テキスト要約</em>と呼ばれるタスクを見ていきます。これは最も難しい NLP タスクの1つです。長い文章を理解し、文書の主要な話題を捉えた一貫性のあるテキストを生成するなど、幅広い能力が求められるためです。しかし、うまくできればテキスト要約は強力なツールになります。ドメインの専門家が長い文書を細部まで読む負担を軽減し、さまざまな業務プロセスを高速化できます。</p>
+<div class="youtube-embed"><iframe src="https://www.youtube-nocookie.com/embed/yHnr5Dk2zCI" title="YouTube video" loading="lazy" allowfullscreen referrerpolicy="strict-origin-when-cross-origin"></iframe></div>
+<p><a href="https://huggingface.co/models?pipeline_tag=summarization&amp;sort=downloads">Hugging Face Hub</a> には要約用にファインチューニングされたモデルがすでに各種存在しますが、そのほとんどすべてが英語の文書にしか適していません。そこで、このセクションではひねりを加えて、英語とスペイン語のバイリンガルモデルを学習します。このセクションの終わりには、ここに示すような顧客レビューを要約できる<a href="https://huggingface.co/huggingface-course/mt5-small-finetuned-amazon-en-es">モデル</a>が得られます。</p>
+<iframe src="https://course-demos-mt5-small-finetuned-amazon-en-es.hf.space" frameBorder="0" height="400" title="Gradio アプリ" class="block dark:hidden container p-0 flex-grow space-iframe" allow="accelerometer; ambient-light-sensor; autoplay; battery; camera; document-domain; encrypted-media; fullscreen; geolocation; gyroscope; layout-animations; legacy-image-formats; magnetometer; microphone; midi; oversized-images; payment; picture-in-picture; publickey-credentials-get; sync-xhr; usb; vr ; wake-lock; xr-spatial-tracking" sandbox="allow-forms allow-modals allow-popups allow-popups-to-escape-sandbox allow-same-origin allow-scripts allow-downloads"></iframe>
+
+<p>見ていくように、これらの要約が簡潔なのは、顧客が製品レビューに付けるタイトルから学習しているためです。まず、このタスクに適したバイリンガルコーパスを組み立てるところから始めましょう。</p>
+<h2>多言語コーパスを準備する</h2>
+<p>バイリンガルの要約器を作るため、<a href="https://huggingface.co/datasets/amazon_reviews_multi">Multilingual Amazon Reviews Corpus</a> を使います。このコーパスは6言語の Amazon 製品レビューで構成され、通常は多言語分類器のベンチマークに使われます。しかし、各レビューには短いタイトルが付いているため、そのタイトルを、モデルが学習するためのターゲット要約として使うことができます！まず、英語とスペイン語のサブセットを Hugging Face Hub からダウンロードしましょう。</p>
+<div class="codehilite"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">datasets</span><span class="w"> </span><span class="kn">import</span> <span class="n">load_dataset</span>
+
+<span class="n">spanish_dataset</span> <span class="o">=</span> <span class="n">load_dataset</span><span class="p">(</span><span class="s2">"amazon_reviews_multi"</span><span class="p">,</span> <span class="s2">"es"</span><span class="p">)</span>
+<span class="n">english_dataset</span> <span class="o">=</span> <span class="n">load_dataset</span><span class="p">(</span><span class="s2">"amazon_reviews_multi"</span><span class="p">,</span> <span class="s2">"en"</span><span class="p">)</span>
+<span class="n">english_dataset</span>
+</code></pre></div>
+
+<p>```python out
+DatasetDict({
+    train: Dataset({
+        features: ['review_id', 'product_id', 'reviewer_id', 'stars', 'review_body', 'review_title', 'language', 'product_category'],
+        num_rows: 200000
+    })
+    validation: Dataset({
+        features: ['review_id', 'product_id', 'reviewer_id', 'stars', 'review_body', 'review_title', 'language', 'product_category'],
+        num_rows: 5000
+    })
+    test: Dataset({
+        features: ['review_id', 'product_id', 'reviewer_id', 'stars', 'review_body', 'review_title', 'language', 'product_category'],
+        num_rows: 5000
+    })
+})</p>
+<div class="codehilite"><pre><span></span><code>見てのとおり、言語ごとに `train` スプリットには200,000件のレビューが、`validation` と `test` の各スプリットには5,000件のレビューがあります。関心のあるレビュー情報は、`review_body` 列と `review_title` 列に含まれています。[Chapter 5](/course/chapter5) で学んだ手法を使い、学習セットからランダムなサンプルを取る単純な関数を作って、例をいくつか見てみましょう。
+
+```python
+def show_samples(dataset, num_samples=3, seed=42):
+    sample = dataset["train"].shuffle(seed=seed).select(range(num_samples))
+    for example in sample:
+        print(f"\n'&gt;&gt; タイトル: {example['review_title']}'")
+        print(f"'&gt;&gt; レビュー: {example['review_body']}'")
+
+
+show_samples(english_dataset)
+</code></pre></div>
+
+<p>```python out
+'&gt;&gt; タイトル: Worked in front position, not rear'
+'&gt;&gt; レビュー: 3 stars because these are not rear brakes as stated in the item description. At least the mount adapter only worked on the front fork of the bike that I got it for.'</p>
+<p>'&gt;&gt; タイトル: meh'
+'&gt;&gt; レビュー: Does it’s job and it’s gorgeous but mine is falling apart, I had to basically put it together again with hot glue'</p>
+<p>'&gt;&gt; タイトル: Can\'t beat these for the money'
+'&gt;&gt; レビュー: Bought this for handling miscellaneous aircraft parts and hanger "stuff" that I needed to organize; it really fit the bill. The unit arrived quickly, was well packaged and arrived intact (always a good sign). There are five wall mounts-- three on the top and two on the bottom. I wanted to mount it on the wall, so all I had to do was to remove the top two layers of plastic drawers, as well as the bottom corner drawers, place it when I wanted and mark it; I then used some of the new plastic screw in wall anchors (the 50 pound variety) and it easily mounted to the wall. Some have remarked that they wanted dividers for the drawers, and that they made those. Good idea. My application was that I needed something that I can see the contents at about eye level, so I wanted the fuller-sized drawers. I also like that these are the new plastic that doesn\'t get brittle and split like my older plastic drawers did. I like the all-plastic construction. It\'s heavy duty enough to hold metal parts, but being made of plastic it\'s not as heavy as a metal frame, so you can easily mount it to the wall and still load it up with heavy stuff, or light stuff. No problem there. For the money, you can\'t beat it. Best one of these I\'ve bought to date-- and I\'ve been using some version of these for over forty years.'</p>
+<div class="codehilite"><pre><span></span><code>&lt;div class="callout callout-tip" markdown="block"&gt;
+&lt;p class="callout-title"&gt;💡 ヒント&lt;/p&gt;
+✏️ **試してみましょう！** `Dataset.shuffle()` コマンドのランダムシードを変更して、コーパス内の他のレビューを探索してみてください。スペイン語話者の方は、`spanish_dataset` のレビューもいくつか見て、タイトルが妥当な要約になっているか確認してみてください。
+&lt;/div&gt;
+
+
+このサンプルは、オンラインでよく見られるレビューの多様性を示しています。肯定的なものから否定的なものまで（そしてその間のすべて）さまざまです。"meh" というタイトルの例はあまり情報がありませんが、他のタイトルはレビュー自体の妥当な要約のように見えます。400,000件すべてのレビューで要約モデルを学習すると、GPU 1つでは時間がかかりすぎます。そのため代わりに、単一ドメインの製品について要約を生成することに集中します。選択できるドメインの感触をつかむため、`english_dataset` を `pandas.DataFrame` に変換し、製品カテゴリごとのレビュー数を計算しましょう。
+
+```python
+english_dataset.set_format("pandas")
+english_df = english_dataset["train"][:]
+# 上位20製品の件数を表示します
+english_df["product_category"].value_counts()[:20]
+</code></pre></div>
+
+<p>```python out
+home                      17679
+apparel                   15951
+wireless                  15717
+other                     13418
+beauty                    12091
+drugstore                 11730
+kitchen                   10382
+toy                        8745
+sports                     8277
+automotive                 7506
+lawn_and_garden            7327
+home_improvement           7136
+pet_products               7082
+digital_ebook_purchase     6749
+pc                         6401
+electronics                6186
+office_product             5521
+shoes                      5197
+grocery                    4730
+book                       3756
+Name: product_category, dtype: int64</p>
+<div class="codehilite"><pre><span></span><code>英語データセットで最も人気のある製品は、家庭用品、衣類、ワイヤレス電子機器に関するものです。しかし、Amazon のテーマに沿うため、本のレビューの要約に集中しましょう。結局のところ、それが同社の創業事業です！当てはまる製品カテゴリが2つあることが分かります（`book` と `digital_ebook_purchase`）。そこで、両言語のデータセットをこれらの製品だけに絞り込みます。[Chapter 5](/course/chapter5) で見たように、`Dataset.filter()` 関数を使うとデータセットを非常に効率的にスライスできます。そのための単純な関数を定義しましょう。
+
+```python
+def filter_books(example):
+    return (
+        example["product_category"] == "book"
+        or example["product_category"] == "digital_ebook_purchase"
+    )
+</code></pre></div>
+
+<p>この関数を <code>english_dataset</code> と <code>spanish_dataset</code> に適用すると、本のカテゴリに関わる行だけが残ります。フィルタを適用する前に、<code>english_dataset</code> の形式を <code>"pandas"</code> から <code>"arrow"</code> に戻しましょう。</p>
+<div class="codehilite"><pre><span></span><code><span class="n">english_dataset</span><span class="o">.</span><span class="n">reset_format</span><span class="p">()</span>
+</code></pre></div>
+
+<p>その後フィルタ関数を適用し、確認のためレビューのサンプルを調べ、本当に本に関するものか見てみましょう。</p>
+<div class="codehilite"><pre><span></span><code><span class="n">spanish_books</span> <span class="o">=</span> <span class="n">spanish_dataset</span><span class="o">.</span><span class="n">filter</span><span class="p">(</span><span class="n">filter_books</span><span class="p">)</span>
+<span class="n">english_books</span> <span class="o">=</span> <span class="n">english_dataset</span><span class="o">.</span><span class="n">filter</span><span class="p">(</span><span class="n">filter_books</span><span class="p">)</span>
+<span class="n">show_samples</span><span class="p">(</span><span class="n">english_books</span><span class="p">)</span>
+</code></pre></div>
+
+<p>```python out
+'&gt;&gt; タイトル: I\'m dissapointed.'
+'&gt;&gt; レビュー: I guess I had higher expectations for this book from the reviews. I really thought I\'d at least like it. The plot idea was great. I loved Ash but, it just didnt go anywhere. Most of the book was about their radio show and talking to callers. I wanted the author to dig deeper so we could really get to know the characters. All we know about Grace is that she is attractive looking, Latino and is kind of a brat. I\'m dissapointed.'</p>
+<p>'&gt;&gt; タイトル: Good art, good price, poor design'
+'&gt;&gt; レビュー: I had gotten the DC Vintage calendar the past two years, but it was on backorder forever this year and I saw they had shrunk the dimensions for no good reason. This one has good art choices but the design has the fold going through the picture, so it\'s less aesthetically pleasing, especially if you want to keep a picture to hang. For the price, a good calendar'</p>
+<p>'&gt;&gt; タイトル: Helpful'
+'&gt;&gt; レビュー: Nearly all the tips useful and. I consider myself an intermediate to advanced user of OneNote. I would highly recommend.'</p>
+<div class="codehilite"><pre><span></span><code>レビューは厳密には本に関するものではなく、カレンダーや OneNote のような電子アプリケーションを指している場合もあることが分かります。それでも、このドメインは要約モデルを学習するのにだいたい適切なようです。このタスクに適したさまざまなモデルを見る前に、データ準備の最後の1つを行います。英語とスペイン語のレビューを単一の `DatasetDict` オブジェクトに結合することです。🤗 Datasets は便利な `concatenate_datasets()` 関数を提供しており、（名前のとおり）2つの `Dataset` オブジェクトを積み重ねることができます。そこで、バイリンガルデータセットを作るため、各スプリットについてループし、そのスプリットのデータセットを連結し、結果をシャッフルして、モデルが単一言語に過学習しないようにします。
+
+```python
+from datasets import concatenate_datasets, DatasetDict
+
+books_dataset = DatasetDict()
+
+for split in english_books.keys():
+    books_dataset[split] = concatenate_datasets(
+        [english_books[split], spanish_books[split]]
+    )
+    books_dataset[split] = books_dataset[split].shuffle(seed=42)
+
+# 例をいくつか確認します
+show_samples(books_dataset)
+</code></pre></div>
+
+<p>```python out
+'&gt;&gt; タイトル: Easy to follow!!!!'
+'&gt;&gt; レビュー: I loved The dash diet weight loss Solution. Never hungry. I would recommend this diet. Also the menus are well rounded. Try it. Has lots of the information need thanks.'</p>
+<p>'&gt;&gt; タイトル: PARCIALMENTE DAÑADO'
+'&gt;&gt; レビュー: Me llegó el día que tocaba, junto a otros libros que pedí, pero la caja llegó en mal estado lo cual dañó las esquinas de los libros porque venían sin protección (forro).'</p>
+<p>'&gt;&gt; タイトル: no lo he podido descargar'
+'&gt;&gt; レビュー: igual que el anterior'</p>
+<div class="codehilite"><pre><span></span><code>確かに、英語とスペイン語のレビューが混ざっています！学習コーパスができたので、最後に確認すべきは、レビューとそのタイトルの単語の分布です。これは要約タスクで特に重要です。データ内の短い参照要約が、モデルに1〜2語しか出力しないよう偏らせる可能性があるためです。下の図は単語の分布を示しており、タイトルはわずか1〜2語に大きく偏っていることが分かります。
+
+&lt;div class="flex justify-center"&gt;
+&lt;img class="block dark:hidden" src="https://huggingface.co/datasets/huggingface-course/documentation-images/resolve/main/en/chapter7/review-lengths.svg" alt="レビューのタイトルとテキストの単語数の分布。"/&gt;
+&lt;img class="hidden dark:block" src="https://huggingface.co/datasets/huggingface-course/documentation-images/resolve/main/en/chapter7/review-lengths-dark.svg" alt="レビューのタイトルとテキストの単語数の分布。"/&gt;
+&lt;/div&gt;
+
+これに対処するため、タイトルが非常に短い例を除外し、モデルがより興味深い要約を生成できるようにします。英語とスペイン語のテキストを扱っているため、大まかなヒューリスティクスとしてタイトルを空白で分割し、信頼できる `Dataset.filter()` メソッドを次のように使えます。
+
+```python
+books_dataset = books_dataset.filter(lambda x: len(x["review_title"].split()) &gt; 2)
+</code></pre></div>
+
+<p>コーパスの準備ができたので、このコーパスでファインチューニングできそうな Transformer モデルをいくつか見ていきましょう！</p>
+<h2>テキスト要約のためのモデル</h2>
+<p>考えてみると、テキスト要約は機械翻訳と似た種類のタスクです。レビューのようなテキストがあり、それを入力の顕著な特徴を捉えた短い版に「翻訳」したいわけです。そのため、要約のための Transformer モデルのほとんどは、<a href="../chapter1/1.html">Chapter 1</a> で最初に出会ったエンコーダ・デコーダアーキテクチャを採用しています。ただし、few-shot 設定でも要約に使える GPT ファミリーのモデルのような例外もあります。次の表は、要約用にファインチューニングできる人気の事前学習済みモデルの一部です。</p>
+<table>
+<thead>
+<tr>
+<th style="text-align: center;">Transformer モデル</th>
+<th>説明</th>
+<th style="text-align: center;">多言語対応？</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align: center;"><a href="https://huggingface.co/gpt2-xl">GPT-2</a></td>
+<td>自己回帰型の言語モデルとして学習されていますが、入力テキストの末尾に "TL;DR" を追加することで GPT-2 に要約を生成させることができます。</td>
+<td style="text-align: center;">❌</td>
+</tr>
+<tr>
+<td style="text-align: center;"><a href="https://huggingface.co/google/pegasus-large">PEGASUS</a></td>
+<td>複数文のテキストでマスクされた文を予測する事前学習目的を使います。この事前学習目的はバニラな言語モデリングよりも要約に近く、人気のベンチマークで高いスコアを出しています。</td>
+<td style="text-align: center;">❌</td>
+</tr>
+<tr>
+<td style="text-align: center;"><a href="https://huggingface.co/t5-base">T5</a></td>
+<td>すべてのタスクを text-to-text フレームワークで定式化する汎用的な Transformer アーキテクチャです。たとえば、モデルが文書を要約するための入力形式は <code>summarize: ARTICLE</code> です。</td>
+<td style="text-align: center;">❌</td>
+</tr>
+<tr>
+<td style="text-align: center;"><a href="https://huggingface.co/google/mt5-base">mT5</a></td>
+<td>T5 の多言語版で、101言語をカバーする多言語 Common Crawl コーパス（mC4）で事前学習されています。</td>
+<td style="text-align: center;">✅</td>
+</tr>
+<tr>
+<td style="text-align: center;"><a href="https://huggingface.co/facebook/bart-base">BART</a></td>
+<td>BERT と GPT-2 の事前学習方式を組み合わせ、変形した入力を復元するよう学習された、エンコーダとデコーダの両スタックを持つ新しい Transformer アーキテクチャです。</td>
+<td style="text-align: center;">❌</td>
+</tr>
+<tr>
+<td style="text-align: center;"><a href="https://huggingface.co/facebook/mbart-large-50">mBART-50</a></td>
+<td>BART の多言語版で、50言語で事前学習されています。</td>
+<td style="text-align: center;">✅</td>
+</tr>
+</tbody>
+</table>
+<p>この表から分かるように、要約のための Transformer モデル（そして実際、ほとんどの NLP タスク）の大部分は単一言語用です。タスクが英語やドイツ語のような「高リソース」言語であれば便利ですが、世界中で使われている何千もの他の言語にはあまり向いていません。幸い、mT5 や mBART のような多言語 Transformer モデルが、この問題を解決してくれます。これらのモデルは言語モデリングを使って事前学習されていますが、ひねりがあります。1つの言語のコーパスで学習するのではなく、50を超える言語のテキストで共同で学習されているのです！</p>
+<p>ここでは mT5 に焦点を当てます。これは T5 をベースにした興味深いアーキテクチャで、text-to-text フレームワークで事前学習されています。T5 では、すべての NLP タスクが <code>summarize:</code> のようなプロンプト接頭辞で定式化され、これによりモデルは生成するテキストをプロンプトに適応させます。下の図に示すように、これにより T5 は非常に汎用的になり、単一のモデルで多くのタスクを解決できます！</p>
+<div class="flex justify-center">
+<img class="block dark:hidden" src="https://huggingface.co/datasets/huggingface-course/documentation-images/resolve/main/en/chapter7/t5.svg" alt="T5 アーキテクチャで実行されるさまざまなタスク。"/>
+<img class="hidden dark:block" src="https://huggingface.co/datasets/huggingface-course/documentation-images/resolve/main/en/chapter7/t5-dark.svg" alt="T5 アーキテクチャで実行されるさまざまなタスク。"/>
+</div>
+
+<p>mT5 は接頭辞を使いませんが、T5 の汎用性の多くを共有し、多言語であるという利点があります。モデルを選んだので、学習用にデータを準備する方法を見ていきましょう。</p>
+<div class="callout callout-tip">
+<p class="callout-title">💡 ヒント</p>
+<p>✏️ <strong>試してみましょう！</strong> このセクションを終えた後、mBART を同じ手法でファインチューニングして、mT5 とどれだけ比較できるか確認してみてください。ボーナスポイントとして、英語のレビューだけで T5 をファインチューニングすることもできます。T5 には特殊な接頭辞プロンプトがあるため、以下の前処理ステップで入力例の先頭に <code>summarize:</code> を追加する必要があります。</p>
+</div>
+<h2>データの前処理</h2>
+<div class="youtube-embed"><iframe src="https://www.youtube-nocookie.com/embed/1m7BerpSq8A" title="YouTube video" loading="lazy" allowfullscreen referrerpolicy="strict-origin-when-cross-origin"></iframe></div>
+<p>次のタスクは、レビューとそのタイトルをトークン化してエンコードすることです。いつものように、事前学習済みモデルのチェックポイントに関連付けられたトークナイザを読み込むことから始めます。妥当な時間でモデルをファインチューニングできるよう、チェックポイントとして <code>mt5-small</code> を使います。</p>
+<div class="codehilite"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">transformers</span><span class="w"> </span><span class="kn">import</span> <span class="n">AutoTokenizer</span>
+
+<span class="n">model_checkpoint</span> <span class="o">=</span> <span class="s2">"google/mt5-small"</span>
+<span class="n">tokenizer</span> <span class="o">=</span> <span class="n">AutoTokenizer</span><span class="o">.</span><span class="n">from_pretrained</span><span class="p">(</span><span class="n">model_checkpoint</span><span class="p">)</span>
+</code></pre></div>
+
+<div class="callout callout-tip">
+<p class="callout-title">💡 ヒント</p>
+<p>💡 NLP プロジェクトの初期段階では、小さなデータサンプルで「小さい」モデルのクラスを学習するのが良い実践です。これにより、エンドツーエンドのワークフローに向けてより速くデバッグと反復ができます。結果に自信が持てたら、モデルのチェックポイントを変更するだけでいつでもモデルをスケールアップできます！</p>
+</div>
+<p>mT5 トークナイザを小さな例で試してみましょう。</p>
+<div class="codehilite"><pre><span></span><code><span class="n">inputs</span> <span class="o">=</span> <span class="n">tokenizer</span><span class="p">(</span><span class="s2">"I loved reading the Hunger Games!"</span><span class="p">)</span>
+<span class="n">inputs</span>
+</code></pre></div>
+
+<p 11807_ 12507_ 1_ 259_ 28387_ 287_ 295_ 62893_ _1_ _336_ _attention_mask_: _input_ids_:>```python out</p>
+<div class="codehilite"><pre><span></span><code>ここでは、[Chapter 3](/course/chapter3) の最初のファインチューニング実験で出会った、お馴染みの `input_ids` と `attention_mask` が見えます。これらの入力 ID を、トークナイザの `convert_ids_to_tokens()` 関数でデコードし、どのような種類のトークナイザを扱っているか見てみましょう。
+
+```python
+tokenizer.convert_ids_to_tokens(inputs.input_ids)
+</code></pre></div>
+
+<p>```python out
+['▁I', '▁', 'loved', '▁reading', '▁the', '▁Hung', 'er', '▁Games', '</s>']</p>
+<div class="codehilite"><pre><span></span><code>特殊な Unicode 文字 `▁` とシーケンス終端トークン `&lt;/s&gt;` は、SentencePiece トークナイザを扱っていることを示しています。これは、[Chapter 6](/course/chapter6) で議論した Unigram セグメンテーションアルゴリズムに基づいています。Unigram は、SentencePiece がアクセントや句読点、さらには日本語のように空白文字を持たない言語が多いという点に左右されないため、多言語コーパスで特に有用です。
+
+コーパスをトークン化するには、要約に関連する微妙な点に対処しなければなりません。ラベルもテキストであるため、モデルの最大コンテキストサイズを超える可能性があります。そのため、レビューとタイトルの両方に切り捨てを適用し、モデルに過度に長い入力を渡さないようにする必要があります。🤗 Transformers のトークナイザは便利な `text_target` 引数を提供しており、入力と並行してラベルをトークン化できます。mT5 で入力とターゲットがどのように処理されるかの例は次のとおりです。
+
+```python
+max_input_length = 512
+max_target_length = 30
+
+
+def preprocess_function(examples):
+    model_inputs = tokenizer(
+        examples["review_body"],
+        max_length=max_input_length,
+        truncation=True,
+    )
+    labels = tokenizer(
+        examples["review_title"], max_length=max_target_length, truncation=True
+    )
+    model_inputs["labels"] = labels["input_ids"]
+    return model_inputs
+</code></pre></div>
+
+<p>このコードを順に見て、何が起きているか理解しましょう。まず行ったのは、<code>max_input_length</code> と <code>max_target_length</code> の値を定義することです。これらは、レビューとタイトルがどれだけ長くなれるかの上限を設定します。レビュー本文は通常タイトルよりずっと大きいため、それに応じてこれらの値をスケーリングしました。</p>
+<p><code>preprocess_function()</code> を使えば、コース全体で広範に使ってきた便利な <code>Dataset.map()</code> 関数を使ってコーパス全体をトークン化するのは簡単です。</p>
+<div class="codehilite"><pre><span></span><code><span class="n">tokenized_datasets</span> <span class="o">=</span> <span class="n">books_dataset</span><span class="o">.</span><span class="n">map</span><span class="p">(</span><span class="n">preprocess_function</span><span class="p">,</span> <span class="n">batched</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+</code></pre></div>
+
+<p>コーパスの前処理が終わったので、要約によく使われる指標をいくつか見ていきましょう。見ていくように、機械生成テキストの品質を測ることに関しては、特効薬はありません。</p>
+<div class="callout callout-tip">
+<p class="callout-title">💡 ヒント</p>
+<p>💡 上の <code>Dataset.map()</code> 関数で <code>batched=True</code> を使ったことに気づいたかもしれません。これは例を1,000件（デフォルト）のバッチでエンコードし、🤗 Transformers の高速トークナイザのマルチスレッド機能を活用できるようにします。可能な場合は、前処理を最大限に活用するため <code>batched=True</code> を使うようにしてください！</p>
+</div>
+<h2>テキスト要約の指標</h2>
+<div class="youtube-embed"><iframe src="https://www.youtube-nocookie.com/embed/TMshhnrEXlg" title="YouTube video" loading="lazy" allowfullscreen referrerpolicy="strict-origin-when-cross-origin"></iframe></div>
+<p>このコースで扱った他のほとんどのタスクと比べて、要約や翻訳のようなテキスト生成タスクのパフォーマンスを測るのは、それほど単純ではありません。たとえば、"I loved reading the Hunger Games" のようなレビューに対しては、"I loved the Hunger Games" や "Hunger Games is a great read" のような、複数の妥当な要約があります。明らかに、生成された要約とラベルの間の何らかの完全一致を適用するのは良い解決策ではありません。人間でさえ、そのような指標ではうまくいかないでしょう。私たちは皆、自分の文体を持っているためです。</p>
+<p>要約で最もよく使われる指標の1つは、<a href="https://en.wikipedia.org/wiki/ROUGE_(metric)">ROUGE スコア</a> です（Recall-Oriented Understudy for Gisting Evaluation の略）。この指標の背後にある基本的な考え方は、生成された要約を、通常は人間が作成した参照要約の集合と比較することです。これをより正確にするため、次の2つの要約を比較したいとします。</p>
+<div class="codehilite"><pre><span></span><code><span class="n">generated_summary</span> <span class="o">=</span> <span class="s2">"I absolutely loved reading the Hunger Games"</span>
+<span class="n">reference_summary</span> <span class="o">=</span> <span class="s2">"I loved reading the Hunger Games"</span>
+</code></pre></div>
+
+<p>比較する1つの方法は、重複する単語の数を数えることです。このケースでは6になります。しかし、これは少し粗い方法です。そのため、代わりに ROUGE は重複に対する<em>適合率</em>と<em>再現率</em>のスコアを計算することに基づいています。</p>
+<div class="callout callout-tip">
+<p class="callout-title">💡 ヒント</p>
+<p>🙋 適合率と再現率を初めて聞いた場合でも心配いりません。明確な例を一緒に見て、すべてを明らかにしていきます。これらの指標は通常、分類タスクで遭遇します。その文脈で適合率と再現率がどのように定義されているかを理解したい場合は、<code>scikit-learn</code> の<a href="https://scikit-learn.org/stable/auto_examples/model_selection/plot_precision_recall.html">ガイド</a>をチェックすることをお勧めします。</p>
+</div>
+<p>ROUGE については、再現率は、参照要約のどれだけが生成された要約で捉えられているかを測ります。単語だけを比較する場合、再現率は次の式で計算できます。</p>
+<p>$$ \mathrm{Recall} = \frac{\mathrm{Number\,of\,overlapping\, words}}{\mathrm{Total\, number\, of\, words\, in\, reference\, summary}} $$</p>
+<p>上の単純な例では、この式は6/6 = 1という完璧な再現率を与えます。つまり、参照要約のすべての単語がモデルによって生成されています。これは素晴らしいことに聞こえるかもしれませんが、生成された要約が "I really really loved reading the Hunger Games all night" だった場合を想像してみてください。これも完璧な再現率になりますが、冗長であるため、おそらくより悪い要約です。このようなシナリオに対処するため、適合率も計算します。ROUGE の文脈では、適合率は、生成された要約のどれだけが関連していたかを測ります。</p>
+<p>$$ \mathrm{Precision} = \frac{\mathrm{Number\,of\,overlapping\, words}}{\mathrm{Total\, number\, of\, words\, in\, generated\, summary}} $$</p>
+<p>これを冗長な要約に適用すると、適合率は 6/10 = 0.6 となり、より短い要約で得られる適合率 6/7 = 0.86 よりかなり悪くなります。実際には、適合率と再現率の両方が通常計算され、その後 F1 スコア（適合率と再現率の調和平均）が報告されます。これは、<code>rouge_score</code> パッケージをまずインストールすることで、🤗 Datasets で簡単に行えます。</p>
+<div class="codehilite"><pre><span></span><code><span class="err">!</span><span class="n">pip</span> <span class="n">install</span> <span class="n">rouge_score</span>
+</code></pre></div>
+
+<p>その後、次のように ROUGE 指標を読み込みます。</p>
+<div class="codehilite"><pre><span></span><code><span class="kn">import</span><span class="w"> </span><span class="nn">evaluate</span>
+
+<span class="n">rouge_score</span> <span class="o">=</span> <span class="n">evaluate</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="s2">"rouge"</span><span class="p">)</span>
+</code></pre></div>
+
+<p>その後、<code>rouge_score.compute()</code> 関数を使って、すべての指標を一度に計算できます。</p>
+<div class="codehilite"><pre><span></span><code><span class="n">scores</span> <span class="o">=</span> <span class="n">rouge_score</span><span class="o">.</span><span class="n">compute</span><span class="p">(</span>
+    <span class="n">predictions</span><span class="o">=</span><span class="p">[</span><span class="n">generated_summary</span><span class="p">],</span> <span class="n">references</span><span class="o">=</span><span class="p">[</span><span class="n">reference_summary</span><span class="p">]</span>
+<span class="p">)</span>
+<span class="n">scores</span>
+</code></pre></div>
+
+<p>```python out
+{'rouge1': AggregateScore(low=Score(precision=0.86, recall=1.0, fmeasure=0.92), mid=Score(precision=0.86, recall=1.0, fmeasure=0.92), high=Score(precision=0.86, recall=1.0, fmeasure=0.92)),
+ 'rouge2': AggregateScore(low=Score(precision=0.67, recall=0.8, fmeasure=0.73), mid=Score(precision=0.67, recall=0.8, fmeasure=0.73), high=Score(precision=0.67, recall=0.8, fmeasure=0.73)),
+ 'rougeL': AggregateScore(low=Score(precision=0.86, recall=1.0, fmeasure=0.92), mid=Score(precision=0.86, recall=1.0, fmeasure=0.92), high=Score(precision=0.86, recall=1.0, fmeasure=0.92)),
+ 'rougeLsum': AggregateScore(low=Score(precision=0.86, recall=1.0, fmeasure=0.92), mid=Score(precision=0.86, recall=1.0, fmeasure=0.92), high=Score(precision=0.86, recall=1.0, fmeasure=0.92))}</p>
+<div class="codehilite"><pre><span></span><code>うわ、その出力にはたくさんの情報があります！これはすべて何を意味するのでしょうか？まず、🤗 Datasets は実際には適合率、再現率、F1 スコアの信頼区間を計算します。これらが、ここで見られる `low`、`mid`、`high` 属性です。さらに、🤗 Datasets はさまざまな ROUGE スコアを計算します。これらは、生成された要約と参照要約を比較する際のテキストの粒度の種類に基づいています。`rouge1` バリアントはユニグラムの重複、つまり生成された要約と参照要約で共通する単語の割合を表す指標で、上で議論した指標そのものです。これを検証するため、スコアの `mid` 値を取り出してみましょう。
+
+```python
+scores["rouge1"].mid
+</code></pre></div>
+
+<p>```python out
+Score(precision=0.86, recall=1.0, fmeasure=0.92)</p>
+<div class="codehilite"><pre><span></span><code>素晴らしい、適合率と再現率の数値が一致しました！では、他の ROUGE スコアはどうでしょうか？`rouge2` はバイグラム（単語のペアの重複と考えてください）の重複を測ります。一方 `rougeL` と `rougeLsum` は、生成された要約と参照要約で最長共通部分文字列を探すことにより、単語の最長一致シーケンスを測ります。`rougeLsum` の "sum" は、この指標が要約全体に対して計算されることを指します。一方 `rougeL` は個々の文に対する平均として計算されます。
+
+&lt;div class="callout callout-tip" markdown="block"&gt;
+&lt;p class="callout-title"&gt;💡 ヒント&lt;/p&gt;
+✏️ **試してみましょう！** 独自の生成要約と参照要約の例を作成し、得られる ROUGE スコアが、適合率と再現率の式に基づく手作業の計算と一致するか確認してください。ボーナスポイントとして、テキストをバイグラムに分割し、`rouge2` 指標の適合率と再現率を比べてみてください。
+&lt;/div&gt;
+
+
+これらの ROUGE スコアを使ってモデルのパフォーマンスを追跡しますが、その前に、優れた NLP 実践者なら誰もが行うべきことを行いましょう。強力でありながら単純なベースラインを作ることです！
+
+### 強力なベースラインを作る
+
+テキスト要約の一般的なベースラインは、記事の最初の3文をそのまま使うことです。これはしばしば *lead-3* ベースラインと呼ばれます。ピリオドを使って文の境界を追跡することもできますが、これは "U.S." や "U.N." のような頭字語で失敗します。そのため代わりに、これらのケースを扱うためのより良いアルゴリズムを含む `nltk` ライブラリを使います。パッケージは `pip` を使って次のようにインストールできます。
+
+```python
+!pip install nltk
+</code></pre></div>
+
+<p>その後、句読点のルールをダウンロードします。</p>
+<div class="codehilite"><pre><span></span><code><span class="kn">import</span><span class="w"> </span><span class="nn">nltk</span>
+
+<span class="n">nltk</span><span class="o">.</span><span class="n">download</span><span class="p">(</span><span class="s2">"punkt"</span><span class="p">)</span>
+</code></pre></div>
+
+<p>次に、<code>nltk</code> から文トークナイザをインポートし、レビューの最初の3文を抽出する単純な関数を作成します。テキスト要約の慣例では、各要約を改行で区切るため、これも含めて学習例でテストしましょう。</p>
+<div class="codehilite"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">nltk.tokenize</span><span class="w"> </span><span class="kn">import</span> <span class="n">sent_tokenize</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">three_sentence_summary</span><span class="p">(</span><span class="n">text</span><span class="p">):</span>
+    <span class="k">return</span> <span class="s2">"</span><span class="se">\n</span><span class="s2">"</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">sent_tokenize</span><span class="p">(</span><span class="n">text</span><span class="p">)[:</span><span class="mi">3</span><span class="p">])</span>
+
+
+<span class="nb">print</span><span class="p">(</span><span class="n">three_sentence_summary</span><span class="p">(</span><span class="n">books_dataset</span><span class="p">[</span><span class="s2">"train"</span><span class="p">][</span><span class="mi">1</span><span class="p">][</span><span class="s2">"review_body"</span><span class="p">]))</span>
+</code></pre></div>
+
+<p>```python out
+'I grew up reading Koontz, and years ago, I stopped,convinced i had "outgrown" him.'
+'Still,when a friend was looking for something suspenseful too read, I suggested Koontz.'
+'She found Strangers.'</p>
+<div class="codehilite"><pre><span></span><code>これはうまくいっているように見えます。では、データセットからこれらの「要約」を抽出し、ベースラインの ROUGE スコアを計算する関数を実装しましょう。
+
+```python
+def evaluate_baseline(dataset, metric):
+    summaries = [three_sentence_summary(text) for text in dataset["review_body"]]
+    return metric.compute(predictions=summaries, references=dataset["review_title"])
+</code></pre></div>
+
+<p>その後、この関数を使って検証セット全体の ROUGE スコアを計算し、Pandas を使って少し整形できます。</p>
+<div class="codehilite"><pre><span></span><code><span class="kn">import</span><span class="w"> </span><span class="nn">pandas</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">pd</span>
+
+<span class="n">score</span> <span class="o">=</span> <span class="n">evaluate_baseline</span><span class="p">(</span><span class="n">books_dataset</span><span class="p">[</span><span class="s2">"validation"</span><span class="p">],</span> <span class="n">rouge_score</span><span class="p">)</span>
+<span class="n">rouge_names</span> <span class="o">=</span> <span class="p">[</span><span class="s2">"rouge1"</span><span class="p">,</span> <span class="s2">"rouge2"</span><span class="p">,</span> <span class="s2">"rougeL"</span><span class="p">,</span> <span class="s2">"rougeLsum"</span><span class="p">]</span>
+<span class="n">rouge_dict</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">((</span><span class="n">rn</span><span class="p">,</span> <span class="nb">round</span><span class="p">(</span><span class="n">score</span><span class="p">[</span><span class="n">rn</span><span class="p">]</span><span class="o">.</span><span class="n">mid</span><span class="o">.</span><span class="n">fmeasure</span> <span class="o">*</span> <span class="mi">100</span><span class="p">,</span> <span class="mi">2</span><span class="p">))</span> <span class="k">for</span> <span class="n">rn</span> <span class="ow">in</span> <span class="n">rouge_names</span><span class="p">)</span>
+<span class="n">rouge_dict</span>
+</code></pre></div>
+
+<p 15.6_ 15.96 16.74_ 8.83_ _rouge1_: _rouge2_: _rougeL_: _rougeLsum_:>```python out</p>
+<div class="codehilite"><pre><span></span><code>`rouge2` スコアが他より大幅に低いことが分かります。これはおそらく、レビュータイトルが通常簡潔であるため、lead-3 ベースラインが冗長すぎるという事実を反映しています。良いベースラインが得られたので、mT5 のファインチューニングに注意を向けましょう！
+
+{#if fw === 'pt'}
+
+## `Trainer` API で mT5 をファインチューニングする
+
+要約のためのモデルのファインチューニングは、この章で扱った他のタスクと非常によく似ています。まず行う必要があるのは、`mt5-small` チェックポイントから事前学習済みモデルを読み込むことです。要約はシーケンス・ツー・シーケンスのタスクであるため、`AutoModelForSeq2SeqLM` クラスでモデルを読み込むことができ、重みが自動的にダウンロードされてキャッシュされます。
+
+```python
+from transformers import AutoModelForSeq2SeqLM
+
+model = AutoModelForSeq2SeqLM.from_pretrained(model_checkpoint)
+</code></pre></div>
+
+<p>{:else}</p>
+<h2>Keras で mT5 をファインチューニングする</h2>
+<p>要約のためのモデルのファインチューニングは、この章で扱った他のタスクと非常によく似ています。まず行う必要があるのは、<code>mt5-small</code> チェックポイントから事前学習済みモデルを読み込むことです。要約はシーケンス・ツー・シーケンスのタスクであるため、<code>TFAutoModelForSeq2SeqLM</code> クラスでモデルを読み込むことができ、重みが自動的にダウンロードされてキャッシュされます。</p>
+<div class="codehilite"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">transformers</span><span class="w"> </span><span class="kn">import</span> <span class="n">TFAutoModelForSeq2SeqLM</span>
+
+<span class="n">model</span> <span class="o">=</span> <span class="n">TFAutoModelForSeq2SeqLM</span><span class="o">.</span><span class="n">from_pretrained</span><span class="p">(</span><span class="n">model_checkpoint</span><span class="p">)</span>
+</code></pre></div>
+
+<p>{/if}</p>
+<div class="callout callout-tip">
+<p class="callout-title">💡 ヒント</p>
+<p>💡 下流タスクでモデルをファインチューニングする際の警告が表示されない理由が気になっている場合は、これはシーケンス・ツー・シーケンスのタスクではネットワークのすべての重みを保持するためです。<a href="../chapter3/1.html">Chapter 3</a> のテキスト分類モデルと比較してください。そこでは、事前学習済みモデルのヘッドはランダムに初期化されたネットワークに置き換えられていました。</p>
+</div>
+<p>次に行う必要があるのは、Hugging Face Hub にログインすることです。ノートブックでこのコードを実行している場合は、次のユーティリティ関数でログインできます。</p>
+<div class="codehilite"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">huggingface_hub</span><span class="w"> </span><span class="kn">import</span> <span class="n">notebook_login</span>
+
+<span class="n">notebook_login</span><span class="p">()</span>
+</code></pre></div>
+
+<p>これにより、認証情報を入力できるウィジェットが表示されます。あるいは、ターミナルでこのコマンドを実行して、そこでログインすることもできます。</p>
+<div class="codehilite"><pre><span></span><code>huggingface-cli login
+</code></pre></div>
+
+<p>{#if fw === 'pt'}</p>
+<p>学習中に ROUGE スコアを計算するには、要約を生成する必要があります。幸い、🤗 Transformers は専用の <code>Seq2SeqTrainingArguments</code> と <code>Seq2SeqTrainer</code> クラスを提供しており、これらを自動的に行うことができます！仕組みを確認するため、まず実験のハイパーパラメータやその他の引数を定義しましょう。</p>
+<div class="codehilite"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">transformers</span><span class="w"> </span><span class="kn">import</span> <span class="n">Seq2SeqTrainingArguments</span>
+
+<span class="n">batch_size</span> <span class="o">=</span> <span class="mi">8</span>
+<span class="n">num_train_epochs</span> <span class="o">=</span> <span class="mi">8</span>
+<span class="c1"># エポックごとに学習損失を表示します</span>
+<span class="n">logging_steps</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">tokenized_datasets</span><span class="p">[</span><span class="s2">"train"</span><span class="p">])</span> <span class="o">//</span> <span class="n">batch_size</span>
+<span class="n">model_name</span> <span class="o">=</span> <span class="n">model_checkpoint</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">"/"</span><span class="p">)[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+
+<span class="n">args</span> <span class="o">=</span> <span class="n">Seq2SeqTrainingArguments</span><span class="p">(</span>
+    <span class="n">output_dir</span><span class="o">=</span><span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">model_name</span><span class="si">}</span><span class="s2">-finetuned-amazon-en-es"</span><span class="p">,</span>
+    <span class="n">evaluation_strategy</span><span class="o">=</span><span class="s2">"epoch"</span><span class="p">,</span>
+    <span class="n">learning_rate</span><span class="o">=</span><span class="mf">5.6e-5</span><span class="p">,</span>
+    <span class="n">per_device_train_batch_size</span><span class="o">=</span><span class="n">batch_size</span><span class="p">,</span>
+    <span class="n">per_device_eval_batch_size</span><span class="o">=</span><span class="n">batch_size</span><span class="p">,</span>
+    <span class="n">weight_decay</span><span class="o">=</span><span class="mf">0.01</span><span class="p">,</span>
+    <span class="n">save_total_limit</span><span class="o">=</span><span class="mi">3</span><span class="p">,</span>
+    <span class="n">num_train_epochs</span><span class="o">=</span><span class="n">num_train_epochs</span><span class="p">,</span>
+    <span class="n">predict_with_generate</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+    <span class="n">logging_steps</span><span class="o">=</span><span class="n">logging_steps</span><span class="p">,</span>
+    <span class="n">push_to_hub</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+<span class="p">)</span>
+</code></pre></div>
+
+<p>ここでは、<code>predict_with_generate</code> 引数を設定して、評価中に要約を生成し、各エポックの ROUGE スコアを計算できるようにしました。<a href="../chapter1/1.html">Chapter 1</a> で議論したように、デコーダはトークンを1つずつ予測して推論を行い、これはモデルの <code>generate()</code> メソッドによって実装されています。<code>predict_with_generate=True</code> と設定すると、<code>Seq2SeqTrainer</code> に評価にそのメソッドを使うよう指示します。また、学習率、エポック数、ウェイト減衰のようなデフォルトのハイパーパラメータの一部を調整し、<code>save_total_limit</code> オプションを設定して、学習中に最大3つのチェックポイントだけを保存するようにしました。これは、mT5 の「小さい」版でも約1 GB のハードドライブ容量を使うため、保存するコピーの数を制限することで少し節約できるためです。</p>
+<p><code>push_to_hub=True</code> 引数により、学習後にモデルを Hub にプッシュできます。リポジトリは、<code>output_dir</code> で定義された場所のユーザープロファイルの下にあります。プッシュ先リポジトリの名前は <code>hub_model_id</code> 引数で指定できることに注意してください（特に、組織にプッシュする場合はこの引数を使う必要があります）。たとえば、モデルを <a href="https://huggingface.co/huggingface-course"><code>huggingface-course</code> 組織</a> にプッシュした際には、<code>Seq2SeqTrainingArguments</code> に <code>hub_model_id="huggingface-course/mt5-finetuned-amazon-en-es"</code> を追加しました。</p>
+<p>次に行う必要があるのは、学習中にモデルを評価できるよう、Trainer に <code>compute_metrics()</code> 関数を提供することです。要約については、モデルの予測に対して <code>rouge_score.compute()</code> を呼び出すだけよりも少し複雑です。ROUGE スコアを計算する前に、出力とラベルをテキストに<em>デコード</em>する必要があるためです。次の関数はまさにそれを行い、<code>nltk</code> の <code>sent_tokenize()</code> 関数も使って、要約の文を改行で区切ります。</p>
+<div class="codehilite"><pre><span></span><code><span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">compute_metrics</span><span class="p">(</span><span class="n">eval_pred</span><span class="p">):</span>
+    <span class="n">predictions</span><span class="p">,</span> <span class="n">labels</span> <span class="o">=</span> <span class="n">eval_pred</span>
+    <span class="c1"># 生成された要約をテキストにデコードします</span>
+    <span class="n">decoded_preds</span> <span class="o">=</span> <span class="n">tokenizer</span><span class="o">.</span><span class="n">batch_decode</span><span class="p">(</span><span class="n">predictions</span><span class="p">,</span> <span class="n">skip_special_tokens</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+    <span class="c1"># ラベル内の -100 はデコードできないので置き換えます</span>
+    <span class="n">labels</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="n">labels</span> <span class="o">!=</span> <span class="o">-</span><span class="mi">100</span><span class="p">,</span> <span class="n">labels</span><span class="p">,</span> <span class="n">tokenizer</span><span class="o">.</span><span class="n">pad_token_id</span><span class="p">)</span>
+    <span class="c1"># 参照要約をテキストにデコードします</span>
+    <span class="n">decoded_labels</span> <span class="o">=</span> <span class="n">tokenizer</span><span class="o">.</span><span class="n">batch_decode</span><span class="p">(</span><span class="n">labels</span><span class="p">,</span> <span class="n">skip_special_tokens</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+    <span class="c1"># ROUGE は各文の後に改行を想定します</span>
+    <span class="n">decoded_preds</span> <span class="o">=</span> <span class="p">[</span><span class="s2">"</span><span class="se">\n</span><span class="s2">"</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">sent_tokenize</span><span class="p">(</span><span class="n">pred</span><span class="o">.</span><span class="n">strip</span><span class="p">()))</span> <span class="k">for</span> <span class="n">pred</span> <span class="ow">in</span> <span class="n">decoded_preds</span><span class="p">]</span>
+    <span class="n">decoded_labels</span> <span class="o">=</span> <span class="p">[</span><span class="s2">"</span><span class="se">\n</span><span class="s2">"</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">sent_tokenize</span><span class="p">(</span><span class="n">label</span><span class="o">.</span><span class="n">strip</span><span class="p">()))</span> <span class="k">for</span> <span class="n">label</span> <span class="ow">in</span> <span class="n">decoded_labels</span><span class="p">]</span>
+    <span class="c1"># ROUGE スコアを計算します</span>
+    <span class="n">result</span> <span class="o">=</span> <span class="n">rouge_score</span><span class="o">.</span><span class="n">compute</span><span class="p">(</span>
+        <span class="n">predictions</span><span class="o">=</span><span class="n">decoded_preds</span><span class="p">,</span> <span class="n">references</span><span class="o">=</span><span class="n">decoded_labels</span><span class="p">,</span> <span class="n">use_stemmer</span><span class="o">=</span><span class="kc">True</span>
+    <span class="p">)</span>
+    <span class="c1"># 中央値のスコアを取り出します</span>
+    <span class="n">result</span> <span class="o">=</span> <span class="p">{</span><span class="n">key</span><span class="p">:</span> <span class="n">value</span><span class="o">.</span><span class="n">mid</span><span class="o">.</span><span class="n">fmeasure</span> <span class="o">*</span> <span class="mi">100</span> <span class="k">for</span> <span class="n">key</span><span class="p">,</span> <span class="n">value</span> <span class="ow">in</span> <span class="n">result</span><span class="o">.</span><span class="n">items</span><span class="p">()}</span>
+    <span class="k">return</span> <span class="p">{</span><span class="n">k</span><span class="p">:</span> <span class="nb">round</span><span class="p">(</span><span class="n">v</span><span class="p">,</span> <span class="mi">4</span><span class="p">)</span> <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">result</span><span class="o">.</span><span class="n">items</span><span class="p">()}</span>
+</code></pre></div>
+
+<p>{/if}</p>
+<p>次に、シーケンス・ツー・シーケンスタスク用のデータコレータを定義する必要があります。mT5 はエンコーダ・デコーダ Transformer モデルであるため、バッチを準備する際の微妙な点の1つは、デコード中にラベルを右に1つシフトする必要があることです。これは、デコーダが以前の正解ラベルだけを見て、現在や未来のラベルは見ないようにするために必要です。現在のラベルや未来のラベルは、モデルが簡単に記憶できてしまいます。これは、<a href="6.html">因果言語モデリング</a> のようなタスクで入力にマスク付きセルフアテンションが適用される方法と似ています。</p>
+<p>幸い、🤗 Transformers は <code>DataCollatorForSeq2Seq</code> コレータを提供しており、入力とラベルを動的にパディングしてくれます。このコレータをインスタンス化するには、<code>tokenizer</code> と <code>model</code> を提供するだけです。</p>
+<p>{#if fw === 'pt'}</p>
+<div class="codehilite"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">transformers</span><span class="w"> </span><span class="kn">import</span> <span class="n">DataCollatorForSeq2Seq</span>
+
+<span class="n">data_collator</span> <span class="o">=</span> <span class="n">DataCollatorForSeq2Seq</span><span class="p">(</span><span class="n">tokenizer</span><span class="p">,</span> <span class="n">model</span><span class="o">=</span><span class="n">model</span><span class="p">)</span>
+</code></pre></div>
+
+<p>{:else}</p>
+<div class="codehilite"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">transformers</span><span class="w"> </span><span class="kn">import</span> <span class="n">DataCollatorForSeq2Seq</span>
+
+<span class="n">data_collator</span> <span class="o">=</span> <span class="n">DataCollatorForSeq2Seq</span><span class="p">(</span><span class="n">tokenizer</span><span class="p">,</span> <span class="n">model</span><span class="o">=</span><span class="n">model</span><span class="p">,</span> <span class="n">return_tensors</span><span class="o">=</span><span class="s2">"tf"</span><span class="p">)</span>
+</code></pre></div>
+
+<p>{/if}</p>
+<p>このコレータに小さなバッチの例を与えると何が生成されるか見てみましょう。まず、文字列の列を削除する必要があります。コレータはこれらの要素をパディングする方法を知らないためです。</p>
+<div class="codehilite"><pre><span></span><code><span class="n">tokenized_datasets</span> <span class="o">=</span> <span class="n">tokenized_datasets</span><span class="o">.</span><span class="n">remove_columns</span><span class="p">(</span>
+    <span class="n">books_dataset</span><span class="p">[</span><span class="s2">"train"</span><span class="p">]</span><span class="o">.</span><span class="n">column_names</span>
+<span class="p">)</span>
+</code></pre></div>
+
+<p>コレータは <code>dict</code> のリストを想定しており、各 <code>dict</code> がデータセット内の単一の例を表すため、データコレータに渡す前にデータを想定される形式に整える必要もあります。</p>
+<div class="codehilite"><pre><span></span><code><span class="n">features</span> <span class="o">=</span> <span class="p">[</span><span class="n">tokenized_datasets</span><span class="p">[</span><span class="s2">"train"</span><span class="p">][</span><span class="n">i</span><span class="p">]</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">2</span><span class="p">)]</span>
+<span class="n">data_collator</span><span class="p">(</span><span class="n">features</span><span class="p">)</span>
+</code></pre></div>
+
+<p>```python out
+{'attention_mask': tensor([[1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
+         1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0],
+        [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
+         1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1]]), 'input_ids': tensor([[  1494,    259,   8622,    390,    259,    262,   2316,   3435,    955,
+            772,    281,    772,   1617,    263,    305,  14701,    260,   1385,
+           3031,    259,  24146,    332,   1037,    259,  43906,    305,    336,
+            260,      1,      0,      0,      0,      0,      0,      0],
+        [   259,  27531,  13483,    259,   7505,    260, 112240,  15192,    305,
+          53198,    276,    259,  74060,    263,    260,    459,  25640,    776,
+           2119,    336,    259,   2220,    259,  18896,    288,   4906,    288,
+           1037,   3931,    260,   7083, 101476,   1143,    260,      1]]), 'labels': tensor([[ 7483,   259,  2364, 15695,     1,  -100],
+        [  259, 27531, 13483,   259,  7505,     1]]), 'decoder_input_ids': tensor([[    0,  7483,   259,  2364, 15695,     1],
+        [    0,   259, 27531, 13483,   259,  7505]])}</p>
+<div class="codehilite"><pre><span></span><code>ここで主に注目すべきは、最初の例が2番目の例より長いため、2番目の例の `input_ids` と `attention_mask` が右側に `[PAD]` トークン（その ID は `0`）でパディングされていることです。同様に、`labels` が `-100` でパディングされていることが分かります。これは、パディングトークンが損失関数に無視されるようにするためです。そして最後に、新しい `decoder_input_ids` が見えます。これは、ラベルの先頭に `[PAD]` トークンを挿入することでラベルを右にシフトしています。
+
+{#if fw === 'pt'}
+
+ついに、学習に必要な材料がすべてそろいました！あとは、標準引数で Trainer をインスタンス化するだけです。
+
+```python
+from transformers import Seq2SeqTrainer
+
+trainer = Seq2SeqTrainer(
+    model,
+    args,
+    train_dataset=tokenized_datasets["train"],
+    eval_dataset=tokenized_datasets["validation"],
+    data_collator=data_collator,
+    tokenizer=tokenizer,
+    compute_metrics=compute_metrics,
+)
+</code></pre></div>
+
+<p>そして学習を実行します。</p>
+<div class="codehilite"><pre><span></span><code><span class="n">trainer</span><span class="o">.</span><span class="n">train</span><span class="p">()</span>
+</code></pre></div>
+
+<p>学習中は、学習損失が減少し、ROUGE スコアがエポックごとに増加する様子が見えるはずです。学習が完了したら、<code>Trainer.evaluate()</code> を実行することで最終の ROUGE スコアを確認できます。</p>
+<div class="codehilite"><pre><span></span><code><span class="n">trainer</span><span class="o">.</span><span class="n">evaluate</span><span class="p">()</span>
+</code></pre></div>
+
+<p>```python out
+{'eval_loss': 3.028524398803711,
+ 'eval_rouge1': 16.9728,
+ 'eval_rouge2': 8.2969,
+ 'eval_rougeL': 16.8366,
+ 'eval_rougeLsum': 16.851,
+ 'eval_gen_len': 10.1597,
+ 'eval_runtime': 6.1054,
+ 'eval_samples_per_second': 38.982,
+ 'eval_steps_per_second': 4.914}</p>
+<div class="codehilite"><pre><span></span><code>スコアから、私たちのモデルが lead-3 ベースラインを楽々上回っていることが分かります。素晴らしい！最後に行うのは、モデルの重みを Hub にプッシュすることです。次のようにします。
+</code></pre></div>
+
+<p>trainer.push_to_hub(commit_message="Training complete", tags="summarization")</p>
+<div class="codehilite"><pre><span></span><code>```python out
+'https://huggingface.co/huggingface-course/mt5-finetuned-amazon-en-es/commit/aa0536b829b28e73e1e4b94b8a5aacec420d40e0'
+</code></pre></div>
+
+<p>これにより、チェックポイントと設定ファイルが <code>output_dir</code> に保存され、その後すべてのファイルが Hub にアップロードされます。<code>tags</code> 引数を指定することで、Hub のウィジェットが、mT5 アーキテクチャに関連付けられたデフォルトのテキスト生成のものではなく、要約パイプラインのものになることも保証します（モデルタグの詳細は、<a href="https://huggingface.co/docs/hub/main#how-is-a-models-type-of-inference-api-and-widget-determined">🤗 Hub ドキュメント</a> を参照してください）。<code>trainer.push_to_hub()</code> からの出力は、Git コミットハッシュへの URL です。これにより、モデルリポジトリに加えられた変更を簡単に確認できます！</p>
+<p>このセクションを締めくくるため、🤗 Accelerate が提供する低レベルの機能を使って mT5 をファインチューニングする方法も見ていきましょう。</p>
+<p>{:else}</p>
+<p>ほぼ学習の準備ができました！上に定義したデータコレータを使って、データセットを <code>tf.data.Dataset</code> に変換し、その後モデルを <code>compile()</code> して <code>fit()</code> するだけです。まず、データセットです。</p>
+<div class="codehilite"><pre><span></span><code><span class="n">tf_train_dataset</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">prepare_tf_dataset</span><span class="p">(</span>
+    <span class="n">tokenized_datasets</span><span class="p">[</span><span class="s2">"train"</span><span class="p">],</span>
+    <span class="n">collate_fn</span><span class="o">=</span><span class="n">data_collator</span><span class="p">,</span>
+    <span class="n">shuffle</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+    <span class="n">batch_size</span><span class="o">=</span><span class="mi">8</span><span class="p">,</span>
+<span class="p">)</span>
+<span class="n">tf_eval_dataset</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">prepare_tf_dataset</span><span class="p">(</span>
+    <span class="n">tokenized_datasets</span><span class="p">[</span><span class="s2">"validation"</span><span class="p">],</span>
+    <span class="n">collate_fn</span><span class="o">=</span><span class="n">data_collator</span><span class="p">,</span>
+    <span class="n">shuffle</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+    <span class="n">batch_size</span><span class="o">=</span><span class="mi">8</span><span class="p">,</span>
+<span class="p">)</span>
+</code></pre></div>
+
+<p>次に、学習のハイパーパラメータを定義し、コンパイルします。</p>
+<div class="codehilite"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">transformers</span><span class="w"> </span><span class="kn">import</span> <span class="n">create_optimizer</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">tensorflow</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">tf</span>
+
+<span class="c1"># 学習ステップ数は、データセットのサンプル数をバッチサイズで割り、総エポック数を掛けたものです。</span>
+<span class="c1"># ここでの tf_train_dataset はバッチ化された tf.data.Dataset であり、元の Hugging Face Dataset ではないため、</span>
+<span class="c1"># その len() はすでに num_samples // batch_size になっています。</span>
+<span class="n">num_train_epochs</span> <span class="o">=</span> <span class="mi">8</span>
+<span class="n">num_train_steps</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">tf_train_dataset</span><span class="p">)</span> <span class="o">*</span> <span class="n">num_train_epochs</span>
+<span class="n">model_name</span> <span class="o">=</span> <span class="n">model_checkpoint</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">"/"</span><span class="p">)[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+
+<span class="n">optimizer</span><span class="p">,</span> <span class="n">schedule</span> <span class="o">=</span> <span class="n">create_optimizer</span><span class="p">(</span>
+    <span class="n">init_lr</span><span class="o">=</span><span class="mf">5.6e-5</span><span class="p">,</span>
+    <span class="n">num_warmup_steps</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span>
+    <span class="n">num_train_steps</span><span class="o">=</span><span class="n">num_train_steps</span><span class="p">,</span>
+    <span class="n">weight_decay_rate</span><span class="o">=</span><span class="mf">0.01</span><span class="p">,</span>
+<span class="p">)</span>
+
+<span class="n">model</span><span class="o">.</span><span class="n">compile</span><span class="p">(</span><span class="n">optimizer</span><span class="o">=</span><span class="n">optimizer</span><span class="p">)</span>
+
+<span class="c1"># 混合精度 float16 で学習します</span>
+<span class="n">tf</span><span class="o">.</span><span class="n">keras</span><span class="o">.</span><span class="n">mixed_precision</span><span class="o">.</span><span class="n">set_global_policy</span><span class="p">(</span><span class="s2">"mixed_float16"</span><span class="p">)</span>
+</code></pre></div>
+
+<p>そして最後に、モデルを fit します。<code>PushToHubCallback</code> を使って各エポックの後にモデルを Hub に保存します。これにより、後で推論に使うことができます。</p>
+<div class="codehilite"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">transformers.keras_callbacks</span><span class="w"> </span><span class="kn">import</span> <span class="n">PushToHubCallback</span>
+
+<span class="n">callback</span> <span class="o">=</span> <span class="n">PushToHubCallback</span><span class="p">(</span>
+    <span class="n">output_dir</span><span class="o">=</span><span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">model_name</span><span class="si">}</span><span class="s2">-finetuned-amazon-en-es"</span><span class="p">,</span> <span class="n">tokenizer</span><span class="o">=</span><span class="n">tokenizer</span>
+<span class="p">)</span>
+
+<span class="n">model</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span>
+    <span class="n">tf_train_dataset</span><span class="p">,</span> <span class="n">validation_data</span><span class="o">=</span><span class="n">tf_eval_dataset</span><span class="p">,</span> <span class="n">callbacks</span><span class="o">=</span><span class="p">[</span><span class="n">callback</span><span class="p">],</span> <span class="n">epochs</span><span class="o">=</span><span class="mi">8</span>
+<span class="p">)</span>
+</code></pre></div>
+
+<p>学習中に損失値はいくつか得られましたが、本来見たいのは先ほど計算した ROUGE 指標です。その指標を得るには、モデルから出力を生成し、文字列に変換する必要があります。ROUGE 指標が比較するためのラベルと予測のリストを構築しましょう（このセクションでインポートエラーが出る場合は、<code>!pip install tqdm</code> が必要になるかもしれません）。さらに、劇的にパフォーマンスを高める工夫も使います。生成コードを TensorFlow の高速化線形代数コンパイラである <a href="https://www.tensorflow.org/xla">XLA</a> でコンパイルします。XLA はモデルの計算グラフにさまざまな最適化を適用し、速度とメモリ使用量を大きく改善します。Hugging Face の<a href="https://huggingface.co/blog/tf-xla-generate">ブログ</a>で説明されているように、XLA は入力の形状があまり変化しないときに最も効果を発揮します。これに対応するため、入力を128の倍数までパディングし、パディング用コレータで新しいデータセットを作り、生成関数に <code>@tf.function(jit_compile=True)</code> デコレータを適用して、関数全体を XLA でコンパイルするようマークします。</p>
+<div class="codehilite"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">tqdm</span><span class="w"> </span><span class="kn">import</span> <span class="n">tqdm</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
+
+<span class="n">generation_data_collator</span> <span class="o">=</span> <span class="n">DataCollatorForSeq2Seq</span><span class="p">(</span>
+    <span class="n">tokenizer</span><span class="p">,</span> <span class="n">model</span><span class="o">=</span><span class="n">model</span><span class="p">,</span> <span class="n">return_tensors</span><span class="o">=</span><span class="s2">"tf"</span><span class="p">,</span> <span class="n">pad_to_multiple_of</span><span class="o">=</span><span class="mi">320</span>
+<span class="p">)</span>
+
+<span class="n">tf_generate_dataset</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">prepare_tf_dataset</span><span class="p">(</span>
+    <span class="n">tokenized_datasets</span><span class="p">[</span><span class="s2">"validation"</span><span class="p">],</span>
+    <span class="n">collate_fn</span><span class="o">=</span><span class="n">generation_data_collator</span><span class="p">,</span>
+    <span class="n">shuffle</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+    <span class="n">batch_size</span><span class="o">=</span><span class="mi">8</span><span class="p">,</span>
+    <span class="n">drop_remainder</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+<span class="p">)</span>
+
+
+<span class="nd">@tf</span><span class="o">.</span><span class="n">function</span><span class="p">(</span><span class="n">jit_compile</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">generate_with_xla</span><span class="p">(</span><span class="n">batch</span><span class="p">):</span>
+    <span class="k">return</span> <span class="n">model</span><span class="o">.</span><span class="n">generate</span><span class="p">(</span>
+        <span class="n">input_ids</span><span class="o">=</span><span class="n">batch</span><span class="p">[</span><span class="s2">"input_ids"</span><span class="p">],</span>
+        <span class="n">attention_mask</span><span class="o">=</span><span class="n">batch</span><span class="p">[</span><span class="s2">"attention_mask"</span><span class="p">],</span>
+        <span class="n">max_new_tokens</span><span class="o">=</span><span class="mi">32</span><span class="p">,</span>
+    <span class="p">)</span>
+
+
+<span class="n">all_preds</span> <span class="o">=</span> <span class="p">[]</span>
+<span class="n">all_labels</span> <span class="o">=</span> <span class="p">[]</span>
+<span class="k">for</span> <span class="n">batch</span><span class="p">,</span> <span class="n">labels</span> <span class="ow">in</span> <span class="n">tqdm</span><span class="p">(</span><span class="n">tf_generate_dataset</span><span class="p">):</span>
+    <span class="n">predictions</span> <span class="o">=</span> <span class="n">generate_with_xla</span><span class="p">(</span><span class="n">batch</span><span class="p">)</span>
+    <span class="n">decoded_preds</span> <span class="o">=</span> <span class="n">tokenizer</span><span class="o">.</span><span class="n">batch_decode</span><span class="p">(</span><span class="n">predictions</span><span class="p">,</span> <span class="n">skip_special_tokens</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+    <span class="n">labels</span> <span class="o">=</span> <span class="n">labels</span><span class="o">.</span><span class="n">numpy</span><span class="p">()</span>
+    <span class="n">labels</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="n">labels</span> <span class="o">!=</span> <span class="o">-</span><span class="mi">100</span><span class="p">,</span> <span class="n">labels</span><span class="p">,</span> <span class="n">tokenizer</span><span class="o">.</span><span class="n">pad_token_id</span><span class="p">)</span>
+    <span class="n">decoded_labels</span> <span class="o">=</span> <span class="n">tokenizer</span><span class="o">.</span><span class="n">batch_decode</span><span class="p">(</span><span class="n">labels</span><span class="p">,</span> <span class="n">skip_special_tokens</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+    <span class="n">decoded_preds</span> <span class="o">=</span> <span class="p">[</span><span class="s2">"</span><span class="se">\n</span><span class="s2">"</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">sent_tokenize</span><span class="p">(</span><span class="n">pred</span><span class="o">.</span><span class="n">strip</span><span class="p">()))</span> <span class="k">for</span> <span class="n">pred</span> <span class="ow">in</span> <span class="n">decoded_preds</span><span class="p">]</span>
+    <span class="n">decoded_labels</span> <span class="o">=</span> <span class="p">[</span><span class="s2">"</span><span class="se">\n</span><span class="s2">"</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">sent_tokenize</span><span class="p">(</span><span class="n">label</span><span class="o">.</span><span class="n">strip</span><span class="p">()))</span> <span class="k">for</span> <span class="n">label</span> <span class="ow">in</span> <span class="n">decoded_labels</span><span class="p">]</span>
+    <span class="n">all_preds</span><span class="o">.</span><span class="n">extend</span><span class="p">(</span><span class="n">decoded_preds</span><span class="p">)</span>
+    <span class="n">all_labels</span><span class="o">.</span><span class="n">extend</span><span class="p">(</span><span class="n">decoded_labels</span><span class="p">)</span>
+</code></pre></div>
+
+<p>ラベルと予測の文字列のリストが得られたら、ROUGE スコアの計算は簡単です。</p>
+<div class="codehilite"><pre><span></span><code><span class="n">result</span> <span class="o">=</span> <span class="n">rouge_score</span><span class="o">.</span><span class="n">compute</span><span class="p">(</span>
+    <span class="n">predictions</span><span class="o">=</span><span class="n">decoded_preds</span><span class="p">,</span> <span class="n">references</span><span class="o">=</span><span class="n">decoded_labels</span><span class="p">,</span> <span class="n">use_stemmer</span><span class="o">=</span><span class="kc">True</span>
+<span class="p">)</span>
+<span class="n">result</span> <span class="o">=</span> <span class="p">{</span><span class="n">key</span><span class="p">:</span> <span class="n">value</span><span class="o">.</span><span class="n">mid</span><span class="o">.</span><span class="n">fmeasure</span> <span class="o">*</span> <span class="mi">100</span> <span class="k">for</span> <span class="n">key</span><span class="p">,</span> <span class="n">value</span> <span class="ow">in</span> <span class="n">result</span><span class="o">.</span><span class="n">items</span><span class="p">()}</span>
+<span class="p">{</span><span class="n">k</span><span class="p">:</span> <span class="nb">round</span><span class="p">(</span><span class="n">v</span><span class="p">,</span> <span class="mi">4</span><span class="p">)</span> <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">result</span><span class="o">.</span><span class="n">items</span><span class="p">()}</span>
+</code></pre></div>
+
+<div class="codehilite"><pre><span></span><code>{'rouge1': 31.4815, 'rouge2': 25.4386, 'rougeL': 31.4815, 'rougeLsum': 31.4815}
+</code></pre></div>
+
+<p>{/if}</p>
+<p>{#if fw === 'pt'}</p>
+<h2>🤗 Accelerate で mT5 をファインチューニングする</h2>
+<p>🤗 Accelerate でモデルをファインチューニングするのは、<a href="../chapter3/1.html">Chapter 3</a> で出会ったテキスト分類の例と非常によく似ています。主な違いは、学習中に要約を明示的に生成する必要があることと、ROUGE スコアの計算方法を定義する必要があることです（<code>Seq2SeqTrainer</code> は生成を代わりに行ってくれたことを思い出してください）。これら2つの要件を 🤗 Accelerate の中でどのように実装できるか見ていきましょう！</p>
+<h3>学習に必要なものをすべて準備する</h3>
+<p>まず行う必要があるのは、各スプリットの <code>DataLoader</code> を作成することです。PyTorch のデータローダはテンソルのバッチを想定するため、データセットの形式を <code>"torch"</code> に設定する必要があります。</p>
+<div class="codehilite"><pre><span></span><code><span class="n">tokenized_datasets</span><span class="o">.</span><span class="n">set_format</span><span class="p">(</span><span class="s2">"torch"</span><span class="p">)</span>
+</code></pre></div>
+
+<p>テンソルだけで構成されたデータセットが得られたので、次に行うのは <code>DataCollatorForSeq2Seq</code> を再びインスタンス化することです。そのためにはモデルの新しい版が必要なので、キャッシュから再び読み込みましょう。</p>
+<div class="codehilite"><pre><span></span><code><span class="n">model</span> <span class="o">=</span> <span class="n">AutoModelForSeq2SeqLM</span><span class="o">.</span><span class="n">from_pretrained</span><span class="p">(</span><span class="n">model_checkpoint</span><span class="p">)</span>
+</code></pre></div>
+
+<p>その後、データコレータをインスタンス化し、これを使ってデータローダを定義できます。</p>
+<div class="codehilite"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">torch.utils.data</span><span class="w"> </span><span class="kn">import</span> <span class="n">DataLoader</span>
+
+<span class="n">batch_size</span> <span class="o">=</span> <span class="mi">8</span>
+<span class="n">train_dataloader</span> <span class="o">=</span> <span class="n">DataLoader</span><span class="p">(</span>
+    <span class="n">tokenized_datasets</span><span class="p">[</span><span class="s2">"train"</span><span class="p">],</span>
+    <span class="n">shuffle</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+    <span class="n">collate_fn</span><span class="o">=</span><span class="n">data_collator</span><span class="p">,</span>
+    <span class="n">batch_size</span><span class="o">=</span><span class="n">batch_size</span><span class="p">,</span>
+<span class="p">)</span>
+<span class="n">eval_dataloader</span> <span class="o">=</span> <span class="n">DataLoader</span><span class="p">(</span>
+    <span class="n">tokenized_datasets</span><span class="p">[</span><span class="s2">"validation"</span><span class="p">],</span> <span class="n">collate_fn</span><span class="o">=</span><span class="n">data_collator</span><span class="p">,</span> <span class="n">batch_size</span><span class="o">=</span><span class="n">batch_size</span>
+<span class="p">)</span>
+</code></pre></div>
+
+<p>次に行うのは、使いたいオプティマイザを定義することです。他の例と同様に、ほとんどの問題でうまく機能する <code>AdamW</code> を使います。</p>
+<div class="codehilite"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">torch.optim</span><span class="w"> </span><span class="kn">import</span> <span class="n">AdamW</span>
+
+<span class="n">optimizer</span> <span class="o">=</span> <span class="n">AdamW</span><span class="p">(</span><span class="n">model</span><span class="o">.</span><span class="n">parameters</span><span class="p">(),</span> <span class="n">lr</span><span class="o">=</span><span class="mf">2e-5</span><span class="p">)</span>
+</code></pre></div>
+
+<p>最後に、モデル、オプティマイザ、データローダを <code>accelerator.prepare()</code> メソッドに渡します。</p>
+<div class="codehilite"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">accelerate</span><span class="w"> </span><span class="kn">import</span> <span class="n">Accelerator</span>
+
+<span class="n">accelerator</span> <span class="o">=</span> <span class="n">Accelerator</span><span class="p">()</span>
+<span class="n">model</span><span class="p">,</span> <span class="n">optimizer</span><span class="p">,</span> <span class="n">train_dataloader</span><span class="p">,</span> <span class="n">eval_dataloader</span> <span class="o">=</span> <span class="n">accelerator</span><span class="o">.</span><span class="n">prepare</span><span class="p">(</span>
+    <span class="n">model</span><span class="p">,</span> <span class="n">optimizer</span><span class="p">,</span> <span class="n">train_dataloader</span><span class="p">,</span> <span class="n">eval_dataloader</span>
+<span class="p">)</span>
+</code></pre></div>
+
+<div class="callout callout-tip">
+<p class="callout-title">💡 ヒント</p>
+<p>🚨 TPU で学習する場合は、上のコードをすべて専用の学習関数の中に移動する必要があります。詳細は <a href="../chapter3/1.html">Chapter 3</a> を参照してください。</p>
+</div>
+<p>オブジェクトを準備したので、残りは3つです。</p>
+<ul>
+<li>学習率スケジュールを定義すること。</li>
+<li>評価のために要約を後処理する関数を実装すること。</li>
+<li>モデルをプッシュできるリポジトリを Hub に作成すること。</li>
+</ul>
+<p>学習率スケジュールについては、前のセクションの標準的な線形のものを使います。</p>
+<div class="codehilite"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">transformers</span><span class="w"> </span><span class="kn">import</span> <span class="n">get_scheduler</span>
+
+<span class="n">num_train_epochs</span> <span class="o">=</span> <span class="mi">10</span>
+<span class="n">num_update_steps_per_epoch</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">train_dataloader</span><span class="p">)</span>
+<span class="n">num_training_steps</span> <span class="o">=</span> <span class="n">num_train_epochs</span> <span class="o">*</span> <span class="n">num_update_steps_per_epoch</span>
+
+<span class="n">lr_scheduler</span> <span class="o">=</span> <span class="n">get_scheduler</span><span class="p">(</span>
+    <span class="s2">"linear"</span><span class="p">,</span>
+    <span class="n">optimizer</span><span class="o">=</span><span class="n">optimizer</span><span class="p">,</span>
+    <span class="n">num_warmup_steps</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span>
+    <span class="n">num_training_steps</span><span class="o">=</span><span class="n">num_training_steps</span><span class="p">,</span>
+<span class="p">)</span>
+</code></pre></div>
+
+<p>後処理については、生成された要約を改行で区切られた文に分割する関数が必要です。これは ROUGE 指標が想定する形式であり、次のコードスニペットで実現できます。</p>
+<div class="codehilite"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">postprocess_text</span><span class="p">(</span><span class="n">preds</span><span class="p">,</span> <span class="n">labels</span><span class="p">):</span>
+    <span class="n">preds</span> <span class="o">=</span> <span class="p">[</span><span class="n">pred</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span> <span class="k">for</span> <span class="n">pred</span> <span class="ow">in</span> <span class="n">preds</span><span class="p">]</span>
+    <span class="n">labels</span> <span class="o">=</span> <span class="p">[</span><span class="n">label</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span> <span class="k">for</span> <span class="n">label</span> <span class="ow">in</span> <span class="n">labels</span><span class="p">]</span>
+
+    <span class="c1"># ROUGE は各文の後に改行を想定します</span>
+    <span class="n">preds</span> <span class="o">=</span> <span class="p">[</span><span class="s2">"</span><span class="se">\n</span><span class="s2">"</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">nltk</span><span class="o">.</span><span class="n">sent_tokenize</span><span class="p">(</span><span class="n">pred</span><span class="p">))</span> <span class="k">for</span> <span class="n">pred</span> <span class="ow">in</span> <span class="n">preds</span><span class="p">]</span>
+    <span class="n">labels</span> <span class="o">=</span> <span class="p">[</span><span class="s2">"</span><span class="se">\n</span><span class="s2">"</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">nltk</span><span class="o">.</span><span class="n">sent_tokenize</span><span class="p">(</span><span class="n">label</span><span class="p">))</span> <span class="k">for</span> <span class="n">label</span> <span class="ow">in</span> <span class="n">labels</span><span class="p">]</span>
+
+    <span class="k">return</span> <span class="n">preds</span><span class="p">,</span> <span class="n">labels</span>
+</code></pre></div>
+
+<p><code>Seq2SeqTrainer</code> の <code>compute_metrics()</code> 関数を定義した方法を思い出せば、これはお馴染みに見えるはずです。</p>
+<p>最後に、Hugging Face Hub にモデルリポジトリを作成する必要があります。これには、適切な名前を持つ 🤗 Hub ライブラリを使うことができます。リポジトリの名前を定義するだけで、ライブラリにはリポジトリ ID とユーザープロファイルを組み合わせるユーティリティ関数があります。</p>
+<div class="codehilite"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">huggingface_hub</span><span class="w"> </span><span class="kn">import</span> <span class="n">get_full_repo_name</span>
+
+<span class="n">model_name</span> <span class="o">=</span> <span class="s2">"test-bert-finetuned-squad-accelerate"</span>
+<span class="n">repo_name</span> <span class="o">=</span> <span class="n">get_full_repo_name</span><span class="p">(</span><span class="n">model_name</span><span class="p">)</span>
+<span class="n">repo_name</span>
+</code></pre></div>
+
+<p>```python out
+'lewtun/mt5-finetuned-amazon-en-es-accelerate'</p>
+<div class="codehilite"><pre><span></span><code>このリポジトリ名を使って、学習成果物を格納する結果ディレクトリにローカル版をクローンできます。
+
+```python
+from huggingface_hub import Repository
+
+output_dir = "results-mt5-finetuned-squad-accelerate"
+repo = Repository(output_dir, clone_from=repo_name)
+</code></pre></div>
+
+<p>これにより、学習中に <code>repo.push_to_hub()</code> メソッドを呼び出すことで、成果物を Hub にプッシュできます！では、学習ループを書いて分析を締めくくりましょう。</p>
+<h3>学習ループ</h3>
+<p>要約の学習ループは、これまでに出会った他の 🤗 Accelerate の例とかなり似ており、大まかに4つの主要なステップに分かれています。</p>
+<ol>
+<li>各エポックで <code>train_dataloader</code> のすべての例を反復してモデルを学習する。</li>
+<li>各エポックの終わりにモデルの要約を生成する。まずトークンを生成し、その後それら（および参照要約）をテキストにデコードする。</li>
+<li>先ほど見たのと同じ手法で ROUGE スコアを計算する。</li>
+<li>チェックポイントを保存し、すべてを Hub にプッシュする。ここでは <code>Repository</code> オブジェクトの便利な <code>blocking=False</code> 引数に依存し、エポックごとのチェックポイントを<em>非同期</em>にプッシュします。これにより、GB サイズのモデルに関連するやや遅いアップロードを待つことなく、学習を続けることができます！</li>
+</ol>
+<p>これらのステップは、次のコードブロックで確認できます。</p>
+<div class="codehilite"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">tqdm.auto</span><span class="w"> </span><span class="kn">import</span> <span class="n">tqdm</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">torch</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
+
+<span class="n">progress_bar</span> <span class="o">=</span> <span class="n">tqdm</span><span class="p">(</span><span class="nb">range</span><span class="p">(</span><span class="n">num_training_steps</span><span class="p">))</span>
+
+<span class="k">for</span> <span class="n">epoch</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">num_train_epochs</span><span class="p">):</span>
+    <span class="c1"># 学習</span>
+    <span class="n">model</span><span class="o">.</span><span class="n">train</span><span class="p">()</span>
+    <span class="k">for</span> <span class="n">step</span><span class="p">,</span> <span class="n">batch</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">train_dataloader</span><span class="p">):</span>
+        <span class="n">outputs</span> <span class="o">=</span> <span class="n">model</span><span class="p">(</span><span class="o">**</span><span class="n">batch</span><span class="p">)</span>
+        <span class="n">loss</span> <span class="o">=</span> <span class="n">outputs</span><span class="o">.</span><span class="n">loss</span>
+        <span class="n">accelerator</span><span class="o">.</span><span class="n">backward</span><span class="p">(</span><span class="n">loss</span><span class="p">)</span>
+
+        <span class="n">optimizer</span><span class="o">.</span><span class="n">step</span><span class="p">()</span>
+        <span class="n">lr_scheduler</span><span class="o">.</span><span class="n">step</span><span class="p">()</span>
+        <span class="n">optimizer</span><span class="o">.</span><span class="n">zero_grad</span><span class="p">()</span>
+        <span class="n">progress_bar</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
+
+    <span class="c1"># 評価</span>
+    <span class="n">model</span><span class="o">.</span><span class="n">eval</span><span class="p">()</span>
+    <span class="k">for</span> <span class="n">step</span><span class="p">,</span> <span class="n">batch</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">eval_dataloader</span><span class="p">):</span>
+        <span class="k">with</span> <span class="n">torch</span><span class="o">.</span><span class="n">no_grad</span><span class="p">():</span>
+            <span class="n">generated_tokens</span> <span class="o">=</span> <span class="n">accelerator</span><span class="o">.</span><span class="n">unwrap_model</span><span class="p">(</span><span class="n">model</span><span class="p">)</span><span class="o">.</span><span class="n">generate</span><span class="p">(</span>
+                <span class="n">batch</span><span class="p">[</span><span class="s2">"input_ids"</span><span class="p">],</span>
+                <span class="n">attention_mask</span><span class="o">=</span><span class="n">batch</span><span class="p">[</span><span class="s2">"attention_mask"</span><span class="p">],</span>
+            <span class="p">)</span>
+
+            <span class="n">generated_tokens</span> <span class="o">=</span> <span class="n">accelerator</span><span class="o">.</span><span class="n">pad_across_processes</span><span class="p">(</span>
+                <span class="n">generated_tokens</span><span class="p">,</span> <span class="n">dim</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">pad_index</span><span class="o">=</span><span class="n">tokenizer</span><span class="o">.</span><span class="n">pad_token_id</span>
+            <span class="p">)</span>
+            <span class="n">labels</span> <span class="o">=</span> <span class="n">batch</span><span class="p">[</span><span class="s2">"labels"</span><span class="p">]</span>
+
+            <span class="c1"># 最大長までパディングしていない場合は、ラベルもパディングする必要があります</span>
+            <span class="n">labels</span> <span class="o">=</span> <span class="n">accelerator</span><span class="o">.</span><span class="n">pad_across_processes</span><span class="p">(</span>
+                <span class="n">batch</span><span class="p">[</span><span class="s2">"labels"</span><span class="p">],</span> <span class="n">dim</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">pad_index</span><span class="o">=</span><span class="n">tokenizer</span><span class="o">.</span><span class="n">pad_token_id</span>
+            <span class="p">)</span>
+
+            <span class="n">generated_tokens</span> <span class="o">=</span> <span class="n">accelerator</span><span class="o">.</span><span class="n">gather</span><span class="p">(</span><span class="n">generated_tokens</span><span class="p">)</span><span class="o">.</span><span class="n">cpu</span><span class="p">()</span><span class="o">.</span><span class="n">numpy</span><span class="p">()</span>
+            <span class="n">labels</span> <span class="o">=</span> <span class="n">accelerator</span><span class="o">.</span><span class="n">gather</span><span class="p">(</span><span class="n">labels</span><span class="p">)</span><span class="o">.</span><span class="n">cpu</span><span class="p">()</span><span class="o">.</span><span class="n">numpy</span><span class="p">()</span>
+
+            <span class="c1"># ラベル内の -100 はデコードできないので置き換えます</span>
+            <span class="n">labels</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="n">labels</span> <span class="o">!=</span> <span class="o">-</span><span class="mi">100</span><span class="p">,</span> <span class="n">labels</span><span class="p">,</span> <span class="n">tokenizer</span><span class="o">.</span><span class="n">pad_token_id</span><span class="p">)</span>
+            <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">generated_tokens</span><span class="p">,</span> <span class="nb">tuple</span><span class="p">):</span>
+                <span class="n">generated_tokens</span> <span class="o">=</span> <span class="n">generated_tokens</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+            <span class="n">decoded_preds</span> <span class="o">=</span> <span class="n">tokenizer</span><span class="o">.</span><span class="n">batch_decode</span><span class="p">(</span>
+                <span class="n">generated_tokens</span><span class="p">,</span> <span class="n">skip_special_tokens</span><span class="o">=</span><span class="kc">True</span>
+            <span class="p">)</span>
+            <span class="n">decoded_labels</span> <span class="o">=</span> <span class="n">tokenizer</span><span class="o">.</span><span class="n">batch_decode</span><span class="p">(</span><span class="n">labels</span><span class="p">,</span> <span class="n">skip_special_tokens</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+
+            <span class="n">decoded_preds</span><span class="p">,</span> <span class="n">decoded_labels</span> <span class="o">=</span> <span class="n">postprocess_text</span><span class="p">(</span>
+                <span class="n">decoded_preds</span><span class="p">,</span> <span class="n">decoded_labels</span>
+            <span class="p">)</span>
+
+            <span class="n">rouge_score</span><span class="o">.</span><span class="n">add_batch</span><span class="p">(</span><span class="n">predictions</span><span class="o">=</span><span class="n">decoded_preds</span><span class="p">,</span> <span class="n">references</span><span class="o">=</span><span class="n">decoded_labels</span><span class="p">)</span>
+
+    <span class="c1"># 指標を計算します</span>
+    <span class="n">result</span> <span class="o">=</span> <span class="n">rouge_score</span><span class="o">.</span><span class="n">compute</span><span class="p">()</span>
+    <span class="c1"># ROUGE スコアの中央値を取り出します</span>
+    <span class="n">result</span> <span class="o">=</span> <span class="p">{</span><span class="n">key</span><span class="p">:</span> <span class="n">value</span><span class="o">.</span><span class="n">mid</span><span class="o">.</span><span class="n">fmeasure</span> <span class="o">*</span> <span class="mi">100</span> <span class="k">for</span> <span class="n">key</span><span class="p">,</span> <span class="n">value</span> <span class="ow">in</span> <span class="n">result</span><span class="o">.</span><span class="n">items</span><span class="p">()}</span>
+    <span class="n">result</span> <span class="o">=</span> <span class="p">{</span><span class="n">k</span><span class="p">:</span> <span class="nb">round</span><span class="p">(</span><span class="n">v</span><span class="p">,</span> <span class="mi">4</span><span class="p">)</span> <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">result</span><span class="o">.</span><span class="n">items</span><span class="p">()}</span>
+    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"エポック </span><span class="si">{</span><span class="n">epoch</span><span class="si">}</span><span class="s2">:"</span><span class="p">,</span> <span class="n">result</span><span class="p">)</span>
+
+    <span class="c1"># 保存とアップロード</span>
+    <span class="n">accelerator</span><span class="o">.</span><span class="n">wait_for_everyone</span><span class="p">()</span>
+    <span class="n">unwrapped_model</span> <span class="o">=</span> <span class="n">accelerator</span><span class="o">.</span><span class="n">unwrap_model</span><span class="p">(</span><span class="n">model</span><span class="p">)</span>
+    <span class="n">unwrapped_model</span><span class="o">.</span><span class="n">save_pretrained</span><span class="p">(</span><span class="n">output_dir</span><span class="p">,</span> <span class="n">save_function</span><span class="o">=</span><span class="n">accelerator</span><span class="o">.</span><span class="n">save</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">accelerator</span><span class="o">.</span><span class="n">is_main_process</span><span class="p">:</span>
+        <span class="n">tokenizer</span><span class="o">.</span><span class="n">save_pretrained</span><span class="p">(</span><span class="n">output_dir</span><span class="p">)</span>
+        <span class="n">repo</span><span class="o">.</span><span class="n">push_to_hub</span><span class="p">(</span>
+            <span class="n">commit_message</span><span class="o">=</span><span class="sa">f</span><span class="s2">"Training in progress epoch </span><span class="si">{</span><span class="n">epoch</span><span class="si">}</span><span class="s2">"</span><span class="p">,</span> <span class="n">blocking</span><span class="o">=</span><span class="kc">False</span>
+        <span class="p">)</span>
+</code></pre></div>
+
+<p>```python out
+エポック 0: {'rouge1': 5.6351, 'rouge2': 1.1625, 'rougeL': 5.4866, 'rougeLsum': 5.5005}
+エポック 1: {'rouge1': 9.8646, 'rouge2': 3.4106, 'rougeL': 9.9439, 'rougeLsum': 9.9306}
+エポック 2: {'rouge1': 11.0872, 'rouge2': 3.3273, 'rougeL': 11.0508, 'rougeLsum': 10.9468}
+エポック 3: {'rouge1': 11.8587, 'rouge2': 4.8167, 'rougeL': 11.7986, 'rougeLsum': 11.7518}
+エポック 4: {'rouge1': 12.9842, 'rouge2': 5.5887, 'rougeL': 12.7546, 'rougeLsum': 12.7029}
+エポック 5: {'rouge1': 13.4628, 'rouge2': 6.4598, 'rougeL': 13.312, 'rougeLsum': 13.2913}
+エポック 6: {'rouge1': 12.9131, 'rouge2': 5.8914, 'rougeL': 12.6896, 'rougeLsum': 12.5701}
+エポック 7: {'rouge1': 13.3079, 'rouge2': 6.2994, 'rougeL': 13.1536, 'rougeLsum': 13.1194}
+エポック 8: {'rouge1': 13.96, 'rouge2': 6.5998, 'rougeL': 13.9123, 'rougeLsum': 13.7744}
+エポック 9: {'rouge1': 14.1192, 'rouge2': 7.0059, 'rougeL': 14.1172, 'rougeLsum': 13.9509}</p>
+<div class="codehilite"><pre><span></span><code>以上です！これを実行すると、`Trainer` で得たものとかなり似たモデルと結果が得られるはずです。
+
+{/if}
+
+## ファインチューニングしたモデルを使う
+
+モデルを Hub にプッシュしたら、推論ウィジェットか、次のような `pipeline` オブジェクトのどちらかで遊ぶことができます。
+
+```python
+from transformers import pipeline
+
+hub_model_id = "huggingface-course/mt5-small-finetuned-amazon-en-es"
+summarizer = pipeline("summarization", model=hub_model_id)
+</code></pre></div>
+
+<p>テストセット（モデルが見たことのないもの）の例をパイプラインに与え、要約の品質の感触をつかむことができます。まず、レビュー、タイトル、生成された要約を一緒に表示する単純な関数を実装しましょう。</p>
+<div class="codehilite"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">print_summary</span><span class="p">(</span><span class="n">idx</span><span class="p">):</span>
+    <span class="n">review</span> <span class="o">=</span> <span class="n">books_dataset</span><span class="p">[</span><span class="s2">"test"</span><span class="p">][</span><span class="n">idx</span><span class="p">][</span><span class="s2">"review_body"</span><span class="p">]</span>
+    <span class="n">title</span> <span class="o">=</span> <span class="n">books_dataset</span><span class="p">[</span><span class="s2">"test"</span><span class="p">][</span><span class="n">idx</span><span class="p">][</span><span class="s2">"review_title"</span><span class="p">]</span>
+    <span class="n">summary</span> <span class="o">=</span> <span class="n">summarizer</span><span class="p">(</span><span class="n">books_dataset</span><span class="p">[</span><span class="s2">"test"</span><span class="p">][</span><span class="n">idx</span><span class="p">][</span><span class="s2">"review_body"</span><span class="p">])[</span><span class="mi">0</span><span class="p">][</span><span class="s2">"summary_text"</span><span class="p">]</span>
+    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"'&gt;&gt;&gt; レビュー: </span><span class="si">{</span><span class="n">review</span><span class="si">}</span><span class="s2">'"</span><span class="p">)</span>
+    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"</span><span class="se">\n</span><span class="s2">'&gt;&gt;&gt; タイトル: </span><span class="si">{</span><span class="n">title</span><span class="si">}</span><span class="s2">'"</span><span class="p">)</span>
+    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"</span><span class="se">\n</span><span class="s2">'&gt;&gt;&gt; 要約: </span><span class="si">{</span><span class="n">summary</span><span class="si">}</span><span class="s2">'"</span><span class="p">)</span>
+</code></pre></div>
+
+<p>得られる英語の例の1つを見てみましょう。</p>
+<div class="codehilite"><pre><span></span><code><span class="n">print_summary</span><span class="p">(</span><span class="mi">100</span><span class="p">)</span>
+</code></pre></div>
+
+<p>```python out
+'&gt;&gt;&gt; レビュー: Nothing special at all about this product... the book is too small and stiff and hard to write in. The huge sticker on the back doesn’t come off and looks super tacky. I would not purchase this again. I could have just bought a journal from the dollar store and it would be basically the same thing. It’s also really expensive for what it is.'</p>
+<p>'&gt;&gt;&gt; タイトル: Not impressed at all... buy something else'</p>
+<p>'&gt;&gt;&gt; 要約: Nothing special at all about this product'</p>
+<div class="codehilite"><pre><span></span><code>悪くありません！私たちのモデルは、レビューの一部を新しい単語で補強することにより、*生成型要約（abstractive summarization）*を実際に実行できています。そして、このモデルのおそらく最も素晴らしい側面は、バイリンガルであることです。そのため、スペイン語のレビューの要約も生成できます。
+
+```python
+print_summary(0)
+</code></pre></div>
+
+<p>```python out
+'&gt;&gt;&gt; レビュー: Es una trilogia que se hace muy facil de leer. Me ha gustado, no me esperaba el final para nada'</p>
+<p>'&gt;&gt;&gt; タイトル: Buena literatura para adolescentes'</p>
+<p>'&gt;&gt;&gt; 要約: Muy facil de leer'
+```</p>
+<p>この要約は、英語では "Very easy to read" という意味で、このケースではレビューから直接抽出されたものであることが分かります。それでも、これは mT5 モデルの汎用性を示しており、多言語コーパスを扱うのがどのようなものか、その一端を味わうことができました！</p>
+<p>次は、もう少し複雑なタスクに注意を向けます。言語モデルをゼロから学習することです。</p>
+</article>
+<nav class="page-nav"><a class="nav-link prev" href="4.html">← 前へ: 翻訳</a><a class="nav-link toc-link" href="../index.html">目次へ</a><a class="nav-link next" href="6.html">次へ →: 因果言語モデルをゼロから学習する</a></nav>
+</main>
+<footer class="site-footer">
+  <p>原典: Hugging Face huggingface/course（<a href="https://github.com/huggingface/course">https://github.com/huggingface/course</a>）</p>
+  <p>日本語版の翻訳・公開: 霞ヶ関京 / 連絡先: GitHub <a href="https://github.com/yanikasumin">@yanikasumin</a> / YouTube <a href="https://www.youtube.com/@KASUMI_MOF">@KASUMI_MOF</a></p>
+  <p class="demo-note">このサイトはデモ版です。内容は順次更新されます。</p>
+</footer>
+<script src="../../site.js"></script>
+</body>
+</html>

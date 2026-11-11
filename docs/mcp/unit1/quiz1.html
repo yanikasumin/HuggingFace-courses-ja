@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>クイズ 1: MCP の基礎 | Hugging Face コース日本語版（デモ版）</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Shippori+Mincho:wght@500;700&family=Zen+Kaku+Gothic+New:wght@400;500;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../../style.css">
+<script>
+window.MathJax = { tex: { inlineMath: [['$', '$'], ['\\(', '\\)']], displayMath: [['$$', '$$'], ['\\[', '\\]']] }, options: { skipHtmlTags: ['script','noscript','style','textarea','pre','code'] } };
+</script>
+<script async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml.js"></script>
+</head>
+<body>
+<header class="site-header">
+  <div class="header-inner">
+    <a class="site-title" href="../../index.html">Hugging Face コース日本語版</a>
+    <span class="demo-badge">デモ版</span>
+  </div>
+</header>
+<main class="container">
+<p class="course-crumb"><a href="../index.html">MCP コース</a>
+<span class="badge badge-qa-wip">翻訳済み・QA進行中（未検証の部分を含みます）</span></p>
+<nav class="page-nav"><a class="nav-link prev" href="architectural-components.html">← 前へ: MCP のアーキテクチャコンポーネント</a><a class="nav-link toc-link" href="../index.html">目次へ</a><a class="nav-link next" href="communication-protocol.html">次へ →: 通信プロトコル</a></nav>
+<article class="content">
+<h1>クイズ 1: MCP の基礎</h1>
+<p>Model Context Protocol のコアコンセプトに関する知識をテストしましょう。</p>
+<h3>Q1: Model Context Protocol（MCP）の主な目的は何ですか？</h3>
+<div class="quiz">
+<div class="quiz-choices">
+<button type="button" class="quiz-choice" data-correct="false" data-quiz-idx="0">AI モデルの学習データを制限すること</button>
+<div class="quiz-explain-src" id="qe-125591346087744-0" hidden>MCP は、AI モデルがアクセスできるコンテキストを制限するのではなく、拡張することを目指しています。</div>
+<button type="button" class="quiz-choice" data-correct="true" data-quiz-idx="1">AI モデルが外部のデータソース、ツール、環境に接続できるようにすること</button>
+<div class="quiz-explain-src" id="qe-125591346087744-1" hidden>正解！MCP の主な目標は相互運用性を促進することです。</div>
+<button type="button" class="quiz-choice" data-correct="false" data-quiz-idx="2">大規模言語モデルを使う際のプロンプティングを置き換えること</button>
+<div class="quiz-explain-src" id="qe-125591346087744-2" hidden>MCP はプロンプティングを強化するプロトコルであり、それを置き換えるものではありません。</div>
+<button type="button" class="quiz-choice" data-correct="false" data-quiz-idx="3">AI のための新しいプログラミング言語を作成すること</button>
+<div class="quiz-explain-src" id="qe-125591346087744-3" hidden>MCP はプロトコルであり、プログラミング言語ではありません。</div>
+</div><div class="quiz-feedback" hidden></div></div>
+<h3>Q2: MCP が主に解決を目指す問題は何ですか？</h3>
+<div class="quiz">
+<div class="quiz-choices">
+<button type="button" class="quiz-choice" data-correct="false" data-quiz-idx="0">AI モデルの不足</button>
+<div class="quiz-explain-src" id="qe-125591346043264-0" hidden>MCP が対処するのは統合の課題であり、AI モデル自体の可用性ではありません。</div>
+<button type="button" class="quiz-choice" data-correct="false" data-quiz-idx="1">LLM の学習にかかる高いコスト</button>
+<div class="quiz-explain-src" id="qe-125591346043264-1" hidden>MCP は効率を改善し得ますが、その主な焦点は学習コストの直接的な削減ではありません。</div>
+<button type="button" class="quiz-choice" data-correct="true" data-quiz-idx="2">M×N 統合問題</button>
+<div class="quiz-explain-src" id="qe-125591346043264-2" hidden>正解！MCP は接続を標準化し、M×N 通りのカスタム統合を避けられるようにします。</div>
+<button type="button" class="quiz-choice" data-correct="false" data-quiz-idx="3">新しい AI アルゴリズムを作成する難しさ</button>
+<div class="quiz-explain-src" id="qe-125591346043264-3" hidden>MCP は既存のアルゴリズムやツールを使うことを促進するもので、新しいものをゼロから作るためのものではありません。</div>
+</div><div class="quiz-feedback" hidden></div></div>
+<h3>Q3: 次のうち、MCP の主な利点はどれですか？</h3>
+<div class="quiz">
+<div class="quiz-choices">
+<button type="button" class="quiz-choice" data-correct="false" data-quiz-idx="0">AI モデルの精度の低下</button>
+<div class="quiz-explain-src" id="qe-125591346087744-0" hidden>MCP は AI の能力を強化することを目指しているため、理想的には精度の向上や維持につながるべきであり、低下はしません。</div>
+<button type="button" class="quiz-choice" data-correct="false" data-quiz-idx="1">AI 開発の複雑さの増大</button>
+<div class="quiz-explain-src" id="qe-125591346087744-1" hidden>MCP は統合を簡素化し、それによって複雑さを減らすことを目指しています。</div>
+<button type="button" class="quiz-choice" data-correct="true" data-quiz-idx="2">AI エコシステムにおける標準化と相互運用性</button>
+<div class="quiz-explain-src" id="qe-125591346087744-2" hidden>正解！これは MCP の主な目標であり利点です。</div>
+<button type="button" class="quiz-choice" data-correct="false" data-quiz-idx="3">AI モデルを外部システムから隔離すること</button>
+<div class="quiz-explain-src" id="qe-125591346087744-3" hidden>MCP が促進するのは接続とやり取りであり、隔離ではありません。</div>
+</div><div class="quiz-feedback" hidden></div></div>
+<h3>Q4: MCP の用語で「ホスト」とは何ですか？</h3>
+<div class="quiz">
+<div class="quiz-choices">
+<button type="button" class="quiz-choice" data-correct="false" data-quiz-idx="0">機能を公開する外部プログラム</button>
+<div class="quiz-explain-src" id="qe-125591346043264-0" hidden>これは MCP サーバーを表しています。</div>
+<button type="button" class="quiz-choice" data-correct="true" data-quiz-idx="1">ユーザー向けの AI アプリケーション</button>
+<div class="quiz-explain-src" id="qe-125591346043264-1" hidden>正解！ホストはユーザーが操作するアプリケーションです。</div>
+<button type="button" class="quiz-choice" data-correct="false" data-quiz-idx="2">読み取り専用のデータソース</button>
+<div class="quiz-explain-src" id="qe-125591346043264-2" hidden>これは MCP の機能（リソース）の一種を表しています。</div>
+<button type="button" class="quiz-choice" data-correct="false" data-quiz-idx="3">やり取りのための事前に定義されたテンプレート</button>
+<div class="quiz-explain-src" id="qe-125591346043264-3" hidden>これは MCP の機能（プロンプト）の一種を表しています。</div>
+</div><div class="quiz-feedback" hidden></div></div>
+<h3>Q5: AI アプリケーションの文脈で「M×N 統合問題」とは何を指しますか？</h3>
+<div class="quiz">
+<div class="quiz-choices">
+<button type="button" class="quiz-choice" data-correct="false" data-quiz-idx="0">M 個のモデルを N 個のデータセットで学習させる難しさ</button>
+<div class="quiz-explain-src" id="qe-125591346087744-0" hidden>これはモデルの学習に関するもので、MCP が対処する統合問題ではありません。</div>
+<button type="button" class="quiz-choice" data-correct="true" data-quiz-idx="1">標準なしに M 個の AI アプリケーションを N 個の外部ツールに接続する課題</button>
+<div class="quiz-explain-src" id="qe-125591346087744-1" hidden>正解！MCP はこの M*N の複雑さを解決するための標準を提供します。</div>
+<button type="button" class="quiz-choice" data-correct="false" data-quiz-idx="2">N 個のアプリケーションにわたる M 人のユーザーを管理する問題</button>
+<div class="quiz-explain-src" id="qe-125591346087744-2" hidden>これはユーザー管理やアイデンティティの問題であり、MCP の焦点ではありません。</div>
+<button type="button" class="quiz-choice" data-correct="false" data-quiz-idx="3">N 種類のユーザーセグメントのために M 個の機能を開発する複雑さ</button>
+<div class="quiz-explain-src" id="qe-125591346087744-3" hidden>これは製品開発戦略に関するもので、MCP の定義するシステム統合ではありません。</div>
+</div><div class="quiz-feedback" hidden></div></div>
+<p>このクイズの修了おめでとうございます 🥳！復習が必要な要素があれば、時間をとってチャプターを再訪し、知識を定着させましょう。 </p>
+</article>
+<nav class="page-nav"><a class="nav-link prev" href="architectural-components.html">← 前へ: MCP のアーキテクチャコンポーネント</a><a class="nav-link toc-link" href="../index.html">目次へ</a><a class="nav-link next" href="communication-protocol.html">次へ →: 通信プロトコル</a></nav>
+</main>
+<footer class="site-footer">
+  <p>原典: Hugging Face huggingface/mcp-course（<a href="https://github.com/huggingface/mcp-course">https://github.com/huggingface/mcp-course</a>）</p>
+  <p>日本語版の翻訳・公開: 霞ヶ関京 / 連絡先: GitHub <a href="https://github.com/yanikasumin">@yanikasumin</a> / YouTube <a href="https://www.youtube.com/@KASUMI_MOF">@KASUMI_MOF</a></p>
+  <p class="demo-note">このサイトはデモ版です。内容は順次更新されます。</p>
+</footer>
+<script src="../../site.js"></script>
+</body>
+</html>

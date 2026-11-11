@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>MCP クライアントとしての Gradio | Hugging Face コース日本語版（デモ版）</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Shippori+Mincho:wght@500;700&family=Zen+Kaku+Gothic+New:wght@400;500;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../../style.css">
+<script>
+window.MathJax = { tex: { inlineMath: [['$', '$'], ['\\(', '\\)']], displayMath: [['$$', '$$'], ['\\[', '\\]']] }, options: { skipHtmlTags: ['script','noscript','style','textarea','pre','code'] } };
+</script>
+<script async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml.js"></script>
+</head>
+<body>
+<header class="site-header">
+  <div class="header-inner">
+    <a class="site-title" href="../../index.html">Hugging Face コース日本語版</a>
+    <span class="demo-badge">デモ版</span>
+  </div>
+</header>
+<main class="container">
+<p class="course-crumb"><a href="../index.html">MCP コース</a>
+<span class="badge badge-qa-wip">翻訳済み・QA進行中（未検証の部分を含みます）</span></p>
+<nav class="page-nav"><a class="nav-link prev" href="continue-client.html">← 前へ: ローカルモデル・オープンソースモデルで MCP を使う</a><a class="nav-link toc-link" href="../index.html">目次へ</a><a class="nav-link next" href="tiny-agents.html">次へ →: Hugging Face Hub と MCP で Tiny Agents を構築する</a></nav>
+<article class="content">
+<h1>MCP クライアントとしての Gradio</h1>
+<p>前のセクションでは、Gradio を使って MCP サーバーを作成し、MCP クライアントを使って接続する方法を学びました。このセクションでは、MCP サーバーに接続するために、MCP クライアントとして Gradio を使う方法を学びます。</p>
+<div class="callout callout-tip">
+<p class="callout-title">💡 ヒント</p>
+<p>Gradio は UI クライアントと MCP サーバーの作成に最も適していますが、MCP クライアントとして使い、それを UI として公開することもできます。</p>
+</div>
+<p>前のセクションで作成したものと似た MCP サーバー（追加機能付き）に接続し、それを使って質問に答えます。</p>
+<h2>Gradio の MCP クライアント</h2>
+<h3>サンプル MCP サーバーに接続する</h3>
+<p>Hugging Face 上ですでに動作しているサンプル MCP サーバーに接続しましょう。この例では <a href="https://huggingface.co/spaces/abidlabs/mcp-tool-http">この Space</a> を使います。MCP ツールのコレクションを含む Space です。</p>
+<div class="codehilite"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">smolagents.mcp_client</span><span class="w"> </span><span class="kn">import</span> <span class="n">MCPClient</span>
+
+<span class="k">with</span> <span class="n">MCPClient</span><span class="p">(</span>
+    <span class="p">{</span><span class="s2">"url"</span><span class="p">:</span> <span class="s2">"https://abidlabs-mcp-tool-http.hf.space/gradio_api/mcp/sse"</span><span class="p">,</span> <span class="s2">"transport"</span><span class="p">:</span> <span class="s2">"sse"</span><span class="p">,}</span>
+<span class="p">)</span> <span class="k">as</span> <span class="n">tools</span><span class="p">:</span>
+    <span class="c1"># リモートサーバーのツールが利用可能になる</span>
+    <span class="nb">print</span><span class="p">(</span><span class="s2">"</span><span class="se">\n</span><span class="s2">"</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">t</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="s2">: </span><span class="si">{</span><span class="n">t</span><span class="o">.</span><span class="n">description</span><span class="si">}</span><span class="s2">"</span> <span class="k">for</span> <span class="n">t</span> <span class="ow">in</span> <span class="n">tools</span><span class="p">))</span>
+</code></pre></div>
+
+<details>
+<summary>出力</summary>
+<pre>
+<code>
+prime_factors: Compute the prime factorization of a positive integer.
+generate_cheetah_image: Generate a cheetah image.
+image_orientation: Returns whether image is portrait or landscape.
+sepia: Apply a sepia filter to the input image.
+</code>
+</pre>
+</details>
+
+<h3>Gradio から MCP サーバーに接続する</h3>
+<p>サンプル MCP サーバーに接続できました。次は、それをサンプルアプリケーションで使います。</p>
+<p>まず、まだインストールしていない場合は、<code>smolagents</code>、Gradio、mcp-client ライブラリをインストールする必要があります。</p>
+<div class="codehilite"><pre><span></span><code>pip<span class="w"> </span>install<span class="w"> </span><span class="s2">"smolagents[mcp]"</span><span class="w"> </span><span class="s2">"gradio[mcp]"</span><span class="w"> </span>mcp<span class="w"> </span>fastmcp
+</code></pre></div>
+
+<p>次に、必要なライブラリをインポートし、MCP クライアントを使って MCP サーバーに接続するシンプルな Gradio インターフェースを作成します。</p>
+<div class="codehilite"><pre><span></span><code><span class="kn">import</span><span class="w"> </span><span class="nn">gradio</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">gr</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">os</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">mcp</span><span class="w"> </span><span class="kn">import</span> <span class="n">StdioServerParameters</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">smolagents</span><span class="w"> </span><span class="kn">import</span> <span class="n">InferenceClientModel</span><span class="p">,</span> <span class="n">CodeAgent</span><span class="p">,</span> <span class="n">ToolCollection</span><span class="p">,</span> <span class="n">MCPClient</span>
+</code></pre></div>
+
+<p>次に、MCP サーバーに接続し、質問に答えるために使えるツールを取得します。</p>
+<div class="codehilite"><pre><span></span><code><span class="n">mcp_client</span> <span class="o">=</span> <span class="n">MCPClient</span><span class="p">(</span>
+    <span class="p">{</span><span class="s2">"url"</span><span class="p">:</span> <span class="s2">"https://abidlabs-mcp-tool-http.hf.space/gradio_api/mcp/sse"</span><span class="p">,</span> <span class="s2">"transport"</span><span class="p">:</span> <span class="s2">"sse"</span><span class="p">,}</span> <span class="c1"># これは前のセクションで作成した MCP クライアントです</span>
+<span class="p">)</span>
+<span class="n">tools</span> <span class="o">=</span> <span class="n">mcp_client</span><span class="o">.</span><span class="n">get_tools</span><span class="p">()</span>
+</code></pre></div>
+
+<p>ツールが用意できたので、それらを使って質問に答えるシンプルなエージェントを作成できます。ここでは、シンプルな <code>InferenceClientModel</code> と <code>smolagents</code> のデフォルトモデルを使います。</p>
+<p>InferenceClientModel に api_key を渡すことが重要です。トークンは Hugging Face アカウントから取得できます。<a href="https://huggingface.co/docs/hub/en/security-tokens">こちらを確認してください</a>。アクセストークンは環境変数 <code>HF_TOKEN</code> で設定します。</p>
+<div class="codehilite"><pre><span></span><code><span class="n">model</span> <span class="o">=</span> <span class="n">InferenceClientModel</span><span class="p">(</span><span class="n">token</span><span class="o">=</span><span class="n">os</span><span class="o">.</span><span class="n">getenv</span><span class="p">(</span><span class="s2">"HF_TOKEN"</span><span class="p">))</span>
+<span class="n">agent</span> <span class="o">=</span> <span class="n">CodeAgent</span><span class="p">(</span><span class="n">tools</span><span class="o">=</span><span class="p">[</span><span class="o">*</span><span class="n">tools</span><span class="p">],</span> <span class="n">model</span><span class="o">=</span><span class="n">model</span><span class="p">)</span>
+</code></pre></div>
+
+<p>これで、エージェントを使って質問に答えるシンプルな Gradio インターフェースを作成できます。</p>
+<div class="codehilite"><pre><span></span><code><span class="n">demo</span> <span class="o">=</span> <span class="n">gr</span><span class="o">.</span><span class="n">ChatInterface</span><span class="p">(</span>
+    <span class="n">fn</span><span class="o">=</span><span class="k">lambda</span> <span class="n">message</span><span class="p">,</span> <span class="n">history</span><span class="p">:</span> <span class="nb">str</span><span class="p">(</span><span class="n">agent</span><span class="o">.</span><span class="n">run</span><span class="p">(</span><span class="n">message</span><span class="p">)),</span>
+    <span class="nb">type</span><span class="o">=</span><span class="s2">"messages"</span><span class="p">,</span>
+    <span class="n">examples</span><span class="o">=</span><span class="p">[</span><span class="s2">"Prime factorization of 68"</span><span class="p">],</span>
+    <span class="n">title</span><span class="o">=</span><span class="s2">"MCP ツールを使うエージェント"</span><span class="p">,</span>
+    <span class="n">description</span><span class="o">=</span><span class="s2">"MCP ツールを使って質問に答えるシンプルなエージェントです。"</span>
+<span class="p">)</span>
+
+<span class="n">demo</span><span class="o">.</span><span class="n">launch</span><span class="p">()</span>
+</code></pre></div>
+
+<p>これで完成です！ MCP クライアントを使って MCP サーバーに接続し、質問に答えるシンプルな Gradio インターフェースを作成しました。</p>
+<p><iframe
+    src="https://mcp-course-unit2-gradio-client.hf.space"
+    frameborder="0"
+    width="850"
+    height="450"
+></iframe>
+</p>
+<h2>完全な例</h2>
+<p>Gradio で MCP クライアントを使う完全な例は次のとおりです。</p>
+<div class="codehilite"><pre><span></span><code><span class="kn">import</span><span class="w"> </span><span class="nn">gradio</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">gr</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">os</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">smolagents</span><span class="w"> </span><span class="kn">import</span> <span class="n">InferenceClientModel</span><span class="p">,</span> <span class="n">CodeAgent</span><span class="p">,</span> <span class="n">MCPClient</span>
+
+
+<span class="k">try</span><span class="p">:</span>
+    <span class="n">mcp_client</span> <span class="o">=</span> <span class="n">MCPClient</span><span class="p">(</span>
+        <span class="p">{</span><span class="s2">"url"</span><span class="p">:</span> <span class="s2">"https://abidlabs-mcp-tool-http.hf.space/gradio_api/mcp/sse"</span><span class="p">,</span> <span class="s2">"transport"</span><span class="p">:</span> <span class="s2">"sse"</span><span class="p">,}</span>
+    <span class="p">)</span>
+    <span class="n">tools</span> <span class="o">=</span> <span class="n">mcp_client</span><span class="o">.</span><span class="n">get_tools</span><span class="p">()</span>
+
+    <span class="n">model</span> <span class="o">=</span> <span class="n">InferenceClientModel</span><span class="p">(</span><span class="n">token</span><span class="o">=</span><span class="n">os</span><span class="o">.</span><span class="n">getenv</span><span class="p">(</span><span class="s2">"HUGGINGFACE_API_TOKEN"</span><span class="p">))</span>
+    <span class="n">agent</span> <span class="o">=</span> <span class="n">CodeAgent</span><span class="p">(</span><span class="n">tools</span><span class="o">=</span><span class="p">[</span><span class="o">*</span><span class="n">tools</span><span class="p">],</span> <span class="n">model</span><span class="o">=</span><span class="n">model</span><span class="p">,</span> <span class="n">additional_authorized_imports</span><span class="o">=</span><span class="p">[</span><span class="s2">"json"</span><span class="p">,</span> <span class="s2">"ast"</span><span class="p">,</span> <span class="s2">"urllib"</span><span class="p">,</span> <span class="s2">"base64"</span><span class="p">])</span>
+
+    <span class="n">demo</span> <span class="o">=</span> <span class="n">gr</span><span class="o">.</span><span class="n">ChatInterface</span><span class="p">(</span>
+        <span class="n">fn</span><span class="o">=</span><span class="k">lambda</span> <span class="n">message</span><span class="p">,</span> <span class="n">history</span><span class="p">:</span> <span class="nb">str</span><span class="p">(</span><span class="n">agent</span><span class="o">.</span><span class="n">run</span><span class="p">(</span><span class="n">message</span><span class="p">)),</span>
+        <span class="nb">type</span><span class="o">=</span><span class="s2">"messages"</span><span class="p">,</span>
+        <span class="n">examples</span><span class="o">=</span><span class="p">[</span><span class="s2">"Analyze the sentiment of the following text 'This is awesome'"</span><span class="p">],</span>
+        <span class="n">title</span><span class="o">=</span><span class="s2">"MCP ツールを使うエージェント"</span><span class="p">,</span>
+        <span class="n">description</span><span class="o">=</span><span class="s2">"MCP ツールを使って質問に答えるシンプルなエージェントです。"</span><span class="p">,</span>
+    <span class="p">)</span>
+
+    <span class="n">demo</span><span class="o">.</span><span class="n">launch</span><span class="p">()</span>
+<span class="k">finally</span><span class="p">:</span>
+    <span class="n">mcp_client</span><span class="o">.</span><span class="n">disconnect</span><span class="p">()</span>
+</code></pre></div>
+
+<p><code>finally</code> ブロックで MCP クライアントを閉じていることに注目してください。MCP クライアントは長期間存続するオブジェクトであり、プログラム終了時に閉じる必要があるため、これは重要です。</p>
+<h2>Hugging Face Spaces へのデプロイ</h2>
+<p>サーバーを他の人が使えるようにするには、前のセクションと同様に、Hugging Face Spaces にデプロイできます。
+Gradio MCP クライアントを Hugging Face Spaces にデプロイするには:</p>
+<ol>
+<li>
+<p>Hugging Face で新しい Space を作成する:
+   - huggingface.co/spaces にアクセスする
+   - "Create new Space" をクリックする
+   - SDK として "Gradio" を選択する
+   - Space に名前を付ける（例: "mcp-client"）</p>
+</li>
+<li>
+<p>コード内の MCP サーバーの URL を更新する:</p>
+</li>
+</ol>
+<div class="codehilite"><pre><span></span><code><span class="n">mcp_client</span> <span class="o">=</span> <span class="n">MCPClient</span><span class="p">(</span>
+    <span class="p">{</span><span class="s2">"url"</span><span class="p">:</span> <span class="s2">"https://abidlabs-mcp-tool-http.hf.space/gradio_api/mcp/sse"</span><span class="p">,</span> <span class="s2">"transport"</span><span class="p">:</span> <span class="s2">"sse"</span><span class="p">}</span>
+<span class="p">)</span>
+</code></pre></div>
+
+<ol start="3">
+<li><code>requirements.txt</code> ファイルを作成する:</li>
+</ol>
+<div class="codehilite"><pre><span></span><code>gradio[mcp]
+smolagents[mcp]
+</code></pre></div>
+
+<ol start="4">
+<li>コードを Space にプッシュする:</li>
+</ol>
+<div class="codehilite"><pre><span></span><code>git<span class="w"> </span>init
+git<span class="w"> </span>add<span class="w"> </span>app.py<span class="w"> </span>requirements.txt
+git<span class="w"> </span>commit<span class="w"> </span>-m<span class="w"> </span><span class="s2">"Initial commit"</span>
+git<span class="w"> </span>remote<span class="w"> </span>add<span class="w"> </span>origin<span class="w"> </span>https://huggingface.co/spaces/YOUR_USERNAME/mcp-client
+git<span class="w"> </span>push<span class="w"> </span>-u<span class="w"> </span>origin<span class="w"> </span>main
+</code></pre></div>
+
+<p>Note: remote origin を追加する際は、AccessToken を使った追加方法について <a href="https://huggingface.co/blog/password-git-deprecation">password-git-deprecation</a> を参照してください。</p>
+<h2>まとめ</h2>
+<p>このセクションでは、MCP サーバーに接続する MCP クライアントとして Gradio を使う方法を学びました。また、MCP クライアントを Hugging Face Spaces にデプロイする方法も確認しました。</p>
+</article>
+<nav class="page-nav"><a class="nav-link prev" href="continue-client.html">← 前へ: ローカルモデル・オープンソースモデルで MCP を使う</a><a class="nav-link toc-link" href="../index.html">目次へ</a><a class="nav-link next" href="tiny-agents.html">次へ →: Hugging Face Hub と MCP で Tiny Agents を構築する</a></nav>
+</main>
+<footer class="site-footer">
+  <p>原典: Hugging Face huggingface/mcp-course（<a href="https://github.com/huggingface/mcp-course">https://github.com/huggingface/mcp-course</a>）</p>
+  <p>日本語版の翻訳・公開: 霞ヶ関京 / 連絡先: GitHub <a href="https://github.com/yanikasumin">@yanikasumin</a> / YouTube <a href="https://www.youtube.com/@KASUMI_MOF">@KASUMI_MOF</a></p>
+  <p class="demo-note">このサイトはデモ版です。内容は順次更新されます。</p>
+</footer>
+<script src="../../site.js"></script>
+</body>
+</html>

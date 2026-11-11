@@ -1,0 +1,226 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ローカルモデル・オープンソースモデルで MCP を使う | Hugging Face コース日本語版（デモ版）</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Shippori+Mincho:wght@500;700&family=Zen+Kaku+Gothic+New:wght@400;500;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../../style.css">
+<script>
+window.MathJax = { tex: { inlineMath: [['$', '$'], ['\\(', '\\)']], displayMath: [['$$', '$$'], ['\\[', '\\]']] }, options: { skipHtmlTags: ['script','noscript','style','textarea','pre','code'] } };
+</script>
+<script async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml.js"></script>
+</head>
+<body>
+<header class="site-header">
+  <div class="header-inner">
+    <a class="site-title" href="../../index.html">Hugging Face コース日本語版</a>
+    <span class="demo-badge">デモ版</span>
+  </div>
+</header>
+<main class="container">
+<p class="course-crumb"><a href="../index.html">MCP コース</a>
+<span class="badge badge-qa-wip">翻訳済み・QA進行中（未検証の部分を含みます）</span></p>
+<nav class="page-nav"><a class="nav-link prev" href="clients.html">← 前へ: MCP クライアントを構築する</a><a class="nav-link toc-link" href="../index.html">目次へ</a><a class="nav-link next" href="gradio-client.html">次へ →: MCP クライアントとしての Gradio</a></nav>
+<article class="content">
+<h1>ローカルモデル・オープンソースモデルで MCP を使う</h1>
+<p>このセクションでは、Ollama のようなローカルツールと連携する AI コーディングアシスタント構築ツール Continue を使って、MCP をローカルモデルやオープンソースモデルと接続します。</p>
+<h2>Continue のセットアップ</h2>
+<p>Continue は VS Code マーケットプレイスからインストールできます。</p>
+<div class="callout callout-tip">
+<p class="callout-title">💡 ヒント</p>
+<p><em>Continue には <a href="https://plugins.jetbrains.com/plugin/22707-continue">JetBrains</a> 用の拡張機能もあります。</em></p>
+</div>
+<h3>VS Code 拡張機能</h3>
+<ol>
+<li><a href="https://marketplace.visualstudio.com/items?itemName=Continue.continue">Visual Studio Marketplace の Continue 拡張機能ページ</a> で <code>Install</code> をクリックする</li>
+<li>VS Code で Continue 拡張機能ページが開くので、そこで再度 <code>Install</code> をクリックする</li>
+<li>左サイドバーに Continue のロゴが表示されます。使いやすくするために、Continue を右サイドバーに移動しましょう</li>
+</ol>
+<p><img alt="右サイドバーへの移動" src="https://mintlify.s3.us-west-1.amazonaws.com/continue-docs/images/move-to-right-sidebar-b2d315296198e41046fc174d8178f30a.gif" /></p>
+<p>Continue の設定が完了したら、次にローカルモデルを取得するために Ollama をセットアップします。</p>
+<h3>ローカルモデル</h3>
+<p>Continue と互換性のあるローカルモデルを実行する方法は数多くあります。人気のある選択肢は Ollama、Llama.cpp、LM Studio の3つです。Ollama は、大規模言語モデル（LLM）をローカルで簡単に実行できるオープンソースツールです。Llama.cpp は LLM を実行するための高性能な C++ ライブラリで、OpenAI 互換サーバーも含まれます。LM Studio は、ローカルモデルを実行するためのグラフィカルインターフェースを提供します。</p>
+<p>Hugging Face Hub からローカルモデルにアクセスでき、主要なローカル推論アプリすべてのコマンドとクイックリンクを取得できます。</p>
+<p><img alt="Hugging Face Hub" src="https://cdn-uploads.huggingface.co/production/uploads/64445e5f1bc692d87b27e183/d6XMR5q9DwVpdEKFeLW9t.png" /></p>
+<div class="hfoptions">
+<section class="hfoption" markdown="block">
+<p class="hfoption-label">llamacpp</p>
+
+
+Llama.cpp は、LLM を提供するための軽量な OpenAI API 互換 HTTP サーバーである `llama-server` を提供します。[Llama.cpp リポジトリ](https://github.com/ggml-org/llama.cpp) の手順に従ってソースからビルドすることも、システム向けのビルド済みバイナリがあればそれを使うこともできます。詳細は [Llama.cpp のドキュメント](https://github.com/ggerganov/llama.cpp) を参照してください。
+
+`llama-server` が用意できたら、次のようなコマンドで Hugging Face のモデルを実行できます。
+
+
+<div class="codehilite"><pre><span></span><code>llama-server<span class="w"> </span>-hf<span class="w"> </span>unsloth/Devstral-Small-2505-GGUF:Q4_K_M
+</code></pre></div>
+
+
+
+</section>
+<section class="hfoption" markdown="block">
+<p class="hfoption-label">lmstudio</p>
+
+LM Studio は、Mac、Windows、Linux 向けのアプリケーションで、グラフィカルインターフェースを使ってオープンソースモデルをローカルで簡単に実行できます。始めるには:
+
+1.  [ここをクリックして LM Studio でモデルを開く](lmstudio://open_from_hf?model=unsloth/Devstral-Small-2505-GGUF)。
+2.  モデルのダウンロードが完了したら、"Local Server" タブに移動し、"Start Server" をクリックします。
+</section>
+<section class="hfoption" markdown="block">
+<p class="hfoption-label">ollama</p>
+
+Ollama を使うには、[インストール](https://ollama.com/download) して、`ollama run` コマンドで実行したいモデルをダウンロードします。
+
+たとえば、[Devstral-Small](https://huggingface.co/unsloth/Devstral-Small-2505-GGUF?local-app=ollama) モデルは次のコマンドでダウンロードして実行できます。
+
+
+<div class="codehilite"><pre><span></span><code>ollama<span class="w"> </span>run<span class="w"> </span>hf.co/unsloth/Devstral-Small-2505-GGUF:Q4_K_M
+</code></pre></div>
+
+
+このモデルのサイズは約14GB なので、実行するマシンに十分な空き RAM があることを確認してください。そうでない場合、「model requires more system memory than is available」のようなエラーが表示されることがあります。
+</section>
+</div>
+
+<div class="callout callout-tip">
+<p class="callout-title">💡 ヒント</p>
+<p>Continue はさまざまなローカルモデルプロバイダーをサポートしています。Ollama、Llama.cpp、LM Studio のほかにも、他のプロバイダーを使えます。サポートされるプロバイダーの完全なリストと詳細な設定オプションについては、<a href="https://docs.continue.dev/customize/model-providers">Continue のドキュメント</a> を参照してください。</p>
+</div>
+<p>ツール呼び出しが組み込み機能として備わっているモデルを使うことが重要です。たとえば Codestral、Qwen、Llama 3.1x です。</p>
+<ol>
+<li>ワークスペースのトップレベルに <code>.continue/models</code> というフォルダを作成する</li>
+<li>モデルプロバイダーを設定するファイルをこのフォルダに追加する。例: <code>local-models.yaml</code></li>
+<li>Ollama、Llama.cpp、LM Studio のどれを使うかに応じて、次の設定を追加する</li>
+</ol>
+<div class="hfoptions">
+<section class="hfoption" markdown="block">
+<p class="hfoption-label">llamacpp</p>
+
+これは、`llama-server` で提供される `llama.cpp` モデル用の設定です。`model` フィールドは、提供するモデルと一致させる必要があります。
+
+
+<div class="codehilite"><pre><span></span><code><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Llama.cpp model</span>
+<span class="nt">version</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">0.0.1</span>
+<span class="nt">schema</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">v1</span>
+<span class="nt">models</span><span class="p">:</span>
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">provider</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">llama.cpp</span>
+<span class="w">    </span><span class="nt">model</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">unsloth/Devstral-Small-2505-GGUF</span>
+<span class="w">    </span><span class="nt">apiBase</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">http://localhost:8080</span>
+<span class="w">    </span><span class="nt">defaultCompletionOptions</span><span class="p">:</span>
+<span class="w">      </span><span class="nt">contextLength</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">8192</span><span class="w"> </span><span class="c1"># モデルに合わせて調整する</span>
+<span class="w">    </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Llama.cpp Devstral-Small</span>
+<span class="w">    </span><span class="nt">roles</span><span class="p">:</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">chat</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">edit</span>
+</code></pre></div>
+
+
+</section>
+<section class="hfoption" markdown="block">
+<p class="hfoption-label">lmstudio</p>
+
+これは、LM Studio 経由で提供されるモデル用の設定です。モデルの識別子は、LM Studio に読み込まれているものと一致させる必要があります。
+
+
+<div class="codehilite"><pre><span></span><code><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">LM Studio Model</span>
+<span class="nt">version</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">0.0.1</span>
+<span class="nt">schema</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">v1</span>
+<span class="nt">models</span><span class="p">:</span>
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">provider</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">lmstudio</span>
+<span class="w">    </span><span class="nt">model</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">unsloth/Devstral-Small-2505-GGUF</span>
+<span class="w">    </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">LM Studio Devstral-Small</span>
+<span class="w">    </span><span class="nt">apiBase</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">http://localhost:1234/v1</span>
+<span class="w">    </span><span class="nt">roles</span><span class="p">:</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">chat</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">edit</span>
+</code></pre></div>
+
+
+</section>
+<section class="hfoption" markdown="block">
+<p class="hfoption-label">ollama</p>
+
+これは、Ollama モデル用の設定です。
+
+
+<div class="codehilite"><pre><span></span><code><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Ollama Devstral model</span>
+<span class="nt">version</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">0.0.1</span>
+<span class="nt">schema</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">v1</span>
+<span class="nt">models</span><span class="p">:</span>
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">provider</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">ollama</span>
+<span class="w">    </span><span class="nt">model</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">unsloth/devstral-small-2505-gguf:Q4_K_M</span>
+<span class="w">    </span><span class="nt">defaultCompletionOptions</span><span class="p">:</span>
+<span class="w">      </span><span class="nt">contextLength</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">8192</span>
+<span class="w">    </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Ollama Devstral-Small</span>
+<span class="w">    </span><span class="nt">roles</span><span class="p">:</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">chat</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">edit</span>
+</code></pre></div>
+
+
+</section>
+</div>
+
+<p>デフォルトでは、各モデルには最大コンテキスト長があり、この場合は <code>128000</code> トークンです。このセットアップでは、複数の MCP リクエストを実行するためにそのコンテキストウィンドウをより大きく使い、より多くのトークンを処理できる必要があります。</p>
+<h2>仕組み</h2>
+<h3>ツールのハンドシェイク</h3>
+<p>ツールは、モデルが外部世界とインターフェースするための強力な手段を提供します。ツールは、名前と引数スキーマを持つ JSON オブジェクトとしてモデルに提供されます。たとえば、<code>filepath</code> 引数を持つ <code>read_file</code> ツールは、モデルに特定のファイルの内容をリクエストする能力を与えます。</p>
+<p><img alt="自律エージェントの図" src="https://gist.github.com/user-attachments/assets/c7301fc0-fa5c-4dc4-9955-7ba8a6587b7a" /></p>
+<p>次のハンドシェイクは、エージェントがツールを使う方法を説明しています。</p>
+<ol>
+<li>Agent モードでは、利用可能なツールが <code>user</code> チャットリクエストと一緒に送信される</li>
+<li>モデルは、レスポンスにツール呼び出しを含めることを選択できる</li>
+<li>ユーザーが許可を与える。そのツールのポリシーが <code>Automatic</code> に設定されている場合、このステップはスキップされる</li>
+<li>Continue は、組み込み機能、またはそのツールを提供する MCP サーバーを使ってツールを呼び出す</li>
+<li>Continue は結果をモデルに送り返す</li>
+<li>モデルが応答し、場合によっては別のツール呼び出しを行い、ステップ2に戻る</li>
+</ol>
+<p>Continue は複数のローカルモデルプロバイダーをサポートしています。タスクごとに異なるモデルを使ったり、必要に応じてモデルを切り替えたりできます。このセクションではローカルファーストのソリューションに焦点を当てますが、Continue は OpenAI、Anthropic、Microsoft/Azure、Mistral などの人気プロバイダーとも連携します。独自のモデルプロバイダーを実行することもできます。</p>
+<h3>ローカルモデルと MCP の統合</h3>
+<p>すべてがセットアップできたので、既存の MCP サーバーを追加しましょう。以下は、アシスタントで使う新しい MCP サーバーをセットアップする簡単な例です。</p>
+<ol>
+<li>ワークスペースのトップレベルに <code>.continue/mcpServers</code> というフォルダを作成する</li>
+<li>このフォルダに <code>playwright-mcp.yaml</code> というファイルを追加する</li>
+<li><code>playwright-mcp.yaml</code> に次の内容を書き込んで保存する</li>
+</ol>
+<div class="codehilite"><pre><span></span><code><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Playwright mcpServer</span>
+<span class="nt">version</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">0.0.1</span>
+<span class="nt">schema</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">v1</span>
+<span class="nt">mcpServers</span><span class="p">:</span>
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Browser search</span>
+<span class="w">    </span><span class="nt">command</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">npx</span>
+<span class="w">    </span><span class="nt">args</span><span class="p">:</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="s">"@playwright/mcp@latest"</span>
+</code></pre></div>
+
+<p>では、次のコマンドをプロンプトとして入力し、MCP サーバーをテストしましょう。</p>
+<div class="codehilite"><pre><span></span><code>1. Using playwright, navigate to https://news.ycombinator.com.
+
+2. Extract the titles and URLs of the top 4 posts on the homepage.
+
+3. Create a file named hn.txt in the root directory of the project.
+
+4. Save this list as plain text in the hn.txt file, with each line containing the title and URL separated by a hyphen.
+
+Do not output code or instructions—just complete the task and confirm when it is done.
+</code></pre></div>
+
+<p>結果として、現在の作業ディレクトリに <code>hn.txt</code> というファイルが生成されます。</p>
+<p><img alt="MCP の出力例" src="https://deploy-preview-6060--continuedev.netlify.app/assets/images/mcp-playwright-50b192a2ff395f7a6cc11618c5e2d5b1.png" /></p>
+<h2>まとめ</h2>
+<p>Continue を Llama 3.1 のようなローカルモデルや MCP サーバーと組み合わせることで、コードとデータをプライベートに保ちながら最先端の AI 機能を活用できる、強力な開発ワークフローが実現しました。</p>
+<p>このセットアップにより、Web 自動化からファイル管理まで、専用のツールで AI アシスタントをカスタマイズする柔軟性が得られ、すべてローカルマシン上で動作します。開発ワークフローを次のレベルに引き上げる準備はできましたか？ <a href="https://hub.continue.dev/explore/mcp">Continue Hub の MCP 探索ページ</a> でさまざまな MCP サーバーを試すことから始めて、ローカル AI がコーディング体験をどう変えるか発見しましょう。</p>
+</article>
+<nav class="page-nav"><a class="nav-link prev" href="clients.html">← 前へ: MCP クライアントを構築する</a><a class="nav-link toc-link" href="../index.html">目次へ</a><a class="nav-link next" href="gradio-client.html">次へ →: MCP クライアントとしての Gradio</a></nav>
+</main>
+<footer class="site-footer">
+  <p>原典: Hugging Face huggingface/mcp-course（<a href="https://github.com/huggingface/mcp-course">https://github.com/huggingface/mcp-course</a>）</p>
+  <p>日本語版の翻訳・公開: 霞ヶ関京 / 連絡先: GitHub <a href="https://github.com/yanikasumin">@yanikasumin</a> / YouTube <a href="https://www.youtube.com/@KASUMI_MOF">@KASUMI_MOF</a></p>
+  <p class="demo-note">このサイトはデモ版です。内容は順次更新されます。</p>
+</footer>
+<script src="../../site.js"></script>
+</body>
+</html>

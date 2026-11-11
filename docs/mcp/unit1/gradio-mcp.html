@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Gradio の MCP 統合 | Hugging Face コース日本語版（デモ版）</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Shippori+Mincho:wght@500;700&family=Zen+Kaku+Gothic+New:wght@400;500;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../../style.css">
+<script>
+window.MathJax = { tex: { inlineMath: [['$', '$'], ['\\(', '\\)']], displayMath: [['$$', '$$'], ['\\[', '\\]']] }, options: { skipHtmlTags: ['script','noscript','style','textarea','pre','code'] } };
+</script>
+<script async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml.js"></script>
+</head>
+<body>
+<header class="site-header">
+  <div class="header-inner">
+    <a class="site-title" href="../../index.html">Hugging Face コース日本語版</a>
+    <span class="demo-badge">デモ版</span>
+  </div>
+</header>
+<main class="container">
+<p class="course-crumb"><a href="../index.html">MCP コース</a>
+<span class="badge badge-qa-wip">翻訳済み・QA進行中（未検証の部分を含みます）</span></p>
+<nav class="page-nav"><a class="nav-link prev" href="hf-mcp-server.html">← 前へ: Hugging Face MCP Server</a><a class="nav-link toc-link" href="../index.html">目次へ</a><a class="nav-link next" href="unit1-recap.html">次へ →: Unit 1 のまとめ</a></nav>
+<article class="content">
+<h1>Gradio の MCP 統合</h1>
+<p>ここまでで、MCP プロトコルのコアコンセプトと、MCP サーバーとクライアントの実装方法を学びました。この節では、Gradio を使って MCP サーバーを作ることで、もう少し簡単にしてみましょう！</p>
+<div class="callout callout-tip">
+<p class="callout-title">💡 ヒント</p>
+<p>Gradio は、機械学習モデル用のカスタマイズ可能な Web インターフェースを素早く作成できる人気の Python ライブラリです。</p>
+</div>
+<h2>Gradio 入門</h2>
+<p>Gradio を使うと、わずか数行の Python コードでモデルの UI を作成できます。特に次の用途で役立ちます。</p>
+<ul>
+<li>デモやプロトタイプの作成</li>
+<li>非技術系ユーザーへのモデルの共有</li>
+<li>モデルの振る舞いのテストとデバッグ</li>
+</ul>
+<p>MCP サポートの追加により、Gradio は標準化された MCP プロトコルを通じて AI モデルの機能を公開する簡単な方法を提供するようになりました。</p>
+<p>Gradio と MCP を組み合わせると、人間に優しいインターフェースと AI からアクセス可能なツールの両方を最小限のコードで作成できます。さらに良いことに、Gradio は AI コミュニティですでに広く使われているため、自分の MCP サーバーを他の人に共有するのにも使えます。</p>
+<h2>前提条件</h2>
+<p>MCP サポート付きの Gradio を使うには、MCP extra 付きで Gradio をインストールする必要があります。</p>
+<div class="codehilite"><pre><span></span><code>uv<span class="w"> </span>pip<span class="w"> </span>install<span class="w"> </span><span class="s2">"gradio[mcp]"</span>
+</code></pre></div>
+
+<p>また、Cursor のような、MCP プロトコルを使ったツール呼び出しをサポートする LLM アプリケーション（「MCP ホスト」と呼ばれます）も必要です。</p>
+<h2>Gradio で MCP サーバーを作成する</h2>
+<p>Gradio を使って MCP サーバーを作成する基本的な例を見ていきましょう。</p>
+<div class="codehilite"><pre><span></span><code><span class="kn">import</span><span class="w"> </span><span class="nn">gradio</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">gr</span>
+
+<span class="k">def</span><span class="w"> </span><span class="nf">letter_counter</span><span class="p">(</span><span class="n">word</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">letter</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""</span>
+<span class="sd">    単語またはテキスト中の文字の出現回数を数えます。</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        word (str): 検索対象の入力テキスト</span>
+<span class="sd">        letter (str): 検索する文字</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        int: その文字がテキスト中に現れる回数</span>
+<span class="sd">    """</span>
+    <span class="n">word</span> <span class="o">=</span> <span class="n">word</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span>
+    <span class="n">letter</span> <span class="o">=</span> <span class="n">letter</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span>
+    <span class="n">count</span> <span class="o">=</span> <span class="n">word</span><span class="o">.</span><span class="n">count</span><span class="p">(</span><span class="n">letter</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">count</span>
+
+<span class="c1"># 標準的な Gradio インターフェースを作成する</span>
+<span class="n">demo</span> <span class="o">=</span> <span class="n">gr</span><span class="o">.</span><span class="n">Interface</span><span class="p">(</span>
+    <span class="n">fn</span><span class="o">=</span><span class="n">letter_counter</span><span class="p">,</span>
+    <span class="n">inputs</span><span class="o">=</span><span class="p">[</span><span class="s2">"textbox"</span><span class="p">,</span> <span class="s2">"textbox"</span><span class="p">],</span>
+    <span class="n">outputs</span><span class="o">=</span><span class="s2">"number"</span><span class="p">,</span>
+    <span class="n">title</span><span class="o">=</span><span class="s2">"Letter Counter"</span><span class="p">,</span>
+    <span class="n">description</span><span class="o">=</span><span class="s2">"Enter text and a letter to count how many times the letter appears in the text."</span>
+<span class="p">)</span>
+
+<span class="c1"># Gradio の Web インターフェースと MCP サーバーの両方を起動する</span>
+<span class="k">if</span> <span class="vm">__name__</span> <span class="o">==</span> <span class="s2">"__main__"</span><span class="p">:</span>
+    <span class="n">demo</span><span class="o">.</span><span class="n">launch</span><span class="p">(</span><span class="n">mcp_server</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+</code></pre></div>
+
+<p>このセットアップにより、文字カウント関数には次の2つの方法でアクセスできるようになります。</p>
+<ol>
+<li>人間が直接操作するための従来型の Gradio Web インターフェース</li>
+<li>互換性のあるクライアントに接続できる MCP サーバー</li>
+</ol>
+<p>MCP サーバーには次のアドレスでアクセスできます。</p>
+<div class="codehilite"><pre><span></span><code>http://your-server:port/gradio_api/mcp/sse
+</code></pre></div>
+
+<p>アプリケーション自体にも引き続きアクセスでき、次のような見た目になります。</p>
+<p><img alt="Gradio MCP サーバー" src="https://huggingface.co/datasets/mcp-course/images/resolve/main/unit1/7.png" /></p>
+<h2>裏側の仕組み</h2>
+<p><code>launch()</code> で <code>mcp_server=True</code> を設定すると、いくつかのことが起こります。</p>
+<ol>
+<li>Gradio の関数が自動的に MCP ツールに変換されます</li>
+<li>入力コンポーネントがツールの引数スキーマに対応します</li>
+<li>出力コンポーネントがレスポンスの形式を決定します</li>
+<li>Gradio サーバーが MCP プロトコルのメッセージも待ち受けるようになります</li>
+<li>クライアント・サーバー通信のために HTTP+SSE 上の JSON-RPC がセットアップされます</li>
+</ol>
+<h2>Gradio &lt;&gt; MCP 統合の主な機能</h2>
+<ol>
+<li>
+<p><strong>ツール変換</strong>: Gradio アプリの各 API エンドポイントは、対応する名前、説明、入力スキーマを持つ MCP ツールに自動的に変換されます。ツールとスキーマを確認するには、<code>http://your-server:port/gradio_api/mcp/schema</code> にアクセスするか、Gradio アプリのフッターにある「View API」リンクを開いて「MCP」をクリックしてください。</p>
+</li>
+<li>
+<p><strong>環境変数のサポート</strong>: MCP サーバー機能を有効化する方法は2つあります。
+- <code>launch()</code> の <code>mcp_server</code> パラメータを使う方法:
+  <code>python
+  demo.launch(mcp_server=True)</code>
+- 環境変数を使う方法:
+  <code>bash
+  export GRADIO_MCP_SERVER=True</code></p>
+</li>
+<li>
+<p><strong>ファイル処理</strong>: サーバーはファイルデータの変換を自動的に処理します。次を含みます。
+   - base64 エンコードされた文字列からファイルデータへの変換
+   - 画像ファイルの処理と正しい形式での返却
+   - 一時ファイルストレージの管理</p>
+</li>
+</ol>
+<p>MCP クライアントはローカルファイルを常に正しく処理できるとは限らないため、入力画像やファイルは完全な URL（"http://..." または "https://..."）として渡すことが<strong>強く</strong>推奨されます。</p>
+<ol start="4">
+<li><strong>🤗 Spaces 上のホスト型 MCP サーバー</strong>: Gradio アプリケーションを Hugging Face Spaces に無料で公開でき、無料のホスト型 MCP サーバーを持つことができます。そのような Space の例はこちらです: https://huggingface.co/spaces/abidlabs/mcp-tools</li>
+</ol>
+<h2>クライアントから MCP 対応 Space を使う</h2>
+<p>Hugging Face の MCP 設定を通じて、MCP 対応の Space をアシスタントに接続できます。</p>
+<ol>
+<li>MCP 対応の Space を探索する: https://huggingface.co/spaces?search=mcp</li>
+<li>https://huggingface.co/settings/mcp を開き（ログイン状態で）、Space を追加する。</li>
+<li>MCP クライアントを再起動または更新し、新しいツールを発見させる。</li>
+</ol>
+<p>これらの Space は、その関数を引数と説明を持つツールとして公開します。そのため、アシスタントが直接呼び出すことができます。</p>
+<h2>トラブルシューティングのヒント</h2>
+<ol>
+<li>
+<p><strong>型ヒントと docstring</strong>: 関数には型ヒントと妥当な docstring を必ず付けましょう。docstring には、パラメータ名をインデントした「Args:」ブロックを含める必要があります。</p>
+</li>
+<li>
+<p><strong>文字列入力</strong>: 迷った場合は、入力引数を <code>str</code> として受け取り、関数の中で目的の型に変換しましょう。</p>
+</li>
+<li>
+<p><strong>SSE サポート</strong>: 一部の MCP ホストは SSE ベースの MCP サーバーをサポートしていません。その場合は <code>mcp-remote</code> を使えます。
+   <code>json
+   {
+     "mcpServers": {
+       "gradio": {
+         "command": "npx",
+         "args": [
+           "mcp-remote",
+           "http://your-server:port/gradio_api/mcp/sse"
+         ]
+       }
+     }
+   }</code></p>
+</li>
+<li>
+<p><strong>再起動</strong>: 接続の問題が発生した場合は、MCP クライアントと MCP サーバーの両方を再起動してみてください。</p>
+</li>
+</ol>
+<h2>MCP サーバーを共有する</h2>
+<p>Gradio アプリを Hugging Face Spaces に公開することで、MCP サーバーを共有できます。下の動画では、Hugging Face Space の作成方法を紹介しています。</p>
+<div class="youtube-embed"><iframe src="https://www.youtube-nocookie.com/embed/3bSVKNKb_PY" title="YouTube video" loading="lazy" allowfullscreen referrerpolicy="strict-origin-when-cross-origin"></iframe></div>
+<p>これで、Hugging Face Space を共有することで、自分の MCP サーバーを他の人に共有できます。</p>
+<h2>まとめ</h2>
+<p>Gradio と MCP の統合は、MCP エコシステムへのアクセスしやすい入り口を提供します。Gradio のシンプルさと MCP の標準化を活用することで、開発者は人間に優しいインターフェースと AI からアクセス可能なツールの両方を最小限のコードで素早く作成できます。</p>
+<p>コースを進めるにつれて、より高度な MCP の実装を探っていきますが、Gradio はプロトコルを理解し実験するための優れた出発点となります。</p>
+<p>次のユニットでは、開発環境のセットアップ、SDK の探索、より高度な MCP サーバーとクライアントの実装に焦点を当て、MCP アプリケーションの構築をさらに深く掘り下げていきます。 </p>
+</article>
+<nav class="page-nav"><a class="nav-link prev" href="hf-mcp-server.html">← 前へ: Hugging Face MCP Server</a><a class="nav-link toc-link" href="../index.html">目次へ</a><a class="nav-link next" href="unit1-recap.html">次へ →: Unit 1 のまとめ</a></nav>
+</main>
+<footer class="site-footer">
+  <p>原典: Hugging Face huggingface/mcp-course（<a href="https://github.com/huggingface/mcp-course">https://github.com/huggingface/mcp-course</a>）</p>
+  <p>日本語版の翻訳・公開: 霞ヶ関京 / 連絡先: GitHub <a href="https://github.com/yanikasumin">@yanikasumin</a> / YouTube <a href="https://www.youtube.com/@KASUMI_MOF">@KASUMI_MOF</a></p>
+  <p class="demo-note">このサイトはデモ版です。内容は順次更新されます。</p>
+</footer>
+<script src="../../site.js"></script>
+</body>
+</html>

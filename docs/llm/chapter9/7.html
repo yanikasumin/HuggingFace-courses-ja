@@ -1,0 +1,246 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Gradio Blocks 入門 | Hugging Face コース日本語版（デモ版）</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Shippori+Mincho:wght@500;700&family=Zen+Kaku+Gothic+New:wght@400;500;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../../style.css">
+<script>
+window.MathJax = { tex: { inlineMath: [['$', '$'], ['\\(', '\\)']], displayMath: [['$$', '$$'], ['\\[', '\\]']] }, options: { skipHtmlTags: ['script','noscript','style','textarea','pre','code'] } };
+</script>
+<script async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml.js"></script>
+</head>
+<body>
+<header class="site-header">
+  <div class="header-inner">
+    <a class="site-title" href="../../index.html">Hugging Face コース日本語版</a>
+    <span class="demo-badge">デモ版</span>
+  </div>
+</header>
+<main class="container">
+<p class="course-crumb"><a href="../index.html">LLM コース</a>
+<span class="badge badge-qa-pass">翻訳QA 最終合格</span></p>
+<nav class="page-nav"><a class="nav-link prev" href="6.html">← 前へ: `Interface` の高度な機能</a><a class="nav-link toc-link" href="../index.html">目次へ</a><a class="nav-link next" href="8.html">次へ →: Gradio、チェック！</a></nav>
+<article class="content">
+<h1>Gradio Blocks 入門</h1>
+<p>これまでのセクションでは、<code>Interface</code> クラスを使ってデモを探索し、作成してきました。このセクションでは、<strong>新しく開発された</strong> 低レベル API、<code>gradio.Blocks</code> を紹介します。</p>
+<p>では、<code>Interface</code> と <code>Blocks</code> の違いは何でしょうか？</p>
+<ul>
+<li>
+<p>⚡ <code>Interface</code>: 高レベル API。入出力のリストを与えるだけで、本格的な機械学習デモを作成できます。</p>
+</li>
+<li>
+<p>🧱 <code>Blocks</code>: 低レベル API。アプリケーションのデータフローとレイアウトを完全に制御できます。<code>Blocks</code>（「積み木」という意味）を使えば、非常に複雑な複数ステップのアプリケーションも構築できます。</p>
+</li>
+</ul>
+<h3>なぜ Blocks 🧱 なのか？</h3>
+<p>これまでのセクションで見たように、<code>Interface</code> クラスを使えば、わずか数行のコードで本格的な機械学習デモを簡単に作れます。<code>Interface</code> API は非常に使いやすい一方で、<code>Blocks</code> API のような柔軟性はありません。たとえば、次のようなことがしたくなるかもしれません:</p>
+<ul>
+<li>関連するデモを、1つの Web アプリケーション内の複数タブとしてまとめる</li>
+<li>デモのレイアウトを変更する（例: 入力と出力の配置場所を指定する）</li>
+<li>あるモデルの出力が次のモデルの入力になるような複数ステップのインターフェースや、より柔軟なデータフロー全般</li>
+<li>ユーザーの入力に応じて、コンポーネントのプロパティ（例: ドロップダウンの選択肢）や表示/非表示を変更する</li>
+</ul>
+<p>これらすべての概念を、以下で探っていきます。</p>
+<h3>Blocks を使ってシンプルなデモを作る</h3>
+<p>Gradio をインストールしたら、下のコードを Python スクリプト、Jupyter ノートブック、Colab ノートブックのいずれかで実行してください。</p>
+<div class="codehilite"><pre><span></span><code><span class="kn">import</span><span class="w"> </span><span class="nn">gradio</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">gr</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">flip_text</span><span class="p">(</span><span class="n">x</span><span class="p">):</span>
+    <span class="k">return</span> <span class="n">x</span><span class="p">[::</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+
+
+<span class="n">demo</span> <span class="o">=</span> <span class="n">gr</span><span class="o">.</span><span class="n">Blocks</span><span class="p">()</span>
+
+<span class="k">with</span> <span class="n">demo</span><span class="p">:</span>
+    <span class="n">gr</span><span class="o">.</span><span class="n">Markdown</span><span class="p">(</span>
+<span class="w">        </span><span class="sd">"""</span>
+<span class="sd">    # Flip Text!</span>
+<span class="sd">    Start typing below to see the output.</span>
+<span class="sd">    """</span>
+    <span class="p">)</span>
+    <span class="nb">input</span> <span class="o">=</span> <span class="n">gr</span><span class="o">.</span><span class="n">Textbox</span><span class="p">(</span><span class="n">placeholder</span><span class="o">=</span><span class="s2">"Flip this text"</span><span class="p">)</span>
+    <span class="n">output</span> <span class="o">=</span> <span class="n">gr</span><span class="o">.</span><span class="n">Textbox</span><span class="p">()</span>
+
+    <span class="nb">input</span><span class="o">.</span><span class="n">change</span><span class="p">(</span><span class="n">fn</span><span class="o">=</span><span class="n">flip_text</span><span class="p">,</span> <span class="n">inputs</span><span class="o">=</span><span class="nb">input</span><span class="p">,</span> <span class="n">outputs</span><span class="o">=</span><span class="n">output</span><span class="p">)</span>
+
+<span class="n">demo</span><span class="o">.</span><span class="n">launch</span><span class="p">()</span>
+</code></pre></div>
+
+<iframe src="https://course-demos-flip-text.hf.space" frameBorder="0" height="400" title="Gradio アプリ" class="container p-0 flex-grow space-iframe" allow="accelerometer; ambient-light-sensor; autoplay; battery; camera; document-domain; encrypted-media; fullscreen; geolocation; gyroscope; layout-animations; legacy-image-formats; magnetometer; microphone; midi; oversized-images; payment; picture-in-picture; publickey-credentials-get; sync-xhr; usb; vr ; wake-lock; xr-spatial-tracking" sandbox="allow-forms allow-modals allow-popups allow-popups-to-escape-sandbox allow-same-origin allow-scripts allow-downloads"></iframe>
+
+<p>上のシンプルな例は、Blocks の基礎となる4つの概念を紹介しています:</p>
+<ol>
+<li>Blocks では、<code>gr.Blocks()</code> を使用した with ブロック内でコンポーネントをインスタンス化するだけで、Markdown、HTML、ボタン、インタラクティブなコンポーネントを組み合わせた Web アプリケーションを構築できます。</li>
+</ol>
+<div class="callout callout-tip">
+<p class="callout-title">💡 ヒント</p>
+<p>🙋Python の <code>with</code> 文に慣れていない場合は、Real Python の優れた<a href="https://realpython.com/python-with-statement/">チュートリアル</a>を確認することをおすすめします。読んだらここに戻ってきてください 🤗</p>
+</div>
+<p>コンポーネントをインスタンス化する順序は重要です。各要素は作成された順序で Web アプリにレンダリングされます（より複雑なレイアウトは後述します）。</p>
+<ol start="2">
+<li>
+<p>通常の Python 関数をコード内のどこにでも定義し、<code>Blocks</code> を使ってユーザーの入力で実行できます。例では入力テキストを「反転」するシンプルな関数を使っていますが、単純な計算から機械学習モデルによる予測処理まで、あらゆる Python 関数を書けます。</p>
+</li>
+<li>
+<p>任意の <code>Blocks</code> コンポーネントにイベントを割り当てられます。コンポーネントがクリックされたり変更されたりしたときに、関数が実行されます。イベントを割り当てる際は、3つのパラメータを渡します: <code>fn</code>（呼び出す関数）、<code>inputs</code>（入力コンポーネント。複数の場合はリストで指定）、<code>outputs</code>（出力コンポーネント。複数の場合はリストで指定）です。</p>
+</li>
+</ol>
+<p>上の例では、<code>input</code> という名前の <code>Textbox</code> の値が変わったときに <code>flip_text()</code> 関数を実行します。イベントが発生すると、<code>input</code> の値が <code>flip_text()</code> の引数 <code>x</code> に渡されます。関数の戻り値は、2つ目の <code>Textbox</code> である <code>output</code> に反映されます。</p>
+<p>各コンポーネントがサポートするイベントの一覧は、Gradio の<a href="https://www.gradio.app/docs/">ドキュメント</a>を参照してください。</p>
+<ol start="4">
+<li>Blocks は、定義したイベントトリガーに基づいて、コンポーネントがインタラクティブ（ユーザーの入力を受け付ける）であるべきかどうかを自動で判断します。例では、1つ目のテキストボックスはその値が <code>flip_text()</code> 関数に使われるためインタラクティブです。2つ目のテキストボックスは、その値が入力として使われることがないため、インタラクティブではありません。この判断を上書きしたい場合は、コンポーネントの <code>interactive</code> パラメータに真偽値を渡します（例: <code>gr.Textbox(placeholder="Flip this text", interactive=True)</code>）。</li>
+</ol>
+<h3>デモのレイアウトをカスタマイズする</h3>
+<p><code>Blocks</code> を使ってデモのレイアウトをカスタマイズするにはどうすればよいでしょうか？デフォルトでは、<code>Blocks</code> は作成したコンポーネントを1列に縦に並べてレンダリングします。これを変更するには、<code>with gradio.Column():</code> で列を、<code>with gradio.Row():</code> で行を追加し、そのコンテキストの中でコンポーネントを作成します。</p>
+<p>覚えておくべき点はこちらです: <code>Column</code> の下（これがデフォルトでもあります）に作成されたコンポーネントは縦に並びます。<code>Row</code> の下に作成されたコンポーネントは、<a href="https://developer.mozilla.org/en-US/docs/Web/CSS/CSS_Flexible_Box_Layout/Basic_Concepts_of_Flexbox">Web 開発の flexbox モデル</a>と同様に、横に並びます。</p>
+<p>最後に、<code>with gradio.Tabs()</code> コンテキストマネージャを使えば、デモにタブを作成することもできます。このコンテキスト内では、<code>with gradio.TabItem(name_of_tab):</code> を子として指定することで複数のタブを作成できます。<code>with gradio.TabItem(name_of_tab):</code> コンテキストの中で作成されたコンポーネントは、そのタブ内に表示されます。</p>
+<p>では、デモに <code>flip_image()</code> 関数を追加し、画像を反転する新しいタブを追加してみましょう。下は、2つのタブを持ち、Row も使った例です:</p>
+<div class="codehilite"><pre><span></span><code><span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">gradio</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">gr</span>
+
+<span class="n">demo</span> <span class="o">=</span> <span class="n">gr</span><span class="o">.</span><span class="n">Blocks</span><span class="p">()</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">flip_text</span><span class="p">(</span><span class="n">x</span><span class="p">):</span>
+    <span class="k">return</span> <span class="n">x</span><span class="p">[::</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">flip_image</span><span class="p">(</span><span class="n">x</span><span class="p">):</span>
+    <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">fliplr</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
+
+
+<span class="k">with</span> <span class="n">demo</span><span class="p">:</span>
+    <span class="n">gr</span><span class="o">.</span><span class="n">Markdown</span><span class="p">(</span><span class="s2">"Flip text or image files using this demo."</span><span class="p">)</span>
+    <span class="k">with</span> <span class="n">gr</span><span class="o">.</span><span class="n">Tabs</span><span class="p">():</span>
+        <span class="k">with</span> <span class="n">gr</span><span class="o">.</span><span class="n">TabItem</span><span class="p">(</span><span class="s2">"Flip Text"</span><span class="p">):</span>
+            <span class="k">with</span> <span class="n">gr</span><span class="o">.</span><span class="n">Row</span><span class="p">():</span>
+                <span class="n">text_input</span> <span class="o">=</span> <span class="n">gr</span><span class="o">.</span><span class="n">Textbox</span><span class="p">()</span>
+                <span class="n">text_output</span> <span class="o">=</span> <span class="n">gr</span><span class="o">.</span><span class="n">Textbox</span><span class="p">()</span>
+            <span class="n">text_button</span> <span class="o">=</span> <span class="n">gr</span><span class="o">.</span><span class="n">Button</span><span class="p">(</span><span class="s2">"Flip"</span><span class="p">)</span>
+        <span class="k">with</span> <span class="n">gr</span><span class="o">.</span><span class="n">TabItem</span><span class="p">(</span><span class="s2">"Flip Image"</span><span class="p">):</span>
+            <span class="k">with</span> <span class="n">gr</span><span class="o">.</span><span class="n">Row</span><span class="p">():</span>
+                <span class="n">image_input</span> <span class="o">=</span> <span class="n">gr</span><span class="o">.</span><span class="n">Image</span><span class="p">()</span>
+                <span class="n">image_output</span> <span class="o">=</span> <span class="n">gr</span><span class="o">.</span><span class="n">Image</span><span class="p">()</span>
+            <span class="n">image_button</span> <span class="o">=</span> <span class="n">gr</span><span class="o">.</span><span class="n">Button</span><span class="p">(</span><span class="s2">"Flip"</span><span class="p">)</span>
+
+    <span class="n">text_button</span><span class="o">.</span><span class="n">click</span><span class="p">(</span><span class="n">flip_text</span><span class="p">,</span> <span class="n">inputs</span><span class="o">=</span><span class="n">text_input</span><span class="p">,</span> <span class="n">outputs</span><span class="o">=</span><span class="n">text_output</span><span class="p">)</span>
+    <span class="n">image_button</span><span class="o">.</span><span class="n">click</span><span class="p">(</span><span class="n">flip_image</span><span class="p">,</span> <span class="n">inputs</span><span class="o">=</span><span class="n">image_input</span><span class="p">,</span> <span class="n">outputs</span><span class="o">=</span><span class="n">image_output</span><span class="p">)</span>
+
+<span class="n">demo</span><span class="o">.</span><span class="n">launch</span><span class="p">()</span>
+</code></pre></div>
+
+<iframe src="https://course-demos-flip-text-image.hf.space" frameBorder="0" height="450" title="Gradio アプリ" class="container p-0 flex-grow space-iframe" allow="accelerometer; ambient-light-sensor; autoplay; battery; camera; document-domain; encrypted-media; fullscreen; geolocation; gyroscope; layout-animations; legacy-image-formats; magnetometer; microphone; midi; oversized-images; payment; picture-in-picture; publickey-credentials-get; sync-xhr; usb; vr ; wake-lock; xr-spatial-tracking" sandbox="allow-forms allow-modals allow-popups allow-popups-to-escape-sandbox allow-same-origin allow-scripts allow-downloads"></iframe>
+
+<p>この例では、各タブに <code>Button</code> コンポーネントも作成し、それぞれのボタンにクリックイベントを割り当てていることにも注目してください。これが実際に関数を実行します。</p>
+<h3>イベントと状態を探る</h3>
+<p>レイアウトを制御できるのと同様に、<code>Blocks</code> では、どのイベントが関数の呼び出しをトリガーするかを細かく制御できます。各コンポーネントや多くのレイアウトには、それぞれサポートする固有のイベントがあります。</p>
+<p>たとえば、<code>Textbox</code> コンポーネントには2つのイベントがあります: <code>change()</code>（テキストボックス内の値が変わったとき）と <code>submit()</code>（テキストボックスにフォーカスした状態でユーザーが Enter キーを押したとき）です。より複雑なコンポーネントには、さらに多くのイベントがあります。たとえば <code>Audio</code> コンポーネントには、音声ファイルが再生、クリア、一時停止されたときなど、それぞれ別のイベントがあります。各コンポーネントがサポートするイベントはドキュメントを参照してください。</p>
+<p>イベントトリガーは、必要に応じて1つまたは複数のイベントに設定できます。設定しないイベントがあっても構いません。イベントトリガーは、コンポーネントのインスタンスに対してイベント名を関数として呼び出すことで作成します（例: <code>textbox.change(...)</code> や <code>btn.click(...)</code>）。前述のとおり、この関数は3つのパラメータを取ります:</p>
+<ul>
+<li><code>fn</code>: 実行する関数</li>
+<li><code>inputs</code>: 値が関数の入力パラメータとして渡されるコンポーネント。複数の場合はリストで指定します。各コンポーネントの値は、順番に対応する関数のパラメータに割り当てられます。関数がパラメータを取らない場合は None にできます。</li>
+<li><code>outputs</code>: 関数の戻り値に基づいて値が更新されるコンポーネント。複数の場合はリストで指定します。各戻り値は、順番に対応するコンポーネントの値を設定します。関数が何も返さない場合は None にできます。</li>
+</ul>
+<p>入力コンポーネントと出力コンポーネントを同じコンポーネントにすることもできます。GPT モデルでテキスト補完を行う次の例がそれです:</p>
+<div class="codehilite"><pre><span></span><code><span class="kn">import</span><span class="w"> </span><span class="nn">gradio</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">gr</span>
+
+<span class="n">api</span> <span class="o">=</span> <span class="n">gr</span><span class="o">.</span><span class="n">Interface</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="s2">"huggingface/EleutherAI/gpt-j-6B"</span><span class="p">)</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">complete_with_gpt</span><span class="p">(</span><span class="n">text</span><span class="p">):</span>
+    <span class="c1"># テキストの最後の50文字をコンテキストとして使う</span>
+    <span class="k">return</span> <span class="n">text</span><span class="p">[:</span><span class="o">-</span><span class="mi">50</span><span class="p">]</span> <span class="o">+</span> <span class="n">api</span><span class="p">(</span><span class="n">text</span><span class="p">[</span><span class="o">-</span><span class="mi">50</span><span class="p">:])</span>
+
+
+<span class="k">with</span> <span class="n">gr</span><span class="o">.</span><span class="n">Blocks</span><span class="p">()</span> <span class="k">as</span> <span class="n">demo</span><span class="p">:</span>
+    <span class="n">textbox</span> <span class="o">=</span> <span class="n">gr</span><span class="o">.</span><span class="n">Textbox</span><span class="p">(</span><span class="n">placeholder</span><span class="o">=</span><span class="s2">"Type here and press enter..."</span><span class="p">,</span> <span class="n">lines</span><span class="o">=</span><span class="mi">4</span><span class="p">)</span>
+    <span class="n">btn</span> <span class="o">=</span> <span class="n">gr</span><span class="o">.</span><span class="n">Button</span><span class="p">(</span><span class="s2">"Generate"</span><span class="p">)</span>
+
+    <span class="n">btn</span><span class="o">.</span><span class="n">click</span><span class="p">(</span><span class="n">complete_with_gpt</span><span class="p">,</span> <span class="n">textbox</span><span class="p">,</span> <span class="n">textbox</span><span class="p">)</span>
+
+<span class="n">demo</span><span class="o">.</span><span class="n">launch</span><span class="p">()</span>
+</code></pre></div>
+
+<iframe src="https://course-demos-blocks-gpt.hf.space" frameBorder="0" height="300" title="Gradio アプリ" class="container p-0 flex-grow space-iframe" allow="accelerometer; ambient-light-sensor; autoplay; battery; camera; document-domain; encrypted-media; fullscreen; geolocation; gyroscope; layout-animations; legacy-image-formats; magnetometer; microphone; midi; oversized-images; payment; picture-in-picture; publickey-credentials-get; sync-xhr; usb; vr ; wake-lock; xr-spatial-tracking" sandbox="allow-forms allow-modals allow-popups allow-popups-to-escape-sandbox allow-same-origin allow-scripts allow-downloads"></iframe>
+
+<h3>複数ステップのデモを作る</h3>
+<p>場合によっては、ある関数の出力を次の関数の入力として再利用する <em>複数ステップのデモ</em> が欲しくなるかもしれません。これは <code>Blocks</code> を使えばとても簡単です。1つのコンポーネントを、あるイベントトリガーの入力でありながら、別のイベントトリガーの出力にできるからです。下の例のテキストコンポーネントを見てください。その値は音声認識モデルの結果ですが、感情分析モデルにも渡されます:</p>
+<div class="codehilite"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">transformers</span><span class="w"> </span><span class="kn">import</span> <span class="n">pipeline</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">gradio</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">gr</span>
+
+<span class="n">asr</span> <span class="o">=</span> <span class="n">pipeline</span><span class="p">(</span><span class="s2">"automatic-speech-recognition"</span><span class="p">,</span> <span class="s2">"facebook/wav2vec2-base-960h"</span><span class="p">)</span>
+<span class="n">classifier</span> <span class="o">=</span> <span class="n">pipeline</span><span class="p">(</span><span class="s2">"text-classification"</span><span class="p">)</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">speech_to_text</span><span class="p">(</span><span class="n">speech</span><span class="p">):</span>
+    <span class="n">text</span> <span class="o">=</span> <span class="n">asr</span><span class="p">(</span><span class="n">speech</span><span class="p">)[</span><span class="s2">"text"</span><span class="p">]</span>
+    <span class="k">return</span> <span class="n">text</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">text_to_sentiment</span><span class="p">(</span><span class="n">text</span><span class="p">):</span>
+    <span class="k">return</span> <span class="n">classifier</span><span class="p">(</span><span class="n">text</span><span class="p">)[</span><span class="mi">0</span><span class="p">][</span><span class="s2">"label"</span><span class="p">]</span>
+
+
+<span class="n">demo</span> <span class="o">=</span> <span class="n">gr</span><span class="o">.</span><span class="n">Blocks</span><span class="p">()</span>
+
+<span class="k">with</span> <span class="n">demo</span><span class="p">:</span>
+    <span class="n">audio_file</span> <span class="o">=</span> <span class="n">gr</span><span class="o">.</span><span class="n">Audio</span><span class="p">(</span><span class="nb">type</span><span class="o">=</span><span class="s2">"filepath"</span><span class="p">)</span>
+    <span class="n">text</span> <span class="o">=</span> <span class="n">gr</span><span class="o">.</span><span class="n">Textbox</span><span class="p">()</span>
+    <span class="n">label</span> <span class="o">=</span> <span class="n">gr</span><span class="o">.</span><span class="n">Label</span><span class="p">()</span>
+
+    <span class="n">b1</span> <span class="o">=</span> <span class="n">gr</span><span class="o">.</span><span class="n">Button</span><span class="p">(</span><span class="s2">"Recognize Speech"</span><span class="p">)</span>
+    <span class="n">b2</span> <span class="o">=</span> <span class="n">gr</span><span class="o">.</span><span class="n">Button</span><span class="p">(</span><span class="s2">"Classify Sentiment"</span><span class="p">)</span>
+
+    <span class="n">b1</span><span class="o">.</span><span class="n">click</span><span class="p">(</span><span class="n">speech_to_text</span><span class="p">,</span> <span class="n">inputs</span><span class="o">=</span><span class="n">audio_file</span><span class="p">,</span> <span class="n">outputs</span><span class="o">=</span><span class="n">text</span><span class="p">)</span>
+    <span class="n">b2</span><span class="o">.</span><span class="n">click</span><span class="p">(</span><span class="n">text_to_sentiment</span><span class="p">,</span> <span class="n">inputs</span><span class="o">=</span><span class="n">text</span><span class="p">,</span> <span class="n">outputs</span><span class="o">=</span><span class="n">label</span><span class="p">)</span>
+
+<span class="n">demo</span><span class="o">.</span><span class="n">launch</span><span class="p">()</span>
+</code></pre></div>
+
+<iframe src="https://course-demos-blocks-multi-step.hf.space" frameBorder="0" height="600" title="Gradio アプリ" class="container p-0 flex-grow space-iframe" allow="accelerometer; ambient-light-sensor; autoplay; battery; camera; document-domain; encrypted-media; fullscreen; geolocation; gyroscope; layout-animations; legacy-image-formats; magnetometer; microphone; midi; oversized-images; payment; picture-in-picture; publickey-credentials-get; sync-xhr; usb; vr ; wake-lock; xr-spatial-tracking" sandbox="allow-forms allow-modals allow-popups allow-popups-to-escape-sandbox allow-same-origin allow-scripts allow-downloads"></iframe>
+
+<h3>コンポーネントのプロパティを更新する</h3>
+<p>ここまで、イベントを作成して別のコンポーネントの値を更新する方法を見てきました。しかし、テキストボックスの表示/非表示やラジオボタングループの選択肢など、コンポーネントの他のプロパティを変更したい場合はどうすればよいでしょうか？関数から通常の戻り値の代わりに、コンポーネントクラスの <code>update()</code> メソッドを呼び出し、その戻り値を返すことで実現できます。</p>
+<p>例で見るのが一番分かりやすいでしょう:</p>
+<div class="codehilite"><pre><span></span><code><span class="kn">import</span><span class="w"> </span><span class="nn">gradio</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">gr</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">change_textbox</span><span class="p">(</span><span class="n">choice</span><span class="p">):</span>
+    <span class="k">if</span> <span class="n">choice</span> <span class="o">==</span> <span class="s2">"short"</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">gr</span><span class="o">.</span><span class="n">Textbox</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">lines</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span> <span class="n">visible</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+    <span class="k">elif</span> <span class="n">choice</span> <span class="o">==</span> <span class="s2">"long"</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">gr</span><span class="o">.</span><span class="n">Textbox</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">lines</span><span class="o">=</span><span class="mi">8</span><span class="p">,</span> <span class="n">visible</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">gr</span><span class="o">.</span><span class="n">Textbox</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">visible</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+
+
+<span class="k">with</span> <span class="n">gr</span><span class="o">.</span><span class="n">Blocks</span><span class="p">()</span> <span class="k">as</span> <span class="n">block</span><span class="p">:</span>
+    <span class="n">radio</span> <span class="o">=</span> <span class="n">gr</span><span class="o">.</span><span class="n">Radio</span><span class="p">(</span>
+        <span class="p">[</span><span class="s2">"short"</span><span class="p">,</span> <span class="s2">"long"</span><span class="p">,</span> <span class="s2">"none"</span><span class="p">],</span> <span class="n">label</span><span class="o">=</span><span class="s2">"What kind of essay would you like to write?"</span>
+    <span class="p">)</span>
+    <span class="n">text</span> <span class="o">=</span> <span class="n">gr</span><span class="o">.</span><span class="n">Textbox</span><span class="p">(</span><span class="n">lines</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span> <span class="n">interactive</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+
+    <span class="n">radio</span><span class="o">.</span><span class="n">change</span><span class="p">(</span><span class="n">fn</span><span class="o">=</span><span class="n">change_textbox</span><span class="p">,</span> <span class="n">inputs</span><span class="o">=</span><span class="n">radio</span><span class="p">,</span> <span class="n">outputs</span><span class="o">=</span><span class="n">text</span><span class="p">)</span>
+    <span class="n">block</span><span class="o">.</span><span class="n">launch</span><span class="p">()</span>
+</code></pre></div>
+
+<iframe src="https://course-demos-blocks-update-component-properties.hf.space" frameBorder="0" height="300" title="Gradio アプリ" class="container p-0 flex-grow space-iframe" allow="accelerometer; ambient-light-sensor; autoplay; battery; camera; document-domain; encrypted-media; fullscreen; geolocation; gyroscope; layout-animations; legacy-image-formats; magnetometer; microphone; midi; oversized-images; payment; picture-in-picture; publickey-credentials-get; sync-xhr; usb; vr ; wake-lock; xr-spatial-tracking" sandbox="allow-forms allow-modals allow-popups allow-popups-to-escape-sandbox allow-same-origin allow-scripts allow-downloads"></iframe>
+
+<p>これで <code>Blocks</code> の核となる概念をすべて見ました！<code>Interface</code> と同様に、<code>launch()</code> メソッドで <code>share=True</code> を使って共有したり、<a href="https://huggingface.co/spaces">Hugging Face Spaces</a> にデプロイしたりできる、素敵なデモを作れます。</p>
+</article>
+<nav class="page-nav"><a class="nav-link prev" href="6.html">← 前へ: `Interface` の高度な機能</a><a class="nav-link toc-link" href="../index.html">目次へ</a><a class="nav-link next" href="8.html">次へ →: Gradio、チェック！</a></nav>
+</main>
+<footer class="site-footer">
+  <p>原典: Hugging Face huggingface/course（<a href="https://github.com/huggingface/course">https://github.com/huggingface/course</a>）</p>
+  <p>日本語版の翻訳・公開: 霞ヶ関京 / 連絡先: GitHub <a href="https://github.com/yanikasumin">@yanikasumin</a> / YouTube <a href="https://www.youtube.com/@KASUMI_MOF">@KASUMI_MOF</a></p>
+  <p class="demo-note">このサイトはデモ版です。内容は順次更新されます。</p>
+</footer>
+<script src="../../site.js"></script>
+</body>
+</html>

@@ -1,0 +1,387 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>MCP クライアント | Hugging Face コース日本語版（デモ版）</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Shippori+Mincho:wght@500;700&family=Zen+Kaku+Gothic+New:wght@400;500;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../../style.css">
+<script>
+window.MathJax = { tex: { inlineMath: [['$', '$'], ['\\(', '\\)']], displayMath: [['$$', '$$'], ['\\[', '\\]']] }, options: { skipHtmlTags: ['script','noscript','style','textarea','pre','code'] } };
+</script>
+<script async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml.js"></script>
+</head>
+<body>
+<header class="site-header">
+  <div class="header-inner">
+    <a class="site-title" href="../../index.html">Hugging Face コース日本語版</a>
+    <span class="demo-badge">デモ版</span>
+  </div>
+</header>
+<main class="container">
+<p class="course-crumb"><a href="../index.html">MCP コース</a>
+<span class="badge badge-qa-wip">翻訳済み・QA進行中（未検証の部分を含みます）</span></p>
+<nav class="page-nav"><a class="nav-link prev" href="quiz2.html">← 前へ: クイズ 2: MCP SDK</a><a class="nav-link toc-link" href="../index.html">目次へ</a><a class="nav-link next" href="hf-mcp-server.html">次へ →: Hugging Face MCP Server</a></nav>
+<article class="content">
+<h1>MCP クライアント</h1>
+<p>Model Context Protocol の基本を理解したところで、Model Context Protocol エコシステムにおける MCP クライアントの重要な役割を探っていきましょう。</p>
+<p>Unit 1 のこのパートでは、Model Context Protocol エコシステムにおける MCP クライアントの重要な役割を探ります。</p>
+<p>この節では、次のことを行います。</p>
+<ul>
+<li>MCP クライアントとは何か、MCP アーキテクチャにおけるその役割を理解する</li>
+<li>MCP クライアントの主な責務を学ぶ</li>
+<li>主要な MCP クライアントの実装を探る</li>
+<li>Hugging Face MCP Server と組み込みツールへの接続方法を知る</li>
+<li>MCP クライアントの実用的な使用例を見る</li>
+</ul>
+<div class="callout callout-tip">
+<p class="callout-title">💡 ヒント</p>
+<p>このページでは、JSON 記法を使って MCP クライアントをセットアップするいくつかの方法の例を示します。当面は、<code>path/to/server.py</code> のような<em>例</em>を使って MCP サーバーへのパスを表します。次のユニットでは、実際の MCP サーバーでこれを実装します。  </p>
+<p>今は MCP クライアントの記法の理解に集中してください。MCP サーバーは次のユニットで実装します。</p>
+</div>
+<h2>MCP クライアントを理解する</h2>
+<p>MCP クライアントは、AI アプリケーション（ホスト）と MCP サーバーが提供する外部機能の間の橋渡し役として動作する重要なコンポーネントです。ホストはメインのアプリケーション（AI アシスタントや IDE のようなもの）、クライアントはそのホスト内の専門モジュールで、MCP 通信の処理を担うものと考えてください。</p>
+<h2>ユーザーインターフェースクライアント</h2>
+<p>まず、MCP で利用できるユーザーインターフェースクライアントを見ていきましょう。</p>
+<h3>チャットインターフェースクライアント</h3>
+<ul>
+<li>Claude Desktop（Anthropic）</li>
+</ul>
+<h3>インタラクティブ開発クライアント</h3>
+<ul>
+<li>MCP 対応の VS Code 拡張機能（例: Continue）</li>
+<li>Cursor IDE（MCP クライアント内蔵）</li>
+<li>Zed エディタ</li>
+</ul>
+<p>これらのクライアントは、複数の MCP サーバーへの接続とリアルタイムのツール呼び出しをサポートしています。</p>
+<h2>Hugging Face MCP Server へのクイック接続</h2>
+<p>Hugging Face は、モデル、データセット、Spaces、論文を探索するための組み込みツールを備えた、ホスト型の MCP サーバーを提供しています。</p>
+<ol>
+<li>ログインした状態で https://huggingface.co/settings/mcp にアクセスします。</li>
+<li>MCP 対応のクライアント（例: VS Code、Cursor、Zed、Claude Desktop）を選択します。</li>
+<li>生成された設定スニペットを、クライアントの MCP 設定にコピーします。</li>
+<li>クライアントを再起動またはリロードします。「Hugging Face」が接続済みと表示されるはずです。</li>
+</ol>
+<p>Tip: 手書きの設定よりも生成されたスニペットを使いましょう。クライアントごとに調整されています。</p>
+<h2>MCP クライアントの設定</h2>
+<p>MCP プロトコルの中核を押さえたところで、MCP サーバーとクライアントの設定方法を見ていきましょう。</p>
+<p>MCP サーバーとクライアントを効果的にデプロイするには、適切な設定が必要です。 </p>
+<div class="callout callout-tip">
+<p class="callout-title">💡 ヒント</p>
+<p>MCP 仕様はまだ進化中であるため、設定方法は今後変わる可能性があります。ここでは現在の設定のベストプラクティスに焦点を当てます。</p>
+</div>
+<h3>MCP 設定ファイル</h3>
+<p>MCP ホストは、サーバー接続を管理するために設定ファイルを使います。これらのファイルは、どのサーバーが利用可能か、どう接続するかを定義します。</p>
+<p>幸い、設定ファイルは非常にシンプルで理解しやすく、主要な MCP ホスト間で一貫しています。</p>
+<h4><code>mcp.json</code> の構造</h4>
+<p>MCP の標準的な設定ファイルは <code>mcp.json</code> という名前です。基本的な構造は次のとおりです。</p>
+<p>次は <code>mcp.json</code> の基本構造であり、Claude Desktop、Cursor、VS Code のようなアプリケーションに渡すことができます。</p>
+<div class="codehilite"><pre><span></span><code><span class="p">{</span>
+<span class="w">  </span><span class="nt">"servers"</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
+<span class="w">    </span><span class="p">{</span>
+<span class="w">      </span><span class="nt">"name"</span><span class="p">:</span><span class="w"> </span><span class="s2">"Server Name"</span><span class="p">,</span>
+<span class="w">      </span><span class="nt">"transport"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">        </span><span class="nt">"type"</span><span class="p">:</span><span class="w"> </span><span class="s2">"stdio|sse"</span><span class="p">,</span>
+<span class="w">        </span><span class="c1">// Transport-specific configuration</span>
+<span class="w">      </span><span class="p">}</span>
+<span class="w">    </span><span class="p">}</span>
+<span class="w">  </span><span class="p">]</span>
+<span class="p">}</span>
+</code></pre></div>
+
+<p>この例では、名前とトランスポートタイプを持つ単一のサーバーがあります。トランスポートタイプは <code>stdio</code> か <code>sse</code> のいずれかです。</p>
+<h4>stdio トランスポートの設定</h4>
+<p>stdio トランスポートを使うローカルサーバーでは、設定にはサーバープロセスを起動するコマンドと引数が含まれます。</p>
+<div class="codehilite"><pre><span></span><code><span class="p">{</span>
+<span class="w">  </span><span class="nt">"servers"</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
+<span class="w">    </span><span class="p">{</span>
+<span class="w">      </span><span class="nt">"name"</span><span class="p">:</span><span class="w"> </span><span class="s2">"File Explorer"</span><span class="p">,</span>
+<span class="w">      </span><span class="nt">"transport"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">        </span><span class="nt">"type"</span><span class="p">:</span><span class="w"> </span><span class="s2">"stdio"</span><span class="p">,</span>
+<span class="w">        </span><span class="nt">"command"</span><span class="p">:</span><span class="w"> </span><span class="s2">"python"</span><span class="p">,</span>
+<span class="w">        </span><span class="nt">"args"</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="s2">"/path/to/file_explorer_server.py"</span><span class="p">]</span><span class="w"> </span><span class="c1">// This is an example, we'll use a real server in the next unit</span>
+<span class="w">      </span><span class="p">}</span>
+<span class="w">    </span><span class="p">}</span>
+<span class="w">  </span><span class="p">]</span>
+<span class="p">}</span>
+</code></pre></div>
+
+<p>ここでは、「File Explorer」という名前のサーバーがあり、これはローカルスクリプトです。</p>
+<h4>HTTP+SSE トランスポートの設定</h4>
+<p>HTTP+SSE トランスポートを使うリモートサーバーでは、設定にはサーバーの URL が含まれます。</p>
+<div class="codehilite"><pre><span></span><code><span class="p">{</span>
+<span class="w">  </span><span class="nt">"servers"</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
+<span class="w">    </span><span class="p">{</span>
+<span class="w">      </span><span class="nt">"name"</span><span class="p">:</span><span class="w"> </span><span class="s2">"Remote API Server"</span><span class="p">,</span>
+<span class="w">      </span><span class="nt">"transport"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">        </span><span class="nt">"type"</span><span class="p">:</span><span class="w"> </span><span class="s2">"sse"</span><span class="p">,</span>
+<span class="w">        </span><span class="nt">"url"</span><span class="p">:</span><span class="w"> </span><span class="s2">"https://example.com/mcp-server"</span>
+<span class="w">      </span><span class="p">}</span>
+<span class="w">    </span><span class="p">}</span>
+<span class="w">  </span><span class="p">]</span>
+<span class="p">}</span>
+</code></pre></div>
+
+<h4>設定における環境変数</h4>
+<p>環境変数は <code>env</code> フィールドを使ってサーバープロセスに渡すことができます。サーバーコードからそれらにアクセスする方法は次のとおりです。</p>
+<div class="hfoptions">
+<section class="hfoption" markdown="block">
+<p class="hfoption-label">python</p>
+
+
+Python では、`os` モジュールを使って環境変数にアクセスします。
+
+
+<div class="codehilite"><pre><span></span><code><span class="kn">import</span><span class="w"> </span><span class="nn">os</span>
+
+<span class="c1"># 環境変数にアクセスする</span>
+<span class="n">github_token</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">environ</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"GITHUB_TOKEN"</span><span class="p">)</span>
+<span class="k">if</span> <span class="ow">not</span> <span class="n">github_token</span><span class="p">:</span>
+    <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">"GITHUB_TOKEN environment variable is required"</span><span class="p">)</span>
+
+<span class="c1"># サーバーコードでトークンを使う</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">make_github_request</span><span class="p">():</span>
+    <span class="n">headers</span> <span class="o">=</span> <span class="p">{</span><span class="s2">"Authorization"</span><span class="p">:</span> <span class="sa">f</span><span class="s2">"Bearer </span><span class="si">{</span><span class="n">github_token</span><span class="si">}</span><span class="s2">"</span><span class="p">}</span>
+    <span class="c1"># ... 残りのコード</span>
+</code></pre></div>
+
+
+
+</section>
+<section class="hfoption" markdown="block">
+<p class="hfoption-label">javascript</p>
+
+
+JavaScript では、`process.env` オブジェクトを使って環境変数にアクセスします。
+
+
+<div class="codehilite"><pre><span></span><code><span class="c1">// 環境変数にアクセスする</span>
+<span class="kd">const</span><span class="w"> </span><span class="nx">githubToken</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nx">process</span><span class="p">.</span><span class="nx">env</span><span class="p">.</span><span class="nx">GITHUB_TOKEN</span><span class="p">;</span>
+<span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="o">!</span><span class="nx">githubToken</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="k">throw</span><span class="w"> </span><span class="ow">new</span><span class="w"> </span><span class="ne">Error</span><span class="p">(</span><span class="s2">"GITHUB_TOKEN environment variable is required"</span><span class="p">);</span>
+<span class="p">}</span>
+
+<span class="c1">// サーバーコードでトークンを使う</span>
+<span class="kd">function</span><span class="w"> </span><span class="nx">makeGithubRequest</span><span class="p">()</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="kd">const</span><span class="w"> </span><span class="nx">headers</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="s2">"Authorization"</span><span class="o">:</span><span class="w"> </span><span class="sb">`Bearer </span><span class="si">${</span><span class="nx">githubToken</span><span class="si">}</span><span class="sb">`</span><span class="w"> </span><span class="p">};</span>
+<span class="w">    </span><span class="c1">// ... 残りのコード</span>
+<span class="p">}</span>
+</code></pre></div>
+
+
+
+</section>
+</div>
+
+<p>対応する <code>mcp.json</code> の設定は次のようになります。</p>
+<div class="codehilite"><pre><span></span><code><span class="p">{</span>
+<span class="w">  </span><span class="nt">"servers"</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
+<span class="w">    </span><span class="p">{</span>
+<span class="w">      </span><span class="nt">"name"</span><span class="p">:</span><span class="w"> </span><span class="s2">"GitHub API"</span><span class="p">,</span>
+<span class="w">      </span><span class="nt">"transport"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">        </span><span class="nt">"type"</span><span class="p">:</span><span class="w"> </span><span class="s2">"stdio"</span><span class="p">,</span>
+<span class="w">        </span><span class="nt">"command"</span><span class="p">:</span><span class="w"> </span><span class="s2">"python"</span><span class="p">,</span>
+<span class="w">        </span><span class="nt">"args"</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="s2">"/path/to/github_server.py"</span><span class="p">],</span><span class="w"> </span><span class="c1">// This is an example, we'll use a real server in the next unit</span>
+<span class="w">        </span><span class="nt">"env"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">          </span><span class="nt">"GITHUB_TOKEN"</span><span class="p">:</span><span class="w"> </span><span class="s2">"your_github_token"</span>
+<span class="w">        </span><span class="p">}</span>
+<span class="w">      </span><span class="p">}</span>
+<span class="w">    </span><span class="p">}</span>
+<span class="w">  </span><span class="p">]</span>
+<span class="p">}</span>
+</code></pre></div>
+
+<h3>設定の例</h3>
+<p>実際のシナリオでの設定例を見ていきましょう。</p>
+<h4>シナリオ 1: ローカルサーバーの設定</h4>
+<p>このシナリオでは、ファイルエクスプローラーやコードエディタになりうる Python スクリプトのローカルサーバーがあります。</p>
+<div class="codehilite"><pre><span></span><code><span class="p">{</span>
+<span class="w">  </span><span class="nt">"servers"</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
+<span class="w">    </span><span class="p">{</span>
+<span class="w">      </span><span class="nt">"name"</span><span class="p">:</span><span class="w"> </span><span class="s2">"File Explorer"</span><span class="p">,</span>
+<span class="w">      </span><span class="nt">"transport"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">        </span><span class="nt">"type"</span><span class="p">:</span><span class="w"> </span><span class="s2">"stdio"</span><span class="p">,</span>
+<span class="w">        </span><span class="nt">"command"</span><span class="p">:</span><span class="w"> </span><span class="s2">"python"</span><span class="p">,</span>
+<span class="w">        </span><span class="nt">"args"</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="s2">"/path/to/file_explorer_server.py"</span><span class="p">]</span><span class="w"> </span><span class="c1">// This is an example, we'll use a real server in the next unit</span>
+<span class="w">      </span><span class="p">}</span>
+<span class="w">    </span><span class="p">}</span>
+<span class="w">  </span><span class="p">]</span>
+<span class="p">}</span>
+</code></pre></div>
+
+<h4>シナリオ 2: リモートサーバーの設定</h4>
+<p>このシナリオでは、天気 API であるリモートサーバーがあります。</p>
+<div class="codehilite"><pre><span></span><code><span class="p">{</span>
+<span class="w">  </span><span class="nt">"servers"</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
+<span class="w">    </span><span class="p">{</span>
+<span class="w">      </span><span class="nt">"name"</span><span class="p">:</span><span class="w"> </span><span class="s2">"Weather API"</span><span class="p">,</span>
+<span class="w">      </span><span class="nt">"transport"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">        </span><span class="nt">"type"</span><span class="p">:</span><span class="w"> </span><span class="s2">"sse"</span><span class="p">,</span>
+<span class="w">        </span><span class="nt">"url"</span><span class="p">:</span><span class="w"> </span><span class="s2">"https://example.com/mcp-server"</span><span class="w"> </span><span class="c1">// This is an example, we'll use a real server in the next unit</span>
+<span class="w">      </span><span class="p">}</span>
+<span class="w">    </span><span class="p">}</span>
+<span class="w">  </span><span class="p">]</span>
+<span class="p">}</span>
+</code></pre></div>
+
+<p>MCP 統合を成功裏にデプロイするには、適切な設定が不可欠です。これらの側面を理解することで、AI アプリケーションと外部機能の間に堅牢で信頼性の高い接続を作成できます。</p>
+<p>次節では、Hugging Face Hub で利用できる MCP サーバーのエコシステムと、自分のサーバーをそこに公開する方法を探ります。 </p>
+<h2>Tiny Agents クライアント</h2>
+<p>次に、コードの中で MCP クライアントを使う方法を見ていきましょう。</p>
+<p>Tiny Agents を MCP クライアントとして使うことで、コードから MCP サーバーに直接接続することもできます。Tiny Agents は、MCP サーバーのツールを使える AI エージェントを作成する簡単な方法を提供します。</p>
+<p>Tiny Agents はコマンドライン環境で MCP サーバーを実行できます。そのためには、<code>npm</code> をインストールし、<code>npx</code> でサーバーを実行する必要があります。<strong>これは Python と JavaScript の両方で必要です。</strong></p>
+<p><code>npm</code> で <code>npx</code> をインストールしましょう。<code>npm</code> がインストールされていない場合は、<a href="https://docs.npmjs.com/downloading-and-installing-node-js-and-npm">npm のドキュメント</a>を確認してください。</p>
+<h3>セットアップ</h3>
+<p>まず、<code>npx</code> がインストールされていない場合はインストールする必要があります。次のコマンドで実行できます。</p>
+<div class="codehilite"><pre><span></span><code><span class="c1"># npx をインストールする</span>
+npm<span class="w"> </span>install<span class="w"> </span>-g<span class="w"> </span>npx
+</code></pre></div>
+
+<p>次に、MCP サポート付きの huggingface_hub パッケージをインストールする必要があります。これにより、MCP サーバーとクライアントを実行できるようになります。</p>
+<div class="codehilite"><pre><span></span><code>pip<span class="w"> </span>install<span class="w"> </span><span class="s2">"huggingface_hub[mcp]&gt;=0.32.0"</span>
+</code></pre></div>
+
+<p>次に、MCP サーバーにアクセスするために Hugging Face Hub にログインする必要があります。これは Hugging Face CLI を使って行えます。そのためには<a href="https://huggingface.co/docs/huggingface_hub/v0.32.3/en/quick-start#authentication">ログイントークン</a>が必要です。</p>
+<div class="codehilite"><pre><span></span><code><span class="c1"># 新しい CLI を使ってログインする</span>
+hf<span class="w"> </span>auth<span class="w"> </span>login
+</code></pre></div>
+
+<blockquote>
+<p><strong>Note</strong>
+<code>huggingface-cli</code> コマンドは非推奨となり、<code>hf</code> に置き換えられました。
+「command not found」エラーに遭遇した場合は、最新バージョンの <code>huggingface_hub</code> を使っているか確認してください。</p>
+</blockquote>
+<h3>アクセストークンの権限を設定する</h3>
+<p>Hugging Face のアクセストークンを作成してログインした後、トークンが推論プロバイダで動作するための適切な権限を持っていることを確認する必要があります。</p>
+<div class="callout callout-warning">
+<p class="callout-title">⚠️ 注意</p>
+<p><strong>重要:</strong> このステップをスキップすると、ホスト型モデルで Tiny Agents を実行する際に認証エラーが発生する可能性があります。</p>
+</div>
+<ol>
+<li><a href="https://huggingface.co/settings/tokens">Hugging Face のアクセストークンページ</a>に移動します</li>
+<li>MCP トークンを見つけ、その横の3点マーク（⋮）をクリックします</li>
+<li><strong>「Edit permissions」</strong> を選択します</li>
+<li><strong>Inference</strong> セクションで、次のチェックボックスをオンにします:
+   - <strong>「Make calls to Inference Providers」</strong></li>
+<li>変更を保存します</li>
+</ol>
+<p>この権限が必要なのは、Tiny Agents が Novita のようなプロバイダを通じて <code>Qwen/Qwen2.5-72B-Instruct</code> のようなホスト型モデルへの API 呼び出しを行う必要があるためです。</p>
+<div class="hfoptions">
+<section class="hfoption" markdown="block">
+<p class="hfoption-label">python</p>
+
+
+### MCP サーバーに接続する
+
+では、エージェントの設定ファイル `agent.json` を作成しましょう。
+
+
+<div class="codehilite"><pre><span></span><code><span class="p">{</span>
+<span class="w">    </span><span class="nt">"name"</span><span class="p">:</span><span class="w"> </span><span class="s2">"playwright-agent"</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">"description"</span><span class="p">:</span><span class="w"> </span><span class="s2">"Agent with Playwright MCP server"</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">"model"</span><span class="p">:</span><span class="w"> </span><span class="s2">"Qwen/Qwen2.5-72B-Instruct"</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">"provider"</span><span class="p">:</span><span class="w"> </span><span class="s2">"novita"</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">"servers"</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
+<span class="w">        </span><span class="p">{</span>
+<span class="w">            </span><span class="nt">"type"</span><span class="p">:</span><span class="w"> </span><span class="s2">"stdio"</span><span class="p">,</span>
+<span class="w">            </span><span class="nt">"command"</span><span class="p">:</span><span class="w"> </span><span class="s2">"npx"</span><span class="p">,</span>
+<span class="w">            </span><span class="nt">"args"</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="s2">"@playwright/mcp@latest"</span><span class="p">]</span>
+<span class="w">        </span><span class="p">}</span>
+<span class="w">    </span><span class="p">]</span>
+<span class="p">}</span>
+</code></pre></div>
+
+
+
+この設定では、`@playwright/mcp` MCP サーバーを使っています。これは Playwright でブラウザを制御できる MCP サーバーです。
+
+これでエージェントを実行できます。
+
+
+<div class="codehilite"><pre><span></span><code>tiny-agents<span class="w"> </span>run<span class="w"> </span>agent.json
+</code></pre></div>
+
+
+</section>
+<section class="hfoption" markdown="block">
+<p class="hfoption-label">javascript</p>
+
+
+まず、[npm](https://docs.npmjs.com/downloading-and-installing-node-js-and-npm) で Tiny Agents パッケージをインストールします。
+
+
+<div class="codehilite"><pre><span></span><code>npm<span class="w"> </span>install<span class="w"> </span>@huggingface/tiny-agents
+</code></pre></div>
+
+
+
+### MCP サーバーに接続する
+
+エージェントプロジェクトのディレクトリを作成し、`agent.json` ファイルを作成します。
+
+
+<div class="codehilite"><pre><span></span><code>mkdir<span class="w"> </span>my-agent
+touch<span class="w"> </span>my-agent/agent.json
+</code></pre></div>
+
+
+
+`my-agent/agent.json` にエージェントの設定ファイルを作成します。
+
+
+<div class="codehilite"><pre><span></span><code><span class="p">{</span>
+<span class="w">    </span><span class="nt">"model"</span><span class="p">:</span><span class="w"> </span><span class="s2">"Qwen/Qwen2.5-72B-Instruct"</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">"provider"</span><span class="p">:</span><span class="w"> </span><span class="s2">"novita"</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">"servers"</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
+<span class="w">        </span><span class="p">{</span>
+<span class="w">            </span><span class="nt">"type"</span><span class="p">:</span><span class="w"> </span><span class="s2">"stdio"</span><span class="p">,</span>
+<span class="w">            </span><span class="nt">"command"</span><span class="p">:</span><span class="w"> </span><span class="s2">"npx"</span><span class="p">,</span>
+<span class="w">            </span><span class="nt">"args"</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="s2">"@playwright/mcp@latest"</span><span class="p">]</span>
+<span class="w">        </span><span class="p">}</span>
+<span class="w">    </span><span class="p">]</span>
+<span class="p">}</span>
+</code></pre></div>
+
+
+
+これでエージェントを実行できます。
+
+
+<div class="codehilite"><pre><span></span><code>npx<span class="w"> </span>@huggingface/tiny-agents<span class="w"> </span>run<span class="w"> </span>./my-agent
+</code></pre></div>
+
+
+
+</section>
+</div>
+
+<p>下の動画では、エージェントを実行し、ブラウザで新しいタブを開くよう指示しています。</p>
+<p>次の例は、Novita 推論プロバイダを通じて <a href="https://huggingface.co/Qwen/Qwen2.5-72B-Instruct">Qwen/Qwen2.5-72B-Instruct</a> モデルを使うよう設定された Web ブラウジングエージェントです。Playwright MCP サーバーを備えており、Web ブラウザを使うことができます！エージェントの設定は、<a href="https://huggingface.co/datasets/tiny-agents/tiny-agents/tree/main/celinah/web-browser"><code>tiny-agents/tiny-agents</code></a> Hugging Face データセット内のパスを指定して読み込まれます。</p>
+<video controls autoplay loop>
+  <source src="https://huggingface.co/datasets/huggingface/documentation-images/resolve/main/blog/python-tiny-agents/web_browser_agent.mp4" type="video/mp4">
+</video>
+
+<p>エージェントを実行すると、接続された MCP サーバーから発見したツールを一覧表示しながら読み込まれます。その後、プロンプトを受け付ける準備が整います！</p>
+<p>このデモで使われたプロンプト:</p>
+<blockquote>
+<p>do a Web Search for HF inference providers on Brave Search and open the first result and then give me the list of the inference providers supported on Hugging Face </p>
+</blockquote>
+<h2>次のステップ</h2>
+<p>MCP クライアントを理解した今、次の準備が整いました。
+* 具体的な MCP サーバーの実装を探る
+* カスタム MCP クライアントの作成について学ぶ
+* 高度な MCP 統合パターンを深く掘り下げる</p>
+<p>Model Context Protocol の世界への旅を続けましょう！</p>
+</article>
+<nav class="page-nav"><a class="nav-link prev" href="quiz2.html">← 前へ: クイズ 2: MCP SDK</a><a class="nav-link toc-link" href="../index.html">目次へ</a><a class="nav-link next" href="hf-mcp-server.html">次へ →: Hugging Face MCP Server</a></nav>
+</main>
+<footer class="site-footer">
+  <p>原典: Hugging Face huggingface/mcp-course（<a href="https://github.com/huggingface/mcp-course">https://github.com/huggingface/mcp-course</a>）</p>
+  <p>日本語版の翻訳・公開: 霞ヶ関京 / 連絡先: GitHub <a href="https://github.com/yanikasumin">@yanikasumin</a> / YouTube <a href="https://www.youtube.com/@KASUMI_MOF">@KASUMI_MOF</a></p>
+  <p class="demo-note">このサイトはデモ版です。内容は順次更新されます。</p>
+</footer>
+<script src="../../site.js"></script>
+</body>
+</html>

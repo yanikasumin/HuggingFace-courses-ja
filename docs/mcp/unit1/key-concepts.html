@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>主要な概念と用語 | Hugging Face コース日本語版（デモ版）</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Shippori+Mincho:wght@500;700&family=Zen+Kaku+Gothic+New:wght@400;500;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../../style.css">
+<script>
+window.MathJax = { tex: { inlineMath: [['$', '$'], ['\\(', '\\)']], displayMath: [['$$', '$$'], ['\\[', '\\]']] }, options: { skipHtmlTags: ['script','noscript','style','textarea','pre','code'] } };
+</script>
+<script async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml.js"></script>
+</head>
+<body>
+<header class="site-header">
+  <div class="header-inner">
+    <a class="site-title" href="../../index.html">Hugging Face コース日本語版</a>
+    <span class="demo-badge">デモ版</span>
+  </div>
+</header>
+<main class="container">
+<p class="course-crumb"><a href="../index.html">MCP コース</a>
+<span class="badge badge-qa-wip">翻訳済み・QA進行中（未検証の部分を含みます）</span></p>
+<nav class="page-nav"><a class="nav-link prev" href="introduction.html">← 前へ: Model Context Protocol（MCP）入門</a><a class="nav-link toc-link" href="../index.html">目次へ</a><a class="nav-link next" href="architectural-components.html">次へ →: MCP のアーキテクチャコンポーネント</a></nav>
+<article class="content">
+<h1>主要な概念と用語</h1>
+<p>Model Context Protocol をより深く学ぶ前に、MCP の基盤をなす主要な概念と用語を理解しておくことが重要です。この節では、プロトコルを支える基本的な考え方を紹介し、コース全体を通じて MCP の実装を議論するための共通の語彙を提供します。</p>
+<p>MCP は「AI アプリケーションのための USB-C」とよく説明されます。USB-C がさまざまな周辺機器をコンピューターに接続するための標準化された物理的・論理的インターフェースを提供するように、MCP は AI モデルを外部の機能に接続するための一貫したプロトコルを提供します。この標準化はエコシステム全体に利益をもたらします。</p>
+<ul>
+<li><strong>ユーザー</strong>は、AI アプリケーション間でよりシンプルで一貫した体験を享受できます</li>
+<li><strong>AI アプリケーション開発者</strong>は、成長し続けるツールやデータソースのエコシステムと簡単に統合できます</li>
+<li><strong>ツールやデータの提供者</strong>は、複数の AI アプリケーションで動作する実装を1つ作るだけで済みます</li>
+<li>エコシステム全体として、相互運用性が高まり、イノベーションが促進され、断片化が減ります</li>
+</ul>
+<h2>統合問題</h2>
+<p><strong>M×N 統合問題</strong>とは、標準化されたアプローチなしに、M 種類の AI アプリケーションを N 種類の外部ツールやデータソースに接続する際の課題を指します。 </p>
+<h3>MCP がない場合（M×N 問題）</h3>
+<p>MCP のようなプロトコルがなければ、開発者は M×N 通りのカスタム統合、つまり AI アプリケーションと外部機能のありうる組み合わせごとに1つずつ統合を作らなければなりません。 </p>
+<p><img alt="MCP がない場合" src="https://huggingface.co/datasets/mcp-course/images/resolve/main/unit1/1.png" /></p>
+<p>各 AI アプリケーションは、各ツールやデータソースと個別に統合する必要があります。これは非常に複雑でコストのかかるプロセスであり、開発者にとって大きな摩擦となり、メンテナンスコストも高くなります。</p>
+<p>モデルが複数、ツールも複数になると、統合の数は管理しきれないほど膨れ上がり、それぞれが独自のインターフェースを持つことになります。</p>
+<p><img alt="複数のモデルとツール" src="https://huggingface.co/datasets/mcp-course/images/resolve/main/unit1/1a.png" /></p>
+<h3>MCP がある場合（M+N の解決策）</h3>
+<p>MCP は標準インターフェースを提供することで、これを M+N 問題に変えます。各 AI アプリケーションは MCP のクライアント側を一度だけ実装し、各ツールやデータソースはサーバー側を一度だけ実装します。これにより、統合の複雑さとメンテナンスの負担が劇的に減ります。</p>
+<p><img alt="MCP がある場合" src="https://huggingface.co/datasets/mcp-course/images/resolve/main/unit1/2.png" /></p>
+<h2>MCP のコア用語</h2>
+<p>MCP が解決する問題を理解したところで、MCP プロトコルを構成するコアな用語と概念を詳しく見ていきましょう。</p>
+<div class="callout callout-tip">
+<p class="callout-title">💡 ヒント</p>
+<p>MCP は HTTP や USB-C のような標準であり、AI アプリケーションを外部のツールやデータソースに接続するためのプロトコルです。そのため、MCP を効果的に機能させるには、標準的な用語を使うことが不可欠です。 </p>
+<p>アプリケーションを文書化したりコミュニティとやり取りしたりする際には、次の用語を使いましょう。</p>
+</div>
+<h3>コンポーネント</h3>
+<p>HTTP におけるクライアントとサーバーの関係と同様に、MCP にもクライアントとサーバーがあります。</p>
+<p><img alt="MCP のコンポーネント" src="https://huggingface.co/datasets/mcp-course/images/resolve/main/unit1/3.png" /></p>
+<ul>
+<li>
+<p><strong>ホスト（Host）</strong>: エンドユーザーが直接操作するユーザー向けの AI アプリケーションです。例として、Anthropic の Claude Desktop、Cursor のような AI 強化 IDE、Hugging Face Python SDK のような推論ライブラリ、LangChain や smolagents のようなライブラリで構築されたカスタムアプリケーションがあります。ホストは MCP サーバーへの接続を開始し、ユーザーのリクエスト、LLM の処理、外部ツールの間の全体的なフローを統括します。</p>
+</li>
+<li>
+<p><strong>クライアント（Client）</strong>: ホストアプリケーション内のコンポーネントで、特定の MCP サーバーとの通信を管理します。各クライアントは単一のサーバーと 1:1 の接続を維持し、MCP 通信のプロトコルレベルの詳細を処理しながら、ホストのロジックと外部サーバーの間の仲介役として動作します。</p>
+</li>
+<li>
+<p><strong>サーバー（Server）</strong>: MCP プロトコルを通じて機能（ツール、リソース、プロンプト）を公開する外部のプログラムまたはサービスです。</p>
+</li>
+</ul>
+<div class="callout callout-warning">
+<p class="callout-title">⚠️ 注意</p>
+<p>多くのコンテンツでは「クライアント」と「ホスト」が同じ意味で使われています。厳密には、ホストはユーザー向けのアプリケーションであり、クライアントはホストアプリケーション内のコンポーネントで、特定の MCP サーバーとの通信を管理します。</p>
+</div>
+<h3>機能（Capabilities）</h3>
+<p>もちろん、アプリケーションの価値は、提供する機能の総和です。そのため、機能はアプリケーションの最も重要な部分です。MCP はあらゆるソフトウェアサービスと接続できますが、多くの AI アプリケーションで使われる一般的な機能がいくつかあります。</p>
+<table>
+<thead>
+<tr>
+<th>Capability</th>
+<th>Description</th>
+<th>Example</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>ツール（Tools）</strong></td>
+<td>AI モデルが呼び出してアクションを実行したり、計算されたデータを取得したりできる実行可能な関数です。通常、アプリケーションのユースケースに関連します。</td>
+<td>天気アプリケーションのツールは、特定の場所の天気を返す関数かもしれません。</td>
+</tr>
+<tr>
+<td><strong>リソース（Resources）</strong></td>
+<td>大きな計算を伴わずにコンテキストを提供する読み取り専用データソースです。</td>
+<td>研究者アシスタントには、科学論文のリソースがあるかもしれません。</td>
+</tr>
+<tr>
+<td><strong>プロンプト（Prompts）</strong></td>
+<td>ユーザー、AI モデル、利用可能な機能の間のやり取りをガイドする、事前に定義されたテンプレートやワークフローです。</td>
+<td>要約プロンプトなどです。</td>
+</tr>
+<tr>
+<td><strong>サンプリング（Sampling）</strong></td>
+<td>サーバーから開始される、クライアント/ホストへの LLM インタラクションのリクエストです。LLM が生成したコンテンツを確認し、さらなる判断を行う再帰的なアクションを可能にします。</td>
+<td>ライティングアプリケーションが自分の出力を見直し、さらに洗練させようと判断することなどです。</td>
+</tr>
+</tbody>
+</table>
+<p>次の図では、コードエージェントのユースケースに適用された機能一式を確認できます。</p>
+<p><img alt="統合図" src="https://huggingface.co/datasets/mcp-course/images/resolve/main/unit1/8.png" /></p>
+<p>このアプリケーションは、MCP のエンティティを次のように使うかもしれません。</p>
+<table>
+<thead>
+<tr>
+<th>Entity</th>
+<th>Name</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Tool</td>
+<td>Code Interpreter</td>
+<td>LLM が書いたコードを実行できるツールです。</td>
+</tr>
+<tr>
+<td>Resource</td>
+<td>Documentation</td>
+<td>アプリケーションのドキュメントを含むリソースです。</td>
+</tr>
+<tr>
+<td>Prompt</td>
+<td>Code Style</td>
+<td>LLM がコードを生成する際のガイドとなるプロンプトです。</td>
+</tr>
+<tr>
+<td>Sampling</td>
+<td>Code Review</td>
+<td>LLM がコードをレビューし、さらなる判断を行えるようにするサンプリングです。</td>
+</tr>
+</tbody>
+</table>
+<h3>まとめ</h3>
+<p>これらの主要な概念と用語を理解することが、MCP を効果的に扱うための基盤となります。次節以降では、この基盤の上に、Model Context Protocol を構成するアーキテクチャコンポーネント、通信プロトコル、機能を探っていきます。 </p>
+</article>
+<nav class="page-nav"><a class="nav-link prev" href="introduction.html">← 前へ: Model Context Protocol（MCP）入門</a><a class="nav-link toc-link" href="../index.html">目次へ</a><a class="nav-link next" href="architectural-components.html">次へ →: MCP のアーキテクチャコンポーネント</a></nav>
+</main>
+<footer class="site-footer">
+  <p>原典: Hugging Face huggingface/mcp-course（<a href="https://github.com/huggingface/mcp-course">https://github.com/huggingface/mcp-course</a>）</p>
+  <p>日本語版の翻訳・公開: 霞ヶ関京 / 連絡先: GitHub <a href="https://github.com/yanikasumin">@yanikasumin</a> / YouTube <a href="https://www.youtube.com/@KASUMI_MOF">@KASUMI_MOF</a></p>
+  <p class="demo-note">このサイトはデモ版です。内容は順次更新されます。</p>
+</footer>
+<script src="../../site.js"></script>
+</body>
+</html>

@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>フォーラムで助けを求める | Hugging Face コース日本語版（デモ版）</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Shippori+Mincho:wght@500;700&family=Zen+Kaku+Gothic+New:wght@400;500;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../../style.css">
+<script>
+window.MathJax = { tex: { inlineMath: [['$', '$'], ['\\(', '\\)']], displayMath: [['$$', '$$'], ['\\[', '\\]']] }, options: { skipHtmlTags: ['script','noscript','style','textarea','pre','code'] } };
+</script>
+<script async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml.js"></script>
+</head>
+<body>
+<header class="site-header">
+  <div class="header-inner">
+    <a class="site-title" href="../../index.html">Hugging Face コース日本語版</a>
+    <span class="demo-badge">デモ版</span>
+  </div>
+</header>
+<main class="container">
+<p class="course-crumb"><a href="../index.html">LLM コース</a>
+<span class="badge badge-qa-pass">翻訳QA 最終合格</span></p>
+<nav class="page-nav"><a class="nav-link prev" href="2.html">← 前へ: エラーが出たときにすること</a><a class="nav-link toc-link" href="../index.html">目次へ</a><a class="nav-link next" href="4.html">次へ →: 学習パイプラインをデバッグする</a></nav>
+<article class="content">
+<h1>フォーラムで助けを求める</h1>
+<div class="youtube-embed"><iframe src="https://www.youtube-nocookie.com/embed/S2EEG3JIt2A" title="YouTube video" loading="lazy" allowfullscreen referrerpolicy="strict-origin-when-cross-origin"></iframe></div>
+<p><a href="https://discuss.huggingface.co">Hugging Face フォーラム</a>は、オープンソースチームや Hugging Face コミュニティ全体から助けを得るのに最適な場所です。メインページは、日によって多少の違いはありますが、次のような見た目をしています。</p>
+<div class="flex justify-center">
+<img src="https://huggingface.co/datasets/huggingface-course/documentation-images/resolve/main/en/chapter8/forums.png" alt="Hugging Face フォーラム。" width="100%"/>
+</div>
+
+<p>左側には、さまざまなトピックが分類されているカテゴリがすべて表示され、右側には最新のトピックが表示されます。トピックとは、タイトル、カテゴリ、説明を含む投稿のことです。<a href="../chapter5/1.html">Chapter 5</a> で自分のデータセットを作ったときに見た GitHub の Issue の形式とよく似ています。名前のとおり、<a href="https://discuss.huggingface.co/c/beginners/5">Beginners</a> カテゴリは主に、Hugging Face のライブラリやエコシステムを使い始めたばかりの人を対象としています。コードのデバッグであれ、何かのやり方を尋ねるのであれ、どのライブラリについての質問でも歓迎されます（ただし、質問が特定のライブラリに関するものであれば、フォーラムの対応するライブラリカテゴリへ行くのがよいでしょう）。</p>
+<p>同様に、<a href="https://discuss.huggingface.co/c/intermediate/6">Intermediate</a> カテゴリと <a href="https://discuss.huggingface.co/c/research/7">Research</a> カテゴリは、ライブラリについての高度な質問や、議論したい面白い新しい NLP 研究など、より進んだ質問のためのものです。</p>
+<p>そしてもちろん、Hugging Face コースについてなら、どんな質問でも投稿できる <a href="https://discuss.huggingface.co/c/course/20">Course</a> カテゴリも紹介しておきましょう。</p>
+<p>カテゴリを選んだら、最初のトピックを書く準備は完了です。書き方の<a href="https://discuss.huggingface.co/t/how-to-request-support/3128">ガイドライン</a>がフォーラムにあります。このセクションでは、よいトピックを構成するいくつかの特徴を見ていきます。</p>
+<h2>よいフォーラム投稿の書き方</h2>
+<p>題材として、カスタムの検索エンジンを作るために、Wikipedia の記事から埋め込みを生成しようとしている場面を考えましょう。いつものように、トークナイザとモデルを次のように読み込みます。</p>
+<div class="codehilite"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">transformers</span><span class="w"> </span><span class="kn">import</span> <span class="n">AutoTokenizer</span><span class="p">,</span> <span class="n">AutoModel</span>
+
+<span class="n">model_checkpoint</span> <span class="o">=</span> <span class="s2">"distilbert-base-uncased"</span>
+<span class="n">tokenizer</span> <span class="o">=</span> <span class="n">AutoTokenizer</span><span class="o">.</span><span class="n">from_pretrained</span><span class="p">(</span><span class="n">model_checkpoint</span><span class="p">)</span>
+<span class="n">model</span> <span class="o">=</span> <span class="n">AutoModel</span><span class="o">.</span><span class="n">from_pretrained</span><span class="p">(</span><span class="n">model_checkpoint</span><span class="p">)</span>
+</code></pre></div>
+
+<p>ここで、Transformers（ライブラリではなくフランチャイズのほうです！）に関する <a href="https://en.wikipedia.org/wiki/Transformers">Wikipedia の記事</a> のセクション全体を埋め込もうとするとします。</p>
+<div class="codehilite"><pre><span></span><code><span class="n">text</span> <span class="o">=</span> <span class="s2">"""</span>
+<span class="s2">Generation One is a retroactive term for the Transformers characters that</span>
+<span class="s2">appeared between 1984 and 1993. The Transformers began with the 1980s Japanese</span>
+<span class="s2">toy lines Micro Change and Diaclone. They presented robots able to transform</span>
+<span class="s2">into everyday vehicles, electronic items or weapons. Hasbro bought the Micro</span>
+<span class="s2">Change and Diaclone toys, and partnered with Takara. Marvel Comics was hired by</span>
+<span class="s2">Hasbro to create the backstory; editor-in-chief Jim Shooter wrote an overall</span>
+<span class="s2">story, and gave the task of creating the characthers to writer Dennis O'Neil.</span>
+<span class="s2">Unhappy with O'Neil's work (although O'Neil created the name "Optimus Prime"),</span>
+<span class="s2">Shooter chose Bob Budiansky to create the characters.</span>
+
+<span class="s2">The Transformers mecha were largely designed by Shōji Kawamori, the creator of</span>
+<span class="s2">the Japanese mecha anime franchise Macross (which was adapted into the Robotech</span>
+<span class="s2">franchise in North America). Kawamori came up with the idea of transforming</span>
+<span class="s2">mechs while working on the Diaclone and Macross franchises in the early 1980s</span>
+<span class="s2">(such as the VF-1 Valkyrie in Macross and Robotech), with his Diaclone mechs</span>
+<span class="s2">later providing the basis for Transformers.</span>
+
+<span class="s2">The primary concept of Generation One is that the heroic Optimus Prime, the</span>
+<span class="s2">villainous Megatron, and their finest soldiers crash land on pre-historic Earth</span>
+<span class="s2">in the Ark and the Nemesis before awakening in 1985, Cybertron hurtling through</span>
+<span class="s2">the Neutral zone as an effect of the war. The Marvel comic was originally part</span>
+<span class="s2">of the main Marvel Universe, with appearances from Spider-Man and Nick Fury,</span>
+<span class="s2">plus some cameos, as well as a visit to the Savage Land.</span>
+
+<span class="s2">The Transformers TV series began around the same time. Produced by Sunbow</span>
+<span class="s2">Productions and Marvel Productions, later Hasbro Productions, from the start it</span>
+<span class="s2">contradicted Budiansky's backstories. The TV series shows the Autobots looking</span>
+<span class="s2">for new energy sources, and crash landing as the Decepticons attack. Marvel</span>
+<span class="s2">interpreted the Autobots as destroying a rogue asteroid approaching Cybertron.</span>
+<span class="s2">Shockwave is loyal to Megatron in the TV series, keeping Cybertron in a</span>
+<span class="s2">stalemate during his absence, but in the comic book he attempts to take command</span>
+<span class="s2">of the Decepticons. The TV series would also differ wildly from the origins</span>
+<span class="s2">Budiansky had created for the Dinobots, the Decepticon turned Autobot Jetfire</span>
+<span class="s2">(known as Skyfire on TV), the Constructicons (who combine to form</span>
+<span class="s2">Devastator),[19][20] and Omega Supreme. The Marvel comic establishes early on</span>
+<span class="s2">that Prime wields the Creation Matrix, which gives life to machines. In the</span>
+<span class="s2">second season, the two-part episode The Key to Vector Sigma introduced the</span>
+<span class="s2">ancient Vector Sigma computer, which served the same original purpose as the</span>
+<span class="s2">Creation Matrix (giving life to Transformers), and its guardian Alpha Trion.</span>
+<span class="s2">"""</span>
+
+<span class="n">inputs</span> <span class="o">=</span> <span class="n">tokenizer</span><span class="p">(</span><span class="n">text</span><span class="p">,</span> <span class="n">return_tensors</span><span class="o">=</span><span class="s2">"pt"</span><span class="p">)</span>
+<span class="n">logits</span> <span class="o">=</span> <span class="n">model</span><span class="p">(</span><span class="o">**</span><span class="n">inputs</span><span class="p">)</span><span class="o">.</span><span class="n">logits</span>
+</code></pre></div>
+
+<p><code>python output
+IndexError: index out of range in self</code></p>
+<p>おっと、問題が発生しました。しかもエラーメッセージは、<a href="2.html">セクション2</a>で見たものよりずっと不可解です。トレースバック全体を見てもさっぱり分からないので、Hugging Face フォーラムに助けを求めることにします。トピックはどう組み立てればよいでしょうか。</p>
+<p>まず、右上隅にある「New Topic」ボタンをクリックする必要があります（トピックを作成するにはログインが必要です）。</p>
+<div class="flex justify-center">
+<img src="https://huggingface.co/datasets/huggingface-course/documentation-images/resolve/main/en/chapter8/forums-new-topic.png" alt="新しいフォーラムトピックを作成する。" width="100%"/>
+</div>
+
+<p>すると、トピックのタイトルを入力し、カテゴリを選択し、内容を作成できる入力画面が表示されます。</p>
+<div class="flex justify-center">
+<img src="https://huggingface.co/datasets/huggingface-course/documentation-images/resolve/main/en/chapter8/forum-topic01.png" alt="新しいフォーラムトピックを作成する画面。" width="100%"/>
+</div>
+
+<p>エラーは 🤗 Transformers だけに関係しているようなので、カテゴリにはこれを選びます。問題を説明する最初の試みは、次のようなものになるかもしれません。</p>
+<div class="flex justify-center">
+<img src="https://huggingface.co/datasets/huggingface-course/documentation-images/resolve/main/en/chapter8/forum-topic02.png" alt="新しいフォーラムトピックの内容を作成する。" width="100%"/>
+</div>
+
+<p>このトピックには助けが必要なエラーメッセージが含まれていますが、書き方にはいくつか問題があります。</p>
+<ol>
+<li>タイトルがあまり説明的ではないため、フォーラムを眺めている人は本文も読まなければトピックの内容が分かりません。</li>
+<li>本文には、エラーが_どこから_来ているのか、_どうすれば_再現できるのかの情報が不足しています。</li>
+<li>何人かに直接タグ付けしていて、やや要求の強い口調になっています。</li>
+</ol>
+<p>このようなトピックは、速い回答が得られそうにありません（そもそも回答が得られるかどうかも怪しいものです）。では、どうすれば改善できるか見ていきましょう。最初の問題である、よいタイトル選びから始めます。</p>
+<h3>内容の分かるタイトルを付ける</h3>
+<p>コードのバグについて助けを求めるときは、タイトルに十分な情報を含めて、他の人が「自分の答えられる質問かどうか」をすばやく判断できるようにするのが、経験則としてよい方法です。今回の例では、発生している例外の名前が分かっており、モデルを呼び出す <code>model(**inputs)</code> のフォワードパスで発生しているらしいという手がかりもあります。これを伝えるタイトルとしては、たとえば次のようなものが考えられます。</p>
+<blockquote>
+<p>AutoModel のフォワードパスで発生する IndexError の原因は？</p>
+</blockquote>
+<p>このタイトルは、バグがどこから来ていると思うかを読み手に伝え、<code>IndexError</code> に遭遇したことがある人なら、デバッグ方法を知っている可能性が高いでしょう。もちろんタイトルは自由に付けられますし、次のようなバリエーションでも問題ありません。</p>
+<blockquote>
+<p>なぜモデルの実行時に IndexError が発生するのか？</p>
+</blockquote>
+<p>説明的なタイトルが決まったので、次は本文の改善を見ていきましょう。</p>
+<h3>コードスニペットを整形する</h3>
+<p>ソースコードを読むのは IDE の中でも十分に大変ですが、プレーンテキストとしてコピー＆ペーストされたものを読むのはさらに大変です。幸い、Hugging Face フォーラムは Markdown をサポートしているので、コードを掲載するときは、必ず3つのバッククォートで囲んでコードブロックとして整形してください。エラーメッセージをこの方法できれいに整形してみましょう。ついでに、本文を最初のバージョンよりも少し丁寧な文面にします。</p>
+<div class="flex justify-center">
+<img src="https://huggingface.co/datasets/huggingface-course/documentation-images/resolve/main/en/chapter8/forum-topic03.png" alt="コードが適切に整形された、改訂版のフォーラムトピック。" width="100%"/>
+</div>
+
+<p>スクリーンショットで分かるように、コードブロックをバッククォートで囲むと、生のテキストが色付けまでされた整形済みコードに変換されます。単一のバッククォートを使えば、<code>distilbert-base-uncased</code> のようにインラインの変数を整形することもできます。このトピックはずいぶんよくなりました。運がよければ、エラーの内容を推測できる人がコミュニティにいるかもしれません。ただ、運に頼るのではなく、トレースバックを省略せず、詳細をすべて掲載して、相手の作業を楽にしましょう。</p>
+<h3>トレースバックを全部載せる</h3>
+<p>トレースバックの最後の行だけで自分のコードをデバッグできることが多いため、スペースを「節約」しようとしてトピックにその行だけを載せたくなるものです。善意からではありますが、トレースバックの上部にある情報も非常に役立つため、実際には他の人が問題をデバッグするのを_難しく_してしまいます。ですから、トレースバックは_全文_をコピー＆ペーストし、読みやすく整形して掲載するのがよい方法です。トレースバックはかなり長くなることがあるので、ソースコードを説明した後に載せる人もいます。ここでもそうしてみましょう。これでフォーラムトピックは次のようになります。</p>
+<div class="flex justify-center">
+<img src="https://huggingface.co/datasets/huggingface-course/documentation-images/resolve/main/en/chapter8/forum-topic04.png" alt="トレースバック全体を含む、フォーラムトピックの例。" width="100%"/>
+</div>
+
+<p>これでずっと有益な情報になりました。注意深い読み手なら、トレースバックの次の行から、問題は長い入力を渡したことが原因らしいと指摘できるかもしれません。</p>
+<blockquote>
+<p>Token indices sequence length is longer than the specified maximum sequence length for this model (583 &gt; 512).</p>
+</blockquote>
+<p>ただし、エラーを引き起こした実際のコードを示せば、相手はさらに楽になります。次はそれをやってみましょう。</p>
+<h3>再現可能な例を用意する</h3>
+<p>他人のコードをデバッグしたことがある人なら、たいてい最初に、報告された問題を再現しようとして、トレースバックをたどってエラーの箇所を特定するところから始めたはずです。フォーラムで支援を受ける（あるいは提供する）場合も同じことなので、エラーを再現する小さな例を用意できると本当に助かります。このように再現例を作る過程で、半数ほどのケースでは問題の原因を自分で発見できます。いずれにせよ、この例で欠けているのは、モデルに渡した_入力_を示すことです。それを示すと、次のような完成した例になります。</p>
+<div class="flex justify-center">
+<img src="https://huggingface.co/datasets/huggingface-course/documentation-images/resolve/main/en/chapter8/forum-topic05.png" alt="フォーラムトピックの最終版。" width="100%"/>
+</div>
+
+<p>このトピックにはかなりの量の情報が含まれるようになり、コミュニティの注目を集めて有益な回答を得られる可能性がずっと高くなる書き方になっています。これらの基本的なガイドラインがあれば、🤗 Transformers についての質問への答えを見つけるための優れたトピックを作成できます。</p>
+</article>
+<nav class="page-nav"><a class="nav-link prev" href="2.html">← 前へ: エラーが出たときにすること</a><a class="nav-link toc-link" href="../index.html">目次へ</a><a class="nav-link next" href="4.html">次へ →: 学習パイプラインをデバッグする</a></nav>
+</main>
+<footer class="site-footer">
+  <p>原典: Hugging Face huggingface/course（<a href="https://github.com/huggingface/course">https://github.com/huggingface/course</a>）</p>
+  <p>日本語版の翻訳・公開: 霞ヶ関京 / 連絡先: GitHub <a href="https://github.com/yanikasumin">@yanikasumin</a> / YouTube <a href="https://www.youtube.com/@KASUMI_MOF">@KASUMI_MOF</a></p>
+  <p class="demo-note">このサイトはデモ版です。内容は順次更新されます。</p>
+</footer>
+<script src="../../site.js"></script>
+</body>
+</html>

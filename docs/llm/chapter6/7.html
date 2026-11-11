@@ -1,0 +1,327 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Unigram によるトークン化 | Hugging Face コース日本語版（デモ版）</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Shippori+Mincho:wght@500;700&family=Zen+Kaku+Gothic+New:wght@400;500;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../../style.css">
+<script>
+window.MathJax = { tex: { inlineMath: [['$', '$'], ['\\(', '\\)']], displayMath: [['$$', '$$'], ['\\[', '\\]']] }, options: { skipHtmlTags: ['script','noscript','style','textarea','pre','code'] } };
+</script>
+<script async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml.js"></script>
+</head>
+<body>
+<header class="site-header">
+  <div class="header-inner">
+    <a class="site-title" href="../../index.html">Hugging Face コース日本語版</a>
+    <span class="demo-badge">デモ版</span>
+  </div>
+</header>
+<main class="container">
+<p class="course-crumb"><a href="../index.html">LLM コース</a>
+<span class="badge badge-qa-pass">翻訳QA 最終合格</span></p>
+<nav class="page-nav"><a class="nav-link prev" href="6.html">← 前へ: WordPiece によるトークン化</a><a class="nav-link toc-link" href="../index.html">目次へ</a><a class="nav-link next" href="8.html">次へ →: 構成要素を組み合わせてトークナイザを構築する</a></nav>
+<article class="content">
+<h1>Unigram によるトークン化</h1>
+<p>Unigram アルゴリズムは <a href="https://huggingface.co/papers/1808.06226">SentencePiece</a> と組み合わせて使われます。SentencePiece は、ALBERT、T5、mBART、Big Bird、XLNet などのモデルで使われているトークン化アルゴリズムです。</p>
+<p>SentencePiece は、すべての言語が単語の区切りにスペースを使うわけではないという事実に対処します。SentencePiece は入力を生の入力ストリームとして扱い、スペースも使用する文字の集合に含めます。そのうえで Unigram アルゴリズムを使い、適切な語彙を構築できます。</p>
+<div class="youtube-embed"><iframe src="https://www.youtube-nocookie.com/embed/TGZfZVuF9Yc" title="YouTube video" loading="lazy" allowfullscreen referrerpolicy="strict-origin-when-cross-origin"></iframe></div>
+<div class="callout callout-tip">
+<p class="callout-title">💡 ヒント</p>
+<p>💡 この節では Unigram を深く掘り下げ、完全な実装を示すところまで扱います。トークン化アルゴリズムの概要だけ知りたい場合は、最後まで読み飛ばしても構いません。</p>
+</div>
+<h2>学習アルゴリズム</h2>
+<p>BPE や WordPiece と比べると、Unigram は逆方向に動作します。大きな語彙から始めて、目的の語彙サイズに到達するまでトークンを取り除いていくのです。初期語彙の構築にはいくつかの方法があります。たとえば、事前トークン化された単語に現れる最も一般的な部分文字列を採用したり、大きな語彙サイズで初期コーパスに BPE を適用したりできます。</p>
+<p>学習の各ステップで、Unigram アルゴリズムは現在の語彙のもとでコーパス全体の損失を計算します。次に、語彙内の各記号について、その記号を取り除いた場合に全体の損失がどれだけ増えるかを計算し、増加が最も小さい記号を探します。こうした記号はコーパス全体の損失への影響が小さいため、ある意味「あまり必要とされていない」ものであり、削除の最有力候補となります。</p>
+<p>これは非常にコストの高い処理なので、損失の増加が最も小さい単一の記号だけを取り除くのではありません。損失の増加が小さい方から (p) パーセントの記号を取り除きます（(p) は制御できるハイパーパラメータで、通常は10または20です）。このプロセスを、語彙が目的のサイズに到達するまで繰り返します。</p>
+<p>なお、基本となる文字は決して取り除きません。どの単語でもトークン化できるようにするためです。</p>
+<p>もっとも、ここまでの説明はまだ少し曖昧です。アルゴリズムの要は、コーパスに対する損失を計算し、語彙からトークンを取り除いたときにそれがどう変化するかを見ることですが、その方法はまだ説明していません。このステップは Unigram モデルのトークン化アルゴリズムに依存しているので、次はそちらを掘り下げます。</p>
+<p>前の例で使ったコーパスを再利用しましょう。</p>
+<div class="codehilite"><pre><span></span><code>("hug", 10), ("pug", 5), ("pun", 12), ("bun", 4), ("hugs", 5)
+</code></pre></div>
+
+<p>この例では、初期語彙としてすべての真部分文字列を採用します。</p>
+<div class="codehilite"><pre><span></span><code>["h", "u", "g", "hu", "ug", "p", "pu", "n", "un", "b", "bu", "s", "hug", "gs", "ugs"]
+</code></pre></div>
+
+<h2>トークン化アルゴリズム</h2>
+<p>Unigram モデルは、各トークンがそれより前のトークンとは独立であると考えるタイプの言語モデルです。最も単純な言語モデルであり、前の文脈が与えられたときのトークン X の確率は、トークン X 自体の確率に等しくなります。つまり、Unigram 言語モデルでテキストを生成すると、常に最も一般的なトークンが予測されることになります。</p>
+<p>あるトークンの確率は、元のコーパスにおけるその頻度（現れる回数）を、語彙内のすべてのトークンの頻度の合計で割ったものです（確率の合計が1になるようにするためです）。たとえば <code>"ug"</code> は <code>"hug"</code>、<code>"pug"</code>、<code>"hugs"</code> に現れるので、このコーパスでの頻度は20です。</p>
+<p>語彙内の考えられるすべてのサブワードの頻度は次のとおりです。</p>
+<div class="codehilite"><pre><span></span><code>("h", 15) ("u", 36) ("g", 20) ("hu", 15) ("ug", 20) ("p", 17) ("pu", 17) ("n", 16)
+("un", 16) ("b", 4) ("bu", 4) ("s", 5) ("hug", 15) ("gs", 5) ("ugs", 5)
+</code></pre></div>
+
+<p>したがって、頻度の合計は210であり、サブワード <code>"ug"</code> の確率は 20/210 となります。</p>
+<div class="callout callout-tip">
+<p class="callout-title">💡 ヒント</p>
+<p>✏️ <strong>やってみよう！</strong> 上記の頻度を計算するコードを書いて、表示されている結果が正しいことと、合計を確認してみましょう。</p>
+</div>
+<p>次に、与えられた単語をトークン化するには、トークンへの分割方法の候補をすべて調べ、それぞれの確率を Unigram モデルに従って計算します。すべてのトークンは独立と見なされるため、この確率は各トークンの確率の積にすぎません。たとえば、<code>"pug"</code> のトークン化 <code>["p", "u", "g"]</code> の確率は次のようになります。</p>
+<p>$$P([<code>p",</code>u", <code>g"]) = P(</code>p") \times P(<code>u") \times P(</code>g") = \frac{5}{210} \times \frac{36}{210} \times \frac{20}{210} = 0.000389$$</p>
+<p>これに対して、トークン化 <code>["pu", "g"]</code> の確率は次のようになります。</p>
+<p>$$P([<code>pu",</code>g"]) = P(<code>pu") \times P(</code>g") = \frac{5}{210} \times \frac{20}{210} = 0.0022676$$</p>
+<p>こちらの方がはるかに尤もらしい結果です。一般に、トークン数が最も少ないトークン化が最も高い確率を持ちます（トークンの数だけ 210 での割り算が繰り返されるため）。これは直感的に望ましいこと、つまり単語をできるだけ少ないトークン数に分割することに対応します。</p>
+<p>Unigram モデルによる単語のトークン化は、確率が最も高いトークン化です。<code>"pug"</code> の例では、可能な分割ごとに次のような確率が得られます。</p>
+<div class="codehilite"><pre><span></span><code>["p", "u", "g"] : 0.000389
+["p", "ug"] : 0.0022676
+["pu", "g"] : 0.0022676
+</code></pre></div>
+
+<p>したがって、<code>"pug"</code> は、どちらの分割が先に見つかるかによって <code>["p", "ug"]</code> または <code>["pu", "g"]</code> とトークン化されます（より大きなコーパスでは、このような同点のケースはまれです）。</p>
+<p>この例では、可能な分割をすべて見つけて確率を計算するのは簡単でしたが、一般的にはもう少し難しくなります。そのために使われる古典的なアルゴリズムが <em>ビタビ（Viterbi）アルゴリズム</em> です。本質的には、文字位置 <em>a</em> から文字位置 <em>b</em> への辺を、<em>a</em> から <em>b</em> までのサブワードが語彙に含まれるときに張り、その辺にサブワードの確率を割り当てることで、与えられた単語の可能な分割を検出するグラフを構築できます。</p>
+<p>そのグラフの中で最良のスコアを持つ経路を見つけるために、ビタビアルゴリズムは、単語の各位置について、その位置で終わる分割のうち最良のスコアを持つものを求めます。先頭から末尾へ進むため、その最良スコアは、現在の位置で終わるすべてのサブワードを調べ、そのサブワードが始まる位置における最良のトークン化スコアを使うことで得られます。あとは、末尾にたどり着くまでにたどった経路を巻き戻すだけです。</p>
+<p>語彙と単語 <code>"unhug"</code> を使った例を見てみましょう。各位置について、そこで終わる最良スコアのサブワードは次のとおりです。</p>
+<div class="codehilite"><pre><span></span><code>Character 0 (u): "u" (score 0.171429)
+Character 1 (n): "un" (score 0.076191)
+Character 2 (h): "un" "h" (score 0.005442)
+Character 3 (u): "un" "hu" (score 0.005442)
+Character 4 (g): "un" "hug" (score 0.005442)
+</code></pre></div>
+
+<p>したがって <code>"unhug"</code> は <code>["un", "hug"]</code> とトークン化されます。</p>
+<div class="callout callout-tip">
+<p class="callout-title">💡 ヒント</p>
+<p>✏️ <strong>やってみよう！</strong> 単語 <code>"huggun"</code> のトークン化とそのスコアを求めてみましょう。</p>
+</div>
+<h2>学習に戻る</h2>
+<p>トークン化の仕組みが分かったので、学習時に使われる損失をもう少し深く掘り下げます。どの段階でも、この損失は、現在の語彙と、各トークンのコーパス内での頻度から決まる Unigram モデルを使って、コーパスのすべての単語をトークン化することで計算されます（前に見たとおりです）。</p>
+<p>コーパスの各単語にはスコアがあり、損失はそれらのスコアの負の対数尤度、つまりコーパスのすべての単語に対する <code>-log(P(word))</code> の合計です。</p>
+<p>次のコーパスを使う例に戻りましょう。</p>
+<div class="codehilite"><pre><span></span><code>("hug", 10), ("pug", 5), ("pun", 12), ("bun", 4), ("hugs", 5)
+</code></pre></div>
+
+<p>各単語のトークン化とそれぞれのスコアは次のとおりです。</p>
+<div class="codehilite"><pre><span></span><code>"hug": ["hug"] (score 0.071428)
+"pug": ["pu", "g"] (score 0.007710)
+"pun": ["pu", "n"] (score 0.006168)
+"bun": ["bu", "n"] (score 0.001451)
+"hugs": ["hug", "s"] (score 0.001701)
+</code></pre></div>
+
+<p>したがって損失は次のようになります。</p>
+<div class="codehilite"><pre><span></span><code>10 * (-log(0.071428)) + 5 * (-log(0.007710)) + 12 * (-log(0.006168)) + 4 * (-log(0.001451)) + 5 * (-log(0.001701)) = 169.8
+</code></pre></div>
+
+<p>次に、各トークンを取り除くことが損失にどう影響するかを計算する必要があります。これはかなり面倒な作業なので、ここでは2つのトークンについてだけ行い、全体の処理はコードの助けが得られる場面のために取っておきます。この（非常に）特殊なケースでは、すべての単語について等価なトークン化が2通りありました。前に見たとおり、たとえば <code>"pug"</code> は同じスコアで <code>["p", "ug"]</code> ともトークン化できます。したがって、語彙から <code>"pu"</code> トークンを取り除いても、損失はまったく同じになります。</p>
+<p>一方、<code>"hug"</code> を取り除くと損失は悪化します。<code>"hug"</code> と <code>"hugs"</code> のトークン化が次のようになるためです。</p>
+<div class="codehilite"><pre><span></span><code>"hug": ["hu", "g"] (score 0.006802)
+"hugs": ["hu", "gs"] (score 0.001701)
+</code></pre></div>
+
+<p>これらの変更により、損失は次の分だけ上昇します。</p>
+<div class="codehilite"><pre><span></span><code>- 10 * (-log(0.071428)) + 10 * (-log(0.006802)) = 23.5
+</code></pre></div>
+
+<p>したがって、トークン <code>"pu"</code> はおそらく語彙から取り除かれますが、<code>"hug"</code> は取り除かれません。</p>
+<h2>Unigram の実装</h2>
+<p>では、これまで見てきた内容をすべてコードで実装しましょう。BPE や WordPiece のときと同様、これは Unigram アルゴリズムの効率的な実装ではありません（むしろその逆です）。それでも、アルゴリズムをもう少しよく理解する助けになるはずです。</p>
+<p>例として、前に使ったのと同じコーパスを使います。</p>
+<div class="codehilite"><pre><span></span><code><span class="n">corpus</span> <span class="o">=</span> <span class="p">[</span>
+    <span class="s2">"This is the Hugging Face Course."</span><span class="p">,</span>
+    <span class="s2">"This chapter is about tokenization."</span><span class="p">,</span>
+    <span class="s2">"This section shows several tokenizer algorithms."</span><span class="p">,</span>
+    <span class="s2">"Hopefully, you will be able to understand how they are trained and generate tokens."</span><span class="p">,</span>
+<span class="p">]</span>
+</code></pre></div>
+
+<p>今回は、モデルとして <code>xlnet-base-cased</code> を使います。</p>
+<div class="codehilite"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">transformers</span><span class="w"> </span><span class="kn">import</span> <span class="n">AutoTokenizer</span>
+
+<span class="n">tokenizer</span> <span class="o">=</span> <span class="n">AutoTokenizer</span><span class="o">.</span><span class="n">from_pretrained</span><span class="p">(</span><span class="s2">"xlnet-base-cased"</span><span class="p">)</span>
+</code></pre></div>
+
+<p>BPE や WordPiece と同様に、まずコーパス内の各単語の出現回数を数えることから始めます。</p>
+<div class="codehilite"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">collections</span><span class="w"> </span><span class="kn">import</span> <span class="n">defaultdict</span>
+
+<span class="n">word_freqs</span> <span class="o">=</span> <span class="n">defaultdict</span><span class="p">(</span><span class="nb">int</span><span class="p">)</span>
+<span class="k">for</span> <span class="n">text</span> <span class="ow">in</span> <span class="n">corpus</span><span class="p">:</span>
+    <span class="n">words_with_offsets</span> <span class="o">=</span> <span class="n">tokenizer</span><span class="o">.</span><span class="n">backend_tokenizer</span><span class="o">.</span><span class="n">pre_tokenizer</span><span class="o">.</span><span class="n">pre_tokenize_str</span><span class="p">(</span><span class="n">text</span><span class="p">)</span>
+    <span class="n">new_words</span> <span class="o">=</span> <span class="p">[</span><span class="n">word</span> <span class="k">for</span> <span class="n">word</span><span class="p">,</span> <span class="n">offset</span> <span class="ow">in</span> <span class="n">words_with_offsets</span><span class="p">]</span>
+    <span class="k">for</span> <span class="n">word</span> <span class="ow">in</span> <span class="n">new_words</span><span class="p">:</span>
+        <span class="n">word_freqs</span><span class="p">[</span><span class="n">word</span><span class="p">]</span> <span class="o">+=</span> <span class="mi">1</span>
+
+<span class="n">word_freqs</span>
+</code></pre></div>
+
+<p>次に、最終的に欲しい語彙サイズよりも大きな初期語彙を用意する必要があります。基本となる文字はすべて含める必要があります（そうしないとすべての単語をトークン化できません）。一方、より大きな部分文字列については最も一般的なものだけを残すので、頻度順にソートします。</p>
+<div class="codehilite"><pre><span></span><code><span class="n">char_freqs</span> <span class="o">=</span> <span class="n">defaultdict</span><span class="p">(</span><span class="nb">int</span><span class="p">)</span>
+<span class="n">subwords_freqs</span> <span class="o">=</span> <span class="n">defaultdict</span><span class="p">(</span><span class="nb">int</span><span class="p">)</span>
+<span class="k">for</span> <span class="n">word</span><span class="p">,</span> <span class="n">freq</span> <span class="ow">in</span> <span class="n">word_freqs</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+    <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">word</span><span class="p">)):</span>
+        <span class="n">char_freqs</span><span class="p">[</span><span class="n">word</span><span class="p">[</span><span class="n">i</span><span class="p">]]</span> <span class="o">+=</span> <span class="n">freq</span>
+        <span class="c1"># 長さ2以上のサブワードを列挙する</span>
+        <span class="k">for</span> <span class="n">j</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">i</span> <span class="o">+</span> <span class="mi">2</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">word</span><span class="p">)</span> <span class="o">+</span> <span class="mi">1</span><span class="p">):</span>
+            <span class="n">subwords_freqs</span><span class="p">[</span><span class="n">word</span><span class="p">[</span><span class="n">i</span><span class="p">:</span><span class="n">j</span><span class="p">]]</span> <span class="o">+=</span> <span class="n">freq</span>
+
+<span class="c1"># サブワードを頻度順にソートする</span>
+<span class="n">sorted_subwords</span> <span class="o">=</span> <span class="nb">sorted</span><span class="p">(</span><span class="n">subwords_freqs</span><span class="o">.</span><span class="n">items</span><span class="p">(),</span> <span class="n">key</span><span class="o">=</span><span class="k">lambda</span> <span class="n">x</span><span class="p">:</span> <span class="n">x</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="n">reverse</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+<span class="n">sorted_subwords</span><span class="p">[:</span><span class="mi">10</span><span class="p">]</span>
+</code></pre></div>
+
+<p>```python out
+[('▁t', 7), ('is', 5), ('er', 5), ('▁a', 5), ('▁to', 4), ('to', 4), ('en', 4), ('▁T', 3), ('▁Th', 3), ('▁Thi', 3)]</p>
+<div class="codehilite"><pre><span></span><code>文字と最良のサブワードをまとめると、サイズ300の初期語彙が得られます。
+
+```python
+token_freqs = list(char_freqs.items()) + sorted_subwords[: 300 - len(char_freqs)]
+token_freqs = {token: freq for token, freq in token_freqs}
+</code></pre></div>
+
+<div class="callout callout-tip">
+<p class="callout-title">💡 ヒント</p>
+<p>💡 SentencePiece は、初期語彙を作るために Enhanced Suffix Array（ESA）と呼ばれる、より効率的なアルゴリズムを使います。</p>
+</div>
+<p>次に、頻度を確率に変換するため、すべての頻度の合計を計算します。このモデルでは確率の対数を保存します。小さい数同士を掛けるよりも対数を足す方が数値的に安定し、モデルの損失の計算も簡単になるためです。</p>
+<div class="codehilite"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">math</span><span class="w"> </span><span class="kn">import</span> <span class="n">log</span>
+
+<span class="n">total_sum</span> <span class="o">=</span> <span class="nb">sum</span><span class="p">([</span><span class="n">freq</span> <span class="k">for</span> <span class="n">token</span><span class="p">,</span> <span class="n">freq</span> <span class="ow">in</span> <span class="n">token_freqs</span><span class="o">.</span><span class="n">items</span><span class="p">()])</span>
+<span class="n">model</span> <span class="o">=</span> <span class="p">{</span><span class="n">token</span><span class="p">:</span> <span class="o">-</span><span class="n">log</span><span class="p">(</span><span class="n">freq</span> <span class="o">/</span> <span class="n">total_sum</span><span class="p">)</span> <span class="k">for</span> <span class="n">token</span><span class="p">,</span> <span class="n">freq</span> <span class="ow">in</span> <span class="n">token_freqs</span><span class="o">.</span><span class="n">items</span><span class="p">()}</span>
+</code></pre></div>
+
+<p>中心となる関数は、ビタビアルゴリズムを使って単語をトークン化する関数です。前に見たとおり、このアルゴリズムは単語の各部分文字列について最良の分割を計算し、それを <code>best_segmentations</code> という変数に保存します。単語の各位置（0から単語の全長まで）について辞書を1つずつ保存し、2つのキーを持たせます。最良の分割における最後のトークンの開始位置のインデックスと、最良の分割のスコアです。最後のトークンの開始位置のインデックスがあれば、リストが完全に埋まったあとで分割全体を取り出すことができます。</p>
+<p>リストへの登録は2つのループだけで行われます。メインループは各開始位置を走査し、2番目のループはその開始位置から始まるすべての部分文字列を試します。部分文字列が語彙に含まれていれば、その終了位置までの単語の新しい分割が得られるので、<code>best_segmentations</code> に入っているものと比較します。</p>
+<p>メインループが終わったら、末尾から開始し、トークンを記録しながら開始位置から開始位置へとたどっていき、単語の先頭に到達するまで続けます。</p>
+<div class="codehilite"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">encode_word</span><span class="p">(</span><span class="n">word</span><span class="p">,</span> <span class="n">model</span><span class="p">):</span>
+    <span class="n">best_segmentations</span> <span class="o">=</span> <span class="p">[{</span><span class="s2">"start"</span><span class="p">:</span> <span class="mi">0</span><span class="p">,</span> <span class="s2">"score"</span><span class="p">:</span> <span class="mi">1</span><span class="p">}]</span> <span class="o">+</span> <span class="p">[</span>
+        <span class="p">{</span><span class="s2">"start"</span><span class="p">:</span> <span class="kc">None</span><span class="p">,</span> <span class="s2">"score"</span><span class="p">:</span> <span class="kc">None</span><span class="p">}</span> <span class="k">for</span> <span class="n">_</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">word</span><span class="p">))</span>
+    <span class="p">]</span>
+    <span class="k">for</span> <span class="n">start_idx</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">word</span><span class="p">)):</span>
+        <span class="c1"># ここはループの前段のステップで適切に埋められているはず</span>
+        <span class="n">best_score_at_start</span> <span class="o">=</span> <span class="n">best_segmentations</span><span class="p">[</span><span class="n">start_idx</span><span class="p">][</span><span class="s2">"score"</span><span class="p">]</span>
+        <span class="k">for</span> <span class="n">end_idx</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">start_idx</span> <span class="o">+</span> <span class="mi">1</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">word</span><span class="p">)</span> <span class="o">+</span> <span class="mi">1</span><span class="p">):</span>
+            <span class="n">token</span> <span class="o">=</span> <span class="n">word</span><span class="p">[</span><span class="n">start_idx</span><span class="p">:</span><span class="n">end_idx</span><span class="p">]</span>
+            <span class="k">if</span> <span class="n">token</span> <span class="ow">in</span> <span class="n">model</span> <span class="ow">and</span> <span class="n">best_score_at_start</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="n">score</span> <span class="o">=</span> <span class="n">model</span><span class="p">[</span><span class="n">token</span><span class="p">]</span> <span class="o">+</span> <span class="n">best_score_at_start</span>
+                <span class="c1"># end_idx で終わるより良い分割が見つかれば更新する</span>
+                <span class="k">if</span> <span class="p">(</span>
+                    <span class="n">best_segmentations</span><span class="p">[</span><span class="n">end_idx</span><span class="p">][</span><span class="s2">"score"</span><span class="p">]</span> <span class="ow">is</span> <span class="kc">None</span>
+                    <span class="ow">or</span> <span class="n">best_segmentations</span><span class="p">[</span><span class="n">end_idx</span><span class="p">][</span><span class="s2">"score"</span><span class="p">]</span> <span class="o">&gt;</span> <span class="n">score</span>
+                <span class="p">):</span>
+                    <span class="n">best_segmentations</span><span class="p">[</span><span class="n">end_idx</span><span class="p">]</span> <span class="o">=</span> <span class="p">{</span><span class="s2">"start"</span><span class="p">:</span> <span class="n">start_idx</span><span class="p">,</span> <span class="s2">"score"</span><span class="p">:</span> <span class="n">score</span><span class="p">}</span>
+
+    <span class="n">segmentation</span> <span class="o">=</span> <span class="n">best_segmentations</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+    <span class="k">if</span> <span class="n">segmentation</span><span class="p">[</span><span class="s2">"score"</span><span class="p">]</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="c1"># 単語のトークン化が見つからなかった -&gt; 未知語として扱う</span>
+        <span class="k">return</span> <span class="p">[</span><span class="s2">"&lt;unk&gt;"</span><span class="p">],</span> <span class="kc">None</span>
+
+    <span class="n">score</span> <span class="o">=</span> <span class="n">segmentation</span><span class="p">[</span><span class="s2">"score"</span><span class="p">]</span>
+    <span class="n">start</span> <span class="o">=</span> <span class="n">segmentation</span><span class="p">[</span><span class="s2">"start"</span><span class="p">]</span>
+    <span class="n">end</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">word</span><span class="p">)</span>
+    <span class="n">tokens</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="k">while</span> <span class="n">start</span> <span class="o">!=</span> <span class="mi">0</span><span class="p">:</span>
+        <span class="n">tokens</span><span class="o">.</span><span class="n">insert</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">word</span><span class="p">[</span><span class="n">start</span><span class="p">:</span><span class="n">end</span><span class="p">])</span>
+        <span class="n">next_start</span> <span class="o">=</span> <span class="n">best_segmentations</span><span class="p">[</span><span class="n">start</span><span class="p">][</span><span class="s2">"start"</span><span class="p">]</span>
+        <span class="n">end</span> <span class="o">=</span> <span class="n">start</span>
+        <span class="n">start</span> <span class="o">=</span> <span class="n">next_start</span>
+    <span class="n">tokens</span><span class="o">.</span><span class="n">insert</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">word</span><span class="p">[</span><span class="n">start</span><span class="p">:</span><span class="n">end</span><span class="p">])</span>
+    <span class="k">return</span> <span class="n">tokens</span><span class="p">,</span> <span class="n">score</span>
+</code></pre></div>
+
+<p>初期モデルをいくつかの単語で早速試すことができます。</p>
+<div class="codehilite"><pre><span></span><code><span class="nb">print</span><span class="p">(</span><span class="n">encode_word</span><span class="p">(</span><span class="s2">"Hopefully"</span><span class="p">,</span> <span class="n">model</span><span class="p">))</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">encode_word</span><span class="p">(</span><span class="s2">"This"</span><span class="p">,</span> <span class="n">model</span><span class="p">))</span>
+</code></pre></div>
+
+<p>```python out
+(['H', 'o', 'p', 'e', 'f', 'u', 'll', 'y'], 41.5157494601402)
+(['This'], 6.288267030694535)</p>
+<div class="codehilite"><pre><span></span><code>これで、コーパスに対するモデルの損失を計算するのも簡単です！
+
+```python
+def compute_loss(model):
+    loss = 0
+    for word, freq in word_freqs.items():
+        _, word_loss = encode_word(word, model)
+        loss += freq * word_loss
+    return loss
+</code></pre></div>
+
+<p>手元のモデルで動作を確認できます。</p>
+<div class="codehilite"><pre><span></span><code><span class="n">compute_loss</span><span class="p">(</span><span class="n">model</span><span class="p">)</span>
+</code></pre></div>
+
+<p>```python out
+413.10377642940875</p>
+<div class="codehilite"><pre><span></span><code>各トークンのスコアを計算するのもそれほど難しくありません。各トークンを削除して得られるモデルについて損失を計算するだけです。
+
+```python
+import copy
+
+
+def compute_scores(model):
+    scores = {}
+    model_loss = compute_loss(model)
+    for token, score in model.items():
+        # 長さ1のトークンは常に保持する
+        if len(token) == 1:
+            continue
+        model_without_token = copy.deepcopy(model)
+        _ = model_without_token.pop(token)
+        scores[token] = compute_loss(model_without_token) - model_loss
+    return scores
+</code></pre></div>
+
+<p>あるトークンで試してみましょう。</p>
+<div class="codehilite"><pre><span></span><code><span class="n">scores</span> <span class="o">=</span> <span class="n">compute_scores</span><span class="p">(</span><span class="n">model</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">scores</span><span class="p">[</span><span class="s2">"ll"</span><span class="p">])</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">scores</span><span class="p">[</span><span class="s2">"his"</span><span class="p">])</span>
+</code></pre></div>
+
+<p><code>"ll"</code> は <code>"Hopefully"</code> のトークン化に使われており、取り除くと代わりに <code>"l"</code> トークンを2回使うことになりそうなので、正の損失になると予想できます。<code>"his"</code> は単語 <code>"This"</code> の内部でのみ使われますが、<code>"This"</code> はそれ自体としてトークン化されるので、損失はゼロになると予想できます。結果は次のとおりです。</p>
+<p>```python out
+6.376412403623874
+0.0</p>
+<div class="codehilite"><pre><span></span><code>&lt;div class="callout callout-tip" markdown="block"&gt;
+&lt;p class="callout-title"&gt;💡 ヒント&lt;/p&gt;
+💡 このアプローチは非常に非効率です。そのため SentencePiece は、トークン X を除いたモデルの損失の近似を使います。最初からやり直すのではなく、残った語彙の中でのトークン X の分割で X を置き換えるだけです。こうすれば、モデルの損失と同時にすべてのスコアを一度に計算できます。
+&lt;/div&gt;
+
+
+これらがすべて揃ったら、あとはモデルが使う特殊トークンを語彙に加え、目的のサイズに到達するまで語彙からトークンを間引くループを回すだけです。
+
+```python
+percent_to_remove = 0.1
+while len(model) &gt; 100:
+    scores = compute_scores(model)
+    sorted_scores = sorted(scores.items(), key=lambda x: x[1])
+    # スコアが最も低いトークンを percent_to_remove の割合だけ削除する
+    for i in range(int(len(model) * percent_to_remove)):
+        _ = token_freqs.pop(sorted_scores[i][0])
+
+    total_sum = sum([freq for token, freq in token_freqs.items()])
+    model = {token: -log(freq / total_sum) for token, freq in token_freqs.items()}
+</code></pre></div>
+
+<p>テキストをトークン化するには、事前トークン化を適用し、<code>encode_word()</code> 関数を使います。</p>
+<div class="codehilite"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">tokenize</span><span class="p">(</span><span class="n">text</span><span class="p">,</span> <span class="n">model</span><span class="p">):</span>
+    <span class="n">words_with_offsets</span> <span class="o">=</span> <span class="n">tokenizer</span><span class="o">.</span><span class="n">backend_tokenizer</span><span class="o">.</span><span class="n">pre_tokenizer</span><span class="o">.</span><span class="n">pre_tokenize_str</span><span class="p">(</span><span class="n">text</span><span class="p">)</span>
+    <span class="n">pre_tokenized_text</span> <span class="o">=</span> <span class="p">[</span><span class="n">word</span> <span class="k">for</span> <span class="n">word</span><span class="p">,</span> <span class="n">offset</span> <span class="ow">in</span> <span class="n">words_with_offsets</span><span class="p">]</span>
+    <span class="n">encoded_words</span> <span class="o">=</span> <span class="p">[</span><span class="n">encode_word</span><span class="p">(</span><span class="n">word</span><span class="p">,</span> <span class="n">model</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span> <span class="k">for</span> <span class="n">word</span> <span class="ow">in</span> <span class="n">pre_tokenized_text</span><span class="p">]</span>
+    <span class="k">return</span> <span class="nb">sum</span><span class="p">(</span><span class="n">encoded_words</span><span class="p">,</span> <span class="p">[])</span>
+
+
+<span class="n">tokenize</span><span class="p">(</span><span class="s2">"This is the Hugging Face course."</span><span class="p">,</span> <span class="n">model</span><span class="p">)</span>
+</code></pre></div>
+
+<p><code>python out
+['▁This', '▁is', '▁the', '▁Hugging', '▁Face', '▁', 'c', 'ou', 'r', 's', 'e', '.']</code></p>
+<div class="callout callout-tip">
+<p class="callout-title">💡 ヒント</p>
+<p>XLNetTokenizer は SentencePiece を使っているため、<code>"_"</code> 文字が含まれています。SentencePiece でデコードするには、すべてのトークンを連結し、<code>"_"</code> をスペースに置き換えます。</p>
+</div>
+<p>Unigram については以上です。ここまでで、トークナイザに関するあらゆることに精通した気分になっているのではないでしょうか。次の節では、🤗 Tokenizers ライブラリの構成要素を掘り下げ、それらを使って独自のトークナイザを構築する方法を紹介します。</p>
+</article>
+<nav class="page-nav"><a class="nav-link prev" href="6.html">← 前へ: WordPiece によるトークン化</a><a class="nav-link toc-link" href="../index.html">目次へ</a><a class="nav-link next" href="8.html">次へ →: 構成要素を組み合わせてトークナイザを構築する</a></nav>
+</main>
+<footer class="site-footer">
+  <p>原典: Hugging Face huggingface/course（<a href="https://github.com/huggingface/course">https://github.com/huggingface/course</a>）</p>
+  <p>日本語版の翻訳・公開: 霞ヶ関京 / 連絡先: GitHub <a href="https://github.com/yanikasumin">@yanikasumin</a> / YouTube <a href="https://www.youtube.com/@KASUMI_MOF">@KASUMI_MOF</a></p>
+  <p class="demo-note">このサイトはデモ版です。内容は順次更新されます。</p>
+</footer>
+<script src="../../site.js"></script>
+</body>
+</html>

@@ -1,0 +1,926 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>マスク言語モデルのファインチューニング | Hugging Face コース日本語版（デモ版）</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Shippori+Mincho:wght@500;700&family=Zen+Kaku+Gothic+New:wght@400;500;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../../style.css">
+<script>
+window.MathJax = { tex: { inlineMath: [['$', '$'], ['\\(', '\\)']], displayMath: [['$$', '$$'], ['\\[', '\\]']] }, options: { skipHtmlTags: ['script','noscript','style','textarea','pre','code'] } };
+</script>
+<script async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml.js"></script>
+</head>
+<body>
+<header class="site-header">
+  <div class="header-inner">
+    <a class="site-title" href="../../index.html">Hugging Face コース日本語版</a>
+    <span class="demo-badge">デモ版</span>
+  </div>
+</header>
+<main class="container">
+<p class="course-crumb"><a href="../index.html">LLM コース</a>
+<span class="badge badge-qa-pass">翻訳QA 最終合格</span></p>
+<nav class="page-nav"><a class="nav-link prev" href="2.html">← 前へ: トークン分類</a><a class="nav-link toc-link" href="../index.html">目次へ</a><a class="nav-link next" href="4.html">次へ →: 翻訳</a></nav>
+<article class="content">
+<h1>マスク言語モデルのファインチューニング</h1>
+<p>{#if fw === 'pt'}</p>
+<p>{:else}</p>
+<p>{/if}</p>
+<p>Transformer モデルを使う多くの NLP アプリケーションでは、Hugging Face Hub から事前学習済みモデルを持ってきて、手元のタスクのために自分のデータで直接ファインチューニングできます。事前学習に使われたコーパスとファインチューニングに使うコーパスが大きく異ならなければ、転移学習によって通常は良い結果が得られます。</p>
+<p>しかし、タスク固有のヘッドを学習する前に、まず自分のデータで言語モデルをファインチューニングしたい場合もいくつかあります。たとえば、データセットに法律契約書や科学論文が含まれている場合、BERT のような素の Transformer モデルは、コーパス中のドメイン固有の単語を通常、珍しいトークンとして扱うため、得られる性能は満足のいくものにならないかもしれません。ドメイン内のデータで言語モデルをファインチューニングすれば、多くの下流タスクの性能を向上させることができ、しかもこのステップは通常一度だけ行えば済みます！</p>
+<p>事前学習済みの言語モデルをドメイン内のデータでファインチューニングするこのプロセスは、一般に<em>ドメイン適応</em>と呼ばれます。これは 2018 年に <a href="https://arxiv.org/abs/1801.06146">ULMFiT</a> によって広められました。ULMFiT は、NLP で転移学習を実際に機能させた最初期のニューラルアーキテクチャ（LSTM ベース）の1つです。ULMFiT によるドメイン適応の例を下の画像に示します。このセクションでは似たようなことを行いますが、LSTM の代わりに Transformer を使います！</p>
+<div class="flex justify-center">
+<img class="block dark:hidden" src="https://huggingface.co/datasets/huggingface-course/documentation-images/resolve/main/en/chapter7/ulmfit.svg" alt="ULMFiT."/>
+<img class="hidden dark:block" src="https://huggingface.co/datasets/huggingface-course/documentation-images/resolve/main/en/chapter7/ulmfit-dark.svg" alt="ULMFiT."/>
+</div>
+
+<p>このセクションの終わりには、下に示すように文を自動補完できる<a href="https://huggingface.co/huggingface-course/distilbert-base-uncased-finetuned-imdb?text=This+is+a+great+%5BMASK%5D.">マスク言語モデル</a>が Hub 上にできあがります。</p>
+<iframe src="https://course-demos-distilbert-base-uncased-finetuned-imdb.hf.space" frameBorder="0" height="300" title="Gradio アプリ" class="block dark:hidden container p-0 flex-grow space-iframe" allow="accelerometer; ambient-light-sensor; autoplay; battery; camera; document-domain; encrypted-media; fullscreen; geolocation; gyroscope; layout-animations; legacy-image-formats; magnetometer; microphone; midi; oversized-images; payment; picture-in-picture; publickey-credentials-get; sync-xhr; usb; vr ; wake-lock; xr-spatial-tracking" sandbox="allow-forms allow-modals allow-popups allow-popups-to-escape-sandbox allow-same-origin allow-scripts allow-downloads"></iframe>
+
+<p>さっそく始めましょう！</p>
+<div class="youtube-embed"><iframe src="https://www.youtube-nocookie.com/embed/mqElG5QJWUg" title="YouTube video" loading="lazy" allowfullscreen referrerpolicy="strict-origin-when-cross-origin"></iframe></div>
+<div class="callout callout-tip">
+<p class="callout-title">💡 ヒント</p>
+<p>🙋 「マスク言語モデリング」や「事前学習済みモデル」という言葉に聞き覚えがない場合は、<a href="../chapter1/1.html">Chapter 1</a>をチェックしてください。これらの核となる概念を、動画付きですべて説明しています！</p>
+</div>
+<h2>マスク言語モデリング用の事前学習済みモデルの選択</h2>
+<p>まず、マスク言語モデリングに適した事前学習済みモデルを選びましょう。次のスクリーンショットに示すように、<a href="https://huggingface.co/models?pipeline_tag=fill-mask&amp;sort=downloads">Hugging Face Hub</a> で「Fill-Mask」フィルタを適用すれば、候補の一覧が見つかります。</p>
+<div class="flex justify-center">
+<img src="https://huggingface.co/datasets/huggingface-course/documentation-images/resolve/main/en/chapter7/mlm-models.png" alt="Hub のモデル" width="80%"/>
+</div>
+
+<p>BERT と RoBERTa のファミリーのモデルが最も多くダウンロードされていますが、ここでは <a href="https://huggingface.co/distilbert-base-uncased">DistilBERT</a>
+というモデルを使います。下流の性能をほとんど落とすことなく、はるかに速く学習できるためです。このモデルは、<a href="https://en.wikipedia.org/wiki/Knowledge_distillation"><em>知識蒸留</em></a>と呼ばれる特殊な手法で学習されました。これは、BERT のような大きな「教師モデル」を使って、はるかにパラメータの少ない「生徒モデル」の学習を導く手法です。知識蒸留の詳細を説明するとこのセクションの範囲をはるかに超えてしまうため、興味のある方は <a href="https://www.oreilly.com/library/view/natural-language-processing/9781098136789/"><em>Natural Language Processing with Transformers</em></a>（通称 Transformers の教科書）で詳しく読んでください。</p>
+<p>{#if fw === 'pt'}</p>
+<p><code>AutoModelForMaskedLM</code> クラスを使って DistilBERT をダウンロードしましょう。</p>
+<div class="codehilite"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">transformers</span><span class="w"> </span><span class="kn">import</span> <span class="n">AutoModelForMaskedLM</span>
+
+<span class="n">model_checkpoint</span> <span class="o">=</span> <span class="s2">"distilbert-base-uncased"</span>
+<span class="n">model</span> <span class="o">=</span> <span class="n">AutoModelForMaskedLM</span><span class="o">.</span><span class="n">from_pretrained</span><span class="p">(</span><span class="n">model_checkpoint</span><span class="p">)</span>
+</code></pre></div>
+
+<p><code>num_parameters()</code> メソッドを呼び出せば、このモデルがどれだけのパラメータを持つかが分かります。</p>
+<div class="codehilite"><pre><span></span><code><span class="n">distilbert_num_parameters</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">num_parameters</span><span class="p">()</span> <span class="o">/</span> <span class="mi">1_000_000</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"'&gt;&gt;&gt; DistilBERT のパラメータ数: </span><span class="si">{</span><span class="nb">round</span><span class="p">(</span><span class="n">distilbert_num_parameters</span><span class="p">)</span><span class="si">}</span><span class="s2">M'"</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"'&gt;&gt;&gt; BERT のパラメータ数: 110M'"</span><span class="p">)</span>
+</code></pre></div>
+
+<p>```python out
+'&gt;&gt;&gt; DistilBERT のパラメータ数: 67M'
+'&gt;&gt;&gt; BERT のパラメータ数: 110M'</p>
+<div class="codehilite"><pre><span></span><code>{:else}
+
+`AutoModelForMaskedLM` クラスを使って DistilBERT をダウンロードしましょう。
+
+```python
+from transformers import TFAutoModelForMaskedLM
+
+model_checkpoint = "distilbert-base-uncased"
+model = TFAutoModelForMaskedLM.from_pretrained(model_checkpoint)
+</code></pre></div>
+
+<p><code>summary()</code> メソッドを呼び出せば、このモデルがどれだけのパラメータを持つかが分かります。</p>
+<div class="codehilite"><pre><span></span><code><span class="n">model</span><span class="o">.</span><span class="n">summary</span><span class="p">()</span>
+</code></pre></div>
+
+<p>```python out
+Model: "tf_distil_bert_for_masked_lm"</p>
+<hr />
+<h1>Layer (type)                 Output Shape              Param #</h1>
+<p>distilbert (TFDistilBertMain multiple                  66362880  </p>
+<hr />
+<p>vocab_transform (Dense)      multiple                  590592    </p>
+<hr />
+<p>vocab_layer_norm (LayerNorma multiple                  1536      </p>
+<hr />
+<h1>vocab_projector (TFDistilBer multiple                  23866170</h1>
+<p>Total params: 66,985,530
+Trainable params: 66,985,530
+Non-trainable params: 0</p>
+<hr />
+<div class="codehilite"><pre><span></span><code>{/if}
+
+約6,700万パラメータの DistilBERT は、BERT のベースモデルよりおよそ2倍小さく、これは学習速度がおよそ2倍になることを意味します。素晴らしい！次に、このモデルが小さなテキストサンプルの補完として最も可能性が高いと予測するトークンの種類を見てみましょう。
+
+```python
+text = "This is a great [MASK]."
+</code></pre></div>
+
+<p>人間なら、<code>[MASK]</code> トークンには「day」「ride」「painting」など、多くの可能性を想像できます。事前学習済みモデルの場合、予測はモデルが学習したコーパスに依存します。データに存在する統計的パターンを拾うよう学習するためです。BERT と同様に、DistilBERT は <a href="https://huggingface.co/datasets/wikipedia">English Wikipedia</a> と <a href="https://huggingface.co/datasets/bookcorpus">BookCorpus</a> のデータセットで事前学習されているため、<code>[MASK]</code> の予測はこれらのドメインを反映すると予想されます。マスクを予測するには、モデルへの入力を作る DistilBERT のトークナイザが必要です。そこで、こちらも Hub からダウンロードしましょう。</p>
+<div class="codehilite"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">transformers</span><span class="w"> </span><span class="kn">import</span> <span class="n">AutoTokenizer</span>
+
+<span class="n">tokenizer</span> <span class="o">=</span> <span class="n">AutoTokenizer</span><span class="o">.</span><span class="n">from_pretrained</span><span class="p">(</span><span class="n">model_checkpoint</span><span class="p">)</span>
+</code></pre></div>
+
+<p>トークナイザとモデルが揃ったので、テキストの例をモデルに渡し、ロジットを取り出して、上位5つの候補を表示できます。</p>
+<p>{#if fw === 'pt'}</p>
+<div class="codehilite"><pre><span></span><code><span class="kn">import</span><span class="w"> </span><span class="nn">torch</span>
+
+<span class="n">inputs</span> <span class="o">=</span> <span class="n">tokenizer</span><span class="p">(</span><span class="n">text</span><span class="p">,</span> <span class="n">return_tensors</span><span class="o">=</span><span class="s2">"pt"</span><span class="p">)</span>
+<span class="n">token_logits</span> <span class="o">=</span> <span class="n">model</span><span class="p">(</span><span class="o">**</span><span class="n">inputs</span><span class="p">)</span><span class="o">.</span><span class="n">logits</span>
+<span class="c1"># [MASK] の位置を見つけ、そのロジットを取り出す</span>
+<span class="n">mask_token_index</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="n">inputs</span><span class="p">[</span><span class="s2">"input_ids"</span><span class="p">]</span> <span class="o">==</span> <span class="n">tokenizer</span><span class="o">.</span><span class="n">mask_token_id</span><span class="p">)[</span><span class="mi">1</span><span class="p">]</span>
+<span class="n">mask_token_logits</span> <span class="o">=</span> <span class="n">token_logits</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="n">mask_token_index</span><span class="p">,</span> <span class="p">:]</span>
+<span class="c1"># ロジットが最も高い [MASK] の候補を選ぶ</span>
+<span class="n">top_5_tokens</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">topk</span><span class="p">(</span><span class="n">mask_token_logits</span><span class="p">,</span> <span class="mi">5</span><span class="p">,</span> <span class="n">dim</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span><span class="o">.</span><span class="n">indices</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">tolist</span><span class="p">()</span>
+
+<span class="k">for</span> <span class="n">token</span> <span class="ow">in</span> <span class="n">top_5_tokens</span><span class="p">:</span>
+    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"'&gt;&gt;&gt; </span><span class="si">{</span><span class="n">text</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="n">tokenizer</span><span class="o">.</span><span class="n">mask_token</span><span class="p">,</span><span class="w"> </span><span class="n">tokenizer</span><span class="o">.</span><span class="n">decode</span><span class="p">([</span><span class="n">token</span><span class="p">]))</span><span class="si">}</span><span class="s2">'"</span><span class="p">)</span>
+</code></pre></div>
+
+<p>{:else}</p>
+<div class="codehilite"><pre><span></span><code><span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">tensorflow</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">tf</span>
+
+<span class="n">inputs</span> <span class="o">=</span> <span class="n">tokenizer</span><span class="p">(</span><span class="n">text</span><span class="p">,</span> <span class="n">return_tensors</span><span class="o">=</span><span class="s2">"np"</span><span class="p">)</span>
+<span class="n">token_logits</span> <span class="o">=</span> <span class="n">model</span><span class="p">(</span><span class="o">**</span><span class="n">inputs</span><span class="p">)</span><span class="o">.</span><span class="n">logits</span>
+<span class="c1"># [MASK] の位置を見つけ、そのロジットを取り出す</span>
+<span class="n">mask_token_index</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">argwhere</span><span class="p">(</span><span class="n">inputs</span><span class="p">[</span><span class="s2">"input_ids"</span><span class="p">]</span> <span class="o">==</span> <span class="n">tokenizer</span><span class="o">.</span><span class="n">mask_token_id</span><span class="p">)[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">]</span>
+<span class="n">mask_token_logits</span> <span class="o">=</span> <span class="n">token_logits</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="n">mask_token_index</span><span class="p">,</span> <span class="p">:]</span>
+<span class="c1"># ロジットが最も高い [MASK] の候補を選ぶ</span>
+<span class="c1"># 最も小さいものではなく最も大きいロジットを得るため、argsort の前に配列を反転させる</span>
+<span class="n">top_5_tokens</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">argsort</span><span class="p">(</span><span class="o">-</span><span class="n">mask_token_logits</span><span class="p">)[:</span><span class="mi">5</span><span class="p">]</span><span class="o">.</span><span class="n">tolist</span><span class="p">()</span>
+
+<span class="k">for</span> <span class="n">token</span> <span class="ow">in</span> <span class="n">top_5_tokens</span><span class="p">:</span>
+    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"&gt;&gt;&gt; </span><span class="si">{</span><span class="n">text</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="n">tokenizer</span><span class="o">.</span><span class="n">mask_token</span><span class="p">,</span><span class="w"> </span><span class="n">tokenizer</span><span class="o">.</span><span class="n">decode</span><span class="p">([</span><span class="n">token</span><span class="p">]))</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+</code></pre></div>
+
+<p>{/if}</p>
+<p>```python out
+'&gt;&gt;&gt; This is a great deal.'
+'&gt;&gt;&gt; This is a great success.'
+'&gt;&gt;&gt; This is a great adventure.'
+'&gt;&gt;&gt; This is a great idea.'
+'&gt;&gt;&gt; This is a great feat.'</p>
+<div class="codehilite"><pre><span></span><code>出力から分かるように、モデルの予測は日常的な言葉を指しています。英語版 Wikipedia が基盤であることを考えれば、驚くことではありません。では、このドメインをもう少しニッチなもの、つまり強く賛否の分かれる映画レビューに変えてみましょう！
+
+
+## データセット
+
+ドメイン適応を紹介するため、有名な [Large Movie Review Dataset](https://huggingface.co/datasets/imdb)（略して IMDb）を使います。これは映画レビューのコーパスで、感情分析モデルのベンチマークによく使われます。DistilBERT をこのコーパスでファインチューニングすれば、言語モデルは、その語彙を、事前学習した Wikipedia の事実的なデータから、映画レビューのより主観的な要素へ適応させると期待できます。データは、🤗 Datasets の `load_dataset()` 関数で Hugging Face Hub から取得できます。
+
+```python
+from datasets import load_dataset
+
+imdb_dataset = load_dataset("imdb")
+imdb_dataset
+</code></pre></div>
+
+<p>```python out
+DatasetDict({
+    train: Dataset({
+        features: ['text', 'label'],
+        num_rows: 25000
+    })
+    test: Dataset({
+        features: ['text', 'label'],
+        num_rows: 25000
+    })
+    unsupervised: Dataset({
+        features: ['text', 'label'],
+        num_rows: 50000
+    })
+})</p>
+<div class="codehilite"><pre><span></span><code>`train` 分割と `test` 分割はそれぞれ25,000件のレビューで構成され、`unsupervised` と呼ばれるラベルなしの分割には50,000件のレビューが含まれています。どのようなテキストを扱うのか感触をつかむため、いくつかのサンプルを見てみましょう。これまでの章で行ったように、`Dataset.shuffle()` と `Dataset.select()` 関数を連鎖させて、ランダムなサンプルを作成します。
+
+```python
+sample = imdb_dataset["train"].shuffle(seed=42).select(range(3))
+
+for row in sample:
+    print(f"\n'&gt;&gt;&gt; レビュー: {row['text']}'")
+    print(f"'&gt;&gt;&gt; ラベル: {row['label']}'")
+</code></pre></div>
+
+<p>```python out</p>
+<p>'&gt;&gt;&gt; レビュー: This is your typical Priyadarshan movie--a bunch of loony characters out on some silly mission. His signature climax has the entire cast of the film coming together and fighting each other in some crazy moshpit over hidden money. Whether it is a winning lottery ticket in Malamaal Weekly, black money in Hera Pheri, "kodokoo" in Phir Hera Pheri, etc., etc., the director is becoming ridiculously predictable. Don\'t get me wrong; as clichéd and preposterous his movies may be, I usually end up enjoying the comedy. However, in most his previous movies there has actually been some good humor, (Hungama and Hera Pheri being noteworthy ones). Now, the hilarity of his films is fading as he is using the same formula over and over again.<br /><br />Songs are good. Tanushree Datta looks awesome. Rajpal Yadav is irritating, and Tusshar is not a whole lot better. Kunal Khemu is OK, and Sharman Joshi is the best.'
+'&gt;&gt;&gt; ラベル: 0'</p>
+<p>'&gt;&gt;&gt; レビュー: Okay, the story makes no sense, the characters lack any dimensionally, the best dialogue is ad-libs about the low quality of movie, the cinematography is dismal, and only editing saves a bit of the muddle, but Sam" Peckinpah directed the film. Somehow, his direction is not enough. For those who appreciate Peckinpah and his great work, this movie is a disappointment. Even a great cast cannot redeem the time the viewer wastes with this minimal effort.<br /><br />The proper response to the movie is the contempt that the director San Peckinpah, James Caan, Robert Duvall, Burt Young, Bo Hopkins, Arthur Hill, and even Gig Young bring to their work. Watch the great Peckinpah films. Skip this mess.'
+'&gt;&gt;&gt; ラベル: 0'</p>
+<p>'&gt;&gt;&gt; レビュー: I saw this movie at the theaters when I was about 6 or 7 years old. I loved it then, and have recently come to own a VHS version. <br /><br />My 4 and 6 year old children love this movie and have been asking again and again to watch it. <br /><br />I have enjoyed watching it again too. Though I have to admit it is not as good on a little TV.<br /><br />I do not have older children so I do not know what they would think of it. <br /><br />The songs are very cute. My daughter keeps singing them over and over.<br /><br />Hope this helps.'
+'&gt;&gt;&gt; ラベル: 1'</p>
+<div class="codehilite"><pre><span></span><code>はい、確かに映画レビューです。年齢が十分な方なら、最後のレビューにある VHS 版を所有しているというコメントも理解できるでしょう 😜！言語モデリングにはラベルは必要ありませんが、`0` がネガティブなレビューを、`1` がポジティブなレビューを表すことはすでに見て取れます。
+
+&lt;div class="callout callout-tip" markdown="block"&gt;
+&lt;p class="callout-title"&gt;💡 ヒント&lt;/p&gt;
+✏️ **試してみましょう！** `unsupervised` 分割のランダムなサンプルを作成し、ラベルが `0` でも `1` でもないことを確認してください。ついでに、`train` 分割と `test` 分割のラベルが確かに `0` か `1` であることも確認できます。これは、すべての NLP 実務者が新しいプロジェクトの開始時に行うべき便利なサニティチェックです！
+&lt;/div&gt;
+
+
+データにざっと目を通したので、マスク言語モデリングのためにデータを準備する作業に取りかかりましょう。見ていくように、[Chapter 3](/course/chapter3) で見た系列分類タスクと比べると、追加のステップがいくつか必要です。さあ、始めましょう！
+
+## データの前処理
+
+
+
+<div class="youtube-embed"><iframe src="https://www.youtube-nocookie.com/embed/8PmhEIXhBvI" title="YouTube video" loading="lazy" allowfullscreen referrerpolicy="strict-origin-when-cross-origin"></iframe></div>
+
+
+
+因果言語モデリングとマスク言語モデリングのどちらでも、一般的な前処理のステップは、すべてのサンプルを連結してから、コーパス全体を等しいサイズのチャンクに分割することです。これは、個々のサンプルを単にトークン化する通常のアプローチとはかなり異なります。なぜすべてを連結するのでしょうか？個々のサンプルが長すぎると切り捨てられる可能性があり、言語モデリングタスクに役立つかもしれない情報が失われてしまうためです！
+
+そこでまず、通常どおりコーパスをトークン化しますが、トークナイザで `truncation=True` オプションを*設定しません*。また、単語 ID が利用可能であれば（[Chapter 6](/course/chapter6/3) で説明したように、高速トークナイザを使っていれば利用可能です）取得しておきます。後で全単語マスキングを行う際に必要になるためです。これをシンプルな関数にまとめ、ついでに、もう必要のない `text` 列と `label` 列を取り除きます。
+
+```python
+def tokenize_function(examples):
+    result = tokenizer(examples["text"])
+    if tokenizer.is_fast:
+        result["word_ids"] = [result.word_ids(i) for i in range(len(result["input_ids"]))]
+    return result
+
+
+# batched=True を使って高速なマルチスレッディングを有効化！
+tokenized_datasets = imdb_dataset.map(
+    tokenize_function, batched=True, remove_columns=["text", "label"]
+)
+tokenized_datasets
+</code></pre></div>
+
+<p>```python out
+DatasetDict({
+    train: Dataset({
+        features: ['attention_mask', 'input_ids', 'word_ids'],
+        num_rows: 25000
+    })
+    test: Dataset({
+        features: ['attention_mask', 'input_ids', 'word_ids'],
+        num_rows: 25000
+    })
+    unsupervised: Dataset({
+        features: ['attention_mask', 'input_ids', 'word_ids'],
+        num_rows: 50000
+    })
+})</p>
+<div class="codehilite"><pre><span></span><code>DistilBERT は BERT 系のモデルなので、エンコードされたテキストは、他の章で見てきた `input_ids` と `attention_mask` に、追加した `word_ids` を加えたもので構成されていることが分かります。
+
+映画レビューをトークン化したので、次のステップは、それらをすべてまとめて、結果をチャンクに分割することです。しかし、これらのチャンクはどれくらいの大きさにすべきでしょうか？これは最終的には利用可能な GPU メモリの量で決まりますが、良い出発点は、モデルの最大コンテキストサイズを確認することです。これは、トークナイザの `model_max_length` 属性を調べれば推測できます。
+
+```python
+tokenizer.model_max_length
+</code></pre></div>
+
+<p>```python out
+512</p>
+<div class="codehilite"><pre><span></span><code>この値は、チェックポイントに関連付けられた *tokenizer_config.json* ファイルから導出されます。この場合、コンテキストサイズは BERT と同じく512トークンであることが分かります。
+
+&lt;div class="callout callout-tip" markdown="block"&gt;
+&lt;p class="callout-title"&gt;💡 ヒント&lt;/p&gt;
+✏️ **試してみましょう！** [BigBird](https://huggingface.co/google/bigbird-roberta-base) や [Longformer](hf.co/allenai/longformer-base-4096) のようないくつかの Transformer モデルは、BERT や他の初期の Transformer モデルよりはるかに長いコンテキスト長を持っています。これらのチェックポイントのいずれかでトークナイザをインスタンス化し、`model_max_length` がモデルカードに記載された値と一致することを確認してください。
+&lt;/div&gt;
+
+
+そこで、Google Colab にあるような GPU で実験を実行するために、メモリに収まるもう少し小さいサイズを選びます。
+
+```python
+chunk_size = 128
+</code></pre></div>
+
+<div class="callout callout-warning">
+<p class="callout-title">⚠️ 注意</p>
+<p>小さいチャンクサイズの使用は、実世界のシナリオでは悪影響を及ぼす可能性があることに注意してください。モデルを適用するユースケースに対応するサイズを使うべきです。</p>
+</div>
+<p>ここからが楽しい部分です。連結がどのように機能するかを示すため、トークン化した学習セットから数件のレビューを取り出し、レビューごとのトークン数を表示しましょう。</p>
+<div class="codehilite"><pre><span></span><code><span class="c1"># スライシングすると、各特徴についてリストのリストが得られる</span>
+<span class="n">tokenized_samples</span> <span class="o">=</span> <span class="n">tokenized_datasets</span><span class="p">[</span><span class="s2">"train"</span><span class="p">][:</span><span class="mi">3</span><span class="p">]</span>
+
+<span class="k">for</span> <span class="n">idx</span><span class="p">,</span> <span class="n">sample</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">tokenized_samples</span><span class="p">[</span><span class="s2">"input_ids"</span><span class="p">]):</span>
+    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"'&gt;&gt;&gt; レビュー </span><span class="si">{</span><span class="n">idx</span><span class="si">}</span><span class="s2"> の長さ: </span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">sample</span><span class="p">)</span><span class="si">}</span><span class="s2">'"</span><span class="p">)</span>
+</code></pre></div>
+
+<p>```python out
+'&gt;&gt;&gt; レビュー 0 の長さ: 200'
+'&gt;&gt;&gt; レビュー 1 の長さ: 559'
+'&gt;&gt;&gt; レビュー 2 の長さ: 192'</p>
+<div class="codehilite"><pre><span></span><code>次に、単純な辞書内包表記で、これらすべてのサンプルを連結できます。
+
+```python
+concatenated_examples = {
+    k: sum(tokenized_samples[k], []) for k in tokenized_samples.keys()
+}
+total_length = len(concatenated_examples["input_ids"])
+print(f"'&gt;&gt;&gt; 連結したレビューの長さ: {total_length}'")
+</code></pre></div>
+
+<p>```python out
+'&gt;&gt;&gt; 連結したレビューの長さ: 951'</p>
+<div class="codehilite"><pre><span></span><code>素晴らしい。合計の長さが一致しました。では、連結したレビューを `chunk_size` で指定されたサイズのチャンクに分割しましょう。そのために、`concatenated_examples` の各フィールドを順に処理し、リスト内包表記を使って各フィールドのスライスを作成して、チャンク単位に分割します。結果は、各フィールドについてのチャンクの辞書です。
+
+```python
+chunks = {
+    k: [t[i : i + chunk_size] for i in range(0, total_length, chunk_size)]
+    for k, t in concatenated_examples.items()
+}
+
+for chunk in chunks["input_ids"]:
+    print(f"'&gt;&gt;&gt; チャンクの長さ: {len(chunk)}'")
+</code></pre></div>
+
+<p>```python out
+'&gt;&gt;&gt; チャンクの長さ: 128'
+'&gt;&gt;&gt; チャンクの長さ: 128'
+'&gt;&gt;&gt; チャンクの長さ: 128'
+'&gt;&gt;&gt; チャンクの長さ: 128'
+'&gt;&gt;&gt; チャンクの長さ: 128'
+'&gt;&gt;&gt; チャンクの長さ: 128'
+'&gt;&gt;&gt; チャンクの長さ: 128'
+'&gt;&gt;&gt; チャンクの長さ: 55'</p>
+<div class="codehilite"><pre><span></span><code>この例で分かるように、最後のチャンクは一般に最大のチャンクサイズより小さくなります。これに対処する主な戦略は2つあります。
+
+* 最後のチャンクが `chunk_size` より小さい場合は破棄する。
+* 最後のチャンクを、その長さが `chunk_size` と等しくなるまでパディングする。
+
+ここでは1つ目のアプローチを取ります。そこで、上記のすべてのロジックを、トークン化したデータセットに適用できる単一の関数にまとめましょう。
+
+```python
+def group_texts(examples):
+    # すべてのテキストを連結する
+    concatenated_examples = {k: sum(examples[k], []) for k in examples.keys()}
+    # 連結したテキストの長さを計算する
+    total_length = len(concatenated_examples[list(examples.keys())[0]])
+    # 最後のチャンクが chunk_size より小さい場合は破棄する
+    total_length = (total_length // chunk_size) * chunk_size
+    # max_len のチャンクに分割する
+    result = {
+        k: [t[i : i + chunk_size] for i in range(0, total_length, chunk_size)]
+        for k, t in concatenated_examples.items()
+    }
+    # 新しい labels 列を作成する
+    result["labels"] = result["input_ids"].copy()
+    return result
+</code></pre></div>
+
+<p><code>group_texts()</code> の最後のステップでは、<code>input_ids</code> 列のコピーである新しい <code>labels</code> 列を作成していることに注意してください。すぐに分かるように、これは、マスク言語モデリングの目的が入力バッチ内のランダムにマスクされたトークンを予測することであり、<code>labels</code> 列を作成することで、言語モデルが学習するための正解データを提供するためです。</p>
+<p>では、信頼できる <code>Dataset.map()</code> 関数を使って、トークン化したデータセットに <code>group_texts()</code> を適用しましょう。</p>
+<div class="codehilite"><pre><span></span><code><span class="n">lm_datasets</span> <span class="o">=</span> <span class="n">tokenized_datasets</span><span class="o">.</span><span class="n">map</span><span class="p">(</span><span class="n">group_texts</span><span class="p">,</span> <span class="n">batched</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+<span class="n">lm_datasets</span>
+</code></pre></div>
+
+<p>```python out
+DatasetDict({
+    train: Dataset({
+        features: ['attention_mask', 'input_ids', 'labels', 'word_ids'],
+        num_rows: 61289
+    })
+    test: Dataset({
+        features: ['attention_mask', 'input_ids', 'labels', 'word_ids'],
+        num_rows: 59905
+    })
+    unsupervised: Dataset({
+        features: ['attention_mask', 'input_ids', 'labels', 'word_ids'],
+        num_rows: 122963
+    })
+})</p>
+<div class="codehilite"><pre><span></span><code>テキストをグループ化してチャンクに分割したことで、元の `train` 分割と `test` 分割の25,000件よりはるかに多くのサンプルが生成されたことが分かります。これは、元の他のサンプルにまたがる*連続したトークン*を含むサンプルができたためです。チャンクの1つで特殊トークン `[SEP]` と `[CLS]` を探せば、これを明示的に確認できます。
+
+```python
+tokenizer.decode(lm_datasets["train"][1]["input_ids"])
+</code></pre></div>
+
+<p>```python out
+".... at.......... high. a classic line : inspector : i'm here to sack one of your teachers. student : welcome to bromwell high. i expect that many adults of my age think that bromwell high is far fetched. what a pity that it isn't! [SEP] [CLS] homelessness ( or houselessness as george carlin stated ) has been an issue for years but never a plan to help those on the street that were once considered human who did everything from going to school, work, or vote for the matter. most people think of the homeless"</p>
+<div class="codehilite"><pre><span></span><code>この例では、高校の映画についてのレビューと、ホームレスについてのレビューという、重なった2つの映画レビューが見られます。マスク言語モデリング用のラベルがどうなっているかも確認しましょう。
+
+```python out
+tokenizer.decode(lm_datasets["train"][1]["labels"])
+</code></pre></div>
+
+<p>```python out
+".... at.......... high. a classic line : inspector : i'm here to sack one of your teachers. student : welcome to bromwell high. i expect that many adults of my age think that bromwell high is far fetched. what a pity that it isn't! [SEP] [CLS] homelessness ( or houselessness as george carlin stated ) has been an issue for years but never a plan to help those on the street that were once considered human who did everything from going to school, work, or vote for the matter. most people think of the homeless"</p>
+<div class="codehilite"><pre><span></span><code>上記の `group_texts()` 関数から予想されるとおり、これはデコードした `input_ids` と同一に見えます。しかし、これではモデルは一体どうやって何かを学習できるのでしょうか？重要なステップが欠けています。入力のランダムな位置に `[MASK]` トークンを挿入することです！ファインチューニングの際に、専用のデータコレータを使ってこれをその場で行う方法を見てみましょう。
+
+## DistilBERT を `Trainer` API でファインチューニングする
+
+マスク言語モデルのファインチューニングは、[Chapter 3](/course/chapter3) で行った系列分類モデルのファインチューニングとほぼ同一です。唯一の違いは、テキストの各バッチ内のトークンの一部をランダムにマスクできる専用のデータコレータが必要なことです。幸い、🤗 Transformers にはこのタスク専用の `DataCollatorForLanguageModeling` が用意されています。トークナイザと、どの割合のトークンをマスクするかを指定する `mlm_probability` 引数を渡すだけです。ここでは、BERT で使われ、文献でも一般的な選択である15%を選びます。
+
+```python
+from transformers import DataCollatorForLanguageModeling
+
+data_collator = DataCollatorForLanguageModeling(tokenizer=tokenizer, mlm_probability=0.15)
+</code></pre></div>
+
+<p>ランダムマスキングの仕組みを見るために、データコレータにいくつかのサンプルを与えてみましょう。データコレータは <code>dict</code> のリストを期待し、各 <code>dict</code> が連続したテキストの1つのチャンクを表すため、まずデータセットをイテレーションしてからバッチをコレータに与えます。このデータコレータは <code>"word_ids"</code> キーを想定していないため、取り除きます。</p>
+<div class="codehilite"><pre><span></span><code><span class="n">samples</span> <span class="o">=</span> <span class="p">[</span><span class="n">lm_datasets</span><span class="p">[</span><span class="s2">"train"</span><span class="p">][</span><span class="n">i</span><span class="p">]</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">2</span><span class="p">)]</span>
+<span class="k">for</span> <span class="n">sample</span> <span class="ow">in</span> <span class="n">samples</span><span class="p">:</span>
+    <span class="n">_</span> <span class="o">=</span> <span class="n">sample</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s2">"word_ids"</span><span class="p">)</span>
+
+<span class="k">for</span> <span class="n">chunk</span> <span class="ow">in</span> <span class="n">data_collator</span><span class="p">(</span><span class="n">samples</span><span class="p">)[</span><span class="s2">"input_ids"</span><span class="p">]:</span>
+    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"</span><span class="se">\n</span><span class="s2">'&gt;&gt;&gt; </span><span class="si">{</span><span class="n">tokenizer</span><span class="o">.</span><span class="n">decode</span><span class="p">(</span><span class="n">chunk</span><span class="p">)</span><span class="si">}</span><span class="s2">'"</span><span class="p">)</span>
+</code></pre></div>
+
+<p>```python output
+'&gt;&gt;&gt; [CLS] bromwell [MASK] is a cartoon comedy. it ran at the same [MASK] as some other [MASK] about school life, [MASK] as " teachers ". [MASK] [MASK] [MASK] in the teaching [MASK] lead [MASK] to believe that bromwell high\'[MASK] satire is much closer to reality than is " teachers ". the scramble [MASK] [MASK] financially, the [MASK]ful students whogn [MASK] right through [MASK] pathetic teachers\'pomp, the pettiness of the whole situation, distinction remind me of the schools i knew and their students. when i saw [MASK] episode in [MASK] a student repeatedly tried to burn down the school, [MASK] immediately recalled. [MASK]...'</p>
+<p>'&gt;&gt;&gt; .... at.. [MASK]... [MASK]... high. a classic line plucked inspector : i\'[MASK] here to [MASK] one of your [MASK]. student : welcome to bromwell [MASK]. i expect that many adults of my age think that [MASK]mwell [MASK] is [MASK] fetched. what a pity that it isn\'t! [SEP] [CLS] [MASK]ness ( or [MASK]lessness as george 宇in stated )公 been an issue for years but never [MASK] plan to help those on the street that were once considered human [MASK] did everything from going to school, [MASK], [MASK] vote for the matter. most people think [MASK] the homeless'</p>
+<div class="codehilite"><pre><span></span><code>やりました！うまくいきました！`[MASK]` トークンがテキストのさまざまな場所にランダムに挿入されていることが分かります。これらは学習時にモデルが予測しなければならないトークンです。そしてデータコレータの素晴らしいところは、バッチごとに `[MASK]` の挿入をランダム化してくれることです！
+
+&lt;div class="callout callout-tip" markdown="block"&gt;
+&lt;p class="callout-title"&gt;💡 ヒント&lt;/p&gt;
+✏️ **試してみましょう！** 上のコードスニペットを何度か実行して、ランダムマスキングが目の前で起こるのを見てください！また、`tokenizer.decode()` メソッドを `tokenizer.convert_ids_to_tokens()` に置き換えると、ある単語のトークンのうち1つだけがマスクされ、他のトークンはマスクされないことがあることも分かります。
+&lt;/div&gt;
+
+
+{#if fw === 'pt'}
+
+ランダムマスキングの副作用として、`Trainer` を使う場合、学習セットとテストセットに同じデータコレータを使うため、評価指標は決定的ではなくなります。後で 🤗 Accelerate でのファインチューニングを見る際に、カスタム評価ループの柔軟性を使ってランダム性を固定する方法を見ます。
+
+{/if}
+
+マスク言語モデルの学習の際には、個々のトークンだけでなく単語全体をまとめてマスクする手法も使えます。このアプローチは*全単語マスキング*と呼ばれます。全単語マスキングを使いたい場合は、データコレータを自分で構築する必要があります。データコレータは、サンプルのリストを受け取ってバッチに変換する単なる関数なので、早速作ってみましょう！先に計算した単語 ID を使って、単語のインデックスと対応するトークンの間のマップを作成し、次にどの単語をマスクするかをランダムに決めて、そのマスクを入力に適用します。ラベルはすべて `-100` で、マスクする単語に対応するものだけが例外であることに注意してください。
+
+{#if fw === 'pt'}
+
+```py
+import collections
+import numpy as np
+
+from transformers import default_data_collator
+
+wwm_probability = 0.2
+
+
+def whole_word_masking_data_collator(features):
+    for feature in features:
+        word_ids = feature.pop("word_ids")
+
+        # 単語と対応するトークンのインデックスの間のマップを作成する
+        mapping = collections.defaultdict(list)
+        current_word_index = -1
+        current_word = None
+        for idx, word_id in enumerate(word_ids):
+            if word_id is not None:
+                if word_id != current_word:
+                    current_word = word_id
+                    current_word_index += 1
+                mapping[current_word_index].append(idx)
+
+        # 単語をランダムにマスクする
+        mask = np.random.binomial(1, wwm_probability, (len(mapping),))
+        input_ids = feature["input_ids"]
+        labels = feature["labels"]
+        new_labels = [-100] * len(labels)
+        for word_id in np.where(mask)[0]:
+            word_id = word_id.item()
+            for idx in mapping[word_id]:
+                new_labels[idx] = labels[idx]
+                input_ids[idx] = tokenizer.mask_token_id
+        feature["labels"] = new_labels
+
+    return default_data_collator(features)
+</code></pre></div>
+
+<p>{:else}</p>
+<div class="codehilite"><pre><span></span><code><span class="kn">import</span><span class="w"> </span><span class="nn">collections</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">transformers.data.data_collator</span><span class="w"> </span><span class="kn">import</span> <span class="n">tf_default_data_collator</span>
+
+<span class="n">wwm_probability</span> <span class="o">=</span> <span class="mf">0.2</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">whole_word_masking_data_collator</span><span class="p">(</span><span class="n">features</span><span class="p">):</span>
+    <span class="k">for</span> <span class="n">feature</span> <span class="ow">in</span> <span class="n">features</span><span class="p">:</span>
+        <span class="n">word_ids</span> <span class="o">=</span> <span class="n">feature</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s2">"word_ids"</span><span class="p">)</span>
+
+        <span class="c1"># 単語と対応するトークンのインデックスの間のマップを作成する</span>
+        <span class="n">mapping</span> <span class="o">=</span> <span class="n">collections</span><span class="o">.</span><span class="n">defaultdict</span><span class="p">(</span><span class="nb">list</span><span class="p">)</span>
+        <span class="n">current_word_index</span> <span class="o">=</span> <span class="o">-</span><span class="mi">1</span>
+        <span class="n">current_word</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="k">for</span> <span class="n">idx</span><span class="p">,</span> <span class="n">word_id</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">word_ids</span><span class="p">):</span>
+            <span class="k">if</span> <span class="n">word_id</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="k">if</span> <span class="n">word_id</span> <span class="o">!=</span> <span class="n">current_word</span><span class="p">:</span>
+                    <span class="n">current_word</span> <span class="o">=</span> <span class="n">word_id</span>
+                    <span class="n">current_word_index</span> <span class="o">+=</span> <span class="mi">1</span>
+                <span class="n">mapping</span><span class="p">[</span><span class="n">current_word_index</span><span class="p">]</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">idx</span><span class="p">)</span>
+
+        <span class="c1"># 単語をランダムにマスクする</span>
+        <span class="n">mask</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">binomial</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="n">wwm_probability</span><span class="p">,</span> <span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">mapping</span><span class="p">),))</span>
+        <span class="n">input_ids</span> <span class="o">=</span> <span class="n">feature</span><span class="p">[</span><span class="s2">"input_ids"</span><span class="p">]</span>
+        <span class="n">labels</span> <span class="o">=</span> <span class="n">feature</span><span class="p">[</span><span class="s2">"labels"</span><span class="p">]</span>
+        <span class="n">new_labels</span> <span class="o">=</span> <span class="p">[</span><span class="o">-</span><span class="mi">100</span><span class="p">]</span> <span class="o">*</span> <span class="nb">len</span><span class="p">(</span><span class="n">labels</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">word_id</span> <span class="ow">in</span> <span class="n">np</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="n">mask</span><span class="p">)[</span><span class="mi">0</span><span class="p">]:</span>
+            <span class="n">word_id</span> <span class="o">=</span> <span class="n">word_id</span><span class="o">.</span><span class="n">item</span><span class="p">()</span>
+            <span class="k">for</span> <span class="n">idx</span> <span class="ow">in</span> <span class="n">mapping</span><span class="p">[</span><span class="n">word_id</span><span class="p">]:</span>
+                <span class="n">new_labels</span><span class="p">[</span><span class="n">idx</span><span class="p">]</span> <span class="o">=</span> <span class="n">labels</span><span class="p">[</span><span class="n">idx</span><span class="p">]</span>
+                <span class="n">input_ids</span><span class="p">[</span><span class="n">idx</span><span class="p">]</span> <span class="o">=</span> <span class="n">tokenizer</span><span class="o">.</span><span class="n">mask_token_id</span>
+        <span class="n">feature</span><span class="p">[</span><span class="s2">"labels"</span><span class="p">]</span> <span class="o">=</span> <span class="n">new_labels</span>
+
+    <span class="k">return</span> <span class="n">tf_default_data_collator</span><span class="p">(</span><span class="n">features</span><span class="p">)</span>
+</code></pre></div>
+
+<p>{/if}</p>
+<p>次に、先ほどと同じサンプルで試してみましょう。</p>
+<div class="codehilite"><pre><span></span><code><span class="n">samples</span> <span class="o">=</span> <span class="p">[</span><span class="n">lm_datasets</span><span class="p">[</span><span class="s2">"train"</span><span class="p">][</span><span class="n">i</span><span class="p">]</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">2</span><span class="p">)]</span>
+<span class="n">batch</span> <span class="o">=</span> <span class="n">whole_word_masking_data_collator</span><span class="p">(</span><span class="n">samples</span><span class="p">)</span>
+
+<span class="k">for</span> <span class="n">chunk</span> <span class="ow">in</span> <span class="n">batch</span><span class="p">[</span><span class="s2">"input_ids"</span><span class="p">]:</span>
+    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"</span><span class="se">\n</span><span class="s2">'&gt;&gt;&gt; </span><span class="si">{</span><span class="n">tokenizer</span><span class="o">.</span><span class="n">decode</span><span class="p">(</span><span class="n">chunk</span><span class="p">)</span><span class="si">}</span><span class="s2">'"</span><span class="p">)</span>
+</code></pre></div>
+
+<p>```python out
+'&gt;&gt;&gt; [CLS] bromwell high is a cartoon comedy [MASK] it ran at the same time as some other programs about school life, such as " teachers ". my 35 years in the teaching profession lead me to believe that bromwell high\'s satire is much closer to reality than is " teachers ". the scramble to survive financially, the insightful students who can see right through their pathetic teachers\'pomp, the pettiness of the whole situation, all remind me of the schools i knew and their students. when i saw the episode in which a student repeatedly tried to burn down the school, i immediately recalled.....'</p>
+<p>'&gt;&gt;&gt; .... [MASK] [MASK] [MASK] [MASK]....... high. a classic line : inspector : i\'m here to sack one of your teachers. student : welcome to bromwell high. i expect that many adults of my age think that bromwell high is far fetched. what a pity that it isn\'t! [SEP] [CLS] homelessness ( or houselessness as george carlin stated ) has been an issue for years but never a plan to help those on the street that were once considered human who did everything from going to school, work, or vote for the matter. most people think of the homeless'</p>
+<div class="codehilite"><pre><span></span><code>&lt;div class="callout callout-tip" markdown="block"&gt;
+&lt;p class="callout-title"&gt;💡 ヒント&lt;/p&gt;
+✏️ **試してみましょう！** 上のコードスニペットを何度か実行して、ランダムマスキングが目の前で起こるのを見てください！また、`tokenizer.decode()` メソッドを `tokenizer.convert_ids_to_tokens()` に置き換えると、ある単語のトークンが常に対象の単語と一緒にマスクされることが分かります。
+&lt;/div&gt;
+
+
+2つのデータコレータが揃ったので、ファインチューニングの残りのステップは標準的なものです。幻の P100 GPU を引き当てる幸運に恵まれない限り、Google Colab での学習にはしばらく時間がかかるため 😭、まず学習セットのサイズを数千件のサンプルにダウンサンプリングします。心配いりません。それでもかなりまともな言語モデルが得られます！🤗 Datasets でデータセットを手早くダウンサンプリングする方法は、[Chapter 5](/course/chapter5) で見た `Dataset.train_test_split()` 関数を使うことです。
+
+```python
+train_size = 10_000
+test_size = int(0.1 * train_size)
+
+downsampled_dataset = lm_datasets["train"].train_test_split(
+    train_size=train_size, test_size=test_size, seed=42
+)
+downsampled_dataset
+</code></pre></div>
+
+<p>```python out
+DatasetDict({
+    train: Dataset({
+        features: ['attention_mask', 'input_ids', 'labels', 'word_ids'],
+        num_rows: 10000
+    })
+    test: Dataset({
+        features: ['attention_mask', 'input_ids', 'labels', 'word_ids'],
+        num_rows: 1000
+    })
+})</p>
+<div class="codehilite"><pre><span></span><code>これにより新しい `train` 分割と `test` 分割が自動的に作成され、学習セットのサイズは10,000件のサンプル、検証セットはその10%に設定されました。強力な GPU がある場合は自由に増やしてください！次に行う必要があるのは、Hugging Face Hub へのログインです。このコードをノートブックで実行している場合は、次のユーティリティ関数でログインできます。
+
+```python
+from huggingface_hub import notebook_login
+
+notebook_login()
+</code></pre></div>
+
+<p>これにより、認証情報を入力できるウィジェットが表示されます。あるいは、次のコマンドを実行することもできます。</p>
+<div class="codehilite"><pre><span></span><code>huggingface-cli login
+</code></pre></div>
+
+<p>お気に入りのターミナルでこれを実行して、そこでログインしてください。</p>
+<p>{#if fw === 'tf'}</p>
+<p>ログインできたら、<code>tf.data</code> データセットを作成できます。そのために <code>prepare_tf_dataset()</code> メソッドを使います。これはモデルを使って、データセットに含めるべき列を自動的に推論します。使う列を正確に制御したい場合は、代わりに <code>Dataset.to_tf_dataset()</code> メソッドを使えます。話を単純にするため、ここでは標準のデータコレータを使いますが、全単語マスキングのコレータを試して結果を比べることも演習としてできます。</p>
+<div class="codehilite"><pre><span></span><code><span class="n">tf_train_dataset</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">prepare_tf_dataset</span><span class="p">(</span>
+    <span class="n">downsampled_dataset</span><span class="p">[</span><span class="s2">"train"</span><span class="p">],</span>
+    <span class="n">collate_fn</span><span class="o">=</span><span class="n">data_collator</span><span class="p">,</span>
+    <span class="n">shuffle</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+    <span class="n">batch_size</span><span class="o">=</span><span class="mi">32</span><span class="p">,</span>
+<span class="p">)</span>
+
+<span class="n">tf_eval_dataset</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">prepare_tf_dataset</span><span class="p">(</span>
+    <span class="n">downsampled_dataset</span><span class="p">[</span><span class="s2">"test"</span><span class="p">],</span>
+    <span class="n">collate_fn</span><span class="o">=</span><span class="n">data_collator</span><span class="p">,</span>
+    <span class="n">shuffle</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+    <span class="n">batch_size</span><span class="o">=</span><span class="mi">32</span><span class="p">,</span>
+<span class="p">)</span>
+</code></pre></div>
+
+<p>次に、学習のハイパーパラメータを設定し、モデルをコンパイルします。🤗 Transformers ライブラリの <code>create_optimizer()</code> 関数を使います。これにより、線形の学習率減衰を備えた <code>AdamW</code> オプティマイザが得られます。また、モデルの組み込み損失を使います。これは、<code>compile()</code> の引数として損失が指定されなかった場合のデフォルトです。学習の精度は <code>"mixed_float16"</code> に設定します。float16 の高速化に対応していない Colab の GPU やその他の GPU を使っている場合は、その行をコメントアウトした方がよいでしょう。</p>
+<p>さらに、各エポックの後にモデルを Hub に保存する <code>PushToHubCallback</code> を設定します。<code>hub_model_id</code> 引数で、push 先のリポジトリの名前を指定できます（特に、組織に push する場合はこの引数を使う必要があります）。たとえば、モデルを <a href="https://huggingface.co/huggingface-course"><code>huggingface-course</code> 組織</a>に push する際には、<code>hub_model_id="huggingface-course/distilbert-finetuned-imdb"</code> を追加しました。デフォルトでは、使用されるリポジトリは自分の名前空間にあり、設定した出力ディレクトリにちなんだ名前になるため、この場合は <code>"lewtun/distilbert-finetuned-imdb"</code> になります。</p>
+<div class="codehilite"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">transformers</span><span class="w"> </span><span class="kn">import</span> <span class="n">create_optimizer</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">transformers.keras_callbacks</span><span class="w"> </span><span class="kn">import</span> <span class="n">PushToHubCallback</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">tensorflow</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">tf</span>
+
+<span class="n">num_train_steps</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">tf_train_dataset</span><span class="p">)</span>
+<span class="n">optimizer</span><span class="p">,</span> <span class="n">schedule</span> <span class="o">=</span> <span class="n">create_optimizer</span><span class="p">(</span>
+    <span class="n">init_lr</span><span class="o">=</span><span class="mf">2e-5</span><span class="p">,</span>
+    <span class="n">num_warmup_steps</span><span class="o">=</span><span class="mi">1_000</span><span class="p">,</span>
+    <span class="n">num_train_steps</span><span class="o">=</span><span class="n">num_train_steps</span><span class="p">,</span>
+    <span class="n">weight_decay_rate</span><span class="o">=</span><span class="mf">0.01</span><span class="p">,</span>
+<span class="p">)</span>
+<span class="n">model</span><span class="o">.</span><span class="n">compile</span><span class="p">(</span><span class="n">optimizer</span><span class="o">=</span><span class="n">optimizer</span><span class="p">)</span>
+
+<span class="c1"># 混合精度 float16 で学習する</span>
+<span class="n">tf</span><span class="o">.</span><span class="n">keras</span><span class="o">.</span><span class="n">mixed_precision</span><span class="o">.</span><span class="n">set_global_policy</span><span class="p">(</span><span class="s2">"mixed_float16"</span><span class="p">)</span>
+
+<span class="n">model_name</span> <span class="o">=</span> <span class="n">model_checkpoint</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">"/"</span><span class="p">)[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+<span class="n">callback</span> <span class="o">=</span> <span class="n">PushToHubCallback</span><span class="p">(</span>
+    <span class="n">output_dir</span><span class="o">=</span><span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">model_name</span><span class="si">}</span><span class="s2">-finetuned-imdb"</span><span class="p">,</span> <span class="n">tokenizer</span><span class="o">=</span><span class="n">tokenizer</span>
+<span class="p">)</span>
+</code></pre></div>
+
+<p>これで <code>model.fit()</code> を実行する準備ができました。しかし、その前に、言語モデルの性能を評価する一般的な指標である<em>パープレキシティ</em>について簡単に見ておきましょう。</p>
+<p>{:else}</p>
+<p>ログインできたら、<code>Trainer</code> の引数を指定できます。</p>
+<div class="codehilite"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">transformers</span><span class="w"> </span><span class="kn">import</span> <span class="n">TrainingArguments</span>
+
+<span class="n">batch_size</span> <span class="o">=</span> <span class="mi">64</span>
+<span class="c1"># エポックごとに学習損失を表示する</span>
+<span class="n">logging_steps</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">downsampled_dataset</span><span class="p">[</span><span class="s2">"train"</span><span class="p">])</span> <span class="o">//</span> <span class="n">batch_size</span>
+<span class="n">model_name</span> <span class="o">=</span> <span class="n">model_checkpoint</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">"/"</span><span class="p">)[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+
+<span class="n">training_args</span> <span class="o">=</span> <span class="n">TrainingArguments</span><span class="p">(</span>
+    <span class="n">output_dir</span><span class="o">=</span><span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">model_name</span><span class="si">}</span><span class="s2">-finetuned-imdb"</span><span class="p">,</span>
+    <span class="n">overwrite_output_dir</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+    <span class="n">evaluation_strategy</span><span class="o">=</span><span class="s2">"epoch"</span><span class="p">,</span>
+    <span class="n">learning_rate</span><span class="o">=</span><span class="mf">2e-5</span><span class="p">,</span>
+    <span class="n">weight_decay</span><span class="o">=</span><span class="mf">0.01</span><span class="p">,</span>
+    <span class="n">per_device_train_batch_size</span><span class="o">=</span><span class="n">batch_size</span><span class="p">,</span>
+    <span class="n">per_device_eval_batch_size</span><span class="o">=</span><span class="n">batch_size</span><span class="p">,</span>
+    <span class="n">push_to_hub</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+    <span class="n">fp16</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+    <span class="n">logging_steps</span><span class="o">=</span><span class="n">logging_steps</span><span class="p">,</span>
+<span class="p">)</span>
+</code></pre></div>
+
+<p>ここでは、エポックごとに学習損失を追跡できるよう <code>logging_steps</code> を設定するなど、デフォルトのオプションをいくつか調整しました。また <code>fp16=True</code> を使って混合精度の学習を有効にし、速度のさらなる向上を図っています。デフォルトでは、<code>Trainer</code> はモデルの <code>forward()</code> メソッドの引数に含まれない列をすべて取り除きます。つまり、全単語マスキングのコレータを使う場合は、学習中に <code>word_ids</code> 列を失わないよう、<code>remove_unused_columns=False</code> も設定する必要があります。</p>
+<p><code>hub_model_id</code> 引数で、push 先のリポジトリの名前を指定できることにも注意してください（特に、組織に push する場合はこの引数を使う必要があります）。たとえば、モデルを <a href="https://huggingface.co/huggingface-course"><code>huggingface-course</code> 組織</a>に push した際には、<code>TrainingArguments</code> に <code>hub_model_id="huggingface-course/distilbert-finetuned-imdb"</code> を追加しました。デフォルトでは、使用されるリポジトリは自分の名前空間にあり、設定した出力ディレクトリにちなんだ名前になるため、この場合は <code>"lewtun/distilbert-finetuned-imdb"</code> になります。</p>
+<p>これで <code>Trainer</code> をインスタンス化するための材料がすべて揃いました。ここでは標準の <code>data_collator</code> を使いますが、全単語マスキングのコレータを試して結果を比べることも演習としてできます。</p>
+<div class="codehilite"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">transformers</span><span class="w"> </span><span class="kn">import</span> <span class="n">Trainer</span>
+
+<span class="n">trainer</span> <span class="o">=</span> <span class="n">Trainer</span><span class="p">(</span>
+    <span class="n">model</span><span class="o">=</span><span class="n">model</span><span class="p">,</span>
+    <span class="n">args</span><span class="o">=</span><span class="n">training_args</span><span class="p">,</span>
+    <span class="n">train_dataset</span><span class="o">=</span><span class="n">downsampled_dataset</span><span class="p">[</span><span class="s2">"train"</span><span class="p">],</span>
+    <span class="n">eval_dataset</span><span class="o">=</span><span class="n">downsampled_dataset</span><span class="p">[</span><span class="s2">"test"</span><span class="p">],</span>
+    <span class="n">data_collator</span><span class="o">=</span><span class="n">data_collator</span><span class="p">,</span>
+    <span class="n">tokenizer</span><span class="o">=</span><span class="n">tokenizer</span><span class="p">,</span>
+<span class="p">)</span>
+</code></pre></div>
+
+<p>これで <code>trainer.train()</code> を実行する準備ができました。しかし、その前に、言語モデルの性能を評価する一般的な指標であるパープレキシティについて簡単に見ておきましょう。</p>
+<p>{/if}</p>
+<h3>言語モデルのパープレキシティ</h3>
+<div class="youtube-embed"><iframe src="https://www.youtube-nocookie.com/embed/NURcDHhYe98" title="YouTube video" loading="lazy" allowfullscreen referrerpolicy="strict-origin-when-cross-origin"></iframe></div>
+<p>テキスト分類や質問応答のような他のタスクでは、学習用のラベル付きコーパスが与えられますが、言語モデリングには明示的なラベルがありません。では、良い言語モデルとは何によって決まるのでしょうか？スマートフォンの自動修正機能のように、良い言語モデルは、文法的に正しい文には高い確率を、意味をなさない文には低い確率を割り当てます。これがどのようなものかよりよく分かるように、オンラインでは「autocorrect fails」のコレクション全体が見つかります。そこでは、ある人のスマートフォンのモデルが、かなり面白い（そしてしばしば不適切な）補完を生み出しています！</p>
+<p>{#if fw === 'pt'}</p>
+<p>テストセットが主に文法的に正しい文で構成されていると仮定すると、言語モデルの品質を測る1つの方法は、テストセットのすべての文における次の単語にモデルが割り当てる確率を計算することです。確率が高いことは、モデルが見たことのないサンプルに「驚いて」おらず、つまり「困惑（perplexed）」しておらず、その言語の文法の基本パターンを学習したことを示唆します。パープレキシティにはさまざまな数学的定義がありますが、ここで使うものは、交差エントロピー損失の指数として定義します。したがって、事前学習済みモデルのパープレキシティは、<code>Trainer.evaluate()</code> 関数を使ってテストセットの交差エントロピー損失を計算し、その結果の指数を取ることで計算できます。</p>
+<div class="codehilite"><pre><span></span><code><span class="kn">import</span><span class="w"> </span><span class="nn">math</span>
+
+<span class="n">eval_results</span> <span class="o">=</span> <span class="n">trainer</span><span class="o">.</span><span class="n">evaluate</span><span class="p">()</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"&gt;&gt;&gt; パープレキシティ: </span><span class="si">{</span><span class="n">math</span><span class="o">.</span><span class="n">exp</span><span class="p">(</span><span class="n">eval_results</span><span class="p">[</span><span class="s1">'eval_loss'</span><span class="p">])</span><span class="si">:</span><span class="s2">.2f</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+</code></pre></div>
+
+<p>{:else}</p>
+<p>テストセットが主に文法的に正しい文で構成されていると仮定すると、言語モデルの品質を測る1つの方法は、テストセットのすべての文における次の単語にモデルが割り当てる確率を計算することです。確率が高いことは、モデルが見たことのないサンプルに「驚いて」おらず、つまり「困惑（perplexed）」しておらず、その言語の文法の基本パターンを学習したことを示唆します。パープレキシティにはさまざまな数学的定義がありますが、ここで使うものは、交差エントロピー損失の指数として定義します。したがって、事前学習済みモデルのパープレキシティは、<code>model.evaluate()</code> メソッドを使ってテストセットの交差エントロピー損失を計算し、その結果の指数を取ることで計算できます。</p>
+<div class="codehilite"><pre><span></span><code><span class="kn">import</span><span class="w"> </span><span class="nn">math</span>
+
+<span class="n">eval_loss</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">evaluate</span><span class="p">(</span><span class="n">tf_eval_dataset</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"パープレキシティ: </span><span class="si">{</span><span class="n">math</span><span class="o">.</span><span class="n">exp</span><span class="p">(</span><span class="n">eval_loss</span><span class="p">)</span><span class="si">:</span><span class="s2">.2f</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+</code></pre></div>
+
+<p>{/if}</p>
+<p>```python out</p>
+<blockquote>
+<blockquote>
+<blockquote>
+<p>パープレキシティ: 21.75</p>
+</blockquote>
+</blockquote>
+</blockquote>
+<div class="codehilite"><pre><span></span><code>パープレキシティのスコアが低いほど、言語モデルは優れています。ここでは、開始時のモデルの値がやや大きいことが分かります。ファインチューニングでこれを下げられるか見てみましょう！そのために、まず学習ループを実行します。
+
+{#if fw === 'pt'}
+
+```python
+trainer.train()
+</code></pre></div>
+
+<p>{:else}</p>
+<div class="codehilite"><pre><span></span><code><span class="n">model</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">tf_train_dataset</span><span class="p">,</span> <span class="n">validation_data</span><span class="o">=</span><span class="n">tf_eval_dataset</span><span class="p">,</span> <span class="n">callbacks</span><span class="o">=</span><span class="p">[</span><span class="n">callback</span><span class="p">])</span>
+</code></pre></div>
+
+<p>{/if}</p>
+<p>次に、先ほどと同様に、結果のパープレキシティをテストセットで計算します。</p>
+<p>{#if fw === 'pt'}</p>
+<div class="codehilite"><pre><span></span><code><span class="n">eval_results</span> <span class="o">=</span> <span class="n">trainer</span><span class="o">.</span><span class="n">evaluate</span><span class="p">()</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"&gt;&gt;&gt; パープレキシティ: </span><span class="si">{</span><span class="n">math</span><span class="o">.</span><span class="n">exp</span><span class="p">(</span><span class="n">eval_results</span><span class="p">[</span><span class="s1">'eval_loss'</span><span class="p">])</span><span class="si">:</span><span class="s2">.2f</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+</code></pre></div>
+
+<p>{:else}</p>
+<div class="codehilite"><pre><span></span><code><span class="n">eval_loss</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">evaluate</span><span class="p">(</span><span class="n">tf_eval_dataset</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"パープレキシティ: </span><span class="si">{</span><span class="n">math</span><span class="o">.</span><span class="n">exp</span><span class="p">(</span><span class="n">eval_loss</span><span class="p">)</span><span class="si">:</span><span class="s2">.2f</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+</code></pre></div>
+
+<p>{/if}</p>
+<p>```python out</p>
+<blockquote>
+<blockquote>
+<blockquote>
+<p>パープレキシティ: 11.32</p>
+</blockquote>
+</blockquote>
+</blockquote>
+<div class="codehilite"><pre><span></span><code>素晴らしい！パープレキシティがかなり下がりました。これは、モデルが映画レビューというドメインについて何かを学習したことを示しています！
+
+{#if fw === 'pt'}
+
+学習が終わったら、学習情報を含むモデルカードを Hub に push できます（チェックポイント自体は学習中に保存されます）。
+
+```python
+trainer.push_to_hub()
+</code></pre></div>
+
+<p>{/if}</p>
+<div class="callout callout-tip">
+<p class="callout-title">💡 ヒント</p>
+<p>✏️ <strong>試してみましょう！</strong> データコレータを全単語マスキングのコレータに変更してから、上記の学習を実行してください。より良い結果が得られますか？</p>
+</div>
+<p>{#if fw === 'pt'} </p>
+<p>私たちのユースケースでは、学習ループに特別なことは何もする必要がありませんでした。しかし、場合によってはカスタムロジックを実装する必要があるかもしれません。そのような用途には 🤗 Accelerate が使えます。見てみましょう！</p>
+<h2>DistilBERT を 🤗 Accelerate でファインチューニングする</h2>
+<p><code>Trainer</code> で見たように、マスク言語モデルのファインチューニングは、<a href="../chapter3/1.html">Chapter 3</a> のテキスト分類の例と非常によく似ています。実際、唯一の注意点は専用のデータコレータの使用であり、それはこのセクションですでに扱いました！</p>
+<p>しかし、<code>DataCollatorForLanguageModeling</code> は評価のたびにもランダムマスキングを適用するため、学習を実行するたびにパープレキシティのスコアに変動が見られます。このランダム性の源を取り除く1つの方法は、テストセット全体にマスキングを<em>一度だけ</em>適用し、評価の際には 🤗 Transformers のデフォルトのデータコレータを使ってバッチを集めることです。これがどのように機能するかを見るため、<code>DataCollatorForLanguageModeling</code> との最初の出会いと同様に、バッチにマスキングを適用するシンプルな関数を実装しましょう。</p>
+<div class="codehilite"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">insert_random_mask</span><span class="p">(</span><span class="n">batch</span><span class="p">):</span>
+    <span class="n">features</span> <span class="o">=</span> <span class="p">[</span><span class="nb">dict</span><span class="p">(</span><span class="nb">zip</span><span class="p">(</span><span class="n">batch</span><span class="p">,</span> <span class="n">t</span><span class="p">))</span> <span class="k">for</span> <span class="n">t</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="o">*</span><span class="n">batch</span><span class="o">.</span><span class="n">values</span><span class="p">())]</span>
+    <span class="n">masked_inputs</span> <span class="o">=</span> <span class="n">data_collator</span><span class="p">(</span><span class="n">features</span><span class="p">)</span>
+    <span class="c1"># データセットの各列について、新しい「masked」列を作成する</span>
+    <span class="k">return</span> <span class="p">{</span><span class="s2">"masked_"</span> <span class="o">+</span> <span class="n">k</span><span class="p">:</span> <span class="n">v</span><span class="o">.</span><span class="n">numpy</span><span class="p">()</span> <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">masked_inputs</span><span class="o">.</span><span class="n">items</span><span class="p">()}</span>
+</code></pre></div>
+
+<p>次に、この関数をテストセットに適用し、マスクされていない列を取り除いて、マスクされた列に置き換えられるようにします。上の <code>data_collator</code> を適切なものに置き換えれば全単語マスキングも使えます。その場合は、ここの最初の行を取り除いてください。</p>
+<div class="codehilite"><pre><span></span><code><span class="n">downsampled_dataset</span> <span class="o">=</span> <span class="n">downsampled_dataset</span><span class="o">.</span><span class="n">remove_columns</span><span class="p">([</span><span class="s2">"word_ids"</span><span class="p">])</span>
+<span class="n">eval_dataset</span> <span class="o">=</span> <span class="n">downsampled_dataset</span><span class="p">[</span><span class="s2">"test"</span><span class="p">]</span><span class="o">.</span><span class="n">map</span><span class="p">(</span>
+    <span class="n">insert_random_mask</span><span class="p">,</span>
+    <span class="n">batched</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+    <span class="n">remove_columns</span><span class="o">=</span><span class="n">downsampled_dataset</span><span class="p">[</span><span class="s2">"test"</span><span class="p">]</span><span class="o">.</span><span class="n">column_names</span><span class="p">,</span>
+<span class="p">)</span>
+<span class="n">eval_dataset</span> <span class="o">=</span> <span class="n">eval_dataset</span><span class="o">.</span><span class="n">rename_columns</span><span class="p">(</span>
+    <span class="p">{</span>
+        <span class="s2">"masked_input_ids"</span><span class="p">:</span> <span class="s2">"input_ids"</span><span class="p">,</span>
+        <span class="s2">"masked_attention_mask"</span><span class="p">:</span> <span class="s2">"attention_mask"</span><span class="p">,</span>
+        <span class="s2">"masked_labels"</span><span class="p">:</span> <span class="s2">"labels"</span><span class="p">,</span>
+    <span class="p">}</span>
+<span class="p">)</span>
+</code></pre></div>
+
+<p>次に、通常どおりデータローダを設定できますが、評価セットには 🤗 Transformers の <code>default_data_collator</code> を使います。</p>
+<div class="codehilite"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">torch.utils.data</span><span class="w"> </span><span class="kn">import</span> <span class="n">DataLoader</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">transformers</span><span class="w"> </span><span class="kn">import</span> <span class="n">default_data_collator</span>
+
+<span class="n">batch_size</span> <span class="o">=</span> <span class="mi">64</span>
+<span class="n">train_dataloader</span> <span class="o">=</span> <span class="n">DataLoader</span><span class="p">(</span>
+    <span class="n">downsampled_dataset</span><span class="p">[</span><span class="s2">"train"</span><span class="p">],</span>
+    <span class="n">shuffle</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+    <span class="n">batch_size</span><span class="o">=</span><span class="n">batch_size</span><span class="p">,</span>
+    <span class="n">collate_fn</span><span class="o">=</span><span class="n">data_collator</span><span class="p">,</span>
+<span class="p">)</span>
+<span class="n">eval_dataloader</span> <span class="o">=</span> <span class="n">DataLoader</span><span class="p">(</span>
+    <span class="n">eval_dataset</span><span class="p">,</span> <span class="n">batch_size</span><span class="o">=</span><span class="n">batch_size</span><span class="p">,</span> <span class="n">collate_fn</span><span class="o">=</span><span class="n">default_data_collator</span>
+<span class="p">)</span>
+</code></pre></div>
+
+<p>ここからは、🤗 Accelerate の標準的な手順に従います。まず最初に行うのは、事前学習済みモデルの新しいコピーを読み込むことです。</p>
+<div class="codehilite"><pre><span></span><code>model = AutoModelForMaskedLM.from_pretrained(model_checkpoint)
+</code></pre></div>
+
+<p>次にオプティマイザを指定する必要があります。標準の <code>AdamW</code> を使います。</p>
+<div class="codehilite"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">torch.optim</span><span class="w"> </span><span class="kn">import</span> <span class="n">AdamW</span>
+
+<span class="n">optimizer</span> <span class="o">=</span> <span class="n">AdamW</span><span class="p">(</span><span class="n">model</span><span class="o">.</span><span class="n">parameters</span><span class="p">(),</span> <span class="n">lr</span><span class="o">=</span><span class="mf">5e-5</span><span class="p">)</span>
+</code></pre></div>
+
+<p>これらのオブジェクトを使って、<code>Accelerator</code> オブジェクトで学習の準備ができます。</p>
+<div class="codehilite"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">accelerate</span><span class="w"> </span><span class="kn">import</span> <span class="n">Accelerator</span>
+
+<span class="n">accelerator</span> <span class="o">=</span> <span class="n">Accelerator</span><span class="p">()</span>
+<span class="n">model</span><span class="p">,</span> <span class="n">optimizer</span><span class="p">,</span> <span class="n">train_dataloader</span><span class="p">,</span> <span class="n">eval_dataloader</span> <span class="o">=</span> <span class="n">accelerator</span><span class="o">.</span><span class="n">prepare</span><span class="p">(</span>
+    <span class="n">model</span><span class="p">,</span> <span class="n">optimizer</span><span class="p">,</span> <span class="n">train_dataloader</span><span class="p">,</span> <span class="n">eval_dataloader</span>
+<span class="p">)</span>
+</code></pre></div>
+
+<p>モデル、オプティマイザ、データローダが設定できたので、学習率スケジューラを次のように指定できます。</p>
+<div class="codehilite"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">transformers</span><span class="w"> </span><span class="kn">import</span> <span class="n">get_scheduler</span>
+
+<span class="n">num_train_epochs</span> <span class="o">=</span> <span class="mi">3</span>
+<span class="n">num_update_steps_per_epoch</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">train_dataloader</span><span class="p">)</span>
+<span class="n">num_training_steps</span> <span class="o">=</span> <span class="n">num_train_epochs</span> <span class="o">*</span> <span class="n">num_update_steps_per_epoch</span>
+
+<span class="n">lr_scheduler</span> <span class="o">=</span> <span class="n">get_scheduler</span><span class="p">(</span>
+    <span class="s2">"linear"</span><span class="p">,</span>
+    <span class="n">optimizer</span><span class="o">=</span><span class="n">optimizer</span><span class="p">,</span>
+    <span class="n">num_warmup_steps</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span>
+    <span class="n">num_training_steps</span><span class="o">=</span><span class="n">num_training_steps</span><span class="p">,</span>
+<span class="p">)</span>
+</code></pre></div>
+
+<p>学習の前に行うことはあと1つだけです。Hugging Face Hub にモデルリポジトリを作成することです！🤗 Hub ライブラリを使って、まずリポジトリの完全な名前を生成できます。</p>
+<div class="codehilite"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">huggingface_hub</span><span class="w"> </span><span class="kn">import</span> <span class="n">get_full_repo_name</span>
+
+<span class="n">model_name</span> <span class="o">=</span> <span class="s2">"distilbert-base-uncased-finetuned-imdb-accelerate"</span>
+<span class="n">repo_name</span> <span class="o">=</span> <span class="n">get_full_repo_name</span><span class="p">(</span><span class="n">model_name</span><span class="p">)</span>
+<span class="n">repo_name</span>
+</code></pre></div>
+
+<p>```python out
+'lewtun/distilbert-base-uncased-finetuned-imdb-accelerate'</p>
+<div class="codehilite"><pre><span></span><code>次に、🤗 Hub の `Repository` クラスを使ってリポジトリを作成し、クローンします。
+
+```python
+from huggingface_hub import Repository
+
+output_dir = model_name
+repo = Repository(output_dir, clone_from=repo_name)
+</code></pre></div>
+
+<p>これで、あとは完全な学習ループと評価ループを書き出すだけです。</p>
+<div class="codehilite"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">tqdm.auto</span><span class="w"> </span><span class="kn">import</span> <span class="n">tqdm</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">torch</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">math</span>
+
+<span class="n">progress_bar</span> <span class="o">=</span> <span class="n">tqdm</span><span class="p">(</span><span class="nb">range</span><span class="p">(</span><span class="n">num_training_steps</span><span class="p">))</span>
+
+<span class="k">for</span> <span class="n">epoch</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">num_train_epochs</span><span class="p">):</span>
+    <span class="c1"># 学習</span>
+    <span class="n">model</span><span class="o">.</span><span class="n">train</span><span class="p">()</span>
+    <span class="k">for</span> <span class="n">batch</span> <span class="ow">in</span> <span class="n">train_dataloader</span><span class="p">:</span>
+        <span class="n">outputs</span> <span class="o">=</span> <span class="n">model</span><span class="p">(</span><span class="o">**</span><span class="n">batch</span><span class="p">)</span>
+        <span class="n">loss</span> <span class="o">=</span> <span class="n">outputs</span><span class="o">.</span><span class="n">loss</span>
+        <span class="n">accelerator</span><span class="o">.</span><span class="n">backward</span><span class="p">(</span><span class="n">loss</span><span class="p">)</span>
+
+        <span class="n">optimizer</span><span class="o">.</span><span class="n">step</span><span class="p">()</span>
+        <span class="n">lr_scheduler</span><span class="o">.</span><span class="n">step</span><span class="p">()</span>
+        <span class="n">optimizer</span><span class="o">.</span><span class="n">zero_grad</span><span class="p">()</span>
+        <span class="n">progress_bar</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
+
+    <span class="c1"># 評価</span>
+    <span class="n">model</span><span class="o">.</span><span class="n">eval</span><span class="p">()</span>
+    <span class="n">losses</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="k">for</span> <span class="n">step</span><span class="p">,</span> <span class="n">batch</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">eval_dataloader</span><span class="p">):</span>
+        <span class="k">with</span> <span class="n">torch</span><span class="o">.</span><span class="n">no_grad</span><span class="p">():</span>
+            <span class="n">outputs</span> <span class="o">=</span> <span class="n">model</span><span class="p">(</span><span class="o">**</span><span class="n">batch</span><span class="p">)</span>
+
+        <span class="n">loss</span> <span class="o">=</span> <span class="n">outputs</span><span class="o">.</span><span class="n">loss</span>
+        <span class="n">losses</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">accelerator</span><span class="o">.</span><span class="n">gather</span><span class="p">(</span><span class="n">loss</span><span class="o">.</span><span class="n">repeat</span><span class="p">(</span><span class="n">batch_size</span><span class="p">)))</span>
+
+    <span class="n">losses</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">cat</span><span class="p">(</span><span class="n">losses</span><span class="p">)</span>
+    <span class="n">losses</span> <span class="o">=</span> <span class="n">losses</span><span class="p">[:</span> <span class="nb">len</span><span class="p">(</span><span class="n">eval_dataset</span><span class="p">)]</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="n">perplexity</span> <span class="o">=</span> <span class="n">math</span><span class="o">.</span><span class="n">exp</span><span class="p">(</span><span class="n">torch</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">losses</span><span class="p">))</span>
+    <span class="k">except</span> <span class="ne">OverflowError</span><span class="p">:</span>
+        <span class="n">perplexity</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="s2">"inf"</span><span class="p">)</span>
+
+    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"&gt;&gt;&gt; エポック </span><span class="si">{</span><span class="n">epoch</span><span class="si">}</span><span class="s2">: パープレキシティ: </span><span class="si">{</span><span class="n">perplexity</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+
+    <span class="c1"># 保存とアップロード</span>
+    <span class="n">accelerator</span><span class="o">.</span><span class="n">wait_for_everyone</span><span class="p">()</span>
+    <span class="n">unwrapped_model</span> <span class="o">=</span> <span class="n">accelerator</span><span class="o">.</span><span class="n">unwrap_model</span><span class="p">(</span><span class="n">model</span><span class="p">)</span>
+    <span class="n">unwrapped_model</span><span class="o">.</span><span class="n">save_pretrained</span><span class="p">(</span><span class="n">output_dir</span><span class="p">,</span> <span class="n">save_function</span><span class="o">=</span><span class="n">accelerator</span><span class="o">.</span><span class="n">save</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">accelerator</span><span class="o">.</span><span class="n">is_main_process</span><span class="p">:</span>
+        <span class="n">tokenizer</span><span class="o">.</span><span class="n">save_pretrained</span><span class="p">(</span><span class="n">output_dir</span><span class="p">)</span>
+        <span class="n">repo</span><span class="o">.</span><span class="n">push_to_hub</span><span class="p">(</span>
+            <span class="n">commit_message</span><span class="o">=</span><span class="sa">f</span><span class="s2">"Training in progress epoch </span><span class="si">{</span><span class="n">epoch</span><span class="si">}</span><span class="s2">"</span><span class="p">,</span> <span class="n">blocking</span><span class="o">=</span><span class="kc">False</span>
+        <span class="p">)</span>
+</code></pre></div>
+
+<p>```python out</p>
+<blockquote>
+<blockquote>
+<blockquote>
+<p>エポック 0: パープレキシティ: 11.397545307900472
+エポック 1: パープレキシティ: 10.904909330983092
+エポック 2: パープレキシティ: 10.729503505340409</p>
+</blockquote>
+</blockquote>
+</blockquote>
+<div class="codehilite"><pre><span></span><code>素晴らしい！エポックごとにパープレキシティを評価でき、複数回の学習実行の再現性を保証できました！
+
+{/if}
+
+## ファインチューニングしたモデルの使用
+
+ファインチューニングしたモデルは、Hub 上のウィジェットを使うか、ローカルで 🤗 Transformers の `pipeline` を使って操作できます。後者を使って、`fill-mask` パイプラインでモデルをダウンロードしましょう。
+
+```python
+from transformers import pipeline
+
+mask_filler = pipeline(
+    "fill-mask", model="huggingface-course/distilbert-base-uncased-finetuned-imdb"
+)
+</code></pre></div>
+
+<p>次に、サンプルテキスト「This is a great [MASK]」をパイプラインに与えて、上位5つの予測が何かを見てみましょう。</p>
+<div class="codehilite"><pre><span></span><code><span class="n">preds</span> <span class="o">=</span> <span class="n">mask_filler</span><span class="p">(</span><span class="n">text</span><span class="p">)</span>
+
+<span class="k">for</span> <span class="n">pred</span> <span class="ow">in</span> <span class="n">preds</span><span class="p">:</span>
+    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"&gt;&gt;&gt; </span><span class="si">{</span><span class="n">pred</span><span class="p">[</span><span class="s1">'sequence'</span><span class="p">]</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+</code></pre></div>
+
+<p><code>python out
+'&gt;&gt;&gt; this is a great movie.'
+'&gt;&gt;&gt; this is a great film.'
+'&gt;&gt;&gt; this is a great story.'
+'&gt;&gt;&gt; this is a great movies.'
+'&gt;&gt;&gt; this is a great character.'</code></p>
+<p>見事です！モデルは、映画とより強く関連する単語を予測するよう、明らかに重みを適応させました！</p>
+<div class="youtube-embed"><iframe src="https://www.youtube-nocookie.com/embed/0Oxphw4Q9fo" title="YouTube video" loading="lazy" allowfullscreen referrerpolicy="strict-origin-when-cross-origin"></iframe></div>
+<p>これで、言語モデルを学習する最初の実験は終わりです。<a href="6.html">セクション6</a> では、GPT-2 のような自己回帰型モデルをゼロから学習する方法を学びます。自作の Transformer モデルを事前学習する方法を見たい場合は、そちらへ進んでください！</p>
+<div class="callout callout-tip">
+<p class="callout-title">💡 ヒント</p>
+<p>✏️ <strong>試してみましょう！</strong> ドメイン適応の効果を定量化するため、事前学習済みの DistilBERT チェックポイントとファインチューニング済みの DistilBERT チェックポイントの両方について、IMDb のラベルで分類器をファインチューニングしてください。テキスト分類の復習が必要な場合は、<a href="../chapter3/1.html">Chapter 3</a>をチェックしてください。</p>
+</div>
+</article>
+<nav class="page-nav"><a class="nav-link prev" href="2.html">← 前へ: トークン分類</a><a class="nav-link toc-link" href="../index.html">目次へ</a><a class="nav-link next" href="4.html">次へ →: 翻訳</a></nav>
+</main>
+<footer class="site-footer">
+  <p>原典: Hugging Face huggingface/course（<a href="https://github.com/huggingface/course">https://github.com/huggingface/course</a>）</p>
+  <p>日本語版の翻訳・公開: 霞ヶ関京 / 連絡先: GitHub <a href="https://github.com/yanikasumin">@yanikasumin</a> / YouTube <a href="https://www.youtube.com/@KASUMI_MOF">@KASUMI_MOF</a></p>
+  <p class="demo-note">このサイトはデモ版です。内容は順次更新されます。</p>
+</footer>
+<script src="../../site.js"></script>
+</body>
+</html>

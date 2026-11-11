@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Hugging Face MCP Server | Hugging Face コース日本語版（デモ版）</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Shippori+Mincho:wght@500;700&family=Zen+Kaku+Gothic+New:wght@400;500;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../../style.css">
+<script>
+window.MathJax = { tex: { inlineMath: [['$', '$'], ['\\(', '\\)']], displayMath: [['$$', '$$'], ['\\[', '\\]']] }, options: { skipHtmlTags: ['script','noscript','style','textarea','pre','code'] } };
+</script>
+<script async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml.js"></script>
+</head>
+<body>
+<header class="site-header">
+  <div class="header-inner">
+    <a class="site-title" href="../../index.html">Hugging Face コース日本語版</a>
+    <span class="demo-badge">デモ版</span>
+  </div>
+</header>
+<main class="container">
+<p class="course-crumb"><a href="../index.html">MCP コース</a>
+<span class="badge badge-qa-wip">翻訳済み・QA進行中（未検証の部分を含みます）</span></p>
+<nav class="page-nav"><a class="nav-link prev" href="mcp-clients.html">← 前へ: MCP クライアント</a><a class="nav-link toc-link" href="../index.html">目次へ</a><a class="nav-link next" href="gradio-mcp.html">次へ →: Gradio の MCP 統合</a></nav>
+<article class="content">
+<h1>Hugging Face MCP Server</h1>
+<p>Hugging Face MCP（Model Context Protocol）Server は、MCP 対応の AI アシスタント（例えば VS Code、Cursor、Zed、Claude Desktop）を Hugging Face Hub に直接接続します。接続すると、アシスタントが Hub のリソースを検索・探索したり、コミュニティのツールを使ったりできるようになり、すべてエディタやチャット、CLI の中から操作できます。</p>
+<div class="callout callout-tip">
+<p class="callout-title">💡 ヒント</p>
+<p>Hugging Face MCP Server の主な利点は、Hub 向けの組み込みツールに加え、Gradio Spaces をベースにしたコミュニティツールを提供することです。自分たちの MCP サーバーを構築し始めると、Hugging Face MCP Server を自分たちのサーバーの参考にできることがわかります。</p>
+</div>
+<h2>できること</h2>
+<ul>
+<li>Hub のリソースを検索・探索する: モデル、データセット、Spaces、論文。</li>
+<li><a href="https://hf.co/spaces">Spaces</a> でホストされている MCP 対応の Gradio アプリを通じて、コミュニティツールを実行する。</li>
+<li>メタデータ、リンク、コンテキストとともに、結果をアシスタントに取り込む。</li>
+</ul>
+<h2>組み込みツール</h2>
+<p>このサーバーは、サポート対象のクライアント全体で動作する厳選されたツールを提供します。</p>
+<ul>
+<li>モデルの検索と探索（タスク、ライブラリ、ダウンロード数、いいね数で絞り込み）</li>
+<li>データセットの検索と探索（タグ、サイズ、モダリティで絞り込み）</li>
+<li>Spaces のセマンティック検索（TTS、ASR、OCR などの機能でアプリを探す）</li>
+<li>論文のセマンティック検索（Hub 上の関連研究を発見する）</li>
+</ul>
+<h2>はじめに</h2>
+<ol>
+<li>
+<p>MCP 設定を開く: ログインした状態で https://huggingface.co/settings/mcp にアクセスします。</p>
+</li>
+<li>
+<p>クライアントを選ぶ: MCP 対応のクライアント（例えば VS Code、Cursor、Zed、Claude Desktop）を選択します。ページにはクライアント固有の手順と、コピーして使える設定スニペットが表示されます。</p>
+</li>
+<li>
+<p>貼り付けて再起動する: スニペットをクライアントの MCP 設定にコピーし、保存して、クライアントを再起動/リロードします。クライアントに「Hugging Face」（または同様の名前）が接続済み MCP サーバーとして表示されるはずです。</p>
+</li>
+</ol>
+<div class="callout callout-tip">
+<p class="callout-title">💡 ヒント</p>
+<p>設定ページは、クライアントが想定する正確な設定を生成します。手書きで設定を書くのではなく、それを使いましょう。</p>
+</div>
+<p><img alt="MCP 設定の例" src="https://huggingface.co/datasets/huggingface/documentation-images/resolve/main/hf-mcp-settings.png" /></p>
+<h2>サーバーを使う</h2>
+<p>接続したら、アシスタントに Hugging Face のツールを使うよう頼んでみましょう。プロンプトの例:</p>
+<ul>
+<li>「Qwen 3 の量子化モデルを Hugging Face で検索して。」</li>
+<li>「音声ファイルを文字起こしできる Space を探して。」</li>
+<li>「天気の時系列に関するデータセットを見せて。」</li>
+<li>「ジブリ風の猫の画像を 1024 × 1024 で作成して。」</li>
+</ul>
+<p>アシスタントは Hugging Face MCP Server が公開する MCP ツール（Spaces を含む）を呼び出し、結果（タイトル、所有者、ダウンロード数、リンクなど）を返します。その後、Hub でリソースを開いたり、同じチャットで反復を続けたりできます。</p>
+<p><img alt="VS Code で Spaces と連携する HF MCP" src="https://huggingface.co/datasets/huggingface/documentation-images/resolve/main/hf-mcp-vscode.png" /></p>
+<h2>コミュニティツール（Spaces）を追加する</h2>
+<p>コミュニティが構築した MCP 対応の Gradio Spaces で、セットアップを拡張できます。</p>
+<ul>
+<li>MCP をサポートする Spaces を<a href="https://huggingface.co/spaces?search=mcp">こちら</a>で探索する。</li>
+<li>Hugging Face の MCP 設定で、関連する Space を<a href="https://huggingface.co/settings/mcp">こちら</a>で追加する。</li>
+</ul>
+<p>Gradio MCP アプリは、その関数をツール（引数と説明付き）として公開するため、アシスタントが直接呼び出すことができます。追加した新しいツールをクライアントが認識できるよう、クライアントを再起動または更新してください。</p>
+<h2>さらに詳しく</h2>
+<ul>
+<li>設定とクライアントのセットアップ: https://huggingface.co/settings/mcp</li>
+<li>変更履歴のお知らせ: https://huggingface.co/changelog/hf-mcp-server</li>
+<li>HF MCP Server のドキュメント: https://huggingface.co/docs/hub/en/hf-mcp-server</li>
+<li>Gradio と Hub ツールで独自の MCP サーバーを構築する: https://huggingface.co/docs/hub/main/agents</li>
+</ul>
+</article>
+<nav class="page-nav"><a class="nav-link prev" href="mcp-clients.html">← 前へ: MCP クライアント</a><a class="nav-link toc-link" href="../index.html">目次へ</a><a class="nav-link next" href="gradio-mcp.html">次へ →: Gradio の MCP 統合</a></nav>
+</main>
+<footer class="site-footer">
+  <p>原典: Hugging Face huggingface/mcp-course（<a href="https://github.com/huggingface/mcp-course">https://github.com/huggingface/mcp-course</a>）</p>
+  <p>日本語版の翻訳・公開: 霞ヶ関京 / 連絡先: GitHub <a href="https://github.com/yanikasumin">@yanikasumin</a> / YouTube <a href="https://www.youtube.com/@KASUMI_MOF">@KASUMI_MOF</a></p>
+  <p class="demo-note">このサイトはデモ版です。内容は順次更新されます。</p>
+</footer>
+<script src="../../site.js"></script>
+</body>
+</html>

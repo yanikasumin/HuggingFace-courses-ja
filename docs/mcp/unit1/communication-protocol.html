@@ -1,0 +1,213 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>通信プロトコル | Hugging Face コース日本語版（デモ版）</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Shippori+Mincho:wght@500;700&family=Zen+Kaku+Gothic+New:wght@400;500;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../../style.css">
+<script>
+window.MathJax = { tex: { inlineMath: [['$', '$'], ['\\(', '\\)']], displayMath: [['$$', '$$'], ['\\[', '\\]']] }, options: { skipHtmlTags: ['script','noscript','style','textarea','pre','code'] } };
+</script>
+<script async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml.js"></script>
+</head>
+<body>
+<header class="site-header">
+  <div class="header-inner">
+    <a class="site-title" href="../../index.html">Hugging Face コース日本語版</a>
+    <span class="demo-badge">デモ版</span>
+  </div>
+</header>
+<main class="container">
+<p class="course-crumb"><a href="../index.html">MCP コース</a>
+<span class="badge badge-qa-wip">翻訳済み・QA進行中（未検証の部分を含みます）</span></p>
+<nav class="page-nav"><a class="nav-link prev" href="quiz1.html">← 前へ: クイズ 1: MCP の基礎</a><a class="nav-link toc-link" href="../index.html">目次へ</a><a class="nav-link next" href="capabilities.html">次へ →: MCP の機能（Capabilities）を理解する</a></nav>
+<article class="content">
+<h1>通信プロトコル</h1>
+<p>MCP は、クライアントとサーバーが一貫した予測可能な方法でメッセージを交換できる、標準化された通信プロトコルを定義しています。この標準化は、コミュニティ全体の相互運用性にとって極めて重要です。この節では、MCP で使われるプロトコルの構造とトランスポート機構を探ります。</p>
+<div class="callout callout-warning">
+<p class="callout-title">⚠️ 注意</p>
+<p>ここからは MCP プロトコルの細部に入っていきます。MCP で構築するうえでこれらすべてを知る必要はありませんが、存在と仕組みを知っておくと役立ちます。</p>
+</div>
+<h2>JSON-RPC: 基盤</h2>
+<p>MCP の中核では、クライアントとサーバー間のすべての通信のメッセージフォーマットとして <strong>JSON-RPC 2.0</strong> を使用します。JSON-RPC は、JSON でエンコードされた軽量なリモートプロシージャコールプロトコルであり、次の特徴があります。</p>
+<ul>
+<li>人間が読め、デバッグしやすい</li>
+<li>言語に依存せず、あらゆるプログラミング環境で実装をサポートする</li>
+<li>明確な仕様と広範な採用実績があり、確立されている</li>
+</ul>
+<p><img alt="メッセージの種類" src="https://huggingface.co/datasets/mcp-course/images/resolve/main/unit1/5.png" /></p>
+<p>プロトコルは3種類のメッセージを定義しています。</p>
+<h3>1. リクエスト（Requests）</h3>
+<p>操作を開始するためにクライアントからサーバーへ送信されます。リクエストメッセージには次が含まれます。
+- 一意の識別子（<code>id</code>）
+- 呼び出すメソッド名（例: <code>tools/call</code>）
+- メソッドのパラメータ（ある場合）</p>
+<p>リクエストの例:</p>
+<div class="codehilite"><pre><span></span><code><span class="p">{</span>
+<span class="w">  </span><span class="nt">"jsonrpc"</span><span class="p">:</span><span class="w"> </span><span class="s2">"2.0"</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">"id"</span><span class="p">:</span><span class="w"> </span><span class="mi">1</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">"method"</span><span class="p">:</span><span class="w"> </span><span class="s2">"tools/call"</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">"params"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="nt">"name"</span><span class="p">:</span><span class="w"> </span><span class="s2">"weather"</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">"arguments"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">      </span><span class="nt">"location"</span><span class="p">:</span><span class="w"> </span><span class="s2">"San Francisco"</span>
+<span class="w">    </span><span class="p">}</span>
+<span class="w">  </span><span class="p">}</span>
+<span class="p">}</span>
+</code></pre></div>
+
+<h3>2. レスポンス（Responses）</h3>
+<p>リクエストへの返信としてサーバーからクライアントへ送信されます。レスポンスメッセージには次が含まれます。
+- 対応するリクエストと同じ <code>id</code>
+- <code>result</code>（成功の場合）または <code>error</code>（失敗の場合）のいずれか</p>
+<p>成功レスポンスの例:</p>
+<div class="codehilite"><pre><span></span><code><span class="p">{</span>
+<span class="w">  </span><span class="nt">"jsonrpc"</span><span class="p">:</span><span class="w"> </span><span class="s2">"2.0"</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">"id"</span><span class="p">:</span><span class="w"> </span><span class="mi">1</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">"result"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="nt">"temperature"</span><span class="p">:</span><span class="w"> </span><span class="mi">62</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">"conditions"</span><span class="p">:</span><span class="w"> </span><span class="s2">"Partly cloudy"</span>
+<span class="w">  </span><span class="p">}</span>
+<span class="p">}</span>
+</code></pre></div>
+
+<p>エラーレスポンスの例:</p>
+<div class="codehilite"><pre><span></span><code><span class="p">{</span>
+<span class="w">  </span><span class="nt">"jsonrpc"</span><span class="p">:</span><span class="w"> </span><span class="s2">"2.0"</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">"id"</span><span class="p">:</span><span class="w"> </span><span class="mi">1</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">"error"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="nt">"code"</span><span class="p">:</span><span class="w"> </span><span class="mi">-32602</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">"message"</span><span class="p">:</span><span class="w"> </span><span class="s2">"Invalid location parameter"</span>
+<span class="w">  </span><span class="p">}</span>
+<span class="p">}</span>
+</code></pre></div>
+
+<h3>3. 通知（Notifications）</h3>
+<p>レスポンスを必要としない一方通行のメッセージです。通常、イベントに関する更新や通知を提供するためにサーバーからクライアントへ送信されます。</p>
+<p>通知の例:</p>
+<div class="codehilite"><pre><span></span><code><span class="p">{</span>
+<span class="w">  </span><span class="nt">"jsonrpc"</span><span class="p">:</span><span class="w"> </span><span class="s2">"2.0"</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">"method"</span><span class="p">:</span><span class="w"> </span><span class="s2">"progress"</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">"params"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="nt">"message"</span><span class="p">:</span><span class="w"> </span><span class="s2">"Processing data..."</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">"percent"</span><span class="p">:</span><span class="w"> </span><span class="mi">50</span>
+<span class="w">  </span><span class="p">}</span>
+<span class="p">}</span>
+</code></pre></div>
+
+<h2>トランスポート機構</h2>
+<p>JSON-RPC はメッセージフォーマットを定義しますが、MCP はこれらのメッセージをクライアントとサーバー間でどう運ぶかも規定しています。2つの主要なトランスポート機構がサポートされています。</p>
+<h3>stdio（標準入出力）</h3>
+<p>stdio トランスポートは、クライアントとサーバーが同じマシン上で動作するローカル通信に使われます。</p>
+<p>ホストアプリケーションはサーバーをサブプロセスとして起動し、その標準入力（stdin）に書き込み、標準出力（stdout）から読み取ることで通信します。</p>
+<div class="callout callout-tip">
+<p class="callout-title">💡 ヒント</p>
+<p>このトランスポートの<strong>ユースケース</strong>は、ファイルシステムへのアクセスやローカルスクリプトの実行といったローカルツールです。</p>
+</div>
+<p>このトランスポートの主な<strong>利点</strong>は、シンプルで、ネットワーク設定が不要であり、オペレーティングシステムによって安全にサンドボックス化されることです。</p>
+<h3>HTTP + SSE（Server-Sent Events）/ Streamable HTTP</h3>
+<p>HTTP+SSE トランスポートは、クライアントとサーバーが異なるマシン上にある可能性があるリモート通信に使われます。</p>
+<p>通信は HTTP で行われ、サーバーは Server-Sent Events（SSE）を使って永続的な接続越しにクライアントへ更新をプッシュします。</p>
+<div class="callout callout-tip">
+<p class="callout-title">💡 ヒント</p>
+<p>このトランスポートの<strong>ユースケース</strong>は、リモート API、クラウドサービス、共有リソースへの接続です。</p>
+</div>
+<p>このトランスポートの主な<strong>利点</strong>は、ネットワーク越しに動作し、Web サービスとの統合を可能にし、サーバーレス環境と互換性があることです。</p>
+<p>MCP 標準の最近のアップデートでは「Streamable HTTP」が導入・改良されています。これにより、サーバーは必要に応じて SSE によるストリーミングへ動的にアップグレードでき、サーバーレス環境との互換性を保ちながら、より柔軟な運用が可能になります。</p>
+<h2>インタラクションのライフサイクル</h2>
+<p>前節では、クライアント（💻）とサーバー（🌐）の間の単一インタラクションのライフサイクルについて説明しました。ここでは、MCP プロトコルの文脈で、クライアントとサーバー間の完全なインタラクションのライフサイクルを見ていきましょう。</p>
+<p>MCP プロトコルは、クライアントとサーバーの間の構造化されたインタラクションライフサイクルを定義しています。</p>
+<h3>初期化（Initialization）</h3>
+<p>クライアントがサーバーに接続し、プロトコルのバージョンと機能を交換します。サーバーは、サポートするプロトコルのバージョンと機能で応答します。</p>
+<table style="width: 100%;">
+  <tr>
+    <td style="background-color: lightgreen; text-align: center; padding: 10px; border: 1px solid #ccc; border-radius: 4px;">💻</td>
+    <td style="text-align: center;">→<br>initialize</td>
+    <td style="background-color: lightblue; text-align: center; padding: 10px; border: 1px solid #ccc; border-radius: 4px;">🌐</td>
+  </tr>
+  <tr>
+    <td style="background-color: lightgreen; text-align: center; padding: 10px; border: 1px solid #ccc; border-radius: 4px;">💻</td>
+    <td style="text-align: center;">←<br>response</td>
+    <td style="background-color: lightblue; text-align: center; padding: 10px; border: 1px solid #ccc; border-radius: 4px;">🌐</td>
+  </tr>
+  <tr>
+    <td style="background-color: lightgreen; text-align: center; padding: 10px; border: 1px solid #ccc; border-radius: 4px;">💻</td>
+    <td style="text-align: center;">→<br>initialized</td>
+    <td style="background-color: lightblue; text-align: center; padding: 10px; border: 1px solid #ccc; border-radius: 4px;">🌐</td>
+  </tr>
+</table>
+
+<p>クライアントは通知メッセージにより初期化の完了を確認します。</p>
+<h3>発見（Discovery）</h3>
+<p>クライアントが利用可能な機能に関する情報をリクエストし、サーバーが利用可能なツールのリストで応答します。</p>
+<table style="width: 100%;">
+  <tr>
+    <td style="background-color: lightgreen; text-align: center; padding: 10px; border: 1px solid #ccc; border-radius: 4px;">💻</td>
+    <td style="text-align: center;">→<br>tools/list</td>
+    <td style="background-color: lightblue; text-align: center; padding: 10px; border: 1px solid #ccc; border-radius: 4px;">🌐</td>
+  </tr>
+  <tr>
+    <td style="background-color: lightgreen; text-align: center; padding: 10px; border: 1px solid #ccc; border-radius: 4px;">💻</td>
+    <td style="text-align: center;">←<br>response</td>
+    <td style="background-color: lightblue; text-align: center; padding: 10px; border: 1px solid #ccc; border-radius: 4px;">🌐</td>
+  </tr>
+</table>
+
+<p>このプロセスは、ツール、リソース、プロンプトの種類ごとに繰り返されます。</p>
+<h3>実行（Execution）</h3>
+<p>クライアントはホストのニーズに基づいて機能を呼び出します。</p>
+<table style="width: 100%;">
+  <tr>
+    <td style="background-color: lightgreen; text-align: center; padding: 10px; border: 1px solid #ccc; border-radius: 4px;">💻</td>
+    <td style="text-align: center;">→<br>tools/call</td>
+    <td style="background-color: lightblue; text-align: center; padding: 10px; border: 1px solid #ccc; border-radius: 4px;">🌐</td>
+  </tr>
+  <tr>
+    <td style="background-color: lightgreen; text-align: center; padding: 10px; border: 1px solid #ccc; border-radius: 4px;">💻</td>
+    <td style="text-align: center;">←<br>notification（任意の進捗通知）</td>
+    <td style="background-color: lightblue; text-align: center; padding: 10px; border: 1px solid #ccc; border-radius: 4px;">🌐</td>
+  </tr>
+  <tr>
+    <td style="background-color: lightgreen; text-align: center; padding: 10px; border: 1px solid #ccc; border-radius: 4px;">💻</td>
+    <td style="text-align: center;">←<br>response</td>
+    <td style="background-color: lightblue; text-align: center; padding: 10px; border: 1px solid #ccc; border-radius: 4px;">🌐</td>
+  </tr>
+</table>
+
+<h3>終了（Termination）</h3>
+<p>接続が不要になったら正常に閉じられ、サーバーはシャットダウンリクエストを確認応答します。</p>
+<table style="width: 100%;">
+  <tr>
+    <td style="background-color: lightgreen; text-align: center; padding: 10px; border: 1px solid #ccc; border-radius: 4px;">💻</td>
+    <td style="text-align: center;">→<br>shutdown</td>
+    <td style="background-color: lightblue; text-align: center; padding: 10px; border: 1px solid #ccc; border-radius: 4px;">🌐</td>
+  </tr>
+  <tr>
+    <td style="background-color: lightgreen; text-align: center; padding: 10px; border: 1px solid #ccc; border-radius: 4px;">💻</td>
+    <td style="text-align: center;">←<br>response</td>
+    <td style="background-color: lightblue; text-align: center; padding: 10px; border: 1px solid #ccc; border-radius: 4px;">🌐</td>
+  </tr>
+  <tr>
+    <td style="background-color: lightgreen; text-align: center; padding: 10px; border: 1px solid #ccc; border-radius: 4px;">💻</td>
+    <td style="text-align: center;">→<br>exit</td>
+    <td style="background-color: lightblue; text-align: center; padding: 10px; border: 1px solid #ccc; border-radius: 4px;">🌐</td>
+  </tr>
+</table>
+
+<p>クライアントは最後の exit メッセージを送信して終了を完了します。</p>
+<h2>プロトコルの進化</h2>
+<p>MCP プロトコルは、拡張可能で適応性のある設計になっています。初期化フェーズにはバージョンネゴシエーションが含まれており、プロトコルの進化に伴う後方互換性が確保されます。さらに、機能の発見（capability discovery）により、クライアントは各サーバーが提供する具体的な機能に適応でき、同じエコシステム内で基本的なサーバーと高度なサーバーを混在させることができます。</p>
+</article>
+<nav class="page-nav"><a class="nav-link prev" href="quiz1.html">← 前へ: クイズ 1: MCP の基礎</a><a class="nav-link toc-link" href="../index.html">目次へ</a><a class="nav-link next" href="capabilities.html">次へ →: MCP の機能（Capabilities）を理解する</a></nav>
+</main>
+<footer class="site-footer">
+  <p>原典: Hugging Face huggingface/mcp-course（<a href="https://github.com/huggingface/mcp-course">https://github.com/huggingface/mcp-course</a>）</p>
+  <p>日本語版の翻訳・公開: 霞ヶ関京 / 連絡先: GitHub <a href="https://github.com/yanikasumin">@yanikasumin</a> / YouTube <a href="https://www.youtube.com/@KASUMI_MOF">@KASUMI_MOF</a></p>
+  <p class="demo-note">このサイトはデモ版です。内容は順次更新されます。</p>
+</footer>
+<script src="../../site.js"></script>
+</body>
+</html>

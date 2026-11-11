@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>MCP クライアントを構築する | Hugging Face コース日本語版（デモ版）</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Shippori+Mincho:wght@500;700&family=Zen+Kaku+Gothic+New:wght@400;500;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../../style.css">
+<script>
+window.MathJax = { tex: { inlineMath: [['$', '$'], ['\\(', '\\)']], displayMath: [['$$', '$$'], ['\\[', '\\]']] }, options: { skipHtmlTags: ['script','noscript','style','textarea','pre','code'] } };
+</script>
+<script async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml.js"></script>
+</head>
+<body>
+<header class="site-header">
+  <div class="header-inner">
+    <a class="site-title" href="../../index.html">Hugging Face コース日本語版</a>
+    <span class="demo-badge">デモ版</span>
+  </div>
+</header>
+<main class="container">
+<p class="course-crumb"><a href="../index.html">MCP コース</a>
+<span class="badge badge-qa-wip">翻訳済み・QA進行中（未検証の部分を含みます）</span></p>
+<nav class="page-nav"><a class="nav-link prev" href="gradio-server.html">← 前へ: Gradio MCP サーバーを構築する</a><a class="nav-link toc-link" href="../index.html">目次へ</a><a class="nav-link next" href="continue-client.html">次へ →: ローカルモデル・オープンソースモデルで MCP を使う</a></nav>
+<article class="content">
+<h1>MCP クライアントを構築する</h1>
+<p>このセクションでは、異なるプログラミング言語を使って MCP サーバーとやり取りできるクライアントを作成します。HuggingFace.js を使った JavaScript クライアントと、smolagents を使った Python クライアントの両方を実装します。</p>
+<h2>MCP クライアントを設定する</h2>
+<p>MCP サーバーとクライアントを効果的にデプロイするには、適切な設定が必要です。MCP の仕様はまだ進化の途上にあるため、設定方法も変わっていく可能性があります。ここでは、現在のベストプラクティスに焦点を当てます。</p>
+<h3>MCP 設定ファイル</h3>
+<p>MCP ホストは設定ファイルを使ってサーバー接続を管理します。これらのファイルは、どのサーバーが利用可能で、どのように接続するかを定義します。</p>
+<p>設定ファイルは非常にシンプルで理解しやすく、主要な MCP ホスト間で一貫しています。</p>
+<h4><code>mcp.json</code> の構造</h4>
+<p>MCP の標準設定ファイルは <code>mcp.json</code> という名前です。基本構造は次のとおりです。</p>
+<div class="codehilite"><pre><span></span><code><span class="p">{</span>
+<span class="w">  </span><span class="nt">"servers"</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
+<span class="w">    </span><span class="p">{</span>
+<span class="w">      </span><span class="nt">"name"</span><span class="p">:</span><span class="w"> </span><span class="s2">"MCP Server"</span><span class="p">,</span>
+<span class="w">      </span><span class="nt">"transport"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">        </span><span class="nt">"type"</span><span class="p">:</span><span class="w"> </span><span class="s2">"sse"</span><span class="p">,</span>
+<span class="w">        </span><span class="nt">"url"</span><span class="p">:</span><span class="w"> </span><span class="s2">"http://localhost:7860/gradio_api/mcp/sse"</span>
+<span class="w">      </span><span class="p">}</span>
+<span class="w">    </span><span class="p">}</span>
+<span class="w">  </span><span class="p">]</span>
+<span class="p">}</span>
+</code></pre></div>
+
+<p>この例では、SSE トランスポートを使う単一のサーバーが設定されており、ポート 7860 で動作するローカルの Gradio サーバーに接続します。</p>
+<div class="callout callout-tip">
+<p class="callout-title">💡 ヒント</p>
+<p>Gradio アプリがリモートサーバーで動作していることを前提とするため、SSE トランスポートで Gradio アプリに接続しました。ただし、ローカルのスクリプトに接続したい場合は、<code>sse</code> トランスポートではなく <code>stdio</code> トランスポートのほうが適しています。</p>
+</div>
+<h4>HTTP+SSE トランスポートの設定</h4>
+<p>HTTP+SSE トランスポートを使うリモートサーバーでは、設定にサーバーの URL を含めます。</p>
+<div class="codehilite"><pre><span></span><code><span class="p">{</span>
+<span class="w">  </span><span class="nt">"servers"</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
+<span class="w">    </span><span class="p">{</span>
+<span class="w">      </span><span class="nt">"name"</span><span class="p">:</span><span class="w"> </span><span class="s2">"Remote MCP Server"</span><span class="p">,</span>
+<span class="w">      </span><span class="nt">"transport"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">        </span><span class="nt">"type"</span><span class="p">:</span><span class="w"> </span><span class="s2">"sse"</span><span class="p">,</span>
+<span class="w">        </span><span class="nt">"url"</span><span class="p">:</span><span class="w"> </span><span class="s2">"https://example.com/gradio_api/mcp/sse"</span>
+<span class="w">      </span><span class="p">}</span>
+<span class="w">    </span><span class="p">}</span>
+<span class="w">  </span><span class="p">]</span>
+<span class="p">}</span>
+</code></pre></div>
+
+<p>この設定により、UI クライアントは MCP プロトコルを使って Gradio MCP サーバーと通信でき、フロントエンドと MCP サービスのシームレスな統合が可能になります。</p>
+<h2>UI MCP クライアントを設定する</h2>
+<p>Gradio MCP サーバーを使う場合、MCP プロトコルを使ってサーバーに接続するよう UI クライアントを設定できます。設定方法は次のとおりです。</p>
+<h3>基本設定</h3>
+<p><code>config.json</code> という新しいファイルを作成し、次の設定を記述します。</p>
+<div class="codehilite"><pre><span></span><code><span class="p">{</span>
+<span class="w">  </span><span class="nt">"mcpServers"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="nt">"mcp"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">      </span><span class="nt">"url"</span><span class="p">:</span><span class="w"> </span><span class="s2">"http://localhost:7860/gradio_api/mcp/sse"</span>
+<span class="w">    </span><span class="p">}</span>
+<span class="w">  </span><span class="p">}</span>
+<span class="p">}</span>
+</code></pre></div>
+
+<p>この設定により、UI クライアントは MCP プロトコルを使って Gradio MCP サーバーと通信でき、フロントエンドと MCP サービスのシームレスな統合が可能になります。</p>
+<h2>Cursor IDE 内で MCP クライアントを設定する</h2>
+<p>Cursor には MCP サポートが組み込まれており、デプロイした MCP サーバーを開発環境に直接接続できます。</p>
+<h3>設定</h3>
+<p>Cursor の設定を開き（<code>Ctrl + Shift + J</code> / <code>Cmd + Shift + J</code>）、<strong>Tools &amp; Integrations</strong> タブ → <strong>Add Custom MCP</strong> を選択します。</p>
+<p><strong>macOS:</strong></p>
+<div class="codehilite"><pre><span></span><code><span class="p">{</span>
+<span class="w">  </span><span class="nt">"mcpServers"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="nt">"sentiment-analysis"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">      </span><span class="nt">"command"</span><span class="p">:</span><span class="w"> </span><span class="s2">"npx"</span><span class="p">,</span>
+<span class="w">      </span><span class="nt">"args"</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
+<span class="w">        </span><span class="s2">"-y"</span><span class="p">,</span><span class="w"> </span>
+<span class="w">        </span><span class="s2">"mcp-remote"</span><span class="p">,</span><span class="w"> </span>
+<span class="w">        </span><span class="s2">"https://YOURUSENAME-mcp-sentiment.hf.space/gradio_api/mcp/sse"</span><span class="p">,</span><span class="w"> </span>
+<span class="w">        </span><span class="s2">"--transport"</span><span class="p">,</span><span class="w"> </span>
+<span class="w">        </span><span class="s2">"sse-only"</span>
+<span class="w">      </span><span class="p">]</span>
+<span class="w">    </span><span class="p">}</span>
+<span class="w">  </span><span class="p">}</span>
+<span class="p">}</span>
+</code></pre></div>
+
+<p><strong>Windows:</strong></p>
+<div class="codehilite"><pre><span></span><code><span class="p">{</span>
+<span class="w">  </span><span class="nt">"mcpServers"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="nt">"sentiment-analysis"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">      </span><span class="nt">"command"</span><span class="p">:</span><span class="w"> </span><span class="s2">"cmd"</span><span class="p">,</span>
+<span class="w">      </span><span class="nt">"args"</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
+<span class="w">        </span><span class="s2">"/c"</span><span class="p">,</span><span class="w"> </span>
+<span class="w">        </span><span class="s2">"npx"</span><span class="p">,</span><span class="w"> </span>
+<span class="w">        </span><span class="s2">"-y"</span><span class="p">,</span><span class="w"> </span>
+<span class="w">        </span><span class="s2">"mcp-remote"</span><span class="p">,</span><span class="w"> </span>
+<span class="w">        </span><span class="s2">"https://YOURUSENAME-mcp-sentiment.hf.space/gradio_api/mcp/sse"</span><span class="p">,</span><span class="w"> </span>
+<span class="w">        </span><span class="s2">"--transport"</span><span class="p">,</span><span class="w"> </span>
+<span class="w">        </span><span class="s2">"sse-only"</span>
+<span class="w">      </span><span class="p">]</span>
+<span class="w">    </span><span class="p">}</span>
+<span class="w">  </span><span class="p">}</span>
+<span class="p">}</span>
+</code></pre></div>
+
+<h3><code>mcp-remote</code> を使う理由</h3>
+<blockquote>
+<p><strong>Note</strong>: 2025年半ば時点で、Cursor は HTTP+SSE と OAuth によるリモート MCP 接続を直接サポートしています。レガシーなセットアップを使う場合や、特定の互換性の問題に遭遇した場合を除き、<code>mcp-remote</code> は不要かもしれません。</p>
+</blockquote>
+<p>Cursor を含む初期の MCP クライアントは、<code>stdio</code> トランスポートによるローカルサーバーのみをサポートし、認証を伴うリモートサーバーをサポートしていませんでした。<code>mcp-remote</code> ツールは、その回避策として導入されたもので、次の特徴があります。</p>
+<ul>
+<li>ローカルマシン上で動作する  </li>
+<li>Cursor とリモート MCP サーバーを橋渡しする  </li>
+<li>トランスポートと認証を暗黙的に処理する  </li>
+<li>おなじみの設定ファイル形式を使う</li>
+</ul>
+<p>これは一部のエッジケースでは今でも有用ですが、Cursor は現在ネイティブのリモート MCP 統合をサポートしています。リモートサーバーは次のように直接設定できます。</p>
+<div class="codehilite"><pre><span></span><code><span class="p">{</span>
+<span class="w">  </span><span class="nt">"mcpServers"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="nt">"my-server"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">      </span><span class="nt">"url"</span><span class="p">:</span><span class="w"> </span><span class="s2">"https://your-mcp-server.hf.space/gradio_api/mcp/sse"</span>
+<span class="w">    </span><span class="p">}</span>
+<span class="w">  </span><span class="p">}</span>
+<span class="p">}</span>
+</code></pre></div>
+
+<blockquote>
+<p>最新のセットアップ手順については <a href="https://docs.cursor.com/context/mcp">Cursor の公式ドキュメント</a> を参照してください。</p>
+</blockquote>
+<p>設定が完了すれば、コードコメントやユーザーフィードバック、プルリクエストの説明の分析といったタスクに、感情分析ツールを使うよう Cursor に依頼できます。</p>
+</article>
+<nav class="page-nav"><a class="nav-link prev" href="gradio-server.html">← 前へ: Gradio MCP サーバーを構築する</a><a class="nav-link toc-link" href="../index.html">目次へ</a><a class="nav-link next" href="continue-client.html">次へ →: ローカルモデル・オープンソースモデルで MCP を使う</a></nav>
+</main>
+<footer class="site-footer">
+  <p>原典: Hugging Face huggingface/mcp-course（<a href="https://github.com/huggingface/mcp-course">https://github.com/huggingface/mcp-course</a>）</p>
+  <p>日本語版の翻訳・公開: 霞ヶ関京 / 連絡先: GitHub <a href="https://github.com/yanikasumin">@yanikasumin</a> / YouTube <a href="https://www.youtube.com/@KASUMI_MOF">@KASUMI_MOF</a></p>
+  <p class="demo-note">このサイトはデモ版です。内容は順次更新されます。</p>
+</footer>
+<script src="../../site.js"></script>
+</body>
+</html>

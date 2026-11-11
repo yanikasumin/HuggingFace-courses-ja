@@ -1,0 +1,696 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>学習パイプラインをデバッグする | Hugging Face コース日本語版（デモ版）</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Shippori+Mincho:wght@500;700&family=Zen+Kaku+Gothic+New:wght@400;500;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../../style.css">
+<script>
+window.MathJax = { tex: { inlineMath: [['$', '$'], ['\\(', '\\)']], displayMath: [['$$', '$$'], ['\\[', '\\]']] }, options: { skipHtmlTags: ['script','noscript','style','textarea','pre','code'] } };
+</script>
+<script async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml.js"></script>
+</head>
+<body>
+<header class="site-header">
+  <div class="header-inner">
+    <a class="site-title" href="../../index.html">Hugging Face コース日本語版</a>
+    <span class="demo-badge">デモ版</span>
+  </div>
+</header>
+<main class="container">
+<p class="course-crumb"><a href="../index.html">LLM コース</a>
+<span class="badge badge-qa-pass">翻訳QA 最終合格</span></p>
+<nav class="page-nav"><a class="nav-link prev" href="3.html">← 前へ: フォーラムで助けを求める</a><a class="nav-link toc-link" href="../index.html">目次へ</a><a class="nav-link next" href="5.html">次へ →: よい Issue の書き方</a></nav>
+<article class="content">
+<h1>学習パイプラインをデバッグする</h1>
+<p><a href="../chapter7/1.html">Chapter 7</a> のアドバイスにきちんと従って、あるタスク向けにモデルを学習・ファインチューニングするスクリプトを、見事に書き上げました。ところが、<code>trainer.train()</code> コマンドを実行すると、恐ろしいことが起こります。エラーが出るのです 😱。あるいはもっと悪いことに、すべて問題ないように見え、学習はエラーなく進むのに、できあがったモデルがひどい出来になります。このセクションでは、このような問題をデバッグするために何ができるかを示します。</p>
+<h2>学習パイプラインをデバッグする</h2>
+<div class="youtube-embed"><iframe src="https://www.youtube-nocookie.com/embed/L-WSwUWde1U" title="YouTube video" loading="lazy" allowfullscreen referrerpolicy="strict-origin-when-cross-origin"></iframe></div>
+<p><code>trainer.train()</code> でエラーに遭遇したときの問題は、その原因が複数ありうることです。<code>Trainer</code> は通常、データの読み込みから最適化まで、複数の処理をまとめて実行するからです。データセットをデータローダに変換するので、問題はデータセットの何かが間違っていることかもしれませんし、データセットの要素をバッチにまとめようとしたときの問題かもしれません。次に、データのバッチをモデルに投入するので、問題はモデルコードにあるかもしれません。その後、勾配を計算して最適化ステップを実行するので、問題はオプティマイザにあるかもしれません。さらに、学習がすべて順調に進んでも、指標に問題があれば評価の段階で何かがうまくいかないこともあります。</p>
+<p><code>trainer.train()</code> で発生したエラーをデバッグする最良の方法は、このパイプライン全体を手作業でたどり、どこで問題が起きたのかを突き止めることです。そうすれば、エラーはたいてい非常に簡単に解決できます。</p>
+<p>これを示すために、<a href="https://huggingface.co/datasets/glue">MNLI データセット</a>で DistilBERT モデルをファインチューニング（しようと）する次のスクリプトを使います。</p>
+<div class="codehilite"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">datasets</span><span class="w"> </span><span class="kn">import</span> <span class="n">load_dataset</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">evaluate</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">transformers</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
+    <span class="n">AutoTokenizer</span><span class="p">,</span>
+    <span class="n">AutoModelForSequenceClassification</span><span class="p">,</span>
+    <span class="n">TrainingArguments</span><span class="p">,</span>
+    <span class="n">Trainer</span><span class="p">,</span>
+<span class="p">)</span>
+
+<span class="n">raw_datasets</span> <span class="o">=</span> <span class="n">load_dataset</span><span class="p">(</span><span class="s2">"glue"</span><span class="p">,</span> <span class="s2">"mnli"</span><span class="p">)</span>
+
+<span class="n">model_checkpoint</span> <span class="o">=</span> <span class="s2">"distilbert-base-uncased"</span>
+<span class="n">tokenizer</span> <span class="o">=</span> <span class="n">AutoTokenizer</span><span class="o">.</span><span class="n">from_pretrained</span><span class="p">(</span><span class="n">model_checkpoint</span><span class="p">)</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">preprocess_function</span><span class="p">(</span><span class="n">examples</span><span class="p">):</span>
+    <span class="k">return</span> <span class="n">tokenizer</span><span class="p">(</span><span class="n">examples</span><span class="p">[</span><span class="s2">"premise"</span><span class="p">],</span> <span class="n">examples</span><span class="p">[</span><span class="s2">"hypothesis"</span><span class="p">],</span> <span class="n">truncation</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+
+
+<span class="n">tokenized_datasets</span> <span class="o">=</span> <span class="n">raw_datasets</span><span class="o">.</span><span class="n">map</span><span class="p">(</span><span class="n">preprocess_function</span><span class="p">,</span> <span class="n">batched</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+<span class="n">model</span> <span class="o">=</span> <span class="n">AutoModelForSequenceClassification</span><span class="o">.</span><span class="n">from_pretrained</span><span class="p">(</span><span class="n">model_checkpoint</span><span class="p">)</span>
+
+<span class="n">args</span> <span class="o">=</span> <span class="n">TrainingArguments</span><span class="p">(</span>
+    <span class="sa">f</span><span class="s2">"distilbert-finetuned-mnli"</span><span class="p">,</span>
+    <span class="n">evaluation_strategy</span><span class="o">=</span><span class="s2">"epoch"</span><span class="p">,</span>
+    <span class="n">save_strategy</span><span class="o">=</span><span class="s2">"epoch"</span><span class="p">,</span>
+    <span class="n">learning_rate</span><span class="o">=</span><span class="mf">2e-5</span><span class="p">,</span>
+    <span class="n">num_train_epochs</span><span class="o">=</span><span class="mi">3</span><span class="p">,</span>
+    <span class="n">weight_decay</span><span class="o">=</span><span class="mf">0.01</span><span class="p">,</span>
+<span class="p">)</span>
+
+<span class="n">metric</span> <span class="o">=</span> <span class="n">evaluate</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="s2">"glue"</span><span class="p">,</span> <span class="s2">"mnli"</span><span class="p">)</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">compute_metrics</span><span class="p">(</span><span class="n">eval_pred</span><span class="p">):</span>
+    <span class="n">predictions</span><span class="p">,</span> <span class="n">labels</span> <span class="o">=</span> <span class="n">eval_pred</span>
+    <span class="k">return</span> <span class="n">metric</span><span class="o">.</span><span class="n">compute</span><span class="p">(</span><span class="n">predictions</span><span class="o">=</span><span class="n">predictions</span><span class="p">,</span> <span class="n">references</span><span class="o">=</span><span class="n">labels</span><span class="p">)</span>
+
+
+<span class="n">trainer</span> <span class="o">=</span> <span class="n">Trainer</span><span class="p">(</span>
+    <span class="n">model</span><span class="p">,</span>
+    <span class="n">args</span><span class="p">,</span>
+    <span class="n">train_dataset</span><span class="o">=</span><span class="n">raw_datasets</span><span class="p">[</span><span class="s2">"train"</span><span class="p">],</span>
+    <span class="n">eval_dataset</span><span class="o">=</span><span class="n">raw_datasets</span><span class="p">[</span><span class="s2">"validation_matched"</span><span class="p">],</span>
+    <span class="n">compute_metrics</span><span class="o">=</span><span class="n">compute_metrics</span><span class="p">,</span>
+<span class="p">)</span>
+<span class="n">trainer</span><span class="o">.</span><span class="n">train</span><span class="p">()</span>
+</code></pre></div>
+
+<p>これを実行すると、かなり不可解なエラーに出迎えられます。</p>
+<p>```python out
+'ValueError: You have to specify either input_ids or inputs_embeds'</p>
+<div class="codehilite"><pre><span></span><code>### データを確認する
+
+言うまでもありませんが、データが壊れていれば、`Trainer` はバッチを作ることなどできず、ましてやモデルを学習させることなどできません。ですから、まず最初に、学習セットの中身を見る必要があります。
+
+バグの発生源ではないものを直そうとして何時間も無駄にするのを避けるため、確認には `trainer.train_dataset` だけを使うことをおすすめします。ここでもそうしましょう。
+
+```py
+trainer.train_dataset[0]
+</code></pre></div>
+
+<p>```python out
+{'hypothesis': 'Product and geography are what make cream skimming work. ',
+ 'idx': 0,
+ 'label': 1,
+ 'premise': 'Conceptually cream skimming has two basic dimensions - product and geography.'}</p>
+<div class="codehilite"><pre><span></span><code>何かおかしいことに気づきますか？`input_ids` が欠けているというエラーメッセージと合わせると、これはモデルが理解できる数ではなくテキストだと分かるはずです。ここでは、元のエラーが非常に誤解を招くものになっています。`Trainer` が、モデルのシグネチャ（つまり、モデルが期待する引数）に一致しない列を自動で削除するからです。つまり、ここではラベル以外のすべてが捨てられました。そのため、バッチを作ってモデルに送る段階では問題がなく、モデルが適切な入力を受け取っていないと文句を言ったのです。
+
+なぜデータが処理されなかったのでしょう。データセットに `Dataset.map()` メソッドを使い、各サンプルにトークナイザを適用しました。しかし、コードをよく見ると、`Trainer` に学習セットと評価セットを渡すときに間違いをしていたことが分かります。ここで使うべきは `raw_datasets` ではなく `tokenized_datasets` でした 🤦。では、修正しましょう。
+
+```py
+from datasets import load_dataset
+import evaluate
+from transformers import (
+    AutoTokenizer,
+    AutoModelForSequenceClassification,
+    TrainingArguments,
+    Trainer,
+)
+
+raw_datasets = load_dataset("glue", "mnli")
+
+model_checkpoint = "distilbert-base-uncased"
+tokenizer = AutoTokenizer.from_pretrained(model_checkpoint)
+
+
+def preprocess_function(examples):
+    return tokenizer(examples["premise"], examples["hypothesis"], truncation=True)
+
+
+tokenized_datasets = raw_datasets.map(preprocess_function, batched=True)
+model = AutoModelForSequenceClassification.from_pretrained(model_checkpoint)
+
+args = TrainingArguments(
+    f"distilbert-finetuned-mnli",
+    evaluation_strategy="epoch",
+    save_strategy="epoch",
+    learning_rate=2e-5,
+    num_train_epochs=3,
+    weight_decay=0.01,
+)
+
+metric = evaluate.load("glue", "mnli")
+
+
+def compute_metrics(eval_pred):
+    predictions, labels = eval_pred
+    return metric.compute(predictions=predictions, references=labels)
+
+
+trainer = Trainer(
+    model,
+    args,
+    train_dataset=tokenized_datasets["train"],
+    eval_dataset=tokenized_datasets["validation_matched"],
+    compute_metrics=compute_metrics,
+)
+trainer.train()
+</code></pre></div>
+
+<p>この新しいコードは今度は別のエラーを出します（進歩です！）。</p>
+<p>```python out
+'ValueError: expected sequence of length 43 at dim 1 (got 37)'</p>
+<div class="codehilite"><pre><span></span><code>トレースバックを見ると、エラーはデータをバッチにまとめる処理で起きていることが分かります。
+
+```python out
+~/git/transformers/src/transformers/data/data_collator.py in torch_default_data_collator(features)
+    105                 batch[k] = torch.stack([f[k] for f in features])
+    106             else:
+--&gt; 107                 batch[k] = torch.tensor([f[k] for f in features])
+    108 
+    109     return batch
+</code></pre></div>
+
+<p>したがって、次はデータをバッチにまとめる処理を調べる必要があります。ただし、その前に、データの検査を最後まで終わらせて、100%正しいことを確かめましょう。</p>
+<p>学習処理をデバッグするときは、モデルに渡す入力をデコードして確認することが重要です。入力の数値をそのまま見ても意味は分からないため、それらが何を表しているのかを確認する必要があります。たとえばコンピュータビジョンでは、渡すピクセルのデコードされた画像を見ることを意味し、音声ではデコードされた音声サンプルを聴くことを意味し、ここでの NLP の例では、トークナイザを使って入力をデコードすることを意味します。</p>
+<div class="codehilite"><pre><span></span><code><span class="n">tokenizer</span><span class="o">.</span><span class="n">decode</span><span class="p">(</span><span class="n">trainer</span><span class="o">.</span><span class="n">train_dataset</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="s2">"input_ids"</span><span class="p">])</span>
+</code></pre></div>
+
+<p>```python out
+'[CLS] conceptually cream skimming has two basic dimensions - product and geography. [SEP] product and geography are what make cream skimming work. [SEP]'</p>
+<div class="codehilite"><pre><span></span><code>これは正しく見えます。入力のすべてのキーについてこれを行うべきです。
+
+```py
+trainer.train_dataset[0].keys()
+</code></pre></div>
+
+<p>```python out
+dict_keys(['attention_mask', 'hypothesis', 'idx', 'input_ids', 'label', 'premise'])</p>
+<div class="codehilite"><pre><span></span><code>モデルが受け入れる入力に対応しないキーは自動的に捨てられることに注意してください。ここでは `input_ids`、`attention_mask`、`label`（`labels` に名前が変更されます）だけが保持されます。モデルのシグネチャを再確認するには、モデルのクラスを出力し、そのドキュメントを確認します。
+
+```py
+type(trainer.model)
+</code></pre></div>
+
+<p>```python out
+transformers.models.distilbert.modeling_distilbert.DistilBertForSequenceClassification</p>
+<div class="codehilite"><pre><span></span><code>私たちの場合、受け入れられるパラメータは[このページ](https://huggingface.co/transformers/model_doc/distilbert.html#distilbertforsequenceclassification)で確認できます。`Trainer` は、捨てている列もログに記録します。
+
+入力 ID をデコードして正しいことを確認しました。次は `attention_mask` です。
+
+```py
+trainer.train_dataset[0]["attention_mask"]
+</code></pre></div>
+
+<p>```python out
+[1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1]</p>
+<div class="codehilite"><pre><span></span><code>前処理でパディングを適用していないので、これはまったく自然に見えます。そのアテンションマスクに問題がないことを確かめるため、入力 ID と同じ長さか確認しましょう。
+
+```py
+len(trainer.train_dataset[0]["attention_mask"]) == len(
+    trainer.train_dataset[0]["input_ids"]
+)
+</code></pre></div>
+
+<p>```python out
+True</p>
+<div class="codehilite"><pre><span></span><code>良好です。最後に、ラベルを確認しましょう。
+
+```py
+trainer.train_dataset[0]["label"]
+</code></pre></div>
+
+<p>```python out
+1</p>
+<div class="codehilite"><pre><span></span><code>入力 ID と同じように、これは単独ではあまり意味を持たない数です。以前見たように、整数とラベル名の対応は、データセットの対応する_特徴_の `names` 属性の中に格納されています。
+
+```py
+trainer.train_dataset.features["label"].names
+</code></pre></div>
+
+<p>```python out
+['entailment', 'neutral', 'contradiction']</p>
+<div class="codehilite"><pre><span></span><code>つまり `1` は `neutral` を意味し、上で見た2つの文は矛盾しておらず、最初の文が2番目の文を含意もしないということです。これは正しく見えます。
+
+ここにはトークンタイプ ID がありません。DistilBERT はそれを期待しないからです。自分のモデルにそれがある場合は、入力の中で最初の文と2番目の文がある場所に適切に対応していることも確認すべきです。
+
+&lt;div class="callout callout-tip" markdown="block"&gt;
+&lt;p class="callout-title"&gt;💡 ヒント&lt;/p&gt;
+✏️ **実践してみましょう！** 学習データセットの2番目の要素ですべてが正しく見えるか確認してみましょう。
+&lt;/div&gt;
+
+
+ここでは学習セットでだけ確認していますが、もちろん検証セットとテストセットも同じ方法で再確認すべきです。
+
+データセットが問題ないことが分かったので、次は学習パイプラインの次のステップを確認する時間です。
+
+### データセットからデータローダへ
+
+学習パイプラインで次にうまくいかなくなる可能性があるのは、`Trainer` が学習セットや検証セットからバッチを作ろうとするときです。`Trainer` のデータセットが正しいと確信できたら、次のコードを実行して手作業でバッチを作ってみることができます（検証データローダの場合は `train` を `eval` に置き換えます）。
+
+```py
+for batch in trainer.get_train_dataloader():
+    break
+</code></pre></div>
+
+<p>このコードは学習データローダを作成し、反復して、最初の反復で停止します。コードがエラーなく実行されれば、検査できる最初の学習バッチが手に入ります。コードがエラーになれば、問題がデータローダにあることが確実に分かります。ここでのケースがそうです。</p>
+<p>```python out
+~/git/transformers/src/transformers/data/data_collator.py in torch_default_data_collator(features)
+    105                 batch[k] = torch.stack([f[k] for f in features])
+    106             else:
+--&gt; 107                 batch[k] = torch.tensor([f[k] for f in features])
+    108 
+    109     return batch</p>
+<p>ValueError: expected sequence of length 45 at dim 1 (got 76)</p>
+<div class="codehilite"><pre><span></span><code>トレースバックの最後のフレームを調べるだけで手がかりは得られるはずですが、もう少し掘り下げてみましょう。バッチ作成中の問題のほとんどは、複数のサンプルを1つのバッチにまとめる処理から生じるので、迷ったときに最初に確認すべきは、あなたの `DataLoader` が使っている `collate_fn` です。
+
+```py
+data_collator = trainer.get_train_dataloader().collate_fn
+data_collator
+</code></pre></div>
+
+<p>```python out
+&lt;function transformers.data.data_collator.default_data_collator(features: List[InputDataClass], return_tensors='pt') -&gt; Dict[str, Any]&gt;</p>
+<div class="codehilite"><pre><span></span><code>これは `default_data_collator` ですが、今回のケースで望むものではありません。サンプルをバッチ内の最長の文に合わせてパディングしたいのですが、それを行うのは `DataCollatorWithPadding` コレータです。そしてこのデータコレータは、`Trainer` がデフォルトで使うことになっているはずです。では、なぜここでは使われていないのでしょう。
+
+答えは、`Trainer` に `tokenizer` を渡さなかったため、望む `DataCollatorWithPadding` を作成できなかったからです。実際には、この種のエラーを確実に避けるため、使いたいデータコレータを明示的に渡すことをためらうべきではありません。コードを適応させて、まさにそれを行いましょう。
+
+```py
+from datasets import load_dataset
+import evaluate
+from transformers import (
+    AutoTokenizer,
+    AutoModelForSequenceClassification,
+    DataCollatorWithPadding,
+    TrainingArguments,
+    Trainer,
+)
+
+raw_datasets = load_dataset("glue", "mnli")
+
+model_checkpoint = "distilbert-base-uncased"
+tokenizer = AutoTokenizer.from_pretrained(model_checkpoint)
+
+
+def preprocess_function(examples):
+    return tokenizer(examples["premise"], examples["hypothesis"], truncation=True)
+
+
+tokenized_datasets = raw_datasets.map(preprocess_function, batched=True)
+model = AutoModelForSequenceClassification.from_pretrained(model_checkpoint)
+
+args = TrainingArguments(
+    f"distilbert-finetuned-mnli",
+    evaluation_strategy="epoch",
+    save_strategy="epoch",
+    learning_rate=2e-5,
+    num_train_epochs=3,
+    weight_decay=0.01,
+)
+
+metric = evaluate.load("glue", "mnli")
+
+
+def compute_metrics(eval_pred):
+    predictions, labels = eval_pred
+    return metric.compute(predictions=predictions, references=labels)
+
+
+data_collator = DataCollatorWithPadding(tokenizer=tokenizer)
+
+trainer = Trainer(
+    model,
+    args,
+    train_dataset=tokenized_datasets["train"],
+    eval_dataset=tokenized_datasets["validation_matched"],
+    compute_metrics=compute_metrics,
+    data_collator=data_collator,
+    tokenizer=tokenizer,
+)
+trainer.train()
+</code></pre></div>
+
+<p>よい知らせは、前と同じエラーは出ないことで、これは間違いなく進歩です。悪い知らせは、代わりに悪名高い CUDA エラーが出ることです。</p>
+<p><code>``python out
+RuntimeError: CUDA error: CUBLAS_STATUS_ALLOC_FAILED when calling</code>cublasCreate(handle)`</p>
+<div class="codehilite"><pre><span></span><code>これは、CUDA エラーが一般にデバッグが非常に難しいため、悪いことです。その解決方法はすぐに見ますが、まずバッチ作成の分析を終わらせましょう。
+
+データコレータが正しいものだと確信している場合は、データセットのいくつかのサンプルにそれを適用してみるべきです。
+
+```py
+data_collator = trainer.get_train_dataloader().collate_fn
+batch = data_collator([trainer.train_dataset[i] for i in range(4)])
+</code></pre></div>
+
+<p>このコードは失敗します。<code>train_dataset</code> には文字列の列が含まれていて、通常 <code>Trainer</code> がそれらを削除するからです。手作業で削除することもできますし、<code>Trainer</code> が裏側でやっていることを正確に再現したい場合は、それを行う非公開メソッド <code>Trainer._remove_unused_columns()</code> を呼ぶことができます。</p>
+<div class="codehilite"><pre><span></span><code><span class="n">data_collator</span> <span class="o">=</span> <span class="n">trainer</span><span class="o">.</span><span class="n">get_train_dataloader</span><span class="p">()</span><span class="o">.</span><span class="n">collate_fn</span>
+<span class="n">actual_train_set</span> <span class="o">=</span> <span class="n">trainer</span><span class="o">.</span><span class="n">_remove_unused_columns</span><span class="p">(</span><span class="n">trainer</span><span class="o">.</span><span class="n">train_dataset</span><span class="p">)</span>
+<span class="n">batch</span> <span class="o">=</span> <span class="n">data_collator</span><span class="p">([</span><span class="n">actual_train_set</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">4</span><span class="p">)])</span>
+</code></pre></div>
+
+<p>そうすれば、エラーが続く場合に、データコレータの内部で何が起きているかを手作業でデバッグできるはずです。</p>
+<p>バッチ作成プロセスをデバッグできたので、次はバッチをモデルに通してみましょう。</p>
+<h3>モデルに通してみる</h3>
+<p>次のコマンドを実行すれば、バッチが取得できるはずです。</p>
+<div class="codehilite"><pre><span></span><code><span class="k">for</span> <span class="n">batch</span> <span class="ow">in</span> <span class="n">trainer</span><span class="o">.</span><span class="n">get_train_dataloader</span><span class="p">():</span>
+    <span class="k">break</span>
+</code></pre></div>
+
+<p>このコードをノートブックで実行している場合、先ほど見たものと似た CUDA エラーが出ることがあります。その場合は、ノートブックを再起動し、<code>trainer.train()</code> の行なしで最後のスニペットを再実行する必要があります。これが CUDA エラーの2番目に厄介な点です。CUDA エラーによって、カーネルが正常に動作しなくなることがあります。最も厄介な点は、デバッグが難しいという事実です。</p>
+<p>なぜでしょう。それは GPU の動作方法に関係しています。GPU は大量の操作を並列に実行するのが非常に効率的ですが、その欠点は、それらの命令の1つがエラーになっても、すぐには分からないことです。プログラムが GPU 上の複数のプロセスの同期を呼んだときに初めて、何か問題が起きたことに気づくため、実際にエラーの原因となった処理とは無関係に見える場所で、エラーが報告されることがあります。たとえば、先ほどのトレースバックを見ると、エラーは逆伝播の最中に発生しましたが、実際にはフォワードパスの何かが原因だとすぐに分かります。</p>
+<p>では、そのようなエラーをどうデバッグすればよいのでしょう。答えは簡単です。デバッグしません。CUDA エラーがメモリ不足エラー（GPU のメモリが足りないという意味）でない限り、デバッグは常に CPU に戻って行うべきです。</p>
+<p>今回のケースでそれを行うには、モデルを CPU に戻し、バッチで呼び出すだけです。<code>DataLoader</code> が返すバッチは、まだ GPU に移されていません。</p>
+<div class="codehilite"><pre><span></span><code><span class="n">outputs</span> <span class="o">=</span> <span class="n">trainer</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">cpu</span><span class="p">()(</span><span class="o">**</span><span class="n">batch</span><span class="p">)</span>
+</code></pre></div>
+
+<p>```python out
+~/.pyenv/versions/3.7.9/envs/base/lib/python3.7/site-packages/torch/nn/functional.py in nll_loss(input, target, weight, size_average, ignore_index, reduce, reduction)
+   2386         )
+   2387     if dim == 2:
+-&gt; 2388         ret = torch._C._nn.nll_loss(input, target, weight, _Reduction.get_enum(reduction), ignore_index)
+   2389     elif dim == 4:
+   2390         ret = torch._C._nn.nll_loss2d(input, target, weight, _Reduction.get_enum(reduction), ignore_index)</p>
+<p>IndexError: Target 2 is out of bounds.</p>
+<div class="codehilite"><pre><span></span><code>これで、状況ははっきりしてきました。CUDA エラーの代わりに、今度は損失計算に `IndexError` が出ています（先ほど言ったように、逆伝播とは関係ありません）。より正確には、ラベル値 2 がエラーの原因になっていると分かるので、モデルのラベルの数を確認する絶好のタイミングです。
+
+```python
+trainer.model.config.num_labels
+</code></pre></div>
+
+<p>```python out
+2</p>
+<div class="codehilite"><pre><span></span><code>ラベルが2つでは、ターゲットとして許されるのは0と1だけですが、エラーメッセージによれば2が得られました。2が得られるのは実は普通のことです。前に取り出したラベル名を思い出すと、3つあったので、データセットにはインデックス0、1、2があります。問題は、それをモデルに伝えなかったことです。モデルは3つのラベルで作成すべきでした。では、修正しましょう。
+
+```py
+from datasets import load_dataset
+import evaluate
+from transformers import (
+    AutoTokenizer,
+    AutoModelForSequenceClassification,
+    DataCollatorWithPadding,
+    TrainingArguments,
+    Trainer,
+)
+
+raw_datasets = load_dataset("glue", "mnli")
+
+model_checkpoint = "distilbert-base-uncased"
+tokenizer = AutoTokenizer.from_pretrained(model_checkpoint)
+
+
+def preprocess_function(examples):
+    return tokenizer(examples["premise"], examples["hypothesis"], truncation=True)
+
+
+tokenized_datasets = raw_datasets.map(preprocess_function, batched=True)
+model = AutoModelForSequenceClassification.from_pretrained(model_checkpoint, num_labels=3)
+
+args = TrainingArguments(
+    f"distilbert-finetuned-mnli",
+    evaluation_strategy="epoch",
+    save_strategy="epoch",
+    learning_rate=2e-5,
+    num_train_epochs=3,
+    weight_decay=0.01,
+)
+
+metric = evaluate.load("glue", "mnli")
+
+
+def compute_metrics(eval_pred):
+    predictions, labels = eval_pred
+    return metric.compute(predictions=predictions, references=labels)
+
+
+data_collator = DataCollatorWithPadding(tokenizer=tokenizer)
+
+trainer = Trainer(
+    model,
+    args,
+    train_dataset=tokenized_datasets["train"],
+    eval_dataset=tokenized_datasets["validation_matched"],
+    compute_metrics=compute_metrics,
+    data_collator=data_collator,
+    tokenizer=tokenizer,
+)
+</code></pre></div>
+
+<p>すべて問題なさそうか確認する時間を取るため、まだ <code>trainer.train()</code> の行は含めていません。バッチを要求してモデルに渡せば、今度はエラーなく動作します。</p>
+<div class="codehilite"><pre><span></span><code><span class="k">for</span> <span class="n">batch</span> <span class="ow">in</span> <span class="n">trainer</span><span class="o">.</span><span class="n">get_train_dataloader</span><span class="p">():</span>
+    <span class="k">break</span>
+
+<span class="n">outputs</span> <span class="o">=</span> <span class="n">trainer</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">cpu</span><span class="p">()(</span><span class="o">**</span><span class="n">batch</span><span class="p">)</span>
+</code></pre></div>
+
+<p>次のステップは、GPU に戻し、すべてが依然として動作するか確認することです。</p>
+<div class="codehilite"><pre><span></span><code><span class="kn">import</span><span class="w"> </span><span class="nn">torch</span>
+
+<span class="n">device</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">device</span><span class="p">(</span><span class="s2">"cuda"</span><span class="p">)</span> <span class="k">if</span> <span class="n">torch</span><span class="o">.</span><span class="n">cuda</span><span class="o">.</span><span class="n">is_available</span><span class="p">()</span> <span class="k">else</span> <span class="n">torch</span><span class="o">.</span><span class="n">device</span><span class="p">(</span><span class="s2">"cpu"</span><span class="p">)</span>
+<span class="n">batch</span> <span class="o">=</span> <span class="p">{</span><span class="n">k</span><span class="p">:</span> <span class="n">v</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="n">device</span><span class="p">)</span> <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">batch</span><span class="o">.</span><span class="n">items</span><span class="p">()}</span>
+
+<span class="n">outputs</span> <span class="o">=</span> <span class="n">trainer</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="n">device</span><span class="p">)(</span><span class="o">**</span><span class="n">batch</span><span class="p">)</span>
+</code></pre></div>
+
+<p>まだエラーが出る場合は、ノートブックを再起動し、スクリプトの最後のバージョンだけを実行してください。</p>
+<h3>最適化ステップを1回実行する</h3>
+<p>バッチを作って実際にモデルに通せることが分かったので、学習パイプラインの次のステップ、つまり勾配の計算と最適化ステップの実行に進む準備ができました。</p>
+<p>最初の部分は、損失に対して <code>backward()</code> メソッドを呼ぶだけのことです。</p>
+<div class="codehilite"><pre><span></span><code><span class="n">loss</span> <span class="o">=</span> <span class="n">outputs</span><span class="o">.</span><span class="n">loss</span>
+<span class="n">loss</span><span class="o">.</span><span class="n">backward</span><span class="p">()</span>
+</code></pre></div>
+
+<p>この段階でエラーが出るのはかなりまれですが、もし出たら、有益なエラーメッセージを得るために CPU に戻ってください。</p>
+<p>最適化ステップを実行するには、<code>optimizer</code> を作成し、その <code>step()</code> メソッドを呼ぶだけです。</p>
+<div class="codehilite"><pre><span></span><code><span class="n">trainer</span><span class="o">.</span><span class="n">create_optimizer</span><span class="p">()</span>
+<span class="n">trainer</span><span class="o">.</span><span class="n">optimizer</span><span class="o">.</span><span class="n">step</span><span class="p">()</span>
+</code></pre></div>
+
+<p>繰り返しますが、<code>Trainer</code> のデフォルトのオプティマイザを使っている場合は、この段階でエラーは出ないはずですが、カスタムのオプティマイザがある場合は、ここでデバッグすべき問題があるかもしれません。この段階で奇妙な CUDA エラーが出たら、CPU に戻ることを忘れないでください。CUDA エラーと言えば、先ほど特殊なケースに触れました。次はそれを見てみましょう。</p>
+<h3>CUDA のメモリ不足エラーに対処する</h3>
+<p><code>RuntimeError: CUDA out of memory</code> で始まるエラーメッセージが出たら、それは GPU メモリが不足していることを示しています。これはコードに直接関係するものではなく、完璧に動作するスクリプトでも起こりえます。GPU メモリの容量を超えるデータを確保しようとしたため、エラーが発生したという意味です。他の CUDA エラーと同様に、学習を再び実行できる状態にするために、カーネルを再起動する必要があります。</p>
+<p>この問題を解決するには、GPU の使用量を減らすだけです。これは、言うのは簡単でも行うのは難しいことがよくあります。まず、GPU 上に2つのモデルが同時にある状態になっていないか確認してください（もちろん、問題にそれが必要な場合を除きます）。次に、おそらくバッチサイズを減らすべきです。バッチサイズは、モデルのすべての中間出力とその勾配のサイズに直接影響するからです。問題が続く場合は、モデルのより小さいバージョンの使用を検討してください。</p>
+<div class="callout callout-tip">
+<p class="callout-title">💡 ヒント</p>
+<p>コースの次のパートでは、メモリ使用量を削減し、最大級のモデルをファインチューニングできる、より高度なテクニックを見ていきます。</p>
+</div>
+<h3>モデルを評価する</h3>
+<p>コードの問題をすべて解決したので、すべて完璧で、学習はスムーズに進むはずですよね？そう早まってはいけません。<code>trainer.train()</code> コマンドを実行すると、最初はすべて順調に見えますが、しばらくすると次のようになります。</p>
+<div class="codehilite"><pre><span></span><code><span class="c1"># これは時間がかかり、エラーで終わります。実行しないでください</span>
+<span class="n">trainer</span><span class="o">.</span><span class="n">train</span><span class="p">()</span>
+</code></pre></div>
+
+<p>```python out
+TypeError: only size-1 arrays can be converted to Python scalars</p>
+<div class="codehilite"><pre><span></span><code>このエラーは評価フェーズの最中に現れることに気づくでしょう。ですから、これがデバッグすべき最後のものです。
+
+`Trainer` の評価ループは、学習とは独立に次のように実行できます。
+
+```py
+trainer.evaluate()
+</code></pre></div>
+
+<p>```python out
+TypeError: only size-1 arrays can be converted to Python scalars</p>
+<div class="codehilite"><pre><span></span><code>&lt;div class="callout callout-tip" markdown="block"&gt;
+&lt;p class="callout-title"&gt;💡 ヒント&lt;/p&gt;
+💡 エラーにぶつかる前に大量の計算リソースを無駄にするのを避けるため、`trainer.train()` を実行する前に `trainer.evaluate()` を実行できることを常に確認してください。
+&lt;/div&gt;
+
+
+評価ループの問題をデバッグしようとする前に、まずデータを見たことがあり、バッチを適切に作ることができ、それをモデルで実行できることを確認すべきです。これらのステップはすべて完了しているので、次のコードはエラーなく実行できるはずです。
+
+```py
+for batch in trainer.get_eval_dataloader():
+    break
+
+batch = {k: v.to(device) for k, v in batch.items()}
+
+with torch.no_grad():
+    outputs = trainer.model(**batch)
+</code></pre></div>
+
+<p>エラーが発生するのは、もっと後の評価フェーズの終盤です。トレースバックを見ると、次のようになっています。</p>
+<p>```python trace
+~/git/datasets/src/datasets/metric.py in add_batch(self, predictions, references)
+    431         """
+    432         batch = {"predictions": predictions, "references": references}
+--&gt; 433         batch = self.info.features.encode_batch(batch)
+    434         if self.writer is None:
+    435             self._init_writer()</p>
+<div class="codehilite"><pre><span></span><code>これは、エラーが `datasets/metric.py` モジュールに由来することを示しています。つまり、これは私たちの `compute_metrics()` 関数の問題です。この関数は、ロジットとラベルを NumPy 配列として含むタプルを受け取ります。では、それを渡してみましょう。
+
+```py
+predictions = outputs.logits.cpu().numpy()
+labels = batch["labels"].cpu().numpy()
+
+compute_metrics((predictions, labels))
+</code></pre></div>
+
+<p>```python out
+TypeError: only size-1 arrays can be converted to Python scalars</p>
+<div class="codehilite"><pre><span></span><code>同じエラーが出るので、問題は間違いなくその関数にあります。そのコードを見返してみると、`predictions` と `labels` を `metric.compute()` に転送しているだけだと分かります。では、そのメソッドに問題があるのでしょうか。そうではありません。形状を手早く見てみましょう。
+
+```py
+predictions.shape, labels.shape
+</code></pre></div>
+
+<p>```python out
+((8, 3), (8,))</p>
+<div class="codehilite"><pre><span></span><code>私たちの予測はまだロジットであり、実際の予測ではないため、指標がこの（やや不可解な）エラーを返しています。修正はかなり簡単です。`compute_metrics()` 関数に argmax を追加するだけです。
+
+```py
+import numpy as np
+
+
+def compute_metrics(eval_pred):
+    predictions, labels = eval_pred
+    predictions = np.argmax(predictions, axis=1)
+    return metric.compute(predictions=predictions, references=labels)
+
+
+compute_metrics((predictions, labels))
+</code></pre></div>
+
+<p 0.625 _accuracy_:>```python out</p>
+<div class="codehilite"><pre><span></span><code>これでエラーは修正されました。これが最後の1つだったので、スクリプトは今度はモデルを適切に学習させるはずです。
+
+参考のために、完全に修正されたスクリプトを次に示します。
+
+```py
+import numpy as np
+from datasets import load_dataset
+import evaluate
+from transformers import (
+    AutoTokenizer,
+    AutoModelForSequenceClassification,
+    DataCollatorWithPadding,
+    TrainingArguments,
+    Trainer,
+)
+
+raw_datasets = load_dataset("glue", "mnli")
+
+model_checkpoint = "distilbert-base-uncased"
+tokenizer = AutoTokenizer.from_pretrained(model_checkpoint)
+
+
+def preprocess_function(examples):
+    return tokenizer(examples["premise"], examples["hypothesis"], truncation=True)
+
+
+tokenized_datasets = raw_datasets.map(preprocess_function, batched=True)
+model = AutoModelForSequenceClassification.from_pretrained(model_checkpoint, num_labels=3)
+
+args = TrainingArguments(
+    f"distilbert-finetuned-mnli",
+    evaluation_strategy="epoch",
+    save_strategy="epoch",
+    learning_rate=2e-5,
+    num_train_epochs=3,
+    weight_decay=0.01,
+)
+
+metric = evaluate.load("glue", "mnli")
+
+
+def compute_metrics(eval_pred):
+    predictions, labels = eval_pred
+    predictions = np.argmax(predictions, axis=1)
+    return metric.compute(predictions=predictions, references=labels)
+
+
+data_collator = DataCollatorWithPadding(tokenizer=tokenizer)
+
+trainer = Trainer(
+    model,
+    args,
+    train_dataset=tokenized_datasets["train"],
+    eval_dataset=tokenized_datasets["validation_matched"],
+    compute_metrics=compute_metrics,
+    data_collator=data_collator,
+    tokenizer=tokenizer,
+)
+trainer.train()
+</code></pre></div>
+
+<p>この場合、もう問題はなく、スクリプトは妥当な結果を与えるモデルをファインチューニングするはずです。しかし、学習がエラーなく進むのに、学習されたモデルの性能がまったく良くない場合は、どうすればよいでしょう。それは機械学習で最も難しい部分であり、役立つテクニックをいくつか示します。</p>
+<div class="callout callout-tip">
+<p class="callout-title">💡 ヒント</p>
+<p>💡 手作業の学習ループを使っている場合は、学習パイプラインをデバッグするために同じステップが当てはまりますが、分離するのがより簡単です。適切な場所で <code>model.eval()</code> や <code>model.train()</code> を忘れていないか、各ステップで <code>zero_grad()</code> を忘れていないかを確認してください。</p>
+</div>
+<h2>学習中のサイレントエラーをデバッグする</h2>
+<p>エラーなく完了するのに良い結果が得られない学習を、どうデバッグすればよいでしょう。ここではいくつかの手がかりを示しますが、この種のデバッグは機械学習で最も難しい部分であり、魔法のような答えはないことに注意してください。</p>
+<h3>データを（もう一度！）確認する</h3>
+<p>データから実際に何かを学ぶことが可能でなければ、モデルは何も学習しません。データを壊すバグがあったり、ラベルがランダムに付けられたりしている場合、そのデータセットで学習するモデルはおそらく何も得られません。ですから、常にデコードされた入力とラベルを再確認することから始め、次の質問を自分に投げかけてください。</p>
+<ul>
+<li>デコードされたデータは理解できますか？</li>
+<li>ラベルに同意できますか？</li>
+<li>他より一般的なラベルはありますか？</li>
+<li>モデルがランダムな答えや常に同じ答えを予測した場合、損失や指標はどうなりますか？</li>
+</ul>
+<div class="callout callout-warning">
+<p class="callout-title">⚠️ 注意</p>
+<p>⚠️ 分散学習をしている場合は、データセットのサンプルを各プロセスで出力し、各プロセスで同じデータが得られることを念入りに確認してください。よくあるバグの1つは、データ作成に何らかのランダム性の源泉があり、各プロセスがデータセットの異なるバージョンを持つことです。</p>
+</div>
+<p>データを見た後は、モデルの予測をいくつかたどり、それらもデコードしてください。モデルが常に同じものを予測している場合、それはデータセットがあるカテゴリに偏っているためかもしれません（分類問題の場合）。まれなクラスのオーバーサンプリングのようなテクニックが役立つことがあります。</p>
+<p>初期モデルの損失や指標が、ランダムな予測に期待する値と大きく異なる場合は、損失や指標の計算方法を再確認してください。おそらくそこにバグがあります。最後に加算する複数の損失を使っている場合は、それらが同じスケールであるか確認してください。</p>
+<p>データが完璧だと確信したら、モデルがそのデータで学習できるかどうかを、1つのシンプルなテストで確認できます。</p>
+<h3>モデルを1つのバッチに過学習させる</h3>
+<p>過学習は、通常は学習時に避けようとするものです。モデルが、学習してほしい一般的な特徴を認識することを学ぶのではなく、学習サンプルをただ記憶してしまうことを意味するからです。しかし、モデルを同じ1つのバッチで何度も学習させてみるのは、自分が組み立てた問題を、学習させようとしているモデルで解けるかどうかを確認するよいテストです。初期の学習率が高すぎないかを見る助けにもなります。</p>
+<p><code>Trainer</code> を定義したら、これは本当に簡単です。学習データのバッチを1つ取得し、そのバッチだけを使って、20ステップ程度の小さな手作業の学習ループを実行するだけです。</p>
+<div class="codehilite"><pre><span></span><code><span class="k">for</span> <span class="n">batch</span> <span class="ow">in</span> <span class="n">trainer</span><span class="o">.</span><span class="n">get_train_dataloader</span><span class="p">():</span>
+    <span class="k">break</span>
+
+<span class="n">batch</span> <span class="o">=</span> <span class="p">{</span><span class="n">k</span><span class="p">:</span> <span class="n">v</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="n">device</span><span class="p">)</span> <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">batch</span><span class="o">.</span><span class="n">items</span><span class="p">()}</span>
+<span class="n">trainer</span><span class="o">.</span><span class="n">create_optimizer</span><span class="p">()</span>
+
+<span class="k">for</span> <span class="n">_</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">20</span><span class="p">):</span>
+    <span class="n">outputs</span> <span class="o">=</span> <span class="n">trainer</span><span class="o">.</span><span class="n">model</span><span class="p">(</span><span class="o">**</span><span class="n">batch</span><span class="p">)</span>
+    <span class="n">loss</span> <span class="o">=</span> <span class="n">outputs</span><span class="o">.</span><span class="n">loss</span>
+    <span class="n">loss</span><span class="o">.</span><span class="n">backward</span><span class="p">()</span>
+    <span class="n">trainer</span><span class="o">.</span><span class="n">optimizer</span><span class="o">.</span><span class="n">step</span><span class="p">()</span>
+    <span class="n">trainer</span><span class="o">.</span><span class="n">optimizer</span><span class="o">.</span><span class="n">zero_grad</span><span class="p">()</span>
+</code></pre></div>
+
+<div class="callout callout-tip">
+<p class="callout-title">💡 ヒント</p>
+<p>💡 学習データが不均衡な場合は、すべてのラベルを含む学習データのバッチを必ず作ってください。</p>
+</div>
+<p>結果のモデルは、同じ <code>batch</code> に対してほぼ完璧な結果を示すはずです。結果の予測について指標を計算してみましょう。</p>
+<div class="codehilite"><pre><span></span><code><span class="k">with</span> <span class="n">torch</span><span class="o">.</span><span class="n">no_grad</span><span class="p">():</span>
+    <span class="n">outputs</span> <span class="o">=</span> <span class="n">trainer</span><span class="o">.</span><span class="n">model</span><span class="p">(</span><span class="o">**</span><span class="n">batch</span><span class="p">)</span>
+<span class="n">preds</span> <span class="o">=</span> <span class="n">outputs</span><span class="o">.</span><span class="n">logits</span>
+<span class="n">labels</span> <span class="o">=</span> <span class="n">batch</span><span class="p">[</span><span class="s2">"labels"</span><span class="p">]</span>
+
+<span class="n">compute_metrics</span><span class="p">((</span><span class="n">preds</span><span class="o">.</span><span class="n">cpu</span><span class="p">()</span><span class="o">.</span><span class="n">numpy</span><span class="p">(),</span> <span class="n">labels</span><span class="o">.</span><span class="n">cpu</span><span class="p">()</span><span class="o">.</span><span class="n">numpy</span><span class="p">()))</span>
+</code></pre></div>
+
+<p><code>python out
+{'accuracy': 1.0}</code></p>
+<p>正解率100%。これは過学習の良い例です（つまり、モデルを他のどんな文で試しても、おそらく間違った答えが返ってくるでしょう）。</p>
+<p>このテストでモデルがほぼ完璧な結果を出せない場合、それは問題の組み立て方かデータに何か問題があることを意味するので、それを修正すべきです。過学習テストに合格して初めて、モデルが実際に何かを学習できると確信できます。</p>
+<div class="callout callout-warning">
+<p class="callout-title">⚠️ 注意</p>
+<p>⚠️ このテストの後は、モデルと <code>Trainer</code> を再作成する必要があります。得られたモデルは、おそらく回復して、完全なデータセットで有益なものを学習することはできないでしょう。</p>
+</div>
+<h3>最初のベースラインが出るまで何もチューニングしない</h3>
+<p>ハイパーパラメータチューニングは、機械学習で最も難しい部分だと常々強調されますが、それは評価指標をさらに改善するため、最後に取り組む調整作業にすぎません。ほとんどの場合、<code>Trainer</code> のデフォルトのハイパーパラメータで良い結果が十分に得られるので、データセットについて持っているベースラインを上回るものが得られるまで、時間とコストのかかるハイパーパラメータ探索に乗り出さないでください。</p>
+<p>十分に良いモデルが得られたら、少しずつ調整を始めることができます。異なるハイパーパラメータで千回も実行しようとはせず、1つのハイパーパラメータについて異なる値の実行をいくつか比較して、どれが最も影響が大きいか感触をつかんでください。</p>
+<p>モデル自体を調整する場合は、シンプルに保ち、合理的に正当化できないことは試さないでください。変更が意図しない結果を招いていないか確認するために、過学習テストに常に戻ってください。</p>
+<h3>助けを求める</h3>
+<p>このセクションで、あなたの問題を解決する助けになるアドバイスが見つかっていれば幸いですが、そうでない場合は、<a href="https://discuss.huggingface.co/">フォーラム</a>でコミュニティにいつでも尋ねられることを覚えておいてください。</p>
+<p>役に立つかもしれない追加のリソースを次に示します。</p>
+<ul>
+<li><a href="https://docs.google.com/presentation/d/1yHLPvPhUs2KGI5ZWo0sU-PKU3GimAk3iTsI38Z-B5Gw/edit#slide=id.p">"Reproducibility as a vehicle for engineering best practices"</a> by Joel Grus</li>
+<li><a href="https://towardsdatascience.com/checklist-for-debugging-neural-networks-d8b2a9434f21">"Checklist for debugging neural networks"</a> by Cecelia Shao</li>
+<li><a href="https://medium.com/@keeper6928/how-to-unit-test-machine-learning-code-57cf6fd81765">"How to unit test machine learning code"</a> by Chase Roberts</li>
+<li><a href="http://karpathy.github.io/2019/04/25/recipe/">"A Recipe for Training Neural Networks"</a> by Andrej Karpathy</li>
+</ul>
+<p>もちろん、ニューラルネットの学習で遭遇する問題のすべてがあなたの責任というわけではありません。🤗 Transformers や 🤗 Datasets ライブラリで何かおかしいと感じるものに遭遇した場合、バグに遭遇したのかもしれません。ぜひ、その問題を詳しく報告してください。次のセクションでは、その方法を正確に説明します。</p>
+</article>
+<nav class="page-nav"><a class="nav-link prev" href="3.html">← 前へ: フォーラムで助けを求める</a><a class="nav-link toc-link" href="../index.html">目次へ</a><a class="nav-link next" href="5.html">次へ →: よい Issue の書き方</a></nav>
+</main>
+<footer class="site-footer">
+  <p>原典: Hugging Face huggingface/course（<a href="https://github.com/huggingface/course">https://github.com/huggingface/course</a>）</p>
+  <p>日本語版の翻訳・公開: 霞ヶ関京 / 連絡先: GitHub <a href="https://github.com/yanikasumin">@yanikasumin</a> / YouTube <a href="https://www.youtube.com/@KASUMI_MOF">@KASUMI_MOF</a></p>
+  <p class="demo-note">このサイトはデモ版です。内容は順次更新されます。</p>
+</footer>
+<script src="../../site.js"></script>
+</body>
+</html>
