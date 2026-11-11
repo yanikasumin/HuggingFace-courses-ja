@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>MCP 開発応用編：Claude Code 向けカスタムワークフローサーバーの構築 | Hugging Face コース日本語版（デモ版）</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Shippori+Mincho:wght@500;700&family=Zen+Kaku+Gothic+New:wght@400;500;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../../style.css">
+<script>
+window.MathJax = { tex: { inlineMath: [['$', '$'], ['\\(', '\\)']], displayMath: [['$$', '$$'], ['\\[', '\\]']] }, options: { skipHtmlTags: ['script','noscript','style','textarea','pre','code'] } };
+</script>
+<script async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml.js"></script>
+</head>
+<body>
+<header class="site-header">
+  <div class="header-inner">
+    <a class="site-title" href="../../index.html">Hugging Face コース日本語版</a>
+    <span class="demo-badge">デモ版</span>
+  </div>
+</header>
+<main class="container">
+<p class="course-crumb"><a href="../index.html">MCP コース</a>
+<span class="badge badge-qa-wip">翻訳済み・QA進行中（未検証の部分を含みます）</span></p>
+<nav class="page-nav"><a class="nav-link prev" href="../unit2/lemonade-server.html">← 前へ: AMD NPU と iGPU アクセラレーションによるローカル Tiny Agents</a><a class="nav-link toc-link" href="../index.html">目次へ</a><a class="nav-link next" href="build-mcp-server.html">次へ →: Module 1：MCP サーバーの構築</a></nav>
+<article class="content">
+<h1>MCP 開発応用編：Claude Code 向けカスタムワークフローサーバーの構築</h1>
+<p>Unit 3 へようこそ！このユニットでは、MCP の3つのプリミティブをすべて学びながら、Claude Code をカスタム開発ワークフローで強化する実用的な MCP サーバーを構築します。</p>
+<p>MCP の制作者の話を聞いてみたい方のために、制作者による動画を用意しました。</p>
+<div class="youtube-embed"><iframe src="https://www.youtube-nocookie.com/embed/CQywdSdi5iA" title="YouTube video" loading="lazy" allowfullscreen referrerpolicy="strict-origin-when-cross-origin"></iframe></div>
+<p>この動画では、Theo Chu、David Soria Parra、Alex Albert の3人が、AI アプリケーションと外部データ・ツールとの接続方法を変えつつある標準、Model Context Protocol（MCP）について詳しく解説します。</p>
+<h2>構築するもの</h2>
+<p><strong>PR Agent ワークフローサーバー</strong> - Claude Code をチーム対応・ワークフロー対応にする方法を示す MCP サーバーです。</p>
+<ul>
+<li><strong>スマートな PR 管理</strong>: MCP Tools を使った、コード変更に応じた PR テンプレートの自動選択</li>
+<li><strong>CI/CD モニタリング</strong>: Cloudflare Tunnel で GitHub Actions を追跡し、標準化された Prompts を活用</li>
+<li><strong>チームコミュニケーション</strong>: MCP の全プリミティブの連携を示す Slack 通知</li>
+</ul>
+<h2>実践ケーススタディ</h2>
+<p>あらゆる開発チームが直面する、実践的なシナリオを実装します。</p>
+<p><strong>Before（導入前）</strong>: 開発者が手動で PR を作成し、Actions の完了を待ち、結果を手動で確認し、チームメンバーへの通知を忘れないようにする</p>
+<p><strong>After（導入後）</strong>: ワークフローサーバーに接続した Claude Code が、賢く次のことをこなします。
+- 変更されたファイルに基づいて適切な PR テンプレートを提案する
+- GitHub Actions の実行を監視し、整形された要約を提供する
+- デプロイの成功／失敗時に Slack でチームへ自動通知する
+- Actions の結果に基づいて、チーム固有のレビュープロセスを開発者に案内する</p>
+<h2>主な学習成果</h2>
+<ol>
+<li><strong>MCP の中核プリミティブ</strong>: 実践的な例を通して Tools と Prompts をマスターする</li>
+<li><strong>MCP サーバー開発</strong>: 適切な構造とエラーハンドリングを備えた、動作するサーバーを構築する</li>
+<li><strong>GitHub Actions 連携</strong>: Cloudflare Tunnel を使って webhook を受信し、CI/CD イベントを処理する</li>
+<li><strong>Hugging Face Hub ワークフロー</strong>: LLM 開発チーム向けの専用ワークフローを作成する</li>
+<li><strong>複数システムの連携</strong>: MCP を通じて GitHub、Slack、Hugging Face Hub を接続する</li>
+<li><strong>Claude Code の強化</strong>: Claude にチーム固有のワークフローを理解させる</li>
+</ol>
+<h2>MCP プリミティブの実践</h2>
+<p>このユニットでは、MCP の中核プリミティブをハンズオンで体験します。</p>
+<ul>
+<li><strong>Tools</strong>（Module 1）: ファイルを分析し、テンプレートを提案するために Claude が呼び出す関数</li>
+<li><strong>Prompts</strong>（Module 2）: チームのプロセスを一貫させるための標準化されたワークフロー</li>
+<li><strong>Integration</strong>（Module 3）: 複雑な自動化のために全プリミティブを連携させる</li>
+</ul>
+<h2>モジュールの構成</h2>
+<ol>
+<li><strong>Module 1：MCP サーバーの構築</strong> - PR テンプレート提案用の Tools を備えた基本サーバーを作成する</li>
+<li><strong>Module 2：GitHub Actions 連携</strong> - Cloudflare Tunnel と Prompts で CI/CD を監視する</li>
+<li><strong>Module 3：Slack 通知</strong> - 全 MCP プリミティブを連携させたチームコミュニケーション</li>
+</ol>
+<h2>前提条件</h2>
+<p>このユニットを始める前に、以下を用意してください。</p>
+<ul>
+<li>Unit 1 と Unit 2 の修了 </li>
+<li>GitHub Actions と webhook の概念に関する基本的な知識</li>
+<li>テスト用の GitHub リポジトリへのアクセス（個人のテスト用リポジトリで可）</li>
+<li>webhook 連携を作成できる Slack ワークスペース</li>
+</ul>
+<h3>Claude Code のインストールとセットアップ</h3>
+<p>このユニットでは、MCP サーバーの連携をテストするために Claude Code が必要です。</p>
+<div class="callout callout-tip">
+<p class="callout-title">💡 ヒント</p>
+<p><strong>インストール必須：</strong> このユニットでは、AI ワークフローとの MCP サーバー連携をテストするために Claude Code が必要です。</p>
+</div>
+<p><strong>クイックセットアップ：</strong></p>
+<p><a href="https://docs.anthropic.com/en/docs/claude-code/getting-started">公式インストールガイド</a> に従って Claude Code をインストールし、認証を完了してください。主な手順は、npm でインストールし、プロジェクトディレクトリに移動して、<code>claude</code> を実行し console.anthropic.com 経由で認証することです。</p>
+<p>インストールが終われば、このユニット全体を通して Claude Code を使い、MCP サーバーのテストや、構築したワークフロー自動化の操作を行います。</p>
+<div class="callout callout-warning">
+<p class="callout-title">⚠️ 注意</p>
+<p><strong>Claude Code が初めての方へ：</strong> セットアップで問題が発生した場合は、<a href="https://docs.anthropic.com/en/docs/claude-code/troubleshooting">トラブルシューティングガイド</a> に、よくあるインストールと認証の問題がまとめられています。</p>
+</div>
+<p>このユニットの終わりには、Claude Code を強力なチーム開発アシスタントへと変える方法を示す完全な MCP サーバーを構築し、3つの MCP プリミティブすべてをハンズオンで体験できているはずです。</p>
+</article>
+<nav class="page-nav"><a class="nav-link prev" href="../unit2/lemonade-server.html">← 前へ: AMD NPU と iGPU アクセラレーションによるローカル Tiny Agents</a><a class="nav-link toc-link" href="../index.html">目次へ</a><a class="nav-link next" href="build-mcp-server.html">次へ →: Module 1：MCP サーバーの構築</a></nav>
+</main>
+<footer class="site-footer">
+  <p>原典: Hugging Face huggingface/mcp-course（<a href="https://github.com/huggingface/mcp-course">https://github.com/huggingface/mcp-course</a>）</p>
+  <p>日本語版の翻訳・公開: 霞ヶ関京 / 連絡先: GitHub <a href="https://github.com/yanikasumin">@yanikasumin</a> / YouTube <a href="https://www.youtube.com/@KASUMI_MOF">@KASUMI_MOF</a></p>
+  <p class="demo-note">このサイトはデモ版です。内容は順次更新されます。</p>
+</footer>
+<script src="../../site.js"></script>
+</body>
+</html>

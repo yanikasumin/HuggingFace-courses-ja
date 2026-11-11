@@ -1,0 +1,321 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Hugging Face Hub と MCP で Tiny Agents を構築する | Hugging Face コース日本語版（デモ版）</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Shippori+Mincho:wght@500;700&family=Zen+Kaku+Gothic+New:wght@400;500;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../../style.css">
+<script>
+window.MathJax = { tex: { inlineMath: [['$', '$'], ['\\(', '\\)']], displayMath: [['$$', '$$'], ['\\[', '\\]']] }, options: { skipHtmlTags: ['script','noscript','style','textarea','pre','code'] } };
+</script>
+<script async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml.js"></script>
+</head>
+<body>
+<header class="site-header">
+  <div class="header-inner">
+    <a class="site-title" href="../../index.html">Hugging Face コース日本語版</a>
+    <span class="demo-badge">デモ版</span>
+  </div>
+</header>
+<main class="container">
+<p class="course-crumb"><a href="../index.html">MCP コース</a>
+<span class="badge badge-qa-wip">翻訳済み・QA進行中（未検証の部分を含みます）</span></p>
+<nav class="page-nav"><a class="nav-link prev" href="gradio-client.html">← 前へ: MCP クライアントとしての Gradio</a><a class="nav-link toc-link" href="../index.html">目次へ</a><a class="nav-link next" href="lemonade-server.html">次へ →: AMD NPU と iGPU アクセラレーションによるローカル Tiny Agents</a></nav>
+<article class="content">
+<h1>Hugging Face Hub と MCP で Tiny Agents を構築する</h1>
+<p>Gradio で MCP サーバーを構築し、MCP クライアントの作成方法を学んだので、感情分析ツールとシームレスにやり取りできるエージェントを構築して、エンドツーエンドアプリケーションを完成させましょう。このセクションは、前のセクションで構築した Gradio 感情分析サーバーのようなサービスに接続できる MCP クライアントをデプロイする非常にシンプルな方法を示すプロジェクト <a href="https://huggingface.co/blog/tiny-agents">Tiny Agents</a> を基にしています。</p>
+<p>Unit 2 のこの最終演習では、Gradio ベースの感情分析サーバーを含む、あらゆる MCP サーバーと通信できる TypeScript (JS) と Python の MCP クライアントの実装方法を順を追って説明します。これにより、エンドツーエンドの MCP アプリケーションフローが完成します。感情分析ツールを公開する Gradio MCP サーバーの構築から、そのツールを他の機能と併せて使える柔軟なエージェントの作成までです。</p>
+<p><img alt="ミーム" src="https://huggingface.co/datasets/huggingface/documentation-images/resolve/main/blog/tiny-agents/thumbnail.jpg" /></p>
+<figcaption>画像クレジット https://x.com/adamdotdev</figcaption>
+
+<h2>インストール</h2>
+<p>Tiny Agents を構築するために必要なパッケージをインストールしましょう。</p>
+<div class="callout callout-tip">
+<p class="callout-title">💡 ヒント</p>
+<p>Claude Desktop をはじめとする一部の MCP クライアントは、まだ SSE ベースの MCP サーバーをサポートしていません。その場合は、<a href="https://github.com/geelen/mcp-remote">mcp-remote</a> のようなツールを使えます。まず Node.js をインストールしてください。次に、自分の MCP クライアント設定に次を追加します。</p>
+</div>
+<p>Tiny Agent はコマンドライン環境で MCP サーバーを実行できます。そのためには、<code>npm</code> をインストールし、<code>npx</code> でサーバーを実行する必要があります。<strong>これらは Python と JavaScript の両方で必要です。</strong></p>
+<p><code>npm</code> で <code>npx</code> をインストールしましょう。<code>npm</code> がインストールされていない場合は、<a href="https://docs.npmjs.com/downloading-and-installing-node-js-and-npm">npm のドキュメント</a> を確認してください。</p>
+<div class="codehilite"><pre><span></span><code><span class="c1"># npx をインストール</span>
+npm<span class="w"> </span>install<span class="w"> </span>-g<span class="w"> </span>npx
+</code></pre></div>
+
+<p>次に、<code>mcp-remote</code> パッケージをインストールする必要があります。</p>
+<div class="codehilite"><pre><span></span><code>npm<span class="w"> </span>i<span class="w"> </span>mcp-remote
+</code></pre></div>
+
+<div class="hfoptions">
+<section class="hfoption" markdown="block">
+<p class="hfoption-label">typescript</p>
+
+
+JavaScript では、`tiny-agents` パッケージをインストールする必要があります。
+
+
+<div class="codehilite"><pre><span></span><code>npm<span class="w"> </span>install<span class="w"> </span>@huggingface/tiny-agents
+</code></pre></div>
+
+
+
+</section>
+<section class="hfoption" markdown="block">
+<p class="hfoption-label">python</p>
+
+
+Python では、必要なコンポーネントをすべて取得するために、`mcp` extra 付きの最新版 `huggingface_hub` をインストールする必要があります。
+
+
+<div class="codehilite"><pre><span></span><code>pip<span class="w"> </span>install<span class="w"> </span><span class="s2">"huggingface_hub[mcp]&gt;=0.32.0"</span>
+</code></pre></div>
+
+
+
+</section>
+</div>
+
+<h2>コマンドラインでの Tiny Agents MCP クライアント</h2>
+<p><a href="https://huggingface.co/learn/mcp-course/unit1/mcp-clients#tiny-agents-clients">Unit 1</a> の例を繰り返して、基本的な Tiny Agent を作成しましょう。Tiny Agents は、JSON 設定ファイルに基づいてコマンドラインから MCP クライアントを作成できます。</p>
+<div class="hfoptions">
+<section class="hfoption" markdown="block">
+<p class="hfoption-label">typescript</p>
+
+
+基本的な Tiny Agent を使ったプロジェクトをセットアップしましょう。
+
+
+<div class="codehilite"><pre><span></span><code>mkdir<span class="w"> </span>my-agent
+touch<span class="w"> </span>my-agent/agent.json
+<span class="nb">cd</span><span class="w"> </span>my-agent
+</code></pre></div>
+
+
+
+JSON ファイルは次のようになります。
+
+
+<div class="codehilite"><pre><span></span><code><span class="p">{</span>
+<span class="w">    </span><span class="nt">"model"</span><span class="p">:</span><span class="w"> </span><span class="s2">"Qwen/Qwen2.5-72B-Instruct"</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">"provider"</span><span class="p">:</span><span class="w"> </span><span class="s2">"novita"</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">"servers"</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
+<span class="w">        </span><span class="p">{</span>
+<span class="w">            </span><span class="nt">"type"</span><span class="p">:</span><span class="w"> </span><span class="s2">"stdio"</span><span class="p">,</span>
+<span class="w">            </span><span class="nt">"command"</span><span class="p">:</span><span class="w"> </span><span class="s2">"npx"</span><span class="p">,</span>
+<span class="w">            </span><span class="nt">"args"</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
+<span class="w">                </span><span class="s2">"mcp-remote"</span><span class="p">,</span>
+<span class="w">                </span><span class="s2">"http://localhost:7860/gradio_api/mcp/sse"</span>
+<span class="w">            </span><span class="p">]</span>
+<span class="w">        </span><span class="p">}</span>
+<span class="w">    </span><span class="p">]</span>
+<span class="p">}</span>
+</code></pre></div>
+
+
+
+次のコマンドでエージェントを実行できます。
+
+
+<div class="codehilite"><pre><span></span><code>npx<span class="w"> </span>@huggingface/tiny-agents<span class="w"> </span>run<span class="w"> </span>agent.json
+</code></pre></div>
+
+
+
+</section>
+<section class="hfoption" markdown="block">
+<p class="hfoption-label">python</p>
+
+
+基本的な Tiny Agent を使ったプロジェクトをセットアップしましょう。
+
+
+<div class="codehilite"><pre><span></span><code>mkdir<span class="w"> </span>my-agent
+touch<span class="w"> </span>my-agent/agent.json
+<span class="nb">cd</span><span class="w"> </span>my-agent
+</code></pre></div>
+
+
+
+JSON ファイルは次のようになります。
+
+
+<div class="codehilite"><pre><span></span><code><span class="p">{</span>
+<span class="w">    </span><span class="nt">"model"</span><span class="p">:</span><span class="w"> </span><span class="s2">"Qwen/Qwen2.5-72B-Instruct"</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">"provider"</span><span class="p">:</span><span class="w"> </span><span class="s2">"novita"</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">"servers"</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
+<span class="w">        </span><span class="p">{</span>
+<span class="w">            </span><span class="nt">"type"</span><span class="p">:</span><span class="w"> </span><span class="s2">"stdio"</span><span class="p">,</span>
+<span class="w">            </span><span class="nt">"command"</span><span class="p">:</span><span class="w"> </span><span class="s2">"npx"</span><span class="p">,</span>
+<span class="w">            </span><span class="nt">"args"</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
+<span class="w">                </span><span class="s2">"mcp-remote"</span><span class="p">,</span><span class="w"> </span>
+<span class="w">                </span><span class="s2">"http://localhost:7860/gradio_api/mcp/sse"</span>
+<span class="w">            </span><span class="p">]</span>
+<span class="w">        </span><span class="p">}</span>
+<span class="w">    </span><span class="p">]</span>
+<span class="p">}</span>
+</code></pre></div>
+
+
+
+次のコマンドでエージェントを実行できます。
+
+
+<div class="codehilite"><pre><span></span><code>tiny-agents<span class="w"> </span>run<span class="w"> </span>agent.json
+</code></pre></div>
+
+
+
+</section>
+</div>
+
+<p>ここでは、Gradio MCP サーバーに接続できる基本的な Tiny Agent が用意されています。モデル、プロバイダー、サーバー設定が含まれています。</p>
+<table>
+<thead>
+<tr>
+<th>フィールド</th>
+<th>説明</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>model</code></td>
+<td>エージェントに使うオープンソースモデル</td>
+</tr>
+<tr>
+<td><code>provider</code></td>
+<td>エージェントに使う推論プロバイダー</td>
+</tr>
+<tr>
+<td><code>servers</code></td>
+<td>エージェントに使うサーバー。Gradio MCP サーバーには <code>mcp-remote</code> サーバーを使います</td>
+</tr>
+</tbody>
+</table>
+<div class="callout callout-tip">
+<p class="callout-title">💡 ヒント</p>
+<p>Tiny Agents では、ローカルで動作するオープンソースモデルも使えます。ローカル推論サーバーを起動すると、次のようになります。</p>
+<div class="codehilite"><pre><span></span><code><span class="p">{</span>
+<span class="w">    </span><span class="nt">"model"</span><span class="p">:</span><span class="w"> </span><span class="s2">"Qwen/Qwen3-32B"</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">"endpointUrl"</span><span class="p">:</span><span class="w"> </span><span class="s2">"http://localhost:1234/v1"</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">"servers"</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
+<span class="w">        </span><span class="p">{</span>
+<span class="w">            </span><span class="nt">"type"</span><span class="p">:</span><span class="w"> </span><span class="s2">"stdio"</span><span class="p">,</span>
+<span class="w">            </span><span class="nt">"command"</span><span class="p">:</span><span class="w"> </span><span class="s2">"npx"</span><span class="p">,</span>
+<span class="w">            </span><span class="nt">"args"</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
+<span class="w">                </span><span class="s2">"mcp-remote"</span><span class="p">,</span>
+<span class="w">                </span><span class="s2">"http://localhost:1234/v1/mcp/sse"</span>
+<span class="w">            </span><span class="p">]</span>
+<span class="w">        </span><span class="p">}</span>
+<span class="w">    </span><span class="p">]</span>
+<span class="p">}</span>
+</code></pre></div>
+
+<p>ここでは、ローカルモデルに接続できる Tiny Agent が用意されています。モデルとサーバー設定、そしてエンドポイント URL <code>http://localhost:1234/v1</code> が含まれています。エンドポイントは OpenAI 互換のエンドポイントである必要があります。</p>
+</div>
+<h2>カスタム Tiny Agents MCP クライアント</h2>
+<p>Tiny Agents と Gradio MCP サーバーの両方を理解したところで、それらがどのように連携するかを見てみましょう！ MCP の美点は、エージェントが MCP 互換のあらゆるサーバー（このユニットの前半で構築した Gradio ベースの感情分析サーバーを含む）とやり取りするための標準化された方法を提供することです。</p>
+<h3>Tiny Agents で Gradio サーバーを使う</h3>
+<p>Tiny Agent を、このユニットの前半で構築した Gradio 感情分析サーバーに接続するには、サーバーのリストに追加するだけです。エージェント設定の変更方法は次のとおりです。</p>
+<div class="hfoptions">
+<section class="hfoption" markdown="block">
+<p class="hfoption-label">typescript</p>
+
+
+
+<div class="codehilite"><pre><span></span><code><span class="kd">const</span><span class="w"> </span><span class="nx">agent</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="ow">new</span><span class="w"> </span><span class="nx">Agent</span><span class="p">({</span>
+<span class="w">    </span><span class="nx">provider</span><span class="o">:</span><span class="w"> </span><span class="kt">process.env.PROVIDER</span><span class="w"> </span><span class="o">??</span><span class="w"> </span><span class="s2">"novita"</span><span class="p">,</span>
+<span class="w">    </span><span class="nx">model</span><span class="o">:</span><span class="w"> </span><span class="kt">process.env.MODEL_ID</span><span class="w"> </span><span class="o">??</span><span class="w"> </span><span class="s2">"Qwen/Qwen2.5-72B-Instruct"</span><span class="p">,</span>
+<span class="w">    </span><span class="nx">apiKey</span><span class="o">:</span><span class="w"> </span><span class="kt">process.env.HF_TOKEN</span><span class="p">,</span>
+<span class="w">    </span><span class="nx">servers</span><span class="o">:</span><span class="w"> </span><span class="p">[</span>
+<span class="w">        </span><span class="c1">// ... 既存のサーバー ...</span>
+<span class="w">        </span><span class="p">{</span>
+<span class="w">            </span><span class="nx">command</span><span class="o">:</span><span class="w"> </span><span class="s2">"npx"</span><span class="p">,</span>
+<span class="w">            </span><span class="nx">args</span><span class="o">:</span><span class="w"> </span><span class="p">[</span>
+<span class="w">                </span><span class="s2">"mcp-remote"</span><span class="p">,</span>
+<span class="w">                </span><span class="s2">"http://localhost:7860/gradio_api/mcp/sse"</span><span class="w">  </span><span class="c1">// 自分の Gradio MCP サーバー</span>
+<span class="w">            </span><span class="p">]</span>
+<span class="w">        </span><span class="p">}</span>
+<span class="w">    </span><span class="p">],</span>
+<span class="p">});</span>
+</code></pre></div>
+
+
+
+</section>
+<section class="hfoption" markdown="block">
+<p class="hfoption-label">python</p>
+
+
+
+<div class="codehilite"><pre><span></span><code><span class="kn">import</span><span class="w"> </span><span class="nn">os</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">huggingface_hub</span><span class="w"> </span><span class="kn">import</span> <span class="n">Agent</span>
+
+<span class="n">agent</span> <span class="o">=</span> <span class="n">Agent</span><span class="p">(</span>
+    <span class="n">model</span><span class="o">=</span><span class="s2">"Qwen/Qwen2.5-72B-Instruct"</span><span class="p">,</span>
+    <span class="n">provider</span><span class="o">=</span><span class="s2">"novita"</span><span class="p">,</span>
+    <span class="n">servers</span><span class="o">=</span><span class="p">[</span>
+        <span class="p">{</span>
+            <span class="s2">"command"</span><span class="p">:</span> <span class="s2">"npx"</span><span class="p">,</span>
+            <span class="s2">"args"</span><span class="p">:</span> <span class="p">[</span>
+                <span class="s2">"mcp-remote"</span><span class="p">,</span>
+                <span class="s2">"http://localhost:7860/gradio_api/mcp/sse"</span>  <span class="c1"># 自分の Gradio MCP サーバー</span>
+            <span class="p">]</span>
+        <span class="p">}</span>
+    <span class="p">],</span>
+<span class="p">)</span>
+</code></pre></div>
+
+
+
+</section>
+</div>
+
+<p>これで、エージェントは感情分析ツールを他のツールと併せて使えるようになりました！ たとえば、次のようなことができます。
+1. ファイルシステムサーバーを使ってファイルからテキストを読み取る
+2. Gradio サーバーを使ってその感情を分析する
+3. 結果をファイルに書き戻す</p>
+<h3>デプロイ時の考慮事項</h3>
+<p>Gradio MCP サーバーを Hugging Face Spaces にデプロイする際は、エージェント設定内のサーバー URL を、デプロイした Space を指すように更新する必要があります。</p>
+<div class="codehilite"><pre><span></span><code><span class="p">{</span>
+<span class="w">    </span><span class="err">comma</span><span class="kc">n</span><span class="err">d</span><span class="p">:</span><span class="w"> </span><span class="s2">"npx"</span><span class="p">,</span>
+<span class="w">    </span><span class="err">args</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
+<span class="w">        </span><span class="s2">"mcp-remote"</span><span class="p">,</span>
+<span class="w">        </span><span class="s2">"https://YOUR_USERNAME-mcp-sentiment.hf.space/gradio_api/mcp/sse"</span>
+<span class="w">    </span><span class="p">]</span>
+<span class="p">}</span>
+</code></pre></div>
+
+<p>これにより、エージェントはローカルだけでなく、どこからでも感情分析ツールを使えるようになります！</p>
+<h2>まとめ: 完成したエンドツーエンド MCP アプリケーション</h2>
+<p>このユニットでは、MCP の基礎の理解から、完全なエンドツーエンドアプリケーションの構築まで進みました。</p>
+<ol>
+<li>感情分析ツールを公開する Gradio MCP サーバーを作成した</li>
+<li>MCP クライアントを使ってこのサーバーに接続する方法を学んだ</li>
+<li>そのツールとやり取りできる TypeScript と Python の小さなエージェントを構築した</li>
+</ol>
+<p>これは Model Context Protocol の力を示しています。使い慣れたフレームワーク（Gradio など）を使って専用ツールを作成し、標準化されたインターフェース（MCP）を通じて公開することで、エージェントにそれらのツールを他の機能と併せてシームレスに使わせることができます。</p>
+<p>構築した完全なフローにより、エージェントは次のことが可能になります。
+- 複数のツールプロバイダーに接続する
+- 利用可能なツールを動的に発見する
+- カスタムの感情分析ツールを使う
+- ファイルシステムアクセスや Web ブラウジングなどの他の機能と組み合わせる</p>
+<p>このモジュール式のアプローチこそが、柔軟な AI アプリケーションの構築において MCP を非常に強力なものにしている理由です。</p>
+<h2>次のステップ</h2>
+<ul>
+<li>Tiny Agents のブログ記事を <a href="https://huggingface.co/blog/python-tiny-agents">Python</a> 版と <a href="https://huggingface.co/blog/tiny-agents">TypeScript</a> 版で確認する</li>
+<li><a href="https://huggingface.co/docs/huggingface.js/main/en/tiny-agents/README">Tiny Agents のドキュメント</a> を確認する</li>
+<li>Tiny Agents で何か作ってみましょう！</li>
+</ul>
+</article>
+<nav class="page-nav"><a class="nav-link prev" href="gradio-client.html">← 前へ: MCP クライアントとしての Gradio</a><a class="nav-link toc-link" href="../index.html">目次へ</a><a class="nav-link next" href="lemonade-server.html">次へ →: AMD NPU と iGPU アクセラレーションによるローカル Tiny Agents</a></nav>
+</main>
+<footer class="site-footer">
+  <p>原典: Hugging Face huggingface/mcp-course（<a href="https://github.com/huggingface/mcp-course">https://github.com/huggingface/mcp-course</a>）</p>
+  <p>日本語版の翻訳・公開: 霞ヶ関京 / 連絡先: GitHub <a href="https://github.com/yanikasumin">@yanikasumin</a> / YouTube <a href="https://www.youtube.com/@KASUMI_MOF">@KASUMI_MOF</a></p>
+  <p class="demo-note">このサイトはデモ版です。内容は順次更新されます。</p>
+</footer>
+<script src="../../site.js"></script>
+</body>
+</html>

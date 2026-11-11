@@ -1,0 +1,347 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>MCP クライアント | Hugging Face コース日本語版（デモ版）</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Shippori+Mincho:wght@500;700&family=Zen+Kaku+Gothic+New:wght@400;500;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../../style.css">
+<script>
+window.MathJax = { tex: { inlineMath: [['$', '$'], ['\\(', '\\)']], displayMath: [['$$', '$$'], ['\\[', '\\]']] }, options: { skipHtmlTags: ['script','noscript','style','textarea','pre','code'] } };
+</script>
+<script async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml.js"></script>
+</head>
+<body>
+<header class="site-header">
+  <div class="header-inner">
+    <a class="site-title" href="../../index.html">Hugging Face コース日本語版</a>
+    <span class="demo-badge">デモ版</span>
+  </div>
+</header>
+<main class="container">
+<p class="course-crumb"><a href="../index.html">MCP コース</a>
+<span class="badge badge-qa-wip">翻訳済み・QA進行中（未検証の部分を含みます）</span></p>
+<nav class="page-nav"><a class="nav-link prev" href="quiz1.html">← 前へ: クイズ1: MCP サーバーの実装</a><a class="nav-link toc-link" href="../index.html">目次へ</a><a class="nav-link next" href="webhook-listener.html">次へ →: Webhook リスナー</a></nav>
+<article class="content">
+<h1>MCP クライアント</h1>
+<p>タグ付けツールを持つ MCP サーバーができたので、次はそれらのツールとやり取りできるクライアントを作成する必要があります。MCP クライアントは Webhook ハンドラーと MCP サーバーの橋渡し役となり、エージェントが Hub のタグ付け機能を使えるようにします。</p>
+<p>このプロジェクトでは、API と Gradio アプリの両方を作ります。API は MCP サーバーと Webhook リスナーのテストに使い、Gradio アプリはシミュレートされた Webhook イベントで MCP クライアントをテストするのに使います。</p>
+<div class="callout callout-tip">
+<p class="callout-title">💡 ヒント</p>
+<p>教育目的のため、このプロジェクトでは MCP サーバーと MCP クライアントを同じリポジトリに作ります。実世界のアプリケーションでは、MCP サーバーと MCP クライアントは別々のリポジトリになることが多いでしょう。実際、どちらか一方だけを作る場合もあります。</p>
+</div>
+<h2>MCP クライアントのアーキテクチャを理解する</h2>
+<p>このアプリケーションでは、MCP クライアントはメインの FastAPI アプリケーション（<code>app.py</code>）に統合されています。MCP サーバーへの接続を作成・管理し、ツール実行のためのシームレスなインターフェースを提供します。</p>
+<p><img alt="MCP クライアントの統合" src="https://huggingface.co/datasets/mcp-course/images/resolve/main/unit3/app.png" /></p>
+<h2>エージェントベースの MCP クライアント</h2>
+<p>MCP サポートを内蔵した <code>huggingface_hub</code> の Agent クラスを使います。これにより、言語モデルの能力と MCP ツールの統合が1つのコンポーネントで得られます。</p>
+<h3>1. エージェントの設定</h3>
+<p>まずエージェントの設定を用意し、各コンポーネントを理解しましょう。</p>
+<div class="codehilite"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">huggingface_hub.inference._mcp.agent</span><span class="w"> </span><span class="kn">import</span> <span class="n">Agent</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Optional</span><span class="p">,</span> <span class="n">Literal</span>
+
+<span class="c1"># 設定</span>
+<span class="n">HF_TOKEN</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">getenv</span><span class="p">(</span><span class="s2">"HF_TOKEN"</span><span class="p">)</span>
+<span class="n">HF_MODEL</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">getenv</span><span class="p">(</span><span class="s2">"HF_MODEL"</span><span class="p">,</span> <span class="s2">"microsoft/DialoGPT-medium"</span><span class="p">)</span>
+<span class="n">DEFAULT_PROVIDER</span><span class="p">:</span> <span class="n">Literal</span><span class="p">[</span><span class="s2">"hf-inference"</span><span class="p">]</span> <span class="o">=</span> <span class="s2">"hf-inference"</span>
+
+<span class="c1"># グローバルなエージェントインスタンス</span>
+<span class="n">agent_instance</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Agent</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
+</code></pre></div>
+
+<p>必要なインポートと設定から始めます。グローバル変数 <code>agent_instance</code> により、エージェントは一度だけ作成され、複数のリクエストで再利用されます。エージェントの初期化はコストが高いため、これはパフォーマンス上重要です。</p>
+<p>次に、エージェントを作成・管理する関数を実装します。</p>
+<div class="codehilite"><pre><span></span><code><span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">get_agent</span><span class="p">():</span>
+<span class="w">    </span><span class="sd">"""Get or create Agent instance"""</span>
+    <span class="nb">print</span><span class="p">(</span><span class="s2">"🤖 get_agent() called..."</span><span class="p">)</span>
+    <span class="k">global</span> <span class="n">agent_instance</span>
+    <span class="k">if</span> <span class="n">agent_instance</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">HF_TOKEN</span><span class="p">:</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s2">"🔧 Creating new Agent instance..."</span><span class="p">)</span>
+        <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"🔑 HF_TOKEN present: </span><span class="si">{</span><span class="nb">bool</span><span class="p">(</span><span class="n">HF_TOKEN</span><span class="p">)</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+        <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"🤖 Model: </span><span class="si">{</span><span class="n">HF_MODEL</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+        <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"🔗 Provider: </span><span class="si">{</span><span class="n">DEFAULT_PROVIDER</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+</code></pre></div>
+
+<p>関数はまず、エージェントのインスタンスがすでに存在するかを確認します。このシングルトンパターンにより、不要な再作成を防ぎ、一貫した状態を保ちます。</p>
+<p>エージェントの作成を続けます。</p>
+<div class="codehilite"><pre><span></span><code>        <span class="k">try</span><span class="p">:</span>
+            <span class="n">agent_instance</span> <span class="o">=</span> <span class="n">Agent</span><span class="p">(</span>
+                <span class="n">model</span><span class="o">=</span><span class="n">HF_MODEL</span><span class="p">,</span>
+                <span class="n">provider</span><span class="o">=</span><span class="n">DEFAULT_PROVIDER</span><span class="p">,</span>
+                <span class="n">api_key</span><span class="o">=</span><span class="n">HF_TOKEN</span><span class="p">,</span>
+                <span class="n">servers</span><span class="o">=</span><span class="p">[</span>
+                    <span class="p">{</span>
+                        <span class="s2">"type"</span><span class="p">:</span> <span class="s2">"stdio"</span><span class="p">,</span>
+                        <span class="s2">"command"</span><span class="p">:</span> <span class="s2">"python"</span><span class="p">,</span>
+                        <span class="s2">"args"</span><span class="p">:</span> <span class="p">[</span><span class="s2">"mcp_server.py"</span><span class="p">],</span>
+                        <span class="s2">"cwd"</span><span class="p">:</span> <span class="s2">"."</span><span class="p">,</span>
+                        <span class="s2">"env"</span><span class="p">:</span> <span class="p">{</span><span class="s2">"HF_TOKEN"</span><span class="p">:</span> <span class="n">HF_TOKEN</span><span class="p">}</span> <span class="k">if</span> <span class="n">HF_TOKEN</span> <span class="k">else</span> <span class="p">{},</span>
+                    <span class="p">}</span>
+                <span class="p">],</span>
+            <span class="p">)</span>
+            <span class="nb">print</span><span class="p">(</span><span class="s2">"✅ Agent instance created successfully"</span><span class="p">)</span>
+            <span class="nb">print</span><span class="p">(</span><span class="s2">"🔧 Loading tools..."</span><span class="p">)</span>
+            <span class="k">await</span> <span class="n">agent_instance</span><span class="o">.</span><span class="n">load_tools</span><span class="p">()</span>
+            <span class="nb">print</span><span class="p">(</span><span class="s2">"✅ Tools loaded successfully"</span><span class="p">)</span>
+        <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+            <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"❌ Error creating/loading agent: </span><span class="si">{</span><span class="nb">str</span><span class="p">(</span><span class="n">e</span><span class="p">)</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+            <span class="n">agent_instance</span> <span class="o">=</span> <span class="kc">None</span>
+</code></pre></div>
+
+<p>ここが重要な部分です。Agent の設定を分解して見ていきましょう。</p>
+<p><strong>Agent のパラメータ:</strong></p>
+<ul>
+<li><code>model</code>: ツールの使い方について推論する言語モデル</li>
+<li><code>provider</code>: モデルへのアクセス方法（Hugging Face Inference Providers）</li>
+<li><code>api_key</code>: Hugging Face の API キー</li>
+</ul>
+<p><strong>MCP サーバーへの接続:</strong></p>
+<ul>
+<li><code>type: "stdio"</code>: 標準入出力を介して MCP サーバーに接続する</li>
+<li><code>command: "python"</code>: MCP サーバーを Python のサブプロセスとして実行する</li>
+<li><code>args: ["mcp_server.py"]</code>: 実行するスクリプトファイル</li>
+<li><code>env</code>: HF_TOKEN をサーバープロセスに渡す</li>
+</ul>
+<div class="callout callout-tip">
+<p class="callout-title">💡 ヒント</p>
+<p><code>stdio</code> 接続タイプでは、エージェントは MCP サーバーをサブプロセスとして起動し、標準入出力を通じて通信します。開発環境や単一マシンのデプロイに最適です。</p>
+</div>
+<p><code>load_tools()</code> の呼び出しは重要です。MCP サーバーから利用可能なツールを発見し、エージェントの推論エンジンから使えるようにします。</p>
+<p>これで、適切なエラーハンドリングとログ出力を備えたエージェント管理関数は完成です。</p>
+<h2>ツールの発見と利用</h2>
+<p>エージェントが作成されツールが読み込まれると、MCP ツールを自動で発見して使えるようになります。ここが Agent アプローチの真価が発揮される場面です。</p>
+<h3>利用可能なツール</h3>
+<p>エージェントは MCP ツールを自動で発見します。</p>
+<ul>
+<li><code>get_current_tags(repo_id: str)</code> - 既存のリポジトリタグを取得する</li>
+<li><code>add_new_tag(repo_id: str, new_tag: str)</code> - プルリクエストで新しいタグを追加する</li>
+</ul>
+<p>エージェントはこれらのツールをやみくもに呼ぶわけではありません。与えられたプロンプトをもとに、いつ、どのように使うべきかを推論します。</p>
+<h3>ツール実行の例</h3>
+<p>エージェントがツールを賢く使う様子は次のとおりです。</p>
+<div class="codehilite"><pre><span></span><code><span class="c1"># エージェントがツールを使う例</span>
+<span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">example_tool_usage</span><span class="p">():</span>
+    <span class="n">agent</span> <span class="o">=</span> <span class="k">await</span> <span class="n">get_agent</span><span class="p">()</span>
+
+    <span class="k">if</span> <span class="n">agent</span><span class="p">:</span>
+        <span class="c1"># エージェントはどのツールを使うべきか推論できる</span>
+        <span class="n">response</span> <span class="o">=</span> <span class="k">await</span> <span class="n">agent</span><span class="o">.</span><span class="n">run</span><span class="p">(</span>
+            <span class="s2">"Check the current tags for microsoft/DialoGPT-medium and add the tag 'conversational-ai' if it's not already present"</span>
+        <span class="p">)</span>
+        <span class="nb">print</span><span class="p">(</span><span class="n">response</span><span class="p">)</span>
+</code></pre></div>
+
+<p>エージェントに自然言語で指示を与えると、自分で次のことを考え出します。</p>
+<ol>
+<li>まず <code>get_current_tags</code> を呼んで、どんなタグがあるか確認する</li>
+<li><code>conversational-ai</code> がすでに存在するか確認する</li>
+<li>なければ、<code>add_new_tag</code> を呼んで追加する</li>
+<li>行ったことの要約を返す</li>
+</ol>
+<p>ツールを直接呼ぶよりも、ずっと賢いやり方です。</p>
+<h2>Webhook 処理との統合</h2>
+<p>次に、MCP クライアントが Webhook 処理パイプラインにどう統合されるかを見ていきましょう。ここで全体が1つにつながります。</p>
+<h3>1. タグの抽出と処理</h3>
+<p>Webhook イベントを処理し、MCP エージェントを使うメイン関数は次のとおりです。</p>
+<div class="codehilite"><pre><span></span><code><span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">process_webhook_comment</span><span class="p">(</span><span class="n">webhook_data</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]):</span>
+<span class="w">    </span><span class="sd">"""Process webhook to detect and add tags"""</span>
+    <span class="nb">print</span><span class="p">(</span><span class="s2">"🏷️ Starting process_webhook_comment..."</span><span class="p">)</span>
+
+    <span class="k">try</span><span class="p">:</span>
+        <span class="n">comment_content</span> <span class="o">=</span> <span class="n">webhook_data</span><span class="p">[</span><span class="s2">"comment"</span><span class="p">][</span><span class="s2">"content"</span><span class="p">]</span>
+        <span class="n">discussion_title</span> <span class="o">=</span> <span class="n">webhook_data</span><span class="p">[</span><span class="s2">"discussion"</span><span class="p">][</span><span class="s2">"title"</span><span class="p">]</span>
+        <span class="n">repo_name</span> <span class="o">=</span> <span class="n">webhook_data</span><span class="p">[</span><span class="s2">"repo"</span><span class="p">][</span><span class="s2">"name"</span><span class="p">]</span>
+
+        <span class="c1"># コメントとディスカッションのタイトルからタグ候補を抽出</span>
+        <span class="n">comment_tags</span> <span class="o">=</span> <span class="n">extract_tags_from_text</span><span class="p">(</span><span class="n">comment_content</span><span class="p">)</span>
+        <span class="n">title_tags</span> <span class="o">=</span> <span class="n">extract_tags_from_text</span><span class="p">(</span><span class="n">discussion_title</span><span class="p">)</span>
+        <span class="n">all_tags</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="nb">set</span><span class="p">(</span><span class="n">comment_tags</span> <span class="o">+</span> <span class="n">title_tags</span><span class="p">))</span>
+
+        <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"🔍 All unique tags: </span><span class="si">{</span><span class="n">all_tags</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">all_tags</span><span class="p">:</span>
+            <span class="k">return</span> <span class="p">[</span><span class="s2">"No recognizable tags found in the discussion."</span><span class="p">]</span>
+</code></pre></div>
+
+<p>この最初の部分では、コメントの内容とディスカッションのタイトルの両方からタグを抽出し、まとめます。両方に現れるタグの重複を取り除くために set を使います。</p>
+<div class="callout callout-tip">
+<p class="callout-title">💡 ヒント</p>
+<p>コメントとディスカッションのタイトルの両方を処理すると、関連するタグを見つけられる可能性が高まります。ユーザーは「Missing pytorch tag」のようにタイトルでタグに触れることもあれば、「This needs #transformers」のようにコメントで触れることもあります。</p>
+</div>
+<p>次に、エージェントを取得し、各タグを処理します。</p>
+<div class="codehilite"><pre><span></span><code>        <span class="c1"># エージェントのインスタンスを取得</span>
+        <span class="n">agent</span> <span class="o">=</span> <span class="k">await</span> <span class="n">get_agent</span><span class="p">()</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">agent</span><span class="p">:</span>
+            <span class="k">return</span> <span class="p">[</span><span class="s2">"Error: Agent not configured (missing HF_TOKEN)"</span><span class="p">]</span>
+
+        <span class="c1"># 各タグを処理</span>
+        <span class="n">result_messages</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">for</span> <span class="n">tag</span> <span class="ow">in</span> <span class="n">all_tags</span><span class="p">:</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="c1"># エージェントを使ってタグを処理</span>
+                <span class="n">prompt</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">"""</span>
+<span class="s2">                For the repository '</span><span class="si">{</span><span class="n">repo_name</span><span class="si">}</span><span class="s2">', check if the tag '</span><span class="si">{</span><span class="n">tag</span><span class="si">}</span><span class="s2">' already exists.</span>
+<span class="s2">                If it doesn't exist, add it via a pull request.</span>
+
+<span class="s2">                Repository: </span><span class="si">{</span><span class="n">repo_name</span><span class="si">}</span>
+<span class="s2">                Tag to check/add: </span><span class="si">{</span><span class="n">tag</span><span class="si">}</span>
+<span class="s2">                """</span>
+
+                <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"🤖 Processing tag '</span><span class="si">{</span><span class="n">tag</span><span class="si">}</span><span class="s2">' for repo '</span><span class="si">{</span><span class="n">repo_name</span><span class="si">}</span><span class="s2">'"</span><span class="p">)</span>
+                <span class="n">response</span> <span class="o">=</span> <span class="k">await</span> <span class="n">agent</span><span class="o">.</span><span class="n">run</span><span class="p">(</span><span class="n">prompt</span><span class="p">)</span>
+
+                <span class="c1"># エージェントの応答を解析し、成功／失敗を判定</span>
+                <span class="k">if</span> <span class="s2">"success"</span> <span class="ow">in</span> <span class="n">response</span><span class="o">.</span><span class="n">lower</span><span class="p">():</span>
+                    <span class="n">result_messages</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="sa">f</span><span class="s2">"✅ Tag '</span><span class="si">{</span><span class="n">tag</span><span class="si">}</span><span class="s2">' processed successfully"</span><span class="p">)</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="n">result_messages</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="sa">f</span><span class="s2">"⚠️ Issue with tag '</span><span class="si">{</span><span class="n">tag</span><span class="si">}</span><span class="s2">': </span><span class="si">{</span><span class="n">response</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+
+            <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+                <span class="n">error_msg</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">"❌ Error processing tag '</span><span class="si">{</span><span class="n">tag</span><span class="si">}</span><span class="s2">': </span><span class="si">{</span><span class="nb">str</span><span class="p">(</span><span class="n">e</span><span class="p">)</span><span class="si">}</span><span class="s2">"</span>
+                <span class="nb">print</span><span class="p">(</span><span class="n">error_msg</span><span class="p">)</span>
+                <span class="n">result_messages</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">error_msg</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">result_messages</span>
+</code></pre></div>
+
+<p>ここでのポイントは、タグごとに明確で構造化されたプロンプトをエージェントに与えることです。エージェントは次のことを行います。</p>
+<ol>
+<li>まず現在のタグを確認する必要があると理解する</li>
+<li>追加したい新しいタグと照合する</li>
+<li>必要であればプルリクエストを作成する</li>
+<li>行ったことの要約を返す</li>
+</ol>
+<p>このアプローチにより、ツールのオーケストレーションの複雑さが自動で処理されます。</p>
+<h3>2. タグ抽出のロジック</h3>
+<p>MCP 処理への入力となるタグ抽出のロジックを詳しく見ていきましょう。</p>
+<div class="codehilite"><pre><span></span><code><span class="kn">import</span><span class="w"> </span><span class="nn">re</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">List</span>
+
+<span class="c1"># 検証用に認識する ML/AI タグ</span>
+<span class="n">RECOGNIZED_TAGS</span> <span class="o">=</span> <span class="p">{</span>
+    <span class="s2">"pytorch"</span><span class="p">,</span> <span class="s2">"tensorflow"</span><span class="p">,</span> <span class="s2">"jax"</span><span class="p">,</span> <span class="s2">"transformers"</span><span class="p">,</span> <span class="s2">"diffusers"</span><span class="p">,</span>
+    <span class="s2">"text-generation"</span><span class="p">,</span> <span class="s2">"text-classification"</span><span class="p">,</span> <span class="s2">"question-answering"</span><span class="p">,</span>
+    <span class="s2">"text-to-image"</span><span class="p">,</span> <span class="s2">"image-classification"</span><span class="p">,</span> <span class="s2">"object-detection"</span><span class="p">,</span>
+    <span class="s2">"fill-mask"</span><span class="p">,</span> <span class="s2">"token-classification"</span><span class="p">,</span> <span class="s2">"translation"</span><span class="p">,</span> <span class="s2">"summarization"</span><span class="p">,</span>
+    <span class="s2">"feature-extraction"</span><span class="p">,</span> <span class="s2">"sentence-similarity"</span><span class="p">,</span> <span class="s2">"zero-shot-classification"</span><span class="p">,</span>
+    <span class="s2">"image-to-text"</span><span class="p">,</span> <span class="s2">"automatic-speech-recognition"</span><span class="p">,</span> <span class="s2">"audio-classification"</span><span class="p">,</span>
+    <span class="s2">"voice-activity-detection"</span><span class="p">,</span> <span class="s2">"depth-estimation"</span><span class="p">,</span> <span class="s2">"image-segmentation"</span><span class="p">,</span>
+    <span class="s2">"video-classification"</span><span class="p">,</span> <span class="s2">"reinforcement-learning"</span><span class="p">,</span> <span class="s2">"tabular-classification"</span><span class="p">,</span>
+    <span class="s2">"tabular-regression"</span><span class="p">,</span> <span class="s2">"time-series-forecasting"</span><span class="p">,</span> <span class="s2">"graph-ml"</span><span class="p">,</span> <span class="s2">"robotics"</span><span class="p">,</span>
+    <span class="s2">"computer-vision"</span><span class="p">,</span> <span class="s2">"nlp"</span><span class="p">,</span> <span class="s2">"cv"</span><span class="p">,</span> <span class="s2">"multimodal"</span><span class="p">,</span>
+<span class="p">}</span>
+</code></pre></div>
+
+<p>この厳選された認識タグのリストのおかげで、関連する ML/AI タグに集中でき、リポジトリに不適切なタグが追加されるのを避けられます。</p>
+<p>次は抽出関数そのものです。</p>
+<div class="codehilite"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">extract_tags_from_text</span><span class="p">(</span><span class="n">text</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
+<span class="w">    </span><span class="sd">"""Extract potential tags from discussion text"""</span>
+    <span class="n">text_lower</span> <span class="o">=</span> <span class="n">text</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span>
+    <span class="n">explicit_tags</span> <span class="o">=</span> <span class="p">[]</span>
+
+    <span class="c1"># パターン1: "tag: something" または "tags: something"</span>
+    <span class="n">tag_pattern</span> <span class="o">=</span> <span class="sa">r</span><span class="s2">"tags?:\s*([a-zA-Z0-9-_,\s]+)"</span>
+    <span class="n">matches</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">findall</span><span class="p">(</span><span class="n">tag_pattern</span><span class="p">,</span> <span class="n">text_lower</span><span class="p">)</span>
+    <span class="k">for</span> <span class="n">match</span> <span class="ow">in</span> <span class="n">matches</span><span class="p">:</span>
+        <span class="n">tags</span> <span class="o">=</span> <span class="p">[</span><span class="n">tag</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span> <span class="k">for</span> <span class="n">tag</span> <span class="ow">in</span> <span class="n">match</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">","</span><span class="p">)]</span>
+        <span class="n">explicit_tags</span><span class="o">.</span><span class="n">extend</span><span class="p">(</span><span class="n">tags</span><span class="p">)</span>
+
+    <span class="c1"># パターン2: "#hashtag" 形式</span>
+    <span class="n">hashtag_pattern</span> <span class="o">=</span> <span class="sa">r</span><span class="s2">"#([a-zA-Z0-9-_]+)"</span>
+    <span class="n">hashtag_matches</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">findall</span><span class="p">(</span><span class="n">hashtag_pattern</span><span class="p">,</span> <span class="n">text_lower</span><span class="p">)</span>
+    <span class="n">explicit_tags</span><span class="o">.</span><span class="n">extend</span><span class="p">(</span><span class="n">hashtag_matches</span><span class="p">)</span>
+
+    <span class="c1"># パターン3: 自然な文章の中で言及された認識タグを探す</span>
+    <span class="n">mentioned_tags</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="k">for</span> <span class="n">tag</span> <span class="ow">in</span> <span class="n">RECOGNIZED_TAGS</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">tag</span> <span class="ow">in</span> <span class="n">text_lower</span><span class="p">:</span>
+            <span class="n">mentioned_tags</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">tag</span><span class="p">)</span>
+
+    <span class="c1"># 結合して重複を取り除く</span>
+    <span class="n">all_tags</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="nb">set</span><span class="p">(</span><span class="n">explicit_tags</span> <span class="o">+</span> <span class="n">mentioned_tags</span><span class="p">))</span>
+
+    <span class="c1"># 認識タグか明示的に言及されたタグだけに絞り込む</span>
+    <span class="n">valid_tags</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="k">for</span> <span class="n">tag</span> <span class="ow">in</span> <span class="n">all_tags</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">tag</span> <span class="ow">in</span> <span class="n">RECOGNIZED_TAGS</span> <span class="ow">or</span> <span class="n">tag</span> <span class="ow">in</span> <span class="n">explicit_tags</span><span class="p">:</span>
+            <span class="n">valid_tags</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">tag</span><span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">valid_tags</span>
+</code></pre></div>
+
+<p>この関数は、複数の戦略でタグを抽出します。</p>
+<ol>
+<li><strong>明示的なパターン</strong>: 「tags: pytorch, transformers」や「tag: nlp」</li>
+<li><strong>ハッシュタグ</strong>: 「#pytorch #nlp」</li>
+<li><strong>自然な言及</strong>: 「This transformers model does text-generation」</li>
+</ol>
+<p>検証ステップにより、適切なタグだけが提案されるようになり、スパムや無関係なタグの追加を防ぎます。</p>
+<h2>パフォーマンスの考慮事項</h2>
+<p>本番用の MCP クライアントを構築する際、応答性の高い Webhook 処理を維持するにはパフォーマンスが重要です。ここでは、私たちが行った考慮事項のいくつかを見ていきます。</p>
+<h3>1. エージェントのシングルトンパターン</h3>
+<p>エージェントは一度だけ作成して再利用し、次のコストを避けます。</p>
+<ul>
+<li>MCP サーバーの起動オーバーヘッドの繰り返し</li>
+<li>ツール読み込みの遅延</li>
+<li>接続確立のコスト</li>
+</ul>
+<p>このパターンは、素早く応答する必要がある Webhook ハンドラーに不可欠です。</p>
+<h3>2. 非同期処理</h3>
+<p>すべての MCP 操作を非同期にすることで、次のことが可能になります。</p>
+<ul>
+<li>複数の Webhook リクエストを同時に処理する</li>
+<li>メインの FastAPI スレッドをブロックしない</li>
+<li>応答性の高い Webhook レスポンスを返す</li>
+</ul>
+<p>非同期であるおかげで、Webhook ハンドラーはバックグラウンドでタグを処理しながら新しいリクエストを受け付けられます。</p>
+<h3>3. バックグラウンドタスク処理</h3>
+<p>FastAPI には、タスクをバックグラウンドで実行できる <code>BackgroundTasks</code> クラスが組み込まれています。メインスレッドをブロックせずに時間のかかるタスクを実行するのに役立ちます。</p>
+<div class="codehilite"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">fastapi</span><span class="w"> </span><span class="kn">import</span> <span class="n">BackgroundTasks</span>
+
+<span class="nd">@app</span><span class="o">.</span><span class="n">post</span><span class="p">(</span><span class="s2">"/webhook"</span><span class="p">)</span>
+<span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">webhook_handler</span><span class="p">(</span><span class="n">request</span><span class="p">:</span> <span class="n">Request</span><span class="p">,</span> <span class="n">background_tasks</span><span class="p">:</span> <span class="n">BackgroundTasks</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">"""Handle webhook and process in background"""</span>
+
+    <span class="c1"># Webhook を素早く検証</span>
+    <span class="k">if</span> <span class="n">request</span><span class="o">.</span><span class="n">headers</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"X-Webhook-Secret"</span><span class="p">)</span> <span class="o">!=</span> <span class="n">WEBHOOK_SECRET</span><span class="p">:</span>
+        <span class="k">return</span> <span class="p">{</span><span class="s2">"error"</span><span class="p">:</span> <span class="s2">"Invalid secret"</span><span class="p">}</span>
+
+    <span class="n">webhook_data</span> <span class="o">=</span> <span class="k">await</span> <span class="n">request</span><span class="o">.</span><span class="n">json</span><span class="p">()</span>
+
+    <span class="c1"># 素早く応答するためバックグラウンドで処理</span>
+    <span class="n">background_tasks</span><span class="o">.</span><span class="n">add_task</span><span class="p">(</span><span class="n">process_webhook_comment</span><span class="p">,</span> <span class="n">webhook_data</span><span class="p">)</span>
+
+    <span class="k">return</span> <span class="p">{</span><span class="s2">"status"</span><span class="p">:</span> <span class="s2">"accepted"</span><span class="p">}</span>
+</code></pre></div>
+
+<p>このパターンにより、複雑なタグ処理をバックグラウンドで行いながら、Webhook の応答を高速（1秒未満）に保てます。</p>
+<div class="callout callout-tip">
+<p class="callout-title">💡 ヒント</p>
+<p>Webhook のエンドポイントは10秒以内に応答しないと、プラットフォームにタイムアウトとみなされる場合があります。バックグラウンドタスクを使えば、複雑な処理を非同期に扱いながら、常に素早く応答できます。</p>
+</div>
+<h2>次のステップ</h2>
+<p>MCP クライアントが実装できたので、次は次のことができます。</p>
+<ol>
+<li><strong>Webhook リスナーを実装する</strong> - Hub イベントを受け取る FastAPI エンドポイントを作る</li>
+<li><strong>すべてを統合する</strong> - Webhook、クライアント、サーバーを結びつけ、完全なシステムにする</li>
+<li><strong>テスト用インターフェースを追加する</strong> - 開発と監視のための Gradio インターフェースを作る</li>
+<li><strong>デプロイとテスト</strong> - 本番環境でシステム全体を検証する</li>
+</ol>
+<p>次のセクションでは、MCP ベースのタグ付けエージェントを起動させる Webhook リスナーを実装します。</p>
+<div class="callout callout-tip">
+<p class="callout-title">💡 ヒント</p>
+<p><code>huggingface_hub</code> の Agent クラスは、MCP ツールの統合と言語モデルの推論の両方を提供します。私たちの PR エージェントのようなインテリジェントな自動化ワークフローを構築するのに最適です。</p>
+</div>
+</article>
+<nav class="page-nav"><a class="nav-link prev" href="quiz1.html">← 前へ: クイズ1: MCP サーバーの実装</a><a class="nav-link toc-link" href="../index.html">目次へ</a><a class="nav-link next" href="webhook-listener.html">次へ →: Webhook リスナー</a></nav>
+</main>
+<footer class="site-footer">
+  <p>原典: Hugging Face huggingface/mcp-course（<a href="https://github.com/huggingface/mcp-course">https://github.com/huggingface/mcp-course</a>）</p>
+  <p>日本語版の翻訳・公開: 霞ヶ関京 / 連絡先: GitHub <a href="https://github.com/yanikasumin">@yanikasumin</a> / YouTube <a href="https://www.youtube.com/@KASUMI_MOF">@KASUMI_MOF</a></p>
+  <p class="demo-note">このサイトはデモ版です。内容は順次更新されます。</p>
+</footer>
+<script src="../../site.js"></script>
+</body>
+</html>

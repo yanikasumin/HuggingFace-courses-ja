@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Hugging Face Hub でプルリクエストエージェントを作る | Hugging Face コース日本語版（デモ版）</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Shippori+Mincho:wght@500;700&family=Zen+Kaku+Gothic+New:wght@400;500;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../../style.css">
+<script>
+window.MathJax = { tex: { inlineMath: [['$', '$'], ['\\(', '\\)']], displayMath: [['$$', '$$'], ['\\[', '\\]']] }, options: { skipHtmlTags: ['script','noscript','style','textarea','pre','code'] } };
+</script>
+<script async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml.js"></script>
+</head>
+<body>
+<header class="site-header">
+  <div class="header-inner">
+    <a class="site-title" href="../../index.html">Hugging Face コース日本語版</a>
+    <span class="demo-badge">デモ版</span>
+  </div>
+</header>
+<main class="container">
+<p class="course-crumb"><a href="../index.html">MCP コース</a>
+<span class="badge badge-qa-wip">翻訳済み・QA進行中（未検証の部分を含みます）</span></p>
+<nav class="page-nav"><a class="nav-link prev" href="../unit3/conclusion.html">← 前へ: Unit 3 のまとめ：CodeCraft Studios の変革</a><a class="nav-link toc-link" href="../index.html">目次へ</a><a class="nav-link next" href="setting-up-the-project.html">次へ →: プロジェクトのセットアップ</a></nav>
+<article class="content">
+<h1>Hugging Face Hub でプルリクエストエージェントを作る</h1>
+<p>MCP コースの Unit 3 へようこそ！</p>
+<p>このユニットでは、ディスカッションやコメントをもとに Hugging Face のモデルリポジトリへ自動でタグ付けするプルリクエストエージェントを作ります。MCP と Webhook リスナー、自動化ワークフローをどう組み合わせるかを示す、実践的なアプリケーションです。</p>
+<div class="callout callout-tip">
+<p class="callout-title">💡 ヒント</p>
+<p>このユニットでは、MCP サーバーが Hugging Face Hub からのリアルタイムイベントに応答し、リポジトリのメタデータを改善するプルリクエストを自動で作成するという、実世界のユースケースを取り上げます。</p>
+</div>
+<h2>このユニットで学ぶこと</h2>
+<p>このユニットでは、次のことを行います。</p>
+<ul>
+<li>Hugging Face Hub API と連携する MCP サーバーを作る</li>
+<li>ディスカッションイベントに応答する Webhook リスナーを実装する</li>
+<li>モデルリポジトリ向けの自動タグ付けワークフローを構築する</li>
+<li>Webhook 駆動のアプリケーション一式を Hugging Face Spaces にデプロイする</li>
+</ul>
+<p>このユニットを終える頃には、ディスカッションを監視し、プルリクエストを通じてリポジトリのメタデータを自動で改善できる、動作する PR エージェントが手元にできあがります。</p>
+<h2>前提条件</h2>
+<p>このユニットに進む前に、次の点を確認してください。</p>
+<ul>
+<li>Unit 1 と Unit 2 を修了しているか、MCP の概念に馴染みがあること</li>
+<li>Python、FastAPI、Webhook の概念に慣れていること</li>
+<li>Hugging Face Hub のワークフローとプルリクエストの基本を理解していること</li>
+<li>次の開発環境が用意できていること:</li>
+<li>Python 3.11+</li>
+<li>API アクセスが可能な Hugging Face アカウント</li>
+</ul>
+<h2>プルリクエストエージェントのプロジェクト</h2>
+<p>タグ付けエージェントは、MCP サーバー、Webhook リスナー、エージェントのロジック、デプロイ基盤という4つの主要コンポーネントで構成します。このエージェントは、ディスカッションやコメントをもとにモデルリポジトリにタグ付けできます。モデルの作者は、自分でリポジトリにタグ付けしなくても、そのまま使える PR を受け取れるので、時間を節約できます。</p>
+<p><img alt="PR エージェントのアーキテクチャ" src="https://huggingface.co/datasets/mcp-course/images/resolve/main/unit3/architecture.png" /></p>
+<p>上の図には、モデルのタグを読み取って更新できる MCP サーバーがあります。Hugging Face Hub から Webhook を受け取れる Webhook リスナーがあります。ディスカッションやコメントを分析し、モデルのタグを更新する PR を作成するエージェントがあります。そして、MCP サーバーを Hugging Face Spaces にデプロイできるデプロイ基盤があります。</p>
+<h3>プロジェクト概要</h3>
+<p>このアプリケーションを作るには、次のファイルが必要です。</p>
+<table>
+<thead>
+<tr>
+<th>ファイル</th>
+<th>役割</th>
+<th>説明</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>mcp_server.py</code></td>
+<td><strong>MCP サーバーの本体</strong></td>
+<td>モデルのタグを読み取って更新するツールを持つ FastMCP ベースのサーバー</td>
+</tr>
+<tr>
+<td><code>app.py</code></td>
+<td><strong>Webhook リスナーとエージェント</strong></td>
+<td>Webhook を受け取り、ディスカッションを処理して PR を作成する FastAPI アプリ</td>
+</tr>
+<tr>
+<td><code>requirements.txt</code></td>
+<td><strong>依存関係</strong></td>
+<td>FastMCP、FastAPI、huggingface-hub を含む Python パッケージ</td>
+</tr>
+<tr>
+<td><code>pyproject.toml</code></td>
+<td><strong>プロジェクト設定</strong></td>
+<td>uv による依存関係管理を備えた、モダンな Python パッケージング</td>
+</tr>
+<tr>
+<td><code>Dockerfile</code></td>
+<td><strong>デプロイ</strong></td>
+<td>Hugging Face Spaces 向けのコンテナ設定</td>
+</tr>
+<tr>
+<td><code>env.example</code></td>
+<td><strong>設定テンプレート</strong></td>
+<td>必要な環境変数とシークレット</td>
+</tr>
+<tr>
+<td><code>cleanup.py</code></td>
+<td><strong>ユーティリティ</strong></td>
+<td>開発とテスト後の片付けに使うヘルパースクリプト</td>
+</tr>
+</tbody>
+</table>
+<p>これらのファイルを1つずつ見て、それぞれの役割を理解していきましょう。</p>
+<h3>MCP サーバー（<code>mcp_server.py</code>）</h3>
+<p>アプリケーションの心臓部です。次のツールを提供する FastMCP サーバーです。</p>
+<ul>
+<li>モデルリポジトリから現在のタグを読み取る</li>
+<li>Hub へのプルリクエストで新しいタグを追加する</li>
+<li>エラーハンドリングと検証</li>
+</ul>
+<p>ここで MCP サーバーを実装します。このプロジェクトの作業の大部分はここです。Gradio アプリと FastAPI アプリは MCP サーバーと Webhook リスナーのテストに使い、すでに利用できる状態になっています。</p>
+<h3>Webhook との連携</h3>
+<p><a href="https://huggingface.co/docs/hub/webhooks-guide-discussion-bot">Hugging Face Webhooks Guide</a> に沿って、このエージェントは次のことを行います。</p>
+<ul>
+<li>ディスカッションのコメントイベントを待ち受ける</li>
+<li>セキュリティのために Webhook の署名を検証する</li>
+<li>メンションとタグの提案を処理する</li>
+<li>プルリクエストを自動で作成する</li>
+</ul>
+<h3>エージェントの機能</h3>
+<p>エージェントはディスカッションの内容を分析して、次のことを行います。</p>
+<ul>
+<li>明示的なタグの言及（<code>tag: pytorch</code>、<code>#transformers</code>）を抽出する</li>
+<li>自然言語から暗黙的なタグを認識する</li>
+<li>既知の ML/AI カテゴリに照らしてタグを検証する</li>
+<li>適切なプルリクエストの説明文を生成する</li>
+</ul>
+<h3>デプロイと本番運用</h3>
+<ul>
+<li>Hugging Face Spaces へのコンテナ化されたデプロイ</li>
+<li>シークレットのための環境変数管理</li>
+<li>Webhook 応答のためのバックグラウンドタスク処理</li>
+<li>テストと監視のための Gradio インターフェース</li>
+</ul>
+<h2>Webhook 連携の概要</h2>
+<p>この PR エージェントは、Hugging Face のディスカッションボットが使うのと同じ Webhook 基盤を利用します。Webhook がリアルタイム応答を可能にする仕組みは次のとおりです。</p>
+<p><img alt="Webhook のフロー" src="https://huggingface.co/datasets/huggingface/documentation-images/resolve/main/hub/webhooks-guides/001-discussion-bot/webhook-creation.png" /></p>
+<p>Webhook のフローは次のように動作します。</p>
+<ol>
+<li><strong>イベントの発生</strong>: ユーザーがモデルリポジトリのディスカッションにコメントを作成する</li>
+<li><strong>Webhook の配信</strong>: Hugging Face がエンドポイントに POST リクエストを送る</li>
+<li><strong>認証</strong>: セキュリティのために Webhook シークレットを検証する</li>
+<li><strong>処理</strong>: エージェントがコメントを分析し、タグの提案を探す</li>
+<li><strong>アクション</strong>: 関連するタグが見つかれば、プルリクエストを作成する</li>
+<li><strong>応答</strong>: PR の作成はバックグラウンドで行い、Webhook には即座に応答する</li>
+</ol>
+<h2>さあ、始めましょう！</h2>
+<p>Hugging Face のリポジトリを自動で改善できる、本番投入可能な PR エージェントを作る準備はできましたか。まずプロジェクト構成をセットアップし、MCP サーバーの実装を理解するところから始めましょう。</p>
+</article>
+<nav class="page-nav"><a class="nav-link prev" href="../unit3/conclusion.html">← 前へ: Unit 3 のまとめ：CodeCraft Studios の変革</a><a class="nav-link toc-link" href="../index.html">目次へ</a><a class="nav-link next" href="setting-up-the-project.html">次へ →: プロジェクトのセットアップ</a></nav>
+</main>
+<footer class="site-footer">
+  <p>原典: Hugging Face huggingface/mcp-course（<a href="https://github.com/huggingface/mcp-course">https://github.com/huggingface/mcp-course</a>）</p>
+  <p>日本語版の翻訳・公開: 霞ヶ関京 / 連絡先: GitHub <a href="https://github.com/yanikasumin">@yanikasumin</a> / YouTube <a href="https://www.youtube.com/@KASUMI_MOF">@KASUMI_MOF</a></p>
+  <p class="demo-note">このサイトはデモ版です。内容は順次更新されます。</p>
+</footer>
+<script src="../../site.js"></script>
+</body>
+</html>

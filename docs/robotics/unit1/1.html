@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ロボット学習入門 | Hugging Face コース日本語版（デモ版）</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Shippori+Mincho:wght@500;700&family=Zen+Kaku+Gothic+New:wght@400;500;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../../style.css">
+<script>
+window.MathJax = { tex: { inlineMath: [['$', '$'], ['\\(', '\\)']], displayMath: [['$$', '$$'], ['\\[', '\\]']] }, options: { skipHtmlTags: ['script','noscript','style','textarea','pre','code'] } };
+</script>
+<script async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml.js"></script>
+</head>
+<body>
+<header class="site-header">
+  <div class="header-inner">
+    <a class="site-title" href="../../index.html">Hugging Face コース日本語版</a>
+    <span class="demo-badge">デモ版</span>
+  </div>
+</header>
+<main class="container">
+<p class="course-crumb"><a href="../index.html">Robotics コース</a>
+<span class="badge badge-qa-pass">翻訳QA 最終合格</span></p>
+<nav class="page-nav"><a class="nav-link prev" href="../unit0/2.html">← 前へ: LeRobot を始める</a><a class="nav-link toc-link" href="../index.html">目次へ</a><a class="nav-link next" href="2.html">次へ →: LeRobot: エンドツーエンドのロボット学習ライブラリ</a></nav>
+<article class="content">
+<h1>ロボット学習入門</h1>
+<p>ロボット学習の基本的な考え方はシンプルです。すべての動作を人間が一つひとつプログラムするのではなく、データや経験からロボット自身が学習し、上達できるようにするというものです。具体的には、動画やセンサーデータ、人間による実演などの事例とフィードバックを使い、物をつかむ、置く、押す、歩くといった動作をロボットが習得できるようにします。</p>
+<p>なぜ今、ロボット学習が注目されているのでしょうか。その背景には2つの進歩があります。機械学習が複雑なパターンをより正確に捉えられるようになったことと、ロボティクスのデータセットを収集・共有しやすくなったことです。これらが相まって、物理モデルや制御器を人間が設計する従来の方法から、データを基に動作を学習し、状況に適応させる方法への移行が可能になりました。</p>
+<p>例えばロボットアームは、さまざまな動作を試し、目標への進み具合に応じて報酬を得る方法（強化学習）や、人間の実演を観察して模倣する方法（模倣学習）によって、ブロックのつかみ方を習得できます。こうした学習方法は、やがてさまざまなタスクだけでなく、身体構造の異なるロボットにも応用できるようになります。</p>
+<div class="callout callout-tip">
+<p class="callout-title">💡 ヒント</p>
+<p>このユニットを終えるころには、次のことができるようになります。
+- 「ロボット学習」が何を意味し、なぜ役立つのかを平易な言葉で理解する
+- 実演からの学習と試行錯誤からの学習の具体例を見る
+- 次のユニットで何を作っていくのか、そして LeRobot がそこにどう関わるのかを知る</p>
+</div>
+<h1>歴史</h1>
+<p>ロボティクスは、反復的な作業や負担の大きい作業、危険な作業をロボットに担わせ、人間を支援する分野です。こうした課題への取り組みは1950年代から続いています。近年は機械学習の進歩によって、ロボットの開発手法が広がりました。タスクごとに専門家が詳細な指示やモデルを設計する代わりに、大量のデータと計算資源を使って、ロボット自身に動作を学習させることも可能になったのです。</p>
+<div class="callout callout-tip">
+<p class="callout-title">💡 ヒント</p>
+<p>少し歴史的な背景を見てみましょう…</p>
+<p>1950年代には、人工知能とロボティクスがそれぞれ独立した研究分野として誕生しました。史上初のロボットは、1961年に発明された <a href="https://en.wikipedia.org/wiki/Unimate">Unimate</a> です。この2つの分野がロボット学習を通じて本格的に結び付くまでには、70年近くかかりました！</p>
+</div>
+<h1>ロボティクスの未来</h1>
+<p>現在のロボティクス研究者は、詳細なモデルや制御システムを人間が設計する従来の手法から、次第に離れつつあります。その代わりに機械学習を取り入れ、次のような能力を持つロボットの開発を目指しています。</p>
+<ul>
+<li>知覚と制御を別々のシステムに分けることなく、見たものと行うべきことを直接結び付けて学べる。</li>
+<li>データ主導の方法で、さまざまなセンサー（カメラ、触覚センサー、マイク）から有用な情報を取り出せる。</li>
+<li>世界の振る舞いを表す完全なモデルがなくても、うまく働ける。</li>
+<li>誰もがアクセスして学習に使える、増え続けるオープンなロボティクスデータセットを活用できる。</li>
+<li>世界の振る舞いを表す完全なモデルがなくても、うまく働ける。</li>
+</ul>
+<p>ロボティクスで現在起きているパラダイムシフトをよりよくつかむには、<a href="https://www.youtube.com/watch?v=VEs1QYEgOQo">この動画</a> を見てみてください。</p>
+<div class="callout callout-warning">
+<p class="callout-title">⚠️ 注意</p>
+<p><strong>重要なポイント:</strong> これは、ロボティクスの考え方そのものを変える大きな転換です。精密な解決策を人間が設計する方法から、データを基にロボットの適応的な動作を学習させる方法へと移りつつあります。</p>
+</div>
+<p>この流れがとりわけ重要なのは、GPT や CLIP のような基盤モデルの発展と共通点があるからです。こうした機械学習（人工知能）システムは、膨大なデータセットで訓練されることで、テキストや画像を理解し、扱えるようになりました。ロボティクスのデータセットが大規模化し、ロボットに多様なセンサー（通常のカメラ、赤外線カメラ、LIDAR、マイク）が搭載されるようになるにつれて、同様の学習手法をロボティクスに応用することがますます有効になっていきます。</p>
+<p>ロボティクスに取り組むには、もともとソフトウェアとハードウェアの両方に関する専門知識が必要です。さらに機械学習も取り入れるとなると、求められるスキルの幅が広がり、研究でも実社会への応用でも技術的なハードルが高くなります。</p>
+<h2>参考文献</h2>
+<p>参考文献の完全なリストは、<a href="https://huggingface.co/spaces/lerobot/robot-learning-tutorial">チュートリアル</a> を確認してください。</p>
+<ul>
+<li>
+<p><strong>ALVINN: An Autonomous Land Vehicle in a Neural Network</strong> (1988)<br />
+  Dean A. Pomerleau<br />
+  この画期的な論文では、自動運転におけるエンドツーエンド学習の初期の実証例が示されています。ニューラルネットワークが、センサー入力から操舵コマンドへの対応関係を直接学習するというものです。<br />
+<a href="https://proceedings.neurips.cc/paper_files/paper/1988/file/812b4ba287f5ee0bc9d43bbf5bbe87fb-Paper.pdf">論文</a></p>
+</li>
+<li>
+<p><strong>Reinforcement Learning: An Introduction</strong> (2018)<br />
+  Richard S. Sutton and Andrew G. Barto<br />
+  強化学習の基礎となる教科書です。ロボットが試行錯誤を通じて学ぶ仕組みの土台となる原理を扱っています。<br />
+<a href="http://incompleteideas.net/book/the-book-2nd.html">書籍サイト</a></p>
+</li>
+</ul>
+</article>
+<nav class="page-nav"><a class="nav-link prev" href="../unit0/2.html">← 前へ: LeRobot を始める</a><a class="nav-link toc-link" href="../index.html">目次へ</a><a class="nav-link next" href="2.html">次へ →: LeRobot: エンドツーエンドのロボット学習ライブラリ</a></nav>
+</main>
+<footer class="site-footer">
+  <p>原典: Hugging Face huggingface/robotics-course（<a href="https://github.com/huggingface/robotics-course">https://github.com/huggingface/robotics-course</a>）</p>
+  <p>日本語版の翻訳・公開: 霞ヶ関京 / 連絡先: GitHub <a href="https://github.com/yanikasumin">@yanikasumin</a> / YouTube <a href="https://www.youtube.com/@KASUMI_MOF">@KASUMI_MOF</a></p>
+  <p class="demo-note">このサイトはデモ版です。内容は順次更新されます。</p>
+</footer>
+<script src="../../site.js"></script>
+</body>
+</html>

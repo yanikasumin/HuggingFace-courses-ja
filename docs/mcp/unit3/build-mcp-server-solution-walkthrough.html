@@ -1,0 +1,446 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Unit 3 ソリューション解説：MCP でプルリクエストエージェントを構築する | Hugging Face コース日本語版（デモ版）</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Shippori+Mincho:wght@500;700&family=Zen+Kaku+Gothic+New:wght@400;500;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../../style.css">
+<script>
+window.MathJax = { tex: { inlineMath: [['$', '$'], ['\\(', '\\)']], displayMath: [['$$', '$$'], ['\\[', '\\]']] }, options: { skipHtmlTags: ['script','noscript','style','textarea','pre','code'] } };
+</script>
+<script async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml.js"></script>
+</head>
+<body>
+<header class="site-header">
+  <div class="header-inner">
+    <a class="site-title" href="../../index.html">Hugging Face コース日本語版</a>
+    <span class="demo-badge">デモ版</span>
+  </div>
+</header>
+<main class="container">
+<p class="course-crumb"><a href="../index.html">MCP コース</a>
+<span class="badge badge-qa-wip">翻訳済み・QA進行中（未検証の部分を含みます）</span></p>
+<nav class="page-nav"><a class="nav-link prev" href="slack-notification.html">← 前へ: Module 3：Slack 通知</a><a class="nav-link toc-link" href="../index.html">目次へ</a><a class="nav-link next" href="certificate.html">次へ →: 修了証を取得しましょう！</a></nav>
+<article class="content">
+<h1>Unit 3 ソリューション解説：MCP でプルリクエストエージェントを構築する</h1>
+<h2>概要</h2>
+<p>この解説では、Unit 3 のプルリクエストエージェントの完全なソリューションを案内します。これは、コード変更の分析、CI/CD パイプラインの監視、チームコミュニケーションの自動化により、開発者がより良いプルリクエストを作成できるよう支援する MCP サーバーです。このソリューションは、3つの MCP プリミティブ（Tools、Resources、Prompts）が実世界のワークフローで連携する様子を示します。</p>
+<h2>アーキテクチャ概要</h2>
+<p>PR Agent は、完全な自動化システムを段階的に構築する、相互接続されたモジュールで構成されています。</p>
+<ol>
+<li><strong>MCP サーバーの構築</strong> - PR テンプレート提案用 Tools を備えた基本サーバー</li>
+<li><strong>スマートなファイル分析</strong> - プロジェクトの文脈に Resources を使う拡張分析</li>
+<li><strong>GitHub Actions 連携</strong> - 標準化された Prompts による CI/CD モニタリング</li>
+<li><strong>Hugging Face Hub 連携</strong> - モデルのデプロイとデータセット PR のワークフロー</li>
+<li><strong>Slack 通知</strong> - 全 MCP プリミティブを連携させたチームコミュニケーション</li>
+</ol>
+<h2>Module 1：MCP サーバーの構築</h2>
+<h3>構築するもの</h3>
+<p>ファイル変更を分析し、MCP Tools を使って適切な PR テンプレートを提案する、最小限の MCP サーバーです。</p>
+<h3>主要コンポーネント</h3>
+<h4>1. サーバーの初期化（<code>server.py</code>）</h4>
+<div class="codehilite"><pre><span></span><code><span class="c1"># サーバーは3つの必須ツールを登録します：</span>
+<span class="c1"># - analyze_file_changes: 変更されたファイルに関する構造化データを返す</span>
+<span class="c1"># - get_pr_templates: メタデータ付きで利用可能なテンプレートを一覧表示する</span>
+<span class="c1"># - suggest_template: インテリジェントなテンプレート推奨を提供する</span>
+</code></pre></div>
+
+<p>サーバーは MCP SDK を使ってこれらのツールを Claude Code に公開し、Claude Code が情報を集め、どの PR テンプレートを使うか賢い判断を下せるようにします。</p>
+<h4>2. ファイル分析ツール</h4>
+<p><code>analyze_file_changes</code> ツールは git diff を調べて、以下を特定します。
+- ファイルの種類と拡張子
+- 変更されたファイルの数
+- 追加／削除された行数
+- よくあるパターン（テスト、設定、ドキュメント）</p>
+<p>この構造化データにより、Claude は判断ロジックをハードコードすることなく、変更の性質を理解できます。</p>
+<h4>3. テンプレート管理</h4>
+<p>テンプレートは <code>templates/</code> ディレクトリに markdown ファイルとして保存されます。
+- <code>bug.md</code> - バグ修正用
+- <code>feature.md</code> - 新機能用
+- <code>docs.md</code> - ドキュメント更新用
+- <code>refactor.md</code> - コードリファクタリング用</p>
+<p>各テンプレートには、分析に基づいて Claude が埋められるプレースホルダーが含まれています。</p>
+<h3>Claude がこれらのツールを使う方法</h3>
+<ol>
+<li>Claude が <code>analyze_file_changes</code> を呼び出し、何が変更されたかを把握する</li>
+<li><code>get_pr_templates</code> で利用可能な選択肢を確認する</li>
+<li>分析データを渡して <code>suggest_template</code> を呼び出す</li>
+<li>理由付きの推奨を受け取る</li>
+<li>具体的な変更に基づいてテンプレートをカスタマイズできる</li>
+</ol>
+<h3>学習成果</h3>
+<ul>
+<li>ツールの登録とスキーマの理解</li>
+<li>構造化データで Claude に判断させること</li>
+<li>データ収集と判断ロジックの分離</li>
+</ul>
+<h2>Module 2：スマートなファイル分析</h2>
+<h3>構築するもの</h3>
+<p>MCP Resources を使ってプロジェクトの文脈とチームのガイドラインを提供する、拡張されたファイル分析です。</p>
+<h3>主要コンポーネント</h3>
+<h4>1. リソースの登録</h4>
+<p>サーバーは4種類のリソースを公開します。</p>
+<div class="codehilite"><pre><span></span><code><span class="c1"># リソースは以下への読み取り専用アクセスを提供します：</span>
+<span class="c1"># - file://templates/ - PR テンプレートファイル</span>
+<span class="c1"># - file://project-context/ - コーディング規約と慣習</span>
+<span class="c1"># - git://recent-changes/ - コミット履歴とパターン</span>
+<span class="c1"># - team://guidelines/ - レビュープロセスと基準</span>
+</code></pre></div>
+
+<h4>2. プロジェクト文脈リソース</h4>
+<p><code>project-context/</code> ディレクトリには以下が含まれます。
+- <code>coding-standards.md</code> - 言語固有の慣習
+- <code>review-guidelines.md</code> - レビュアーが注目するポイント
+- <code>architecture.md</code> - システム設計パターン
+- <code>dependencies.md</code> - サードパーティライブラリの方針</p>
+<p>Claude はこれらを読んで、プロジェクト固有の要件を理解できます。</p>
+<h4>3. Git 履歴分析</h4>
+<p><code>git://recent-changes/</code> リソースは以下を提供します。
+- 最近のコミットメッセージとパターン
+- よくある PR のタイトルと説明
+- チームメンバーの貢献パターン
+- 過去のテンプレート使用状況</p>
+<p>これにより、Claude はチームの慣行に沿ったテンプレートを提案できます。</p>
+<h3>Claude がリソースを使う方法</h3>
+<ol>
+<li><code>team://guidelines/review-process.md</code> を読み、PR の要件を理解する</li>
+<li>スタイルガイドのために <code>file://project-context/coding-standards.md</code> にアクセスする</li>
+<li><code>git://recent-changes/</code> を分析し、チームのパターンに合わせる</li>
+<li>この文脈とファイル分析を組み合わせ、より良い提案を行う</li>
+</ol>
+<h3>強化された意思決定</h3>
+<p>リソースにより、Claude は次のことができるようになります。
+- チームの慣習に合ったテンプレートを提案する
+- プロジェクト固有の要件を PR に含める
+- 説明の中でコーディング規約に言及する
+- 過去のチームの慣行に合わせる</p>
+<h3>学習成果</h3>
+<ul>
+<li>リソース URI の設計とスキーマ</li>
+<li>プロジェクトの知識を AI がアクセスできるようにすること</li>
+<li>文脈を意識した意思決定</li>
+<li>自動化とチーム基準のバランス</li>
+</ul>
+<h2>Module 3：GitHub Actions 連携</h2>
+<h3>構築するもの</h3>
+<p>webhook と標準化されたプロンプトを使った、リアルタイム CI/CD モニタリングによる一貫したチームコミュニケーションです。</p>
+<h3>主要コンポーネント</h3>
+<h4>1. Webhook サーバー</h4>
+<p>Cloudflare Tunnel を使って GitHub Actions イベントを受信します。</p>
+<div class="codehilite"><pre><span></span><code><span class="c1"># Webhook エンドポイントが処理するもの：</span>
+<span class="c1"># - workflow_run イベント</span>
+<span class="c1"># - check_run イベント  </span>
+<span class="c1"># - pull_request のステータス更新</span>
+<span class="c1"># - デプロイ通知</span>
+</code></pre></div>
+
+<h4>2. プロンプトテンプレート</h4>
+<p>4つの標準化されたプロンプトが一貫性を保証します。
+- <strong>「Analyze CI Results」</strong> - テストの失敗とビルドエラーを処理する
+- <strong>「Generate Status Summary」</strong> - 人間が読めるステータス更新を作成する
+- <strong>「Create Follow-up Tasks」</strong> - 結果に基づいて次のステップを提案する
+- <strong>「Draft Team Notification」</strong> - 対象読者ごとに更新を整形する</p>
+<h4>3. イベント処理パイプライン</h4>
+<ol>
+<li>GitHub から webhook を受信する</li>
+<li>イベントデータを解析し、関連情報を抽出する</li>
+<li>イベントタイプに応じた適切なプロンプトを使う</li>
+<li>標準化されたレスポンスを生成する</li>
+<li>チーム通知用に保存する</li>
+</ol>
+<h3>Claude がプロンプトを使う方法</h3>
+<p>プロンプト使用例：</p>
+<div class="codehilite"><pre><span></span><code><span class="c1"># テストが失敗すると、Claude は「Analyze CI Results」プロンプトを使います：</span>
+<span class="n">prompt_data</span> <span class="o">=</span> <span class="p">{</span>
+    <span class="s2">"event_type"</span><span class="p">:</span> <span class="s2">"workflow_run"</span><span class="p">,</span>
+    <span class="s2">"status"</span><span class="p">:</span> <span class="s2">"failure"</span><span class="p">,</span>
+    <span class="s2">"failed_jobs"</span><span class="p">:</span> <span class="p">[</span><span class="s2">"unit-tests"</span><span class="p">,</span> <span class="s2">"lint"</span><span class="p">],</span>
+    <span class="s2">"error_logs"</span><span class="p">:</span> <span class="s2">"..."</span><span class="p">,</span>
+    <span class="s2">"pr_context"</span><span class="p">:</span> <span class="p">{</span><span class="o">...</span><span class="p">}</span>
+<span class="p">}</span>
+
+<span class="c1"># Claude が生成するもの：</span>
+<span class="c1"># - 根本原因分析</span>
+<span class="c1"># - 修正案</span>
+<span class="c1"># - 影響評価</span>
+<span class="c1"># - 次のステップ</span>
+</code></pre></div>
+
+<h3>標準化されたワークフロー</h3>
+<p>プロンプトにより、担当者が誰であっても次のことが保証されます。
+- CI の失敗が一貫して分析される
+- ステータス更新がチームの形式に従う
+- フォローアップアクションがプロセスに沿う
+- 通知に必要な情報が含まれる</p>
+<h3>学習成果</h3>
+<ul>
+<li>webhook 連携パターン</li>
+<li>一貫性のためのプロンプトエンジニアリング</li>
+<li>イベント駆動アーキテクチャ</li>
+<li>チームワークフローの標準化</li>
+</ul>
+<h2>Module 4：Hugging Face Hub 連携</h2>
+<h3>構築するもの</h3>
+<p>LLM とデータセットの PR のための Hugging Face Hub 連携です。言語モデルを扱うチーム向けの専用ワークフローを追加します。</p>
+<h3>主要コンポーネント</h3>
+<h4>1. Hub 固有のツール</h4>
+<div class="codehilite"><pre><span></span><code><span class="c1"># Hugging Face ワークフロー用ツール：</span>
+<span class="c1"># - analyze_model_changes: LLM ファイルの変更を検出する</span>
+<span class="c1"># - validate_dataset_format: 訓練データの準拠をチェックする</span>
+<span class="c1"># - generate_model_card: モデルのドキュメントを作成／更新する</span>
+<span class="c1"># - suggest_hub_template: LLM／データセット用の PR テンプレート</span>
+</code></pre></div>
+
+<h4>2. Hub リソース</h4>
+<div class="codehilite"><pre><span></span><code><span class="c1"># Hub の文脈用リソース：</span>
+<span class="c1"># - hub://model-cards/ - LLM カードのテンプレートと例</span>
+<span class="c1"># - hub://dataset-formats/ - 訓練データの仕様</span>
+<span class="c1"># - hub://community-standards/ - Hub コミュニティガイドライン</span>
+<span class="c1"># - hub://license-info/ - ライセンス互換性チェック</span>
+</code></pre></div>
+
+<h4>3. LLM 固有のプロンプト</h4>
+<div class="codehilite"><pre><span></span><code><span class="c1"># LLM ワークフロー用プロンプト：</span>
+<span class="c1"># - 「Analyze Model Changes」 - LLM の更新を理解する</span>
+<span class="c1"># - 「Generate Benchmark Summary」 - 評価指標を作成する</span>
+<span class="c1"># - 「Check Dataset Quality」 - 訓練データを検証する</span>
+<span class="c1"># - 「Draft Model Card Update」 - ドキュメントを更新する</span>
+</code></pre></div>
+
+<h3>Hub 固有のワークフロー</h3>
+<p>PR が LLM ファイルを変更した場合：
+1. <strong>Tool</strong>：<code>analyze_model_changes</code> がモデルアーキテクチャの変更を検出する
+2. <strong>Resource</strong>：<code>hub://model-cards/llm-template.md</code> を読む
+3. <strong>Prompt</strong>：「Generate Benchmark Summary」が評価セクションを作成する
+4. <strong>Tool</strong>：<code>generate_model_card</code> がドキュメントを更新する
+5. <strong>Resource</strong>：互換性のため <code>hub://license-info/</code> をチェックする</p>
+<h3>データセット PR の処理</h3>
+<p>訓練データの更新では：
+- 形式の一貫性を検証する
+- データ品質の指標をチェックする
+- データセットカードを更新する
+- 適切なレビュアーを提案する</p>
+<h3>学習成果</h3>
+<ul>
+<li>Hugging Face Hub API 連携</li>
+<li>LLM 固有の PR ワークフロー</li>
+<li>モデルとデータセットのドキュメント</li>
+<li>コミュニティ基準への準拠</li>
+</ul>
+<h2>Module 5：Slack 通知</h2>
+<h3>構築するもの</h3>
+<p>Tools、Resources、Prompts を組み合わせた自動チーム通知により、ワークフローの完全自動化を実現します。</p>
+<h3>主要コンポーネント</h3>
+<h4>1. コミュニケーションツール</h4>
+<div class="codehilite"><pre><span></span><code><span class="c1"># チーム更新用の3つのツール：</span>
+<span class="c1"># - send_slack_message: チームチャンネルへ投稿する</span>
+<span class="c1"># - get_team_members: 通知先を特定する</span>
+<span class="c1"># - track_notification_status: 配信状況を監視する</span>
+</code></pre></div>
+
+<h4>2. チームリソース</h4>
+<div class="codehilite"><pre><span></span><code><span class="c1"># チームデータ用リソース：</span>
+<span class="c1"># - team://members/ - 開発者のプロフィールと設定</span>
+<span class="c1"># - slack://channels/ - チャンネルの設定</span>
+<span class="c1"># - notification://templates/ - メッセージの形式</span>
+</code></pre></div>
+
+<h4>3. 通知プロンプト</h4>
+<div class="codehilite"><pre><span></span><code><span class="c1"># コミュニケーション用プロンプト：</span>
+<span class="c1"># - 「Format Team Update」 - メッセージを適切に整形する</span>
+<span class="c1"># - 「Choose Communication Channel」 - 適切な宛先を選ぶ</span>
+<span class="c1"># - 「Escalate if Critical」 - 緊急の問題に対応する</span>
+</code></pre></div>
+
+<h3>連携の例</h3>
+<p>重大な PR で CI が失敗した場合：
+1. <strong>Tool</strong>：<code>get_team_members</code> が PR の作成者とレビュアーを特定する
+2. <strong>Resource</strong>：<code>team://members/{user}/preferences</code> が通知設定を確認する
+3. <strong>Prompt</strong>：「Format Team Update」が適切なメッセージを作成する
+4. <strong>Tool</strong>：<code>send_slack_message</code> が適切なチャンネルへ配信する
+5. <strong>Resource</strong>：<code>notification://templates/ci-failure</code> が一貫した形式を保証する
+6. <strong>Prompt</strong>：「Escalate if Critical」が追加のアラートが必要かを判断する</p>
+<h3>インテリジェントなルーティング</h3>
+<p>システムは以下を考慮します。
+- チームメンバーの空き状況（カレンダーリソースから）
+- 通知の好み（メールか Slack か）
+- メッセージの緊急度（PR のラベルに基づく）
+- タイムゾーンと勤務時間</p>
+<h3>学習成果</h3>
+<ul>
+<li>プリミティブの連携パターン</li>
+<li>複雑なワークフローのオーケストレーション</li>
+<li>自動化と人間のニーズのバランス</li>
+<li>本番対応のエラーハンドリング</li>
+</ul>
+<h2>完全なワークフローの例</h2>
+<p>典型的な PR に対して、すべてのコンポーネントがどのように連携するかを見てみましょう。</p>
+<ol>
+<li>
+<p><strong>開発者が PR を作成する</strong>
+   - GitHub の webhook がサーバーを起動する
+   - Tool：<code>analyze_file_changes</code> が diff を調べる
+   - Resource：チームのガイドラインとプロジェクトの文脈を読む
+   - Prompt：最適な PR テンプレートを提案する</p>
+</li>
+<li>
+<p><strong>CI/CD パイプラインが実行される</strong>
+   - Webhook がワークフローイベントを受信する
+   - Prompt：「Analyze CI Results」が結果を処理する
+   - Resource：チームのエスカレーションポリシーを確認する
+   - Tool：GitHub の PR ステータスを更新する</p>
+</li>
+<li>
+<p><strong>Hugging Face Hub 連携</strong>
+   - Tool：LLM／データセットの変更を検出する
+   - Resource：Hub のガイドラインを読む
+   - Prompt：モデルカードの更新を生成する
+   - Tool：Hub の基準に照らして検証する</p>
+</li>
+<li>
+<p><strong>チーム通知</strong>
+   - Tool：関係するチームメンバーを特定する
+   - Resource：通知設定を読む
+   - Prompt：適切なメッセージを整形する
+   - Tool：Slack チャンネル経由で送信する</p>
+</li>
+<li>
+<p><strong>フォローアップアクション</strong>
+   - Prompt：「Create Follow-up Tasks」が次のステップを生成する
+   - Tool：必要に応じて GitHub の Issue を作成する
+   - Resource：ドキュメントへのリンク
+   - すべてのプリミティブがシームレスに連携する</p>
+</li>
+</ol>
+<h2>テスト戦略</h2>
+<h3>ユニットテスト</h3>
+<p>各モジュールには包括的なユニットテストが含まれています。
+- ツールスキーマの検証
+- リソース URI の解析
+- プロンプトテンプレートのレンダリング
+- 連携シナリオ</p>
+<h3>統合テスト</h3>
+<p>エンドツーエンドテストは以下をカバーします。
+- 完全な PR ワークフロー
+- エラー回復シナリオ
+- 負荷時のパフォーマンス
+- セキュリティ検証</p>
+<h3>テスト構成</h3>
+<div class="codehilite"><pre><span></span><code>tests/
+├── unit/
+│   ├── test_tools.py
+│   ├── test_resources.py
+│   ├── test_prompts.py
+│   └── test_integration.py
+├── integration/
+│   ├── test_workflow.py
+│   ├── test_webhooks.py
+│   └── test_notifications.py
+└── fixtures/
+    ├── sample_events.json
+    └── mock_responses.json
+</code></pre></div>
+
+<h2>ソリューションの実行</h2>
+<h3>ローカル開発セットアップ</h3>
+<ol>
+<li><strong>MCP サーバーを起動する</strong>：<code>python server.py</code></li>
+<li><strong>Claude Code を設定する</strong>：MCP 設定にサーバーを追加する</li>
+<li><strong>Cloudflare Tunnel をセットアップする</strong>：<code>cloudflared tunnel --url http://localhost:3000</code></li>
+<li><strong>webhook を設定する</strong>：GitHub リポジトリにトンネル URL を追加する</li>
+<li><strong>ワークフローをテストする</strong>：PR を作成し、自動化の動作を見る</li>
+</ol>
+<h3>設定</h3>
+<p>セットアップが簡単な、シンプルなファイルベースの設定です。
+- GitHub トークンは <code>.env</code> ファイルに
+- Slack の webhook は設定ファイルに
+- テンプレートのカスタマイズは <code>templates/</code> に
+- すべての設定を1か所に</p>
+<h2>よくあるパターンとベストプラクティス</h2>
+<h3>ツールの設計</h3>
+<ul>
+<li>ツールは焦点を絞り、単一目的にする</li>
+<li>AI が解釈できるよう構造化データを返す</li>
+<li>包括的なエラーメッセージを含める</li>
+<li>ツールスキーマをバージョン管理する</li>
+</ul>
+<h3>リソースの構成</h3>
+<ul>
+<li>明確な URI 階層を使う</li>
+<li>リソース検出を実装する</li>
+<li>頻繁にアクセスされるリソースをキャッシュする</li>
+<li>すべてのリソースをバージョン管理する</li>
+</ul>
+<h3>プロンプトエンジニアリング</h3>
+<ul>
+<li>プロンプトは具体的に、しかし柔軟に</li>
+<li>文脈と例を含める</li>
+<li>さまざまな入力でテストする</li>
+<li>プロンプトライブラリを維持する</li>
+</ul>
+<h3>連携パターン</h3>
+<ul>
+<li>疎結合にはイベントを使う</li>
+<li>サーキットブレーカーを実装する</li>
+<li>バックオフ付きのリトライを追加する</li>
+<li>すべての外部呼び出しを監視する</li>
+</ul>
+<h2>トラブルシューティングガイド</h2>
+<h3>よくある問題</h3>
+<ol>
+<li>
+<p><strong>Webhook がイベントを受信しない</strong>
+   - Cloudflare Tunnel が動いているか確認する
+   - GitHub の webhook 設定を確認する
+   - シークレットが一致するか確認する</p>
+</li>
+<li>
+<p><strong>ツールが Claude に表示されない</strong>
+   - ツールスキーマを検証する
+   - サーバーの登録を確認する
+   - MCP 接続を見直す</p>
+</li>
+<li>
+<p><strong>リソースにアクセスできない</strong>
+   - ファイルの権限を確認する
+   - URI の形式を確認する
+   - リソースの登録を確認する</p>
+</li>
+<li>
+<p><strong>プロンプトの結果が一貫しない</strong>
+   - プロンプトテンプレートを見直す
+   - 提供した文脈を確認する
+   - 入力の形式を検証する</p>
+</li>
+</ol>
+<h2>次のステップと拡張</h2>
+<h3>可能な機能強化</h3>
+<ol>
+<li>コード分析ツールを追加する（複雑性、セキュリティ）</li>
+<li>より多くのコミュニケーションプラットフォームと連携する</li>
+<li>カスタムワークフロー定義を追加する</li>
+<li>PR の自動マージ機能を実装する</li>
+</ol>
+<h3>学習パス</h3>
+<ul>
+<li><strong>次</strong>：Unit 4 - このサーバーをリモートにデプロイする</li>
+<li><strong>応用</strong>：カスタム MCP プロトコル拡張</li>
+<li><strong>上級</strong>：マルチサーバーのオーケストレーション</li>
+</ul>
+<h2>まとめ</h2>
+<p>この PR Agent は、MCP の3つのプリミティブが連携する力を示しています。Tools が機能を提供し、Resources が文脈を提供し、Prompts が一貫性を保証します。これらが組み合わさることで、チームの基準を維持しながら開発者の生産性を高める、インテリジェントな自動化システムが生まれます。</p>
+<p>モジュール式アーキテクチャにより、各コンポーネントは独立して理解・テスト・拡張でき、その連携は本番の MCP サーバーで使うことになる実世界のパターンを示しています。</p>
+</article>
+<nav class="page-nav"><a class="nav-link prev" href="slack-notification.html">← 前へ: Module 3：Slack 通知</a><a class="nav-link toc-link" href="../index.html">目次へ</a><a class="nav-link next" href="certificate.html">次へ →: 修了証を取得しましょう！</a></nav>
+</main>
+<footer class="site-footer">
+  <p>原典: Hugging Face huggingface/mcp-course（<a href="https://github.com/huggingface/mcp-course">https://github.com/huggingface/mcp-course</a>）</p>
+  <p>日本語版の翻訳・公開: 霞ヶ関京 / 連絡先: GitHub <a href="https://github.com/yanikasumin">@yanikasumin</a> / YouTube <a href="https://www.youtube.com/@KASUMI_MOF">@KASUMI_MOF</a></p>
+  <p class="demo-note">このサイトはデモ版です。内容は順次更新されます。</p>
+</footer>
+<script src="../../site.js"></script>
+</body>
+</html>

@@ -1,0 +1,330 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>MCP サーバーの作成 | Hugging Face コース日本語版（デモ版）</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Shippori+Mincho:wght@500;700&family=Zen+Kaku+Gothic+New:wght@400;500;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../../style.css">
+<script>
+window.MathJax = { tex: { inlineMath: [['$', '$'], ['\\(', '\\)']], displayMath: [['$$', '$$'], ['\\[', '\\]']] }, options: { skipHtmlTags: ['script','noscript','style','textarea','pre','code'] } };
+</script>
+<script async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml.js"></script>
+</head>
+<body>
+<header class="site-header">
+  <div class="header-inner">
+    <a class="site-title" href="../../index.html">Hugging Face コース日本語版</a>
+    <span class="demo-badge">デモ版</span>
+  </div>
+</header>
+<main class="container">
+<p class="course-crumb"><a href="../index.html">MCP コース</a>
+<span class="badge badge-qa-wip">翻訳済み・QA進行中（未検証の部分を含みます）</span></p>
+<nav class="page-nav"><a class="nav-link prev" href="setting-up-the-project.html">← 前へ: プロジェクトのセットアップ</a><a class="nav-link toc-link" href="../index.html">目次へ</a><a class="nav-link next" href="quiz1.html">次へ →: クイズ1: MCP サーバーの実装</a></nav>
+<article class="content">
+<h1>MCP サーバーの作成</h1>
+<p>MCP サーバーはプルリクエストエージェントの心臓部です。エージェントが Hugging Face Hub とやり取りするためのツールを提供し、特にモデルリポジトリのタグの読み取りと更新を担います。このセクションでは、FastMCP と Hugging Face Hub の Python SDK を使ってサーバーを構築します。</p>
+<h2>MCP サーバーのアーキテクチャを理解する</h2>
+<p>この MCP サーバーは、2つの必須ツールを提供します。</p>
+<table>
+<thead>
+<tr>
+<th>ツール</th>
+<th>説明</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>get_current_tags</code></td>
+<td>モデルリポジトリから既存のタグを取得する</td>
+</tr>
+<tr>
+<td><code>add_new_tag</code></td>
+<td>プルリクエストでリポジトリに新しいタグを追加する</td>
+</tr>
+</tbody>
+</table>
+<p>これらのツールは Hub API とのやり取りの複雑さを抽象化し、エージェントが扱いやすいきれいなインターフェースを提供します。</p>
+<p><img alt="MCP サーバーのツール" src="https://huggingface.co/datasets/mcp-course/images/resolve/main/unit3/architecture.png" /></p>
+<h2>MCP サーバーの完全な実装</h2>
+<p><code>mcp_server.py</code> ファイルを一歩ずつ作っていきましょう。各コンポーネントと、それらがどう連携するかを理解できるよう、段階的に構築します。</p>
+<h3>1. インポートと設定</h3>
+<p>まず、必要なインポートと設定をすべて用意します。</p>
+<div class="codehilite"><pre><span></span><code><span class="ch">#!/usr/bin/env python3</span>
+<span class="sd">"""</span>
+<span class="sd">Simplified MCP Server for HuggingFace Hub Tagging Operations using FastMCP</span>
+<span class="sd">"""</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">os</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">json</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">fastmcp</span><span class="w"> </span><span class="kn">import</span> <span class="n">FastMCP</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">huggingface_hub</span><span class="w"> </span><span class="kn">import</span> <span class="n">HfApi</span><span class="p">,</span> <span class="n">model_info</span><span class="p">,</span> <span class="n">ModelCard</span><span class="p">,</span> <span class="n">ModelCardData</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">huggingface_hub.utils</span><span class="w"> </span><span class="kn">import</span> <span class="n">HfHubHTTPError</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">dotenv</span><span class="w"> </span><span class="kn">import</span> <span class="n">load_dotenv</span>
+
+<span class="n">load_dotenv</span><span class="p">()</span>
+</code></pre></div>
+
+<p>上のインポートで、MCP サーバーを構築するために必要なものがすべて揃います。<code>FastMCP</code> はサーバーフレームワークを提供し、<code>huggingface_hub</code> のインポートはモデルリポジトリとやり取りする手段を提供します。</p>
+<p><code>load_dotenv()</code> の呼び出しにより、<code>.env</code> ファイルから環境変数が自動で読み込まれ、開発中に API トークンのようなシークレットを簡単に管理できます。</p>
+<div class="callout callout-tip">
+<p class="callout-title">💡 ヒント</p>
+<p>uv を使っている場合は、プロジェクトのルートに <code>.env</code> ファイルを作成すれば、<code>uv run</code> でサーバーを実行する限り <code>load_dotenv()</code> は不要です。</p>
+</div>
+<p>次に、必要な認証情報でサーバーを設定し、FastMCP インスタンスを作成します。</p>
+<div class="codehilite"><pre><span></span><code><span class="c1"># 設定</span>
+<span class="n">HF_TOKEN</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">getenv</span><span class="p">(</span><span class="s2">"HF_TOKEN"</span><span class="p">)</span>
+
+<span class="c1"># HF API クライアントを初期化</span>
+<span class="n">hf_api</span> <span class="o">=</span> <span class="n">HfApi</span><span class="p">(</span><span class="n">token</span><span class="o">=</span><span class="n">HF_TOKEN</span><span class="p">)</span> <span class="k">if</span> <span class="n">HF_TOKEN</span> <span class="k">else</span> <span class="kc">None</span>
+
+<span class="c1"># FastMCP サーバーを作成</span>
+<span class="n">mcp</span> <span class="o">=</span> <span class="n">FastMCP</span><span class="p">(</span><span class="s2">"hf-tagging-bot"</span><span class="p">)</span>
+</code></pre></div>
+
+<p>この設定ブロックは、重要な3つのことを行います。</p>
+<ol>
+<li>環境変数から Hugging Face トークンを取得する</li>
+<li>認証済みの API クライアントを作成する（トークンがある場合のみ）</li>
+<li>分かりやすい名前で FastMCP サーバーを初期化する</li>
+</ol>
+<p><code>hf_api</code> を条件付きで作成しているおかげで、トークンがなくてもサーバーを起動でき、基本構造のテストに役立ちます。</p>
+<h3>2. 現在のタグを取得するツール</h3>
+<p>最初のツール <code>get_current_tags</code> を実装しましょう。このツールは、モデルリポジトリから既存のタグを取得します。</p>
+<div class="codehilite"><pre><span></span><code><span class="nd">@mcp</span><span class="o">.</span><span class="n">tool</span><span class="p">()</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">get_current_tags</span><span class="p">(</span><span class="n">repo_id</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""Get current tags from a HuggingFace model repository"""</span>
+    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"🔧 get_current_tags called with repo_id: </span><span class="si">{</span><span class="n">repo_id</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">hf_api</span><span class="p">:</span>
+        <span class="n">error_result</span> <span class="o">=</span> <span class="p">{</span><span class="s2">"error"</span><span class="p">:</span> <span class="s2">"HF token not configured"</span><span class="p">}</span>
+        <span class="n">json_str</span> <span class="o">=</span> <span class="n">json</span><span class="o">.</span><span class="n">dumps</span><span class="p">(</span><span class="n">error_result</span><span class="p">)</span>
+        <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"❌ No HF API token - returning: </span><span class="si">{</span><span class="n">json_str</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">json_str</span>
+</code></pre></div>
+
+<p>関数はまず検証から始まります。認証済みの API クライアントがあるかどうかを確認します。Python オブジェクトではなく JSON 文字列を返している点に注目してください。これは MCP の通信にとって重要です。</p>
+<div class="callout callout-tip">
+<p class="callout-title">💡 ヒント</p>
+<p>すべての MCP ツールは、Python オブジェクトではなく文字列を返さなければなりません。そのため、結果を JSON 文字列に変換するのに <code>json.dumps()</code> を使います。これにより、MCP サーバーとクライアントの間で確実にデータをやり取りできます。</p>
+</div>
+<p><code>get_current_tags</code> 関数のメインロジックを続けます。</p>
+<div class="codehilite"><pre><span></span><code>    <span class="k">try</span><span class="p">:</span>
+        <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"📡 Fetching model info for: </span><span class="si">{</span><span class="n">repo_id</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+        <span class="n">info</span> <span class="o">=</span> <span class="n">model_info</span><span class="p">(</span><span class="n">repo_id</span><span class="o">=</span><span class="n">repo_id</span><span class="p">,</span> <span class="n">token</span><span class="o">=</span><span class="n">HF_TOKEN</span><span class="p">)</span>
+        <span class="n">current_tags</span> <span class="o">=</span> <span class="n">info</span><span class="o">.</span><span class="n">tags</span> <span class="k">if</span> <span class="n">info</span><span class="o">.</span><span class="n">tags</span> <span class="k">else</span> <span class="p">[]</span>
+        <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"🏷️ Found </span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">current_tags</span><span class="p">)</span><span class="si">}</span><span class="s2"> tags: </span><span class="si">{</span><span class="n">current_tags</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+
+        <span class="n">result</span> <span class="o">=</span> <span class="p">{</span>
+            <span class="s2">"status"</span><span class="p">:</span> <span class="s2">"success"</span><span class="p">,</span>
+            <span class="s2">"repo_id"</span><span class="p">:</span> <span class="n">repo_id</span><span class="p">,</span>
+            <span class="s2">"current_tags"</span><span class="p">:</span> <span class="n">current_tags</span><span class="p">,</span>
+            <span class="s2">"count"</span><span class="p">:</span> <span class="nb">len</span><span class="p">(</span><span class="n">current_tags</span><span class="p">),</span>
+        <span class="p">}</span>
+        <span class="n">json_str</span> <span class="o">=</span> <span class="n">json</span><span class="o">.</span><span class="n">dumps</span><span class="p">(</span><span class="n">result</span><span class="p">)</span>
+        <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"✅ get_current_tags returning: </span><span class="si">{</span><span class="n">json_str</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">json_str</span>
+
+    <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+        <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"❌ Error in get_current_tags: </span><span class="si">{</span><span class="nb">str</span><span class="p">(</span><span class="n">e</span><span class="p">)</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+        <span class="n">error_result</span> <span class="o">=</span> <span class="p">{</span><span class="s2">"status"</span><span class="p">:</span> <span class="s2">"error"</span><span class="p">,</span> <span class="s2">"repo_id"</span><span class="p">:</span> <span class="n">repo_id</span><span class="p">,</span> <span class="s2">"error"</span><span class="p">:</span> <span class="nb">str</span><span class="p">(</span><span class="n">e</span><span class="p">)}</span>
+        <span class="n">json_str</span> <span class="o">=</span> <span class="n">json</span><span class="o">.</span><span class="n">dumps</span><span class="p">(</span><span class="n">error_result</span><span class="p">)</span>
+        <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"❌ get_current_tags error returning: </span><span class="si">{</span><span class="n">json_str</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">json_str</span>
+</code></pre></div>
+
+<p>この実装は、明確なパターンに従っています。</p>
+<ol>
+<li>Hugging Face Hub API で<strong>データを取得する</strong></li>
+<li><strong>レスポンスを処理して</strong>タグ情報を抽出する</li>
+<li><strong>結果を</strong>一貫した JSON 形式に<strong>整形する</strong></li>
+<li>詳細なエラーメッセージで<strong>エラーを適切に処理する</strong></li>
+</ol>
+<div class="callout callout-tip">
+<p class="callout-title">💡 ヒント</p>
+<p>これほど詳細なログはやりすぎに見えるかもしれませんが、サーバー稼働中のデバッグと監視に役立ちます。アプリケーションは Hub からのイベントに自律的に反応するため、ログをリアルタイムで見ることはできません。</p>
+</div>
+<h3>3. 新しいタグを追加するツール</h3>
+<p>次は、より複雑なツール <code>add_new_tag</code> です。このツールは、プルリクエストを作成してリポジトリに新しいタグを追加します。まず初期設定と検証から始めましょう。</p>
+<div class="codehilite"><pre><span></span><code><span class="nd">@mcp</span><span class="o">.</span><span class="n">tool</span><span class="p">()</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">add_new_tag</span><span class="p">(</span><span class="n">repo_id</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">new_tag</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""Add a new tag to a HuggingFace model repository via PR"""</span>
+    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"🔧 add_new_tag called with repo_id: </span><span class="si">{</span><span class="n">repo_id</span><span class="si">}</span><span class="s2">, new_tag: </span><span class="si">{</span><span class="n">new_tag</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">hf_api</span><span class="p">:</span>
+        <span class="n">error_result</span> <span class="o">=</span> <span class="p">{</span><span class="s2">"error"</span><span class="p">:</span> <span class="s2">"HF token not configured"</span><span class="p">}</span>
+        <span class="n">json_str</span> <span class="o">=</span> <span class="n">json</span><span class="o">.</span><span class="n">dumps</span><span class="p">(</span><span class="n">error_result</span><span class="p">)</span>
+        <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"❌ No HF API token - returning: </span><span class="si">{</span><span class="n">json_str</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">json_str</span>
+</code></pre></div>
+
+<p>最初のツールと同様に、検証から始めます。次に、タグがすでに存在するか確認するため、リポジトリの現在の状態を取得します。</p>
+<div class="codehilite"><pre><span></span><code>    <span class="k">try</span><span class="p">:</span>
+        <span class="c1"># 現在のモデル情報とタグを取得</span>
+        <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"📡 Fetching current model info for: </span><span class="si">{</span><span class="n">repo_id</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+        <span class="n">info</span> <span class="o">=</span> <span class="n">model_info</span><span class="p">(</span><span class="n">repo_id</span><span class="o">=</span><span class="n">repo_id</span><span class="p">,</span> <span class="n">token</span><span class="o">=</span><span class="n">HF_TOKEN</span><span class="p">)</span>
+        <span class="n">current_tags</span> <span class="o">=</span> <span class="n">info</span><span class="o">.</span><span class="n">tags</span> <span class="k">if</span> <span class="n">info</span><span class="o">.</span><span class="n">tags</span> <span class="k">else</span> <span class="p">[]</span>
+        <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"🏷️ Current tags: </span><span class="si">{</span><span class="n">current_tags</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+
+        <span class="c1"># タグがすでに存在するか確認</span>
+        <span class="k">if</span> <span class="n">new_tag</span> <span class="ow">in</span> <span class="n">current_tags</span><span class="p">:</span>
+            <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"⚠️ Tag '</span><span class="si">{</span><span class="n">new_tag</span><span class="si">}</span><span class="s2">' already exists in </span><span class="si">{</span><span class="n">current_tags</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+            <span class="n">result</span> <span class="o">=</span> <span class="p">{</span>
+                <span class="s2">"status"</span><span class="p">:</span> <span class="s2">"already_exists"</span><span class="p">,</span>
+                <span class="s2">"repo_id"</span><span class="p">:</span> <span class="n">repo_id</span><span class="p">,</span>
+                <span class="s2">"tag"</span><span class="p">:</span> <span class="n">new_tag</span><span class="p">,</span>
+                <span class="s2">"message"</span><span class="p">:</span> <span class="sa">f</span><span class="s2">"Tag '</span><span class="si">{</span><span class="n">new_tag</span><span class="si">}</span><span class="s2">' already exists"</span><span class="p">,</span>
+            <span class="p">}</span>
+            <span class="n">json_str</span> <span class="o">=</span> <span class="n">json</span><span class="o">.</span><span class="n">dumps</span><span class="p">(</span><span class="n">result</span><span class="p">)</span>
+            <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"🏷️ add_new_tag (already exists) returning: </span><span class="si">{</span><span class="n">json_str</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+            <span class="k">return</span> <span class="n">json_str</span>
+</code></pre></div>
+
+<p>このセクションは、<strong>行動する前に検証する</strong>という重要な原則を示しています。不要なプルリクエストを作らないよう、タグがすでに存在するかを確認します。</p>
+<div class="callout callout-tip">
+<p class="callout-title">💡 ヒント</p>
+<p>変更を加える前に、必ず現在の状態を確認してください。これにより重複した作業を防ぎ、ユーザーへのフィードバックも良くなります。プルリクエストを作成するときは特に重要です。重複した PR はリポジトリを乱雑にしてしまいます。</p>
+</div>
+<p>次に、更新後のタグリストを準備し、モデルカードを処理します。</p>
+<div class="codehilite"><pre><span></span><code>        <span class="c1"># 既存のタグに新しいタグを追加</span>
+        <span class="n">updated_tags</span> <span class="o">=</span> <span class="n">current_tags</span> <span class="o">+</span> <span class="p">[</span><span class="n">new_tag</span><span class="p">]</span>
+        <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"🆕 Will update tags from </span><span class="si">{</span><span class="n">current_tags</span><span class="si">}</span><span class="s2"> to </span><span class="si">{</span><span class="n">updated_tags</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+
+        <span class="c1"># 更新したタグでモデルカードの内容を作成</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="c1"># 既存のモデルカードを読み込む</span>
+            <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"📄 Loading existing model card..."</span><span class="p">)</span>
+            <span class="n">card</span> <span class="o">=</span> <span class="n">ModelCard</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="n">repo_id</span><span class="p">,</span> <span class="n">token</span><span class="o">=</span><span class="n">HF_TOKEN</span><span class="p">)</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">card</span><span class="p">,</span> <span class="s2">"data"</span><span class="p">)</span> <span class="ow">or</span> <span class="n">card</span><span class="o">.</span><span class="n">data</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="n">card</span><span class="o">.</span><span class="n">data</span> <span class="o">=</span> <span class="n">ModelCardData</span><span class="p">()</span>
+        <span class="k">except</span> <span class="n">HfHubHTTPError</span><span class="p">:</span>
+            <span class="c1"># 存在しない場合は新しいモデルカードを作成</span>
+            <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"📄 Creating new model card (none exists)"</span><span class="p">)</span>
+            <span class="n">card</span> <span class="o">=</span> <span class="n">ModelCard</span><span class="p">(</span><span class="s2">""</span><span class="p">)</span>
+            <span class="n">card</span><span class="o">.</span><span class="n">data</span> <span class="o">=</span> <span class="n">ModelCardData</span><span class="p">()</span>
+
+        <span class="c1"># タグを更新 - 更新したタグで新しい ModelCardData を作成</span>
+        <span class="n">card_dict</span> <span class="o">=</span> <span class="n">card</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">to_dict</span><span class="p">()</span>
+        <span class="n">card_dict</span><span class="p">[</span><span class="s2">"tags"</span><span class="p">]</span> <span class="o">=</span> <span class="n">updated_tags</span>
+        <span class="n">card</span><span class="o">.</span><span class="n">data</span> <span class="o">=</span> <span class="n">ModelCardData</span><span class="p">(</span><span class="o">**</span><span class="n">card_dict</span><span class="p">)</span>
+</code></pre></div>
+
+<p>このセクションはモデルカードの管理を担当します。まず既存のモデルカードを読み込もうとし、存在しない場合は新しいものを作成します。これにより、空のリポジトリでもツールが動作します。</p>
+<p>モデルカード（<code>README.md</code>）には、タグを含むリポジトリのメタデータが入っています。モデルカードのデータを更新してプルリクエストを作成することで、メタデータ変更における Hugging Face の標準的なワークフローに従っています。</p>
+<p>次はプルリクエストの作成です。このツールの主要部分になります。</p>
+<div class="codehilite"><pre><span></span><code>        <span class="c1"># 更新したモデルカードでプルリクエストを作成</span>
+        <span class="n">pr_title</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">"Add '</span><span class="si">{</span><span class="n">new_tag</span><span class="si">}</span><span class="s2">' tag"</span>
+        <span class="n">pr_description</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">"""</span>
+<span class="s2">## Add tag: </span><span class="si">{</span><span class="n">new_tag</span><span class="si">}</span>
+
+<span class="s2">This PR adds the `</span><span class="si">{</span><span class="n">new_tag</span><span class="si">}</span><span class="s2">` tag to the model repository.</span>
+
+<span class="s2">**Changes:**</span>
+<span class="s2">- Added `</span><span class="si">{</span><span class="n">new_tag</span><span class="si">}</span><span class="s2">` to model tags</span>
+<span class="s2">- Updated from </span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">current_tags</span><span class="p">)</span><span class="si">}</span><span class="s2"> to </span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">updated_tags</span><span class="p">)</span><span class="si">}</span><span class="s2"> tags</span>
+
+<span class="s2">**Current tags:** </span><span class="si">{</span><span class="s2">", "</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">current_tags</span><span class="p">)</span><span class="w"> </span><span class="k">if</span><span class="w"> </span><span class="n">current_tags</span><span class="w"> </span><span class="k">else</span><span class="w"> </span><span class="s2">"None"</span><span class="si">}</span>
+<span class="s2">**New tags:** </span><span class="si">{</span><span class="s2">", "</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">updated_tags</span><span class="p">)</span><span class="si">}</span>
+
+<span class="s2">🤖 This is a pull request created by the Hugging Face Hub Tagging Bot.</span>
+<span class="s2">"""</span>
+
+        <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"🚀 Creating PR with title: </span><span class="si">{</span><span class="n">pr_title</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+</code></pre></div>
+
+<p>何が、なぜ変わるのかを説明する詳細なプルリクエストの説明文を作成します。この透明性は、PR をレビューするリポジトリのメンテナーにとって重要です。</p>
+<div class="callout callout-tip">
+<p class="callout-title">💡 ヒント</p>
+<p>明確で詳細な PR の説明文は、自動生成されるプルリクエストに不可欠です。メンテナーが何が起きているのかを理解し、変更をマージすべきか判断する助けになります。</p>
+<p>また、PR が自動化ツールによって作成されたことを明記するのは良い習慣です。メンテナーが PR への対処法を理解しやすくなります。</p>
+</div>
+<p>最後に、コミットとプルリクエストを作成します。</p>
+<div class="codehilite"><pre><span></span><code>        <span class="c1"># CommitOperationAdd を使って、更新したモデルカードでコミットを作成</span>
+        <span class="kn">from</span><span class="w"> </span><span class="nn">huggingface_hub</span><span class="w"> </span><span class="kn">import</span> <span class="n">CommitOperationAdd</span>
+
+        <span class="n">commit_info</span> <span class="o">=</span> <span class="n">hf_api</span><span class="o">.</span><span class="n">create_commit</span><span class="p">(</span>
+            <span class="n">repo_id</span><span class="o">=</span><span class="n">repo_id</span><span class="p">,</span>
+            <span class="n">operations</span><span class="o">=</span><span class="p">[</span>
+                <span class="n">CommitOperationAdd</span><span class="p">(</span>
+                    <span class="n">path_in_repo</span><span class="o">=</span><span class="s2">"README.md"</span><span class="p">,</span> <span class="n">path_or_fileobj</span><span class="o">=</span><span class="nb">str</span><span class="p">(</span><span class="n">card</span><span class="p">)</span><span class="o">.</span><span class="n">encode</span><span class="p">(</span><span class="s2">"utf-8"</span><span class="p">)</span>
+                <span class="p">)</span>
+            <span class="p">],</span>
+            <span class="n">commit_message</span><span class="o">=</span><span class="n">pr_title</span><span class="p">,</span>
+            <span class="n">commit_description</span><span class="o">=</span><span class="n">pr_description</span><span class="p">,</span>
+            <span class="n">token</span><span class="o">=</span><span class="n">HF_TOKEN</span><span class="p">,</span>
+            <span class="n">create_pr</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+        <span class="p">)</span>
+
+        <span class="c1"># コミット情報から PR の URL を取り出す</span>
+        <span class="n">pr_url_attr</span> <span class="o">=</span> <span class="n">commit_info</span><span class="o">.</span><span class="n">pr_url</span>
+        <span class="n">pr_url</span> <span class="o">=</span> <span class="n">pr_url_attr</span> <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">commit_info</span><span class="p">,</span> <span class="s2">"pr_url"</span><span class="p">)</span> <span class="k">else</span> <span class="nb">str</span><span class="p">(</span><span class="n">commit_info</span><span class="p">)</span>
+
+        <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"✅ PR created successfully! URL: </span><span class="si">{</span><span class="n">pr_url</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+
+        <span class="n">result</span> <span class="o">=</span> <span class="p">{</span>
+            <span class="s2">"status"</span><span class="p">:</span> <span class="s2">"success"</span><span class="p">,</span>
+            <span class="s2">"repo_id"</span><span class="p">:</span> <span class="n">repo_id</span><span class="p">,</span>
+            <span class="s2">"tag"</span><span class="p">:</span> <span class="n">new_tag</span><span class="p">,</span>
+            <span class="s2">"pr_url"</span><span class="p">:</span> <span class="n">pr_url</span><span class="p">,</span>
+            <span class="s2">"previous_tags"</span><span class="p">:</span> <span class="n">current_tags</span><span class="p">,</span>
+            <span class="s2">"new_tags"</span><span class="p">:</span> <span class="n">updated_tags</span><span class="p">,</span>
+            <span class="s2">"message"</span><span class="p">:</span> <span class="sa">f</span><span class="s2">"Created PR to add tag '</span><span class="si">{</span><span class="n">new_tag</span><span class="si">}</span><span class="s2">'"</span><span class="p">,</span>
+        <span class="p">}</span>
+        <span class="n">json_str</span> <span class="o">=</span> <span class="n">json</span><span class="o">.</span><span class="n">dumps</span><span class="p">(</span><span class="n">result</span><span class="p">)</span>
+        <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"✅ add_new_tag success returning: </span><span class="si">{</span><span class="n">json_str</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">json_str</span>
+</code></pre></div>
+
+<p><code>create_pr=True</code> を指定した <code>create_commit</code> 関数が、この自動化の鍵です。更新した <code>README.md</code> ファイルでコミットを作成し、レビュー用のプルリクエストを自動で開きます。</p>
+<p>この複雑な処理に対するエラーハンドリングも忘れないでください。</p>
+<div class="codehilite"><pre><span></span><code>    <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+        <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"❌ Error in add_new_tag: </span><span class="si">{</span><span class="nb">str</span><span class="p">(</span><span class="n">e</span><span class="p">)</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+        <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"❌ Error type: </span><span class="si">{</span><span class="nb">type</span><span class="p">(</span><span class="n">e</span><span class="p">)</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+        <span class="kn">import</span><span class="w"> </span><span class="nn">traceback</span>
+        <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"❌ Traceback: </span><span class="si">{</span><span class="n">traceback</span><span class="o">.</span><span class="n">format_exc</span><span class="p">()</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+
+        <span class="n">error_result</span> <span class="o">=</span> <span class="p">{</span>
+            <span class="s2">"status"</span><span class="p">:</span> <span class="s2">"error"</span><span class="p">,</span>
+            <span class="s2">"repo_id"</span><span class="p">:</span> <span class="n">repo_id</span><span class="p">,</span>
+            <span class="s2">"tag"</span><span class="p">:</span> <span class="n">new_tag</span><span class="p">,</span>
+            <span class="s2">"error"</span><span class="p">:</span> <span class="nb">str</span><span class="p">(</span><span class="n">e</span><span class="p">),</span>
+        <span class="p">}</span>
+        <span class="n">json_str</span> <span class="o">=</span> <span class="n">json</span><span class="o">.</span><span class="n">dumps</span><span class="p">(</span><span class="n">error_result</span><span class="p">)</span>
+        <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"❌ add_new_tag error returning: </span><span class="si">{</span><span class="n">json_str</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">json_str</span>
+</code></pre></div>
+
+<p>この手厚いエラーハンドリングには完全なトレースバックが含まれており、問題が起きたときのデバッグに非常に役立ちます。</p>
+<p>ログメッセージに絵文字を使うのはばかばかしく見えるかもしれませんが、ログを流し読みする速度が格段に上がります。関数呼び出しには 🔧、API リクエストには 📡、成功には ✅、エラーには ❌ という視覚的なパターンがあるおかげで、探しているものを素早く見つけられます。</p>
+<div class="callout callout-tip">
+<p class="callout-title">💡 ヒント</p>
+<p>このアプリケーションを作っていると、うっかり PR の無限ループを作ってしまうことがあります。<code>create_pr=True</code> を指定した <code>create_commit</code> 関数は、コミットのたびに PR を作成するからです。PR がマージされなければ、<code>create_commit</code> 関数は何度も何度も呼ばれ続けます……</p>
+<p>これを防ぐチェックは追加してありますが、意識しておくべき点です。</p>
+</div>
+<h2>次のステップ</h2>
+<p>堅牢なタグ付けツールを備えた MCP サーバーが実装できたので、次は次の作業が必要です。</p>
+<ol>
+<li><strong>MCP クライアントを作る</strong> - エージェントと MCP サーバーの間のインターフェースを構築する</li>
+<li><strong>Webhook の処理を実装する</strong> - Hub のディスカッションイベントを待ち受ける</li>
+<li><strong>エージェントのロジックを統合する</strong> - Webhook と MCP ツールの呼び出しをつなぐ</li>
+<li><strong>システム全体をテストする</strong> - エンドツーエンドの機能を検証する</li>
+</ol>
+<p>次のセクションでは、Webhook ハンドラーがこれらのツールを賢く扱えるようにする MCP クライアントを作成します。</p>
+<div class="callout callout-tip">
+<p class="callout-title">💡 ヒント</p>
+<p>MCP サーバーは、メインアプリケーションとは別のプロセスとして動作します。この分離によりエラーハンドリングが改善され、サーバーを複数のクライアントやアプリケーションで再利用できます。</p>
+</div>
+</article>
+<nav class="page-nav"><a class="nav-link prev" href="setting-up-the-project.html">← 前へ: プロジェクトのセットアップ</a><a class="nav-link toc-link" href="../index.html">目次へ</a><a class="nav-link next" href="quiz1.html">次へ →: クイズ1: MCP サーバーの実装</a></nav>
+</main>
+<footer class="site-footer">
+  <p>原典: Hugging Face huggingface/mcp-course（<a href="https://github.com/huggingface/mcp-course">https://github.com/huggingface/mcp-course</a>）</p>
+  <p>日本語版の翻訳・公開: 霞ヶ関京 / 連絡先: GitHub <a href="https://github.com/yanikasumin">@yanikasumin</a> / YouTube <a href="https://www.youtube.com/@KASUMI_MOF">@KASUMI_MOF</a></p>
+  <p class="demo-note">このサイトはデモ版です。内容は順次更新されます。</p>
+</footer>
+<script src="../../site.js"></script>
+</body>
+</html>

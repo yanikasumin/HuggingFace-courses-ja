@@ -1,0 +1,376 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>コード例: データセットを実際に扱う | Hugging Face コース日本語版（デモ版）</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Shippori+Mincho:wght@500;700&family=Zen+Kaku+Gothic+New:wght@400;500;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../../style.css">
+<script>
+window.MathJax = { tex: { inlineMath: [['$', '$'], ['\\(', '\\)']], displayMath: [['$$', '$$'], ['\\[', '\\]']] }, options: { skipHtmlTags: ['script','noscript','style','textarea','pre','code'] } };
+</script>
+<script async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml.js"></script>
+</head>
+<body>
+<header class="site-header">
+  <div class="header-inner">
+    <a class="site-title" href="../../index.html">Hugging Face コース日本語版</a>
+    <span class="demo-badge">デモ版</span>
+  </div>
+</header>
+<main class="container">
+<p class="course-crumb"><a href="../index.html">Robotics コース</a>
+<span class="badge badge-qa-pass">翻訳QA 最終合格</span></p>
+<nav class="page-nav"><a class="nav-link prev" href="3.html">← 前へ: LeRobotDataset</a><a class="nav-link toc-link" href="../index.html">目次へ</a><a class="nav-link next" href="../unit2/1.html">次へ →: 古典ロボティクス</a></nav>
+<article class="content">
+<h1>コード例: データセットを実際に扱う</h1>
+<p>このセクションでは、LeRobotDataset クラスを使い、Hugging Face のロボティクスデータセットを扱う方法を紹介します。簡単な例から始め、徐々に複雑な例へと進みます。自分のプロジェクトに合った方法を選び、コードをコピーして応用してください。</p>
+<p>ここで重要なのは、表形式データ、視覚データ、メタデータを含む LeRobot 形式に準拠したデータセットなら、Hugging Face Hub 上にあるものをどれでも、わずか1行のコードで読み込めるということです。</p>
+<p>ロボティクスデータを扱う際には、ある時点のデータだけでなく、複数の時点のデータをまとめて参照することがよくあります。なぜなら、多くのロボット学習アルゴリズムでは、時間の経過に伴う状態の変化を捉える必要があるからです。例えば、物体をつかむ際には、直前の数時点で何が起きたかを確認することで、現在の状況をより正確に把握できます。また、多くのアルゴリズムは、その瞬間の行動だけを決めるよりも、先の数ステップまで行動を計画できるほうがうまく機能します。</p>
+<p>LeRobotDataset では「時間窓（temporal windowing）」という仕組みにより、複数時点のデータを簡単に取得できます。必要な時間オフセット（例: 現在のフレームとその前の2フレーム）を指定するだけで、対応するフレームを自動的に取得できます。エピソードの開始時や終了時に一部のフレームが存在しない場合も、自動的に処理されます。</p>
+<p><img alt="複数フレームのストリーミング" src="https://huggingface.co/datasets/huggingface/documentation-images/resolve/main/lerobotdataset-v3/streaming-multiple-frames.png" /></p>
+<div class="callout callout-tip">
+<p class="callout-title">💡 ヒント</p>
+<p><strong>時間窓の説明:</strong> 
+- <strong>観測の履歴</strong>: <code>[-0.2, -0.1, 0.0]</code> で、200ms 前、100ms 前、現在の観測が得られます
+- <strong>行動シーケンス</strong>: <code>[0.0, 0.1, 0.2]</code> で、現在の行動と次の2つの行動（100ms 間隔）が得られます
+- <strong>自動パディング</strong>: エピソードの境界で欠けたフレームは自動的に処理されます。データセットは常に、要求した数のフレームを返し、必要なところではパディングを適用します
+- <strong>マスク情報</strong>: どのフレームが実際のデータで、どれがパディングなのかを判別できるため、適切に訓練できます</p>
+</div>
+<p>LeRobotDataset は PyTorch の <code>DataLoader</code> と組み合わせて利用でき、各サンプルを表す辞書を、訓練や推論に使えるバッチ化されたテンソルの辞書へ自動的にまとめる（collate）ことができます。また、データセットのストリーミングにも標準で対応しています。実装を1行変更するだけで、Hugging Face Hub 上の大規模なデータセットをストリーミングで利用できます。ストリーミングデータセットは、高速なバッチ処理（接続状況によりおよそ 80-100 it/s）と、フレームの十分なランダム化をサポートしています。これらは実用的な BC アルゴリズムにとって重要です。こうした機能がなければ、処理が遅くなったり、データの時間的な偏りが強く、独立同一分布（i.i.d.）の仮定から大きく外れた状態で学習することになったりします。この仕組みは、大量のメモリやストレージを用意しなくても大規模なデータセットを扱えるようにし、より多くの人が利用できる環境を提供するものです。</p>
+<p>用途に応じた時間窓の設定例をいくつか紹介します。まずは全体をざっと確認し、1つ選んで試してみてください。後から別の設定に切り替える場合も、設定用の辞書を書き換えるだけで済みます。</p>
+<div class="hfoptions">
+<section class="hfoption" markdown="block">
+<p class="hfoption-label">basic-bc</p>
+
+
+**基本的な行動クローニング**（現在の観測から現在の行動を学ぶ）:
+
+
+<div class="codehilite"><pre><span></span><code><span class="c1"># シンプル: 現在の観測 → 現在の行動</span>
+<span class="n">delta_timestamps</span> <span class="o">=</span> <span class="p">{</span>
+    <span class="s2">"observation.images.up"</span><span class="p">:</span> <span class="p">[</span><span class="mf">0.0</span><span class="p">],</span>  <span class="c1"># 現在のフレームのみ</span>
+    <span class="s2">"action"</span><span class="p">:</span> <span class="p">[</span><span class="mf">0.0</span><span class="p">]</span>  <span class="c1"># 現在の行動のみ</span>
+<span class="p">}</span>
+
+<span class="n">dataset</span> <span class="o">=</span> <span class="n">LeRobotDataset</span><span class="p">(</span>
+    <span class="s2">"lerobot/svla_so101_pickplace"</span><span class="p">,</span> 
+    <span class="n">delta_timestamps</span><span class="o">=</span><span class="n">delta_timestamps</span>
+<span class="p">)</span>
+</code></pre></div>
+
+
+
+</section>
+<section class="hfoption" markdown="block">
+<p class="hfoption-label">history-bc</p>
+
+
+**履歴ベースの BC**（より良い判断のために観測の履歴を使う）:
+
+
+<div class="codehilite"><pre><span></span><code><span class="c1"># コンテキストとして観測の履歴を使う</span>
+<span class="n">delta_timestamps</span> <span class="o">=</span> <span class="p">{</span>
+    <span class="s2">"observation.images.up"</span><span class="p">:</span> <span class="p">[</span><span class="o">-</span><span class="mf">0.2</span><span class="p">,</span> <span class="o">-</span><span class="mf">0.1</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">],</span>  <span class="c1"># 200ms 分の履歴</span>
+    <span class="s2">"action"</span><span class="p">:</span> <span class="p">[</span><span class="mf">0.0</span><span class="p">]</span>  <span class="c1"># 現在の行動</span>
+<span class="p">}</span>
+
+<span class="n">dataset</span> <span class="o">=</span> <span class="n">LeRobotDataset</span><span class="p">(</span>
+    <span class="s2">"lerobot/svla_so101_pickplace"</span><span class="p">,</span>
+    <span class="n">delta_timestamps</span><span class="o">=</span><span class="n">delta_timestamps</span>
+<span class="p">)</span>
+
+<span class="n">sample</span> <span class="o">=</span> <span class="n">dataset</span><span class="p">[</span><span class="mi">100</span><span class="p">]</span>
+<span class="c1"># 画像の shape: [3, C, H, W] - 3つの過去フレーム</span>
+<span class="c1"># 行動の shape: [action_dim] - 単一の現在の行動</span>
+</code></pre></div>
+
+
+
+</section>
+<section class="hfoption" markdown="block">
+<p class="hfoption-label">action-chunking</p>
+
+
+**アクションチャンキング**（より滑らかな制御のために行動シーケンスを予測する）:
+
+
+<div class="codehilite"><pre><span></span><code><span class="c1"># 複数の未来の行動を一度に予測する</span>
+<span class="n">delta_timestamps</span> <span class="o">=</span> <span class="p">{</span>
+    <span class="s2">"observation.images.up"</span><span class="p">:</span> <span class="p">[</span><span class="o">-</span><span class="mf">0.1</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">],</span>  <span class="c1"># 直前 + 現在</span>
+    <span class="s2">"action"</span><span class="p">:</span> <span class="p">[</span><span class="mf">0.0</span><span class="p">,</span> <span class="mf">0.1</span><span class="p">,</span> <span class="mf">0.2</span><span class="p">,</span> <span class="mf">0.3</span><span class="p">]</span>  <span class="c1"># 現在 + 3つの未来の行動</span>
+<span class="p">}</span>
+
+<span class="n">dataset</span> <span class="o">=</span> <span class="n">LeRobotDataset</span><span class="p">(</span>
+    <span class="s2">"lerobot/svla_so101_pickplace"</span><span class="p">,</span>
+    <span class="n">delta_timestamps</span><span class="o">=</span><span class="n">delta_timestamps</span>
+<span class="p">)</span>
+
+<span class="n">sample</span> <span class="o">=</span> <span class="n">dataset</span><span class="p">[</span><span class="mi">100</span><span class="p">]</span> 
+<span class="c1"># 画像の shape: [2, C, H, W] - 2つの観測フレーム</span>
+<span class="c1"># 行動の shape: [4, action_dim] - 4つの行動予測</span>
+</code></pre></div>
+
+
+
+</section>
+</div>
+
+<h3>大規模データセットのストリーミング</h3>
+<div class="callout callout-tip">
+<p class="callout-title">💡 ヒント</p>
+<p><strong>ストリーミングを使う場面:</strong>
+- <strong>データセットの容量がストレージ容量を超える場合</strong> - ディスクに収まらないデータセットをストリーミングする
+- <strong>実験</strong> - ダウンロードせずに、さまざまなデータセットを手早く試す
+- <strong>クラウドでの訓練</strong> - Hugging Face Hub からストリーミングして起動時間を短縮する
+- <strong>安定したネット接続がある場合</strong> - 訓練中は安定したインターネット接続が必要</p>
+<p><strong>性能:</strong> ネットワーク接続が良好な場合、ストリーミングでも 80-100 it/s の処理速度を実現できます！ 初期化にかかる時間を除けば、平均的な処理性能はローカルに保存したデータセットと同程度です。</p>
+</div>
+<div class="hfoptions">
+<section class="hfoption" markdown="block">
+<p class="hfoption-label">download</p>
+
+
+**データセットのダウンロード**（訓練が高速、ストレージが必要）:
+
+
+<div class="codehilite"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">lerobot.datasets.lerobot_dataset</span><span class="w"> </span><span class="kn">import</span> <span class="n">LeRobotDataset</span>
+
+<span class="c1"># データセットをローカルキャッシュにダウンロードする</span>
+<span class="n">dataset</span> <span class="o">=</span> <span class="n">LeRobotDataset</span><span class="p">(</span><span class="s2">"lerobot/svla_so101_pickplace"</span><span class="p">)</span>
+
+<span class="c1"># ダウンロード後は最も高速にアクセスできる</span>
+<span class="n">sample</span> <span class="o">=</span> <span class="n">dataset</span><span class="p">[</span><span class="mi">100</span><span class="p">]</span>
+</code></pre></div>
+
+
+
+</section>
+<section class="hfoption" markdown="block">
+<p class="hfoption-label">streaming</p>
+
+
+**データセットのストリーミング**（ストレージ不要、インターネットが必要）:
+
+
+<div class="codehilite"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">lerobot.datasets.streaming_dataset</span><span class="w"> </span><span class="kn">import</span> <span class="n">StreamingLeRobotDataset</span>
+
+<span class="c1"># ダウンロードせずにデータをストリーミングする</span>
+<span class="n">streaming_dataset</span> <span class="o">=</span> <span class="n">StreamingLeRobotDataset</span><span class="p">(</span>
+    <span class="s2">"lerobot/svla_so101_pickplace"</span><span class="p">,</span>
+    <span class="n">delta_timestamps</span><span class="o">=</span><span class="n">delta_timestamps</span>
+<span class="p">)</span>
+
+<span class="c1"># 通常のデータセットとまったく同じように動作する</span>
+<span class="n">sample</span> <span class="o">=</span> <span class="n">streaming_dataset</span><span class="p">[</span><span class="mi">100</span><span class="p">]</span>
+</code></pre></div>
+
+
+
+</section>
+</div>
+
+<h2>訓練への統合</h2>
+<p>通常のデータセットもストリーミングデータセットも、PyTorch のデータローダーと簡単に組み合わせられます。そのため、どの LeRobotDataset でも、自分で作成した <code>torch</code> の訓練ループに容易に組み込めます。データセットから各フレームをテンソルとして取得できるので、データローダーからバッチを取り出してモデルを訓練する処理も簡単に実装できます。  </p>
+<h3>PyTorch DataLoader</h3>
+<p>通常のデータセットもストリーミングデータセットも、PyTorch のデータローダーと簡単に組み合わせられます。そのため、どの LeRobotDataset でも、自分で作成した <code>torch</code> の訓練ループに容易に組み込めます。データセットから各フレームをテンソルとして取得できるので、データローダーからバッチを取り出してモデルを訓練する処理も簡単に実装できます。</p>
+<div class="codehilite"><pre><span></span><code><span class="kn">import</span><span class="w"> </span><span class="nn">torch</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">torch.utils.data</span><span class="w"> </span><span class="kn">import</span> <span class="n">DataLoader</span>
+<span class="c1"># 訓練用の DataLoader を作成する</span>
+<span class="n">dataloader</span> <span class="o">=</span> <span class="n">DataLoader</span><span class="p">(</span>
+    <span class="n">dataset</span><span class="p">,</span>
+    <span class="n">batch_size</span><span class="o">=</span><span class="mi">16</span><span class="p">,</span>
+    <span class="n">shuffle</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+    <span class="n">num_workers</span><span class="o">=</span><span class="mi">4</span>
+<span class="p">)</span>
+
+<span class="c1"># 訓練ループ</span>
+<span class="n">device</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">device</span><span class="p">(</span><span class="s2">"cuda"</span> <span class="k">if</span> <span class="n">torch</span><span class="o">.</span><span class="n">cuda</span><span class="o">.</span><span class="n">is_available</span><span class="p">()</span> <span class="k">else</span> <span class="s2">"cpu"</span><span class="p">)</span>
+
+<span class="k">for</span> <span class="n">batch</span> <span class="ow">in</span> <span class="n">dataloader</span><span class="p">:</span>
+    <span class="c1"># デバイスへ移動する</span>
+    <span class="n">observations</span> <span class="o">=</span> <span class="n">batch</span><span class="p">[</span><span class="s2">"observation.state"</span><span class="p">]</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="n">device</span><span class="p">)</span>
+    <span class="n">actions</span> <span class="o">=</span> <span class="n">batch</span><span class="p">[</span><span class="s2">"action"</span><span class="p">]</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="n">device</span><span class="p">)</span>
+    <span class="n">images</span> <span class="o">=</span> <span class="n">batch</span><span class="p">[</span><span class="s2">"observation.images.up"</span><span class="p">]</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="n">device</span><span class="p">)</span>
+
+    <span class="c1"># ここにモデルの訓練を書く</span>
+    <span class="c1"># loss = model(observations, images, actions)</span>
+    <span class="c1"># loss.backward()</span>
+    <span class="c1"># optimizer.step()</span>
+</code></pre></div>
+
+<h2>これが重要な理由</h2>
+<p>このシンプルな API の裏側では、多くの複雑な処理が行われています。
+- ✅ <strong>マルチモーダルの同期</strong> - 画像データとセンサーデータのタイミングが正確に同期している
+- ✅ <strong>効率的な保存</strong> - 圧縮された動画、メモリマップされた配列
+- ✅ <strong>時系列データの処理</strong> - 観測／行動シーケンスへの簡単なアクセス<br />
+- ✅ <strong>スケーラビリティ</strong> - 小規模なデータセットでも大規模なデータセットでも、同じコードが動作する</p>
+<p>これに対して、従来のロボティクスのデータ処理では、たいてい次のものが必要でした。
+- 各データ形式のためのカスタムパーサー
+- モダリティ間での手作業の同期
+- 時間窓のための複雑なバッファリング
+- プラットフォーム固有の読み込みコード</p>
+<p>LeRobotDataset は、これらすべてを<strong>標準化し、単純化</strong>します！</p>
+<h2>セクションクイズ</h2>
+<p>LeRobot と、そのロボット学習における役割について、理解度を確認してみましょう。</p>
+<h3>1. LeRobot が従来のロボティクスライブラリと違う点は何ですか？</h3>
+<div class="quiz">
+<div class="quiz-choices">
+<button type="button" class="quiz-choice" data-correct="false" data-quiz-idx="0">シミュレーション環境でのみ動作します。</button>
+<div class="quiz-explain-src" id="qe-125591345016000-0" hidden>LeRobot は主に実機のロボットを対象としており、さまざまなロボットプラットフォームに対応しています。</div>
+<button type="button" class="quiz-choice" data-correct="true" data-quiz-idx="1">最先端の学習アルゴリズムを備え、ハードウェア制御からデータ処理、学習まで、ロボティクススタック全体を一貫して扱えます。</button>
+<div class="quiz-explain-src" id="qe-125591345016000-1" hidden>LeRobot の重要な革新は、ハードウェア制御、データ処理、学習アルゴリズムを1つの統一ライブラリに組み合わせたことです。</div>
+<button type="button" class="quiz-choice" data-correct="false" data-quiz-idx="2">動作するには高価な産業用ロボットが必要です。</button>
+<div class="quiz-explain-src" id="qe-125591345016000-2" hidden>LeRobot は、ロボティクスをより多くの人が利用できるようにするため、安価で導入しやすいロボットを重視しています。</div>
+<button type="button" class="quiz-choice" data-correct="false" data-quiz-idx="3">古典的な制御手法にのみ対応しています。</button>
+<div class="quiz-explain-src" id="qe-125591345016000-3" hidden>LeRobot は、古典的な制御ではなく、学習ベースのアプローチに特化しています。</div>
+</div><div class="quiz-feedback" hidden></div></div>
+<h3>2. 次のうち、LeRobot のアプローチの重要な構成要素ではないものはどれですか？</h3>
+<div class="quiz">
+<div class="quiz-choices">
+<button type="button" class="quiz-choice" data-correct="false" data-quiz-idx="0">低レベルのロボット設定を統一的に扱う仕組み</button>
+<div class="quiz-explain-src" id="qe-125591345007680-0" hidden>これは、異なるロボットプラットフォーム間での互換性を確保するための重要な機能です。</div>
+<button type="button" class="quiz-choice" data-correct="false" data-quiz-idx="1">ネイティブなロボティクスデータセット形式（LeRobotDataset）</button>
+<div class="quiz-explain-src" id="qe-125591345007680-1" hidden>LeRobotDataset はこのライブラリの中心的な革新です。</div>
+<button type="button" class="quiz-choice" data-correct="true" data-quiz-idx="2">新しいロボットプラットフォームごとに専門知識を必要とすること</button>
+<div class="quiz-explain-src" id="qe-125591345007680-2" hidden>むしろ LeRobot は、ロボットごとに高度な専門知識が必要となる状況を改善し、導入のハードルを下げることを目指しています。</div>
+<button type="button" class="quiz-choice" data-correct="false" data-quiz-idx="3">PyTorch 実装を備えた最先端の学習アルゴリズム</button>
+<div class="quiz-explain-src" id="qe-125591345007680-3" hidden>最先端（SOTA）のアルゴリズムは LeRobot の中核機能です。</div>
+</div><div class="quiz-feedback" hidden></div></div>
+<h3>3. LeRobot の最適化された推論スタックの主な利点は何ですか？</h3>
+<div class="quiz">
+<div class="quiz-choices">
+<button type="button" class="quiz-choice" data-correct="false" data-quiz-idx="0">GPU での訓練を高速化します。</button>
+<div class="quiz-explain-src" id="qe-125591345016000-0" hidden>推論スタックはデプロイに関するものであり、訓練速度ではありません。</div>
+<button type="button" class="quiz-choice" data-correct="false" data-quiz-idx="1">データセットを保存するためのメモリ要件を減らします。</button>
+<div class="quiz-explain-src" id="qe-125591345016000-1" hidden>メモリの削減はデータセット形式が担うものであり、推論スタックではありません。</div>
+<button type="button" class="quiz-choice" data-correct="true" data-quiz-idx="2">リアルタイム性能を高めるために、行動の計画と行動の実行を分離します。</button>
+<div class="quiz-explain-src" id="qe-125591345016000-2" hidden>この分離は、ミリ秒単位の遅れが問題になるリアルタイムのロボット制御にとって非常に重要です。</div>
+<button type="button" class="quiz-choice" data-correct="false" data-quiz-idx="3">ロボットとのやり取りから訓練データを自動的に生成します。</button>
+<div class="quiz-explain-src" id="qe-125591345016000-3" hidden>データ生成は推論スタックでは扱いません。</div>
+</div><div class="quiz-feedback" hidden></div></div>
+<h3>4. LeRobot は、どのような種類のロボットプラットフォームに対応していますか？</h3>
+<div class="quiz">
+<div class="quiz-choices">
+<button type="button" class="quiz-choice" data-correct="false" data-quiz-idx="0">ロボットアームのようなマニピュレーションロボットのみです。</button>
+<div class="quiz-explain-src" id="qe-125591345007680-0" hidden>LeRobot は、ロボットアームなどのマニピュレーション用ロボットだけでなく、さまざまな種類のロボットに対応しています。</div>
+<button type="button" class="quiz-choice" data-correct="true" data-quiz-idx="1">マニピュレーション、歩行・移動、全身制御のプラットフォームです。</button>
+<div class="quiz-explain-src" id="qe-125591345007680-1" hidden>LeRobot は、シンプルなロボットアームから複雑なヒューマノイドまで、幅広い種類のロボットに対応しています。</div>
+<button type="button" class="quiz-choice" data-correct="false" data-quiz-idx="2">10,000 ドルを超えるロボットのみです。</button>
+<div class="quiz-explain-src" id="qe-125591345007680-2" hidden>LeRobot は、ロボティクスをより多くの人が利用できるようにするため、安価で導入しやすいロボットプラットフォームを重視しています。</div>
+<button type="button" class="quiz-choice" data-correct="false" data-quiz-idx="3">特定の企業が製造したロボットのみです。</button>
+<div class="quiz-explain-src" id="qe-125591345007680-3" hidden>LeRobot は、さまざまな開発元が提供する、オープンソースで導入しやすいロボットに対応しています。</div>
+</div><div class="quiz-feedback" hidden></div></div>
+<h3>5. LeRobot の文脈で「ロボティクススタックとのエンドツーエンド統合」とは何を意味しますか？</h3>
+<div class="quiz">
+<div class="quiz-choices">
+<button type="button" class="quiz-choice" data-correct="false" data-quiz-idx="0">低レベルの制御ではなく、高レベルの計画だけを扱います。</button>
+<div class="quiz-explain-src" id="qe-125591345016000-0" hidden>エンドツーエンドとは、低レベルの制御から高レベルのアルゴリズムまで、すべてをカバーすることを意味します。</div>
+<button type="button" class="quiz-choice" data-correct="true" data-quiz-idx="1">低レベルのハードウェア制御から高レベルの学習アルゴリズムまで、すべてをカバーします。</button>
+<div class="quiz-explain-src" id="qe-125591345016000-1" hidden>必要な機能を幅広く備えているため、別々のツールを複数組み合わせる必要がなくなります。</div>
+<button type="button" class="quiz-choice" data-correct="false" data-quiz-idx="2">データ処理とモデル訓練には別々のツールが必要です。</button>
+<div class="quiz-explain-src" id="qe-125591345016000-2" hidden>エンドツーエンド統合では、必要な機能が1つのライブラリにまとめられるため、複数のツールを別々に組み合わせる必要がありません。</div>
+<button type="button" class="quiz-choice" data-correct="false" data-quiz-idx="3">特定のオペレーティングシステムでのみ動作します。</button>
+<div class="quiz-explain-src" id="qe-125591345016000-3" hidden>プラットフォーム統合とは、オペレーティングシステムではなく、ロボティクスの構成要素を指します。</div>
+</div><div class="quiz-feedback" hidden></div></div>
+<h3>6. LeRobotDataset の <code>delta_timestamps</code> パラメータの主な目的は何ですか？</h3>
+<div class="quiz">
+<div class="quiz-choices">
+<button type="button" class="quiz-choice" data-correct="false" data-quiz-idx="0">動画記録のフレームレートを設定します。</button>
+<div class="quiz-explain-src" id="qe-125591345007680-0" hidden>フレームレートはメタデータに保存されるものであり、delta_timestamps で制御するものではありません。</div>
+<button type="button" class="quiz-choice" data-correct="true" data-quiz-idx="1">観測の履歴と行動シーケンスにアクセスするための時間窓を定義します。</button>
+<div class="quiz-explain-src" id="qe-125591345007680-1" hidden>delta_timestamps を使うと、含める時間オフセットを指定でき、過去の観測や未来の行動にアクセスできるようになります。</div>
+<button type="button" class="quiz-choice" data-correct="false" data-quiz-idx="2">異なるロボット間でデータを同期します。</button>
+<div class="quiz-explain-src" id="qe-125591345007680-2" hidden>ロボット間の同期は delta_timestamps では扱いません。</div>
+<button type="button" class="quiz-choice" data-correct="false" data-quiz-idx="3">保存効率のために動画データを圧縮します。</button>
+<div class="quiz-explain-src" id="qe-125591345007680-3" hidden>動画の圧縮は delta_timestamps とは関係なく、データセットの保存形式に応じて別途行われます。</div>
+</div><div class="quiz-feedback" hidden></div></div>
+<h3>7. LeRobotDataset の3つの主要な構成要素を最もよく表しているのはどれですか？</h3>
+<div class="quiz">
+<div class="quiz-choices">
+<button type="button" class="quiz-choice" data-correct="false" data-quiz-idx="0">画像、行動、報酬</button>
+<div class="quiz-explain-src" id="qe-125591345016000-0" hidden>これらは重要なデータ型ではありますが、構造的な構成要素を表してはいません。</div>
+<button type="button" class="quiz-choice" data-correct="true" data-quiz-idx="1">表形式データ、視覚データ、メタデータ</button>
+<div class="quiz-explain-src" id="qe-125591345016000-1" hidden>これらがデータセットの保存構造を構成する3つの要素です。センサーデータを効率よく保存する表形式データ、圧縮された動画データ、JSON 形式のメタデータに分かれます。</div>
+<button type="button" class="quiz-choice" data-correct="false" data-quiz-idx="2">訓練、検証、テストのセット</button>
+<div class="quiz-explain-src" id="qe-125591345016000-2" hidden>これらはデータの分割であり、形式の構造的な構成要素ではありません。</div>
+<button type="button" class="quiz-choice" data-correct="false" data-quiz-idx="3">シミュレーション、実ロボット、ハイブリッドのデータ</button>
+<div class="quiz-explain-src" id="qe-125591345016000-3" hidden>これらはデータの出どころを表すものであり、保存のアーキテクチャではありません。</div>
+</div><div class="quiz-feedback" hidden></div></div>
+<h3>8. <code>LeRobotDataset</code> の代わりに <code>StreamingLeRobotDataset</code> を使うとどうなりますか？</h3>
+<div class="quiz">
+<div class="quiz-choices">
+<button type="button" class="quiz-choice" data-correct="false" data-quiz-idx="0">より良い訓練のために、データが自動的に拡張されます。</button>
+<div class="quiz-explain-src" id="qe-125591345007680-0" hidden>ストリーミングにデータ拡張は含まれません。それは別の前処理ステップです。</div>
+<button type="button" class="quiz-choice" data-correct="false" data-quiz-idx="1">データセットが、ローカルマシンへより速くダウンロードされます。</button>
+<div class="quiz-explain-src" id="qe-125591345007680-1" hidden>ストリーミングでは、データセット全体を事前にダウンロードする必要がありません。</div>
+<button type="button" class="quiz-choice" data-correct="true" data-quiz-idx="2">Hugging Face Hub 上のデータを事前に一括ダウンロードせずにストリーミングできるため、ストレージ容量を節約できます。</button>
+<div class="quiz-explain-src" id="qe-125591345007680-2" hidden>StreamingLeRobotDataset を使うと、大規模なデータセットをローカルにダウンロードせずに処理できます。</div>
+<button type="button" class="quiz-choice" data-correct="false" data-quiz-idx="3">データセットが自動的に訓練／検証セットに分割されます。</button>
+<div class="quiz-explain-src" id="qe-125591345007680-3" hidden>データの分割は、ストリーミングかダウンロードかの選択とは独立しています。</div>
+</div><div class="quiz-feedback" hidden></div></div>
+<h3>9. ロボット学習の文脈で、「temporal windowing（時間窓）」とは何を指しますか？</h3>
+<div class="quiz">
+<div class="quiz-choices">
+<button type="button" class="quiz-choice" data-correct="false" data-quiz-idx="0">ロボット学習モデルを訓練するのにかかる時間です。</button>
+<div class="quiz-explain-src" id="qe-125591345016000-0" hidden>モデルの訓練にかかる時間は、ここでいう時間窓とは関係ありません。</div>
+<button type="button" class="quiz-choice" data-correct="true" data-quiz-idx="1">あるフレームを基準に、複数の時点における観測と行動のデータを取得することです。</button>
+<div class="quiz-explain-src" id="qe-125591345016000-1" hidden>時間窓により、アルゴリズムは観測の履歴と行動シーケンスを使えるようになります。これはロボット学習にとって非常に重要です。</div>
+<button type="button" class="quiz-choice" data-correct="false" data-quiz-idx="2">ロボットのセンサーがデータを収集する頻度です。</button>
+<div class="quiz-explain-src" id="qe-125591345016000-2" hidden>センサーがデータを収集する頻度は、データセットの時間窓とは別の概念です。</div>
+<button type="button" class="quiz-choice" data-correct="false" data-quiz-idx="3">各ロボットエピソードや軌跡の長さです。</button>
+<div class="quiz-explain-src" id="qe-125591345016000-3" hidden>エピソードの長さは、エピソード内での時間窓とは異なります。</div>
+</div><div class="quiz-feedback" hidden></div></div>
+<h3>10. LeRobotDataset の動画データの保存方法の主な利点は何ですか？</h3>
+<div class="quiz">
+<div class="quiz-choices">
+<button type="button" class="quiz-choice" data-correct="false" data-quiz-idx="0">動画が可能な限り最高の品質で保存されます。</button>
+<div class="quiz-explain-src" id="qe-125591345007680-0" hidden>ここで重視しているのは最高画質ではなく、保存効率と大規模データへの対応です。</div>
+<button type="button" class="quiz-choice" data-correct="false" data-quiz-idx="1">各フレームが、アクセスしやすいよう別々のファイルとして保存されます。</button>
+<div class="quiz-explain-src" id="qe-125591345007680-1" hidden>これは実際には非効率です。LeRobotDataset はその逆を行います。</div>
+<button type="button" class="quiz-choice" data-correct="true" data-quiz-idx="2">複数のエピソードの映像を大きな MP4 ファイルにまとめて保存することで、ファイルシステムへの負荷を抑えられます。</button>
+<div class="quiz-explain-src" id="qe-125591345007680-2" hidden>この方法によりファイルの数が大幅に減り、大規模なデータセットでも保存が効率的になります。</div>
+<button type="button" class="quiz-choice" data-correct="false" data-quiz-idx="3">動画が AI アルゴリズムを使って自動的に圧縮されます。</button>
+<div class="quiz-explain-src" id="qe-125591345007680-3" hidden>AI ベースの圧縮ではなく、標準的な動画圧縮が使われます。</div>
+</div><div class="quiz-feedback" hidden></div></div>
+<h3>11. LeRobotDataset の互換性について、正しい記述はどれですか？</h3>
+<div class="quiz">
+<div class="quiz-choices">
+<button type="button" class="quiz-choice" data-correct="false" data-quiz-idx="0">SO-100 のような特定のロボットブランドでのみ動作します。</button>
+<div class="quiz-explain-src" id="qe-125591345016000-0" hidden>LeRobotDataset は、多くの異なるロボットプラットフォームで動作するよう設計されています。</div>
+<button type="button" class="quiz-choice" data-correct="false" data-quiz-idx="1">新しいロボットプラットフォームごとにカスタムコードが必要です。</button>
+<div class="quiz-explain-src" id="qe-125591345016000-1" hidden>統一された形式により、プラットフォームごとのカスタムコードの必要性が減ります。</div>
+<button type="button" class="quiz-choice" data-correct="true" data-quiz-idx="2">PyTorch DataLoader や Hugging Face のエコシステムとシームレスに連携します。</button>
+<div class="quiz-explain-src" id="qe-125591345016000-2" hidden>この連携により、既存の ML ワークフローでロボティクスデータを簡単に使えるようになります。</div>
+<button type="button" class="quiz-choice" data-correct="false" data-quiz-idx="3">実ロボットのデータではなく、シミュレーションデータにのみ対応しています。</button>
+<div class="quiz-explain-src" id="qe-125591345016000-3" hidden>LeRobotDataset は、シミュレーションと実ロボットの両方のデータに対応しています。</div>
+</div><div class="quiz-feedback" hidden></div></div>
+<h2>参考文献</h2>
+<p>参考文献の完全なリストは、<a href="https://huggingface.co/spaces/lerobot/robot-learning-tutorial">チュートリアル</a> を確認してください。</p>
+<ul>
+<li>
+<p><strong>Diffusion Policy: Visuomotor Policy Learning via Action Diffusion</strong> (2024)<br />
+  Cheng Chi et al.<br />
+  この論文は、ロボットのポリシー学習のための拡散モデルを紹介し、時間窓とアクションチャンキングによって、滑らかな視覚運動制御がどのように可能になるかを論じています。<br />
+<a href="https://huggingface.co/papers/2303.04137">arXiv:2303.04137</a></p>
+</li>
+<li>
+<p><strong>RT-2: Vision-Language-Action Models Transfer Web Knowledge to Robotic Control</strong> (2023)<br />
+  Anthony Brohan et al.<br />
+  視覚言語モデルをロボット制御のためにファインチューニングできることを実証し、時間的なコンテキスト窓や行動予測のホライズンについても論じています。<br />
+<a href="https://huggingface.co/papers/2307.15818">arXiv:2307.15818</a></p>
+</li>
+</ul>
+</article>
+<nav class="page-nav"><a class="nav-link prev" href="3.html">← 前へ: LeRobotDataset</a><a class="nav-link toc-link" href="../index.html">目次へ</a><a class="nav-link next" href="../unit2/1.html">次へ →: 古典ロボティクス</a></nav>
+</main>
+<footer class="site-footer">
+  <p>原典: Hugging Face huggingface/robotics-course（<a href="https://github.com/huggingface/robotics-course">https://github.com/huggingface/robotics-course</a>）</p>
+  <p>日本語版の翻訳・公開: 霞ヶ関京 / 連絡先: GitHub <a href="https://github.com/yanikasumin">@yanikasumin</a> / YouTube <a href="https://www.youtube.com/@KASUMI_MOF">@KASUMI_MOF</a></p>
+  <p class="demo-note">このサイトはデモ版です。内容は順次更新されます。</p>
+</footer>
+<script src="../../site.js"></script>
+</body>
+</html>

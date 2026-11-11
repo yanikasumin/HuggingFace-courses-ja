@@ -1,0 +1,472 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Webhook リスナー | Hugging Face コース日本語版（デモ版）</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Shippori+Mincho:wght@500;700&family=Zen+Kaku+Gothic+New:wght@400;500;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../../style.css">
+<script>
+window.MathJax = { tex: { inlineMath: [['$', '$'], ['\\(', '\\)']], displayMath: [['$$', '$$'], ['\\[', '\\]']] }, options: { skipHtmlTags: ['script','noscript','style','textarea','pre','code'] } };
+</script>
+<script async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml.js"></script>
+</head>
+<body>
+<header class="site-header">
+  <div class="header-inner">
+    <a class="site-title" href="../../index.html">Hugging Face コース日本語版</a>
+    <span class="demo-badge">デモ版</span>
+  </div>
+</header>
+<main class="container">
+<p class="course-crumb"><a href="../index.html">MCP コース</a>
+<span class="badge badge-qa-wip">翻訳済み・QA進行中（未検証の部分を含みます）</span></p>
+<nav class="page-nav"><a class="nav-link prev" href="mcp-client.html">← 前へ: MCP クライアント</a><a class="nav-link toc-link" href="../index.html">目次へ</a><a class="nav-link next" href="quiz2.html">次へ →: クイズ2: プルリクエストエージェントの統合</a></nav>
+<article class="content">
+<h1>Webhook リスナー</h1>
+<p>Webhook リスナーは、プルリクエストエージェントの入口です。ディスカッションが作成・更新されたときに Hugging Face Hub からリアルタイムイベントを受け取り、MCP ベースのタグ付けワークフローを起動します。このセクションでは、FastAPI を使って Webhook ハンドラーを実装します。</p>
+<h2>Webhook 連携を理解する</h2>
+<p><a href="https://raw.githubusercontent.com/huggingface/hub-docs/refs/heads/main/docs/hub/webhooks-guide-discussion-bot.md">Hugging Face Webhooks Guide</a> に沿って、この Webhook リスナーは届いたリクエストを検証し、ディスカッションイベントをリアルタイムで処理します。</p>
+<p><img alt="Webhook の作成" src="https://huggingface.co/datasets/huggingface/documentation-images/resolve/main/hub/webhooks-guides/001-discussion-bot/webhook-creation.png" /></p>
+<h3>Webhook のイベントフロー</h3>
+<p>信頼できるリスナーを作るには、Webhook のフローを理解することが重要です。</p>
+<ol>
+<li><strong>ユーザーアクション</strong>: 誰かがモデルリポジトリのディスカッションにコメントを作成する</li>
+<li><strong>Hub イベント</strong>: Hugging Face が Webhook イベントを生成する</li>
+<li><strong>Webhook の配信</strong>: Hub がエンドポイントに POST リクエストを送る</li>
+<li><strong>認証</strong>: Webhook シークレットを検証する</li>
+<li><strong>処理</strong>: コメントの内容からタグを抽出する</li>
+<li><strong>アクション</strong>: MCP ツールを使って、新しいタグのためのプルリクエストを作成する</li>
+</ol>
+<div class="callout callout-tip">
+<p class="callout-title">💡 ヒント</p>
+<p>Webhook はプッシュ通知です。変更をポーリングするのではなく、Hugging Face Hub が積極的にイベントをアプリケーションへ送ります。これにより、ディスカッションやコメントへのリアルタイム応答が可能になります。</p>
+</div>
+<h2>FastAPI の Webhook アプリケーション</h2>
+<p>土台から始めて完全な処理ロジックまで、Webhook リスナーを一歩ずつ構築していきましょう。</p>
+<h3>1. アプリケーションのセットアップ</h3>
+<p>まず、必要なインポートと設定をすべて備えた基本的な FastAPI アプリケーションを用意します。</p>
+<div class="codehilite"><pre><span></span><code><span class="kn">import</span><span class="w"> </span><span class="nn">os</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">json</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">datetime</span><span class="w"> </span><span class="kn">import</span> <span class="n">datetime</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">List</span><span class="p">,</span> <span class="n">Dict</span><span class="p">,</span> <span class="n">Any</span><span class="p">,</span> <span class="n">Optional</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">fastapi</span><span class="w"> </span><span class="kn">import</span> <span class="n">FastAPI</span><span class="p">,</span> <span class="n">Request</span><span class="p">,</span> <span class="n">BackgroundTasks</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">fastapi.middleware.cors</span><span class="w"> </span><span class="kn">import</span> <span class="n">CORSMiddleware</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">pydantic</span><span class="w"> </span><span class="kn">import</span> <span class="n">BaseModel</span>
+</code></pre></div>
+
+<p>これらのインポートで、堅牢な Webhook ハンドラーを構築するために必要なものがすべて揃います。<code>FastAPI</code> は Web フレームワークを提供し、<code>BackgroundTasks</code> は非同期処理を可能にし、typing のインポートはデータ検証に役立ちます。</p>
+<p>次に、アプリケーションを設定します。</p>
+<div class="codehilite"><pre><span></span><code><span class="c1"># 設定</span>
+<span class="n">WEBHOOK_SECRET</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">getenv</span><span class="p">(</span><span class="s2">"WEBHOOK_SECRET"</span><span class="p">)</span>
+<span class="n">HF_TOKEN</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">getenv</span><span class="p">(</span><span class="s2">"HF_TOKEN"</span><span class="p">)</span>
+
+<span class="c1"># 処理した操作を入れる簡易ストレージ</span>
+<span class="n">tag_operations_store</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]]</span> <span class="o">=</span> <span class="p">[]</span>
+
+<span class="n">app</span> <span class="o">=</span> <span class="n">FastAPI</span><span class="p">(</span><span class="n">title</span><span class="o">=</span><span class="s2">"HF Tagging Bot"</span><span class="p">)</span>
+<span class="n">app</span><span class="o">.</span><span class="n">add_middleware</span><span class="p">(</span><span class="n">CORSMiddleware</span><span class="p">,</span> <span class="n">allow_origins</span><span class="o">=</span><span class="p">[</span><span class="s2">"*"</span><span class="p">])</span>
+</code></pre></div>
+
+<p>この設定では次を用意します。</p>
+<ul>
+<li><strong>Webhook シークレット</strong>: 届いた Webhook を検証するため</li>
+<li><strong>HF トークン</strong>: Hub API の認証のため</li>
+<li><strong>操作ストア</strong>: 処理した操作を監視するためのインメモリストレージ</li>
+<li><strong>CORS ミドルウェア</strong>: Web インターフェース向けにクロスオリジンリクエストを許可する</li>
+</ul>
+<div class="callout callout-tip">
+<p class="callout-title">💡 ヒント</p>
+<p><code>tag_operations_store</code> リストは、最近の Webhook 処理操作を記録します。デバッグや監視に役立ちますが、本番環境ではデータベースを使うか、このリストのサイズに上限を設けたほうがよいでしょう。</p>
+</div>
+<h3>2. Webhook のデータモデル</h3>
+<p><a href="https://raw.githubusercontent.com/huggingface/hub-docs/refs/heads/main/docs/hub/webhooks-guide-discussion-bot.md">Hugging Face の Webhook ドキュメント</a> をもとに、Webhook のデータ構造を理解する必要があります。</p>
+<div class="codehilite"><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">WebhookEvent</span><span class="p">(</span><span class="n">BaseModel</span><span class="p">):</span>
+    <span class="n">event</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">]</span>          <span class="c1"># アクションとスコープの情報を含む</span>
+    <span class="n">comment</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]</span>        <span class="c1"># コメントの内容とメタデータ</span>
+    <span class="n">discussion</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]</span>     <span class="c1"># ディスカッションの情報</span>
+    <span class="n">repo</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">]</span>           <span class="c1"># リポジトリの詳細</span>
+</code></pre></div>
+
+<p>この Pydantic モデルは、Webhook の構造を理解する助けになります。</p>
+<p>注目すべき主要フィールドは次のとおりです。</p>
+<ul>
+<li><code>event.action</code>: 新しいコメントの場合は通常 "create"</li>
+<li><code>event.scope</code>: コメントイベントの場合は通常 "discussion.comment"</li>
+<li><code>comment.content</code>: 実際のコメント本文</li>
+<li><code>repo.name</code>: コメントが行われたリポジトリ</li>
+</ul>
+<h3>3. Webhook ハンドラーの本体</h3>
+<p>次はメインの Webhook ハンドラーです。ここが重要な部分になります。消化しやすいよう、小分けして見ていきましょう。</p>
+<div class="codehilite"><pre><span></span><code><span class="nd">@app</span><span class="o">.</span><span class="n">post</span><span class="p">(</span><span class="s2">"/webhook"</span><span class="p">)</span>
+<span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">webhook_handler</span><span class="p">(</span><span class="n">request</span><span class="p">:</span> <span class="n">Request</span><span class="p">,</span> <span class="n">background_tasks</span><span class="p">:</span> <span class="n">BackgroundTasks</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">"""</span>
+<span class="sd">    Handle incoming webhooks from Hugging Face Hub</span>
+<span class="sd">    Following the pattern from: https://raw.githubusercontent.com/huggingface/hub-docs/refs/heads/main/docs/hub/webhooks-guide-discussion-bot.md</span>
+<span class="sd">    """</span>
+    <span class="nb">print</span><span class="p">(</span><span class="s2">"🔔 Webhook received!"</span><span class="p">)</span>
+
+    <span class="c1"># ステップ1: Webhook シークレットを検証（セキュリティ）</span>
+    <span class="n">webhook_secret</span> <span class="o">=</span> <span class="n">request</span><span class="o">.</span><span class="n">headers</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"X-Webhook-Secret"</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">webhook_secret</span> <span class="o">!=</span> <span class="n">WEBHOOK_SECRET</span><span class="p">:</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s2">"❌ Invalid webhook secret"</span><span class="p">)</span>
+        <span class="k">return</span> <span class="p">{</span><span class="s2">"error"</span><span class="p">:</span> <span class="s2">"incorrect secret"</span><span class="p">},</span> <span class="mi">400</span>
+</code></pre></div>
+
+<p>最初のステップはセキュリティ検証です。<code>X-Webhook-Secret</code> ヘッダーを設定したシークレットと照合し、Webhook が正当なものであることを確認します。</p>
+<div class="callout callout-tip">
+<p class="callout-title">💡 ヒント</p>
+<p>Webhook シークレットは必ず検証してください。このチェックがなければ、誰でも偽の Webhook リクエストをアプリケーションに送れてしまいます。シークレットは、Hugging Face とアプリケーションの間で共有されるパスワードの役割を果たします。</p>
+</div>
+<p>次に、Webhook データをパースして検証します。</p>
+<div class="codehilite"><pre><span></span><code>    <span class="c1"># ステップ2: Webhook データをパース</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="n">webhook_data</span> <span class="o">=</span> <span class="k">await</span> <span class="n">request</span><span class="o">.</span><span class="n">json</span><span class="p">()</span>
+        <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"📥 Webhook data: </span><span class="si">{</span><span class="n">json</span><span class="o">.</span><span class="n">dumps</span><span class="p">(</span><span class="n">webhook_data</span><span class="p">,</span><span class="w"> </span><span class="n">indent</span><span class="o">=</span><span class="mi">2</span><span class="p">)</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+    <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+        <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"❌ Error parsing webhook data: </span><span class="si">{</span><span class="nb">str</span><span class="p">(</span><span class="n">e</span><span class="p">)</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+        <span class="k">return</span> <span class="p">{</span><span class="s2">"error"</span><span class="p">:</span> <span class="s2">"invalid JSON"</span><span class="p">},</span> <span class="mi">400</span>
+
+    <span class="c1"># ステップ3: イベント構造を検証</span>
+    <span class="n">event</span> <span class="o">=</span> <span class="n">webhook_data</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"event"</span><span class="p">,</span> <span class="p">{})</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">event</span><span class="p">:</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s2">"❌ No event data in webhook"</span><span class="p">)</span>
+        <span class="k">return</span> <span class="p">{</span><span class="s2">"error"</span><span class="p">:</span> <span class="s2">"missing event data"</span><span class="p">},</span> <span class="mi">400</span>
+</code></pre></div>
+
+<p>このパースのステップでは、起こりうる JSON エラーを適切に処理し、期待するイベント構造が得られているかを検証します。</p>
+<p>次はイベントのフィルタリングロジックです。</p>
+<div class="codehilite"><pre><span></span><code>    <span class="c1"># ステップ4: ディスカッションコメントの作成かどうかを確認</span>
+    <span class="c1"># Webhook ガイドのパターンに従う:</span>
+    <span class="k">if</span> <span class="p">(</span>
+        <span class="n">event</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"action"</span><span class="p">)</span> <span class="o">==</span> <span class="s2">"create"</span> <span class="ow">and</span> 
+        <span class="n">event</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"scope"</span><span class="p">)</span> <span class="o">==</span> <span class="s2">"discussion.comment"</span>
+    <span class="p">):</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s2">"✅ Valid discussion comment creation event"</span><span class="p">)</span>
+
+        <span class="c1"># Hub に素早く応答するため、バックグラウンドで処理</span>
+        <span class="n">background_tasks</span><span class="o">.</span><span class="n">add_task</span><span class="p">(</span><span class="n">process_webhook_comment</span><span class="p">,</span> <span class="n">webhook_data</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="p">{</span>
+            <span class="s2">"status"</span><span class="p">:</span> <span class="s2">"accepted"</span><span class="p">,</span>
+            <span class="s2">"message"</span><span class="p">:</span> <span class="s2">"Comment processing started"</span><span class="p">,</span>
+            <span class="s2">"timestamp"</span><span class="p">:</span> <span class="n">datetime</span><span class="o">.</span><span class="n">now</span><span class="p">()</span><span class="o">.</span><span class="n">isoformat</span><span class="p">()</span>
+        <span class="p">}</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"ℹ️ Ignoring event: action=</span><span class="si">{</span><span class="n">event</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">'action'</span><span class="p">)</span><span class="si">}</span><span class="s2">, scope=</span><span class="si">{</span><span class="n">event</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">'scope'</span><span class="p">)</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+        <span class="k">return</span> <span class="p">{</span>
+            <span class="s2">"status"</span><span class="p">:</span> <span class="s2">"ignored"</span><span class="p">,</span>
+            <span class="s2">"reason"</span><span class="p">:</span> <span class="s2">"Not a discussion comment creation"</span>
+        <span class="p">}</span>
+</code></pre></div>
+
+<p>このフィルタリングにより、関心のあるイベント、つまり新しいディスカッションコメントだけを処理します。リポジトリの作成やモデルのアップロードなど、他のイベントは無視します。</p>
+<p>FastAPI の <code>background_tasks.add_task()</code> を使って Webhook を非同期に処理します。これにより、実際のタグ処理をバックグラウンドで行いながら、応答を素早く（数秒以内に）返せます。</p>
+<div class="callout callout-tip">
+<p class="callout-title">💡 ヒント</p>
+<p>Webhook のエンドポイントは10秒以内に応答しないと、送信側のプラットフォームに失敗とみなされる場合があります。バックグラウンドタスクを使えば、複雑な処理を非同期に行いながら、高速な応答を保てます。</p>
+</div>
+<h3>4. コメント処理のロジック</h3>
+<p>次に、実際のタグ抽出と MCP ツールの利用を行う、コメント処理関数の本体を実装します。</p>
+<div class="codehilite"><pre><span></span><code><span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">process_webhook_comment</span><span class="p">(</span><span class="n">webhook_data</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]):</span>
+<span class="w">    </span><span class="sd">"""</span>
+<span class="sd">    Process webhook comment to detect and add tags</span>
+<span class="sd">    Integrates with our MCP client for Hub interactions</span>
+<span class="sd">    """</span>
+    <span class="nb">print</span><span class="p">(</span><span class="s2">"🏷️ Starting process_webhook_comment..."</span><span class="p">)</span>
+
+    <span class="k">try</span><span class="p">:</span>
+        <span class="c1"># コメントとリポジトリの情報を抽出</span>
+        <span class="n">comment_content</span> <span class="o">=</span> <span class="n">webhook_data</span><span class="p">[</span><span class="s2">"comment"</span><span class="p">][</span><span class="s2">"content"</span><span class="p">]</span>
+        <span class="n">discussion_title</span> <span class="o">=</span> <span class="n">webhook_data</span><span class="p">[</span><span class="s2">"discussion"</span><span class="p">][</span><span class="s2">"title"</span><span class="p">]</span>
+        <span class="n">repo_name</span> <span class="o">=</span> <span class="n">webhook_data</span><span class="p">[</span><span class="s2">"repo"</span><span class="p">][</span><span class="s2">"name"</span><span class="p">]</span>
+        <span class="n">discussion_num</span> <span class="o">=</span> <span class="n">webhook_data</span><span class="p">[</span><span class="s2">"discussion"</span><span class="p">][</span><span class="s2">"num"</span><span class="p">]</span>
+        <span class="n">comment_author</span> <span class="o">=</span> <span class="n">webhook_data</span><span class="p">[</span><span class="s2">"comment"</span><span class="p">][</span><span class="s2">"author"</span><span class="p">]</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"id"</span><span class="p">,</span> <span class="s2">"unknown"</span><span class="p">)</span>
+
+        <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"📝 Comment from </span><span class="si">{</span><span class="n">comment_author</span><span class="si">}</span><span class="s2">: </span><span class="si">{</span><span class="n">comment_content</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+        <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"📰 Discussion: </span><span class="si">{</span><span class="n">discussion_title</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+        <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"📦 Repository: </span><span class="si">{</span><span class="n">repo_name</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+</code></pre></div>
+
+<p>この冒頭のセクションでは、Webhook データから関連情報をすべて抽出します。タグはコメントの内容とディスカッションのタイトルのどちらに言及されるか分からないため、両方を取得します。</p>
+<p>次に、タグを抽出して処理します。</p>
+<div class="codehilite"><pre><span></span><code>        <span class="c1"># コメントとタイトルからタグ候補を抽出</span>
+        <span class="n">comment_tags</span> <span class="o">=</span> <span class="n">extract_tags_from_text</span><span class="p">(</span><span class="n">comment_content</span><span class="p">)</span>
+        <span class="n">title_tags</span> <span class="o">=</span> <span class="n">extract_tags_from_text</span><span class="p">(</span><span class="n">discussion_title</span><span class="p">)</span>
+        <span class="n">all_tags</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="nb">set</span><span class="p">(</span><span class="n">comment_tags</span> <span class="o">+</span> <span class="n">title_tags</span><span class="p">))</span>
+
+        <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"🔍 Found tags: </span><span class="si">{</span><span class="n">all_tags</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+
+        <span class="c1"># 監視用に操作を記録</span>
+        <span class="n">operation</span> <span class="o">=</span> <span class="p">{</span>
+            <span class="s2">"timestamp"</span><span class="p">:</span> <span class="n">datetime</span><span class="o">.</span><span class="n">now</span><span class="p">()</span><span class="o">.</span><span class="n">isoformat</span><span class="p">(),</span>
+            <span class="s2">"repo_name"</span><span class="p">:</span> <span class="n">repo_name</span><span class="p">,</span>
+            <span class="s2">"discussion_num"</span><span class="p">:</span> <span class="n">discussion_num</span><span class="p">,</span>
+            <span class="s2">"comment_author"</span><span class="p">:</span> <span class="n">comment_author</span><span class="p">,</span>
+            <span class="s2">"extracted_tags"</span><span class="p">:</span> <span class="n">all_tags</span><span class="p">,</span>
+            <span class="s2">"comment_preview"</span><span class="p">:</span> <span class="n">comment_content</span><span class="p">[:</span><span class="mi">100</span><span class="p">]</span> <span class="o">+</span> <span class="s2">"..."</span> <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">comment_content</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">100</span> <span class="k">else</span> <span class="n">comment_content</span><span class="p">,</span>
+            <span class="s2">"status"</span><span class="p">:</span> <span class="s2">"processing"</span>
+        <span class="p">}</span>
+        <span class="n">tag_operations_store</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">operation</span><span class="p">)</span>
+</code></pre></div>
+
+<p>両方のソースからタグをまとめ、監視用に操作レコードを作成します。このレコードは、各 Webhook 処理操作の進捗を追跡します。</p>
+<div class="callout callout-tip">
+<p class="callout-title">💡 ヒント</p>
+<p>操作レコードを保存することは、デバッグと監視に欠かせません。何か問題が起きたとき、最近の操作を見れば、何が、なぜ起きたのかを把握できます。</p>
+</div>
+<p>次は MCP エージェントとの統合です。</p>
+<div class="codehilite"><pre><span></span><code>        <span class="k">if</span> <span class="ow">not</span> <span class="n">all_tags</span><span class="p">:</span>
+            <span class="n">operation</span><span class="p">[</span><span class="s2">"status"</span><span class="p">]</span> <span class="o">=</span> <span class="s2">"no_tags"</span>
+            <span class="n">operation</span><span class="p">[</span><span class="s2">"message"</span><span class="p">]</span> <span class="o">=</span> <span class="s2">"No recognizable tags found"</span>
+            <span class="nb">print</span><span class="p">(</span><span class="s2">"❌ No tags found to process"</span><span class="p">)</span>
+            <span class="k">return</span>
+
+        <span class="c1"># タグ処理用の MCP エージェントを取得</span>
+        <span class="n">agent</span> <span class="o">=</span> <span class="k">await</span> <span class="n">get_agent</span><span class="p">()</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">agent</span><span class="p">:</span>
+            <span class="n">operation</span><span class="p">[</span><span class="s2">"status"</span><span class="p">]</span> <span class="o">=</span> <span class="s2">"error"</span>
+            <span class="n">operation</span><span class="p">[</span><span class="s2">"message"</span><span class="p">]</span> <span class="o">=</span> <span class="s2">"Agent not configured (missing HF_TOKEN)"</span>
+            <span class="nb">print</span><span class="p">(</span><span class="s2">"❌ No agent available"</span><span class="p">)</span>
+            <span class="k">return</span>
+
+        <span class="c1"># 抽出した各タグを処理</span>
+        <span class="n">operation</span><span class="p">[</span><span class="s2">"results"</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">for</span> <span class="n">tag</span> <span class="ow">in</span> <span class="n">all_tags</span><span class="p">:</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"🤖 Processing tag '</span><span class="si">{</span><span class="n">tag</span><span class="si">}</span><span class="s2">' for repo '</span><span class="si">{</span><span class="n">repo_name</span><span class="si">}</span><span class="s2">'"</span><span class="p">)</span>
+
+                <span class="c1"># タグ処理を任せるためのエージェント向けプロンプトを作成</span>
+                <span class="n">prompt</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">"""</span>
+<span class="s2">                Analyze the repository '</span><span class="si">{</span><span class="n">repo_name</span><span class="si">}</span><span class="s2">' and determine if the tag '</span><span class="si">{</span><span class="n">tag</span><span class="si">}</span><span class="s2">' should be added.</span>
+
+<span class="s2">                First, check the current tags using get_current_tags.</span>
+<span class="s2">                If '</span><span class="si">{</span><span class="n">tag</span><span class="si">}</span><span class="s2">' is not already present and it's a valid tag, add it using add_new_tag.</span>
+
+<span class="s2">                Repository: </span><span class="si">{</span><span class="n">repo_name</span><span class="si">}</span>
+<span class="s2">                Tag to process: </span><span class="si">{</span><span class="n">tag</span><span class="si">}</span>
+
+<span class="s2">                Provide a clear summary of what was done.</span>
+<span class="s2">                """</span>
+
+                <span class="n">response</span> <span class="o">=</span> <span class="k">await</span> <span class="n">agent</span><span class="o">.</span><span class="n">run</span><span class="p">(</span><span class="n">prompt</span><span class="p">)</span>
+                <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"🤖 Agent response for '</span><span class="si">{</span><span class="n">tag</span><span class="si">}</span><span class="s2">': </span><span class="si">{</span><span class="n">response</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+
+                <span class="c1"># 応答を解析し、結果を記録</span>
+                <span class="n">tag_result</span> <span class="o">=</span> <span class="p">{</span>
+                    <span class="s2">"tag"</span><span class="p">:</span> <span class="n">tag</span><span class="p">,</span>
+                    <span class="s2">"response"</span><span class="p">:</span> <span class="n">response</span><span class="p">,</span>
+                    <span class="s2">"timestamp"</span><span class="p">:</span> <span class="n">datetime</span><span class="o">.</span><span class="n">now</span><span class="p">()</span><span class="o">.</span><span class="n">isoformat</span><span class="p">()</span>
+                <span class="p">}</span>
+                <span class="n">operation</span><span class="p">[</span><span class="s2">"results"</span><span class="p">]</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">tag_result</span><span class="p">)</span>
+
+            <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+                <span class="n">error_msg</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">"❌ Error processing tag '</span><span class="si">{</span><span class="n">tag</span><span class="si">}</span><span class="s2">': </span><span class="si">{</span><span class="nb">str</span><span class="p">(</span><span class="n">e</span><span class="p">)</span><span class="si">}</span><span class="s2">"</span>
+                <span class="nb">print</span><span class="p">(</span><span class="n">error_msg</span><span class="p">)</span>
+                <span class="n">operation</span><span class="p">[</span><span class="s2">"results"</span><span class="p">]</span><span class="o">.</span><span class="n">append</span><span class="p">({</span>
+                    <span class="s2">"tag"</span><span class="p">:</span> <span class="n">tag</span><span class="p">,</span>
+                    <span class="s2">"error"</span><span class="p">:</span> <span class="nb">str</span><span class="p">(</span><span class="n">e</span><span class="p">),</span>
+                    <span class="s2">"timestamp"</span><span class="p">:</span> <span class="n">datetime</span><span class="o">.</span><span class="n">now</span><span class="p">()</span><span class="o">.</span><span class="n">isoformat</span><span class="p">()</span>
+                <span class="p">})</span>
+
+        <span class="n">operation</span><span class="p">[</span><span class="s2">"status"</span><span class="p">]</span> <span class="o">=</span> <span class="s2">"completed"</span>
+        <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"✅ Completed processing </span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">all_tags</span><span class="p">)</span><span class="si">}</span><span class="s2"> tags"</span><span class="p">)</span>
+</code></pre></div>
+
+<p>このセクションはビジネスロジックの本体を担当します。</p>
+<ol>
+<li><strong>検証</strong>: 処理するタグと、利用可能なエージェントがあることを確認する</li>
+<li><strong>処理</strong>: タグごとに、エージェント向けの自然言語プロンプトを作成する</li>
+<li><strong>記録</strong>: 監視とデバッグのため、すべての結果を保存する</li>
+<li><strong>エラーハンドリング</strong>: 個別のタグのエラーを適切に処理する</li>
+</ol>
+<p>エージェントへのプロンプトは、AI に取るべき手順を正確に指示するよう慎重に作られています。まず現在のタグを確認し、適切であれば新しいタグを追加する、という手順です。</p>
+<h3>5. ヘルスチェックと監視のエンドポイント</h3>
+<p>Webhook ハンドラーのほかにも、監視とデバッグのためのエンドポイントが必要です。これらの必須エンドポイントを追加しましょう。</p>
+<div class="codehilite"><pre><span></span><code><span class="nd">@app</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"/"</span><span class="p">)</span>
+<span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">root</span><span class="p">():</span>
+<span class="w">    </span><span class="sd">"""Root endpoint with basic information"""</span>
+    <span class="k">return</span> <span class="p">{</span>
+        <span class="s2">"name"</span><span class="p">:</span> <span class="s2">"HF Tagging Bot"</span><span class="p">,</span>
+        <span class="s2">"status"</span><span class="p">:</span> <span class="s2">"running"</span><span class="p">,</span>
+        <span class="s2">"description"</span><span class="p">:</span> <span class="s2">"Webhook listener for automatic model tagging"</span><span class="p">,</span>
+        <span class="s2">"endpoints"</span><span class="p">:</span> <span class="p">{</span>
+            <span class="s2">"webhook"</span><span class="p">:</span> <span class="s2">"/webhook"</span><span class="p">,</span>
+            <span class="s2">"health"</span><span class="p">:</span> <span class="s2">"/health"</span><span class="p">,</span>
+            <span class="s2">"operations"</span><span class="p">:</span> <span class="s2">"/operations"</span>
+        <span class="p">}</span>
+    <span class="p">}</span>
+</code></pre></div>
+
+<p>ルートエンドポイントは、サービスに関する基本情報と、利用可能なエンドポイントを提供します。</p>
+<div class="codehilite"><pre><span></span><code><span class="nd">@app</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"/health"</span><span class="p">)</span>
+<span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">health_check</span><span class="p">():</span>
+<span class="w">    </span><span class="sd">"""Health check endpoint for monitoring"""</span>
+    <span class="n">agent</span> <span class="o">=</span> <span class="k">await</span> <span class="n">get_agent</span><span class="p">()</span>
+
+    <span class="k">return</span> <span class="p">{</span>
+        <span class="s2">"status"</span><span class="p">:</span> <span class="s2">"healthy"</span><span class="p">,</span>
+        <span class="s2">"timestamp"</span><span class="p">:</span> <span class="n">datetime</span><span class="o">.</span><span class="n">now</span><span class="p">()</span><span class="o">.</span><span class="n">isoformat</span><span class="p">(),</span>
+        <span class="s2">"components"</span><span class="p">:</span> <span class="p">{</span>
+            <span class="s2">"webhook_secret"</span><span class="p">:</span> <span class="s2">"configured"</span> <span class="k">if</span> <span class="n">WEBHOOK_SECRET</span> <span class="k">else</span> <span class="s2">"missing"</span><span class="p">,</span>
+            <span class="s2">"hf_token"</span><span class="p">:</span> <span class="s2">"configured"</span> <span class="k">if</span> <span class="n">HF_TOKEN</span> <span class="k">else</span> <span class="s2">"missing"</span><span class="p">,</span>
+            <span class="s2">"mcp_agent"</span><span class="p">:</span> <span class="s2">"ready"</span> <span class="k">if</span> <span class="n">agent</span> <span class="k">else</span> <span class="s2">"not_ready"</span>
+        <span class="p">}</span>
+    <span class="p">}</span>
+</code></pre></div>
+
+<p>ヘルスチェックエンドポイントは、すべてのコンポーネントが正しく設定されているかを検証します。本番環境の監視に不可欠です。</p>
+<div class="codehilite"><pre><span></span><code><span class="nd">@app</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"/operations"</span><span class="p">)</span>
+<span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">get_operations</span><span class="p">():</span>
+<span class="w">    </span><span class="sd">"""Get recent tag operations for monitoring"""</span>
+    <span class="c1"># 直近50件の操作を返す</span>
+    <span class="n">recent_ops</span> <span class="o">=</span> <span class="n">tag_operations_store</span><span class="p">[</span><span class="o">-</span><span class="mi">50</span><span class="p">:]</span> <span class="k">if</span> <span class="n">tag_operations_store</span> <span class="k">else</span> <span class="p">[]</span>
+    <span class="k">return</span> <span class="p">{</span>
+        <span class="s2">"total_operations"</span><span class="p">:</span> <span class="nb">len</span><span class="p">(</span><span class="n">tag_operations_store</span><span class="p">),</span>
+        <span class="s2">"recent_operations"</span><span class="p">:</span> <span class="n">recent_ops</span>
+    <span class="p">}</span>
+</code></pre></div>
+
+<p>操作エンドポイントでは、最近の Webhook 処理の活動を確認できます。デバッグと監視にとても役立ちます。</p>
+<div class="callout callout-tip">
+<p class="callout-title">💡 ヒント</p>
+<p>ヘルスチェックと監視のエンドポイントは、本番デプロイに欠かせません。ログを掘り返さなくても、設定の問題を素早く特定し、アプリケーションの活動を監視できます。</p>
+</div>
+<h2>Hugging Face Hub での Webhook の設定</h2>
+<p>Webhook リスナーの準備ができたので、Hugging Face Hub 側で設定しましょう。ここでアプリケーションを実際のリポジトリイベントに接続します。</p>
+<h3>1. 設定で Webhook を作成する</h3>
+<p><a href="https://huggingface.co/docs/hub/webhooks-guide-discussion-bot">Webhook セットアップガイド</a>に沿って進めます。</p>
+<p><img alt="Webhook の設定" src="https://huggingface.co/datasets/huggingface/documentation-images/resolve/main/hub/webhooks-guides/001-discussion-bot/webhook-creation.png" /></p>
+<p><a href="https://huggingface.co/settings/webhooks">Hugging Face の設定</a>を開き、次を設定します。</p>
+<ol>
+<li><strong>対象リポジトリ</strong>: 監視するリポジトリを指定する</li>
+<li><strong>Webhook URL</strong>: デプロイしたアプリケーションのエンドポイント（<code>https://your-space.hf.space/webhook</code> など）</li>
+<li><strong>シークレット</strong>: <code>WEBHOOK_SECRET</code> 環境変数と同じシークレットを使う</li>
+<li><strong>イベント</strong>: 「Community (PR &amp; discussions)」イベントを購読する</li>
+</ol>
+<div class="callout callout-tip">
+<p class="callout-title">💡 ヒント</p>
+<p>多くのリポジトリに Webhook を設定する前に、まずテスト用リポジトリ1〜2件から始めてください。規模を広げる前に、アプリケーションが正しく動作するかを検証できます。</p>
+</div>
+<h3>2. Space の URL 設定</h3>
+<p>Hugging Face Spaces にデプロイする場合は、直接 URL を取得する必要があります。</p>
+<p><img alt="直接 URL" src="https://huggingface.co/datasets/huggingface/documentation-images/resolve/main/hub/webhooks-guides/001-discussion-bot/direct-url.png" /></p>
+<p>手順は次のとおりです。</p>
+<ol>
+<li>Space の設定で「Embed this Space」をクリックする</li>
+<li>「Direct URL」をコピーする</li>
+<li><code>/webhook</code> を付け足して Webhook エンドポイントを作成する</li>
+<li>この URL で Webhook の設定を更新する</li>
+</ol>
+<p>たとえば、Space の URL が <code>https://username-space-name.hf.space</code>, Webhook エンドポイントは <code>https://username-space-name.hf.space/webhook</code> になります。</p>
+<p><img alt="Space の URL" src="https://huggingface.co/datasets/huggingface/documentation-images/resolve/main/hub/webhooks-guides/001-discussion-bot/direct-url.png" /></p>
+<h2>Webhook リスナーのテスト</h2>
+<p>本番にデプロイする前のテストは重要です。さまざまなテスト方法を見ていきましょう。</p>
+<h3>1. ローカルテスト</h3>
+<p>簡単なスクリプトで、Webhook ハンドラーをローカルでテストできます。</p>
+<div class="codehilite"><pre><span></span><code><span class="c1"># test_webhook_local.py</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">requests</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">json</span>
+
+<span class="c1"># Webhook 形式に合わせたテストデータ</span>
+<span class="n">test_webhook_data</span> <span class="o">=</span> <span class="p">{</span>
+    <span class="s2">"event"</span><span class="p">:</span> <span class="p">{</span>
+        <span class="s2">"action"</span><span class="p">:</span> <span class="s2">"create"</span><span class="p">,</span>
+        <span class="s2">"scope"</span><span class="p">:</span> <span class="s2">"discussion.comment"</span>
+    <span class="p">},</span>
+    <span class="s2">"comment"</span><span class="p">:</span> <span class="p">{</span>
+        <span class="s2">"content"</span><span class="p">:</span> <span class="s2">"This model needs tags: pytorch, transformers"</span><span class="p">,</span>
+        <span class="s2">"author"</span><span class="p">:</span> <span class="p">{</span><span class="s2">"id"</span><span class="p">:</span> <span class="s2">"test-user"</span><span class="p">}</span>
+    <span class="p">},</span>
+    <span class="s2">"discussion"</span><span class="p">:</span> <span class="p">{</span>
+        <span class="s2">"title"</span><span class="p">:</span> <span class="s2">"Missing tags"</span><span class="p">,</span>
+        <span class="s2">"num"</span><span class="p">:</span> <span class="mi">1</span>
+    <span class="p">},</span>
+    <span class="s2">"repo"</span><span class="p">:</span> <span class="p">{</span>
+        <span class="s2">"name"</span><span class="p">:</span> <span class="s2">"test-user/test-model"</span>
+    <span class="p">}</span>
+<span class="p">}</span>
+
+<span class="c1"># テスト Webhook を送信</span>
+<span class="n">response</span> <span class="o">=</span> <span class="n">requests</span><span class="o">.</span><span class="n">post</span><span class="p">(</span>
+    <span class="s2">"http://localhost:8000/webhook"</span><span class="p">,</span>
+    <span class="n">json</span><span class="o">=</span><span class="n">test_webhook_data</span><span class="p">,</span>
+    <span class="n">headers</span><span class="o">=</span><span class="p">{</span><span class="s2">"X-Webhook-Secret"</span><span class="p">:</span> <span class="s2">"your-test-secret"</span><span class="p">}</span>
+<span class="p">)</span>
+
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Status: </span><span class="si">{</span><span class="n">response</span><span class="o">.</span><span class="n">status_code</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Response: </span><span class="si">{</span><span class="n">response</span><span class="o">.</span><span class="n">json</span><span class="p">()</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+</code></pre></div>
+
+<p>このスクリプトは実際の Webhook リクエストをシミュレートするので、本物のイベントを待たずにハンドラーをテストできます。</p>
+<h3>2. 開発用シミュレーションエンドポイント</h3>
+<p>FastAPI アプリケーションにシミュレーションエンドポイントを追加すると、テストがさらに楽になります。</p>
+<div class="codehilite"><pre><span></span><code><span class="nd">@app</span><span class="o">.</span><span class="n">post</span><span class="p">(</span><span class="s2">"/simulate_webhook"</span><span class="p">)</span>
+<span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">simulate_webhook</span><span class="p">(</span>
+    <span class="n">repo_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> 
+    <span class="n">discussion_title</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> 
+    <span class="n">comment_content</span><span class="p">:</span> <span class="nb">str</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""Simulate webhook for testing purposes"""</span>
+
+    <span class="c1"># モックの Webhook データを作成</span>
+    <span class="n">mock_webhook_data</span> <span class="o">=</span> <span class="p">{</span>
+        <span class="s2">"event"</span><span class="p">:</span> <span class="p">{</span>
+            <span class="s2">"action"</span><span class="p">:</span> <span class="s2">"create"</span><span class="p">,</span>
+            <span class="s2">"scope"</span><span class="p">:</span> <span class="s2">"discussion.comment"</span>
+        <span class="p">},</span>
+        <span class="s2">"comment"</span><span class="p">:</span> <span class="p">{</span>
+            <span class="s2">"content"</span><span class="p">:</span> <span class="n">comment_content</span><span class="p">,</span>
+            <span class="s2">"author"</span><span class="p">:</span> <span class="p">{</span><span class="s2">"id"</span><span class="p">:</span> <span class="s2">"test-user"</span><span class="p">}</span>
+        <span class="p">},</span>
+        <span class="s2">"discussion"</span><span class="p">:</span> <span class="p">{</span>
+            <span class="s2">"title"</span><span class="p">:</span> <span class="n">discussion_title</span><span class="p">,</span>
+            <span class="s2">"num"</span><span class="p">:</span> <span class="mi">999</span>
+        <span class="p">},</span>
+        <span class="s2">"repo"</span><span class="p">:</span> <span class="p">{</span>
+            <span class="s2">"name"</span><span class="p">:</span> <span class="n">repo_name</span>
+        <span class="p">}</span>
+    <span class="p">}</span>
+
+    <span class="c1"># シミュレートした Webhook を処理</span>
+    <span class="k">await</span> <span class="n">process_webhook_comment</span><span class="p">(</span><span class="n">mock_webhook_data</span><span class="p">)</span>
+
+    <span class="k">return</span> <span class="sa">f</span><span class="s2">"Simulated webhook processed for </span><span class="si">{</span><span class="n">repo_name</span><span class="si">}</span><span class="s2">"</span>
+</code></pre></div>
+
+<p>このエンドポイントを使えば、アプリケーションのインターフェースからさまざまなシナリオを簡単にテストできます。</p>
+<div class="callout callout-tip">
+<p class="callout-title">💡 ヒント</p>
+<p>シミュレーションエンドポイントは開発中に非常に役立ちます。実際のリポジトリディスカッションを作らずに、さまざまなタグの組み合わせやエッジケースをテストできます。</p>
+</div>
+<h2>期待される Webhook の結果</h2>
+<p>すべてが正しく動作していれば、ディスカッションボットの例のような結果が見られるはずです。</p>
+<p><img alt="ディスカッションの結果" src="https://huggingface.co/datasets/huggingface/documentation-images/resolve/main/hub/webhooks-guides/001-discussion-bot/discussion-result.png" /></p>
+<p>このスクリーンショットは、ボットがディスカッションのコメントに応答してプルリクエストを作成した、Webhook 処理の成功例を示しています。</p>
+<h2>次のステップ</h2>
+<p>Webhook リスナーを実装したことで、次が揃いました。</p>
+<ol>
+<li>Hugging Face のベストプラクティスに従った<strong>安全な Webhook 検証</strong></li>
+<li>バックグラウンドタスク処理を備えた<strong>リアルタイムイベント処理</strong></li>
+<li>インテリジェントなタグ管理のための <strong>MCP 統合</strong></li>
+<li><strong>監視とデバッグ</strong>の機能</li>
+</ol>
+<p>次のセクションでは、すべてを統合して、Webhook から PR 作成までの完全なワークフローを示すプルリクエストエージェントを完成させます。</p>
+<div class="callout callout-tip">
+<p class="callout-title">💡 ヒント</p>
+<p>タイムアウトを避けるため、Webhook の応答は常に素早く（10秒以内に）返してください。MCP ツールの実行やプルリクエストの作成など、時間のかかる処理にはバックグラウンドタスクを使ってください。</p>
+</div>
+</article>
+<nav class="page-nav"><a class="nav-link prev" href="mcp-client.html">← 前へ: MCP クライアント</a><a class="nav-link toc-link" href="../index.html">目次へ</a><a class="nav-link next" href="quiz2.html">次へ →: クイズ2: プルリクエストエージェントの統合</a></nav>
+</main>
+<footer class="site-footer">
+  <p>原典: Hugging Face huggingface/mcp-course（<a href="https://github.com/huggingface/mcp-course">https://github.com/huggingface/mcp-course</a>）</p>
+  <p>日本語版の翻訳・公開: 霞ヶ関京 / 連絡先: GitHub <a href="https://github.com/yanikasumin">@yanikasumin</a> / YouTube <a href="https://www.youtube.com/@KASUMI_MOF">@KASUMI_MOF</a></p>
+  <p class="demo-note">このサイトはデモ版です。内容は順次更新されます。</p>
+</footer>
+<script src="../../site.js"></script>
+</body>
+</html>

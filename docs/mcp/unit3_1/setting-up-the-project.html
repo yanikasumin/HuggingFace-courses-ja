@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>プロジェクトのセットアップ | Hugging Face コース日本語版（デモ版）</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Shippori+Mincho:wght@500;700&family=Zen+Kaku+Gothic+New:wght@400;500;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../../style.css">
+<script>
+window.MathJax = { tex: { inlineMath: [['$', '$'], ['\\(', '\\)']], displayMath: [['$$', '$$'], ['\\[', '\\]']] }, options: { skipHtmlTags: ['script','noscript','style','textarea','pre','code'] } };
+</script>
+<script async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml.js"></script>
+</head>
+<body>
+<header class="site-header">
+  <div class="header-inner">
+    <a class="site-title" href="../../index.html">Hugging Face コース日本語版</a>
+    <span class="demo-badge">デモ版</span>
+  </div>
+</header>
+<main class="container">
+<p class="course-crumb"><a href="../index.html">MCP コース</a>
+<span class="badge badge-qa-wip">翻訳済み・QA進行中（未検証の部分を含みます）</span></p>
+<nav class="page-nav"><a class="nav-link prev" href="introduction.html">← 前へ: Hugging Face Hub でプルリクエストエージェントを作る</a><a class="nav-link toc-link" href="../index.html">目次へ</a><a class="nav-link next" href="creating-the-mcp-server.html">次へ →: MCP サーバーの作成</a></nav>
+<article class="content">
+<h1>プロジェクトのセットアップ</h1>
+<p>このセクションでは、プルリクエストエージェントの開発環境をセットアップします。</p>
+<div class="callout callout-tip">
+<p class="callout-title">💡 ヒント</p>
+<p>依存関係の管理には <code>uv</code> を使うモダンな Python ツール群を使い、必要な設定ファイルを作成します。<code>uv</code> に馴染みがなければ、<a href="https://docs.astral.sh/uv/">こちら</a>で詳しく学べます。</p>
+</div>
+<h2>プロジェクト構成</h2>
+<p>まずプロジェクトディレクトリを作成し、ファイル構成を理解しましょう。</p>
+<div class="codehilite"><pre><span></span><code>git<span class="w"> </span>clone<span class="w"> </span>https://huggingface.co/spaces/mcp-course/tag-this-repo
+</code></pre></div>
+
+<p>最終的なプロジェクト構成は次のようになります。</p>
+<div class="codehilite"><pre><span></span><code>hf-pr-agent/
+├── mcp_server.py              # タグ付けツールを持つ MCP サーバーの本体
+├── app.py                     # FastAPI の Webhook リスナーとエージェント
+├── requirements.txt           # Python の依存関係
+├── pyproject.toml             # プロジェクト設定
+├── env.example                # 環境変数のテンプレート
+├── cleanup.py                 # 開発用ユーティリティ
+</code></pre></div>
+
+<h2>依存関係と設定</h2>
+<p>プロジェクトの依存関係と設定を順に見ていきます。</p>
+<h3>1. Python プロジェクトの設定</h3>
+<p><code>uv</code> を使って <code>pyproject.toml</code> ファイルを作成し、プロジェクトを定義します。</p>
+<div class="callout callout-tip">
+<p class="callout-title">💡 ヒント</p>
+<p><code>uv</code> がインストールされていなければ、<a href="https://docs.astral.sh/uv/getting-started/installation/">こちら</a>の手順に従ってインストールできます。</p>
+</div>
+<div class="codehilite"><pre><span></span><code><span class="k">[project]</span>
+<span class="n">name</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"mcp-course-unit3-example"</span>
+<span class="n">version</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"0.1.0"</span>
+<span class="n">description</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"FastAPI and Gradio app for Hugging Face Hub discussion webhooks"</span>
+<span class="n">readme</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"README.md"</span>
+<span class="n">requires-python</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"&gt;=3.11"</span>
+<span class="n">dependencies</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">[</span>
+<span class="w">    </span><span class="s2">"fastapi&gt;=0.104.0"</span><span class="p">,</span>
+<span class="w">    </span><span class="s2">"uvicorn[standard]&gt;=0.24.0"</span><span class="p">,</span>
+<span class="w">    </span><span class="s2">"gradio&gt;=4.0.0"</span><span class="p">,</span>
+<span class="w">    </span><span class="s2">"huggingface-hub[mcp]&gt;=0.32.0"</span><span class="p">,</span>
+<span class="w">    </span><span class="s2">"pydantic&gt;=2.0.0"</span><span class="p">,</span>
+<span class="w">    </span><span class="s2">"python-multipart&gt;=0.0.6"</span><span class="p">,</span>
+<span class="w">    </span><span class="s2">"requests&gt;=2.31.0"</span><span class="p">,</span>
+<span class="w">    </span><span class="s2">"python-dotenv&gt;=1.0.0"</span><span class="p">,</span>
+<span class="w">    </span><span class="s2">"fastmcp&gt;=2.0.0"</span><span class="p">,</span>
+<span class="p">]</span>
+
+<span class="k">[build-system]</span>
+<span class="n">requires</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">[</span><span class="s2">"hatchling"</span><span class="p">]</span>
+<span class="n">build-backend</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"hatchling.build"</span>
+
+<span class="k">[tool.hatch.build.targets.wheel]</span>
+<span class="n">packages</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">[</span><span class="s2">"src"</span><span class="p">]</span>
+</code></pre></div>
+
+<p>さまざまなデプロイプラットフォームとの互換性のため、同じ内容を <code>requirements.txt</code> にも記述します。</p>
+<p>仮想環境を作成するには、次を実行します。</p>
+<div class="codehilite"><pre><span></span><code>uv<span class="w"> </span>venv
+<span class="nb">source</span><span class="w"> </span>.venv/bin/activate<span class="w"> </span><span class="c1"># Windows では .venv/Scripts/activate</span>
+</code></pre></div>
+
+<p>依存関係をインストールするには、次を実行します。</p>
+<div class="codehilite"><pre><span></span><code>uv<span class="w"> </span>sync
+</code></pre></div>
+
+<h3>2. 環境設定</h3>
+<p>必要な環境変数を記録するために <code>env.example</code> を作成します。</p>
+<div class="codehilite"><pre><span></span><code><span class="c1"># Hugging Face API トークン（必須）</span>
+<span class="c1"># 取得先: https://huggingface.co/settings/tokens</span>
+<span class="nv">HF_TOKEN</span><span class="o">=</span>hf_your_token_here
+
+<span class="c1"># Webhook シークレット（本番では必須）</span>
+<span class="c1"># 強力でランダムな文字列を使ってください</span>
+<span class="nv">WEBHOOK_SECRET</span><span class="o">=</span>your-webhook-secret-here
+
+<span class="c1"># エージェント用のモデル（任意）</span>
+<span class="nv">HF_MODEL</span><span class="o">=</span>owner/model
+
+<span class="c1"># MCP エージェントのプロバイダ（任意）</span>
+<span class="nv">HF_PROVIDER</span><span class="o">=</span>huggingface
+</code></pre></div>
+
+<p>Hugging Face API トークンは<a href="https://huggingface.co/settings/tokens">こちら</a>から取得する必要があります。</p>
+<p>Webhook シークレットも生成する必要があります。次のコマンドを実行すれば生成できます。</p>
+<div class="codehilite"><pre><span></span><code>python<span class="w"> </span>-c<span class="w"> </span><span class="s2">"import secrets; print(secrets.token_hex(32))"</span>
+</code></pre></div>
+
+<p>そのうえで、<code>env.example</code> ファイルをもとに、Webhook シークレットを <code>.env</code> ファイルに追加します。</p>
+<h2>次のステップ</h2>
+<p>プロジェクト構成と環境のセットアップができたので、次はいよいよ次の作業です。</p>
+<ol>
+<li><strong>MCP サーバーを作る</strong> - タグ付け機能の本体を実装する</li>
+<li><strong>Webhook リスナーを作る</strong> - 届いたディスカッションイベントを処理する</li>
+<li><strong>エージェントを統合する</strong> - MCP ツールと Webhook 処理をつなぐ</li>
+<li><strong>テストとデプロイ</strong> - 機能を検証し、Spaces にデプロイする</li>
+</ol>
+<p>次のセクションでは、Hugging Face Hub とのやり取りをすべて担当する MCP サーバーの作成に踏み込みます。</p>
+<div class="callout callout-tip">
+<p class="callout-title">💡 ヒント</p>
+<p><code>.env</code> ファイルは安全に保管し、決してバージョン管理にコミットしないでください。シークレットがうっかり漏れるのを防ぐため、<code>.env</code> ファイルは <code>.gitignore</code> に追加しておきましょう。</p>
+</div>
+</article>
+<nav class="page-nav"><a class="nav-link prev" href="introduction.html">← 前へ: Hugging Face Hub でプルリクエストエージェントを作る</a><a class="nav-link toc-link" href="../index.html">目次へ</a><a class="nav-link next" href="creating-the-mcp-server.html">次へ →: MCP サーバーの作成</a></nav>
+</main>
+<footer class="site-footer">
+  <p>原典: Hugging Face huggingface/mcp-course（<a href="https://github.com/huggingface/mcp-course">https://github.com/huggingface/mcp-course</a>）</p>
+  <p>日本語版の翻訳・公開: 霞ヶ関京 / 連絡先: GitHub <a href="https://github.com/yanikasumin">@yanikasumin</a> / YouTube <a href="https://www.youtube.com/@KASUMI_MOF">@KASUMI_MOF</a></p>
+  <p class="demo-note">このサイトはデモ版です。内容は順次更新されます。</p>
+</footer>
+<script src="../../site.js"></script>
+</body>
+</html>
