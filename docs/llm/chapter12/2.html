@@ -1,0 +1,230 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>強化学習と LLM におけるその役割の紹介 | Hugging Face コース日本語版（デモ版）</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Shippori+Mincho:wght@500;700&family=Zen+Kaku+Gothic+New:wght@400;500;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../../style.css">
+<script>
+window.MathJax = { tex: { inlineMath: [['$', '$'], ['\\(', '\\)']], displayMath: [['$$', '$$'], ['\\[', '\\]']] }, options: { skipHtmlTags: ['script','noscript','style','textarea','pre','code'] } };
+</script>
+<script async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml.js"></script>
+</head>
+<body>
+<header class="site-header">
+  <div class="header-inner">
+    <a class="site-title" href="../../index.html">Hugging Face コース日本語版</a>
+    <span class="demo-badge">デモ版</span>
+  </div>
+</header>
+<main class="container">
+<p class="course-crumb"><a href="../index.html">LLM コース</a>
+<span class="badge badge-qa-pass">翻訳QA 最終合格</span></p>
+<nav class="page-nav"><a class="nav-link prev" href="1.html">← 前へ: 学生のための Open R1</a><a class="nav-link toc-link" href="../index.html">目次へ</a><a class="nav-link next" href="3.html">次へ →: DeepSeek R1 論文を理解する</a></nav>
+<article class="content">
+<h1>強化学習と LLM におけるその役割の紹介</h1>
+<p>最初のページへようこそ！</p>
+<p>強化学習（RL）のエキサイティングな世界への旅を始め、RL が、皆さんが日常的に使っているような言語モデルの学習方法をどう変革しているのかを見ていきましょう。</p>
+<div class="callout callout-tip">
+<p class="callout-title">💡 ヒント</p>
+<p>この章では、言語モデルのための強化学習に焦点を当てます。しかし強化学習は、言語モデル以外にも多くの応用がある広い分野です。強化学習についてもっと学びたい方は、<a href="https://huggingface.co/courses/deep-rl-course/en/unit1/introduction">Deep Reinforcement Learning コース</a>をチェックしてください。</p>
+</div>
+<p>このページでは、RL に初めて触れる方にも分かりやすく、親しみやすい形で紹介します。核となる考え方を分解し、RL が大規模言語モデル（LLM）の分野でなぜこれほど重要になっているのかを見ていきます。</p>
+<h2>強化学習（RL）とは何か？</h2>
+<p>犬を訓練するところを想像してみてください。「お座り」を教えたいとします。「お座り！」と言って、犬が座ったら、おやつをあげて褒めます。座らなかったら、そっと誘導したり、もう一度試したりします。やがて犬は、座ることとポジティブな報酬（おやつと褒め言葉）を結びつけて覚え、「お座り！」と言われたら座る可能性が高くなります。強化学習では、このフィードバックを<strong>報酬（reward）</strong>と呼びます。</p>
+<p>これが、強化学習の基本的な考え方です！犬の代わりに<strong>言語モデル</strong>があり（強化学習ではこれを<strong>エージェント（agent）</strong>と呼びます）、あなたの代わりにフィードバックを与える<strong>環境（environment）</strong>があります。</p>
+<p><img alt="RL の用語とプロセス" src="https://huggingface.co/reasoning-course/images/resolve/main/grpo/3.jpg" /></p>
+<p>RL の重要な要素を分解してみましょう。</p>
+<h3>エージェント</h3>
+<p>学習者です。犬の例では、犬がエージェントです。LLM の文脈では、LLM 自体が学習させたいエージェントになります。エージェントは意思決定を行い、環境とその報酬から学びます。</p>
+<h3>環境</h3>
+<p>エージェントが生活し、相互作用する世界です。犬にとっての環境は、家と飼い主です。LLM にとっての環境はもう少し抽象的で、対話するユーザーであったり、設定したシミュレーションのシナリオであったりします。環境はエージェントにフィードバックを提供します。</p>
+<h3>行動</h3>
+<p>エージェントが環境の中で取れる選択肢です。犬の行動は「座る」「立つ」「吠える」などです。LLM にとっての行動は、文中の単語を生成すること、質問に対してどの答えを返すかを選ぶこと、会話でどう応答するかを決めることなどです。</p>
+<h3>報酬</h3>
+<p>エージェントが行動を取った後に、環境がエージェントに与えるフィードバックです。報酬は通常、数値で表されます。</p>
+<p><strong>正の報酬</strong>は、おやつや褒め言葉のようなものです。「よくできました、その調子！」とエージェントに伝えます。</p>
+<p><strong>負の報酬</strong>（ペナルティ）は、そっと「ダメ」と言うようなものです。「それはちょっと違う、別の方法を試して」と伝えます。犬にとっては、おやつが報酬です。</p>
+<p>LLM にとっての報酬は、特定のタスクで LLM がどれだけうまくやれているかを反映するよう設計されます。たとえば、応答がどれだけ役立つか、真実か、無害か、といったものです。</p>
+<h3>方策</h3>
+<p>エージェントが行動を選ぶための戦略です。「お座り！」と言われたら何をすべきかについての、犬の理解のようなものです。RL では、方策こそが学習し、改善したい対象そのものです。方策は、異なる状況でどの行動を取るかをエージェントに指示する規則の集合、または関数です。最初はランダムかもしれませんが、エージェントが学習するにつれて、より高い報酬につながる行動を選ぶのが上手くなっていきます。</p>
+<h2>RL のプロセス：試行錯誤</h2>
+<p><img alt="RL のプロセス" src="https://huggingface.co/reasoning-course/images/resolve/main/grpo/1.jpg" /></p>
+<p>強化学習は、試行錯誤のプロセスを通じて行われます。</p>
+<table>
+<thead>
+<tr>
+<th>ステップ</th>
+<th>プロセス</th>
+<th>説明</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>1. 観察</td>
+<td>エージェントが環境を観察する</td>
+<td>エージェントは現在の状態と周囲に関する情報を取り込む</td>
+</tr>
+<tr>
+<td>2. 行動</td>
+<td>エージェントが現在の方策に基づいて行動を取る</td>
+<td>学習した戦略（方策）を使って、エージェントは次に何をするかを決める</td>
+</tr>
+<tr>
+<td>3. フィードバック</td>
+<td>環境がエージェントに報酬を与える</td>
+<td>エージェントは、その行動がどれだけ良かったか悪かったかのフィードバックを受け取る</td>
+</tr>
+<tr>
+<td>4. 学習</td>
+<td>エージェントが報酬に基づいて方策を更新する</td>
+<td>エージェントは戦略を調整する。高い報酬につながった行動を強化し、低い報酬につながった行動を避ける</td>
+</tr>
+<tr>
+<td>5. 反復</td>
+<td>プロセスを繰り返す</td>
+<td>このサイクルが続き、エージェントは意思決定を継続的に改善していく</td>
+</tr>
+</tbody>
+</table>
+<p>自転車の乗り方を覚えることを考えてみてください。最初はぐらついて転ぶかもしれません（負の報酬！）。しかし、バランスを取ってスムーズにペダルを漕げると、気持ちがいい（正の報酬！）。このフィードバックに基づいて、少し傾いたり、速く漕いだりしながら行動を調整し、やがて上手に乗れるようになります。RL も似ています。相互作用とフィードバックを通じて学ぶことです。</p>
+<h2>大規模言語モデル（LLM）における RL の役割</h2>
+<p>では、なぜ RL は大規模言語モデルにとってそれほど重要なのでしょうか？</p>
+<p>本当に優れた LLM の学習は難しいものです。インターネット上の膨大な量のテキストで学習すれば、文の次の単語を予測するのが非常に上手くなります。流暢で文法的に正しいテキストを生成する方法は、こうして学ばれるのです。<a href="../chapter2/1.html">第2章</a>で学んだとおりです。</p>
+<p>しかし、流暢なだけでは十分ではありません。LLM には、単に単語を上手くつなげる以上のこと、つまり次のような特性が求められます。</p>
+<ul>
+<li><strong>役立つこと：</strong> 有用で関連性のある情報を提供する。</li>
+<li><strong>無害であること：</strong> 攻撃的、偏見を含む、または有害な内容を生成しない。</li>
+<li><strong>人間の選好に合っていること：</strong> 人間が自然で、役立ち、魅力的に感じる方法で応答する。</li>
+</ul>
+<p>LLM の事前学習の手法は、主にテキストデータから次の単語を予測することに依存しており、これらの側面では不十分な場合があります。</p>
+<p>教師あり学習は構造化された出力を生成するのに優れていますが、役立ち、無害で、人間の選好に合った応答を生成するのにはあまり効果的でない場合があります。教師あり学習については<a href="../chapter11/1.html">第11章</a>で探ります。</p>
+<p>ファインチューニングされたモデルは、流暢で構造化されたテキストを生成しても、事実として誤っていたり、偏見を含んでいたり、ユーザーの質問に役立つ形で答えられていなかったりすることがあります。</p>
+<p><strong>ここで強化学習の出番です！</strong> RL は、事前学習された LLM をファインチューニングして、求める品質をよりよく達成するための方法を提供します。流暢に吠える方法を知っているだけの犬ではなく、行儀が良く、役立つパートナーになるよう、LLM の犬に追加の訓練を施すようなものです！</p>
+<h2>人間のフィードバックによる強化学習（RLHF）</h2>
+<p>言語モデルをアラインするための非常に人気のある手法が、<strong>人間のフィードバックによる強化学習（RLHF）</strong> です。RLHF では、人間のフィードバックを RL における「報酬」信号の代理として使います。その仕組みは次のとおりです。</p>
+<ol>
+<li>
+<p><strong>人間の選好を得る：</strong> 人間に、同じ入力プロンプトに対して LLM が生成した異なる応答を比較してもらい、どちらの応答を好むかを教えてもらいます。たとえば、「フランスの首都はどこですか？」という質問に対する2つの異なる答えを人間に見せて、「どちらの答えが優れていますか？」と尋ねます。</p>
+</li>
+<li>
+<p><strong>報酬モデルを学習する：</strong> この人間の選好データを使って、<strong>報酬モデル</strong>と呼ばれる別のモデルを学習します。この報酬モデルは、人間がどのような応答を好むかを予測することを学びます。役立ち度、無害さ、人間の選好との一致に基づいて応答にスコアを付けることを学びます。</p>
+</li>
+<li>
+<p><strong>RL で LLM をファインチューニングする：</strong> ここで、報酬モデルを LLM エージェントの環境として使います。LLM は応答（行動）を生成し、報酬モデルがその応答にスコアを付けます（報酬を提供します）。本質的には、（人間の選好から学習した）報酬モデルが良いと考えるテキストを生成するよう LLM を学習させているのです。</p>
+</li>
+</ol>
+<p><img alt="RL の基本概念" src="https://huggingface.co/reasoning-course/images/resolve/main/grpo/2.jpg" /></p>
+<p>全体的な観点から、LLM で RL を使う利点を見てみましょう。</p>
+<table>
+<thead>
+<tr>
+<th>利点</th>
+<th>説明</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>制御の改善</td>
+<td>RL により、LLM が生成するテキストの種類をより細かく制御できます。役立つ、創造的、簡潔であるといった特定の目標に沿ったテキストを生成するよう導けます。</td>
+</tr>
+<tr>
+<td>人間の価値観とのアライメントの強化</td>
+<td>特に RLHF は、複雑で主観的な場合が多い人間の選好に LLM を合わせるのに役立ちます。「良い答えとは何か」の規則を書き下すのは難しいですが、人間は応答を簡単に判断し、比較できます。RLHF により、モデルはこれらの人間の判断から学べます。</td>
+</tr>
+<tr>
+<td>望ましくない振る舞いの軽減</td>
+<td>RL は、有毒な言語の生成、誤情報の拡散、偏見の表出といった、LLM の否定的な振る舞いを減らすために使えます。これらの振る舞いにペナルティを与える報酬を設計することで、モデルをそれらを避ける方向に促せます。</td>
+</tr>
+</tbody>
+</table>
+<p>人間のフィードバックによる強化学習は、OpenAI の GPT-4、Google の Gemini、DeepSeek の R1 など、現在最も人気のある LLM の多くを学習するために使われてきました。RLHF には、複雑さや洗練度が異なる幅広い手法があります。この章では、人間の選好に合った、役立ち、無害な LLM の学習に効果的であることが示されている RLHF の手法、Group Relative Policy Optimization（GRPO）に焦点を当てます。</p>
+<h2>GRPO（Group Relative Policy Optimization）が重要な理由</h2>
+<p>RLHF には多くの手法がありますが、このコースが GRPO に焦点を当てるのは、GRPO が言語モデルのための強化学習における大きな進歩を表しているためです。</p>
+<p>RLHF の他の人気のある手法を2つ簡単に見てみましょう。</p>
+<ul>
+<li>Proximal Policy Optimization（PPO）</li>
+<li>Direct Preference Optimization（DPO）</li>
+</ul>
+<p>Proximal Policy Optimization（PPO）は、RLHF において最初期に高い効果を上げた手法の一つです。別の報酬モデルからの報酬に基づいて、方策勾配法を使って方策を更新します。</p>
+<p>Direct Preference Optimization（DPO）は後に、選好データを直接使うことで別の報酬モデルを不要にする、よりシンプルな手法として開発されました。本質的には、選ばれた応答と棄却された応答の間の分類タスクとして問題を設定するものです。</p>
+<div class="callout callout-tip">
+<p class="callout-title">💡 ヒント</p>
+<p>DPO と PPO はそれ自体が複雑な強化学習アルゴリズムであり、このコースでは扱いません。もっと詳しく知りたい方は、次のリソースをチェックしてください。</p>
+<ul>
+<li><a href="https://huggingface.co/docs/trl/main/en/ppo_trainer">Proximal Policy Optimization</a></li>
+<li><a href="https://huggingface.co/docs/trl/main/en/dpo_trainer">Direct Preference Optimization</a></li>
+</ul>
+</div>
+<p>DPO や PPO とは異なり、GRPO は類似したサンプルをグループ化し、グループとして比較します。このグループベースのアプローチは、他の手法と比較して、より安定した勾配と優れた収束特性を提供します。</p>
+<p>GRPO は DPO のような選好データを使わず、モデルまたは関数からの報酬信号を使って、類似したサンプルのグループを比較します。</p>
+<p>GRPO は報酬信号の取得方法が柔軟で、報酬モデルを使うこともできますが（PPO のように）、厳密には必須ではありません。これは、GRPO が応答の品質を評価できる任意の関数やモデルからの報酬信号を組み込めるためです。</p>
+<p>たとえば、長さの関数を使って短い応答に報酬を与えたり、数式ソルバーを使って解の正しさを検証したり、事実の正しさの関数を使って、より事実として正確な応答に報酬を与えたりできます。この柔軟性により、GRPO はさまざまな種類のアライメントタスクに特に汎用的に使えます。</p>
+<hr />
+<p>モジュール1の修了、おめでとうございます！強化学習と、それが LLM で果たす役割について、基礎をひととおり学びました。RL の基本概念、LLM に RL が使われる理由を理解し、この分野の重要なアルゴリズムである GRPO の紹介を受けました。</p>
+<p>次のモジュールでは、手を動かして DeepSeek R1 論文に深く入り込み、これらの概念が実際にどう使われるかを見ていきます！</p>
+<h2>クイズ</h2>
+<h3>1. 強化学習の主要な構成要素は何ですか？</h3>
+<div class="quiz">
+<div class="quiz-choices">
+<button type="button" class="quiz-choice" data-correct="true" data-quiz-idx="0">エージェント、環境、行動、報酬、方策</button>
+<div class="quiz-explain-src" id="qe-125591347754752-0" hidden>正解です！これらは強化学習システムを構成する基本的な要素です。</div>
+<button type="button" class="quiz-choice" data-correct="false" data-quiz-idx="1">モデル、データ、損失関数、オプティマイザ</button>
+<div class="quiz-explain-src" id="qe-125591347754752-1" hidden>これらは教師あり学習により一般的に関連する要素です。</div>
+<button type="button" class="quiz-choice" data-correct="false" data-quiz-idx="2">入力、出力、隠れ層</button>
+<div class="quiz-explain-src" id="qe-125591347754752-2" hidden>これらはニューラルネットワークのアーキテクチャの要素であり、RL 固有の要素ではありません。</div>
+</div><div class="quiz-feedback" hidden></div></div>
+<h3>2. 言語モデルの学習における RLHF の主な利点は何ですか？</h3>
+<div class="quiz">
+<div class="quiz-choices">
+<button type="button" class="quiz-choice" data-correct="true" data-quiz-idx="0">モデルを人間の選好と価値観に合わせるのに役立つ</button>
+<div class="quiz-explain-src" id="qe-125591347747968-0" hidden>正解です！RLHF は人間のフィードバックを使って、モデルをより役立ち、無害で、選好に合った振る舞いへと導きます。</div>
+<button type="button" class="quiz-choice" data-correct="false" data-quiz-idx="1">モデルのテキスト生成を速くする</button>
+<div class="quiz-explain-src" id="qe-125591347747968-1" hidden>RLHF の主目的は生成速度の改善ではありません。</div>
+<button type="button" class="quiz-choice" data-correct="false" data-quiz-idx="2">モデルのメモリ使用量を削減する</button>
+<div class="quiz-explain-src" id="qe-125591347747968-2" hidden>RLHF はモデルの効率やメモリの最適化には焦点を当てていません。</div>
+</div><div class="quiz-feedback" hidden></div></div>
+<h3>3. LLM のための RL の文脈で、「行動」とは何を表しますか？</h3>
+<div class="quiz">
+<div class="quiz-choices">
+<button type="button" class="quiz-choice" data-correct="true" data-quiz-idx="0">単語を生成すること、または会話で応答を選ぶこと</button>
+<div class="quiz-explain-src" id="qe-125591347754752-0" hidden>正解です！LLM にとって、行動は通常、テキスト生成に関する決定を伴います。</div>
+<button type="button" class="quiz-choice" data-correct="false" data-quiz-idx="1">モデルの重みを更新すること</button>
+<div class="quiz-explain-src" id="qe-125591347754752-1" hidden>これは学習プロセスの一部であり、RL の文脈での行動ではありません。</div>
+<button type="button" class="quiz-choice" data-correct="false" data-quiz-idx="2">入力トークンを処理すること</button>
+<div class="quiz-explain-src" id="qe-125591347754752-2" hidden>これはモデルの動作の一部であり、RL の文脈での行動ではありません。</div>
+</div><div class="quiz-feedback" hidden></div></div>
+<h3>4. 言語モデルの RL 学習における報酬の役割は何ですか？</h3>
+<div class="quiz">
+<div class="quiz-choices">
+<button type="button" class="quiz-choice" data-correct="true" data-quiz-idx="0">モデルの応答が望ましい振る舞いにどれだけ合っているかについてフィードバックを提供すること</button>
+<div class="quiz-explain-src" id="qe-125591347747968-0" hidden>正解です！報酬はモデルを、より役立ち、真実で、適切な応答を生成する方向へ導きます。</div>
+<button type="button" class="quiz-choice" data-correct="false" data-quiz-idx="1">モデルの語彙の大きさを測ること</button>
+<div class="quiz-explain-src" id="qe-125591347747968-1" hidden>報酬は語彙の知識を評価するためには使われません。</div>
+<button type="button" class="quiz-choice" data-correct="false" data-quiz-idx="2">モデルの学習速度を決めること</button>
+<div class="quiz-explain-src" id="qe-125591347747968-2" hidden>報酬は応答の品質についてのフィードバックを提供するものであり、学習効率についてのものではありません。</div>
+</div><div class="quiz-feedback" hidden></div></div>
+<h3>5. LLM のための RL の文脈で、報酬とは何ですか？</h3>
+<div class="quiz">
+<div class="quiz-choices">
+<button type="button" class="quiz-choice" data-correct="true" data-quiz-idx="0">応答の品質を測る数値スコア</button>
+<div class="quiz-explain-src" id="qe-125591347754752-0" hidden>正解です！報酬は応答の品質についてのフィードバックを提供し、モデルを望ましい振る舞いへと導きます。</div>
+<button type="button" class="quiz-choice" data-correct="false" data-quiz-idx="1">応答を生成する関数</button>
+<div class="quiz-explain-src" id="qe-125591347754752-1" hidden>報酬は応答の品質についてのフィードバックであり、生成プロセスそのものではありません。</div>
+<button type="button" class="quiz-choice" data-correct="false" data-quiz-idx="2">応答の品質を評価するモデル</button>
+<div class="quiz-explain-src" id="qe-125591347754752-2" hidden>報酬は応答の品質についてのフィードバックであり、評価モデルではありません。</div>
+</div><div class="quiz-feedback" hidden></div></div>
+</article>
+<nav class="page-nav"><a class="nav-link prev" href="1.html">← 前へ: 学生のための Open R1</a><a class="nav-link toc-link" href="../index.html">目次へ</a><a class="nav-link next" href="3.html">次へ →: DeepSeek R1 論文を理解する</a></nav>
+</main>
+<footer class="site-footer">
+  <p>原典: Hugging Face huggingface/course（<a href="https://github.com/huggingface/course">https://github.com/huggingface/course</a>）</p>
+  <p>日本語版の翻訳・公開: 霞ヶ関京 / 連絡先: GitHub <a href="https://github.com/yanikasumin">@yanikasumin</a> / YouTube <a href="https://www.youtube.com/@KASUMI_MOF">@KASUMI_MOF</a></p>
+  <p class="demo-note">このサイトはデモ版です。内容は順次更新されます。</p>
+</footer>
+<script src="../../site.js"></script>
+</body>
+</html>

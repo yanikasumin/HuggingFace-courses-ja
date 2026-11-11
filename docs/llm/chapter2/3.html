@@ -1,0 +1,274 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>モデル | Hugging Face コース日本語版（デモ版）</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Shippori+Mincho:wght@500;700&family=Zen+Kaku+Gothic+New:wght@400;500;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../../style.css">
+<script>
+window.MathJax = { tex: { inlineMath: [['$', '$'], ['\\(', '\\)']], displayMath: [['$$', '$$'], ['\\[', '\\]']] }, options: { skipHtmlTags: ['script','noscript','style','textarea','pre','code'] } };
+</script>
+<script async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml.js"></script>
+</head>
+<body>
+<header class="site-header">
+  <div class="header-inner">
+    <a class="site-title" href="../../index.html">Hugging Face コース日本語版</a>
+    <span class="demo-badge">デモ版</span>
+  </div>
+</header>
+<main class="container">
+<p class="course-crumb"><a href="../index.html">LLM コース</a>
+<span class="badge badge-qa-pass">翻訳QA 最終合格</span></p>
+<nav class="page-nav"><a class="nav-link prev" href="2.html">← 前へ: パイプラインの裏側</a><a class="nav-link toc-link" href="../index.html">目次へ</a><a class="nav-link next" href="4.html">次へ →: トークナイザ</a></nav>
+<article class="content">
+<h1>モデル</h1>
+<div class="youtube-embed"><iframe src="https://www.youtube-nocookie.com/embed/AhChOFRegn4" title="YouTube video" loading="lazy" allowfullscreen referrerpolicy="strict-origin-when-cross-origin"></iframe></div>
+<p>このセクションでは、モデルの作成と使い方を詳しく見ていきます。チェックポイントから任意のモデルをインスタンス化したいときに便利な <code>AutoModel</code> クラスを使います。</p>
+<h2>Transformer を作成する</h2>
+<p>まず、<code>AutoModel</code> をインスタンス化すると何が起きるのかを確認します。</p>
+<div class="codehilite"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">transformers</span><span class="w"> </span><span class="kn">import</span> <span class="n">AutoModel</span>
+
+<span class="n">model</span> <span class="o">=</span> <span class="n">AutoModel</span><span class="o">.</span><span class="n">from_pretrained</span><span class="p">(</span><span class="s2">"bert-base-cased"</span><span class="p">)</span>
+</code></pre></div>
+
+<p>トークナイザと同様に、<code>from_pretrained()</code> メソッドはモデルのデータを Hugging Face Hub からダウンロードし、キャッシュします。前述のとおり、チェックポイント名は特定のモデルアーキテクチャと重みに対応しています。このチェックポイントは、12層、隠れサイズ768、アテンションヘッド12個という基本構成を持ち、大文字と小文字を区別する（cased）BERT モデルに対応しています。Hub には多数のチェックポイントがあり、<a href="https://huggingface.co/models">このページ</a>で探すことができます。</p>
+<p><code>AutoModel</code> をはじめとする Auto クラスは、指定したチェックポイントに対応するモデルアーキテクチャを選択するための、シンプルなラッパーです。「auto（自動）」クラスというのは、適切なモデルアーキテクチャを推測し、正しいモデルクラスをインスタンス化してくれるという意味です。ただし、使いたいモデルの種類がわかっている場合は、そのアーキテクチャを定義するクラスを直接使うこともできます。</p>
+<div class="codehilite"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">transformers</span><span class="w"> </span><span class="kn">import</span> <span class="n">BertModel</span>
+
+<span class="n">model</span> <span class="o">=</span> <span class="n">BertModel</span><span class="o">.</span><span class="n">from_pretrained</span><span class="p">(</span><span class="s2">"bert-base-cased"</span><span class="p">)</span>
+</code></pre></div>
+
+<h2>読み込みと保存</h2>
+<p>モデルの保存は、トークナイザの保存と同じくらい簡単です。実際、モデルにも同じ <code>save_pretrained()</code> メソッドがあり、モデルの重みとアーキテクチャの設定を保存します。</p>
+<div class="codehilite"><pre><span></span><code><span class="n">model</span><span class="o">.</span><span class="n">save_pretrained</span><span class="p">(</span><span class="s2">"directory_on_my_computer"</span><span class="p">)</span>
+</code></pre></div>
+
+<p>これにより、ディスクに2つのファイルが保存されます。</p>
+<div class="codehilite"><pre><span></span><code>ls directory_on_my_computer
+
+config.json model.safetensors
+</code></pre></div>
+
+<p><em>config.json</em> ファイルの中を見ると、モデルアーキテクチャを構築するために必要な属性がすべてそろっています。このファイルには、チェックポイントの由来や、そのチェックポイントを最後に保存したときに使っていた 🤗 Transformers のバージョンといったメタデータも含まれています。</p>
+<p><em>pytorch_model.safetensors</em> ファイルは state dictionary（状態辞書）として知られており、モデルのすべての重みが含まれています。この2つのファイルは連携して動作します。設定ファイルはモデルアーキテクチャを知るために必要で、モデルの重みはモデルのパラメータです。</p>
+<p>保存したモデルを再利用するには、もう一度 <code>from_pretrained()</code> メソッドを使います。</p>
+<div class="codehilite"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">transformers</span><span class="w"> </span><span class="kn">import</span> <span class="n">AutoModel</span>
+
+<span class="n">model</span> <span class="o">=</span> <span class="n">AutoModel</span><span class="o">.</span><span class="n">from_pretrained</span><span class="p">(</span><span class="s2">"directory_on_my_computer"</span><span class="p">)</span>
+</code></pre></div>
+
+<p>🤗 Transformers ライブラリの素晴らしい機能の1つは、モデルとトークナイザをコミュニティと簡単に共有できることです。そのためには、<a href="https://huggingface.co">Hugging Face</a> のアカウントが必要です。ノートブックを使っている場合は、次で簡単にログインできます。</p>
+<div class="codehilite"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">huggingface_hub</span><span class="w"> </span><span class="kn">import</span> <span class="n">notebook_login</span>
+
+<span class="n">notebook_login</span><span class="p">()</span>
+</code></pre></div>
+
+<p>それ以外の場合は、ターミナルで次を実行します。</p>
+<div class="codehilite"><pre><span></span><code>huggingface-cli<span class="w"> </span>login
+</code></pre></div>
+
+<p>その後、<code>push_to_hub()</code> メソッドを使って、モデルを Hub にプッシュできます。</p>
+<div class="codehilite"><pre><span></span><code><span class="n">model</span><span class="o">.</span><span class="n">push_to_hub</span><span class="p">(</span><span class="s2">"my-awesome-model"</span><span class="p">)</span>
+</code></pre></div>
+
+<p>これにより、モデルファイルが Hub にアップロードされ、あなたの名前空間の下に <em>my-awesome-model</em> という名前のリポジトリが作られます。あとは誰でも、<code>from_pretrained()</code> メソッドであなたのモデルを読み込めます！</p>
+<div class="codehilite"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">transformers</span><span class="w"> </span><span class="kn">import</span> <span class="n">AutoModel</span>
+
+<span class="n">model</span> <span class="o">=</span> <span class="n">AutoModel</span><span class="o">.</span><span class="n">from_pretrained</span><span class="p">(</span><span class="s2">"your-username/my-awesome-model"</span><span class="p">)</span>
+</code></pre></div>
+
+<p>Hub API では、ほかにもさまざまなことができます。</p>
+<ul>
+<li>ローカルのリポジトリからモデルをプッシュする</li>
+<li>すべてを再アップロードすることなく、特定のファイルを更新する</li>
+<li>モデルカードを追加して、モデルの能力、制限、既知のバイアスなどを文書化する</li>
+</ul>
+<p>詳しいチュートリアルについては<a href="https://huggingface.co/docs/huggingface_hub/how-to-upstream">ドキュメント</a>を参照してください。発展的な内容は <a href="../chapter4/1.html">第4章</a> でも扱います。</p>
+<h2>テキストをエンコードする</h2>
+<p>Transformer モデルは、入力を数値に変換することでテキストを処理します。ここでは、テキストがトークナイザで処理されるときに何が起きているのかを、具体的に見ていきます。<a href="../chapter1/1.html">第1章</a> で既に見たように、トークナイザはテキストをトークンに分割し、それらのトークンを数値に変換します。この変換は、シンプルなトークナイザで確認できます。</p>
+<div class="codehilite"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">transformers</span><span class="w"> </span><span class="kn">import</span> <span class="n">AutoTokenizer</span>
+
+<span class="n">tokenizer</span> <span class="o">=</span> <span class="n">AutoTokenizer</span><span class="o">.</span><span class="n">from_pretrained</span><span class="p">(</span><span class="s2">"bert-base-cased"</span><span class="p">)</span>
+
+<span class="n">encoded_input</span> <span class="o">=</span> <span class="n">tokenizer</span><span class="p">(</span><span class="s2">"Hello, I'm a single sentence!"</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">encoded_input</span><span class="p">)</span>
+</code></pre></div>
+
+<p>```python out
+{'input_ids': [101, 8667, 117, 1000, 1045, 1005, 1049, 2235, 17662, 12172, 1012, 102], 
+ 'token_type_ids': [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], 
+ 'attention_mask': [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1]}</p>
+<div class="codehilite"><pre><span></span><code>次のフィールドを持つ辞書が得られます。
+
+- input_ids: トークンの数値表現
+- token_type_ids: 入力のどの部分が文 A で、どの部分が文 B かをモデルに伝えるもの（次のセクションで詳しく説明します）
+- attention_mask: どのトークンに注意を向けるべきで、どのトークンには向けるべきでないかを示すもの（この後すぐに詳しく説明します）
+
+入力 ID をデコードすれば、元のテキストを取り戻せます。
+
+```py
+tokenizer.decode(encoded_input["input_ids"])
+</code></pre></div>
+
+<p>```python out
+"[CLS] Hello, I'm a single sentence! [SEP]"</p>
+<div class="codehilite"><pre><span></span><code>トークナイザが、モデルに必要な特殊トークン `[CLS]` と `[SEP]` を追加していることに気づくでしょう。すべてのモデルが特殊トークンを必要とするわけではありません。特殊トークンは、モデルがそれらを使って事前学習された場合に利用されます。その場合、モデルがそれらのトークンを想定しているため、トークナイザが追加する必要があります。
+
+複数の文を一度にエンコードすることもできます。バッチとしてまとめる（間もなく説明します）か、リストとして渡します。
+
+```py
+encoded_input = tokenizer("How are you?", "I'm fine, thank you!")
+print(encoded_input)
+</code></pre></div>
+
+<p>```python out
+{'input_ids': [[101, 1731, 1132, 1128, 136, 102], [101, 1045, 1005, 1049, 2503, 117, 5763, 1128, 136, 102]], 
+ 'token_type_ids': [[0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0, 0, 0]], 
+ 'attention_mask': [[1, 1, 1, 1, 1, 1], [1, 1, 1, 1, 1, 1, 1, 1, 1, 1]]}</p>
+<div class="codehilite"><pre><span></span><code>複数の文を渡すと、トークナイザは辞書の値ごとに、文ごとのリストを返す点に注意してください。トークナイザに、PyTorch のテンソルを直接返すよう求めることもできます。
+
+```py
+encoded_input = tokenizer("How are you?", "I'm fine, thank you!", return_tensors="pt")
+print(encoded_input)
+</code></pre></div>
+
+<p>```python out
+{'input_ids': tensor([[  101,  1731,  1132,  1128,   136,   102],
+         [  101,  1045,  1005,  1049,  2503,   117,  5763,  1128,   136,   102]]), 
+ 'token_type_ids': tensor([[0, 0, 0, 0, 0, 0],
+         [0, 0, 0, 0, 0, 0, 0, 0, 0, 0]]), 
+ 'attention_mask': tensor([[1, 1, 1, 1, 1, 1],
+         [1, 1, 1, 1, 1, 1, 1, 1, 1, 1]])}</p>
+<div class="codehilite"><pre><span></span><code>しかし、ここで問題があります。2つのリストの長さが同じではないのです！配列とテンソルは長方形（矩形）でなければならないため、これらのリストをそのまま PyTorch テンソル（や NumPy 配列）に変換することはできません。そのためにトークナイザが用意しているオプションが、パディングです。
+
+### 入力をパディングする
+
+トークナイザに入力をパディングするよう求めると、最も長い文よりも短い文に特殊なパディングトークンを追加して、すべての文の長さを揃えてくれます。
+
+```py
+encoded_input = tokenizer(
+    ["How are you?", "I'm fine, thank you!"], padding=True, return_tensors="pt"
+)
+print(encoded_input)
+</code></pre></div>
+
+<p>```python out
+{'input_ids': tensor([[  101,  1731,  1132,  1128,   136,   102,     0,     0,     0,     0],
+         [  101,  1045,  1005,  1049,  2503,   117,  5763,  1128,   136,   102]]), 
+ 'token_type_ids': tensor([[0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+         [0, 0, 0, 0, 0, 0, 0, 0, 0, 0]]), 
+ 'attention_mask': tensor([[1, 1, 1, 1, 1, 1, 0, 0, 0, 0],
+         [1, 1, 1, 1, 1, 1, 1, 1, 1, 1]])}</p>
+<div class="codehilite"><pre><span></span><code>これで長方形のテンソルが得られました！パディングトークンは、入力 ID では ID 0 としてエンコードされ、アテンションマスクの値も 0 になっている点に注意してください。これは、パディングトークンが実際の文の一部ではなく、モデルが分析すべき対象ではないためです。
+
+### 入力を切り捨てる
+
+テンソルが大きくなりすぎて、モデルが処理できなくなることもあります。たとえば BERT は、最大で512トークンまでのシーケンスでしか事前学習されていないため、それより長いシーケンスは処理できません。モデルが処理できる長さを超えたシーケンスがある場合は、`truncation` パラメータを使って切り捨てる必要があります。
+
+```py
+encoded_input = tokenizer(
+    "This is a very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very long sentence.",
+    truncation=True,
+)
+print(encoded_input["input_ids"])
+</code></pre></div>
+
+<p>```python out
+[101, 1188, 1110, 170, 1505, 1505, 1505, 1505, 1505, 1505, 1505, 1505, 1505, 1505, 1505, 1505, 1505, 1505, 1505, 1505, 1505, 1505, 1505, 1505, 1505, 1505, 1505, 1505, 1505, 1505, 1505, 1505, 1505, 1505, 1505, 1505, 1505, 1505, 1505, 1505, 1505, 1505, 1505, 1505, 1505, 1505, 1505, 1505, 1505, 1505, 1505, 1505, 1505, 1505, 1505, 1505, 1505, 1505, 1505, 1505, 1505, 1505, 1505, 1505, 1505, 1505, 1505, 1505, 1505, 1505, 1505, 1505, 1505, 1505, 1505, 1505, 1505, 1505, 1505, 1505, 1505, 1505, 1505, 1505, 1505, 1505, 1505, 1505, 1505, 1505, 1505, 1505, 1505, 1505, 1505, 1505, 1505, 1505, 1505, 1505, 1505, 1505, 1505, 1505, 1505, 1505, 1505, 1505, 1505, 1505, 1505, 1505, 1505, 1505, 1505, 1505, 1505, 1505, 1505, 1505, 1505, 1505, 1505, 1505, 1505, 1505, 1505, 1505, 1179, 5650, 119, 102]</p>
+<div class="codehilite"><pre><span></span><code>パディングと切り捨ての引数を組み合わせれば、テンソルのサイズを必要な大きさに揃えられます。
+
+```py
+encoded_input = tokenizer(
+    ["How are you?", "I'm fine, thank you!"],
+    padding=True,
+    truncation=True,
+    max_length=5,
+    return_tensors="pt",
+)
+print(encoded_input)
+</code></pre></div>
+
+<p>```python out
+{'input_ids': tensor([[  101,  1731,  1132,  1128,   102],
+         [  101,  1045,  1005,  1049,   102]]), 
+ 'token_type_ids': tensor([[0, 0, 0, 0, 0],
+         [0, 0, 0, 0, 0]]), 
+ 'attention_mask': tensor([[1, 1, 1, 1, 1],
+         [1, 1, 1, 1, 1]])}</p>
+<div class="codehilite"><pre><span></span><code>### 特殊トークンの追加
+
+特殊トークン（あるいは少なくともその概念）は、BERT とその派生モデルにとって特に重要です。これらのトークンは、文の開始（`[CLS]`）や文同士の区切り（`[SEP]`）など、文の境界をよりよく表すために追加されます。シンプルな例を見てみましょう。
+
+```py
+encoded_input = tokenizer("How are you?")
+print(encoded_input["input_ids"])
+tokenizer.decode(encoded_input["input_ids"])
+</code></pre></div>
+
+<p>```python out
+[101, 1731, 1132, 1128, 136, 102]
+'[CLS] How are you? [SEP]'</p>
+<div class="codehilite"><pre><span></span><code>これらの特殊トークンは、トークナイザが自動的に追加します。すべてのモデルが特殊トークンを必要とするわけではありません。主に、モデルがそれらを使って事前学習された場合に使われます。その場合、モデルが想定しているため、トークナイザが特殊トークンを追加します。
+
+### なぜこれらすべてが必要なのか？
+
+具体例を見てみましょう。エンコードされた次のシーケンスを考えます。
+
+```py
+sequences = [
+    "I've been waiting for a HuggingFace course my whole life.",
+    "I hate this so much!",
+]
+</code></pre></div>
+
+<p>トークン化すると、次のようになります。</p>
+<div class="codehilite"><pre><span></span><code><span class="n">encoded_sequences</span> <span class="o">=</span> <span class="p">[</span>
+    <span class="p">[</span>
+        <span class="mi">101</span><span class="p">,</span>
+        <span class="mi">1045</span><span class="p">,</span>
+        <span class="mi">1005</span><span class="p">,</span>
+        <span class="mi">2310</span><span class="p">,</span>
+        <span class="mi">2042</span><span class="p">,</span>
+        <span class="mi">3403</span><span class="p">,</span>
+        <span class="mi">2005</span><span class="p">,</span>
+        <span class="mi">1037</span><span class="p">,</span>
+        <span class="mi">17662</span><span class="p">,</span>
+        <span class="mi">12172</span><span class="p">,</span>
+        <span class="mi">2607</span><span class="p">,</span>
+        <span class="mi">2026</span><span class="p">,</span>
+        <span class="mi">2878</span><span class="p">,</span>
+        <span class="mi">2166</span><span class="p">,</span>
+        <span class="mi">1012</span><span class="p">,</span>
+        <span class="mi">102</span><span class="p">,</span>
+    <span class="p">],</span>
+    <span class="p">[</span><span class="mi">101</span><span class="p">,</span> <span class="mi">1045</span><span class="p">,</span> <span class="mi">5223</span><span class="p">,</span> <span class="mi">2023</span><span class="p">,</span> <span class="mi">2061</span><span class="p">,</span> <span class="mi">2172</span><span class="p">,</span> <span class="mi">999</span><span class="p">,</span> <span class="mi">102</span><span class="p">],</span>
+<span class="p">]</span>
+</code></pre></div>
+
+<p>これは、エンコードされたシーケンスのリスト、つまりリストのリストです。テンソルが受け付けるのは長方形の形状（行列を思い浮かべてください）だけです。この「配列」はすでに長方形の形状になっているため、テンソルへの変換は簡単です。</p>
+<div class="codehilite"><pre><span></span><code><span class="kn">import</span><span class="w"> </span><span class="nn">torch</span>
+
+<span class="n">model_inputs</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">tensor</span><span class="p">(</span><span class="n">encoded_sequences</span><span class="p">)</span>
+</code></pre></div>
+
+<h3>テンソルをモデルの入力として使う</h3>
+<p>モデルでテンソルを使うのは、非常に簡単です。入力を使ってモデルを呼び出すだけです。</p>
+<div class="codehilite"><pre><span></span><code><span class="n">output</span> <span class="o">=</span> <span class="n">model</span><span class="p">(</span><span class="n">model_inputs</span><span class="p">)</span>
+</code></pre></div>
+
+<p>モデルはさまざまな引数を受け付けますが、必要なのは入力 ID だけです。他の引数が何をするもので、いつ必要になるのかは後ほど説明します。まずは、Transformer モデルが理解できる入力を構築するトークナイザを、詳しく見ていく必要があります。</p>
+</article>
+<nav class="page-nav"><a class="nav-link prev" href="2.html">← 前へ: パイプラインの裏側</a><a class="nav-link toc-link" href="../index.html">目次へ</a><a class="nav-link next" href="4.html">次へ →: トークナイザ</a></nav>
+</main>
+<footer class="site-footer">
+  <p>原典: Hugging Face huggingface/course（<a href="https://github.com/huggingface/course">https://github.com/huggingface/course</a>）</p>
+  <p>日本語版の翻訳・公開: 霞ヶ関京 / 連絡先: GitHub <a href="https://github.com/yanikasumin">@yanikasumin</a> / YouTube <a href="https://www.youtube.com/@KASUMI_MOF">@KASUMI_MOF</a></p>
+  <p class="demo-note">このサイトはデモ版です。内容は順次更新されます。</p>
+</footer>
+<script src="../../site.js"></script>
+</body>
+</html>

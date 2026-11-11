@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>データセットを Argilla に読み込む | Hugging Face コース日本語版（デモ版）</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Shippori+Mincho:wght@500;700&family=Zen+Kaku+Gothic+New:wght@400;500;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../../style.css">
+<script>
+window.MathJax = { tex: { inlineMath: [['$', '$'], ['\\(', '\\)']], displayMath: [['$$', '$$'], ['\\[', '\\]']] }, options: { skipHtmlTags: ['script','noscript','style','textarea','pre','code'] } };
+</script>
+<script async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml.js"></script>
+</head>
+<body>
+<header class="site-header">
+  <div class="header-inner">
+    <a class="site-title" href="../../index.html">Hugging Face コース日本語版</a>
+    <span class="demo-badge">デモ版</span>
+  </div>
+</header>
+<main class="container">
+<p class="course-crumb"><a href="../index.html">LLM コース</a>
+<span class="badge badge-qa-pass">翻訳QA 最終合格</span></p>
+<nav class="page-nav"><a class="nav-link prev" href="2.html">← 前へ: Argilla インスタンスをセットアップする</a><a class="nav-link toc-link" href="../index.html">目次へ</a><a class="nav-link next" href="4.html">次へ →: データセットにアノテーションを付ける</a></nav>
+<article class="content">
+<h1>データセットを Argilla に読み込む</h1>
+<p>取り組んでいる NLP タスクや具体的なユースケース・アプリケーションによって、データやアノテーションタスクの形は変わります。このセクションでは、<a href="https://huggingface.co/datasets/SetFit/ag_news">ニュースを集めたデータセット</a> を使って、2つのタスクを行います。各テキストのトピックを判定するテキスト分類と、言及されている固有表現を特定するトークン分類です。</p>
+<p><iframe
+  src="https://huggingface.co/datasets/SetFit/ag_news/embed/viewer/default/train"
+  frameborder="0"
+  width="100%"
+  height="560px"
+></iframe>
+</p>
+<p>Hub からデータセットをインポートすることは Argilla の UI からも直接できますが、ここでは SDK を使います。必要に応じてデータにさらに手を加える方法も学べるためです。</p>
+<h2>データセットを設定する</h2>
+<p>最初のステップは、前のセクションで行ったように Argilla インスタンスに接続することです。</p>
+<div class="codehilite"><pre><span></span><code><span class="kn">import</span><span class="w"> </span><span class="nn">argilla</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">rg</span>
+
+<span class="n">HF_TOKEN</span> <span class="o">=</span> <span class="s2">"..."</span>  <span class="c1"># プライベートな Space の場合のみ</span>
+
+<span class="n">client</span> <span class="o">=</span> <span class="n">rg</span><span class="o">.</span><span class="n">Argilla</span><span class="p">(</span>
+    <span class="n">api_url</span><span class="o">=</span><span class="s2">"..."</span><span class="p">,</span>
+    <span class="n">api_key</span><span class="o">=</span><span class="s2">"..."</span><span class="p">,</span>
+    <span class="n">headers</span><span class="o">=</span><span class="p">{</span><span class="s2">"Authorization"</span><span class="p">:</span> <span class="sa">f</span><span class="s2">"Bearer </span><span class="si">{</span><span class="n">HF_TOKEN</span><span class="si">}</span><span class="s2">"</span><span class="p">},</span>  <span class="c1"># プライベートな Space の場合のみ</span>
+<span class="p">)</span>
+</code></pre></div>
+
+<p>次に、Argilla におけるデータセットの設定を考えます。これは、データに対して行うアノテーションタスクを表すものです。まず Hub からデータセットを読み込み、列の構成やデータ型を表す <code>features</code> を確認して、データセットを正しく設定できるようにします。</p>
+<div class="codehilite"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">datasets</span><span class="w"> </span><span class="kn">import</span> <span class="n">load_dataset</span>
+
+<span class="n">data</span> <span class="o">=</span> <span class="n">load_dataset</span><span class="p">(</span><span class="s2">"SetFit/ag_news"</span><span class="p">,</span> <span class="n">split</span><span class="o">=</span><span class="s2">"train"</span><span class="p">)</span>
+<span class="n">data</span><span class="o">.</span><span class="n">features</span>
+</code></pre></div>
+
+<p>データセットの特徴は次のとおりです。</p>
+<p>```python out
+{'text': Value(dtype='string', id=None),
+ 'label': Value(dtype='int64', id=None),
+ 'label_text': Value(dtype='string', id=None)}</p>
+<div class="codehilite"><pre><span></span><code>データセットには `text` と、テキスト分類用の初期ラベルが含まれています。これらを、固有表現の範囲を指定するスパンアノテーション用の質問と一緒にデータセットの設定に追加します。
+
+```python
+settings = rg.Settings(
+    fields=[rg.TextField(name="text")],
+    questions=[
+        rg.LabelQuestion(
+            name="label", title="Classify the text:", labels=data.unique("label_text")
+        ),
+        rg.SpanQuestion(
+            name="entities",
+            title="Highlight all the entities in the text:",
+            labels=["PERSON", "ORG", "LOC", "EVENT"],
+            field="text",
+        ),
+    ],
+)
+</code></pre></div>
+
+<p>これらの設定が何を意味するのか、もう少し詳しく見ていきましょう。まず <strong>fields（フィールド）</strong> を定義しました。これには、アノテーション対象の情報が含まれます。今回はフィールドが1つだけであり、それがテキストの形をしているため、<code>TextField</code> を選びました。</p>
+<p>次に、データに対して行いたいタスクを表す <strong>questions（質問）</strong> を定義します。</p>
+<ul>
+<li>テキスト分類タスクには <code>LabelQuestion</code> を選び、ラベルには <code>label_text</code> 列のユニークな値を使いました。質問で使用するラベルを、データセットに既に含まれているラベルと一致させるためです。</li>
+<li>トークン分類タスクには <code>SpanQuestion</code> が必要です。そのタスクで使うラベルの集合と、スパンを描画する対象のフィールドを定義しました。</li>
+</ul>
+<p>利用できるフィールドや質問の種類、その他の高度な設定（メタデータやベクトルなど）について詳しくは、<a href="https://docs.argilla.io/latest/how_to_guides/dataset/#define-dataset-settings">Argilla のドキュメント</a> を参照してください。</p>
+<h2>データセットをアップロードする</h2>
+<p>設定を定義できたので、データセットを作成します。</p>
+<div class="codehilite"><pre><span></span><code><span class="n">dataset</span> <span class="o">=</span> <span class="n">rg</span><span class="o">.</span><span class="n">Dataset</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="s2">"ag_news"</span><span class="p">,</span> <span class="n">settings</span><span class="o">=</span><span class="n">settings</span><span class="p">)</span>
+
+<span class="n">dataset</span><span class="o">.</span><span class="n">create</span><span class="p">()</span>
+</code></pre></div>
+
+<p>データセットが Argilla インスタンスに表示されるようになりましたが、まだ空です。</p>
+<p><img src="https://huggingface.co/datasets/huggingface-course/documentation-images/resolve/main/en/chapter10/empty_dataset.png" alt="空のデータセットのスクリーンショット。"/></p>
+<p>次に、アノテーション対象のレコード、つまりデータセットの行を追加する必要があります。そのためには、データをレコードとして登録（log）し、Hub のデータセットと Argilla のデータセットで名前が異なる要素についてはマッピングを指定します。</p>
+<div class="codehilite"><pre><span></span><code><span class="n">dataset</span><span class="o">.</span><span class="n">records</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">mapping</span><span class="o">=</span><span class="p">{</span><span class="s2">"label_text"</span><span class="p">:</span> <span class="s2">"label"</span><span class="p">})</span>
+</code></pre></div>
+
+<p>このマッピングでは、データセットの <code>label_text</code> 列を、名前が <code>label</code> の質問に対応付けています。こうすることで、データセットに既にあるラベルを事前アノテーションとして使い、より速くアノテーションできます。</p>
+<p>レコードの登録処理が進んでいる間でも、Argilla の UI でデータセットの作業を開始できます。この時点では、次のような表示になっているはずです。</p>
+<p><img src="https://huggingface.co/datasets/huggingface-course/documentation-images/resolve/main/en/chapter10/argilla_initial_dataset.png" alt="Argilla 上のデータセットのスクリーンショット。"/></p>
+<p>これで、データセットのアノテーションを始める準備ができました！</p>
+</article>
+<nav class="page-nav"><a class="nav-link prev" href="2.html">← 前へ: Argilla インスタンスをセットアップする</a><a class="nav-link toc-link" href="../index.html">目次へ</a><a class="nav-link next" href="4.html">次へ →: データセットにアノテーションを付ける</a></nav>
+</main>
+<footer class="site-footer">
+  <p>原典: Hugging Face huggingface/course（<a href="https://github.com/huggingface/course">https://github.com/huggingface/course</a>）</p>
+  <p>日本語版の翻訳・公開: 霞ヶ関京 / 連絡先: GitHub <a href="https://github.com/yanikasumin">@yanikasumin</a> / YouTube <a href="https://www.youtube.com/@KASUMI_MOF">@KASUMI_MOF</a></p>
+  <p class="demo-note">このサイトはデモ版です。内容は順次更新されます。</p>
+</footer>
+<script src="../../site.js"></script>
+</body>
+</html>

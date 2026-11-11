@@ -1,0 +1,365 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>データを処理する | Hugging Face コース日本語版（デモ版）</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Shippori+Mincho:wght@500;700&family=Zen+Kaku+Gothic+New:wght@400;500;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../../style.css">
+<script>
+window.MathJax = { tex: { inlineMath: [['$', '$'], ['\\(', '\\)']], displayMath: [['$$', '$$'], ['\\[', '\\]']] }, options: { skipHtmlTags: ['script','noscript','style','textarea','pre','code'] } };
+</script>
+<script async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml.js"></script>
+</head>
+<body>
+<header class="site-header">
+  <div class="header-inner">
+    <a class="site-title" href="../../index.html">Hugging Face コース日本語版</a>
+    <span class="demo-badge">デモ版</span>
+  </div>
+</header>
+<main class="container">
+<p class="course-crumb"><a href="../index.html">LLM コース</a>
+<span class="badge badge-qa-pass">翻訳QA 最終合格</span></p>
+<nav class="page-nav"><a class="nav-link prev" href="1.html">← 前へ: はじめに</a><a class="nav-link toc-link" href="../index.html">目次へ</a><a class="nav-link next" href="3.html">次へ →: Trainer API でモデルをファインチューニングする</a></nav>
+<article class="content">
+<h1>データを処理する</h1>
+<p><a href="../chapter2/1.html">前の章</a> の例の続きとして、シーケンス分類モデルを1バッチ分だけ学習させるコードは次のようになります。</p>
+<div class="codehilite"><pre><span></span><code><span class="kn">import</span><span class="w"> </span><span class="nn">torch</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">torch.optim</span><span class="w"> </span><span class="kn">import</span> <span class="n">AdamW</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">transformers</span><span class="w"> </span><span class="kn">import</span> <span class="n">AutoTokenizer</span><span class="p">,</span> <span class="n">AutoModelForSequenceClassification</span>
+
+<span class="c1"># 前と同じ</span>
+<span class="n">checkpoint</span> <span class="o">=</span> <span class="s2">"bert-base-uncased"</span>
+<span class="n">tokenizer</span> <span class="o">=</span> <span class="n">AutoTokenizer</span><span class="o">.</span><span class="n">from_pretrained</span><span class="p">(</span><span class="n">checkpoint</span><span class="p">)</span>
+<span class="n">model</span> <span class="o">=</span> <span class="n">AutoModelForSequenceClassification</span><span class="o">.</span><span class="n">from_pretrained</span><span class="p">(</span><span class="n">checkpoint</span><span class="p">)</span>
+<span class="n">sequences</span> <span class="o">=</span> <span class="p">[</span>
+    <span class="s2">"I've been waiting for a HuggingFace course my whole life."</span><span class="p">,</span>
+    <span class="s2">"This course is amazing!"</span><span class="p">,</span>
+<span class="p">]</span>
+<span class="n">batch</span> <span class="o">=</span> <span class="n">tokenizer</span><span class="p">(</span><span class="n">sequences</span><span class="p">,</span> <span class="n">padding</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">truncation</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">return_tensors</span><span class="o">=</span><span class="s2">"pt"</span><span class="p">)</span>
+
+<span class="c1"># ここから新しい部分</span>
+<span class="n">batch</span><span class="p">[</span><span class="s2">"labels"</span><span class="p">]</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">tensor</span><span class="p">([</span><span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">])</span>
+
+<span class="n">optimizer</span> <span class="o">=</span> <span class="n">AdamW</span><span class="p">(</span><span class="n">model</span><span class="o">.</span><span class="n">parameters</span><span class="p">())</span>
+<span class="n">loss</span> <span class="o">=</span> <span class="n">model</span><span class="p">(</span><span class="o">**</span><span class="n">batch</span><span class="p">)</span><span class="o">.</span><span class="n">loss</span>
+<span class="n">loss</span><span class="o">.</span><span class="n">backward</span><span class="p">()</span>
+<span class="n">optimizer</span><span class="o">.</span><span class="n">step</span><span class="p">()</span>
+</code></pre></div>
+
+<p>もちろん、2つの文だけでモデルを学習させても、あまり良い結果は得られません。より良い結果を得るには、より大きなデータセットを用意する必要があります。</p>
+<p>このセクションでは、例として MRPC（Microsoft Research Paraphrase Corpus）データセットを使います。William B. Dolan と Chris Brockett の<a href="https://www.aclweb.org/anthology/I05-5002.pdf">論文</a>で紹介されたデータセットです。このデータセットは5,801組の文ペアからなり、各ペアには、2つの文がパラフレーズかどうか（つまり、両方の文が同じ意味かどうか）を示すラベルが付いています。このデータセットを選んだのは、規模が小さく、学習の実験に適しているためです。</p>
+<h3>Hub からデータセットを読み込む</h3>
+<div class="youtube-embed"><iframe src="https://www.youtube-nocookie.com/embed/_BZearw7f0w" title="YouTube video" loading="lazy" allowfullscreen referrerpolicy="strict-origin-when-cross-origin"></iframe></div>
+<p>Hub にあるのはモデルだけではありません。さまざまな言語のデータセットも多数そろっています。データセットは<a href="https://huggingface.co/datasets">Hub の一覧</a>から探せます。このセクションを終えたら、別のデータセットも読み込んで処理してみてください。基本的な使い方は<a href="https://huggingface.co/docs/datasets/loading">データセットの読み込みに関するドキュメント</a>を参照してください。ただし今は、MRPC データセットに集中しましょう！MRPC は <a href="https://gluebenchmark.com/">GLUE ベンチマーク</a> を構成する10個のデータセットの1つです。このベンチマークは、10種類の異なるテキスト分類タスクにわたって ML モデルの性能を測定するために使用される学術ベンチマークです。</p>
+<p>🤗 Datasets ライブラリには、Hub 上のデータセットをダウンロードしてキャッシュするための、とてもシンプルなコマンドが用意されています。MRPC データセットは次のようにダウンロードできます。</p>
+<div class="callout callout-tip">
+<p class="callout-title">💡 ヒント</p>
+<p>💡 <strong>追加資料</strong>: データセットの読み込みに関するテクニックや例をさらに知りたい場合は、<a href="https://huggingface.co/docs/datasets/">🤗 Datasets ドキュメント</a> を確認してください。</p>
+</div>
+<div class="codehilite"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">datasets</span><span class="w"> </span><span class="kn">import</span> <span class="n">load_dataset</span>
+
+<span class="n">raw_datasets</span> <span class="o">=</span> <span class="n">load_dataset</span><span class="p">(</span><span class="s2">"glue"</span><span class="p">,</span> <span class="s2">"mrpc"</span><span class="p">)</span>
+<span class="n">raw_datasets</span>
+</code></pre></div>
+
+<p>```python out
+DatasetDict({
+    train: Dataset({
+        features: ['sentence1', 'sentence2', 'label', 'idx'],
+        num_rows: 3668
+    })
+    validation: Dataset({
+        features: ['sentence1', 'sentence2', 'label', 'idx'],
+        num_rows: 408
+    })
+    test: Dataset({
+        features: ['sentence1', 'sentence2', 'label', 'idx'],
+        num_rows: 1725
+    })
+})</p>
+<div class="codehilite"><pre><span></span><code>見てのとおり、学習セット、検証セット、テストセットを含む `DatasetDict` オブジェクトが得られます。各セットには、いくつかの列（`sentence1`、`sentence2`、`label`、`idx`）と、件数の異なる行が含まれています。行数が各セットの要素数に相当します（学習セットには3,668組、検証セットには408組、テストセットには1,725組の文ペアがあります）。
+
+&lt;div class="callout callout-tip" markdown="block"&gt;
+&lt;p class="callout-title"&gt;💡 ヒント&lt;/p&gt;
+このコマンドはデータセットをダウンロードしてキャッシュします。デフォルトの保存先は *~/.cache/huggingface/datasets* です。第2章で説明したように、`HF_HOME` 環境変数を設定すれば、キャッシュフォルダをカスタマイズできます。
+&lt;/div&gt;
+
+
+`raw_datasets` オブジェクト内の各文ペアには、辞書のようにインデックスでアクセスできます。
+
+```py
+raw_train_dataset = raw_datasets["train"]
+raw_train_dataset[0]
+</code></pre></div>
+
+<p>```python out
+{'idx': 0,
+ 'label': 1,
+ 'sentence1': 'Amrozi accused his brother , whom he called " the witness " , of deliberately distorting his evidence .',
+ 'sentence2': 'Referring to him as only " the witness " , Amrozi accused his brother of deliberately distorting his evidence .'}</p>
+<div class="codehilite"><pre><span></span><code>ラベルはすでに整数になっているので、その点に前処理は必要ないことがわかります。どの整数がどのラベルに対応するかは、`raw_train_dataset` の `features` を調べればわかります。各列の型もわかります。
+
+```py
+raw_train_dataset.features
+</code></pre></div>
+
+<p>```python out
+{'sentence1': Value(dtype='string', id=None),
+ 'sentence2': Value(dtype='string', id=None),
+ 'label': ClassLabel(num_classes=2, names=['not_equivalent', 'equivalent'], names_file=None, id=None),
+ 'idx': Value(dtype='int32', id=None)}</p>
+<div class="codehilite"><pre><span></span><code>裏側では、`label` は `ClassLabel` 型で、整数からラベル名へのマッピングは *names* に保存されています。`0` が `not_equivalent`、`1` が `equivalent` に対応します。
+
+&lt;div class="callout callout-tip" markdown="block"&gt;
+&lt;p class="callout-title"&gt;💡 ヒント&lt;/p&gt;
+✏️ **試してみましょう！** 学習セットの15番目の要素と、検証セットの87番目の要素を見てください。それぞれのラベルは何ですか？
+&lt;/div&gt;
+
+
+### データセットを前処理する
+
+
+
+<div class="youtube-embed"><iframe src="https://www.youtube-nocookie.com/embed/0u3ioSwev3s" title="YouTube video" loading="lazy" allowfullscreen referrerpolicy="strict-origin-when-cross-origin"></iframe></div>
+
+
+
+データセットを前処理するには、テキストをモデルが理解できる数値に変換する必要があります。[前の章](/course/chapter2) で見たとおり、これはトークナイザで行います。トークナイザには文を1つ渡すことも、文のリストを渡すこともできます。そのため、各文ペアの1つ目の文を集めたリストと、2つ目の文を集めたリストを、次のようにそれぞれトークン化できます。
+
+```py
+from transformers import AutoTokenizer
+
+checkpoint = "bert-base-uncased"
+tokenizer = AutoTokenizer.from_pretrained(checkpoint)
+tokenized_sentences_1 = tokenizer(raw_datasets["train"]["sentence1"])
+tokenized_sentences_2 = tokenizer(raw_datasets["train"]["sentence2"])
+</code></pre></div>
+
+<div class="callout callout-tip">
+<p class="callout-title">💡 ヒント</p>
+<p>💡 <strong>深掘り</strong>: より高度なトークン化のテクニックや、さまざまなトークナイザの動作の理解には、<a href="https://huggingface.co/docs/transformers/main/en/tokenizer_summary">🤗 Tokenizers ドキュメント</a> と <a href="https://huggingface.co/learn/cookbook/en/advanced_rag#tokenization-strategies">クックブックのトークン化ガイド</a> を参照してください。</p>
+</div>
+<p>ただし、2つのシーケンスをモデルにそのまま渡しても、2つの文がパラフレーズかどうかという予測は得られません。2つのシーケンスをペアとして扱い、適切な前処理を適用する必要があります。幸い、トークナイザはシーケンスのペアを受け取り、BERT モデルが想定する形に整えることもできます。</p>
+<div class="codehilite"><pre><span></span><code><span class="n">inputs</span> <span class="o">=</span> <span class="n">tokenizer</span><span class="p">(</span><span class="s2">"This is the first sentence."</span><span class="p">,</span> <span class="s2">"This is the second one."</span><span class="p">)</span>
+<span class="n">inputs</span>
+</code></pre></div>
+
+<p>```python out
+{ 
+  'input_ids': [101, 2023, 2003, 1996, 2034, 6251, 1012, 102, 2023, 2003, 1996, 2117, 2028, 1012, 102],
+  'token_type_ids': [0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1],
+  'attention_mask': [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1]
+}</p>
+<div class="codehilite"><pre><span></span><code>`input_ids` キーと `attention_mask` キーについては [第2章](/course/chapter2) で説明しましたが、`token_type_ids` については後回しにしていました。この例では、これが入力のどの部分が1つ目の文で、どの部分が2つ目の文かをモデルに伝えます。
+
+&lt;div class="callout callout-tip" markdown="block"&gt;
+&lt;p class="callout-title"&gt;💡 ヒント&lt;/p&gt;
+✏️ **試してみましょう！** 学習セットの15番目の要素を取り出し、2つの文を別々にトークン化した場合と、ペアとしてトークン化した場合を比べてください。2つの結果にはどのような違いがありますか？
+&lt;/div&gt;
+
+
+`input_ids` 内の ID を単語にデコードすると、次のようになります。
+
+```py
+tokenizer.convert_ids_to_tokens(inputs["input_ids"])
+</code></pre></div>
+
+<p>結果は次のとおりです。</p>
+<p>```python out
+['[CLS]', 'this', 'is', 'the', 'first', 'sentence', '.', '[SEP]', 'this', 'is', 'the', 'second', 'one', '.', '[SEP]']</p>
+<div class="codehilite"><pre><span></span><code>このように、文が2つある場合、モデルは入力が `[CLS] sentence1 [SEP] sentence2 [SEP]` の形であることを想定しているとわかります。これに `token_type_ids` を対応させると、次のようになります。
+
+```python out
+['[CLS]', 'this', 'is', 'the', 'first', 'sentence', '.', '[SEP]', 'this', 'is', 'the', 'second', 'one', '.', '[SEP]']
+[      0,      0,    0,     0,       0,          0,   0,       0,      1,    1,     1,        1,     1,   1,       1]
+</code></pre></div>
+
+<p>見てのとおり、<code>[CLS] sentence1 [SEP]</code> に対応する部分はすべてトークンタイプ ID が <code>0</code> で、<code>sentence2 [SEP]</code> に対応するその他の部分はすべてトークンタイプ ID が <code>1</code> です。</p>
+<p>なお、別のチェックポイントを選んだ場合、トークン化された入力に <code>token_type_ids</code> が含まれるとは限りません（たとえば、DistilBERT モデルを使うと返されません）。これらは、モデルが事前学習の際にそれらを見ており、扱い方を知っている場合にのみ返されます。</p>
+<p>BERT はトークンタイプ ID を用いて事前学習されており、<a href="../chapter1/1.html">第1章</a> で説明したマスク言語モデリングの目的関数に加えて、<em>next sentence prediction</em>（次文予測）と呼ばれる追加の目的関数を持ちます。このタスクの目標は、文ペア間の関係をモデル化することです。</p>
+<p>次文予測では、モデルに文のペア（トークンの一部はランダムにマスクされています）が与えられ、2つ目の文が1つ目の文に続くかどうかを予測するよう求められます。タスクが自明なものにならないよう、半分の場合は文ペアが抽出元のドキュメントの中で実際に連続しており、残りの半分の場合は2つの文が異なるドキュメントから来ています。</p>
+<p>一般に、トークン化された入力に <code>token_type_ids</code> があるかどうかを心配する必要はありません。トークナイザとモデルで同じチェックポイントを使う限り、トークナイザがモデルに何を提供すべきかを知っているため、すべて問題なく動作します。</p>
+<p>トークナイザが文のペア1組を処理できることを確認したので、データセット全体のトークン化に使えます。<a href="../chapter2/1.html">前の章</a> のように、1つ目の文のリスト、次に2つ目の文のリストを与えることで、文ペアのリストをトークナイザに渡せます。これは、<a href="../chapter2/1.html">第2章</a> で見たパディングと切り捨てのオプションとも併用できます。学習用データセットを前処理する方法の1つは次のとおりです。</p>
+<div class="codehilite"><pre><span></span><code><span class="n">tokenized_dataset</span> <span class="o">=</span> <span class="n">tokenizer</span><span class="p">(</span>
+    <span class="n">raw_datasets</span><span class="p">[</span><span class="s2">"train"</span><span class="p">][</span><span class="s2">"sentence1"</span><span class="p">],</span>
+    <span class="n">raw_datasets</span><span class="p">[</span><span class="s2">"train"</span><span class="p">][</span><span class="s2">"sentence2"</span><span class="p">],</span>
+    <span class="n">padding</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+    <span class="n">truncation</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+<span class="p">)</span>
+</code></pre></div>
+
+<p>これはうまく機能しますが、辞書が返されるという欠点があります（キーは <code>input_ids</code>、<code>attention_mask</code>、<code>token_type_ids</code> で、値はリストのリストです）。また、トークン化の間、データセット全体を保持できるだけの RAM がある場合にのみ機能します（対照的に、🤗 Datasets ライブラリのデータセットはディスク上に保存された <a href="https://arrow.apache.org/">Apache Arrow</a> ファイルであるため、メモリ上に読み込まれるのは要求したサンプルだけです）。</p>
+<p>データをデータセットとして保持するために、<a href="https://huggingface.co/docs/datasets/package_reference/main_classes#datasets.Dataset.map"><code>Dataset.map()</code></a> メソッドを使います。これにより、トークン化だけでなく追加の前処理が必要な場合にも、柔軟に対応できます。<code>map()</code> メソッドはデータセットの各要素に関数を適用することで機能するので、入力をトークン化する関数を定義しましょう。</p>
+<div class="codehilite"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">tokenize_function</span><span class="p">(</span><span class="n">example</span><span class="p">):</span>
+    <span class="k">return</span> <span class="n">tokenizer</span><span class="p">(</span><span class="n">example</span><span class="p">[</span><span class="s2">"sentence1"</span><span class="p">],</span> <span class="n">example</span><span class="p">[</span><span class="s2">"sentence2"</span><span class="p">],</span> <span class="n">truncation</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+</code></pre></div>
+
+<p>この関数は辞書（データセットの項目のようなもの）を受け取り、<code>input_ids</code>、<code>attention_mask</code>、<code>token_type_ids</code> をキーとする新しい辞書を返します。<code>example</code> 辞書に複数のサンプルが含まれている場合（各キーが文のリストの場合）でも機能することに注意してください。これは前に見たとおり、<code>tokenizer</code> が文ペアのリストに対して動作するためです。これにより、<code>map()</code> の呼び出しで <code>batched=True</code> オプションが使えるようになり、トークン化が大幅に高速化されます。<code>tokenizer</code> の背後には、<a href="https://github.com/huggingface/tokenizers">🤗 Tokenizers</a> ライブラリの、Rust で書かれたトークナイザがあります。このトークナイザの高速性を十分に生かせるのは、多くの入力を一度にまとめて渡した場合です。</p>
+<p>トークン化関数では、今のところ <code>padding</code> 引数を省略している点に注意してください。これは、すべてのサンプルを最大長までパディングすることが効率的ではないためです。バッチを構築する際にサンプルをパディングした方が良いのです。そうすれば、そのバッチ内の最大長までパディングするだけで済み、データセット全体の最大長までパディングする必要がありません。入力の長さが大きくばらつく場合、これにより時間と計算リソースを大幅に節約できます！</p>
+<div class="callout callout-tip">
+<p class="callout-title">💡 ヒント</p>
+<p>📚 <strong>パフォーマンスのヒント</strong>: 効率的なデータ処理テクニックの詳細は、<a href="https://huggingface.co/docs/datasets/about_arrow">🤗 Datasets のパフォーマンスガイド</a> で学べます。</p>
+</div>
+<p>すべてのデータセットにトークン化関数を一度に適用する方法は次のとおりです。<code>map</code> の呼び出しで <code>batched=True</code> を使っているため、関数はデータセットの複数の要素に一度に適用され、要素ごとに別々に適用されることはありません。これにより、前処理が高速になります。</p>
+<div class="codehilite"><pre><span></span><code><span class="n">tokenized_datasets</span> <span class="o">=</span> <span class="n">raw_datasets</span><span class="o">.</span><span class="n">map</span><span class="p">(</span><span class="n">tokenize_function</span><span class="p">,</span> <span class="n">batched</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+<span class="n">tokenized_datasets</span>
+</code></pre></div>
+
+<p>🤗 Datasets ライブラリは、前処理関数が返した辞書のキーごとに、データセットに新しいフィールドを追加することで、この処理を適用します。</p>
+<p>```python out
+DatasetDict({
+    train: Dataset({
+        features: ['attention_mask', 'idx', 'input_ids', 'label', 'sentence1', 'sentence2', 'token_type_ids'],
+        num_rows: 3668
+    })
+    validation: Dataset({
+        features: ['attention_mask', 'idx', 'input_ids', 'label', 'sentence1', 'sentence2', 'token_type_ids'],
+        num_rows: 408
+    })
+    test: Dataset({
+        features: ['attention_mask', 'idx', 'input_ids', 'label', 'sentence1', 'sentence2', 'token_type_ids'],
+        num_rows: 1725
+    })
+})</p>
+<div class="codehilite"><pre><span></span><code>`map()` で前処理関数を適用する際に、`num_proc` 引数を渡すことでマルチプロセッシングを使うこともできます。ここでは使用しませんでした。これは、🤗 Tokenizers ライブラリがすでに複数のスレッドを使用してサンプルをより高速にトークン化しているためです。ただし、このライブラリによる高速なトークナイザを使用していない場合は、これにより前処理を高速化できるでしょう。
+
+`tokenize_function` は `input_ids`、`attention_mask`、`token_type_ids` をキーとする辞書を返すため、これら3つのフィールドがデータセットのすべての分割に追加されます。なお、`map()` を適用したデータセットの既存のキーに対して、前処理関数が新しい値を返すようにすれば、既存のフィールドを変更することも可能でした。
+
+最後に行う必要があるのは、要素をバッチにまとめる際、すべてのサンプルを最も長い要素の長さまでパディングすることです。このテクニックは *動的パディング* と呼ばれます。
+
+##### 動的パディング
+
+
+
+<div class="youtube-embed"><iframe src="https://www.youtube-nocookie.com/embed/7q5NyFT8REg" title="YouTube video" loading="lazy" allowfullscreen referrerpolicy="strict-origin-when-cross-origin"></iframe></div>
+
+
+
+バッチ内でサンプルをまとめる役割を果たす関数は、*collate 関数* と呼ばれます。これは `DataLoader` を構築する際に渡せる引数であり、デフォルトでは、サンプルを PyTorch テンソルに変換して連結するだけの関数になっています（要素がリスト、タプル、辞書の場合は再帰的に処理します）。今回の入力はシーケンスごとに長さが異なるため、この方法ではそのままバッチ化できません。パディングはあえて後回しにし、バッチごとに必要な分だけ追加します。これにより、余分なパディングによって入力が不必要に長くなるのを防げます。これにより学習はかなり高速化されますが、TPU で学習している場合、問題を引き起こす可能性がある点に注意してください。TPU は、余分なパディングが必要な場合でも固定の形状を好みます。
+
+&lt;div class="callout callout-tip" markdown="block"&gt;
+&lt;p class="callout-title"&gt;💡 ヒント&lt;/p&gt;
+🚀 **最適化ガイド**: パディング戦略や TPU に関する考慮事項など、学習パフォーマンスの最適化の詳細については、[🤗 Transformers のパフォーマンスドキュメント](https://huggingface.co/docs/transformers/main/en/performance) を参照してください。
+&lt;/div&gt;
+
+
+これを実装するには、同じバッチにまとめるサンプルに対して、必要な分だけパディングを行う collate 関数を定義します。幸いなことに、🤗 Transformers ライブラリは `DataCollatorWithPadding` を通じてそのような関数を提供しています。これは、インスタンス化する際にトークナイザを受け取り（使用するパディングトークンと、モデルが入力の左側と右側のどちらにパディングを想定しているかを知るためです）、必要な処理をすべて実行します。
+
+```py
+from transformers import DataCollatorWithPadding
+
+data_collator = DataCollatorWithPadding(tokenizer=tokenizer)
+</code></pre></div>
+
+<p>この新しいツールを試すために、一緒にバッチ化したいサンプルを学習セットからいくつか取得しましょう。ここでは、不要であり文字列を含んでいる列 <code>idx</code>、<code>sentence1</code>、<code>sentence2</code> を削除し（文字列ではテンソルを作成できません）、バッチ内の各エントリーの長さを確認します。</p>
+<div class="codehilite"><pre><span></span><code><span class="n">samples</span> <span class="o">=</span> <span class="n">tokenized_datasets</span><span class="p">[</span><span class="s2">"train"</span><span class="p">][:</span><span class="mi">8</span><span class="p">]</span>
+<span class="n">samples</span> <span class="o">=</span> <span class="p">{</span><span class="n">k</span><span class="p">:</span> <span class="n">v</span> <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">samples</span><span class="o">.</span><span class="n">items</span><span class="p">()</span> <span class="k">if</span> <span class="n">k</span> <span class="ow">not</span> <span class="ow">in</span> <span class="p">[</span><span class="s2">"idx"</span><span class="p">,</span> <span class="s2">"sentence1"</span><span class="p">,</span> <span class="s2">"sentence2"</span><span class="p">]}</span>
+<span class="p">[</span><span class="nb">len</span><span class="p">(</span><span class="n">x</span><span class="p">)</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="n">samples</span><span class="p">[</span><span class="s2">"input_ids"</span><span class="p">]]</span>
+</code></pre></div>
+
+<p>```python out
+[50, 59, 47, 67, 59, 50, 62, 32]</p>
+<div class="codehilite"><pre><span></span><code>驚くことではありませんが、長さが32から67までばらばらのサンプルが得られました。動的パディングとは、このバッチ内のサンプルがすべて、バッチ内の最大長である67までパディングされることを意味します。動的パディングがなければ、すべてのサンプルはデータセット全体の最大長、またはモデルが受け入れ可能な最大長までパディングしなければなりません。`data_collator` がバッチを適切に動的パディングしているかを再確認しましょう。
+
+```py
+batch = data_collator(samples)
+{k: v.shape for k, v in batch.items()}
+</code></pre></div>
+
+<p><code>python out
+{'attention_mask': torch.Size([8, 67]),
+ 'input_ids': torch.Size([8, 67]),
+ 'token_type_ids': torch.Size([8, 67]),
+ 'labels': torch.Size([8])}</code></p>
+<p>良いですね！生のテキストを、モデルが処理できるバッチに変換できたので、ファインチューニングの準備が整いました！</p>
+<div class="callout callout-tip">
+<p class="callout-title">💡 ヒント</p>
+<p>✏️ <strong>試してみましょう！</strong> GLUE の SST-2 データセットで前処理を再現してみてください。文のペアではなく単一の文で構成されているため少し異なりますが、行った処理の残りは同じはずです。より難しい課題として、GLUE の任意のタスクで動作する前処理関数を作成してみてください。</p>
+<p>📖 <strong>追加の演習</strong>: <a href="https://huggingface.co/docs/transformers/main/en/notebooks">🤗 Transformers のサンプル</a>から、ハンズオンの例を確認してください。</p>
+</div>
+<p>完璧です！🤗 Datasets ライブラリの最新のベストプラクティスでデータを前処理したので、次に最新の Trainer API を使用してモデルの学習に移る準備が整いました。次のセクションでは、Hugging Face エコシステムで利用可能な最新の機能と最適化を使用して、モデルを効果的にファインチューニングする方法を紹介します。</p>
+<h2>セクションクイズ</h2>
+<p>データ処理の概念に関する理解度をテストしましょう。</p>
+<h3>1. <code>Dataset.map()</code> で <code>batched=True</code> を使用する主な利点は何ですか？</h3>
+<div class="quiz">
+<div class="quiz-choices">
+<button type="button" class="quiz-choice" data-correct="false" data-quiz-idx="0">メモリ使用量が少なくなります。</button>
+<div class="quiz-explain-src" id="qe-125591346037952-0" hidden>メモリ効率が向上する場合もありますが、それが主な利点ではありません。</div>
+<button type="button" class="quiz-choice" data-correct="true" data-quiz-idx="1">複数のサンプルを一度に処理するため、トークン化がはるかに高速になります。</button>
+<div class="quiz-explain-src" id="qe-125591346037952-1" hidden>正解です！バッチ処理により、高速なトークナイザが複数のサンプルを同時に処理できるため、速度が大幅に向上します。</div>
+<button type="button" class="quiz-choice" data-correct="false" data-quiz-idx="2">パディングを自動的に処理してくれます。</button>
+<div class="quiz-explain-src" id="qe-125591346037952-2" hidden>バッチ処理によってパディングが自動的に処理されるわけではありません。パディングはデータコレータが行います。</div>
+<button type="button" class="quiz-choice" data-correct="false" data-quiz-idx="3">データを PyTorch テンソルに変換します。</button>
+<div class="quiz-explain-src" id="qe-125591346037952-3" hidden>テンソルへの変換は、フォーマットを設定する際に行われるものであり、バッチマッピング中に行われるものではありません。</div>
+</div><div class="quiz-feedback" hidden></div></div>
+<h3>2. データセット内の最大長まですべてのシーケンスをパディングするのではなく、動的パディングを使用するのはなぜですか？</h3>
+<div class="quiz">
+<div class="quiz-choices">
+<button type="button" class="quiz-choice" data-correct="false" data-quiz-idx="0">モデルのアーキテクチャで動的パディングが必要とされるからです。</button>
+<div class="quiz-explain-src" id="qe-125591346336640-0" hidden>いいえ、モデルは固定パディングと動的パディングの両方に対応できます。</div>
+<button type="button" class="quiz-choice" data-correct="true" data-quiz-idx="1">各バッチ内の最長シーケンスに合わせてパディングするため、余分な計算を減らせます。</button>
+<div class="quiz-explain-src" id="qe-125591346336640-1" hidden>正解です！動的パディングは、データセット全体ではなく各バッチ内の最長シーケンスに合わせてパディングすることで、パディングトークンに対する不要な計算を回避します。</div>
+<button type="button" class="quiz-choice" data-correct="false" data-quiz-idx="2">モデルの正解率が向上します。</button>
+<div class="quiz-explain-src" id="qe-125591346336640-2" hidden>パディングの戦略はモデルの精度に直接影響しません。</div>
+<button type="button" class="quiz-choice" data-correct="false" data-quiz-idx="3">DataCollatorWithPadding を使用する際に必要だからです。</button>
+<div class="quiz-explain-src" id="qe-125591346336640-3" hidden>DataCollatorWithPadding により動的パディングが可能になりますが、希望すれば固定パディングを使用することもできます。</div>
+</div><div class="quiz-feedback" hidden></div></div>
+<h3>3. BERT のトークン化において、<code>token_type_ids</code> フィールドは何を表しますか？</h3>
+<div class="quiz">
+<div class="quiz-choices">
+<button type="button" class="quiz-choice" data-correct="false" data-quiz-idx="0">シーケンスにおける各トークンの位置です。</button>
+<div class="quiz-explain-src" id="qe-125591346037952-0" hidden>それは位置埋め込みであり、token_type_ids ではありません。</div>
+<button type="button" class="quiz-choice" data-correct="true" data-quiz-idx="1">文ペアを処理する際、各トークンがどちらの文に属しているかです。</button>
+<div class="quiz-explain-src" id="qe-125591346037952-1" hidden>正解です！token_type_ids は、文ペアタスクにおける最初の文（0）と2番目の文（1）を区別します。</div>
+<button type="button" class="quiz-choice" data-correct="false" data-quiz-idx="2">各トークンのアテンションマスクです。</button>
+<div class="quiz-explain-src" id="qe-125591346037952-2" hidden>アテンションマスクは、どのトークンに注意を払うべきかを示す別のフィールドです。</div>
+<button type="button" class="quiz-choice" data-correct="false" data-quiz-idx="3">各トークンの語彙 ID です。</button>
+<div class="quiz-explain-src" id="qe-125591346037952-3" hidden>それは input_ids フィールドであり、token_type_ids ではありません。</div>
+</div><div class="quiz-feedback" hidden></div></div>
+<h3>4. <code>load_dataset('glue', 'mrpc')</code> でデータセットを読み込む際、第2引数は何を指定しますか？</h3>
+<div class="quiz">
+<div class="quiz-choices">
+<button type="button" class="quiz-choice" data-correct="false" data-quiz-idx="0">読み込むデータセットのバージョンです。</button>
+<div class="quiz-explain-src" id="qe-125591346336640-0" hidden>バージョンの指定には異なるパラメータを使用します。</div>
+<button type="button" class="quiz-choice" data-correct="true" data-quiz-idx="1">GLUE ベンチマーク内の特定のタスクまたはサブセットです。</button>
+<div class="quiz-explain-src" id="qe-125591346336640-1" hidden>正解です！MRPC は、より大規模な GLUE ベンチマークコレクションの中の特定のタスクの1つです。</div>
+<button type="button" class="quiz-choice" data-correct="false" data-quiz-idx="2">データセットの分割（train/validation/test）です。</button>
+<div class="quiz-explain-src" id="qe-125591346336640-2" hidden>分割は読み込み後にアクセスするものであり、load_dataset の呼び出しでは指定しません。</div>
+<button type="button" class="quiz-choice" data-correct="false" data-quiz-idx="3">データを返すフォーマットです。</button>
+<div class="quiz-explain-src" id="qe-125591346336640-3" hidden>フォーマットは、読み込み後に set_format() メソッドを使用して設定します。</div>
+</div><div class="quiz-feedback" hidden></div></div>
+<h3>5. 学習前に 'sentence1' や 'sentence2' のような列を削除する目的は何ですか？</h3>
+<div class="quiz">
+<div class="quiz-choices">
+<button type="button" class="quiz-choice" data-correct="false" data-quiz-idx="0">学習中にメモリを節約するためです。</button>
+<div class="quiz-explain-src" id="qe-125591346037952-0" hidden>メモリの節約にはなりますが、それが主な理由ではありません。</div>
+<button type="button" class="quiz-choice" data-correct="true" data-quiz-idx="1">モデルはこれらの生テキスト列を受け付けないため、エラーが発生します。</button>
+<div class="quiz-explain-src" id="qe-125591346037952-1" hidden>正解です！モデルは数値テンソルを想定しており、生のテキスト文字列は想定していません。テキスト列を保持するとエラーが発生します。</div>
+<button type="button" class="quiz-choice" data-correct="false" data-quiz-idx="2">これらの列は評価には必要ありません。</button>
+<div class="quiz-explain-src" id="qe-125591346037952-2" hidden>それは事実ですが、主な理由はモデルが生のテキストを処理できないことです。</div>
+<button type="button" class="quiz-choice" data-correct="false" data-quiz-idx="3">学習速度が大幅に向上します。</button>
+<div class="quiz-explain-src" id="qe-125591346037952-3" hidden>互換性のないデータ型によるエラーを回避することに比べれば、速度の向上はわずかです。</div>
+</div><div class="quiz-feedback" hidden></div></div>
+<div class="callout callout-tip">
+<p class="callout-title">💡 ヒント</p>
+<p>💡 <strong>重要なポイント:</strong>
+- <code>Dataset.map()</code> で <code>batched=True</code> を使用すると、前処理が大幅に高速化されます
+- <code>DataCollatorWithPadding</code> による動的パディングは、固定長のパディングよりも効率的です
+- データは常に、モデルが想定するもの（数値テンソル、正しい列名）に合わせて前処理してください
+- 🤗 Datasets ライブラリは、大規模で効率的なデータ処理のための強力なツールを提供します</p>
+</div>
+</article>
+<nav class="page-nav"><a class="nav-link prev" href="1.html">← 前へ: はじめに</a><a class="nav-link toc-link" href="../index.html">目次へ</a><a class="nav-link next" href="3.html">次へ →: Trainer API でモデルをファインチューニングする</a></nav>
+</main>
+<footer class="site-footer">
+  <p>原典: Hugging Face huggingface/course（<a href="https://github.com/huggingface/course">https://github.com/huggingface/course</a>）</p>
+  <p>日本語版の翻訳・公開: 霞ヶ関京 / 連絡先: GitHub <a href="https://github.com/yanikasumin">@yanikasumin</a> / YouTube <a href="https://www.youtube.com/@KASUMI_MOF">@KASUMI_MOF</a></p>
+  <p class="demo-note">このサイトはデモ版です。内容は順次更新されます。</p>
+</footer>
+<script src="../../site.js"></script>
+</body>
+</html>

@@ -1,0 +1,922 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>推論デプロイの最適化 | Hugging Face コース日本語版（デモ版）</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Shippori+Mincho:wght@500;700&family=Zen+Kaku+Gothic+New:wght@400;500;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../../style.css">
+<script>
+window.MathJax = { tex: { inlineMath: [['$', '$'], ['\\(', '\\)']], displayMath: [['$$', '$$'], ['\\[', '\\]']] }, options: { skipHtmlTags: ['script','noscript','style','textarea','pre','code'] } };
+</script>
+<script async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml.js"></script>
+</head>
+<body>
+<header class="site-header">
+  <div class="header-inner">
+    <a class="site-title" href="../../index.html">Hugging Face コース日本語版</a>
+    <span class="demo-badge">デモ版</span>
+  </div>
+</header>
+<main class="container">
+<p class="course-crumb"><a href="../index.html">LLM コース</a>
+<span class="badge badge-qa-pass">翻訳QA 最終合格</span></p>
+<nav class="page-nav"><a class="nav-link prev" href="7.html">← 前へ: 基本的な使い方はこれで完了です！</a><a class="nav-link toc-link" href="../index.html">目次へ</a><a class="nav-link next" href="9.html">次へ →: 章末クイズ</a></nav>
+<article class="content">
+<h1>推論デプロイの最適化</h1>
+<p>このセクションでは、LLM のデプロイメントを最適化するための高度なフレームワーク、Text Generation Inference（TGI）、vLLM、llama.cpp を取り上げます。これらのアプリケーションは主に本番環境で使われ、LLM をユーザーに提供する役割を担います。ここでは、1台のマシンで推論を実行する方法ではなく、本番環境へこれらのフレームワークをデプロイする方法に焦点を当てます。</p>
+<p>これらのツールが、推論の効率をどう最大化し、大規模言語モデルの本番デプロイをどう簡素化するのかを見ていきます。</p>
+<h2>フレームワークの選び方</h2>
+<p>TGI、vLLM、llama.cpp は似た目的を持ちますが、それぞれ異なる特徴があり、用途によって向き不向きがあります。性能と連携の観点から、主な違いを見ていきます。</p>
+<h3>メモリ管理と性能</h3>
+<p><strong>TGI</strong> は本番環境で安定して予測可能に動作するよう設計されており、固定したシーケンス長を使うことでメモリ使用量を一定に保ちます。メモリ管理には Flash Attention 2 と継続的バッチングの手法を使います。これにより、アテンションの計算を非常に効率よく処理でき、GPU の稼働率を高く維持できます。必要に応じてモデルの一部を CPU と GPU の間で移動できるため、より大きなモデルも扱えます。 </p>
+<p><img src="https://huggingface.co/datasets/huggingface/documentation-images/resolve/main/tgi/flash-attn.png" alt="Flash Attention" /></p>
+<div class="callout callout-tip">
+<p class="callout-title">💡 Flash Attention の仕組み</p>
+<p>Flash Attention は、メモリ帯域のボトルネックに対処して、Transformer モデルのアテンション機構を最適化する技術です。<a href="../chapter1/8.html">第1章第8節</a> で見たように、アテンション機構は計算量とメモリ使用量が二乗オーダーになるため、長いシーケンスでは非効率です。</p>
+<p>鍵となる工夫は、High Bandwidth Memory（HBM）と、より高速な SRAM キャッシュの間で、メモリ転送をどう管理するかにあります。従来のアテンションは HBM と SRAM の間でデータ転送を繰り返し、GPU を待たせるボトルネックを生んでいました。Flash Attention はデータを一度だけ SRAM に読み込み、すべての計算をそこで行うため、高コストなメモリ転送を最小限に抑えられます。 </p>
+<p>効果が最も大きいのは学習時ですが、VRAM 使用量の削減と効率の向上は推論でも有効で、より高速でスケーラブルな LLM サービングを可能にします。</p>
+</div>
+<p><strong>vLLM</strong> は PagedAttention を使う、異なるアプローチを取ります。コンピュータがメモリをページ単位で管理するのと同じように、vLLM はモデルのメモリを小さなブロックに分割します。この仕組みにより、長さの異なるリクエストにも柔軟に対応でき、メモリの無駄を抑えられます。異なるリクエスト間でのメモリ共有が特に得意で、メモリの断片化も減らせるため、システム全体の効率が上がります。</p>
+<div class="callout callout-tip">
+<p class="callout-title">💡 PagedAttention の仕組み</p>
+<p>PagedAttention は、LLM 推論におけるもう1つの重要なボトルネック、KVキャッシュのメモリ管理に対処する技術です。<a href="../chapter1/8.html">第1章第8節</a> で見たように、テキスト生成の際、モデルは冗長な計算を減らすため、生成したトークンごとにアテンションのキーとバリュー（KVキャッシュ）を保存します。KVキャッシュは、特に長いシーケンスや複数のリクエストを同時に処理する場合に、膨大な大きさになることがあります。</p>
+<p>vLLM の鍵となる工夫は、このキャッシュの管理方法にあります。</p>
+<ol>
+<li><strong>メモリページング</strong>: KVキャッシュを1つの大きなブロックとして扱うのではなく、固定サイズの「ページ」に分割します（オペレーティングシステムの仮想メモリと似た考え方です）。</li>
+<li><strong>非連続な配置</strong>: ページは GPU メモリ上に連続して配置する必要がないため、メモリの割り当てを柔軟に行えます。</li>
+<li><strong>ページテーブルの管理</strong>: ページテーブルが、どのページがどのシーケンスに属するかを記録し、効率的な検索とアクセスを可能にします。</li>
+<li><strong>メモリ共有</strong>: 並列サンプリングのような処理では、プロンプトの KVキャッシュを保存したページを、複数のシーケンスで共有できます。</li>
+</ol>
+<p>PagedAttention のアプローチは、従来の手法と比べて最大で24倍のスループットを実現でき、本番環境への LLM デプロイを大きく変えるものです。PagedAttention の仕組みをさらに深く知りたい場合は、<a href="https://docs.vllm.ai/en/latest/design/kernel/paged_attention.html">vLLM ドキュメントのガイド</a> を読んでみてください。</p>
+</div>
+<p><strong>llama.cpp</strong> は、もともとコンシューマー向けハードウェアで LLaMA モデルを動かすために設計された、高度に最適化された C/C++ 実装です。CPU の効率を重視し、任意で GPU アクセラレーションも使えます。リソースに制約のある環境に最適です。llama.cpp は量子化の手法を使って、良好な性能を保ちながらモデルのサイズとメモリ要件を削減します。各種 CPU アーキテクチャ向けに最適化されたカーネルを実装し、効率的なトークン生成のための基本的な KVキャッシュ管理も備えています。</p>
+<div class="callout callout-tip">
+<p class="callout-title">💡 llama.cpp の量子化の仕組み</p>
+<p>llama.cpp の量子化では、モデルの重みを 32 ビットや 16 ビットの浮動小数点形式から、8 ビット整数（INT8）や 4 ビット、あるいはそれ以下のビット幅の低精度形式に変換します。これにより、品質の低下を最小限に抑えながら、メモリ使用量を大幅に削減し、推論速度を向上させます。</p>
+<p>llama.cpp の量子化の主な特徴は次のとおりです。
+1. <strong>複数の量子化レベル</strong>: 8 ビット、4 ビット、3 ビット、さらには 2 ビットの量子化に対応します
+2. <strong>GGML/GGUF フォーマット</strong>: 量子化した推論向けに最適化された独自のテンソルフォーマットを使います
+3. <strong>混合精度</strong>: モデルの部位ごとに異なる量子化レベルを適用できます
+4. <strong>ハードウェア固有の最適化</strong>: 各種 CPU アーキテクチャ（AVX2、AVX-512、NEON）向けに最適化されたコードパスを含みます</p>
+<p>このアプローチにより、メモリの限られたコンシューマー向けハードウェアでも数十億パラメータのモデルを動かせるため、ローカルデプロイやエッジデバイスに最適です。</p>
+</div>
+<h3>デプロイと連携</h3>
+<p>次に、フレームワークごとにデプロイと連携がどう違うかを見ていきます。</p>
+<p><strong>TGI</strong> は、本番運用に対応した機能を備え、エンタープライズレベルのデプロイに優れています。Kubernetes のサポートが組み込まれており、Prometheus や Grafana による監視、自動スケーリング、包括的な安全機能など、本番運用に必要なものが一通りそろっています。エンタープライズグレードのロギングに加え、コンテンツフィルタリングやレート制限といった各種の保護機能も備えており、デプロイを安全かつ安定した状態に保てます。</p>
+<p><strong>vLLM</strong> は、柔軟性が高く、開発者が扱いやすいデプロイ方法を提供します。中核は Python で構築されており、既存のアプリケーションで OpenAI の API を簡単に置き換えられます。純粋な性能の追求に焦点を当て、具体的なニーズに合わせてカスタマイズできます。クラスタ管理では Ray との相性が特に良く、高い性能と適応性が必要な場合に適した選択肢です。</p>
+<p><strong>llama.cpp</strong> はシンプルさと移植性を優先します。サーバー実装は軽量で、高性能なサーバーからコンシューマー向けノートパソコン、さらには一部のハイエンドモバイルデバイスまで、幅広いハードウェアで動作します。依存関係が最小限で、中核はシンプルな C/C++ なので、Python フレームワークのインストールが難しい環境でもデプロイしやすいのが特徴です。サーバーは OpenAI 互換の API を提供しながら、他のソリューションに比べてリソース使用量を大幅に抑えています。</p>
+<h2>はじめ方</h2>
+<p>これらのフレームワークを使って LLM をデプロイする方法を、インストールと基本設定から見ていきます。</p>
+<h3>インストールと基本設定</h3>
+<div class="hfoptions">
+
+<hfoption value="tgi" label="TGI">
+
+TGI はインストールも使い方も簡単で、Hugging Face のエコシステムと深く統合されています。
+
+まず、Docker を使って TGI サーバーを起動します。
+
+
+<div class="codehilite"><pre><span></span><code>docker<span class="w"> </span>run<span class="w"> </span>--gpus<span class="w"> </span>all<span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>--shm-size<span class="w"> </span>1g<span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>-p<span class="w"> </span><span class="m">8080</span>:80<span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>-v<span class="w"> </span>~/.cache/huggingface:/data<span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>ghcr.io/huggingface/text-generation-inference:latest<span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>--model-id<span class="w"> </span>HuggingFaceTB/SmolLM2-360M-Instruct
+</code></pre></div>
+
+
+
+次に、Hugging Face の InferenceClient を使ってアクセスします。
+
+
+<div class="codehilite"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">huggingface_hub</span><span class="w"> </span><span class="kn">import</span> <span class="n">InferenceClient</span>
+
+<span class="c1"># TGI エンドポイントを指すクライアントを初期化</span>
+<span class="n">client</span> <span class="o">=</span> <span class="n">InferenceClient</span><span class="p">(</span>
+    <span class="n">model</span><span class="o">=</span><span class="s2">"http://localhost:8080"</span><span class="p">,</span>  <span class="c1"># TGI サーバーへの URL</span>
+<span class="p">)</span>
+
+<span class="c1"># テキスト生成</span>
+<span class="n">response</span> <span class="o">=</span> <span class="n">client</span><span class="o">.</span><span class="n">text_generation</span><span class="p">(</span>
+    <span class="s2">"Tell me a story"</span><span class="p">,</span>
+    <span class="n">max_new_tokens</span><span class="o">=</span><span class="mi">100</span><span class="p">,</span>
+    <span class="n">temperature</span><span class="o">=</span><span class="mf">0.7</span><span class="p">,</span>
+    <span class="n">top_p</span><span class="o">=</span><span class="mf">0.95</span><span class="p">,</span>
+    <span class="n">details</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+    <span class="n">stop_sequences</span><span class="o">=</span><span class="p">[],</span>
+<span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">response</span><span class="o">.</span><span class="n">generated_text</span><span class="p">)</span>
+
+<span class="c1"># チャット形式の場合</span>
+<span class="n">response</span> <span class="o">=</span> <span class="n">client</span><span class="o">.</span><span class="n">chat_completion</span><span class="p">(</span>
+    <span class="n">messages</span><span class="o">=</span><span class="p">[</span>
+        <span class="p">{</span><span class="s2">"role"</span><span class="p">:</span> <span class="s2">"system"</span><span class="p">,</span> <span class="s2">"content"</span><span class="p">:</span> <span class="s2">"You are a helpful assistant."</span><span class="p">},</span>
+        <span class="p">{</span><span class="s2">"role"</span><span class="p">:</span> <span class="s2">"user"</span><span class="p">,</span> <span class="s2">"content"</span><span class="p">:</span> <span class="s2">"Tell me a story"</span><span class="p">},</span>
+    <span class="p">],</span>
+    <span class="n">max_tokens</span><span class="o">=</span><span class="mi">100</span><span class="p">,</span>
+    <span class="n">temperature</span><span class="o">=</span><span class="mf">0.7</span><span class="p">,</span>
+    <span class="n">top_p</span><span class="o">=</span><span class="mf">0.95</span><span class="p">,</span>
+<span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">response</span><span class="o">.</span><span class="n">choices</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">message</span><span class="o">.</span><span class="n">content</span><span class="p">)</span>
+</code></pre></div>
+
+
+
+代わりに、OpenAI クライアントを使うこともできます。
+
+
+<div class="codehilite"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">openai</span><span class="w"> </span><span class="kn">import</span> <span class="n">OpenAI</span>
+
+<span class="c1"># TGI エンドポイントを指すクライアントを初期化</span>
+<span class="n">client</span> <span class="o">=</span> <span class="n">OpenAI</span><span class="p">(</span>
+    <span class="n">base_url</span><span class="o">=</span><span class="s2">"http://localhost:8080/v1"</span><span class="p">,</span>  <span class="c1"># /v1 を必ず含める</span>
+    <span class="n">api_key</span><span class="o">=</span><span class="s2">"not-needed"</span><span class="p">,</span>  <span class="c1"># TGI はデフォルトでは API キーを必要としない</span>
+<span class="p">)</span>
+
+<span class="c1"># チャット補完</span>
+<span class="n">response</span> <span class="o">=</span> <span class="n">client</span><span class="o">.</span><span class="n">chat</span><span class="o">.</span><span class="n">completions</span><span class="o">.</span><span class="n">create</span><span class="p">(</span>
+    <span class="n">model</span><span class="o">=</span><span class="s2">"HuggingFaceTB/SmolLM2-360M-Instruct"</span><span class="p">,</span>
+    <span class="n">messages</span><span class="o">=</span><span class="p">[</span>
+        <span class="p">{</span><span class="s2">"role"</span><span class="p">:</span> <span class="s2">"system"</span><span class="p">,</span> <span class="s2">"content"</span><span class="p">:</span> <span class="s2">"You are a helpful assistant."</span><span class="p">},</span>
+        <span class="p">{</span><span class="s2">"role"</span><span class="p">:</span> <span class="s2">"user"</span><span class="p">,</span> <span class="s2">"content"</span><span class="p">:</span> <span class="s2">"Tell me a story"</span><span class="p">},</span>
+    <span class="p">],</span>
+    <span class="n">max_tokens</span><span class="o">=</span><span class="mi">100</span><span class="p">,</span>
+    <span class="n">temperature</span><span class="o">=</span><span class="mf">0.7</span><span class="p">,</span>
+    <span class="n">top_p</span><span class="o">=</span><span class="mf">0.95</span><span class="p">,</span>
+<span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">response</span><span class="o">.</span><span class="n">choices</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">message</span><span class="o">.</span><span class="n">content</span><span class="p">)</span>
+</code></pre></div>
+
+
+
+</section>
+
+<hfoption value="llama.cpp" label="llama.cpp">
+
+llama.cpp はインストールも使い方も簡単です。依存関係は最小限で、CPU 推論と GPU 推論の両方に対応します。
+
+まず、llama.cpp をインストールしてビルドします。
+
+
+<div class="codehilite"><pre><span></span><code><span class="c1"># リポジトリをクローン</span>
+git<span class="w"> </span>clone<span class="w"> </span>https://github.com/ggerganov/llama.cpp
+<span class="nb">cd</span><span class="w"> </span>llama.cpp
+
+<span class="c1"># プロジェクトをビルド</span>
+make
+
+<span class="c1"># SmolLM2-1.7B-Instruct-GGUF モデルをダウンロード</span>
+curl<span class="w"> </span>-L<span class="w"> </span>-O<span class="w"> </span>https://huggingface.co/HuggingFaceTB/SmolLM2-1.7B-Instruct-GGUF/resolve/main/smollm2-1.7b-instruct.Q4_K_M.gguf
+</code></pre></div>
+
+
+
+次に、サーバーを起動します（OpenAI API 互換）。
+
+
+<div class="codehilite"><pre><span></span><code><span class="c1"># サーバーを起動</span>
+./server<span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>-m<span class="w"> </span>smollm2-1.7b-instruct.Q4_K_M.gguf<span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>--host<span class="w"> </span><span class="m">0</span>.0.0.0<span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>--port<span class="w"> </span><span class="m">8080</span><span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>-c<span class="w"> </span><span class="m">4096</span><span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>--n-gpu-layers<span class="w"> </span><span class="m">0</span><span class="w">  </span><span class="c1"># GPU を使う場合は大きな値に設定</span>
+</code></pre></div>
+
+
+
+Hugging Face の InferenceClient を使ってサーバーにアクセスします。
+
+
+<div class="codehilite"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">huggingface_hub</span><span class="w"> </span><span class="kn">import</span> <span class="n">InferenceClient</span>
+
+<span class="c1"># llama.cpp サーバーを指すクライアントを初期化</span>
+<span class="n">client</span> <span class="o">=</span> <span class="n">InferenceClient</span><span class="p">(</span>
+    <span class="n">model</span><span class="o">=</span><span class="s2">"http://localhost:8080/v1"</span><span class="p">,</span>  <span class="c1"># llama.cpp サーバーへの URL</span>
+    <span class="n">token</span><span class="o">=</span><span class="s2">"sk-no-key-required"</span><span class="p">,</span>  <span class="c1"># llama.cpp サーバーではこのプレースホルダが必要</span>
+<span class="p">)</span>
+
+<span class="c1"># テキスト生成</span>
+<span class="n">response</span> <span class="o">=</span> <span class="n">client</span><span class="o">.</span><span class="n">text_generation</span><span class="p">(</span>
+    <span class="s2">"Tell me a story"</span><span class="p">,</span>
+    <span class="n">max_new_tokens</span><span class="o">=</span><span class="mi">100</span><span class="p">,</span>
+    <span class="n">temperature</span><span class="o">=</span><span class="mf">0.7</span><span class="p">,</span>
+    <span class="n">top_p</span><span class="o">=</span><span class="mf">0.95</span><span class="p">,</span>
+    <span class="n">details</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+<span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">response</span><span class="o">.</span><span class="n">generated_text</span><span class="p">)</span>
+
+<span class="c1"># チャット形式の場合</span>
+<span class="n">response</span> <span class="o">=</span> <span class="n">client</span><span class="o">.</span><span class="n">chat_completion</span><span class="p">(</span>
+    <span class="n">messages</span><span class="o">=</span><span class="p">[</span>
+        <span class="p">{</span><span class="s2">"role"</span><span class="p">:</span> <span class="s2">"system"</span><span class="p">,</span> <span class="s2">"content"</span><span class="p">:</span> <span class="s2">"You are a helpful assistant."</span><span class="p">},</span>
+        <span class="p">{</span><span class="s2">"role"</span><span class="p">:</span> <span class="s2">"user"</span><span class="p">,</span> <span class="s2">"content"</span><span class="p">:</span> <span class="s2">"Tell me a story"</span><span class="p">},</span>
+    <span class="p">],</span>
+    <span class="n">max_tokens</span><span class="o">=</span><span class="mi">100</span><span class="p">,</span>
+    <span class="n">temperature</span><span class="o">=</span><span class="mf">0.7</span><span class="p">,</span>
+    <span class="n">top_p</span><span class="o">=</span><span class="mf">0.95</span><span class="p">,</span>
+<span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">response</span><span class="o">.</span><span class="n">choices</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">message</span><span class="o">.</span><span class="n">content</span><span class="p">)</span>
+</code></pre></div>
+
+
+
+代わりに、OpenAI クライアントを使うこともできます。
+
+
+<div class="codehilite"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">openai</span><span class="w"> </span><span class="kn">import</span> <span class="n">OpenAI</span>
+
+<span class="c1"># llama.cpp サーバーを指すクライアントを初期化</span>
+<span class="n">client</span> <span class="o">=</span> <span class="n">OpenAI</span><span class="p">(</span>
+    <span class="n">base_url</span><span class="o">=</span><span class="s2">"http://localhost:8080/v1"</span><span class="p">,</span>
+    <span class="n">api_key</span><span class="o">=</span><span class="s2">"sk-no-key-required"</span><span class="p">,</span>  <span class="c1"># llama.cpp サーバーではこのプレースホルダが必要</span>
+<span class="p">)</span>
+
+<span class="c1"># チャット補完</span>
+<span class="n">response</span> <span class="o">=</span> <span class="n">client</span><span class="o">.</span><span class="n">chat</span><span class="o">.</span><span class="n">completions</span><span class="o">.</span><span class="n">create</span><span class="p">(</span>
+    <span class="n">model</span><span class="o">=</span><span class="s2">"smollm2-1.7b-instruct"</span><span class="p">,</span>  <span class="c1"># サーバーは1つのモデルしか読み込まないため、モデル識別子は何でもよい</span>
+    <span class="n">messages</span><span class="o">=</span><span class="p">[</span>
+        <span class="p">{</span><span class="s2">"role"</span><span class="p">:</span> <span class="s2">"system"</span><span class="p">,</span> <span class="s2">"content"</span><span class="p">:</span> <span class="s2">"You are a helpful assistant."</span><span class="p">},</span>
+        <span class="p">{</span><span class="s2">"role"</span><span class="p">:</span> <span class="s2">"user"</span><span class="p">,</span> <span class="s2">"content"</span><span class="p">:</span> <span class="s2">"Tell me a story"</span><span class="p">},</span>
+    <span class="p">],</span>
+    <span class="n">max_tokens</span><span class="o">=</span><span class="mi">100</span><span class="p">,</span>
+    <span class="n">temperature</span><span class="o">=</span><span class="mf">0.7</span><span class="p">,</span>
+    <span class="n">top_p</span><span class="o">=</span><span class="mf">0.95</span><span class="p">,</span>
+<span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">response</span><span class="o">.</span><span class="n">choices</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">message</span><span class="o">.</span><span class="n">content</span><span class="p">)</span>
+</code></pre></div>
+
+
+
+</section>
+
+<hfoption value="vllm" label="vLLM">
+
+vLLM はインストールも使い方も簡単で、OpenAI API 互換とネイティブな Python インターフェースの両方を備えています。
+
+まず、vLLM の OpenAI 互換サーバーを起動します。
+
+
+<div class="codehilite"><pre><span></span><code>python<span class="w"> </span>-m<span class="w"> </span>vllm.entrypoints.openai.api_server<span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>--model<span class="w"> </span>HuggingFaceTB/SmolLM2-360M-Instruct<span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>--host<span class="w"> </span><span class="m">0</span>.0.0.0<span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>--port<span class="w"> </span><span class="m">8000</span>
+</code></pre></div>
+
+
+
+次に、Hugging Face の InferenceClient を使ってアクセスします。
+
+
+<div class="codehilite"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">huggingface_hub</span><span class="w"> </span><span class="kn">import</span> <span class="n">InferenceClient</span>
+
+<span class="c1"># vLLM エンドポイントを指すクライアントを初期化</span>
+<span class="n">client</span> <span class="o">=</span> <span class="n">InferenceClient</span><span class="p">(</span>
+    <span class="n">model</span><span class="o">=</span><span class="s2">"http://localhost:8000/v1"</span><span class="p">,</span>  <span class="c1"># vLLM サーバーへの URL</span>
+<span class="p">)</span>
+
+<span class="c1"># テキスト生成</span>
+<span class="n">response</span> <span class="o">=</span> <span class="n">client</span><span class="o">.</span><span class="n">text_generation</span><span class="p">(</span>
+    <span class="s2">"Tell me a story"</span><span class="p">,</span>
+    <span class="n">max_new_tokens</span><span class="o">=</span><span class="mi">100</span><span class="p">,</span>
+    <span class="n">temperature</span><span class="o">=</span><span class="mf">0.7</span><span class="p">,</span>
+    <span class="n">top_p</span><span class="o">=</span><span class="mf">0.95</span><span class="p">,</span>
+    <span class="n">details</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+<span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">response</span><span class="o">.</span><span class="n">generated_text</span><span class="p">)</span>
+
+<span class="c1"># チャット形式の場合</span>
+<span class="n">response</span> <span class="o">=</span> <span class="n">client</span><span class="o">.</span><span class="n">chat_completion</span><span class="p">(</span>
+    <span class="n">messages</span><span class="o">=</span><span class="p">[</span>
+        <span class="p">{</span><span class="s2">"role"</span><span class="p">:</span> <span class="s2">"system"</span><span class="p">,</span> <span class="s2">"content"</span><span class="p">:</span> <span class="s2">"You are a helpful assistant."</span><span class="p">},</span>
+        <span class="p">{</span><span class="s2">"role"</span><span class="p">:</span> <span class="s2">"user"</span><span class="p">,</span> <span class="s2">"content"</span><span class="p">:</span> <span class="s2">"Tell me a story"</span><span class="p">},</span>
+    <span class="p">],</span>
+    <span class="n">max_tokens</span><span class="o">=</span><span class="mi">100</span><span class="p">,</span>
+    <span class="n">temperature</span><span class="o">=</span><span class="mf">0.7</span><span class="p">,</span>
+    <span class="n">top_p</span><span class="o">=</span><span class="mf">0.95</span><span class="p">,</span>
+<span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">response</span><span class="o">.</span><span class="n">choices</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">message</span><span class="o">.</span><span class="n">content</span><span class="p">)</span>
+</code></pre></div>
+
+
+
+代わりに、OpenAI クライアントを使うこともできます。
+
+
+<div class="codehilite"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">openai</span><span class="w"> </span><span class="kn">import</span> <span class="n">OpenAI</span>
+
+<span class="c1"># vLLM エンドポイントを指すクライアントを初期化</span>
+<span class="n">client</span> <span class="o">=</span> <span class="n">OpenAI</span><span class="p">(</span>
+    <span class="n">base_url</span><span class="o">=</span><span class="s2">"http://localhost:8000/v1"</span><span class="p">,</span>
+    <span class="n">api_key</span><span class="o">=</span><span class="s2">"not-needed"</span><span class="p">,</span>  <span class="c1"># vLLM はデフォルトでは API キーを必要としない</span>
+<span class="p">)</span>
+
+<span class="c1"># チャット補完</span>
+<span class="n">response</span> <span class="o">=</span> <span class="n">client</span><span class="o">.</span><span class="n">chat</span><span class="o">.</span><span class="n">completions</span><span class="o">.</span><span class="n">create</span><span class="p">(</span>
+    <span class="n">model</span><span class="o">=</span><span class="s2">"HuggingFaceTB/SmolLM2-360M-Instruct"</span><span class="p">,</span>
+    <span class="n">messages</span><span class="o">=</span><span class="p">[</span>
+        <span class="p">{</span><span class="s2">"role"</span><span class="p">:</span> <span class="s2">"system"</span><span class="p">,</span> <span class="s2">"content"</span><span class="p">:</span> <span class="s2">"You are a helpful assistant."</span><span class="p">},</span>
+        <span class="p">{</span><span class="s2">"role"</span><span class="p">:</span> <span class="s2">"user"</span><span class="p">,</span> <span class="s2">"content"</span><span class="p">:</span> <span class="s2">"Tell me a story"</span><span class="p">},</span>
+    <span class="p">],</span>
+    <span class="n">max_tokens</span><span class="o">=</span><span class="mi">100</span><span class="p">,</span>
+    <span class="n">temperature</span><span class="o">=</span><span class="mf">0.7</span><span class="p">,</span>
+    <span class="n">top_p</span><span class="o">=</span><span class="mf">0.95</span><span class="p">,</span>
+<span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">response</span><span class="o">.</span><span class="n">choices</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">message</span><span class="o">.</span><span class="n">content</span><span class="p">)</span>
+</code></pre></div>
+
+
+
+</section>
+
+</div>
+
+<h3>基本的なテキスト生成</h3>
+<p>各フレームワークでのテキスト生成の例を見ていきます。</p>
+<div class="hfoptions">
+
+<hfoption value="tgi" label="TGI">
+
+まず、詳細なパラメータを指定して TGI をデプロイします。
+
+<div class="codehilite"><pre><span></span><code>docker<span class="w"> </span>run<span class="w"> </span>--gpus<span class="w"> </span>all<span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>--shm-size<span class="w"> </span>1g<span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>-p<span class="w"> </span><span class="m">8080</span>:80<span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>-v<span class="w"> </span>~/.cache/huggingface:/data<span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>ghcr.io/huggingface/text-generation-inference:latest<span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>--model-id<span class="w"> </span>HuggingFaceTB/SmolLM2-360M-Instruct<span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>--max-total-tokens<span class="w"> </span><span class="m">4096</span><span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>--max-input-length<span class="w"> </span><span class="m">3072</span><span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>--max-batch-total-tokens<span class="w"> </span><span class="m">8192</span><span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>--waiting-served-ratio<span class="w"> </span><span class="m">1</span>.2
+</code></pre></div>
+
+
+
+InferenceClient を使うと、柔軟なテキスト生成ができます。
+
+
+<div class="codehilite"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">huggingface_hub</span><span class="w"> </span><span class="kn">import</span> <span class="n">InferenceClient</span>
+
+<span class="n">client</span> <span class="o">=</span> <span class="n">InferenceClient</span><span class="p">(</span><span class="n">model</span><span class="o">=</span><span class="s2">"http://localhost:8080"</span><span class="p">)</span>
+
+<span class="c1"># 詳細パラメータの例</span>
+<span class="n">response</span> <span class="o">=</span> <span class="n">client</span><span class="o">.</span><span class="n">chat_completion</span><span class="p">(</span>
+    <span class="n">messages</span><span class="o">=</span><span class="p">[</span>
+        <span class="p">{</span><span class="s2">"role"</span><span class="p">:</span> <span class="s2">"system"</span><span class="p">,</span> <span class="s2">"content"</span><span class="p">:</span> <span class="s2">"You are a creative storyteller."</span><span class="p">},</span>
+        <span class="p">{</span><span class="s2">"role"</span><span class="p">:</span> <span class="s2">"user"</span><span class="p">,</span> <span class="s2">"content"</span><span class="p">:</span> <span class="s2">"Write a creative story"</span><span class="p">},</span>
+    <span class="p">],</span>
+    <span class="n">temperature</span><span class="o">=</span><span class="mf">0.8</span><span class="p">,</span>
+    <span class="n">max_tokens</span><span class="o">=</span><span class="mi">200</span><span class="p">,</span>
+    <span class="n">top_p</span><span class="o">=</span><span class="mf">0.95</span><span class="p">,</span>
+<span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">response</span><span class="o">.</span><span class="n">choices</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">message</span><span class="o">.</span><span class="n">content</span><span class="p">)</span>
+
+<span class="c1"># 生のテキスト生成</span>
+<span class="n">response</span> <span class="o">=</span> <span class="n">client</span><span class="o">.</span><span class="n">text_generation</span><span class="p">(</span>
+    <span class="s2">"Write a creative story about space exploration"</span><span class="p">,</span>
+    <span class="n">max_new_tokens</span><span class="o">=</span><span class="mi">200</span><span class="p">,</span>
+    <span class="n">temperature</span><span class="o">=</span><span class="mf">0.8</span><span class="p">,</span>
+    <span class="n">top_p</span><span class="o">=</span><span class="mf">0.95</span><span class="p">,</span>
+    <span class="n">repetition_penalty</span><span class="o">=</span><span class="mf">1.1</span><span class="p">,</span>
+    <span class="n">do_sample</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+    <span class="n">details</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+<span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">response</span><span class="o">.</span><span class="n">generated_text</span><span class="p">)</span>
+</code></pre></div>
+
+
+
+OpenAI クライアントを使う方法もあります。
+
+<div class="codehilite"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">openai</span><span class="w"> </span><span class="kn">import</span> <span class="n">OpenAI</span>
+
+<span class="n">client</span> <span class="o">=</span> <span class="n">OpenAI</span><span class="p">(</span><span class="n">base_url</span><span class="o">=</span><span class="s2">"http://localhost:8080/v1"</span><span class="p">,</span> <span class="n">api_key</span><span class="o">=</span><span class="s2">"not-needed"</span><span class="p">)</span>
+
+<span class="c1"># 詳細パラメータの例</span>
+<span class="n">response</span> <span class="o">=</span> <span class="n">client</span><span class="o">.</span><span class="n">chat</span><span class="o">.</span><span class="n">completions</span><span class="o">.</span><span class="n">create</span><span class="p">(</span>
+    <span class="n">model</span><span class="o">=</span><span class="s2">"HuggingFaceTB/SmolLM2-360M-Instruct"</span><span class="p">,</span>
+    <span class="n">messages</span><span class="o">=</span><span class="p">[</span>
+        <span class="p">{</span><span class="s2">"role"</span><span class="p">:</span> <span class="s2">"system"</span><span class="p">,</span> <span class="s2">"content"</span><span class="p">:</span> <span class="s2">"You are a creative storyteller."</span><span class="p">},</span>
+        <span class="p">{</span><span class="s2">"role"</span><span class="p">:</span> <span class="s2">"user"</span><span class="p">,</span> <span class="s2">"content"</span><span class="p">:</span> <span class="s2">"Write a creative story"</span><span class="p">},</span>
+    <span class="p">],</span>
+    <span class="n">temperature</span><span class="o">=</span><span class="mf">0.8</span><span class="p">,</span>  <span class="c1"># 高いほど創造的になる</span>
+<span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">response</span><span class="o">.</span><span class="n">choices</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">message</span><span class="o">.</span><span class="n">content</span><span class="p">)</span>
+</code></pre></div>
+
+
+
+</section>
+
+<hfoption value="llama.cpp" label="llama.cpp">
+
+llama.cpp では、サーバーの起動時に詳細なパラメータを設定できます。
+
+
+<div class="codehilite"><pre><span></span><code>./server<span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>-m<span class="w"> </span>smollm2-1.7b-instruct.Q4_K_M.gguf<span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>--host<span class="w"> </span><span class="m">0</span>.0.0.0<span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>--port<span class="w"> </span><span class="m">8080</span><span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>-c<span class="w"> </span><span class="m">4096</span><span class="w"> </span><span class="se">\ </span><span class="w">           </span><span class="c1"># コンテキストサイズ</span>
+<span class="w">    </span>--threads<span class="w"> </span><span class="m">8</span><span class="w"> </span><span class="se">\ </span><span class="w">       </span><span class="c1"># 使用する CPU スレッド数</span>
+<span class="w">    </span>--batch-size<span class="w"> </span><span class="m">512</span><span class="w"> </span><span class="se">\ </span><span class="w">  </span><span class="c1"># プロンプト評価のバッチサイズ</span>
+<span class="w">    </span>--n-gpu-layers<span class="w"> </span><span class="m">0</span><span class="w">     </span><span class="c1"># GPU レイヤー数（0 = CPU のみ）</span>
+</code></pre></div>
+
+
+
+InferenceClient を使います。
+
+
+<div class="codehilite"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">huggingface_hub</span><span class="w"> </span><span class="kn">import</span> <span class="n">InferenceClient</span>
+
+<span class="n">client</span> <span class="o">=</span> <span class="n">InferenceClient</span><span class="p">(</span><span class="n">model</span><span class="o">=</span><span class="s2">"http://localhost:8080/v1"</span><span class="p">,</span> <span class="n">token</span><span class="o">=</span><span class="s2">"sk-no-key-required"</span><span class="p">)</span>
+
+<span class="c1"># 詳細パラメータの例</span>
+<span class="n">response</span> <span class="o">=</span> <span class="n">client</span><span class="o">.</span><span class="n">chat_completion</span><span class="p">(</span>
+    <span class="n">messages</span><span class="o">=</span><span class="p">[</span>
+        <span class="p">{</span><span class="s2">"role"</span><span class="p">:</span> <span class="s2">"system"</span><span class="p">,</span> <span class="s2">"content"</span><span class="p">:</span> <span class="s2">"You are a creative storyteller."</span><span class="p">},</span>
+        <span class="p">{</span><span class="s2">"role"</span><span class="p">:</span> <span class="s2">"user"</span><span class="p">,</span> <span class="s2">"content"</span><span class="p">:</span> <span class="s2">"Write a creative story"</span><span class="p">},</span>
+    <span class="p">],</span>
+    <span class="n">temperature</span><span class="o">=</span><span class="mf">0.8</span><span class="p">,</span>
+    <span class="n">max_tokens</span><span class="o">=</span><span class="mi">200</span><span class="p">,</span>
+    <span class="n">top_p</span><span class="o">=</span><span class="mf">0.95</span><span class="p">,</span>
+<span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">response</span><span class="o">.</span><span class="n">choices</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">message</span><span class="o">.</span><span class="n">content</span><span class="p">)</span>
+
+<span class="c1"># 直接テキストを生成する場合</span>
+<span class="n">response</span> <span class="o">=</span> <span class="n">client</span><span class="o">.</span><span class="n">text_generation</span><span class="p">(</span>
+    <span class="s2">"Write a creative story about space exploration"</span><span class="p">,</span>
+    <span class="n">max_new_tokens</span><span class="o">=</span><span class="mi">200</span><span class="p">,</span>
+    <span class="n">temperature</span><span class="o">=</span><span class="mf">0.8</span><span class="p">,</span>
+    <span class="n">top_p</span><span class="o">=</span><span class="mf">0.95</span><span class="p">,</span>
+    <span class="n">repetition_penalty</span><span class="o">=</span><span class="mf">1.1</span><span class="p">,</span>
+    <span class="n">details</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+<span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">response</span><span class="o">.</span><span class="n">generated_text</span><span class="p">)</span>
+</code></pre></div>
+
+
+
+サンプリングパラメータを細かく制御して生成したい場合は、OpenAI クライアントも使えます。
+
+
+<div class="codehilite"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">openai</span><span class="w"> </span><span class="kn">import</span> <span class="n">OpenAI</span>
+
+<span class="n">client</span> <span class="o">=</span> <span class="n">OpenAI</span><span class="p">(</span><span class="n">base_url</span><span class="o">=</span><span class="s2">"http://localhost:8080/v1"</span><span class="p">,</span> <span class="n">api_key</span><span class="o">=</span><span class="s2">"sk-no-key-required"</span><span class="p">)</span>
+
+<span class="c1"># 詳細パラメータの例</span>
+<span class="n">response</span> <span class="o">=</span> <span class="n">client</span><span class="o">.</span><span class="n">chat</span><span class="o">.</span><span class="n">completions</span><span class="o">.</span><span class="n">create</span><span class="p">(</span>
+    <span class="n">model</span><span class="o">=</span><span class="s2">"smollm2-1.7b-instruct"</span><span class="p">,</span>
+    <span class="n">messages</span><span class="o">=</span><span class="p">[</span>
+        <span class="p">{</span><span class="s2">"role"</span><span class="p">:</span> <span class="s2">"system"</span><span class="p">,</span> <span class="s2">"content"</span><span class="p">:</span> <span class="s2">"You are a creative storyteller."</span><span class="p">},</span>
+        <span class="p">{</span><span class="s2">"role"</span><span class="p">:</span> <span class="s2">"user"</span><span class="p">,</span> <span class="s2">"content"</span><span class="p">:</span> <span class="s2">"Write a creative story"</span><span class="p">},</span>
+    <span class="p">],</span>
+    <span class="n">temperature</span><span class="o">=</span><span class="mf">0.8</span><span class="p">,</span>  <span class="c1"># 高いほど創造的になる</span>
+    <span class="n">top_p</span><span class="o">=</span><span class="mf">0.95</span><span class="p">,</span>  <span class="c1"># Top-pサンプリングの確率の閾値</span>
+    <span class="n">frequency_penalty</span><span class="o">=</span><span class="mf">0.5</span><span class="p">,</span>  <span class="c1"># 頻出トークンの繰り返しを抑える</span>
+    <span class="n">presence_penalty</span><span class="o">=</span><span class="mf">0.5</span><span class="p">,</span>  <span class="c1"># すでに出現したトークンにペナルティを与えて繰り返しを抑える</span>
+    <span class="n">max_tokens</span><span class="o">=</span><span class="mi">200</span><span class="p">,</span>  <span class="c1"># 生成する最大長</span>
+<span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">response</span><span class="o">.</span><span class="n">choices</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">message</span><span class="o">.</span><span class="n">content</span><span class="p">)</span>
+</code></pre></div>
+
+
+
+さらに細かく制御したい場合は、llama.cpp のネイティブライブラリも使えます。
+
+
+<div class="codehilite"><pre><span></span><code><span class="c1"># llama-cpp-python パッケージでモデルに直接アクセス</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">llama_cpp</span><span class="w"> </span><span class="kn">import</span> <span class="n">Llama</span>
+
+<span class="c1"># モデルを読み込む</span>
+<span class="n">llm</span> <span class="o">=</span> <span class="n">Llama</span><span class="p">(</span>
+    <span class="n">model_path</span><span class="o">=</span><span class="s2">"smollm2-1.7b-instruct.Q4_K_M.gguf"</span><span class="p">,</span>
+    <span class="n">n_ctx</span><span class="o">=</span><span class="mi">4096</span><span class="p">,</span>  <span class="c1"># コンテキストウィンドウのサイズ</span>
+    <span class="n">n_threads</span><span class="o">=</span><span class="mi">8</span><span class="p">,</span>  <span class="c1"># CPU スレッド数</span>
+    <span class="n">n_gpu_layers</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span>  <span class="c1"># GPU レイヤー数（0 = CPU のみ）</span>
+<span class="p">)</span>
+
+<span class="c1"># モデルが想定する形式に合わせてプロンプトを整形</span>
+<span class="n">prompt</span> <span class="o">=</span> <span class="s2">"""&lt;|im_start|&gt;system</span>
+<span class="s2">You are a creative storyteller.</span>
+<span class="s2">&lt;|im_end|&gt;</span>
+<span class="s2">&lt;|im_start|&gt;user</span>
+<span class="s2">Write a creative story</span>
+<span class="s2">&lt;|im_end|&gt;</span>
+<span class="s2">&lt;|im_start|&gt;assistant</span>
+<span class="s2">"""</span>
+
+<span class="c1"># パラメータを細かく制御して応答を生成</span>
+<span class="n">output</span> <span class="o">=</span> <span class="n">llm</span><span class="p">(</span>
+    <span class="n">prompt</span><span class="p">,</span>
+    <span class="n">max_tokens</span><span class="o">=</span><span class="mi">200</span><span class="p">,</span>
+    <span class="n">temperature</span><span class="o">=</span><span class="mf">0.8</span><span class="p">,</span>
+    <span class="n">top_p</span><span class="o">=</span><span class="mf">0.95</span><span class="p">,</span>
+    <span class="n">frequency_penalty</span><span class="o">=</span><span class="mf">0.5</span><span class="p">,</span>
+    <span class="n">presence_penalty</span><span class="o">=</span><span class="mf">0.5</span><span class="p">,</span>
+    <span class="n">stop</span><span class="o">=</span><span class="p">[</span><span class="s2">"&lt;|im_end|&gt;"</span><span class="p">],</span>
+<span class="p">)</span>
+
+<span class="nb">print</span><span class="p">(</span><span class="n">output</span><span class="p">[</span><span class="s2">"choices"</span><span class="p">][</span><span class="mi">0</span><span class="p">][</span><span class="s2">"text"</span><span class="p">])</span>
+</code></pre></div>
+
+
+
+</section>
+
+<hfoption value="vllm" label="vLLM">
+
+vLLM の高度な使い方として、InferenceClient を使う方法があります。
+
+
+<div class="codehilite"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">huggingface_hub</span><span class="w"> </span><span class="kn">import</span> <span class="n">InferenceClient</span>
+
+<span class="n">client</span> <span class="o">=</span> <span class="n">InferenceClient</span><span class="p">(</span><span class="n">model</span><span class="o">=</span><span class="s2">"http://localhost:8000/v1"</span><span class="p">)</span>
+
+<span class="c1"># 詳細パラメータの例</span>
+<span class="n">response</span> <span class="o">=</span> <span class="n">client</span><span class="o">.</span><span class="n">chat_completion</span><span class="p">(</span>
+    <span class="n">messages</span><span class="o">=</span><span class="p">[</span>
+        <span class="p">{</span><span class="s2">"role"</span><span class="p">:</span> <span class="s2">"system"</span><span class="p">,</span> <span class="s2">"content"</span><span class="p">:</span> <span class="s2">"You are a creative storyteller."</span><span class="p">},</span>
+        <span class="p">{</span><span class="s2">"role"</span><span class="p">:</span> <span class="s2">"user"</span><span class="p">,</span> <span class="s2">"content"</span><span class="p">:</span> <span class="s2">"Write a creative story"</span><span class="p">},</span>
+    <span class="p">],</span>
+    <span class="n">temperature</span><span class="o">=</span><span class="mf">0.8</span><span class="p">,</span>
+    <span class="n">max_tokens</span><span class="o">=</span><span class="mi">200</span><span class="p">,</span>
+    <span class="n">top_p</span><span class="o">=</span><span class="mf">0.95</span><span class="p">,</span>
+<span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">response</span><span class="o">.</span><span class="n">choices</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">message</span><span class="o">.</span><span class="n">content</span><span class="p">)</span>
+
+<span class="c1"># 直接テキストを生成する場合</span>
+<span class="n">response</span> <span class="o">=</span> <span class="n">client</span><span class="o">.</span><span class="n">text_generation</span><span class="p">(</span>
+    <span class="s2">"Write a creative story about space exploration"</span><span class="p">,</span>
+    <span class="n">max_new_tokens</span><span class="o">=</span><span class="mi">200</span><span class="p">,</span>
+    <span class="n">temperature</span><span class="o">=</span><span class="mf">0.8</span><span class="p">,</span>
+    <span class="n">top_p</span><span class="o">=</span><span class="mf">0.95</span><span class="p">,</span>
+    <span class="n">details</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+<span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">response</span><span class="o">.</span><span class="n">generated_text</span><span class="p">)</span>
+</code></pre></div>
+
+
+
+OpenAI クライアントを使うこともできます。
+
+
+<div class="codehilite"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">openai</span><span class="w"> </span><span class="kn">import</span> <span class="n">OpenAI</span>
+
+<span class="n">client</span> <span class="o">=</span> <span class="n">OpenAI</span><span class="p">(</span><span class="n">base_url</span><span class="o">=</span><span class="s2">"http://localhost:8000/v1"</span><span class="p">,</span> <span class="n">api_key</span><span class="o">=</span><span class="s2">"not-needed"</span><span class="p">)</span>
+
+<span class="c1"># 詳細パラメータの例</span>
+<span class="n">response</span> <span class="o">=</span> <span class="n">client</span><span class="o">.</span><span class="n">chat</span><span class="o">.</span><span class="n">completions</span><span class="o">.</span><span class="n">create</span><span class="p">(</span>
+    <span class="n">model</span><span class="o">=</span><span class="s2">"HuggingFaceTB/SmolLM2-360M-Instruct"</span><span class="p">,</span>
+    <span class="n">messages</span><span class="o">=</span><span class="p">[</span>
+        <span class="p">{</span><span class="s2">"role"</span><span class="p">:</span> <span class="s2">"system"</span><span class="p">,</span> <span class="s2">"content"</span><span class="p">:</span> <span class="s2">"You are a creative storyteller."</span><span class="p">},</span>
+        <span class="p">{</span><span class="s2">"role"</span><span class="p">:</span> <span class="s2">"user"</span><span class="p">,</span> <span class="s2">"content"</span><span class="p">:</span> <span class="s2">"Write a creative story"</span><span class="p">},</span>
+    <span class="p">],</span>
+    <span class="n">temperature</span><span class="o">=</span><span class="mf">0.8</span><span class="p">,</span>
+    <span class="n">top_p</span><span class="o">=</span><span class="mf">0.95</span><span class="p">,</span>
+    <span class="n">max_tokens</span><span class="o">=</span><span class="mi">200</span><span class="p">,</span>
+<span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">response</span><span class="o">.</span><span class="n">choices</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">message</span><span class="o">.</span><span class="n">content</span><span class="p">)</span>
+</code></pre></div>
+
+
+
+vLLM には、細かな制御ができるネイティブな Python インターフェースもあります。
+
+
+<div class="codehilite"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">vllm</span><span class="w"> </span><span class="kn">import</span> <span class="n">LLM</span><span class="p">,</span> <span class="n">SamplingParams</span>
+
+<span class="c1"># 詳細パラメータを指定してモデルを初期化</span>
+<span class="n">llm</span> <span class="o">=</span> <span class="n">LLM</span><span class="p">(</span>
+    <span class="n">model</span><span class="o">=</span><span class="s2">"HuggingFaceTB/SmolLM2-360M-Instruct"</span><span class="p">,</span>
+    <span class="n">gpu_memory_utilization</span><span class="o">=</span><span class="mf">0.85</span><span class="p">,</span>
+    <span class="n">max_num_batched_tokens</span><span class="o">=</span><span class="mi">8192</span><span class="p">,</span>
+    <span class="n">max_num_seqs</span><span class="o">=</span><span class="mi">256</span><span class="p">,</span>
+    <span class="n">block_size</span><span class="o">=</span><span class="mi">16</span><span class="p">,</span>
+<span class="p">)</span>
+
+<span class="c1"># サンプリングパラメータを設定</span>
+<span class="n">sampling_params</span> <span class="o">=</span> <span class="n">SamplingParams</span><span class="p">(</span>
+    <span class="n">temperature</span><span class="o">=</span><span class="mf">0.8</span><span class="p">,</span>  <span class="c1"># 高いほど創造的になる</span>
+    <span class="n">top_p</span><span class="o">=</span><span class="mf">0.95</span><span class="p">,</span>  <span class="c1"># 確率の累積が上位 95% までのトークンを対象にする</span>
+    <span class="n">max_tokens</span><span class="o">=</span><span class="mi">100</span><span class="p">,</span>  <span class="c1"># 最大長</span>
+    <span class="n">presence_penalty</span><span class="o">=</span><span class="mf">1.1</span><span class="p">,</span>  <span class="c1"># 繰り返しを抑える</span>
+    <span class="n">frequency_penalty</span><span class="o">=</span><span class="mf">1.1</span><span class="p">,</span>  <span class="c1"># 繰り返しを抑える</span>
+    <span class="n">stop</span><span class="o">=</span><span class="p">[</span><span class="s2">"</span><span class="se">\n\n</span><span class="s2">"</span><span class="p">,</span> <span class="s2">"###"</span><span class="p">],</span>  <span class="c1"># 停止シーケンス</span>
+<span class="p">)</span>
+
+<span class="c1"># テキストを生成</span>
+<span class="n">prompt</span> <span class="o">=</span> <span class="s2">"Write a creative story"</span>
+<span class="n">outputs</span> <span class="o">=</span> <span class="n">llm</span><span class="o">.</span><span class="n">generate</span><span class="p">(</span><span class="n">prompt</span><span class="p">,</span> <span class="n">sampling_params</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">outputs</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">outputs</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">text</span><span class="p">)</span>
+
+<span class="c1"># チャット形式のやり取りの場合</span>
+<span class="n">chat_prompt</span> <span class="o">=</span> <span class="p">[</span>
+    <span class="p">{</span><span class="s2">"role"</span><span class="p">:</span> <span class="s2">"system"</span><span class="p">,</span> <span class="s2">"content"</span><span class="p">:</span> <span class="s2">"You are a creative storyteller."</span><span class="p">},</span>
+    <span class="p">{</span><span class="s2">"role"</span><span class="p">:</span> <span class="s2">"user"</span><span class="p">,</span> <span class="s2">"content"</span><span class="p">:</span> <span class="s2">"Write a creative story"</span><span class="p">},</span>
+<span class="p">]</span>
+<span class="n">formatted_prompt</span> <span class="o">=</span> <span class="n">llm</span><span class="o">.</span><span class="n">get_chat_template</span><span class="p">()(</span><span class="n">chat_prompt</span><span class="p">)</span>  <span class="c1"># モデルのチャットテンプレートを使う</span>
+<span class="n">outputs</span> <span class="o">=</span> <span class="n">llm</span><span class="o">.</span><span class="n">generate</span><span class="p">(</span><span class="n">formatted_prompt</span><span class="p">,</span> <span class="n">sampling_params</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">outputs</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">outputs</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">text</span><span class="p">)</span>
+</code></pre></div>
+
+
+
+</section>
+
+</div>
+
+<h2>生成の高度な制御</h2>
+<h3>トークンの選択とサンプリング</h3>
+<p>テキストの生成は、各ステップで次のトークンを選択する処理の繰り返しです。この選択の処理は、さまざまなパラメータで制御できます。</p>
+<ol>
+<li><strong>生のロジット</strong>: 各トークンについて最初に出力される確率</li>
+<li><strong>温度（Temperature）</strong>: 選択のランダムさを制御します（高いほど創造的になります）</li>
+<li><strong>Top-p（Nucleus）サンプリング</strong>: 確率の累積が X% に達するまでの上位トークンに絞り込みます</li>
+<li><strong>Top-k フィルタリング</strong>: 選択肢を最も確率の高い k 個のトークンに制限します</li>
+</ol>
+<p>これらのパラメータの設定方法は次のとおりです。</p>
+<div class="hfoptions">
+
+<hfoption value="tgi" label="TGI">
+
+
+<div class="codehilite"><pre><span></span><code><span class="n">client</span><span class="o">.</span><span class="n">generate</span><span class="p">(</span>
+    <span class="s2">"Write a creative story"</span><span class="p">,</span>
+    <span class="n">temperature</span><span class="o">=</span><span class="mf">0.8</span><span class="p">,</span>  <span class="c1"># 高いほど創造的になる</span>
+    <span class="n">top_p</span><span class="o">=</span><span class="mf">0.95</span><span class="p">,</span>  <span class="c1"># 確率の累積が上位 95% までのトークンを対象にする</span>
+    <span class="n">top_k</span><span class="o">=</span><span class="mi">50</span><span class="p">,</span>  <span class="c1"># 上位 50 トークンを対象にする</span>
+    <span class="n">max_new_tokens</span><span class="o">=</span><span class="mi">100</span><span class="p">,</span>  <span class="c1"># 最大長</span>
+    <span class="n">repetition_penalty</span><span class="o">=</span><span class="mf">1.1</span><span class="p">,</span>  <span class="c1"># 繰り返しを抑える</span>
+<span class="p">)</span>
+</code></pre></div>
+
+
+
+</section>
+
+<hfoption value="llama.cpp" label="llama.cpp">
+
+
+<div class="codehilite"><pre><span></span><code><span class="c1"># OpenAI API 互換経由</span>
+<span class="n">response</span> <span class="o">=</span> <span class="n">client</span><span class="o">.</span><span class="n">completions</span><span class="o">.</span><span class="n">create</span><span class="p">(</span>
+    <span class="n">model</span><span class="o">=</span><span class="s2">"smollm2-1.7b-instruct"</span><span class="p">,</span>  <span class="c1"># モデル名（llama.cpp サーバーでは任意の文字列でよい）</span>
+    <span class="n">prompt</span><span class="o">=</span><span class="s2">"Write a creative story"</span><span class="p">,</span>
+    <span class="n">temperature</span><span class="o">=</span><span class="mf">0.8</span><span class="p">,</span>  <span class="c1"># 高いほど創造的になる</span>
+    <span class="n">top_p</span><span class="o">=</span><span class="mf">0.95</span><span class="p">,</span>  <span class="c1"># 確率の累積が上位 95% までのトークンを対象にする</span>
+    <span class="n">frequency_penalty</span><span class="o">=</span><span class="mf">1.1</span><span class="p">,</span>  <span class="c1"># 繰り返しを抑える</span>
+    <span class="n">presence_penalty</span><span class="o">=</span><span class="mf">0.1</span><span class="p">,</span>  <span class="c1"># 繰り返しを抑える</span>
+    <span class="n">max_tokens</span><span class="o">=</span><span class="mi">100</span><span class="p">,</span>  <span class="c1"># 最大長</span>
+<span class="p">)</span>
+
+<span class="c1"># llama-cpp-python で直接アクセス</span>
+<span class="n">output</span> <span class="o">=</span> <span class="n">llm</span><span class="p">(</span>
+    <span class="s2">"Write a creative story"</span><span class="p">,</span>
+    <span class="n">temperature</span><span class="o">=</span><span class="mf">0.8</span><span class="p">,</span>
+    <span class="n">top_p</span><span class="o">=</span><span class="mf">0.95</span><span class="p">,</span>
+    <span class="n">top_k</span><span class="o">=</span><span class="mi">50</span><span class="p">,</span>
+    <span class="n">max_tokens</span><span class="o">=</span><span class="mi">100</span><span class="p">,</span>
+    <span class="n">repeat_penalty</span><span class="o">=</span><span class="mf">1.1</span><span class="p">,</span>
+<span class="p">)</span>
+</code></pre></div>
+
+
+
+</section>
+
+<hfoption value="vllm" label="vLLM">
+
+
+<div class="codehilite"><pre><span></span><code><span class="n">params</span> <span class="o">=</span> <span class="n">SamplingParams</span><span class="p">(</span>
+    <span class="n">temperature</span><span class="o">=</span><span class="mf">0.8</span><span class="p">,</span>  <span class="c1"># 高いほど創造的になる</span>
+    <span class="n">top_p</span><span class="o">=</span><span class="mf">0.95</span><span class="p">,</span>  <span class="c1"># 確率の累積が上位 95% までのトークンを対象にする</span>
+    <span class="n">top_k</span><span class="o">=</span><span class="mi">50</span><span class="p">,</span>  <span class="c1"># 上位 50 トークンを対象にする</span>
+    <span class="n">max_tokens</span><span class="o">=</span><span class="mi">100</span><span class="p">,</span>  <span class="c1"># 最大長</span>
+    <span class="n">presence_penalty</span><span class="o">=</span><span class="mf">0.1</span><span class="p">,</span>  <span class="c1"># 繰り返しを抑える</span>
+<span class="p">)</span>
+<span class="n">llm</span><span class="o">.</span><span class="n">generate</span><span class="p">(</span><span class="s2">"Write a creative story"</span><span class="p">,</span> <span class="n">sampling_params</span><span class="o">=</span><span class="n">params</span><span class="p">)</span>
+</code></pre></div>
+
+
+
+</section>
+
+</div>
+
+<h3>繰り返しの制御</h3>
+<p>各フレームワークには、生成テキストで同じ表現が繰り返されるのを抑える機能があります。</p>
+<div class="hfoptions">
+
+<hfoption value="tgi" label="TGI">
+
+
+<div class="codehilite"><pre><span></span><code><span class="n">client</span><span class="o">.</span><span class="n">generate</span><span class="p">(</span>
+    <span class="s2">"Write a varied text"</span><span class="p">,</span>
+    <span class="n">repetition_penalty</span><span class="o">=</span><span class="mf">1.1</span><span class="p">,</span>  <span class="c1"># 繰り返されたトークンにペナルティを与える</span>
+    <span class="n">no_repeat_ngram_size</span><span class="o">=</span><span class="mi">3</span><span class="p">,</span>  <span class="c1"># 3-gram の繰り返しを防ぐ</span>
+<span class="p">)</span>
+</code></pre></div>
+
+
+
+</section>
+
+<hfoption value="llama.cpp" label="llama.cpp">
+
+
+<div class="codehilite"><pre><span></span><code><span class="c1"># OpenAI API 経由</span>
+<span class="n">response</span> <span class="o">=</span> <span class="n">client</span><span class="o">.</span><span class="n">completions</span><span class="o">.</span><span class="n">create</span><span class="p">(</span>
+    <span class="n">model</span><span class="o">=</span><span class="s2">"smollm2-1.7b-instruct"</span><span class="p">,</span>
+    <span class="n">prompt</span><span class="o">=</span><span class="s2">"Write a varied text"</span><span class="p">,</span>
+    <span class="n">frequency_penalty</span><span class="o">=</span><span class="mf">1.1</span><span class="p">,</span>  <span class="c1"># 頻出トークンにペナルティを与える</span>
+    <span class="n">presence_penalty</span><span class="o">=</span><span class="mf">0.8</span><span class="p">,</span>  <span class="c1"># すでに出現したトークンにペナルティを与える</span>
+<span class="p">)</span>
+
+<span class="c1"># ライブラリで直接アクセス</span>
+<span class="n">output</span> <span class="o">=</span> <span class="n">llm</span><span class="p">(</span>
+    <span class="s2">"Write a varied text"</span><span class="p">,</span>
+    <span class="n">repeat_penalty</span><span class="o">=</span><span class="mf">1.1</span><span class="p">,</span>  <span class="c1"># 繰り返されたトークンにペナルティを与える</span>
+    <span class="n">frequency_penalty</span><span class="o">=</span><span class="mf">0.5</span><span class="p">,</span>  <span class="c1"># 追加の頻出ペナルティ</span>
+    <span class="n">presence_penalty</span><span class="o">=</span><span class="mf">0.5</span><span class="p">,</span>  <span class="c1"># 追加の出現ペナルティ</span>
+<span class="p">)</span>
+</code></pre></div>
+
+
+
+</section>
+
+<hfoption value="vllm" label="vLLM">
+
+
+<div class="codehilite"><pre><span></span><code><span class="n">params</span> <span class="o">=</span> <span class="n">SamplingParams</span><span class="p">(</span>
+    <span class="n">presence_penalty</span><span class="o">=</span><span class="mf">0.1</span><span class="p">,</span>  <span class="c1"># トークンの出現にペナルティを与える</span>
+    <span class="n">frequency_penalty</span><span class="o">=</span><span class="mf">0.1</span><span class="p">,</span>  <span class="c1"># トークンの頻出にペナルティを与える</span>
+<span class="p">)</span>
+</code></pre></div>
+
+
+
+</section>
+
+</div>
+
+<h3>長さの制御と停止シーケンス</h3>
+<p>生成の長さを制御したり、停止するタイミングを指定したりできます。</p>
+<div class="hfoptions">
+
+<hfoption value="tgi" label="TGI">
+
+
+<div class="codehilite"><pre><span></span><code><span class="n">client</span><span class="o">.</span><span class="n">generate</span><span class="p">(</span>
+    <span class="s2">"Generate a short paragraph"</span><span class="p">,</span>
+    <span class="n">max_new_tokens</span><span class="o">=</span><span class="mi">100</span><span class="p">,</span>
+    <span class="n">min_new_tokens</span><span class="o">=</span><span class="mi">10</span><span class="p">,</span>
+    <span class="n">stop_sequences</span><span class="o">=</span><span class="p">[</span><span class="s2">"</span><span class="se">\n\n</span><span class="s2">"</span><span class="p">,</span> <span class="s2">"###"</span><span class="p">],</span>
+<span class="p">)</span>
+</code></pre></div>
+
+
+
+</section>
+
+<hfoption value="llama.cpp" label="llama.cpp">
+
+
+<div class="codehilite"><pre><span></span><code><span class="c1"># OpenAI API 経由</span>
+<span class="n">response</span> <span class="o">=</span> <span class="n">client</span><span class="o">.</span><span class="n">completions</span><span class="o">.</span><span class="n">create</span><span class="p">(</span>
+    <span class="n">model</span><span class="o">=</span><span class="s2">"smollm2-1.7b-instruct"</span><span class="p">,</span>
+    <span class="n">prompt</span><span class="o">=</span><span class="s2">"Generate a short paragraph"</span><span class="p">,</span>
+    <span class="n">max_tokens</span><span class="o">=</span><span class="mi">100</span><span class="p">,</span>
+    <span class="n">stop</span><span class="o">=</span><span class="p">[</span><span class="s2">"</span><span class="se">\n\n</span><span class="s2">"</span><span class="p">,</span> <span class="s2">"###"</span><span class="p">],</span>
+<span class="p">)</span>
+
+<span class="c1"># ライブラリで直接アクセス</span>
+<span class="n">output</span> <span class="o">=</span> <span class="n">llm</span><span class="p">(</span><span class="s2">"Generate a short paragraph"</span><span class="p">,</span> <span class="n">max_tokens</span><span class="o">=</span><span class="mi">100</span><span class="p">,</span> <span class="n">stop</span><span class="o">=</span><span class="p">[</span><span class="s2">"</span><span class="se">\n\n</span><span class="s2">"</span><span class="p">,</span> <span class="s2">"###"</span><span class="p">])</span>
+</code></pre></div>
+
+
+
+</section>
+
+<hfoption value="vllm" label="vLLM">
+
+
+<div class="codehilite"><pre><span></span><code><span class="n">params</span> <span class="o">=</span> <span class="n">SamplingParams</span><span class="p">(</span>
+    <span class="n">max_tokens</span><span class="o">=</span><span class="mi">100</span><span class="p">,</span>
+    <span class="n">min_tokens</span><span class="o">=</span><span class="mi">10</span><span class="p">,</span>
+    <span class="n">stop</span><span class="o">=</span><span class="p">[</span><span class="s2">"###"</span><span class="p">,</span> <span class="s2">"</span><span class="se">\n\n</span><span class="s2">"</span><span class="p">],</span>
+    <span class="n">ignore_eos</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+    <span class="n">skip_special_tokens</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+<span class="p">)</span>
+</code></pre></div>
+
+
+
+</section>
+
+</div>
+
+<h2>メモリ管理</h2>
+<p>各フレームワークは、効率的な推論のために高度なメモリ管理の手法を実装しています。</p>
+<div class="hfoptions">
+
+<hfoption value="tgi" label="TGI">
+
+TGI は Flash Attention 2 と継続的バッチングを使います。
+
+
+<div class="codehilite"><pre><span></span><code><span class="c1"># メモリ最適化を施した Docker デプロイ</span>
+docker<span class="w"> </span>run<span class="w"> </span>--gpus<span class="w"> </span>all<span class="w"> </span>-p<span class="w"> </span><span class="m">8080</span>:80<span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>--shm-size<span class="w"> </span>1g<span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>ghcr.io/huggingface/text-generation-inference:latest<span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>--model-id<span class="w"> </span>HuggingFaceTB/SmolLM2-1.7B-Instruct<span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>--max-batch-total-tokens<span class="w"> </span><span class="m">8192</span><span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>--max-input-length<span class="w"> </span><span class="m">4096</span>
+</code></pre></div>
+
+
+
+</section>
+
+<hfoption value="llama.cpp" label="llama.cpp">
+
+llama.cpp は量子化と最適化されたメモリレイアウトを使います。
+
+
+<div class="codehilite"><pre><span></span><code><span class="c1"># メモリ最適化を施したサーバー</span>
+./server<span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>-m<span class="w"> </span>smollm2-1.7b-instruct.Q4_K_M.gguf<span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>--host<span class="w"> </span><span class="m">0</span>.0.0.0<span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>--port<span class="w"> </span><span class="m">8080</span><span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>-c<span class="w"> </span><span class="m">2048</span><span class="w"> </span><span class="se">\ </span><span class="w">              </span><span class="c1"># コンテキストサイズ</span>
+<span class="w">    </span>--threads<span class="w"> </span><span class="m">4</span><span class="w"> </span><span class="se">\ </span><span class="w">          </span><span class="c1"># CPU スレッド数</span>
+<span class="w">    </span>--n-gpu-layers<span class="w"> </span><span class="m">32</span><span class="w"> </span><span class="se">\ </span><span class="w">    </span><span class="c1"># 大きなモデルでは GPU レイヤーを増やす</span>
+<span class="w">    </span>--mlock<span class="w"> </span><span class="se">\ </span><span class="w">              </span><span class="c1"># メモリをロックしてスワップを防ぐ</span>
+<span class="w">    </span>--cont-batching<span class="w">         </span><span class="c1"># 継続的バッチングを有効化</span>
+</code></pre></div>
+
+
+
+GPU に収まらない大きなモデルには、CPU オフロードが使えます。
+
+
+<div class="codehilite"><pre><span></span><code>./server<span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>-m<span class="w"> </span>smollm2-1.7b-instruct.Q4_K_M.gguf<span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>--n-gpu-layers<span class="w"> </span><span class="m">20</span><span class="w"> </span><span class="se">\ </span><span class="w">    </span><span class="c1"># 最初の 20 層を GPU に置く</span>
+<span class="w">    </span>--threads<span class="w"> </span><span class="m">8</span><span class="w">             </span><span class="c1"># CPU レイヤーには CPU スレッドを多めに使う</span>
+</code></pre></div>
+
+
+
+</section>
+
+<hfoption value="vllm" label="vLLM">
+
+vLLM は最適なメモリ管理のために PagedAttention を使います。
+
+
+<div class="codehilite"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">vllm.engine.arg_utils</span><span class="w"> </span><span class="kn">import</span> <span class="n">AsyncEngineArgs</span>
+
+<span class="n">engine_args</span> <span class="o">=</span> <span class="n">AsyncEngineArgs</span><span class="p">(</span>
+    <span class="n">model</span><span class="o">=</span><span class="s2">"HuggingFaceTB/SmolLM2-1.7B-Instruct"</span><span class="p">,</span>
+    <span class="n">gpu_memory_utilization</span><span class="o">=</span><span class="mf">0.85</span><span class="p">,</span>
+    <span class="n">max_num_batched_tokens</span><span class="o">=</span><span class="mi">8192</span><span class="p">,</span>
+    <span class="n">block_size</span><span class="o">=</span><span class="mi">16</span><span class="p">,</span>
+<span class="p">)</span>
+
+<span class="n">llm</span> <span class="o">=</span> <span class="n">LLM</span><span class="p">(</span><span class="n">engine_args</span><span class="o">=</span><span class="n">engine_args</span><span class="p">)</span>
+</code></pre></div>
+
+
+
+</section>
+
+</div>
+
+<h2>参考資料</h2>
+<ul>
+<li><a href="https://huggingface.co/docs/text-generation-inference">Text Generation Inference ドキュメント</a></li>
+<li><a href="https://github.com/huggingface/text-generation-inference">TGI の GitHub リポジトリ</a></li>
+<li><a href="https://vllm.readthedocs.io/">vLLM ドキュメント</a></li>
+<li><a href="https://github.com/vllm-project/vllm">vLLM の GitHub リポジトリ</a></li>
+<li><a href="https://arxiv.org/abs/2309.06180">PagedAttention の論文</a></li>
+<li><a href="https://github.com/ggerganov/llama.cpp">llama.cpp の GitHub リポジトリ</a></li>
+<li><a href="https://github.com/abetlen/llama-cpp-python">llama-cpp-python のリポジトリ</a></li>
+</ul>
+</article>
+<nav class="page-nav"><a class="nav-link prev" href="7.html">← 前へ: 基本的な使い方はこれで完了です！</a><a class="nav-link toc-link" href="../index.html">目次へ</a><a class="nav-link next" href="9.html">次へ →: 章末クイズ</a></nav>
+</main>
+<footer class="site-footer">
+  <p>原典: Hugging Face huggingface/course（<a href="https://github.com/huggingface/course">https://github.com/huggingface/course</a>）</p>
+  <p>日本語版の翻訳・公開: 霞ヶ関京 / 連絡先: GitHub <a href="https://github.com/yanikasumin">@yanikasumin</a> / YouTube <a href="https://www.youtube.com/@KASUMI_MOF">@KASUMI_MOF</a></p>
+  <p class="demo-note">このサイトはデモ版です。内容は順次更新されます。</p>
+</footer>
+<script src="../../site.js"></script>
+</body>
+</html>

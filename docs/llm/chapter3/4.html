@@ -1,0 +1,452 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>完全な学習ループ | Hugging Face コース日本語版（デモ版）</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Shippori+Mincho:wght@500;700&family=Zen+Kaku+Gothic+New:wght@400;500;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../../style.css">
+<script>
+window.MathJax = { tex: { inlineMath: [['$', '$'], ['\\(', '\\)']], displayMath: [['$$', '$$'], ['\\[', '\\]']] }, options: { skipHtmlTags: ['script','noscript','style','textarea','pre','code'] } };
+</script>
+<script async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml.js"></script>
+</head>
+<body>
+<header class="site-header">
+  <div class="header-inner">
+    <a class="site-title" href="../../index.html">Hugging Face コース日本語版</a>
+    <span class="demo-badge">デモ版</span>
+  </div>
+</header>
+<main class="container">
+<p class="course-crumb"><a href="../index.html">LLM コース</a>
+<span class="badge badge-qa-pass">翻訳QA 最終合格</span></p>
+<nav class="page-nav"><a class="nav-link prev" href="3.html">← 前へ: Trainer API でモデルをファインチューニングする</a><a class="nav-link toc-link" href="../index.html">目次へ</a><a class="nav-link next" href="5.html">次へ →: 学習曲線を理解する</a></nav>
+<article class="content">
+<h1>完全な学習ループ</h1>
+<div class="youtube-embed"><iframe src="https://www.youtube-nocookie.com/embed/Dh9CL8fyG80" title="YouTube video" loading="lazy" allowfullscreen referrerpolicy="strict-origin-when-cross-origin"></iframe></div>
+<p>ここでは、<code>Trainer</code> クラスを使わずに、PyTorch の現代的なベストプラクティスに沿って学習ループをゼロから実装し、前のセクションと同じ結果を得る方法を見ていきます。前提として、セクション2のデータ処理は済んでいるものとします。必要なものをまとめた短いコードがこちらです。</p>
+<div class="callout callout-tip">
+<p class="callout-title">💡 ヒント</p>
+<p>🏗️ <strong>ゼロからの学習</strong>: このセクションはこれまでの内容を前提としています。PyTorch の学習ループとベストプラクティスの詳しいガイドは、<a href="https://huggingface.co/docs/transformers/main/en/training#train-in-native-pytorch">🤗 Transformers の学習ドキュメント</a> と <a href="https://huggingface.co/learn/cookbook/en/fine_tuning_code_llm_on_single_gpu#model">カスタム学習クックブック</a> を参照してください。</p>
+</div>
+<div class="codehilite"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">datasets</span><span class="w"> </span><span class="kn">import</span> <span class="n">load_dataset</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">transformers</span><span class="w"> </span><span class="kn">import</span> <span class="n">AutoTokenizer</span><span class="p">,</span> <span class="n">DataCollatorWithPadding</span>
+
+<span class="n">raw_datasets</span> <span class="o">=</span> <span class="n">load_dataset</span><span class="p">(</span><span class="s2">"glue"</span><span class="p">,</span> <span class="s2">"mrpc"</span><span class="p">)</span>
+<span class="n">checkpoint</span> <span class="o">=</span> <span class="s2">"bert-base-uncased"</span>
+<span class="n">tokenizer</span> <span class="o">=</span> <span class="n">AutoTokenizer</span><span class="o">.</span><span class="n">from_pretrained</span><span class="p">(</span><span class="n">checkpoint</span><span class="p">)</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">tokenize_function</span><span class="p">(</span><span class="n">example</span><span class="p">):</span>
+    <span class="k">return</span> <span class="n">tokenizer</span><span class="p">(</span><span class="n">example</span><span class="p">[</span><span class="s2">"sentence1"</span><span class="p">],</span> <span class="n">example</span><span class="p">[</span><span class="s2">"sentence2"</span><span class="p">],</span> <span class="n">truncation</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+
+
+<span class="n">tokenized_datasets</span> <span class="o">=</span> <span class="n">raw_datasets</span><span class="o">.</span><span class="n">map</span><span class="p">(</span><span class="n">tokenize_function</span><span class="p">,</span> <span class="n">batched</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+<span class="n">data_collator</span> <span class="o">=</span> <span class="n">DataCollatorWithPadding</span><span class="p">(</span><span class="n">tokenizer</span><span class="o">=</span><span class="n">tokenizer</span><span class="p">)</span>
+</code></pre></div>
+
+<h3>学習の準備</h3>
+<p>学習ループを実際に書く前に、いくつかオブジェクトを定義する必要があります。最初は、バッチを反復処理するためのデータローダです。ただし、データローダを定義する前に、<code>tokenized_datasets</code> に少し後処理を施す必要があります。<code>Trainer</code> が自動でやってくれていた処理です。具体的には、次のことが必要です。</p>
+<ul>
+<li>モデルが想定していない値の列（<code>sentence1</code> 列や <code>sentence2</code> 列など）を削除する</li>
+<li>列 <code>label</code> を <code>labels</code> にリネームする（モデルは引数名が <code>labels</code> であることを想定しているため）</li>
+<li>データセットの形式を設定し、リストではなく PyTorch テンソルを返すようにする</li>
+</ul>
+<p><code>tokenized_datasets</code> には、これらのステップに対応するメソッドがそれぞれ用意されています。</p>
+<div class="codehilite"><pre><span></span><code><span class="n">tokenized_datasets</span> <span class="o">=</span> <span class="n">tokenized_datasets</span><span class="o">.</span><span class="n">remove_columns</span><span class="p">([</span><span class="s2">"sentence1"</span><span class="p">,</span> <span class="s2">"sentence2"</span><span class="p">,</span> <span class="s2">"idx"</span><span class="p">])</span>
+<span class="n">tokenized_datasets</span> <span class="o">=</span> <span class="n">tokenized_datasets</span><span class="o">.</span><span class="n">rename_column</span><span class="p">(</span><span class="s2">"label"</span><span class="p">,</span> <span class="s2">"labels"</span><span class="p">)</span>
+<span class="n">tokenized_datasets</span><span class="o">.</span><span class="n">set_format</span><span class="p">(</span><span class="s2">"torch"</span><span class="p">)</span>
+<span class="n">tokenized_datasets</span><span class="p">[</span><span class="s2">"train"</span><span class="p">]</span><span class="o">.</span><span class="n">column_names</span>
+</code></pre></div>
+
+<p>結果として、モデルが受け付ける列だけが残っていることを確認できます。</p>
+<div class="codehilite"><pre><span></span><code><span class="p">[</span><span class="s2">"attention_mask"</span><span class="p">,</span> <span class="s2">"input_ids"</span><span class="p">,</span> <span class="s2">"labels"</span><span class="p">,</span> <span class="s2">"token_type_ids"</span><span class="p">]</span>
+</code></pre></div>
+
+<p>これで、データローダを簡単に定義できます。</p>
+<div class="codehilite"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">torch.utils.data</span><span class="w"> </span><span class="kn">import</span> <span class="n">DataLoader</span>
+
+<span class="n">train_dataloader</span> <span class="o">=</span> <span class="n">DataLoader</span><span class="p">(</span>
+    <span class="n">tokenized_datasets</span><span class="p">[</span><span class="s2">"train"</span><span class="p">],</span> <span class="n">shuffle</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">batch_size</span><span class="o">=</span><span class="mi">8</span><span class="p">,</span> <span class="n">collate_fn</span><span class="o">=</span><span class="n">data_collator</span>
+<span class="p">)</span>
+<span class="n">eval_dataloader</span> <span class="o">=</span> <span class="n">DataLoader</span><span class="p">(</span>
+    <span class="n">tokenized_datasets</span><span class="p">[</span><span class="s2">"validation"</span><span class="p">],</span> <span class="n">batch_size</span><span class="o">=</span><span class="mi">8</span><span class="p">,</span> <span class="n">collate_fn</span><span class="o">=</span><span class="n">data_collator</span>
+<span class="p">)</span>
+</code></pre></div>
+
+<p>データ処理に間違いがないか手早く確認するために、バッチを次のように調べられます。</p>
+<div class="codehilite"><pre><span></span><code><span class="k">for</span> <span class="n">batch</span> <span class="ow">in</span> <span class="n">train_dataloader</span><span class="p">:</span>
+    <span class="k">break</span>
+<span class="p">{</span><span class="n">k</span><span class="p">:</span> <span class="n">v</span><span class="o">.</span><span class="n">shape</span> <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">batch</span><span class="o">.</span><span class="n">items</span><span class="p">()}</span>
+</code></pre></div>
+
+<p>```python out
+{'attention_mask': torch.Size([8, 65]),
+ 'input_ids': torch.Size([8, 65]),
+ 'labels': torch.Size([8]),
+ 'token_type_ids': torch.Size([8, 65])}</p>
+<div class="codehilite"><pre><span></span><code>学習用データローダでは `shuffle=True` を設定し、バッチ内の最大長に合わせてパディングしているため、実際の形状はおそらく少し異なります。
+
+これでデータの前処理が完了しました（機械学習の実務では、前処理をここまで終えるのもなかなか大変です）。次はモデルです。前のセクションとまったく同じようにインスタンス化します。
+
+```py
+from transformers import AutoModelForSequenceClassification
+
+model = AutoModelForSequenceClassification.from_pretrained(checkpoint, num_labels=2)
+</code></pre></div>
+
+<p>学習が問題なく進むことを確認するために、バッチをこのモデルに渡してみます。</p>
+<div class="codehilite"><pre><span></span><code><span class="n">outputs</span> <span class="o">=</span> <span class="n">model</span><span class="p">(</span><span class="o">**</span><span class="n">batch</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">outputs</span><span class="o">.</span><span class="n">loss</span><span class="p">,</span> <span class="n">outputs</span><span class="o">.</span><span class="n">logits</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span>
+</code></pre></div>
+
+<p>```python out
+tensor(0.5441, grad_fn=<NllLossBackward>) torch.Size([8, 2])</p>
+<div class="codehilite"><pre><span></span><code>🤗 Transformers のモデルはすべて、`labels` が与えられると損失を返します。ロジットも得られます（バッチ内の各入力につき2つなので、サイズ 8 x 2 のテンソルです）。
+
+学習ループを書く準備はほぼ整いました。あと2つ、オプティマイザと学習率スケジューラが足りません。`Trainer` がやっていたことを手作業で再現するので、同じデフォルトを使います。`Trainer` が使うオプティマイザは `AdamW` です。これは Adam と同じですが、重み減衰による正則化の工夫が加わっています（Ilya Loshchilov と Frank Hutter による ["Decoupled Weight Decay Regularization"](https://arxiv.org/abs/1711.05101) を参照）。
+
+```py
+from torch.optim import AdamW
+
+optimizer = AdamW(model.parameters(), lr=5e-5)
+</code></pre></div>
+
+<div class="callout callout-tip">
+<p class="callout-title">💡 ヒント</p>
+<p>💡 <strong>現代的な最適化のヒント</strong>: さらに性能を高めたい場合は、次を試せます。
+- <strong>重み減衰ありの AdamW</strong>: <code>AdamW(model.parameters(), lr=5e-5, weight_decay=0.01)</code>
+- <strong>8-bit Adam</strong>: <code>bitsandbytes</code> を使ったメモリ効率のよい最適化
+- <strong>学習率の調整</strong>: 大きなモデルでは、低めの学習率（1e-5 〜 3e-5）がうまくいくことが多い</p>
+<p>🚀 <strong>最適化のリソース</strong>: オプティマイザと学習戦略の詳細は <a href="https://huggingface.co/docs/transformers/main/en/performance#optimizer">🤗 Transformers 最適化ガイド</a> を参照してください。</p>
+</div>
+<p>最後に、デフォルトの学習率スケジューラは、最大値（5e-5）から 0 まで線形に減衰させるだけのものです。これを正しく定義するには、実行する学習ステップ数を知る必要があります。ステップ数は、実行したいエポック数に学習バッチ数（学習用データローダの長さ）を掛けたものです。<code>Trainer</code> のデフォルトは3エポックなので、それに従います。</p>
+<div class="codehilite"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">transformers</span><span class="w"> </span><span class="kn">import</span> <span class="n">get_scheduler</span>
+
+<span class="n">num_epochs</span> <span class="o">=</span> <span class="mi">3</span>
+<span class="n">num_training_steps</span> <span class="o">=</span> <span class="n">num_epochs</span> <span class="o">*</span> <span class="nb">len</span><span class="p">(</span><span class="n">train_dataloader</span><span class="p">)</span>
+<span class="n">lr_scheduler</span> <span class="o">=</span> <span class="n">get_scheduler</span><span class="p">(</span>
+    <span class="s2">"linear"</span><span class="p">,</span>
+    <span class="n">optimizer</span><span class="o">=</span><span class="n">optimizer</span><span class="p">,</span>
+    <span class="n">num_warmup_steps</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span>
+    <span class="n">num_training_steps</span><span class="o">=</span><span class="n">num_training_steps</span><span class="p">,</span>
+<span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">num_training_steps</span><span class="p">)</span>
+</code></pre></div>
+
+<p>```python out
+1377</p>
+<div class="codehilite"><pre><span></span><code>### 学習ループ
+
+最後にもう1つ。GPU を使える環境なら使いたいところです（CPU では、学習に数分ではなく数時間かかるかもしれません）。そのために、モデルとバッチを配置する `device` を定義します。
+
+```py
+import torch
+
+device = torch.device("cuda") if torch.cuda.is_available() else torch.device("cpu")
+model.to(device)
+device
+</code></pre></div>
+
+<p>```python out
+device(type='cuda')</p>
+<div class="codehilite"><pre><span></span><code>これで学習の準備が整いました。学習がいつ終わるか見当をつけるために、`tqdm` ライブラリを使って、学習ステップ数分のプログレスバーを追加します。
+
+```py
+from tqdm.auto import tqdm
+
+progress_bar = tqdm(range(num_training_steps))
+
+model.train()
+for epoch in range(num_epochs):
+    for batch in train_dataloader:
+        batch = {k: v.to(device) for k, v in batch.items()}
+        outputs = model(**batch)
+        loss = outputs.loss
+        loss.backward()
+
+        optimizer.step()
+        lr_scheduler.step()
+        optimizer.zero_grad()
+        progress_bar.update(1)
+</code></pre></div>
+
+<div class="callout callout-tip">
+<p class="callout-title">💡 ヒント</p>
+<p>💡 <strong>現代的な学習の最適化</strong>: 学習ループをさらに効率化するには、次を検討してください。</p>
+<ul>
+<li><strong>勾配クリッピング</strong>: <code>optimizer.step()</code> の前に <code>torch.nn.utils.clip_grad_norm_(model.parameters(), max_norm=1.0)</code> を追加する</li>
+<li><strong>混合精度</strong>: <code>torch.cuda.amp.autocast()</code> と <code>GradScaler</code> を使って学習を高速化する</li>
+<li><strong>勾配累積</strong>: 複数のバッチにわたって勾配を蓄積し、大きなバッチサイズを擬似的に再現する</li>
+<li><strong>チェックポイント保存</strong>: 定期的にモデルのチェックポイントを保存し、中断しても再開できるようにする</li>
+</ul>
+<p>🔧 <strong>実装ガイド</strong>: これらの最適化の詳しい例は、<a href="https://huggingface.co/docs/transformers/main/en/perf_train_gpu_one">🤗 Transformers の効率的な学習ガイド</a> と <a href="https://huggingface.co/docs/transformers/main/en/optimizers">オプティマイザの一覧</a> を参照してください。</p>
+</div>
+<p>学習ループの核となる部分は、入門編で見たものとよく似ていることがわかります。学習状況を報告する処理は追加していないため、この学習ループだけではモデルの性能を把握できません。それには評価ループを追加する必要があります。</p>
+<h3>評価ループ</h3>
+<p>前と同じく、🤗 Evaluate ライブラリが提供する指標を使います。<code>metric.compute()</code> メソッドはすでに見ましたが、<code>add_batch()</code> メソッドを使えば、評価ループの実行中に、指標の計算に必要な予測結果と正解ラベルをバッチごとに蓄積できます。すべてのバッチを蓄積したら、<code>metric.compute()</code> で最終結果が得られます。評価ループでの実装は次のとおりです。</p>
+<div class="callout callout-tip">
+<p class="callout-title">💡 ヒント</p>
+<p>📊 <strong>評価のベストプラクティス</strong>: より高度な評価戦略と指標については、<a href="https://huggingface.co/docs/evaluate/">🤗 Evaluate のドキュメント</a> と <a href="https://github.com/huggingface/evaluation-guidebook">包括的な評価クックブック</a> を参照してください。</p>
+</div>
+<div class="codehilite"><pre><span></span><code><span class="kn">import</span><span class="w"> </span><span class="nn">evaluate</span>
+
+<span class="n">metric</span> <span class="o">=</span> <span class="n">evaluate</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="s2">"glue"</span><span class="p">,</span> <span class="s2">"mrpc"</span><span class="p">)</span>
+<span class="n">model</span><span class="o">.</span><span class="n">eval</span><span class="p">()</span>
+<span class="k">for</span> <span class="n">batch</span> <span class="ow">in</span> <span class="n">eval_dataloader</span><span class="p">:</span>
+    <span class="n">batch</span> <span class="o">=</span> <span class="p">{</span><span class="n">k</span><span class="p">:</span> <span class="n">v</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="n">device</span><span class="p">)</span> <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">batch</span><span class="o">.</span><span class="n">items</span><span class="p">()}</span>
+    <span class="k">with</span> <span class="n">torch</span><span class="o">.</span><span class="n">no_grad</span><span class="p">():</span>
+        <span class="n">outputs</span> <span class="o">=</span> <span class="n">model</span><span class="p">(</span><span class="o">**</span><span class="n">batch</span><span class="p">)</span>
+
+    <span class="n">logits</span> <span class="o">=</span> <span class="n">outputs</span><span class="o">.</span><span class="n">logits</span>
+    <span class="n">predictions</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">argmax</span><span class="p">(</span><span class="n">logits</span><span class="p">,</span> <span class="n">dim</span><span class="o">=-</span><span class="mi">1</span><span class="p">)</span>
+    <span class="n">metric</span><span class="o">.</span><span class="n">add_batch</span><span class="p">(</span><span class="n">predictions</span><span class="o">=</span><span class="n">predictions</span><span class="p">,</span> <span class="n">references</span><span class="o">=</span><span class="n">batch</span><span class="p">[</span><span class="s2">"labels"</span><span class="p">])</span>
+
+<span class="n">metric</span><span class="o">.</span><span class="n">compute</span><span class="p">()</span>
+</code></pre></div>
+
+<p 0.8431372549019608_ 0.8907849829351535 _accuracy_: _f1_:>```python out</p>
+<div class="codehilite"><pre><span></span><code>繰り返しになりますが、モデルヘッドの初期化とデータのシャッフルのランダム性があるため、結果は少し異なります。ただし、だいたい同じくらいの値になるはずです。
+
+&lt;div class="callout callout-tip" markdown="block"&gt;
+&lt;p class="callout-title"&gt;💡 ヒント&lt;/p&gt;
+✏️ **試してみましょう！** 前の学習ループを変更して、SST-2 データセットでモデルをファインチューニングしてみてください。
+&lt;/div&gt;
+
+
+### 🤗 Accelerate で学習ループを強化する
+
+
+
+<div class="youtube-embed"><iframe src="https://www.youtube-nocookie.com/embed/s7dy8QRgjJ0" title="YouTube video" loading="lazy" allowfullscreen referrerpolicy="strict-origin-when-cross-origin"></iframe></div>
+
+
+
+先ほど定義した学習ループは、単一の CPU や GPU では問題なく動作します。しかし [🤗 Accelerate](https://github.com/huggingface/accelerate) ライブラリを使えば、わずかな変更で複数の GPU や TPU での分散学習が可能になります。分散学習、混合精度、デバイス配置の複雑な処理は、🤗 Accelerate が自動で引き受けてくれます。学習用と検証用のデータローダの作成から始めると、手作業の学習ループは次のようになります。
+
+&lt;div class="callout callout-tip" markdown="block"&gt;
+&lt;p class="callout-title"&gt;💡 ヒント&lt;/p&gt;
+⚡ **Accelerate の詳細**: 分散学習、混合精度、ハードウェア最適化のすべては [🤗 Accelerate のドキュメント](https://huggingface.co/docs/accelerate/) で学べます。実践的な例は [Transformers のドキュメント](https://huggingface.co/docs/transformers/main/en/accelerate) にあります。
+&lt;/div&gt;
+
+
+```py
+from accelerate import Accelerator
+from torch.optim import AdamW
+from transformers import AutoModelForSequenceClassification, get_scheduler
+
+accelerator = Accelerator()
+
+model = AutoModelForSequenceClassification.from_pretrained(checkpoint, num_labels=2)
+optimizer = AdamW(model.parameters(), lr=3e-5)
+
+train_dl, eval_dl, model, optimizer = accelerator.prepare(
+    train_dataloader, eval_dataloader, model, optimizer
+)
+
+num_epochs = 3
+num_training_steps = num_epochs * len(train_dl)
+lr_scheduler = get_scheduler(
+    "linear",
+    optimizer=optimizer,
+    num_warmup_steps=0,
+    num_training_steps=num_training_steps,
+)
+
+progress_bar = tqdm(range(num_training_steps))
+
+model.train()
+for epoch in range(num_epochs):
+    for batch in train_dl:
+        outputs = model(**batch)
+        loss = outputs.loss
+        accelerator.backward(loss)
+
+        optimizer.step()
+        lr_scheduler.step()
+        optimizer.zero_grad()
+        progress_bar.update(1)
+</code></pre></div>
+
+<p>最初に追加する行は import 文です。次に追加する行では <code>Accelerator</code> オブジェクトをインスタンス化します。これが環境を確認し、適切な分散セットアップを初期化します。デバイス配置は 🤗 Accelerate が処理してくれるので、モデルをデバイスに載せる行は削除できます（残したい場合は、<code>device</code> の代わりに <code>accelerator.device</code> を使うよう変更してください）。</p>
+<p>作業の中心は、データローダ、モデル、オプティマイザを <code>accelerator.prepare()</code> に渡す行です。これにより各オブジェクトが分散学習に適した形でラップされ、分散学習が意図どおりに動作します。残りの変更は、バッチを <code>device</code> に載せる行の削除（これも残したい場合は <code>accelerator.device</code> を使うよう変更できます）と、<code>loss.backward()</code> を <code>accelerator.backward(loss)</code> に置き換えることです。</p>
+<div class="callout callout-tip">
+<p class="callout-title">💡 ヒント</p>
+<p>⚠️ Cloud TPU による高速化の恩恵を受けるには、トークナイザの <code>padding="max_length"</code> 引数と <code>max_length</code> 引数を使って、サンプルを固定長にパディングすることをおすすめします。</p>
+</div>
+<p>コピー＆ペーストして試せるように、🤗 Accelerate を使った完全な学習ループを載せておきます。</p>
+<div class="codehilite"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">accelerate</span><span class="w"> </span><span class="kn">import</span> <span class="n">Accelerator</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">torch.optim</span><span class="w"> </span><span class="kn">import</span> <span class="n">AdamW</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">transformers</span><span class="w"> </span><span class="kn">import</span> <span class="n">AutoModelForSequenceClassification</span><span class="p">,</span> <span class="n">get_scheduler</span>
+
+<span class="n">accelerator</span> <span class="o">=</span> <span class="n">Accelerator</span><span class="p">()</span>
+
+<span class="n">model</span> <span class="o">=</span> <span class="n">AutoModelForSequenceClassification</span><span class="o">.</span><span class="n">from_pretrained</span><span class="p">(</span><span class="n">checkpoint</span><span class="p">,</span> <span class="n">num_labels</span><span class="o">=</span><span class="mi">2</span><span class="p">)</span>
+<span class="n">optimizer</span> <span class="o">=</span> <span class="n">AdamW</span><span class="p">(</span><span class="n">model</span><span class="o">.</span><span class="n">parameters</span><span class="p">(),</span> <span class="n">lr</span><span class="o">=</span><span class="mf">3e-5</span><span class="p">)</span>
+
+<span class="n">train_dl</span><span class="p">,</span> <span class="n">eval_dl</span><span class="p">,</span> <span class="n">model</span><span class="p">,</span> <span class="n">optimizer</span> <span class="o">=</span> <span class="n">accelerator</span><span class="o">.</span><span class="n">prepare</span><span class="p">(</span>
+    <span class="n">train_dataloader</span><span class="p">,</span> <span class="n">eval_dataloader</span><span class="p">,</span> <span class="n">model</span><span class="p">,</span> <span class="n">optimizer</span>
+<span class="p">)</span>
+
+<span class="n">num_epochs</span> <span class="o">=</span> <span class="mi">3</span>
+<span class="n">num_training_steps</span> <span class="o">=</span> <span class="n">num_epochs</span> <span class="o">*</span> <span class="nb">len</span><span class="p">(</span><span class="n">train_dl</span><span class="p">)</span>
+<span class="n">lr_scheduler</span> <span class="o">=</span> <span class="n">get_scheduler</span><span class="p">(</span>
+    <span class="s2">"linear"</span><span class="p">,</span>
+    <span class="n">optimizer</span><span class="o">=</span><span class="n">optimizer</span><span class="p">,</span>
+    <span class="n">num_warmup_steps</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span>
+    <span class="n">num_training_steps</span><span class="o">=</span><span class="n">num_training_steps</span><span class="p">,</span>
+<span class="p">)</span>
+
+<span class="n">progress_bar</span> <span class="o">=</span> <span class="n">tqdm</span><span class="p">(</span><span class="nb">range</span><span class="p">(</span><span class="n">num_training_steps</span><span class="p">))</span>
+
+<span class="n">model</span><span class="o">.</span><span class="n">train</span><span class="p">()</span>
+<span class="k">for</span> <span class="n">epoch</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">num_epochs</span><span class="p">):</span>
+    <span class="k">for</span> <span class="n">batch</span> <span class="ow">in</span> <span class="n">train_dl</span><span class="p">:</span>
+        <span class="n">outputs</span> <span class="o">=</span> <span class="n">model</span><span class="p">(</span><span class="o">**</span><span class="n">batch</span><span class="p">)</span>
+        <span class="n">loss</span> <span class="o">=</span> <span class="n">outputs</span><span class="o">.</span><span class="n">loss</span>
+        <span class="n">accelerator</span><span class="o">.</span><span class="n">backward</span><span class="p">(</span><span class="n">loss</span><span class="p">)</span>
+
+        <span class="n">optimizer</span><span class="o">.</span><span class="n">step</span><span class="p">()</span>
+        <span class="n">lr_scheduler</span><span class="o">.</span><span class="n">step</span><span class="p">()</span>
+        <span class="n">optimizer</span><span class="o">.</span><span class="n">zero_grad</span><span class="p">()</span>
+        <span class="n">progress_bar</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
+</code></pre></div>
+
+<p>これを <code>train.py</code> スクリプトに入れれば、そのスクリプトはあらゆる分散セットアップで実行できるようになります。自分の分散セットアップで試すには、次のコマンドを実行します。</p>
+<div class="codehilite"><pre><span></span><code>accelerate<span class="w"> </span>config
+</code></pre></div>
+
+<p>いくつか質問に答えると、その回答が設定ファイルに書き出されます。その設定ファイルは次のコマンドで使われます。</p>
+<div class="codehilite"><pre><span></span><code>accelerate launch train.py
+</code></pre></div>
+
+<p>これで分散学習が起動します。</p>
+<p>ノートブックで試したい場合（たとえば Colab で TPU を使ってテストする場合）は、コードを <code>training_function()</code> に貼り付け、最後のセルで次を実行します。</p>
+<div class="codehilite"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">accelerate</span><span class="w"> </span><span class="kn">import</span> <span class="n">notebook_launcher</span>
+
+<span class="n">notebook_launcher</span><span class="p">(</span><span class="n">training_function</span><span class="p">)</span>
+</code></pre></div>
+
+<p>その他の例は <a href="https://github.com/huggingface/accelerate/tree/main/examples">🤗 Accelerate リポジトリ</a> にあります。</p>
+<div class="callout callout-tip">
+<p class="callout-title">💡 ヒント</p>
+<p>🌐 <strong>分散学習</strong>: マルチ GPU・マルチノード学習の包括的な解説は、<a href="https://huggingface.co/docs/transformers/main/en/perf_train_gpu_many">🤗 Transformers 分散学習ガイド</a> と <a href="https://huggingface.co/docs/transformers/main/en/accelerate">学習のスケーリングに関するクックブック</a> を参照してください。</p>
+</div>
+<h3>次のステップとベストプラクティス</h3>
+<p>ゼロから学習を実装する方法を学んだところで、本番利用に向けた追加の検討事項を挙げておきます。</p>
+<p><strong>モデルの評価</strong>: 正解率だけでなく、常に複数の指標でモデルを評価してください。包括的な評価には 🤗 Evaluate ライブラリを使います。</p>
+<p><strong>ハイパーパラメータ調整</strong>: 体系的なハイパーパラメータ最適化には、Optuna や Ray Tune のようなライブラリの利用を検討してください。</p>
+<p><strong>モデルの監視</strong>: 学習を通して、学習指標、学習曲線、検証性能を追跡してください。</p>
+<p><strong>モデルの共有</strong>: 学習が終わったら、モデルを Hugging Face Hub で共有し、コミュニティが使えるようにしてください。</p>
+<p><strong>効率化</strong>: 大きなモデルでは、勾配チェックポインティング、パラメータ効率のよいファインチューニング（LoRA、AdaLoRA）、量子化といった手法を検討してください。</p>
+<p>カスタム学習ループによるファインチューニングの詳細な解説は以上です。ここで学んだスキルは、学習プロセスを完全に制御したい場合や、<code>Trainer</code> API の範囲を超えるカスタム学習ロジックを実装したい場合に役立ちます。</p>
+<h2>セクションクイズ</h2>
+<p>カスタム学習ループと高度な学習テクニックの理解度をテストしましょう。</p>
+<h3>1. Adam オプティマイザと AdamW オプティマイザの主な違いは何ですか？</h3>
+<div class="quiz">
+<div class="quiz-choices">
+<button type="button" class="quiz-choice" data-correct="false" data-quiz-idx="0">AdamW は異なる学習率スケジュールを使います。</button>
+<div class="quiz-explain-src" id="qe-125591347805824-0" hidden>学習率のスケジューリングは、オプティマイザの選択とは別物です。</div>
+<button type="button" class="quiz-choice" data-correct="true" data-quiz-idx="1">AdamW には、分離された重み減衰による正則化が含まれています。</button>
+<div class="quiz-explain-src" id="qe-125591347805824-1" hidden>正解です！AdamW は重み減衰を勾配ベースのパラメータ更新から分離しており、よりよい正則化につながります。</div>
+<button type="button" class="quiz-choice" data-correct="false" data-quiz-idx="2">AdamW は Transformer モデルでしか動作しません。</button>
+<div class="quiz-explain-src" id="qe-125591347805824-2" hidden>AdamW は Transformer に限らず、あらゆるモデルアーキテクチャで使えます。</div>
+<button type="button" class="quiz-choice" data-correct="false" data-quiz-idx="3">AdamW は Adam よりメモリ使用量が少ないです。</button>
+<div class="quiz-explain-src" id="qe-125591347805824-3" hidden>どちらのオプティマイザもメモリ要件は同程度です。</div>
+</div><div class="quiz-feedback" hidden></div></div>
+<h3>2. 学習ループにおける操作の正しい順序はどれですか？</h3>
+<div class="quiz">
+<div class="quiz-choices">
+<button type="button" class="quiz-choice" data-correct="false" data-quiz-idx="0">フォワードパス → バックワードパス → オプティマイザステップ → 勾配をゼロにする</button>
+<div class="quiz-explain-src" id="qe-125591345902080-0" hidden>惜しいですが、古い勾配が蓄積しないよう、次のフォワードパスの前に勾配をゼロにすべきです。</div>
+<button type="button" class="quiz-choice" data-correct="true" data-quiz-idx="1">フォワードパス → バックワードパス → オプティマイザステップ → スケジューラステップ → 勾配をゼロにする</button>
+<div class="quiz-explain-src" id="qe-125591345902080-1" hidden>正解です！正しい順序は、損失の計算、勾配の計算、パラメータの更新、学習率の更新、そして勾配のクリアです。</div>
+<button type="button" class="quiz-choice" data-correct="false" data-quiz-idx="2">勾配をゼロにする → フォワードパス → オプティマイザステップ → バックワードパス</button>
+<div class="quiz-explain-src" id="qe-125591345902080-2" hidden>損失から勾配を計算するには、バックワードパスはフォワードパスの後でなければなりません。</div>
+<button type="button" class="quiz-choice" data-correct="false" data-quiz-idx="3">フォワードパス → 勾配をゼロにする → バックワードパス → オプティマイザステップ</button>
+<div class="quiz-explain-src" id="qe-125591345902080-3" hidden>バックワードパスの前に勾配をゼロにすると、計算したばかりの勾配が消えてしまいます。</div>
+</div><div class="quiz-feedback" hidden></div></div>
+<h3>3. 🤗 Accelerate ライブラリは主に何を支援しますか？</h3>
+<div class="quiz">
+<div class="quiz-choices">
+<button type="button" class="quiz-choice" data-correct="false" data-quiz-idx="0">フォワードパスを最適化して、モデルの学習を高速化すること</button>
+<div class="quiz-explain-src" id="qe-125591347805824-0" hidden>Accelerate はモデルアーキテクチャ自体を最適化するものではありません。</div>
+<button type="button" class="quiz-choice" data-correct="false" data-quiz-idx="1">最適なハイパーパラメータを自動で選択すること</button>
+<div class="quiz-explain-src" id="qe-125591347805824-1" hidden>Accelerate はハイパーパラメータ最適化を行いません。</div>
+<button type="button" class="quiz-choice" data-correct="true" data-quiz-idx="2">最小限のコード変更で、複数の GPU/TPU での分散学習を可能にすること</button>
+<div class="quiz-explain-src" id="qe-125591347805824-2" hidden>正解です！Accelerate は分散学習の複雑さを引き受け、コードを単一デバイスでも複数デバイスでもシームレスに動作させます。</div>
+<button type="button" class="quiz-choice" data-correct="false" data-quiz-idx="3">モデルを TensorFlow のような別のフレームワークに変換すること</button>
+<div class="quiz-explain-src" id="qe-125591347805824-3" hidden>Accelerate は PyTorch の中で動作し、フレームワーク間の変換は行いません。</div>
+</div><div class="quiz-feedback" hidden></div></div>
+<h3>4. 学習ループでバッチをデバイスに移動するのはなぜですか？</h3>
+<div class="quiz">
+<div class="quiz-choices">
+<button type="button" class="quiz-choice" data-correct="false" data-quiz-idx="0">学習を高速化するため</button>
+<div class="quiz-explain-src" id="qe-125591345902080-0" hidden>速度に影響することはありますが、主な理由は互換性です。</div>
+<button type="button" class="quiz-choice" data-correct="true" data-quiz-idx="1">計算するには、モデルとデータが同じデバイス（CPU/GPU）上になければならないため</button>
+<div class="quiz-explain-src" id="qe-125591345902080-1" hidden>正解です！PyTorch では、演算を行うテンソル同士が同じデバイス上にある必要があります。</div>
+<button type="button" class="quiz-choice" data-correct="false" data-quiz-idx="2">メモリを節約するため</button>
+<div class="quiz-explain-src" id="qe-125591345902080-2" hidden>デバイスへの移動自体がメモリを節約するわけではありません。</div>
+<button type="button" class="quiz-choice" data-correct="false" data-quiz-idx="3">DataLoader に要求されるため</button>
+<div class="quiz-explain-src" id="qe-125591345902080-3" hidden>DataLoader は特定のデバイス配置を要求しません。</div>
+</div><div class="quiz-feedback" hidden></div></div>
+<h3>5. 評価前に <code>model.eval()</code> は何をしますか？</h3>
+<div class="quiz">
+<div class="quiz-choices">
+<button type="button" class="quiz-choice" data-correct="false" data-quiz-idx="0">モデルのパラメータを凍結し、更新できなくします。</button>
+<div class="quiz-explain-src" id="qe-125591347805824-0" hidden>model.eval() はパラメータを凍結しません。凍結するには requires_grad=False を設定します。</div>
+<button type="button" class="quiz-choice" data-correct="true" data-quiz-idx="1">ドロップアウトやバッチ正規化のような層の動作を、推論用に切り替えます。</button>
+<div class="quiz-explain-src" id="qe-125591347805824-1" hidden>正解です！eval() モードではドロップアウトが無効になり、バッチ正規化では現在のバッチから統計量を計算するのではなく、学習中に蓄積された統計量を使います。</div>
+<button type="button" class="quiz-choice" data-correct="false" data-quiz-idx="2">評価指標のための勾配計算を有効にします。</button>
+<div class="quiz-explain-src" id="qe-125591347805824-2" hidden>実際には、評価中は通常 torch.no_grad() を使って勾配計算を無効にします。</div>
+<button type="button" class="quiz-choice" data-correct="false" data-quiz-idx="3">評価指標を自動で計算します。</button>
+<div class="quiz-explain-src" id="qe-125591347805824-3" hidden>model.eval() は層の動作を変えるだけです。指標の計算は別途実装する必要があります。</div>
+</div><div class="quiz-feedback" hidden></div></div>
+<h3>6. 評価中の <code>torch.no_grad()</code> の目的は何ですか？</h3>
+<div class="quiz">
+<div class="quiz-choices">
+<button type="button" class="quiz-choice" data-correct="false" data-quiz-idx="0">モデルが予測を行わないようにすること</button>
+<div class="quiz-explain-src" id="qe-125591345902080-0" hidden>torch.no_grad() は予測を妨げるものではなく、勾配計算を止めるだけです。</div>
+<button type="button" class="quiz-choice" data-correct="true" data-quiz-idx="1">勾配の追跡を無効にして、メモリを節約し計算を高速化すること</button>
+<div class="quiz-explain-src" id="qe-125591345902080-1" hidden>正解です！評価には勾配が不要なので、無効にするとメモリと計算量を節約できます。</div>
+<button type="button" class="quiz-choice" data-correct="false" data-quiz-idx="2">モデルを評価モードにすること</button>
+<div class="quiz-explain-src" id="qe-125591345902080-2" hidden>評価モードを有効にするのは torch.no_grad() ではなく model.eval() です。</div>
+<button type="button" class="quiz-choice" data-correct="false" data-quiz-idx="3">実行ごとに一貫した結果を保証すること</button>
+<div class="quiz-explain-src" id="qe-125591345902080-3" hidden>再現性は乱数シードの設定で担保するもので、torch.no_grad() の役割ではありません。</div>
+</div><div class="quiz-feedback" hidden></div></div>
+<h3>7. 学習ループで 🤗 Accelerate を使うと何が変わりますか？</h3>
+<div class="quiz">
+<div class="quiz-choices">
+<button type="button" class="quiz-choice" data-correct="false" data-quiz-idx="0">学習ループ全体をゼロから書き直す必要があります。</button>
+<div class="quiz-explain-src" id="qe-125591347805824-0" hidden>Accelerate では、既存の PyTorch コードへの変更は最小限で済みます。</div>
+<button type="button" class="quiz-choice" data-correct="true" data-quiz-idx="1">主要なオブジェクトを accelerator.prepare() でラップし、loss.backward() の代わりに accelerator.backward() を使います。</button>
+<div class="quiz-explain-src" id="qe-125591347805824-1" hidden>正解です！主な変更はこの2点で、オブジェクトを accelerator.prepare() でラップし、分散学習を適切に行うために accelerator.backward() を使います。</div>
+<button type="button" class="quiz-choice" data-correct="false" data-quiz-idx="2">コード内で GPU の数を指定する必要があります。</button>
+<div class="quiz-explain-src" id="qe-125591347805824-2" hidden>Accelerate は利用可能なハードウェアを自動で検出します。</div>
+<button type="button" class="quiz-choice" data-correct="false" data-quiz-idx="3">別のオプティマイザとスケジューラを使わなければなりません。</button>
+<div class="quiz-explain-src" id="qe-125591347805824-3" hidden>Accelerate でも同じオプティマイザとスケジューラが使えます。</div>
+</div><div class="quiz-feedback" hidden></div></div>
+<div class="callout callout-tip">
+<p class="callout-title">💡 ヒント</p>
+<p>💡 <strong>要点:</strong>
+- 手動の学習ループでは完全な制御が可能ですが、正しい順序（フォワード → バックワード → オプティマイザステップ → スケジューラステップ → 勾配をゼロにする）を理解する必要があります
+- 重み減衰ありの AdamW が、Transformer モデルに推奨されるオプティマイザです
+- 評価中は、正しい動作と効率のために、常に <code>model.eval()</code> と <code>torch.no_grad()</code> を使ってください
+- 🤗 Accelerate を使えば、最小限のコード変更で分散学習が可能になります
+- デバイス管理（テンソルを GPU/CPU に移動すること）は、PyTorch の演算に不可欠です
+- 混合精度、勾配累積、勾配クリッピングといった現代的なテクニックで、学習効率を大きく改善できます</p>
+</div>
+</article>
+<nav class="page-nav"><a class="nav-link prev" href="3.html">← 前へ: Trainer API でモデルをファインチューニングする</a><a class="nav-link toc-link" href="../index.html">目次へ</a><a class="nav-link next" href="5.html">次へ →: 学習曲線を理解する</a></nav>
+</main>
+<footer class="site-footer">
+  <p>原典: Hugging Face huggingface/course（<a href="https://github.com/huggingface/course">https://github.com/huggingface/course</a>）</p>
+  <p>日本語版の翻訳・公開: 霞ヶ関京 / 連絡先: GitHub <a href="https://github.com/yanikasumin">@yanikasumin</a> / YouTube <a href="https://www.youtube.com/@KASUMI_MOF">@KASUMI_MOF</a></p>
+  <p class="demo-note">このサイトはデモ版です。内容は順次更新されます。</p>
+</footer>
+<script src="../../site.js"></script>
+</body>
+</html>

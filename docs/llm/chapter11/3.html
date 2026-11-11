@@ -1,0 +1,326 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>教師ありファインチューニング | Hugging Face コース日本語版（デモ版）</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Shippori+Mincho:wght@500;700&family=Zen+Kaku+Gothic+New:wght@400;500;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../../style.css">
+<script>
+window.MathJax = { tex: { inlineMath: [['$', '$'], ['\\(', '\\)']], displayMath: [['$$', '$$'], ['\\[', '\\]']] }, options: { skipHtmlTags: ['script','noscript','style','textarea','pre','code'] } };
+</script>
+<script async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml.js"></script>
+</head>
+<body>
+<header class="site-header">
+  <div class="header-inner">
+    <a class="site-title" href="../../index.html">Hugging Face コース日本語版</a>
+    <span class="demo-badge">デモ版</span>
+  </div>
+</header>
+<main class="container">
+<p class="course-crumb"><a href="../index.html">LLM コース</a>
+<span class="badge badge-qa-pass">翻訳QA 最終合格</span></p>
+<nav class="page-nav"><a class="nav-link prev" href="2.html">← 前へ: チャットテンプレート</a><a class="nav-link toc-link" href="../index.html">目次へ</a><a class="nav-link next" href="4.html">次へ →: LoRA（低ランク適応）</a></nav>
+<article class="content">
+<h1>教師ありファインチューニング</h1>
+<p>教師ありファインチューニング（SFT）は、事前学習済みの言語モデルに、指示への追従、対話、特定の出力形式への対応を身につけさせるための手法です。事前学習済みモデルは優れた汎用能力を持っていますが、SFT によって、ユーザーのプロンプトをよりよく理解し応答できるアシスタント型のモデルへと変えることができます。通常は、人間が書いた会話や指示のデータセットで学習を行います。</p>
+<p>このページでは、<a href="https://huggingface.co/docs/trl/en/sft_trainer"><code>SFTTrainer</code></a> を使って <a href="https://huggingface.co/deepseek-ai/DeepSeek-R1-Distill-Qwen-1.5B"><code>deepseek-ai/DeepSeek-R1-Distill-Qwen-1.5B</code></a> モデルをファインチューニングする手順をステップごとに解説します。これらの手順に従えば、モデルを特定のタスクでより効果的に動作するよう適応させることができます。 </p>
+<h2>SFT を使うべき場面</h2>
+<p>実装に入る前に、SFT が自分のプロジェクトに適した手法かどうかを判断することが重要です。まずは、既存の指示チューニング済みモデルにプロンプトを工夫して与えるだけで、目的を達成できないか検討してください。SFT には多大な計算リソースとエンジニアリングの労力が必要なため、既存のモデルへのプロンプトだけでは不十分だと分かった場合にのみ取り組むべきです。</p>
+<div class="callout callout-tip">
+<p class="callout-title">💡 ヒント</p>
+<p>SFT を検討するのは次のような場合だけにしましょう:
+- プロンプトの工夫だけでは達成できない性能が必要
+- 大規模な汎用モデルを使うコストが、小規模モデルをファインチューニングするコストを上回る具体的なユースケースがある
+- 既存のモデルが苦手とする、特殊な出力形式やドメイン固有の知識が必要</p>
+</div>
+<p>SFT が必要だと判断したら、進めるかどうかは主に次の2つの要素で決まります。</p>
+<h3>テンプレートのコントロール</h3>
+<p>SFT を使うと、モデルの出力構造を精密にコントロールできます。これは、モデルに次のことを求める場合に特に価値があります。
+1. 特定のチャットテンプレート形式で応答を生成する
+2. 厳密な出力スキーマに従う
+3. 応答全体で一貫したスタイルを保つ</p>
+<h3>ドメインへの適応</h3>
+<p>専門的なドメインで作業する場合、SFT は次のような形でモデルをドメイン固有の要件に合わせる手助けをします。
+1. ドメインの専門用語や概念を教える
+2. 専門職としての基準を守らせる
+3. 技術的な問い合わせに適切に対応させる
+4. 業界固有のガイドラインに従わせる</p>
+<div class="callout callout-tip">
+<p class="callout-title">💡 ヒント</p>
+<p>SFT を始める前に、そのユースケースが次を必要とするか評価してください:
+- 精密な出力形式
+- ドメイン固有の知識
+- 一貫した応答パターン
+- 特定のガイドラインへの準拠</p>
+<p>この評価により、SFT が自分のニーズに合ったアプローチかどうかを判断できます。</p>
+</div>
+<h2>データセットの準備</h2>
+<p>教師ありファインチューニングの工程には、入力と出力のペアで構造化された、タスク固有のデータセットが必要です。各ペアは次の要素で構成されます。
+1. 入力プロンプト
+2. 期待されるモデルの応答
+3. 追加の文脈やメタデータ</p>
+<p>学習データの品質は、ファインチューニングを成功させるうえで極めて重要です。データセットの準備と検証の方法を見てみましょう。</p>
+<p><iframe
+  src="https://huggingface.co/datasets/HuggingFaceTB/smoltalk/embed/viewer/all/train?row=0"
+  frameborder="0"
+  width="100%"
+  height="360px"
+></iframe>
+</p>
+<h2>学習の設定</h2>
+<p>ファインチューニングの成功は、適切な学習パラメータの選択に大きく依存します。重要なパラメータと、それらを効果的に設定する方法を見ていきましょう。</p>
+<p>SFTTrainer の設定では、学習プロセスを制御するいくつかのパラメータを検討する必要があります。各パラメータとその目的を見ていきます。</p>
+<ol>
+<li>
+<p><strong>学習時間のパラメータ</strong>:
+   - <code>num_train_epochs</code>: 学習全体の時間を制御する
+   - <code>max_steps</code>: エポックの代替で、学習ステップの最大数を設定する
+   - エポック数が多いほど学習は進むが、過学習のリスクがある</p>
+</li>
+<li>
+<p><strong>バッチサイズのパラメータ</strong>:
+   - <code>per_device_train_batch_size</code>: メモリ使用量と学習の安定性を左右する
+   - <code>gradient_accumulation_steps</code>: 実効的なバッチサイズを大きくできる
+   - バッチが大きいほど勾配が安定するが、より多くのメモリを必要とする</p>
+</li>
+<li>
+<p><strong>学習率のパラメータ</strong>:
+   - <code>learning_rate</code>: 重みの更新の大きさを制御する
+   - <code>warmup_ratio</code>: 学習率のウォームアップに使う学習の割合
+   - 高すぎると不安定になり、低すぎると学習が遅くなる</p>
+</li>
+<li>
+<p><strong>モニタリングのパラメータ</strong>:
+   - <code>logging_steps</code>: メトリクスの記録頻度
+   - <code>eval_steps</code>: 検証データで評価する頻度
+   - <code>save_steps</code>: モデルのチェックポイントを保存する頻度</p>
+</li>
+</ol>
+<div class="callout callout-tip">
+<p class="callout-title">💡 ヒント</p>
+<p>控えめな値から始めて、モニタリングしながら調整しましょう:
+- まずは 1〜3 エポックから始める
+- 最初は小さめのバッチサイズを使う
+- 検証メトリクスを注意深く監視する
+- 学習が不安定なら学習率を調整する</p>
+</div>
+<h2>TRL での実装</h2>
+<p>主要な要素を理解したところで、適切な検証とモニタリングを備えた学習を実装してみましょう。<code>transformers</code> ライブラリの上に構築された Transformers Reinforcement Learning（TRL）ライブラリの <code>SFTTrainer</code> クラスを使います。TRL ライブラリを使った完全な例がこちらです。</p>
+<div class="codehilite"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">datasets</span><span class="w"> </span><span class="kn">import</span> <span class="n">load_dataset</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">trl</span><span class="w"> </span><span class="kn">import</span> <span class="n">SFTConfig</span><span class="p">,</span> <span class="n">SFTTrainer</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">torch</span>
+
+<span class="c1"># デバイスを設定</span>
+<span class="n">device</span> <span class="o">=</span> <span class="s2">"cuda"</span> <span class="k">if</span> <span class="n">torch</span><span class="o">.</span><span class="n">cuda</span><span class="o">.</span><span class="n">is_available</span><span class="p">()</span> <span class="k">else</span> <span class="s2">"cpu"</span>
+
+<span class="c1"># データセットを読み込む</span>
+<span class="n">dataset</span> <span class="o">=</span> <span class="n">load_dataset</span><span class="p">(</span><span class="s2">"HuggingFaceTB/smoltalk"</span><span class="p">,</span> <span class="s2">"all"</span><span class="p">)</span>
+
+<span class="c1"># モデルとトークナイザを設定</span>
+<span class="n">model_name</span> <span class="o">=</span> <span class="s2">"HuggingFaceTB/SmolLM2-135M"</span>
+<span class="n">model</span> <span class="o">=</span> <span class="n">AutoModelForCausalLM</span><span class="o">.</span><span class="n">from_pretrained</span><span class="p">(</span><span class="n">pretrained_model_name_or_path</span><span class="o">=</span><span class="n">model_name</span><span class="p">)</span><span class="o">.</span><span class="n">to</span><span class="p">(</span>
+    <span class="n">device</span>
+<span class="p">)</span>
+<span class="n">tokenizer</span> <span class="o">=</span> <span class="n">AutoTokenizer</span><span class="o">.</span><span class="n">from_pretrained</span><span class="p">(</span><span class="n">pretrained_model_name_or_path</span><span class="o">=</span><span class="n">model_name</span><span class="p">)</span>
+<span class="c1"># チャットテンプレートをセットアップ</span>
+<span class="n">model</span><span class="p">,</span> <span class="n">tokenizer</span> <span class="o">=</span> <span class="n">setup_chat_format</span><span class="p">(</span><span class="n">model</span><span class="o">=</span><span class="n">model</span><span class="p">,</span> <span class="n">tokenizer</span><span class="o">=</span><span class="n">tokenizer</span><span class="p">)</span>
+
+<span class="c1"># トレーナーを設定</span>
+<span class="n">training_args</span> <span class="o">=</span> <span class="n">SFTConfig</span><span class="p">(</span>
+    <span class="n">output_dir</span><span class="o">=</span><span class="s2">"./sft_output"</span><span class="p">,</span>
+    <span class="n">max_steps</span><span class="o">=</span><span class="mi">1000</span><span class="p">,</span>
+    <span class="n">per_device_train_batch_size</span><span class="o">=</span><span class="mi">4</span><span class="p">,</span>
+    <span class="n">learning_rate</span><span class="o">=</span><span class="mf">5e-5</span><span class="p">,</span>
+    <span class="n">logging_steps</span><span class="o">=</span><span class="mi">10</span><span class="p">,</span>
+    <span class="n">save_steps</span><span class="o">=</span><span class="mi">100</span><span class="p">,</span>
+    <span class="n">eval_strategy</span><span class="o">=</span><span class="s2">"steps"</span><span class="p">,</span>
+    <span class="n">eval_steps</span><span class="o">=</span><span class="mi">50</span><span class="p">,</span>
+<span class="p">)</span>
+
+<span class="c1"># トレーナーを初期化</span>
+<span class="n">trainer</span> <span class="o">=</span> <span class="n">SFTTrainer</span><span class="p">(</span>
+    <span class="n">model</span><span class="o">=</span><span class="n">model</span><span class="p">,</span>
+    <span class="n">args</span><span class="o">=</span><span class="n">training_args</span><span class="p">,</span>
+    <span class="n">train_dataset</span><span class="o">=</span><span class="n">dataset</span><span class="p">[</span><span class="s2">"train"</span><span class="p">],</span>
+    <span class="n">eval_dataset</span><span class="o">=</span><span class="n">dataset</span><span class="p">[</span><span class="s2">"test"</span><span class="p">],</span>
+    <span class="n">processing_class</span><span class="o">=</span><span class="n">tokenizer</span><span class="p">,</span>
+<span class="p">)</span>
+
+<span class="c1"># 学習を開始</span>
+<span class="n">trainer</span><span class="o">.</span><span class="n">train</span><span class="p">()</span>
+</code></pre></div>
+
+<div class="callout callout-tip">
+<p class="callout-title">💡 ヒント</p>
+<p>上の例のように "messages" フィールドを持つデータセットを使うと、SFTTrainer はモデルのチャットテンプレートを自動的に適用します。テンプレートは Hub から取得されます。つまり、チャット形式の会話を扱うための追加の設定は不要です。トレーナーが、モデルの想定するテンプレート形式に従ってメッセージを整形してくれます。</p>
+</div>
+<h2>データセットのパッキング</h2>
+<p>SFTTrainer は、学習効率を最適化するためのサンプルのパッキング（example packing）に対応しています。この機能を使うと、複数の短いサンプルを同じ入力シーケンスに詰め込むことができ、学習中の GPU 使用率を最大化できます。パッキングを有効にするには、SFTConfig のコンストラクタで <code>packing=True</code> を設定するだけです。パッキングしたデータセットを <code>max_steps</code> と併用する場合、パッキングの設定によっては想定より多くのエポック学習することになる点に注意してください。サンプルの組み合わせ方は、整形用関数（formatting function）でカスタマイズできます。これは、質疑応答ペアのような複数のフィールドを持つデータセットを扱う場合に特に便利です。評価用データセットについては、SFTConfig で <code>eval_packing=False</code> を設定するとパッキングを無効化できます。パッキング設定のカスタマイズの基本的な例がこちらです。</p>
+<div class="codehilite"><pre><span></span><code><span class="c1"># パッキングを設定</span>
+<span class="n">training_args</span> <span class="o">=</span> <span class="n">SFTConfig</span><span class="p">(</span><span class="n">packing</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+
+<span class="n">trainer</span> <span class="o">=</span> <span class="n">SFTTrainer</span><span class="p">(</span><span class="n">model</span><span class="o">=</span><span class="n">model</span><span class="p">,</span> <span class="n">train_dataset</span><span class="o">=</span><span class="n">dataset</span><span class="p">,</span> <span class="n">args</span><span class="o">=</span><span class="n">training_args</span><span class="p">)</span>
+
+<span class="n">trainer</span><span class="o">.</span><span class="n">train</span><span class="p">()</span>
+</code></pre></div>
+
+<p>複数のフィールドを持つデータセットをパッキングする場合、カスタムの整形用関数を定義して、フィールドを1つの入力シーケンスに組み合わせることができます。この関数はサンプルのリストを受け取り、パッキングされた入力シーケンスを持つ辞書を返すことが想定されています。カスタム整形用関数の例がこちらです。</p>
+<div class="codehilite"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">formatting_func</span><span class="p">(</span><span class="n">example</span><span class="p">):</span>
+    <span class="n">text</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">"### Question: </span><span class="si">{</span><span class="n">example</span><span class="p">[</span><span class="s1">'question'</span><span class="p">]</span><span class="si">}</span><span class="se">\n</span><span class="s2"> ### Answer: </span><span class="si">{</span><span class="n">example</span><span class="p">[</span><span class="s1">'answer'</span><span class="p">]</span><span class="si">}</span><span class="s2">"</span>
+    <span class="k">return</span> <span class="n">text</span>
+
+
+<span class="n">training_args</span> <span class="o">=</span> <span class="n">SFTConfig</span><span class="p">(</span><span class="n">packing</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+<span class="n">trainer</span> <span class="o">=</span> <span class="n">SFTTrainer</span><span class="p">(</span>
+    <span class="s2">"facebook/opt-350m"</span><span class="p">,</span>
+    <span class="n">train_dataset</span><span class="o">=</span><span class="n">dataset</span><span class="p">,</span>
+    <span class="n">args</span><span class="o">=</span><span class="n">training_args</span><span class="p">,</span>
+    <span class="n">formatting_func</span><span class="o">=</span><span class="n">formatting_func</span><span class="p">,</span>
+<span class="p">)</span>
+</code></pre></div>
+
+<h2>学習状況のモニタリング</h2>
+<p>効果的なモニタリングは、ファインチューニングを成功させるうえで極めて重要です。学習中に何に注目すべきかを見ていきましょう。</p>
+<h3>損失パターンの理解</h3>
+<p>学習損失は通常、次の3つの明確なフェーズをたどります。
+1. 初期の急激な低下: 新しいデータ分布への急速な適応
+2. 緩やかな安定化: モデルのファインチューニングが進むにつれて学習速度が緩やかになる
+3. 収束: 損失の値が安定し、学習の完了を示す</p>
+<p><img src="https://huggingface.co/datasets/huggingface/documentation-images/resolve/main/nlp_course_sft_loss_graphic.png" alt="SFTTrainer の学習" /></p>
+<h3>監視すべきメトリクス</h3>
+<p>効果的なモニタリングでは、定量的な指標を追跡するだけでなく、モデルの出力を定性的に評価することも重要です。利用できるメトリクスは次のとおりです。</p>
+<ul>
+<li>学習損失</li>
+<li>検証損失</li>
+<li>学習率の推移</li>
+<li>勾配ノルム</li>
+</ul>
+<div class="callout callout-warning">
+<p class="callout-title">⚠️ 注意</p>
+<p>学習中は次の警告サインに注意してください:
+1. 学習損失が下がり続けるのに検証損失が上がる（過学習）
+2. 損失の値に大きな改善が見られない（学習不足）
+3. 損失の値が極端に低い（暗記している可能性）
+4. 出力形式が一貫しない（テンプレートの学習に問題）</p>
+</div>
+<h3>収束への道のり</h3>
+<p>学習が進むにつれて、損失曲線は徐々に安定していくはずです。健全な学習の重要な指標は、学習損失と検証損失の差が小さいことです。これは、モデルが特定のサンプルを暗記するのではなく、汎化できるパターンを学習していることを示します。損失の絶対値は、タスクやデータセットによって異なります。</p>
+<h3>学習状況のモニタリング</h3>
+<p>上のグラフは典型的な学習の推移を示しています。学習損失と検証損失の両方が最初は急激に下がり、その後徐々に落ち着いていく様子に注目してください。このパターンは、モデルが汎化能力を維持しながら効果的に学習していることを示しています。</p>
+<h3>注意すべき警告サイン</h3>
+<p>損失曲線のいくつかのパターンは、潜在的な問題を示すことがあります。よくある警告サインと、検討できる対処法を以下に示します。</p>
+<p><img src="https://huggingface.co/datasets/huggingface/documentation-images/resolve/main/sft_loss_1.png" alt="SFTTrainer の学習" /></p>
+<p>検証損失の下がり方が学習損失より著しく遅い場合、そのモデルは学習データに過学習している可能性が高いです。次の対処を検討してください。
+- 学習ステップを減らす
+- データセットのサイズを増やす
+- データセットの品質と多様性を検証する</p>
+<p><img src="https://huggingface.co/datasets/huggingface/documentation-images/resolve/main/sft_loss_2.png" alt="SFTTrainer の学習" /></p>
+<p>損失に大きな改善が見られない場合、モデルは次の状態かもしれません。
+- 学習が遅すぎる（学習率を上げてみる）
+- タスクに苦戦している（データの品質とタスクの複雑さを確認する）
+- アーキテクチャの限界に当たっている（別のモデルを検討する）</p>
+<p><img src="https://huggingface.co/datasets/huggingface/documentation-images/resolve/main/sft_loss_3.png" alt="SFTTrainer の学習" /></p>
+<p>損失の値が極端に低い場合は、学習ではなく暗記を示している可能性があります。特に次の場合は懸念されます。
+- 新しい類似のサンプルに対する性能が悪い
+- 出力に多様性がない
+- 応答が学習サンプルに似すぎている</p>
+<div class="callout callout-warning">
+<p class="callout-title">⚠️ 注意</p>
+<p>学習中は、損失の値とモデルの実際の出力の両方を監視してください。損失が良好に見えても、モデルに望ましくない振る舞いが生まれることがあります。モデルの応答を定期的に定性評価することで、メトリクスだけでは見逃しがちな問題を捉えられます。</p>
+</div>
+<p>ここで概説した損失の値の解釈は、最も一般的なケースを想定したものである点に注意してください。実際には、損失の値はモデル、データセット、学習パラメータなどによってさまざまな振る舞いをします。ここで挙げたパターンについてもっと詳しく知りたい場合は、<a href="https://www.fast.ai/posts/2023-09-04-learning-jumps/">Fast AI</a> のブログ記事も参考にしてください。</p>
+<h2>SFT 後の評価</h2>
+<p>セクション <a href="4.html">11.4</a> では、ベンチマークデータセットを使ったモデルの評価方法を学びます。ここでは、モデルの定性評価に焦点を当てます。</p>
+<p>SFT を完了したら、次のフォローアップを検討してください。</p>
+<ol>
+<li>ホールドアウトしたテストデータでモデルを十分に評価する</li>
+<li>さまざまな入力でテンプレートへの準拠を検証する</li>
+<li>ドメイン固有の知識が保持されているかをテストする</li>
+<li>実世界での性能メトリクスを監視する</li>
+</ol>
+<div class="callout callout-tip">
+<p class="callout-title">💡 ヒント</p>
+<p>学習プロセスを文書化してください。含めるべき項目:
+- データセットの特徴
+- 学習パラメータ
+- 性能メトリクス
+- 既知の制限事項
+このドキュメントは、今後モデルを改良する際に役立ちます。</p>
+</div>
+<h2>クイズ</h2>
+<h3>1. SFT で学習時間を制御するパラメータはどれですか？</h3>
+<div class="quiz">
+<div class="quiz-choices">
+<button type="button" class="quiz-choice" data-correct="true" data-quiz-idx="0">num_train_epochs と max_steps</button>
+<div class="quiz-explain-src" id="qe-125591346091136-0" hidden>正解です！これらのパラメータは、エポック数または総ステップ数によって、モデルがどれだけ長く学習するかを決めます。</div>
+<button type="button" class="quiz-choice" data-correct="false" data-quiz-idx="1">batch_size と learning_rate</button>
+<div class="quiz-explain-src" id="qe-125591346091136-1" hidden>これらは学習に影響しますが、学習時間を直接制御するものではありません。</div>
+<button type="button" class="quiz-choice" data-correct="false" data-quiz-idx="2">gradient_checkpointing と warmup_ratio</button>
+<div class="quiz-explain-src" id="qe-125591346091136-2" hidden>これらのパラメータは学習の効率と安定性に影響するもので、時間ではありません。</div>
+</div><div class="quiz-feedback" hidden></div></div>
+<h3>2. 損失曲線のどのパターンが過学習の可能性を示しますか？</h3>
+<div class="quiz">
+<div class="quiz-choices">
+<button type="button" class="quiz-choice" data-correct="true" data-quiz-idx="0">検証損失が上がる一方で、学習損失が下がり続けている</button>
+<div class="quiz-explain-src" id="qe-125591347801408-0" hidden>正解です！学習損失と検証損失のこの乖離は、過学習の典型的なサインです。</div>
+<button type="button" class="quiz-choice" data-correct="false" data-quiz-idx="1">学習損失と検証損失の両方が着実に下がる</button>
+<div class="quiz-explain-src" id="qe-125591347801408-1" hidden>このパターンは実際には健全な学習を示します。</div>
+<button type="button" class="quiz-choice" data-correct="false" data-quiz-idx="2">学習損失が一定のままで、検証損失が下がる</button>
+<div class="quiz-explain-src" id="qe-125591347801408-2" hidden>これは珍しいパターンであり、過学習を示すものではありません。</div>
+</div><div class="quiz-feedback" hidden></div></div>
+<h3>3. gradient_accumulation_steps は何に使われますか？</h3>
+<div class="quiz">
+<div class="quiz-choices">
+<button type="button" class="quiz-choice" data-correct="true" data-quiz-idx="0">メモリ使用量を増やさずに、実効的なバッチサイズを大きくするため</button>
+<div class="quiz-explain-src" id="qe-125591346091136-0" hidden>正解です！複数の順伝播にわたって勾配を累積してから重みを更新します。</div>
+<button type="button" class="quiz-choice" data-correct="false" data-quiz-idx="1">学習中にチェックポイントを保存するため</button>
+<div class="quiz-explain-src" id="qe-125591346091136-1" hidden>これは save_steps と save_strategy パラメータが担います。</div>
+<button type="button" class="quiz-choice" data-correct="false" data-quiz-idx="2">学習率のスケジュールを制御するため</button>
+<div class="quiz-explain-src" id="qe-125591346091136-2" hidden>学習率のスケジュールは learning_rate と warmup_ratio で制御します。</div>
+</div><div class="quiz-feedback" hidden></div></div>
+<h3>4. SFT の学習中に監視すべきなのは何ですか？</h3>
+<div class="quiz">
+<div class="quiz-choices">
+<button type="button" class="quiz-choice" data-correct="true" data-quiz-idx="0">定量的なメトリクスと定性的な出力の両方</button>
+<div class="quiz-explain-src" id="qe-125591347801408-0" hidden>正解です！両方の種類のメトリクスを監視することで、潜在的な問題をすべて捉えられます。</div>
+<button type="button" class="quiz-choice" data-correct="false" data-quiz-idx="1">学習損失のみ</button>
+<div class="quiz-explain-src" id="qe-125591347801408-1" hidden>学習損失だけでは、モデルの良好な振る舞いを保証するには不十分です。</div>
+<button type="button" class="quiz-choice" data-correct="false" data-quiz-idx="2">モデルの出力の品質のみ</button>
+<div class="quiz-explain-src" id="qe-125591347801408-2" hidden>重要ではありますが、定性的な評価だけでは、学習の進行状況やその変化を十分に把握できません。</div>
+</div><div class="quiz-feedback" hidden></div></div>
+<h3>5. 学習中の健全な収束を示すのは何ですか？</h3>
+<div class="quiz">
+<div class="quiz-choices">
+<button type="button" class="quiz-choice" data-correct="true" data-quiz-idx="0">学習損失と検証損失の差が小さいこと</button>
+<div class="quiz-explain-src" id="qe-125591346091136-0" hidden>正解です！これは、モデルが汎化できるパターンを学習していることを示します。</div>
+<button type="button" class="quiz-choice" data-correct="false" data-quiz-idx="1">学習損失がゼロに到達すること</button>
+<div class="quiz-explain-src" id="qe-125591346091136-1" hidden>損失の値が極端に低い場合は、学習ではなく暗記を示している可能性があります。</div>
+<button type="button" class="quiz-choice" data-correct="false" data-quiz-idx="2">検証損失が学習損失より低いこと</button>
+<div class="quiz-explain-src" id="qe-125591346091136-2" hidden>これは珍しいことであり、検証セットに問題がある可能性を示します。</div>
+</div><div class="quiz-feedback" hidden></div></div>
+<h2>💐 お疲れさまでした！</h2>
+<p>SFT を使ったモデルのファインチューニングの方法を学びました。学習を続けるには:
+1. ノートブックでパラメータを変えて試してみましょう
+2. 他のデータセットでも実験してみましょう
+3. コース教材の改善に貢献しましょう</p>
+<h2>参考資料</h2>
+<ul>
+<li><a href="https://huggingface.co/docs/trl">TRL Documentation</a></li>
+<li><a href="https://github.com/huggingface/trl/blob/main/trl/scripts/sft.py">SFT Examples Repository</a></li>
+<li><a href="https://huggingface.co/docs/transformers/training">Fine-tuning Best Practices</a></li>
+</ul>
+</article>
+<nav class="page-nav"><a class="nav-link prev" href="2.html">← 前へ: チャットテンプレート</a><a class="nav-link toc-link" href="../index.html">目次へ</a><a class="nav-link next" href="4.html">次へ →: LoRA（低ランク適応）</a></nav>
+</main>
+<footer class="site-footer">
+  <p>原典: Hugging Face huggingface/course（<a href="https://github.com/huggingface/course">https://github.com/huggingface/course</a>）</p>
+  <p>日本語版の翻訳・公開: 霞ヶ関京 / 連絡先: GitHub <a href="https://github.com/yanikasumin">@yanikasumin</a> / YouTube <a href="https://www.youtube.com/@KASUMI_MOF">@KASUMI_MOF</a></p>
+  <p class="demo-note">このサイトはデモ版です。内容は順次更新されます。</p>
+</footer>
+<script src="../../site.js"></script>
+</body>
+</html>

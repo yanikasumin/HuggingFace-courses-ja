@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>LoRA（低ランク適応） | Hugging Face コース日本語版（デモ版）</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Shippori+Mincho:wght@500;700&family=Zen+Kaku+Gothic+New:wght@400;500;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../../style.css">
+<script>
+window.MathJax = { tex: { inlineMath: [['$', '$'], ['\\(', '\\)']], displayMath: [['$$', '$$'], ['\\[', '\\]']] }, options: { skipHtmlTags: ['script','noscript','style','textarea','pre','code'] } };
+</script>
+<script async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml.js"></script>
+</head>
+<body>
+<header class="site-header">
+  <div class="header-inner">
+    <a class="site-title" href="../../index.html">Hugging Face コース日本語版</a>
+    <span class="demo-badge">デモ版</span>
+  </div>
+</header>
+<main class="container">
+<p class="course-crumb"><a href="../index.html">LLM コース</a>
+<span class="badge badge-qa-pass">翻訳QA 最終合格</span></p>
+<nav class="page-nav"><a class="nav-link prev" href="3.html">← 前へ: 教師ありファインチューニング</a><a class="nav-link toc-link" href="../index.html">目次へ</a><a class="nav-link next" href="5.html">次へ →: 評価</a></nav>
+<article class="content">
+<h1>LoRA（低ランク適応）</h1>
+<p>大規模言語モデルのファインチューニングは、リソースを大量に消費する工程です。LoRA は、少数のパラメータで大規模言語モデルをファインチューニングできる手法です。アテンションの重みに小さな行列を追加して最適化することで、学習可能なパラメータを通常約90%削減します。</p>
+<h2>LoRA の理解</h2>
+<p>LoRA（低ランク適応）は、パラメータ効率のよいファインチューニング手法です。事前学習済みモデルの重みを凍結し、学習可能なランク分解行列をモデルの層に挿入します。ファインチューニングでモデルの全パラメータを学習する代わりに、LoRA は重みの更新量を小さな低ランク行列の積で表すことにより、モデルの性能を維持しながら学習可能なパラメータ数を大幅に削減します。たとえば、GPT-3 175B に適用した場合、LoRA は全パラメータのファインチューニングと比べて学習可能なパラメータを 10,000 分の 1 にし、GPU メモリ要件を 3 分の 1 にしました。LoRA の詳細は <a href="https://arxiv.org/pdf/2106.09685">LoRA の論文</a>で読むことができます。</p>
+<p>LoRA は、Transformer の層、通常はアテンションの重みに、ランク分解行列のペアを追加することで動作します。推論時には、これらのアダプタの重みをベースモデルにマージできるため、レイテンシのオーバーヘッドは追加されません。LoRA は、リソース要件を扱いやすい範囲に保ちながら、大規模言語モデルを特定のタスクやドメインに適応させるのに特に役立ちます。</p>
+<h2>LoRA の主な利点</h2>
+<ol>
+<li>
+<p><strong>メモリ効率</strong>: 
+   - GPU メモリに保存されるのはアダプタのパラメータのみ
+   - ベースモデルの重みは凍結されたままで、より低い精度で読み込める
+   - コンシューマ向け GPU でも大規模モデルのファインチューニングが可能</p>
+</li>
+<li>
+<p><strong>学習時の利点</strong>:
+   - 少ない設定で PEFT/LoRA を学習処理に組み込める
+   - さらにメモリ効率のよい QLoRA（量子化 LoRA）に対応</p>
+</li>
+<li>
+<p><strong>アダプタの管理</strong>:
+   - チェックポイント時にアダプタの重みを保存
+   - アダプタをベースモデルにマージし直す機能</p>
+</li>
+</ol>
+<h2>PEFT で LoRA アダプタを読み込む</h2>
+<p><a href="https://github.com/huggingface/peft">PEFT</a> は、LoRA を含む PEFT 手法の読み込みと管理に統一されたインターフェースを提供するライブラリです。異なる PEFT 手法を簡単に読み込んで切り替えられるため、さまざまなファインチューニング手法の実験がしやすくなります。 </p>
+<p>アダプタは <code>load_adapter()</code> で事前学習済みモデルに読み込むことができ、重みがマージされていないさまざまなアダプタを試すのに便利です。有効なアダプタの重みは <code>set_adapter()</code> 関数で設定します。ベースモデルに戻すには、unload() を使ってすべての LoRA モジュールをアンロードできます。これにより、タスク固有の重みを簡単に切り替えられます。  </p>
+<div class="codehilite"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">peft</span><span class="w"> </span><span class="kn">import</span> <span class="n">PeftModel</span><span class="p">,</span> <span class="n">PeftConfig</span>
+
+<span class="n">config</span> <span class="o">=</span> <span class="n">PeftConfig</span><span class="o">.</span><span class="n">from_pretrained</span><span class="p">(</span><span class="s2">"ybelkada/opt-350m-lora"</span><span class="p">)</span>
+<span class="n">model</span> <span class="o">=</span> <span class="n">AutoModelForCausalLM</span><span class="o">.</span><span class="n">from_pretrained</span><span class="p">(</span><span class="n">config</span><span class="o">.</span><span class="n">base_model_name_or_path</span><span class="p">)</span>
+<span class="n">lora_model</span> <span class="o">=</span> <span class="n">PeftModel</span><span class="o">.</span><span class="n">from_pretrained</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="s2">"ybelkada/opt-350m-lora"</span><span class="p">)</span>
+</code></pre></div>
+
+<p><img alt="LoRA アダプタの読み込み" src="https://github.com/huggingface/smol-course/raw/main/v1/3_parameter_efficient_finetuning/images/lora_adapter.png" /></p>
+<h2><code>trl</code> の <code>SFTTrainer</code> と LoRA で LLM をファインチューニングする</h2>
+<p><code>trl</code> の <a href="https://huggingface.co/docs/trl/sft_trainer">SFTTrainer</a> は、<a href="https://huggingface.co/docs/peft/en/index">PEFT</a> ライブラリを通じた LoRA アダプタとの統合を提供します。つまり、SFT と同じ方法でモデルをファインチューニングしながら、LoRA を使って学習が必要なパラメータ数を減らすことができます。</p>
+<p>この例では PEFT の <code>LoRAConfig</code> クラスを使います。セットアップは数ステップの設定だけです。</p>
+<ol>
+<li>LoRA の設定（ランク、アルファ、ドロップアウト）を定義する</li>
+<li>PEFT の設定で SFTTrainer を作成する</li>
+<li>学習してアダプタの重みを保存する</li>
+</ol>
+<h2>LoRA の設定</h2>
+<p>LoRA の設定と主要なパラメータを順に見ていきましょう。</p>
+<table>
+<thead>
+<tr>
+<th>パラメータ</th>
+<th>説明</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>r</code>（ランク）</td>
+<td>重みの更新に使う低ランク行列の次元。通常は 4〜32 の間。値が小さいほど圧縮率は高くなるが、表現力が落ちる可能性がある。</td>
+</tr>
+<tr>
+<td><code>lora_alpha</code></td>
+<td>LoRA 層のスケーリング係数。通常はランク値の 2 倍に設定する。値が大きいほど適応の効果が強くなる。</td>
+</tr>
+<tr>
+<td><code>lora_dropout</code></td>
+<td>LoRA 層のドロップアウト確率。通常は 0.05〜0.1。値が大きいほど学習中の過学習を防ぐのに役立つ。</td>
+</tr>
+<tr>
+<td><code>bias</code></td>
+<td>バイアス項の学習を制御する。選択肢は "none"、"all"、"lora_only"。"none" がメモリ効率の面で最も一般的。</td>
+</tr>
+<tr>
+<td><code>target_modules</code></td>
+<td>LoRA を適用するモデルのモジュールを指定する。"all-linear" や "q_proj,v_proj" のような特定のモジュールを指定できる。モジュールが多いほど適応の自由度は上がるが、メモリ使用量も増える。</td>
+</tr>
+</tbody>
+</table>
+<div class="callout callout-tip">
+<p class="callout-title">💡 ヒント</p>
+<p>PEFT 手法を実装するときは、LoRA のランク値は小さい値（4〜8）から始めて、学習損失を監視してください。過学習を防ぐために検証セットを使い、可能であれば全パラメータのファインチューニングのベースラインと比較しましょう。手法の効果はタスクによって変わるため、実験が鍵です。</p>
+</div>
+<h2>TRL と PEFT の併用</h2>
+<p>PEFT 手法は TRL と組み合わせてファインチューニングに使え、メモリ要件を削減できます。モデルを読み込むときに <code>LoraConfig</code> を渡すことができます。  </p>
+<div class="codehilite"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">peft</span><span class="w"> </span><span class="kn">import</span> <span class="n">LoraConfig</span>
+
+<span class="c1"># r: LoRA の更新行列のランク次元（小さいほど圧縮率が高い）</span>
+<span class="n">rank_dimension</span> <span class="o">=</span> <span class="mi">6</span>
+<span class="c1"># lora_alpha: LoRA 層のスケーリング係数（大きいほど適応が強い）</span>
+<span class="n">lora_alpha</span> <span class="o">=</span> <span class="mi">8</span>
+<span class="c1"># lora_dropout: LoRA 層のドロップアウト確率（過学習の防止に役立つ）</span>
+<span class="n">lora_dropout</span> <span class="o">=</span> <span class="mf">0.05</span>
+
+<span class="n">peft_config</span> <span class="o">=</span> <span class="n">LoraConfig</span><span class="p">(</span>
+    <span class="n">r</span><span class="o">=</span><span class="n">rank_dimension</span><span class="p">,</span>  <span class="c1"># ランク次元 - 通常は 4〜32 の間</span>
+    <span class="n">lora_alpha</span><span class="o">=</span><span class="n">lora_alpha</span><span class="p">,</span>  <span class="c1"># LoRA のスケーリング係数 - 通常はランクの 2 倍</span>
+    <span class="n">lora_dropout</span><span class="o">=</span><span class="n">lora_dropout</span><span class="p">,</span>  <span class="c1"># LoRA 層のドロップアウト確率</span>
+    <span class="n">bias</span><span class="o">=</span><span class="s2">"none"</span><span class="p">,</span>  <span class="c1"># LoRA のバイアスの種類。対応するバイアスが学習中に更新されます。</span>
+    <span class="n">target_modules</span><span class="o">=</span><span class="s2">"all-linear"</span><span class="p">,</span>  <span class="c1"># LoRA を適用するモジュール</span>
+    <span class="n">task_type</span><span class="o">=</span><span class="s2">"CAUSAL_LM"</span><span class="p">,</span>  <span class="c1"># モデルアーキテクチャのタスクの種類</span>
+<span class="p">)</span>
+</code></pre></div>
+
+<p>上では、<code>device_map="auto"</code> を使ってモデルを正しいデバイスに自動的に割り当てました。<code>device_map={"": device_index}</code> のようにして、モデルを特定のデバイスに手動で割り当てることもできます。 </p>
+<p>さらに、LoRA の設定で <code>SFTTrainer</code> を定義する必要があります。</p>
+<div class="codehilite"><pre><span></span><code><span class="c1"># LoRA の設定で SFTTrainer を作成</span>
+<span class="n">trainer</span> <span class="o">=</span> <span class="n">SFTTrainer</span><span class="p">(</span>
+    <span class="n">model</span><span class="o">=</span><span class="n">model</span><span class="p">,</span>
+    <span class="n">args</span><span class="o">=</span><span class="n">args</span><span class="p">,</span>
+    <span class="n">train_dataset</span><span class="o">=</span><span class="n">dataset</span><span class="p">[</span><span class="s2">"train"</span><span class="p">],</span>
+    <span class="n">peft_config</span><span class="o">=</span><span class="n">peft_config</span><span class="p">,</span>  <span class="c1"># LoRA の設定</span>
+    <span class="n">max_seq_length</span><span class="o">=</span><span class="n">max_seq_length</span><span class="p">,</span>  <span class="c1"># シーケンス長の最大値</span>
+    <span class="n">processing_class</span><span class="o">=</span><span class="n">tokenizer</span><span class="p">,</span>
+<span class="p">)</span>
+</code></pre></div>
+
+<div class="callout callout-tip">
+<p class="callout-title">💡 ヒント</p>
+<p>✏️ <strong>試してみましょう！</strong> 前のセクションでファインチューニングしたモデルをベースに、今度は LoRA でファインチューニングしてみましょう。上で定義した LoRA の設定を使い、<code>HuggingFaceTB/smoltalk</code> データセットで <code>deepseek-ai/DeepSeek-R1-Distill-Qwen-1.5B</code> モデルをファインチューニングしてください。</p>
+</div>
+<h2>LoRA アダプタのマージ</h2>
+<p>LoRA で学習した後は、デプロイを簡単にするために、アダプタの重みをベースモデルにマージし直したい場合があります。これにより重みが統合された単一のモデルができ、推論時にアダプタを別々に読み込む必要がなくなります。</p>
+<p>マージの工程では、メモリ管理と精度に注意が必要です。ベースモデルとアダプタの重みの両方を同時に読み込む必要があるため、十分な GPU/CPU メモリが確保できるようにしてください。<code>transformers</code> で <code>device_map="auto"</code> を使うと、ハードウェアに応じてモデルに正しいデバイスが割り当てられます。 </p>
+<p>工程を通して一貫した精度（例: float16）を維持し、学習時に使った精度と合わせ、マージしたモデルをデプロイ用に同じ形式で保存してください。 </p>
+<h2>マージの実装</h2>
+<p>LoRA アダプタを学習した後は、アダプタの重みをベースモデルにマージし直すことができます。その方法がこちらです。</p>
+<div class="codehilite"><pre><span></span><code><span class="kn">import</span><span class="w"> </span><span class="nn">torch</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">transformers</span><span class="w"> </span><span class="kn">import</span> <span class="n">AutoModelForCausalLM</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">peft</span><span class="w"> </span><span class="kn">import</span> <span class="n">PeftModel</span>
+
+<span class="c1"># 1. ベースモデルを読み込む</span>
+<span class="n">base_model</span> <span class="o">=</span> <span class="n">AutoModelForCausalLM</span><span class="o">.</span><span class="n">from_pretrained</span><span class="p">(</span>
+    <span class="s2">"base_model_name"</span><span class="p">,</span> <span class="n">torch_dtype</span><span class="o">=</span><span class="n">torch</span><span class="o">.</span><span class="n">float16</span><span class="p">,</span> <span class="n">device_map</span><span class="o">=</span><span class="s2">"auto"</span>
+<span class="p">)</span>
+
+<span class="c1"># 2. アダプタ付きの PEFT モデルを読み込む</span>
+<span class="n">peft_model</span> <span class="o">=</span> <span class="n">PeftModel</span><span class="o">.</span><span class="n">from_pretrained</span><span class="p">(</span>
+    <span class="n">base_model</span><span class="p">,</span> <span class="s2">"path/to/adapter"</span><span class="p">,</span> <span class="n">torch_dtype</span><span class="o">=</span><span class="n">torch</span><span class="o">.</span><span class="n">float16</span>
+<span class="p">)</span>
+
+<span class="c1"># 3. アダプタの重みをベースモデルにマージする</span>
+<span class="n">merged_model</span> <span class="o">=</span> <span class="n">peft_model</span><span class="o">.</span><span class="n">merge_and_unload</span><span class="p">()</span>
+</code></pre></div>
+
+<p>保存したモデルのサイズが想定と異なる場合は、トークナイザも併せて保存しているか確認してください。</p>
+<div class="codehilite"><pre><span></span><code><span class="c1"># モデルとトークナイザの両方を保存する</span>
+<span class="n">tokenizer</span> <span class="o">=</span> <span class="n">AutoTokenizer</span><span class="o">.</span><span class="n">from_pretrained</span><span class="p">(</span><span class="s2">"base_model_name"</span><span class="p">)</span>
+<span class="n">merged_model</span><span class="o">.</span><span class="n">save_pretrained</span><span class="p">(</span><span class="s2">"path/to/save/merged_model"</span><span class="p">)</span>
+<span class="n">tokenizer</span><span class="o">.</span><span class="n">save_pretrained</span><span class="p">(</span><span class="s2">"path/to/save/merged_model"</span><span class="p">)</span>
+</code></pre></div>
+
+<div class="callout callout-tip">
+<p class="callout-title">💡 ヒント</p>
+<p>✏️ <strong>試してみましょう！</strong> アダプタの重みをベースモデルにマージし直してみましょう。上で定義した LoRA の設定を使い、<code>HuggingFaceTB/smoltalk</code> データセットで <code>deepseek-ai/DeepSeek-R1-Distill-Qwen-1.5B</code> モデルをファインチューニングしてください。</p>
+</div>
+<h1>参考資料</h1>
+<ul>
+<li><a href="https://arxiv.org/pdf/2106.09685">LoRA: Low-Rank Adaptation of Large Language Models</a></li>
+<li><a href="https://huggingface.co/docs/peft">PEFT Documentation</a></li>
+<li><a href="https://huggingface.co/blog/peft">Hugging Face blog post on PEFT</a></li>
+</ul>
+</article>
+<nav class="page-nav"><a class="nav-link prev" href="3.html">← 前へ: 教師ありファインチューニング</a><a class="nav-link toc-link" href="../index.html">目次へ</a><a class="nav-link next" href="5.html">次へ →: 評価</a></nav>
+</main>
+<footer class="site-footer">
+  <p>原典: Hugging Face huggingface/course（<a href="https://github.com/huggingface/course">https://github.com/huggingface/course</a>）</p>
+  <p>日本語版の翻訳・公開: 霞ヶ関京 / 連絡先: GitHub <a href="https://github.com/yanikasumin">@yanikasumin</a> / YouTube <a href="https://www.youtube.com/@KASUMI_MOF">@KASUMI_MOF</a></p>
+  <p class="demo-note">このサイトはデモ版です。内容は順次更新されます。</p>
+</footer>
+<script src="../../site.js"></script>
+</body>
+</html>

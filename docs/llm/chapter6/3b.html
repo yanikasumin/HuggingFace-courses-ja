@@ -1,0 +1,556 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>QA パイプラインにおける高速トークナイザ | Hugging Face コース日本語版（デモ版）</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Shippori+Mincho:wght@500;700&family=Zen+Kaku+Gothic+New:wght@400;500;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../../style.css">
+<script>
+window.MathJax = { tex: { inlineMath: [['$', '$'], ['\\(', '\\)']], displayMath: [['$$', '$$'], ['\\[', '\\]']] }, options: { skipHtmlTags: ['script','noscript','style','textarea','pre','code'] } };
+</script>
+<script async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml.js"></script>
+</head>
+<body>
+<header class="site-header">
+  <div class="header-inner">
+    <a class="site-title" href="../../index.html">Hugging Face コース日本語版</a>
+    <span class="demo-badge">デモ版</span>
+  </div>
+</header>
+<main class="container">
+<p class="course-crumb"><a href="../index.html">LLM コース</a>
+<span class="badge badge-qa-pass">翻訳QA 最終合格</span></p>
+<nav class="page-nav"><a class="nav-link prev" href="3.html">← 前へ: 高速トークナイザならではの機能</a><a class="nav-link toc-link" href="../index.html">目次へ</a><a class="nav-link next" href="4.html">次へ →: 正規化と事前トークン化</a></nav>
+<article class="content">
+<h1>QA パイプラインにおける高速トークナイザ</h1>
+<p>{#if fw === 'pt'}</p>
+<p>{:else}</p>
+<p>{/if}</p>
+<p>ここでは <code>question-answering</code> パイプラインを詳しく見て、前のセクションでエンティティをグループ化したときのように、オフセットを活用して文脈から手元の質問への回答を取り出す方法を見ていきます。次に、切り詰められることになる非常に長い文脈への対処方法を見ます。質問応答タスクに興味がなければ、このセクションは読み飛ばしても構いません。</p>
+<p>{#if fw === 'pt'}</p>
+<div class="youtube-embed"><iframe src="https://www.youtube-nocookie.com/embed/_wxyB3j3mk4" title="YouTube video" loading="lazy" allowfullscreen referrerpolicy="strict-origin-when-cross-origin"></iframe></div>
+<p>{:else}</p>
+<div class="youtube-embed"><iframe src="https://www.youtube-nocookie.com/embed/b3u8RzBCX9Y" title="YouTube video" loading="lazy" allowfullscreen referrerpolicy="strict-origin-when-cross-origin"></iframe></div>
+<p>{/if}</p>
+<h2><code>question-answering</code> パイプラインの使用</h2>
+<p><a href="../chapter1/1.html">Chapter 1</a> で見たように、<code>question-answering</code> パイプラインを次のように使って質問への回答を得ることができます。</p>
+<div class="codehilite"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">transformers</span><span class="w"> </span><span class="kn">import</span> <span class="n">pipeline</span>
+
+<span class="n">question_answerer</span> <span class="o">=</span> <span class="n">pipeline</span><span class="p">(</span><span class="s2">"question-answering"</span><span class="p">)</span>
+<span class="n">context</span> <span class="o">=</span> <span class="s2">"""</span>
+<span class="s2">🤗 Transformers is backed by the three most popular deep learning libraries — Jax, PyTorch, and TensorFlow — with a seamless integration</span>
+<span class="s2">between them. It's straightforward to train your models with one before loading them for inference with the other.</span>
+<span class="s2">"""</span>
+<span class="n">question</span> <span class="o">=</span> <span class="s2">"Which deep learning libraries back 🤗 Transformers?"</span>
+<span class="n">question_answerer</span><span class="p">(</span><span class="n">question</span><span class="o">=</span><span class="n">question</span><span class="p">,</span> <span class="n">context</span><span class="o">=</span><span class="n">context</span><span class="p">)</span>
+</code></pre></div>
+
+<p>```python out
+{'score': 0.97773,
+ 'start': 78,
+ 'end': 105,
+ 'answer': 'Jax, PyTorch and TensorFlow'}</p>
+<div class="codehilite"><pre><span></span><code>他のパイプラインは、モデルが受け付ける最大長よりも長いテキストを切り詰めたり分割したりできないため（その結果、文書の末尾の情報を見逃すことがあります）、このパイプラインは非常に長い文脈にも対処でき、回答が末尾にあっても質問への回答を返します。
+
+```py
+long_context = """
+🤗 Transformers: State of the Art NLP
+
+🤗 Transformers provides thousands of pretrained models to perform tasks on texts such as classification, information extraction,
+question answering, summarization, translation, text generation and more in over 100 languages.
+Its aim is to make cutting-edge NLP easier to use for everyone.
+
+🤗 Transformers provides APIs to quickly download and use those pretrained models on a given text, fine-tune them on your own datasets and
+then share them with the community on our model hub. At the same time, each python module defining an architecture is fully standalone and
+can be modified to enable quick research experiments.
+
+Why should I use transformers?
+
+1. Easy-to-use state-of-the-art models:
+  - High performance on NLU and NLG tasks.
+  - Low barrier to entry for educators and practitioners.
+  - Few user-facing abstractions with just three classes to learn.
+  - A unified API for using all our pretrained models.
+  - Lower compute costs, smaller carbon footprint:
+
+2. Researchers can share trained models instead of always retraining.
+  - Practitioners can reduce compute time and production costs.
+  - Dozens of architectures with over 10,000 pretrained models, some in more than 100 languages.
+
+3. Choose the right framework for every part of a model's lifetime:
+  - Train state-of-the-art models in 3 lines of code.
+  - Move a single model between TF2.0/PyTorch frameworks at will.
+  - Seamlessly pick the right framework for training, evaluation and production.
+
+4. Easily customize a model or an example to your needs:
+  - We provide examples for each architecture to reproduce the results published by its original authors.
+  - Model internals are exposed as consistently as possible.
+  - Model files can be used independently of the library for quick experiments.
+
+🤗 Transformers is backed by the three most popular deep learning libraries — Jax, PyTorch and TensorFlow — with a seamless integration
+between them. It's straightforward to train your models with one before loading them for inference with the other.
+"""
+question_answerer(question=question, context=long_context)
+</code></pre></div>
+
+<p>```python out
+{'score': 0.97149,
+ 'start': 1892,
+ 'end': 1919,
+ 'answer': 'Jax, PyTorch and TensorFlow'}</p>
+<div class="codehilite"><pre><span></span><code>これらすべてをどのように実現しているか見てみましょう！
+
+## 質問応答にモデルを使う
+
+他のパイプラインと同様に、まず入力をトークン化してからモデルに通します。`question-answering` パイプラインでデフォルトで使われるチェックポイントは [`distilbert-base-cased-distilled-squad`](https://huggingface.co/distilbert-base-cased-distilled-squad) です（名前の "squad" は、モデルがファインチューニングされたデータセットに由来します。SQuAD データセットについては [Chapter 7](/course/chapter7/7) で詳しく説明します）。
+
+{#if fw === 'pt'}
+
+```py
+from transformers import AutoTokenizer, AutoModelForQuestionAnswering
+
+model_checkpoint = "distilbert-base-cased-distilled-squad"
+tokenizer = AutoTokenizer.from_pretrained(model_checkpoint)
+model = AutoModelForQuestionAnswering.from_pretrained(model_checkpoint)
+
+inputs = tokenizer(question, context, return_tensors="pt")
+outputs = model(**inputs)
+</code></pre></div>
+
+<p>{:else}</p>
+<div class="codehilite"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">transformers</span><span class="w"> </span><span class="kn">import</span> <span class="n">AutoTokenizer</span><span class="p">,</span> <span class="n">TFAutoModelForQuestionAnswering</span>
+
+<span class="n">model_checkpoint</span> <span class="o">=</span> <span class="s2">"distilbert-base-cased-distilled-squad"</span>
+<span class="n">tokenizer</span> <span class="o">=</span> <span class="n">AutoTokenizer</span><span class="o">.</span><span class="n">from_pretrained</span><span class="p">(</span><span class="n">model_checkpoint</span><span class="p">)</span>
+<span class="n">model</span> <span class="o">=</span> <span class="n">TFAutoModelForQuestionAnswering</span><span class="o">.</span><span class="n">from_pretrained</span><span class="p">(</span><span class="n">model_checkpoint</span><span class="p">)</span>
+
+<span class="n">inputs</span> <span class="o">=</span> <span class="n">tokenizer</span><span class="p">(</span><span class="n">question</span><span class="p">,</span> <span class="n">context</span><span class="p">,</span> <span class="n">return_tensors</span><span class="o">=</span><span class="s2">"tf"</span><span class="p">)</span>
+<span class="n">outputs</span> <span class="o">=</span> <span class="n">model</span><span class="p">(</span><span class="o">**</span><span class="n">inputs</span><span class="p">)</span>
+</code></pre></div>
+
+<p>{/if}</p>
+<p>質問と文脈をペアとして、質問を先にしてトークン化することに注意してください。</p>
+<div class="flex justify-center">
+<img class="block dark:hidden" src="https://huggingface.co/datasets/huggingface-course/documentation-images/resolve/main/en/chapter6/question_tokens.svg" alt="質問と文脈のトークン化の例"/>
+<img class="hidden dark:block" src="https://huggingface.co/datasets/huggingface-course/documentation-images/resolve/main/en/chapter6/question_tokens-dark.svg" alt="質問と文脈のトークン化の例"/>
+</div>
+
+<p>質問応答用のモデルは、これまで見てきたモデルとは少し異なる仕組みで動作します。上の図を例にすると、モデルは回答の開始トークンのインデックス（ここでは21）と、回答が終わるトークンのインデックス（ここでは24）を予測するよう学習されています。そのため、これらのモデルはロジットのテンソルを1つではなく2つ返します。1つは回答の開始トークンに対応するロジット用、もう1つは回答の終了トークンに対応するロジット用です。この場合は66トークンを含む入力が1つだけなので、次のようになります。</p>
+<div class="codehilite"><pre><span></span><code><span class="n">start_logits</span> <span class="o">=</span> <span class="n">outputs</span><span class="o">.</span><span class="n">start_logits</span>
+<span class="n">end_logits</span> <span class="o">=</span> <span class="n">outputs</span><span class="o">.</span><span class="n">end_logits</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">start_logits</span><span class="o">.</span><span class="n">shape</span><span class="p">,</span> <span class="n">end_logits</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span>
+</code></pre></div>
+
+<p>{#if fw === 'pt'}</p>
+<p>```python out
+torch.Size([1, 66]) torch.Size([1, 66])</p>
+<div class="codehilite"><pre><span></span><code>{:else}
+
+```python out
+(1, 66) (1, 66)
+</code></pre></div>
+
+<p>{/if}</p>
+<p>これらのロジットを確率に変換するために softmax 関数を適用しますが、その前に、文脈の一部ではないインデックスを確実にマスクする必要があります。入力は <code>[CLS] question [SEP] context [SEP]</code> なので、質問のトークンと <code>[SEP]</code> トークンをマスクする必要があります。ただし <code>[CLS]</code> トークンは保持します。一部のモデルは、回答が文脈に含まれていないことを示すためにそれを使うためです。</p>
+<p>後で softmax を適用するため、マスクしたいロジットを大きな負の数に置き換えるだけで済みます。ここでは <code>-10000</code> を使います。</p>
+<p>{#if fw === 'pt'}</p>
+<div class="codehilite"><pre><span></span><code><span class="kn">import</span><span class="w"> </span><span class="nn">torch</span>
+
+<span class="n">sequence_ids</span> <span class="o">=</span> <span class="n">inputs</span><span class="o">.</span><span class="n">sequence_ids</span><span class="p">()</span>
+<span class="c1"># 文脈のトークン以外をすべてマスクする</span>
+<span class="n">mask</span> <span class="o">=</span> <span class="p">[</span><span class="n">i</span> <span class="o">!=</span> <span class="mi">1</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">sequence_ids</span><span class="p">]</span>
+<span class="c1"># [CLS] トークンのマスクを解除する</span>
+<span class="n">mask</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">=</span> <span class="kc">False</span>
+<span class="n">mask</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">tensor</span><span class="p">(</span><span class="n">mask</span><span class="p">)[</span><span class="kc">None</span><span class="p">]</span>
+
+<span class="n">start_logits</span><span class="p">[</span><span class="n">mask</span><span class="p">]</span> <span class="o">=</span> <span class="o">-</span><span class="mi">10000</span>
+<span class="n">end_logits</span><span class="p">[</span><span class="n">mask</span><span class="p">]</span> <span class="o">=</span> <span class="o">-</span><span class="mi">10000</span>
+</code></pre></div>
+
+<p>{:else}</p>
+<div class="codehilite"><pre><span></span><code><span class="kn">import</span><span class="w"> </span><span class="nn">tensorflow</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">tf</span>
+
+<span class="n">sequence_ids</span> <span class="o">=</span> <span class="n">inputs</span><span class="o">.</span><span class="n">sequence_ids</span><span class="p">()</span>
+<span class="c1"># 文脈のトークン以外をすべてマスクする</span>
+<span class="n">mask</span> <span class="o">=</span> <span class="p">[</span><span class="n">i</span> <span class="o">!=</span> <span class="mi">1</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">sequence_ids</span><span class="p">]</span>
+<span class="c1"># [CLS] トークンのマスクを解除する</span>
+<span class="n">mask</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">=</span> <span class="kc">False</span>
+<span class="n">mask</span> <span class="o">=</span> <span class="n">tf</span><span class="o">.</span><span class="n">constant</span><span class="p">(</span><span class="n">mask</span><span class="p">)[</span><span class="kc">None</span><span class="p">]</span>
+
+<span class="n">start_logits</span> <span class="o">=</span> <span class="n">tf</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="n">mask</span><span class="p">,</span> <span class="o">-</span><span class="mi">10000</span><span class="p">,</span> <span class="n">start_logits</span><span class="p">)</span>
+<span class="n">end_logits</span> <span class="o">=</span> <span class="n">tf</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="n">mask</span><span class="p">,</span> <span class="o">-</span><span class="mi">10000</span><span class="p">,</span> <span class="n">end_logits</span><span class="p">)</span>
+</code></pre></div>
+
+<p>{/if}</p>
+<p>予測したくない位置に対応するロジットを適切にマスクできたので、softmax を適用できます。</p>
+<p>{#if fw === 'pt'}</p>
+<div class="codehilite"><pre><span></span><code><span class="n">start_probabilities</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">nn</span><span class="o">.</span><span class="n">functional</span><span class="o">.</span><span class="n">softmax</span><span class="p">(</span><span class="n">start_logits</span><span class="p">,</span> <span class="n">dim</span><span class="o">=-</span><span class="mi">1</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span>
+<span class="n">end_probabilities</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">nn</span><span class="o">.</span><span class="n">functional</span><span class="o">.</span><span class="n">softmax</span><span class="p">(</span><span class="n">end_logits</span><span class="p">,</span> <span class="n">dim</span><span class="o">=-</span><span class="mi">1</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span>
+</code></pre></div>
+
+<p>{:else}</p>
+<div class="codehilite"><pre><span></span><code><span class="n">start_probabilities</span> <span class="o">=</span> <span class="n">tf</span><span class="o">.</span><span class="n">math</span><span class="o">.</span><span class="n">softmax</span><span class="p">(</span><span class="n">start_logits</span><span class="p">,</span> <span class="n">axis</span><span class="o">=-</span><span class="mi">1</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">numpy</span><span class="p">()</span>
+<span class="n">end_probabilities</span> <span class="o">=</span> <span class="n">tf</span><span class="o">.</span><span class="n">math</span><span class="o">.</span><span class="n">softmax</span><span class="p">(</span><span class="n">end_logits</span><span class="p">,</span> <span class="n">axis</span><span class="o">=-</span><span class="mi">1</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">numpy</span><span class="p">()</span>
+</code></pre></div>
+
+<p>{/if}</p>
+<p>この段階で、開始確率と終了確率の argmax を取ることもできますが、終了インデックスより大きい開始インデックスになってしまう可能性があるため、もう少し注意が必要です。<code>start_index &lt;= end_index</code> を満たす各 <code>start_index</code> と <code>end_index</code> の組み合わせの確率を計算し、確率が最も高いタプル <code>(start_index, end_index)</code> を取ります。</p>
+<p>事象「回答が <code>start_index</code> から始まる」と「回答が <code>end_index</code> で終わる」が独立であると仮定すると、回答が <code>start_index</code> から始まって <code>end_index</code> で終わる確率は次のとおりです。</p>
+<p>$$\mathrm{start_probabilities}[\mathrm{start_index}] \times \mathrm{end_probabilities}[\mathrm{end_index}]$$ </p>
+<p>したがって、すべてのスコアを計算するには、<code>start_index &lt;= end_index</code> の範囲で積 (\mathrm{start_probabilities}[\mathrm{start_index}] \times \mathrm{end_probabilities}[\mathrm{end_index}]) をすべて計算するだけです。</p>
+<p>まず、可能な積をすべて計算しましょう。</p>
+<div class="codehilite"><pre><span></span><code><span class="n">scores</span> <span class="o">=</span> <span class="n">start_probabilities</span><span class="p">[:,</span> <span class="kc">None</span><span class="p">]</span> <span class="o">*</span> <span class="n">end_probabilities</span><span class="p">[</span><span class="kc">None</span><span class="p">,</span> <span class="p">:]</span>
+</code></pre></div>
+
+<p>{#if fw === 'pt'}</p>
+<p>次に、<code>start_index &gt; end_index</code> の値を <code>0</code> に設定してマスクします（他の確率はすべて正の数です）。<code>torch.triu()</code> 関数は、引数として渡された2次元テンソルの上三角部分を返すため、そのマスキングを行ってくれます。</p>
+<div class="codehilite"><pre><span></span><code><span class="n">scores</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">triu</span><span class="p">(</span><span class="n">scores</span><span class="p">)</span>
+</code></pre></div>
+
+<p>{:else}</p>
+<p>次に、<code>start_index &gt; end_index</code> の値を <code>0</code> に設定してマスクします（他の確率はすべて正の数です）。<code>np.triu()</code> 関数は、引数として渡された2次元テンソルの上三角部分を返すため、そのマスキングを行ってくれます。</p>
+<div class="codehilite"><pre><span></span><code><span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
+
+<span class="n">scores</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">triu</span><span class="p">(</span><span class="n">scores</span><span class="p">)</span>
+</code></pre></div>
+
+<p>{/if}</p>
+<p>あとは最大値のインデックスを取得するだけです。PyTorch は平坦化されたテンソルでのインデックスを返すため、<code>start_index</code> と <code>end_index</code> を得るには床除算 <code>//</code> と剰余 <code>%</code> の演算を使う必要があります。</p>
+<div class="codehilite"><pre><span></span><code><span class="n">max_index</span> <span class="o">=</span> <span class="n">scores</span><span class="o">.</span><span class="n">argmax</span><span class="p">()</span><span class="o">.</span><span class="n">item</span><span class="p">()</span>
+<span class="n">start_index</span> <span class="o">=</span> <span class="n">max_index</span> <span class="o">//</span> <span class="n">scores</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
+<span class="n">end_index</span> <span class="o">=</span> <span class="n">max_index</span> <span class="o">%</span> <span class="n">scores</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">scores</span><span class="p">[</span><span class="n">start_index</span><span class="p">,</span> <span class="n">end_index</span><span class="p">])</span>
+</code></pre></div>
+
+<p>まだ完全には終わっていませんが、少なくとも回答の正しいスコアはすでに得られています（前のセクションの最初の結果と比較すれば確認できます）。</p>
+<p>```python out
+0.97773</p>
+<div class="codehilite"><pre><span></span><code>&lt;div class="callout callout-tip" markdown="block"&gt;
+&lt;p class="callout-title"&gt;💡 ヒント&lt;/p&gt;
+✏️ **試してみましょう！** 最も可能性の高い5つの回答について、開始インデックスと終了インデックスを計算してください。
+&lt;/div&gt;
+
+
+回答の `start_index` と `end_index` がトークン単位で得られたので、あとは文脈中の文字インデックスに変換するだけです。ここでオフセットが非常に役立ちます。トークン分類タスクで行ったように、それらを取得して使えます。
+
+```py
+inputs_with_offsets = tokenizer(question, context, return_offsets_mapping=True)
+offsets = inputs_with_offsets["offset_mapping"]
+
+start_char, _ = offsets[start_index]
+_, end_char = offsets[end_index]
+answer = context[start_char:end_char]
+</code></pre></div>
+
+<p>あとは、結果を得るためにすべてを整形するだけです。</p>
+<div class="codehilite"><pre><span></span><code><span class="n">result</span> <span class="o">=</span> <span class="p">{</span>
+    <span class="s2">"answer"</span><span class="p">:</span> <span class="n">answer</span><span class="p">,</span>
+    <span class="s2">"start"</span><span class="p">:</span> <span class="n">start_char</span><span class="p">,</span>
+    <span class="s2">"end"</span><span class="p">:</span> <span class="n">end_char</span><span class="p">,</span>
+    <span class="s2">"score"</span><span class="p">:</span> <span class="n">scores</span><span class="p">[</span><span class="n">start_index</span><span class="p">,</span> <span class="n">end_index</span><span class="p">],</span>
+<span class="p">}</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">result</span><span class="p">)</span>
+</code></pre></div>
+
+<p>```python out
+{'answer': 'Jax, PyTorch and TensorFlow',
+ 'start': 78,
+ 'end': 105,
+ 'score': 0.97773}</p>
+<div class="codehilite"><pre><span></span><code>素晴らしい！最初の例と同じになりました！
+
+&lt;div class="callout callout-tip" markdown="block"&gt;
+&lt;p class="callout-title"&gt;💡 ヒント&lt;/p&gt;
+✏️ **試してみましょう！** 先ほど計算した最良のスコアを使って、最も可能性の高い5つの回答を表示してください。結果を確認するには、最初のパイプラインに戻り、呼び出し時に `top_k=5` を渡してください。
+&lt;/div&gt;
+
+
+## 長い文脈の処理
+
+以前に例として使った質問と長い文脈をトークン化しようとすると、`question-answering` パイプラインで使われる最大長（384）を超えるトークン数が得られます。
+
+```py
+inputs = tokenizer(question, long_context)
+print(len(inputs["input_ids"]))
+</code></pre></div>
+
+<p>```python out
+461</p>
+<div class="codehilite"><pre><span></span><code>そのため、入力をその最大長で切り詰める必要があります。これを行う方法はいくつかありますが、切り詰めたいのは質問ではなく文脈だけです。文脈は2番目の文なので、`"only_second"` の切り詰め戦略を使います。その場合に生じる問題は、質問への回答が切り詰められた文脈に含まれていない可能性があることです。たとえば、ここでは回答が文脈の末尾寄りにある質問を選んだため、切り詰めるとその回答が含まれなくなります。
+
+```py
+inputs = tokenizer(question, long_context, max_length=384, truncation="only_second")
+print(tokenizer.decode(inputs["input_ids"]))
+</code></pre></div>
+
+<p>```python out
+"""
+[CLS] Which deep learning libraries back [UNK] Transformers? [SEP] [UNK] Transformers : State of the Art NLP</p>
+<p>[UNK] Transformers provides thousands of pretrained models to perform tasks on texts such as classification, information extraction,
+question answering, summarization, translation, text generation and more in over 100 languages.
+Its aim is to make cutting-edge NLP easier to use for everyone.</p>
+<p>[UNK] Transformers provides APIs to quickly download and use those pretrained models on a given text, fine-tune them on your own datasets and
+then share them with the community on our model hub. At the same time, each python module defining an architecture is fully standalone and
+can be modified to enable quick research experiments.</p>
+<p>Why should I use transformers?</p>
+<ol>
+<li>
+<p>Easy-to-use state-of-the-art models:
+  - High performance on NLU and NLG tasks.
+  - Low barrier to entry for educators and practitioners.
+  - Few user-facing abstractions with just three classes to learn.
+  - A unified API for using all our pretrained models.
+  - Lower compute costs, smaller carbon footprint:</p>
+</li>
+<li>
+<p>Researchers can share trained models instead of always retraining.
+  - Practitioners can reduce compute time and production costs.
+  - Dozens of architectures with over 10,000 pretrained models, some in more than 100 languages.</p>
+</li>
+<li>
+<p>Choose the right framework for every part of a model's lifetime:
+  - Train state-of-the-art models in 3 lines of code.
+  - Move a single model between TF2.0/PyTorch frameworks at will.
+  - Seamlessly pick the right framework for training, evaluation and production.</p>
+</li>
+<li>
+<p>Easily customize a model or an example to your needs:
+  - We provide examples for each architecture to reproduce the results published by its original authors.
+  - Model internal [SEP]
+"""</p>
+</li>
+</ol>
+<div class="codehilite"><pre><span></span><code>つまり、モデルは正しい回答を選ぶのが難しくなります。これを解決するために、`question-answering` パイプラインでは最大長を指定して文脈をより小さいチャンクに分割できます。また、回答を含む箇所がチャンクの境界で分断されないように、隣接するチャンクには一部重複する範囲を設けます。
+
+`return_overflowing_tokens=True` を追加すれば、トークナイザ（高速・低速を問わず）にこの処理を行わせることができ、重なりの量は `stride` 引数で指定できます。小さい文を使った例を示します。
+
+```py
+sentence = "This sentence is not too long but we are going to split it anyway."
+inputs = tokenizer(
+    sentence, truncation=True, return_overflowing_tokens=True, max_length=6, stride=2
+)
+
+for ids in inputs["input_ids"]:
+    print(tokenizer.decode(ids))
+</code></pre></div>
+
+<p>```python out
+'[CLS] This sentence is not [SEP]'
+'[CLS] is not too long [SEP]'
+'[CLS] too long but we [SEP]'
+'[CLS] but we are going [SEP]'
+'[CLS] are going to split [SEP]'
+'[CLS] to split it anyway [SEP]'
+'[CLS] it anyway. [SEP]'</p>
+<div class="codehilite"><pre><span></span><code>見てのとおり、文はチャンクに分割され、`inputs["input_ids"]` の各エントリは最大6トークンになっています（最後のエントリを他と同じサイズにするにはパディングを追加する必要があります）。また、各エントリ間には2トークンの重なりがあります。
+
+トークン化の結果を詳しく見てみましょう。
+
+```py
+print(inputs.keys())
+</code></pre></div>
+
+<p>```python out
+dict_keys(['input_ids', 'attention_mask', 'overflow_to_sample_mapping'])</p>
+<div class="codehilite"><pre><span></span><code>予想通り、入力 ID とアテンションマスクが得られます。最後のキー `overflow_to_sample_mapping` は、各結果がどの文に対応するかを示すマップです。ここでは、トークナイザに渡した（唯一の）文に由来する結果が7つあります。
+
+```py
+print(inputs["overflow_to_sample_mapping"])
+</code></pre></div>
+
+<p>```python out
+[0, 0, 0, 0, 0, 0, 0]</p>
+<div class="codehilite"><pre><span></span><code>これは、複数の文をまとめてトークン化するときにより役立ちます。たとえば、次の場合です。
+
+```py
+sentences = [
+    "This sentence is not too long but we are going to split it anyway.",
+    "This sentence is shorter but will still get split.",
+]
+inputs = tokenizer(
+    sentences, truncation=True, return_overflowing_tokens=True, max_length=6, stride=2
+)
+
+print(inputs["overflow_to_sample_mapping"])
+</code></pre></div>
+
+<p>次の結果が得られます。</p>
+<p>```python out
+[0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1]</p>
+<div class="codehilite"><pre><span></span><code>つまり、最初の文は前と同様に7つのチャンクに分割され、次の4つのチャンクは2番目の文に由来します。
+
+さて、長い文脈に戻りましょう。デフォルトでは、`question-answering` パイプラインは前述のとおり最大長384とストライド128を使います。これらはモデルがファインチューニングされた方法に対応しています（パイプラインの呼び出し時に `max_seq_len` と `stride` 引数を渡せば、これらのパラメータを調整できます）。したがって、トークン化の際にもこれらのパラメータを使います。パディング（サンプルを同じ長さにしてテンソルを構築できるようにするため）も追加し、オフセットも要求します。
+
+```py
+inputs = tokenizer(
+    question,
+    long_context,
+    stride=128,
+    max_length=384,
+    padding="longest",
+    truncation="only_second",
+    return_overflowing_tokens=True,
+    return_offsets_mapping=True,
+)
+</code></pre></div>
+
+<p>その <code>inputs</code> には、モデルが想定する入力 ID とアテンションマスクに加えて、オフセットと先ほど説明した <code>overflow_to_sample_mapping</code> が含まれます。これら2つはモデルが使うパラメータではないため、テンソルに変換する前に <code>inputs</code> から取り除きます（マップはここでは役に立たないため保存しません）。</p>
+<p>{#if fw === 'pt'}</p>
+<div class="codehilite"><pre><span></span><code><span class="n">_</span> <span class="o">=</span> <span class="n">inputs</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s2">"overflow_to_sample_mapping"</span><span class="p">)</span>
+<span class="n">offsets</span> <span class="o">=</span> <span class="n">inputs</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s2">"offset_mapping"</span><span class="p">)</span>
+
+<span class="n">inputs</span> <span class="o">=</span> <span class="n">inputs</span><span class="o">.</span><span class="n">convert_to_tensors</span><span class="p">(</span><span class="s2">"pt"</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">inputs</span><span class="p">[</span><span class="s2">"input_ids"</span><span class="p">]</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span>
+</code></pre></div>
+
+<p>```python out
+torch.Size([2, 384])</p>
+<div class="codehilite"><pre><span></span><code>{:else}
+
+```py
+_ = inputs.pop("overflow_to_sample_mapping")
+offsets = inputs.pop("offset_mapping")
+
+inputs = inputs.convert_to_tensors("tf")
+print(inputs["input_ids"].shape)
+</code></pre></div>
+
+<p>```python out
+(2, 384)</p>
+<div class="codehilite"><pre><span></span><code>{/if}
+
+長い文脈は2つに分割されたため、モデルを通した後は、開始ロジットと終了ロジットが2組得られます。
+
+```py
+outputs = model(**inputs)
+
+start_logits = outputs.start_logits
+end_logits = outputs.end_logits
+print(start_logits.shape, end_logits.shape)
+</code></pre></div>
+
+<p>{#if fw === 'pt'}</p>
+<p>```python out
+torch.Size([2, 384]) torch.Size([2, 384])</p>
+<div class="codehilite"><pre><span></span><code>{:else}
+
+```python out
+(2, 384) (2, 384)
+</code></pre></div>
+
+<p>{/if}</p>
+<p>前と同様に、softmax を取る前に、まず文脈の一部ではないトークンをマスクします。すべてのパディングトークン（アテンションマスクで示されるもの）もマスクします。</p>
+<p>{#if fw === 'pt'}</p>
+<div class="codehilite"><pre><span></span><code><span class="n">sequence_ids</span> <span class="o">=</span> <span class="n">inputs</span><span class="o">.</span><span class="n">sequence_ids</span><span class="p">()</span>
+<span class="c1"># 文脈のトークン以外をすべてマスクする</span>
+<span class="n">mask</span> <span class="o">=</span> <span class="p">[</span><span class="n">i</span> <span class="o">!=</span> <span class="mi">1</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">sequence_ids</span><span class="p">]</span>
+<span class="c1"># [CLS] トークンのマスクを解除する</span>
+<span class="n">mask</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">=</span> <span class="kc">False</span>
+<span class="c1"># すべての [PAD] トークンをマスクする</span>
+<span class="n">mask</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">logical_or</span><span class="p">(</span><span class="n">torch</span><span class="o">.</span><span class="n">tensor</span><span class="p">(</span><span class="n">mask</span><span class="p">)[</span><span class="kc">None</span><span class="p">],</span> <span class="p">(</span><span class="n">inputs</span><span class="p">[</span><span class="s2">"attention_mask"</span><span class="p">]</span> <span class="o">==</span> <span class="mi">0</span><span class="p">))</span>
+
+<span class="n">start_logits</span><span class="p">[</span><span class="n">mask</span><span class="p">]</span> <span class="o">=</span> <span class="o">-</span><span class="mi">10000</span>
+<span class="n">end_logits</span><span class="p">[</span><span class="n">mask</span><span class="p">]</span> <span class="o">=</span> <span class="o">-</span><span class="mi">10000</span>
+</code></pre></div>
+
+<p>{:else}</p>
+<div class="codehilite"><pre><span></span><code><span class="n">sequence_ids</span> <span class="o">=</span> <span class="n">inputs</span><span class="o">.</span><span class="n">sequence_ids</span><span class="p">()</span>
+<span class="c1"># 文脈のトークン以外をすべてマスクする</span>
+<span class="n">mask</span> <span class="o">=</span> <span class="p">[</span><span class="n">i</span> <span class="o">!=</span> <span class="mi">1</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">sequence_ids</span><span class="p">]</span>
+<span class="c1"># [CLS] トークンのマスクを解除する</span>
+<span class="n">mask</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">=</span> <span class="kc">False</span>
+<span class="c1"># すべての [PAD] トークンをマスクする</span>
+<span class="n">mask</span> <span class="o">=</span> <span class="n">tf</span><span class="o">.</span><span class="n">math</span><span class="o">.</span><span class="n">logical_or</span><span class="p">(</span><span class="n">tf</span><span class="o">.</span><span class="n">constant</span><span class="p">(</span><span class="n">mask</span><span class="p">)[</span><span class="kc">None</span><span class="p">],</span> <span class="n">inputs</span><span class="p">[</span><span class="s2">"attention_mask"</span><span class="p">]</span> <span class="o">==</span> <span class="mi">0</span><span class="p">)</span>
+
+<span class="n">start_logits</span> <span class="o">=</span> <span class="n">tf</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="n">mask</span><span class="p">,</span> <span class="o">-</span><span class="mi">10000</span><span class="p">,</span> <span class="n">start_logits</span><span class="p">)</span>
+<span class="n">end_logits</span> <span class="o">=</span> <span class="n">tf</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="n">mask</span><span class="p">,</span> <span class="o">-</span><span class="mi">10000</span><span class="p">,</span> <span class="n">end_logits</span><span class="p">)</span>
+</code></pre></div>
+
+<p>{/if}</p>
+<p>次に、softmax を使ってロジットを確率に変換できます。</p>
+<p>{#if fw === 'pt'}</p>
+<div class="codehilite"><pre><span></span><code><span class="n">start_probabilities</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">nn</span><span class="o">.</span><span class="n">functional</span><span class="o">.</span><span class="n">softmax</span><span class="p">(</span><span class="n">start_logits</span><span class="p">,</span> <span class="n">dim</span><span class="o">=-</span><span class="mi">1</span><span class="p">)</span>
+<span class="n">end_probabilities</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">nn</span><span class="o">.</span><span class="n">functional</span><span class="o">.</span><span class="n">softmax</span><span class="p">(</span><span class="n">end_logits</span><span class="p">,</span> <span class="n">dim</span><span class="o">=-</span><span class="mi">1</span><span class="p">)</span>
+</code></pre></div>
+
+<p>{:else}</p>
+<div class="codehilite"><pre><span></span><code><span class="n">start_probabilities</span> <span class="o">=</span> <span class="n">tf</span><span class="o">.</span><span class="n">math</span><span class="o">.</span><span class="n">softmax</span><span class="p">(</span><span class="n">start_logits</span><span class="p">,</span> <span class="n">axis</span><span class="o">=-</span><span class="mi">1</span><span class="p">)</span><span class="o">.</span><span class="n">numpy</span><span class="p">()</span>
+<span class="n">end_probabilities</span> <span class="o">=</span> <span class="n">tf</span><span class="o">.</span><span class="n">math</span><span class="o">.</span><span class="n">softmax</span><span class="p">(</span><span class="n">end_logits</span><span class="p">,</span> <span class="n">axis</span><span class="o">=-</span><span class="mi">1</span><span class="p">)</span><span class="o">.</span><span class="n">numpy</span><span class="p">()</span>
+</code></pre></div>
+
+<p>{/if}</p>
+<p>次のステップは小さい文脈で行ったことと似ていますが、2つのチャンクそれぞれについて繰り返します。回答の可能なすべての範囲にスコアを割り当て、最もスコアの高い範囲を取ります。</p>
+<p>{#if fw === 'pt'}</p>
+<div class="codehilite"><pre><span></span><code><span class="n">candidates</span> <span class="o">=</span> <span class="p">[]</span>
+<span class="k">for</span> <span class="n">start_probs</span><span class="p">,</span> <span class="n">end_probs</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="n">start_probabilities</span><span class="p">,</span> <span class="n">end_probabilities</span><span class="p">):</span>
+    <span class="n">scores</span> <span class="o">=</span> <span class="n">start_probs</span><span class="p">[:,</span> <span class="kc">None</span><span class="p">]</span> <span class="o">*</span> <span class="n">end_probs</span><span class="p">[</span><span class="kc">None</span><span class="p">,</span> <span class="p">:]</span>
+    <span class="n">idx</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">triu</span><span class="p">(</span><span class="n">scores</span><span class="p">)</span><span class="o">.</span><span class="n">argmax</span><span class="p">()</span><span class="o">.</span><span class="n">item</span><span class="p">()</span>
+
+    <span class="n">start_idx</span> <span class="o">=</span> <span class="n">idx</span> <span class="o">//</span> <span class="n">scores</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
+    <span class="n">end_idx</span> <span class="o">=</span> <span class="n">idx</span> <span class="o">%</span> <span class="n">scores</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
+    <span class="n">score</span> <span class="o">=</span> <span class="n">scores</span><span class="p">[</span><span class="n">start_idx</span><span class="p">,</span> <span class="n">end_idx</span><span class="p">]</span><span class="o">.</span><span class="n">item</span><span class="p">()</span>
+    <span class="n">candidates</span><span class="o">.</span><span class="n">append</span><span class="p">((</span><span class="n">start_idx</span><span class="p">,</span> <span class="n">end_idx</span><span class="p">,</span> <span class="n">score</span><span class="p">))</span>
+
+<span class="nb">print</span><span class="p">(</span><span class="n">candidates</span><span class="p">)</span>
+</code></pre></div>
+
+<p>{:else}</p>
+<div class="codehilite"><pre><span></span><code><span class="n">candidates</span> <span class="o">=</span> <span class="p">[]</span>
+<span class="k">for</span> <span class="n">start_probs</span><span class="p">,</span> <span class="n">end_probs</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="n">start_probabilities</span><span class="p">,</span> <span class="n">end_probabilities</span><span class="p">):</span>
+    <span class="n">scores</span> <span class="o">=</span> <span class="n">start_probs</span><span class="p">[:,</span> <span class="kc">None</span><span class="p">]</span> <span class="o">*</span> <span class="n">end_probs</span><span class="p">[</span><span class="kc">None</span><span class="p">,</span> <span class="p">:]</span>
+    <span class="n">idx</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">triu</span><span class="p">(</span><span class="n">scores</span><span class="p">)</span><span class="o">.</span><span class="n">argmax</span><span class="p">()</span><span class="o">.</span><span class="n">item</span><span class="p">()</span>
+
+    <span class="n">start_idx</span> <span class="o">=</span> <span class="n">idx</span> <span class="o">//</span> <span class="n">scores</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
+    <span class="n">end_idx</span> <span class="o">=</span> <span class="n">idx</span> <span class="o">%</span> <span class="n">scores</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
+    <span class="n">score</span> <span class="o">=</span> <span class="n">scores</span><span class="p">[</span><span class="n">start_idx</span><span class="p">,</span> <span class="n">end_idx</span><span class="p">]</span><span class="o">.</span><span class="n">item</span><span class="p">()</span>
+    <span class="n">candidates</span><span class="o">.</span><span class="n">append</span><span class="p">((</span><span class="n">start_idx</span><span class="p">,</span> <span class="n">end_idx</span><span class="p">,</span> <span class="n">score</span><span class="p">))</span>
+
+<span class="nb">print</span><span class="p">(</span><span class="n">candidates</span><span class="p">)</span>
+</code></pre></div>
+
+<p>{/if}</p>
+<p>```python out
+[(0, 18, 0.33867), (173, 184, 0.97149)]</p>
+<div class="codehilite"><pre><span></span><code>これら2つの候補は、各チャンクでモデルが見つけられた最良の回答に対応します。モデルは、正しい回答が2番目のチャンクに含まれると、1番目よりもはるかに高い確信度で予測しています。これは良い兆候です。あとは、これら2つのトークン範囲を文脈中の文字範囲にマッピングするだけです（回答を得るには2番目のものだけをマッピングすればよいのですが、モデルが最初のチャンクで何を選んだかを見るのも興味深いでしょう）。
+
+&lt;div class="callout callout-tip" markdown="block"&gt;
+&lt;p class="callout-title"&gt;💡 ヒント&lt;/p&gt;
+✏️ **試してみましょう！** 上のコードを改変して、最も可能性の高い5つの回答について（チャンクごとではなく全体で）スコアと範囲を返すようにしてください。
+&lt;/div&gt;
+
+
+先ほど取得した `offsets` は実際にはオフセットのリストであり、テキストのチャンクごとに1つのリストがあります。
+
+```py
+for candidate, offset in zip(candidates, offsets):
+    start_token, end_token, score = candidate
+    start_char, _ = offset[start_token]
+    _, end_char = offset[end_token]
+    answer = long_context[start_char:end_char]
+    result = {"answer": answer, "start": start_char, "end": end_char, "score": score}
+    print(result)
+</code></pre></div>
+
+<p><code>python out
+{'answer': '\n🤗 Transformers: State of the Art NLP', 'start': 0, 'end': 37, 'score': 0.33867}
+{'answer': 'Jax, PyTorch and TensorFlow', 'start': 1892, 'end': 1919, 'score': 0.97149}</code></p>
+<p>最初の結果を無視すれば、この長い文脈に対するパイプラインと同じ結果が得られます。やりました！</p>
+<div class="callout callout-tip">
+<p class="callout-title">💡 ヒント</p>
+<p>✏️ <strong>試してみましょう！</strong> 先ほど計算した最良のスコアを使って、最も可能性の高い5つの回答を表示してください（各チャンクではなく、文脈全体について）。結果を確認するには、最初のパイプラインに戻り、呼び出し時に <code>top_k=5</code> を渡してください。</p>
+</div>
+<p>これでトークナイザの能力についての深掘りは終わりです。次の章では、一般的な NLP タスクでモデルをファインチューニングする方法を紹介し、これらすべてを再び実践します。</p>
+</article>
+<nav class="page-nav"><a class="nav-link prev" href="3.html">← 前へ: 高速トークナイザならではの機能</a><a class="nav-link toc-link" href="../index.html">目次へ</a><a class="nav-link next" href="4.html">次へ →: 正規化と事前トークン化</a></nav>
+</main>
+<footer class="site-footer">
+  <p>原典: Hugging Face huggingface/course（<a href="https://github.com/huggingface/course">https://github.com/huggingface/course</a>）</p>
+  <p>日本語版の翻訳・公開: 霞ヶ関京 / 連絡先: GitHub <a href="https://github.com/yanikasumin">@yanikasumin</a> / YouTube <a href="https://www.youtube.com/@KASUMI_MOF">@KASUMI_MOF</a></p>
+  <p class="demo-note">このサイトはデモ版です。内容は順次更新されます。</p>
+</footer>
+<script src="../../site.js"></script>
+</body>
+</html>

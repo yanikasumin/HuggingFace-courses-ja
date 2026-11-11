@@ -1,0 +1,214 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>実践演習： GRPO でモデルをファインチューニングする | Hugging Face コース日本語版（デモ版）</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Shippori+Mincho:wght@500;700&family=Zen+Kaku+Gothic+New:wght@400;500;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../../style.css">
+<script>
+window.MathJax = { tex: { inlineMath: [['$', '$'], ['\\(', '\\)']], displayMath: [['$$', '$$'], ['\\[', '\\]']] }, options: { skipHtmlTags: ['script','noscript','style','textarea','pre','code'] } };
+</script>
+<script async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml.js"></script>
+</head>
+<body>
+<header class="site-header">
+  <div class="header-inner">
+    <a class="site-title" href="../../index.html">Hugging Face コース日本語版</a>
+    <span class="demo-badge">デモ版</span>
+  </div>
+</header>
+<main class="container">
+<p class="course-crumb"><a href="../index.html">LLM コース</a>
+<span class="badge badge-qa-pass">翻訳QA 最終合格</span></p>
+<nav class="page-nav"><a class="nav-link prev" href="4.html">← 前へ: TRL で GRPO を実装する</a><a class="nav-link toc-link" href="../index.html">目次へ</a><a class="nav-link next" href="6.html">次へ →: 実践演習： Unsloth で GRPO</a></nav>
+<article class="content">
+<h1>実践演習： GRPO でモデルをファインチューニングする</h1>
+<p>理論を見てきたところで、実践に移しましょう！この演習では、GRPO でモデルをファインチューニングします。</p>
+<div class="callout callout-tip">
+<p class="callout-title">💡 ヒント</p>
+<p>この演習は、LLM ファインチューニングの専門家 <a href="https://huggingface.co/mlabonne">@mlabonne</a> が執筆しました。</p>
+</div>
+<h2>依存関係をインストールする</h2>
+<p>まず、この演習の依存関係をインストールしましょう。</p>
+<div class="codehilite"><pre><span></span><code>!pip<span class="w"> </span>install<span class="w"> </span>-qqq<span class="w"> </span><span class="nv">datasets</span><span class="o">==</span><span class="m">3</span>.2.0<span class="w"> </span><span class="nv">transformers</span><span class="o">==</span><span class="m">4</span>.47.1<span class="w"> </span><span class="nv">trl</span><span class="o">==</span><span class="m">0</span>.14.0<span class="w"> </span><span class="nv">peft</span><span class="o">==</span><span class="m">0</span>.14.0<span class="w"> </span><span class="nv">accelerate</span><span class="o">==</span><span class="m">1</span>.2.1<span class="w"> </span><span class="nv">bitsandbytes</span><span class="o">==</span><span class="m">0</span>.45.2<span class="w"> </span><span class="nv">wandb</span><span class="o">==</span><span class="m">0</span>.19.7<span class="w"> </span>--progress-bar<span class="w"> </span>off
+!pip<span class="w"> </span>install<span class="w"> </span>-qqq<span class="w"> </span>flash-attn<span class="w"> </span>--no-build-isolation<span class="w"> </span>--progress-bar<span class="w"> </span>off
+</code></pre></div>
+
+<p>次に、必要なライブラリをインポートします。</p>
+<div class="codehilite"><pre><span></span><code><span class="kn">import</span><span class="w"> </span><span class="nn">torch</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">datasets</span><span class="w"> </span><span class="kn">import</span> <span class="n">load_dataset</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">peft</span><span class="w"> </span><span class="kn">import</span> <span class="n">LoraConfig</span><span class="p">,</span> <span class="n">get_peft_model</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">transformers</span><span class="w"> </span><span class="kn">import</span> <span class="n">AutoModelForCausalLM</span><span class="p">,</span> <span class="n">AutoTokenizer</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">trl</span><span class="w"> </span><span class="kn">import</span> <span class="n">GRPOConfig</span><span class="p">,</span> <span class="n">GRPOTrainer</span>
+</code></pre></div>
+
+<h2>Weights &amp; Biases のインポートとログイン</h2>
+<p>Weights &amp; Biases は、実験を記録し、監視するためのツールです。ファインチューニングのプロセスを記録するために使います。</p>
+<div class="codehilite"><pre><span></span><code><span class="kn">import</span><span class="w"> </span><span class="nn">wandb</span>
+
+<span class="n">wandb</span><span class="o">.</span><span class="n">login</span><span class="p">()</span>
+</code></pre></div>
+
+<p>Weights &amp; Biases にログインしなくてもこの演習は行えますが、実験を追跡し、結果を解釈するために、ログインすることをお勧めします。</p>
+<h2>データセットを読み込む</h2>
+<p>では、データセットを読み込みましょう。この場合は、短い物語のリストを含む <a href="https://huggingface.co/datasets/mlabonne/smoltldr"><code>mlabonne/smoltldr</code></a> データセットを使います。</p>
+<div class="codehilite"><pre><span></span><code><span class="n">dataset</span> <span class="o">=</span> <span class="n">load_dataset</span><span class="p">(</span><span class="s2">"mlabonne/smoltldr"</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">dataset</span><span class="p">)</span>
+</code></pre></div>
+
+<h2>モデルを読み込む</h2>
+<p>次に、モデルを読み込みます。</p>
+<p>この演習では、<a href="https://huggingface.co/HuggingFaceTB/SmolLM2-135M"><code>SmolLM2-135M</code></a> モデルを使います。</p>
+<p>これは、限られたハードウェアで動作する、パラメータ数135Mの小さなモデルです。そのため学習には理想的ですが、高性能な大規模モデルではありません。より強力なハードウェアにアクセスできる場合は、<a href="https://huggingface.co/HuggingFaceTB/SmolLM2-1.7B"><code>SmolLM2-1.7B</code></a> のようなより大きなモデルのファインチューニングを試すこともできます。</p>
+<div class="codehilite"><pre><span></span><code><span class="n">model_id</span> <span class="o">=</span> <span class="s2">"HuggingFaceTB/SmolLM-135M-Instruct"</span>
+<span class="n">model</span> <span class="o">=</span> <span class="n">AutoModelForCausalLM</span><span class="o">.</span><span class="n">from_pretrained</span><span class="p">(</span>
+    <span class="n">model_id</span><span class="p">,</span>
+    <span class="n">torch_dtype</span><span class="o">=</span><span class="s2">"auto"</span><span class="p">,</span>
+    <span class="n">device_map</span><span class="o">=</span><span class="s2">"auto"</span><span class="p">,</span>
+    <span class="n">attn_implementation</span><span class="o">=</span><span class="s2">"flash_attention_2"</span><span class="p">,</span>
+<span class="p">)</span>
+<span class="n">tokenizer</span> <span class="o">=</span> <span class="n">AutoTokenizer</span><span class="o">.</span><span class="n">from_pretrained</span><span class="p">(</span><span class="n">model_id</span><span class="p">)</span>
+</code></pre></div>
+
+<h2>LoRA を読み込む</h2>
+<p>次に、LoRA の設定を読み込みます。LoRA を活用して、学習可能なパラメータの数を減らし、ひいてはモデルのファインチューニングに必要なメモリ使用量を削減します。</p>
+<p>LoRA に馴染みがない方は、<a href="https://huggingface.co/learn/course/en/chapter11/3">第11章</a>で詳細を読むことができます。</p>
+<div class="codehilite"><pre><span></span><code><span class="c1"># LoRA を読み込む</span>
+<span class="n">lora_config</span> <span class="o">=</span> <span class="n">LoraConfig</span><span class="p">(</span>
+    <span class="n">task_type</span><span class="o">=</span><span class="s2">"CAUSAL_LM"</span><span class="p">,</span>
+    <span class="n">r</span><span class="o">=</span><span class="mi">16</span><span class="p">,</span>
+    <span class="n">lora_alpha</span><span class="o">=</span><span class="mi">32</span><span class="p">,</span>
+    <span class="n">target_modules</span><span class="o">=</span><span class="s2">"all-linear"</span><span class="p">,</span>
+<span class="p">)</span>
+<span class="n">model</span> <span class="o">=</span> <span class="n">get_peft_model</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="n">lora_config</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">model</span><span class="o">.</span><span class="n">print_trainable_parameters</span><span class="p">())</span>
+</code></pre></div>
+
+<div class="codehilite"><pre><span></span><code>Total<span class="w"> </span>trainable<span class="w"> </span>parameters:<span class="w"> </span>135M
+</code></pre></div>
+
+<h2>報酬関数を定義する</h2>
+<p>前のセクションで述べたとおり、GRPO は任意の報酬関数を使ってモデルを改善できます。この場合は、50トークンの長さのテキストを生成するようモデルを促す、簡単な報酬関数を使います。</p>
+<div class="codehilite"><pre><span></span><code><span class="c1"># 報酬関数</span>
+<span class="n">ideal_length</span> <span class="o">=</span> <span class="mi">50</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">reward_len</span><span class="p">(</span><span class="n">completions</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+    <span class="k">return</span> <span class="p">[</span><span class="o">-</span><span class="nb">abs</span><span class="p">(</span><span class="n">ideal_length</span> <span class="o">-</span> <span class="nb">len</span><span class="p">(</span><span class="n">completion</span><span class="p">))</span> <span class="k">for</span> <span class="n">completion</span> <span class="ow">in</span> <span class="n">completions</span><span class="p">]</span>
+</code></pre></div>
+
+<h2>学習引数を定義する</h2>
+<p>では、学習引数を定義しましょう。<code>GRPOConfig</code> クラスを使って、典型的な <code>transformers</code> スタイルで学習引数を定義します。</p>
+<p>学習引数を定義するのが初めての方は、詳細については <a href="https://huggingface.co/docs/transformers/en/main_classes/trainer#trainingarguments">TrainingArguments</a> クラスを確認するか、詳しい紹介として <a href="https://huggingface.co/learn/course/en/chapter2/1">第2章</a>を確認できます。</p>
+<div class="codehilite"><pre><span></span><code><span class="c1"># 学習引数</span>
+<span class="n">training_args</span> <span class="o">=</span> <span class="n">GRPOConfig</span><span class="p">(</span>
+    <span class="n">output_dir</span><span class="o">=</span><span class="s2">"GRPO"</span><span class="p">,</span>
+    <span class="n">learning_rate</span><span class="o">=</span><span class="mf">2e-5</span><span class="p">,</span>
+    <span class="n">per_device_train_batch_size</span><span class="o">=</span><span class="mi">8</span><span class="p">,</span>
+    <span class="n">gradient_accumulation_steps</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span>
+    <span class="n">max_prompt_length</span><span class="o">=</span><span class="mi">512</span><span class="p">,</span>
+    <span class="n">max_completion_length</span><span class="o">=</span><span class="mi">96</span><span class="p">,</span>
+    <span class="n">num_generations</span><span class="o">=</span><span class="mi">8</span><span class="p">,</span>
+    <span class="n">optim</span><span class="o">=</span><span class="s2">"adamw_8bit"</span><span class="p">,</span>
+    <span class="n">num_train_epochs</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span>
+    <span class="n">bf16</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+    <span class="n">report_to</span><span class="o">=</span><span class="p">[</span><span class="s2">"wandb"</span><span class="p">],</span>
+    <span class="n">remove_unused_columns</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+    <span class="n">logging_steps</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span>
+<span class="p">)</span>
+</code></pre></div>
+
+<p>これで、モデル、データセット、学習引数を使ってトレーナーを初期化し、学習を開始できます。</p>
+<div class="codehilite"><pre><span></span><code><span class="c1"># トレーナー</span>
+<span class="n">trainer</span> <span class="o">=</span> <span class="n">GRPOTrainer</span><span class="p">(</span>
+    <span class="n">model</span><span class="o">=</span><span class="n">model</span><span class="p">,</span>
+    <span class="n">reward_funcs</span><span class="o">=</span><span class="p">[</span><span class="n">reward_len</span><span class="p">],</span>
+    <span class="n">args</span><span class="o">=</span><span class="n">training_args</span><span class="p">,</span>
+    <span class="n">train_dataset</span><span class="o">=</span><span class="n">dataset</span><span class="p">[</span><span class="s2">"train"</span><span class="p">],</span>
+<span class="p">)</span>
+
+<span class="c1"># モデルを学習する</span>
+<span class="n">wandb</span><span class="o">.</span><span class="n">init</span><span class="p">(</span><span class="n">project</span><span class="o">=</span><span class="s2">"GRPO"</span><span class="p">)</span>
+<span class="n">trainer</span><span class="o">.</span><span class="n">train</span><span class="p">()</span>
+</code></pre></div>
+
+<p>学習には、Google Colab や Hugging Face Spaces で利用できる単一の A10G GPU で約1時間かかります。</p>
+<h2>学習中にモデルを Hub にプッシュする</h2>
+<p><code>push_to_hub</code> 引数を <code>True</code> に設定し、<code>model_id</code> 引数を有効なモデル名に設定すると、学習中にモデルが Hugging Face Hub にプッシュされます。学習中からモデルを気軽に試し、どのような応答を生成するか確かめたい場合に便利です！</p>
+<h2>学習結果を解釈する</h2>
+<p><code>GRPOTrainer</code> は、報酬関数からの報酬、損失、その他のさまざまなメトリクスを記録します。</p>
+<p>ここでは、報酬関数からの報酬と損失に焦点を当てます。</p>
+<p>ご覧のとおり、モデルが学習するにつれて、報酬関数からの報酬は0に近づいていきます。これは、モデルが正しい長さのテキストを生成することを学んでいる良い兆候です。</p>
+<p><img alt="報酬関数からの報酬" src="https://huggingface.co/reasoning-course/images/resolve/main/grpo/13.png" /></p>
+<p>損失は0から始まり、学習中に増加することに気づくかもしれません。これは直感に反するように思えるかもしれません。この振る舞いは GRPO では予期されるものであり、アルゴリズムの数学的な定式化に直接関係しています。GRPO の損失は、KL ダイバージェンス（元の方策からの乖離を抑えるための尺度）に比例します。学習が進むにつれて、モデルは報酬関数によりよく合うテキストを生成することを学び、当初の方策からより乖離するようになります。この増大する乖離は、損失値の上昇に反映されており、これは実際には、モデルが報酬関数への最適化に成功して適応していることを示しています。</p>
+<p><img alt="損失" src="https://huggingface.co/reasoning-course/images/resolve/main/grpo/14.png" /></p>
+<h2>モデルを保存して公開する</h2>
+<p>モデルをコミュニティと共有しましょう！</p>
+<div class="codehilite"><pre><span></span><code><span class="n">merged_model</span> <span class="o">=</span> <span class="n">trainer</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">merge_and_unload</span><span class="p">()</span>
+<span class="n">merged_model</span><span class="o">.</span><span class="n">push_to_hub</span><span class="p">(</span>
+    <span class="s2">"SmolGRPO-135M"</span><span class="p">,</span> <span class="n">private</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">tags</span><span class="o">=</span><span class="p">[</span><span class="s2">"GRPO"</span><span class="p">,</span> <span class="s2">"Reasoning-Course"</span><span class="p">]</span>
+<span class="p">)</span>
+</code></pre></div>
+
+<h2>テキストを生成する</h2>
+<p>🎉 GRPO でモデルのファインチューニングに成功しました！では、モデルでテキストを生成してみましょう。</p>
+<p>まず、とても長い文書を定義します！</p>
+<div class="codehilite"><pre><span></span><code><span class="n">prompt</span> <span class="o">=</span> <span class="s2">"""</span>
+<span class="s2"># A long document about the Cat</span>
+
+<span class="s2">The cat (Felis catus), also referred to as the domestic cat or house cat, is a small </span>
+<span class="s2">domesticated carnivorous mammal. It is the only domesticated species of the family Felidae.</span>
+<span class="s2">Advances in archaeology and genetics have shown that the domestication of the cat occurred</span>
+<span class="s2">in the Near East around 7500 BC. It is commonly kept as a pet and farm cat, but also ranges</span>
+<span class="s2">freely as a feral cat avoiding human contact. It is valued by humans for companionship and</span>
+<span class="s2">its ability to kill vermin. Its retractable claws are adapted to killing small prey species</span>
+<span class="s2">such as mice and rats. It has a strong, flexible body, quick reflexes, and sharp teeth,</span>
+<span class="s2">and its night vision and sense of smell are well developed. It is a social species,</span>
+<span class="s2">but a solitary hunter and a crepuscular predator. Cat communication includes</span>
+<span class="s2">vocalizations—including meowing, purring, trilling, hissing, growling, and grunting—as</span>
+<span class="s2">well as body language. It can hear sounds too faint or too high in frequency for human ears,</span>
+<span class="s2">such as those made by small mammals. It secretes and perceives pheromones.</span>
+<span class="s2">"""</span>
+
+<span class="n">messages</span> <span class="o">=</span> <span class="p">[</span>
+    <span class="p">{</span><span class="s2">"role"</span><span class="p">:</span> <span class="s2">"user"</span><span class="p">,</span> <span class="s2">"content"</span><span class="p">:</span> <span class="n">prompt</span><span class="p">},</span>
+<span class="p">]</span>
+</code></pre></div>
+
+<p>これで、モデルを使ってテキストを生成できます。</p>
+<div class="codehilite"><pre><span></span><code><span class="c1"># テキストを生成する</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">transformers</span><span class="w"> </span><span class="kn">import</span> <span class="n">pipeline</span>
+
+<span class="n">generator</span> <span class="o">=</span> <span class="n">pipeline</span><span class="p">(</span><span class="s2">"text-generation"</span><span class="p">,</span> <span class="n">model</span><span class="o">=</span><span class="s2">"SmolGRPO-135M"</span><span class="p">)</span>
+
+<span class="c1">## または、先に定義したモデルとトークナイザを使う</span>
+<span class="c1"># generator = pipeline("text-generation", model=model, tokenizer=tokenizer)</span>
+
+<span class="n">generate_kwargs</span> <span class="o">=</span> <span class="p">{</span>
+    <span class="s2">"max_new_tokens"</span><span class="p">:</span> <span class="mi">256</span><span class="p">,</span>
+    <span class="s2">"do_sample"</span><span class="p">:</span> <span class="kc">True</span><span class="p">,</span>
+    <span class="s2">"temperature"</span><span class="p">:</span> <span class="mf">0.5</span><span class="p">,</span>
+    <span class="s2">"min_p"</span><span class="p">:</span> <span class="mf">0.1</span><span class="p">,</span>
+<span class="p">}</span>
+
+<span class="n">generated_text</span> <span class="o">=</span> <span class="n">generator</span><span class="p">(</span><span class="n">messages</span><span class="p">,</span> <span class="n">generate_kwargs</span><span class="o">=</span><span class="n">generate_kwargs</span><span class="p">)</span>
+
+<span class="nb">print</span><span class="p">(</span><span class="n">generated_text</span><span class="p">)</span>
+</code></pre></div>
+
+<h1>結論</h1>
+<p>この章では、GRPO でモデルをファインチューニングする方法を見てきました。あわせて、学習結果を解釈し、モデルでテキストを生成する方法も見てきました。</p>
+</article>
+<nav class="page-nav"><a class="nav-link prev" href="4.html">← 前へ: TRL で GRPO を実装する</a><a class="nav-link toc-link" href="../index.html">目次へ</a><a class="nav-link next" href="6.html">次へ →: 実践演習： Unsloth で GRPO</a></nav>
+</main>
+<footer class="site-footer">
+  <p>原典: Hugging Face huggingface/course（<a href="https://github.com/huggingface/course">https://github.com/huggingface/course</a>）</p>
+  <p>日本語版の翻訳・公開: 霞ヶ関京 / 連絡先: GitHub <a href="https://github.com/yanikasumin">@yanikasumin</a> / YouTube <a href="https://www.youtube.com/@KASUMI_MOF">@KASUMI_MOF</a></p>
+  <p class="demo-note">このサイトはデモ版です。内容は順次更新されます。</p>
+</footer>
+<script src="../../site.js"></script>
+</body>
+</html>

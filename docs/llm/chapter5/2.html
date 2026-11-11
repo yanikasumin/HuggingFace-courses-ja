@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>データセットが Hub にない場合は？ | Hugging Face コース日本語版（デモ版）</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Shippori+Mincho:wght@500;700&family=Zen+Kaku+Gothic+New:wght@400;500;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../../style.css">
+<script>
+window.MathJax = { tex: { inlineMath: [['$', '$'], ['\\(', '\\)']], displayMath: [['$$', '$$'], ['\\[', '\\]']] }, options: { skipHtmlTags: ['script','noscript','style','textarea','pre','code'] } };
+</script>
+<script async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml.js"></script>
+</head>
+<body>
+<header class="site-header">
+  <div class="header-inner">
+    <a class="site-title" href="../../index.html">Hugging Face コース日本語版</a>
+    <span class="demo-badge">デモ版</span>
+  </div>
+</header>
+<main class="container">
+<p class="course-crumb"><a href="../index.html">LLM コース</a>
+<span class="badge badge-qa-pass">翻訳QA 最終合格</span></p>
+<nav class="page-nav"><a class="nav-link prev" href="1.html">← 前へ: はじめに</a><a class="nav-link toc-link" href="../index.html">目次へ</a><a class="nav-link next" href="3.html">次へ →: 切り分けて、加工して</a></nav>
+<article class="content">
+<h1>データセットが Hub にない場合は？</h1>
+<p><a href="https://huggingface.co/datasets">Hugging Face Hub</a> からデータセットをダウンロードする方法はすでに知っていると思いますが、実際に扱うデータは、自分のノートパソコンやリモートサーバーに置かれていることも多いはずです。このセクションでは、Hugging Face Hub にないデータセットを 🤗 Datasets で読み込む方法を紹介します。</p>
+<div class="youtube-embed"><iframe src="https://www.youtube-nocookie.com/embed/HyQgpJTkRdE" title="YouTube video" loading="lazy" allowfullscreen referrerpolicy="strict-origin-when-cross-origin"></iframe></div>
+<h2>ローカルおよびリモートのデータセットを扱う</h2>
+<p>🤗 Datasets には、ローカルおよびリモートのデータセットを読み込むためのローディングスクリプトが用意されています。次のような一般的なデータ形式に対応しています。</p>
+<table>
+<thead>
+<tr>
+<th style="text-align: center;">データ形式</th>
+<th style="text-align: center;">ローディングスクリプト</th>
+<th style="text-align: center;">例</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align: center;">CSV &amp; TSV</td>
+<td style="text-align: center;"><code>csv</code></td>
+<td style="text-align: center;"><code>load_dataset("csv", data_files="my_file.csv")</code></td>
+</tr>
+<tr>
+<td style="text-align: center;">テキストファイル</td>
+<td style="text-align: center;"><code>text</code></td>
+<td style="text-align: center;"><code>load_dataset("text", data_files="my_file.txt")</code></td>
+</tr>
+<tr>
+<td style="text-align: center;">JSON &amp; JSON Lines</td>
+<td style="text-align: center;"><code>json</code></td>
+<td style="text-align: center;"><code>load_dataset("json", data_files="my_file.jsonl")</code></td>
+</tr>
+<tr>
+<td style="text-align: center;">Pickle 化された DataFrame</td>
+<td style="text-align: center;"><code>pandas</code></td>
+<td style="text-align: center;"><code>load_dataset("pandas", data_files="my_dataframe.pkl")</code></td>
+</tr>
+</tbody>
+</table>
+<p>表のとおり、データ形式ごとに <code>load_dataset()</code> 関数でローディングスクリプトの種類を指定し、1つ以上のファイルへのパスを指定する <code>data_files</code> 引数を渡すだけです。まずはローカルファイルからデータセットを読み込み、後でリモートファイルでも同じことができることを見ていきます。</p>
+<h2>ローカルデータセットの読み込み</h2>
+<p>この例では、イタリア語の質問応答用の大規模データセットである <a href="https://github.com/crux82/squad-it/">SQuAD-it データセット</a> を使います。</p>
+<p>訓練用とテスト用の分割（split）は GitHub で公開されているので、簡単な <code>wget</code> コマンドでダウンロードできます。</p>
+<div class="codehilite"><pre><span></span><code><span class="err">!</span><span class="n">wget</span> <span class="n">https</span><span class="p">:</span><span class="o">//</span><span class="n">github</span><span class="o">.</span><span class="n">com</span><span class="o">/</span><span class="n">crux82</span><span class="o">/</span><span class="n">squad</span><span class="o">-</span><span class="n">it</span><span class="o">/</span><span class="n">raw</span><span class="o">/</span><span class="n">master</span><span class="o">/</span><span class="n">SQuAD_it</span><span class="o">-</span><span class="n">train</span><span class="o">.</span><span class="n">json</span><span class="o">.</span><span class="n">gz</span>
+<span class="err">!</span><span class="n">wget</span> <span class="n">https</span><span class="p">:</span><span class="o">//</span><span class="n">github</span><span class="o">.</span><span class="n">com</span><span class="o">/</span><span class="n">crux82</span><span class="o">/</span><span class="n">squad</span><span class="o">-</span><span class="n">it</span><span class="o">/</span><span class="n">raw</span><span class="o">/</span><span class="n">master</span><span class="o">/</span><span class="n">SQuAD_it</span><span class="o">-</span><span class="n">test</span><span class="o">.</span><span class="n">json</span><span class="o">.</span><span class="n">gz</span>
+</code></pre></div>
+
+<p>これで <em>SQuAD_it-train.json.gz</em> と <em>SQuAD_it-test.json.gz</em> という2つの圧縮ファイルがダウンロードされます。Linux の <code>gzip</code> コマンドで解凍しましょう。</p>
+<div class="codehilite"><pre><span></span><code><span class="err">!</span><span class="n">gzip</span> <span class="o">-</span><span class="n">dkv</span> <span class="n">SQuAD_it</span><span class="o">-*.</span><span class="n">json</span><span class="o">.</span><span class="n">gz</span>
+</code></pre></div>
+
+<div class="codehilite"><pre><span></span><code>SQuAD_it-test.json.gz:<span class="w">     </span><span class="m">87</span>.4%<span class="w"> </span>--<span class="w"> </span>replaced<span class="w"> </span>with<span class="w"> </span>SQuAD_it-test.json
+SQuAD_it-train.json.gz:<span class="w">    </span><span class="m">82</span>.2%<span class="w"> </span>--<span class="w"> </span>replaced<span class="w"> </span>with<span class="w"> </span>SQuAD_it-train.json
+</code></pre></div>
+
+<p>圧縮ファイルが <em>SQuAD_it-train.json</em> と <em>SQuAD_it-test.json</em> に置き換わり、データが JSON 形式で保存されていることが分かります。</p>
+<div class="callout callout-tip">
+<p class="callout-title">💡 ヒント</p>
+<p>✎ 上のシェルコマンドに <code>!</code> という文字があるのはなぜか気になるかもしれません。これは Jupyter ノートブックの中で実行しているためです。ターミナルでデータセットをダウンロード・解凍したい場合は、この接頭辞を取り除いてください。</p>
+</div>
+<p>JSON ファイルを <code>load_dataset()</code> 関数で読み込むには、それが通常の JSON（ネストした辞書のような形式）なのか、JSON Lines（行ごとに区切られた JSON）なのかを知る必要があります。多くの質問応答データセットと同様、SQuAD-it はネスト形式を使っており、すべてのテキストが <code>data</code> フィールドに格納されています。つまり、次のように <code>field</code> 引数を指定すればデータセットを読み込めます。</p>
+<div class="codehilite"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">datasets</span><span class="w"> </span><span class="kn">import</span> <span class="n">load_dataset</span>
+
+<span class="n">squad_it_dataset</span> <span class="o">=</span> <span class="n">load_dataset</span><span class="p">(</span><span class="s2">"json"</span><span class="p">,</span> <span class="n">data_files</span><span class="o">=</span><span class="s2">"SQuAD_it-train.json"</span><span class="p">,</span> <span class="n">field</span><span class="o">=</span><span class="s2">"data"</span><span class="p">)</span>
+</code></pre></div>
+
+<p>デフォルトでは、ローカルファイルを読み込むと <code>train</code> 分割を持つ <code>DatasetDict</code> オブジェクトが作られます。<code>squad_it_dataset</code> オブジェクトを確認してみましょう。</p>
+<div class="codehilite"><pre><span></span><code><span class="n">squad_it_dataset</span>
+</code></pre></div>
+
+<p>```python out
+DatasetDict({
+    train: Dataset({
+        features: ['title', 'paragraphs'],
+        num_rows: 442
+    })
+})</p>
+<div class="codehilite"><pre><span></span><code>訓練セットの行数と列名が表示されています。次のように `train` 分割にインデックスでアクセスすれば、サンプルの1つを見ることができます。
+
+```py
+squad_it_dataset["train"][0]
+</code></pre></div>
+
+<p>```python out
+{
+    "title": "Terremoto del Sichuan del 2008",
+    "paragraphs": [
+        {
+            "context": "Il terremoto del Sichuan del 2008 o il terremoto...",
+            "qas": [
+                {
+                    "answers": [{"answer_start": 29, "text": "2008"}],
+                    "id": "56cdca7862d2951400fa6826",
+                    "question": "In quale anno si è verificato il terremoto nel Sichuan?",
+                },
+                ...
+            ],
+        },
+        ...
+    ],
+}</p>
+<div class="codehilite"><pre><span></span><code>これで、初めてのローカルデータセットが読み込めました！ただし、訓練セットについてはうまくいきましたが、本当に欲しいのは `train` と `test` の両方の分割を1つの `DatasetDict` オブジェクトにまとめ、両方の分割に対してまとめて `Dataset.map()` 関数を適用できるようにすることです。そのためには、`data_files` 引数に、各分割名とその分割に対応するファイルを対応づける辞書を渡します。
+
+```py
+data_files = {"train": "SQuAD_it-train.json", "test": "SQuAD_it-test.json"}
+squad_it_dataset = load_dataset("json", data_files=data_files, field="data")
+squad_it_dataset
+</code></pre></div>
+
+<p>```python out
+DatasetDict({
+    train: Dataset({
+        features: ['title', 'paragraphs'],
+        num_rows: 442
+    })
+    test: Dataset({
+        features: ['title', 'paragraphs'],
+        num_rows: 48
+    })
+})</p>
+<div class="codehilite"><pre><span></span><code>まさに望んでいた形になりました。これで、データのクリーニングやレビューのトークナイズなど、さまざまな前処理を適用できます。
+
+&lt;div class="callout callout-tip" markdown="block"&gt;
+&lt;p class="callout-title"&gt;💡 ヒント&lt;/p&gt;
+`load_dataset()` 関数の `data_files` 引数はかなり柔軟で、単一のファイルパス、ファイルパスのリスト、分割名とファイルパスを対応づける辞書のいずれでも渡せます。Unix シェルの規則に従ったワイルドカードパターンで、条件に一致する複数のファイルを指定することもできます（たとえば `data_files="*.json"` と指定すれば、ディレクトリ内のすべての JSON ファイルを1つの分割として読み込めます）。詳細は 🤗 Datasets の[ドキュメント](https://huggingface.co/docs/datasets/loading#local-and-remote-files)を参照してください。
+&lt;/div&gt;
+
+
+🤗 Datasets のローディングスクリプトは入力ファイルの自動解凍にも対応しているので、`data_files` 引数に圧縮ファイルを直接指定すれば、`gzip` を使う手順は省略できました。
+
+```py
+data_files = {"train": "SQuAD_it-train.json.gz", "test": "SQuAD_it-test.json.gz"}
+squad_it_dataset = load_dataset("json", data_files=data_files, field="data")
+</code></pre></div>
+
+<p>多数の GZIP ファイルを手作業で解凍したくない場合に便利です。自動解凍は ZIP や TAR など他の一般的な形式にも適用されるので、<code>data_files</code> に圧縮ファイルを指定するだけで済みます！</p>
+<p>ノートパソコンやデスクトップ上のローカルファイルを読み込む方法が分かったところで、次はリモートファイルの読み込みを見ていきます。</p>
+<h2>リモートデータセットの読み込み</h2>
+<p>企業でデータサイエンティストやプログラマーとして働いている場合、分析したいデータセットはリモートサーバーに保存されていることが多いでしょう。幸い、リモートファイルの読み込みはローカルファイルと同じくらい簡単です！ローカルファイルへのパスを与える代わりに、<code>load_dataset()</code> の <code>data_files</code> 引数に、リモートファイルの URL を1つ以上指定します。たとえば、GitHub で公開されている SQuAD-it データセットなら、次のように <code>data_files</code> に <em>SQuAD_it-*.json.gz</em> の URL を指定するだけです。</p>
+<div class="codehilite"><pre><span></span><code><span class="n">url</span> <span class="o">=</span> <span class="s2">"https://github.com/crux82/squad-it/raw/master/"</span>
+<span class="n">data_files</span> <span class="o">=</span> <span class="p">{</span>
+    <span class="s2">"train"</span><span class="p">:</span> <span class="n">url</span> <span class="o">+</span> <span class="s2">"SQuAD_it-train.json.gz"</span><span class="p">,</span>
+    <span class="s2">"test"</span><span class="p">:</span> <span class="n">url</span> <span class="o">+</span> <span class="s2">"SQuAD_it-test.json.gz"</span><span class="p">,</span>
+<span class="p">}</span>
+<span class="n">squad_it_dataset</span> <span class="o">=</span> <span class="n">load_dataset</span><span class="p">(</span><span class="s2">"json"</span><span class="p">,</span> <span class="n">data_files</span><span class="o">=</span><span class="n">data_files</span><span class="p">,</span> <span class="n">field</span><span class="o">=</span><span class="s2">"data"</span><span class="p">)</span>
+</code></pre></div>
+
+<p>これにより、上で得たのと同じ <code>DatasetDict</code> オブジェクトが返ってきますが、<em>SQuAD_it-*.json.gz</em> ファイルを手作業でダウンロード・解凍する手間が省けます。以上で、Hugging Face Hub にホストされていないデータセットのさまざまな読み込み方法を見てきました。手元にデータセットが用意できたので、次は実際に手を動かしながら、さまざまなデータ加工の方法を試していきましょう！</p>
+<div class="callout callout-tip">
+<p class="callout-title">💡 ヒント</p>
+<p>✏️ <strong>やってみよう！</strong> GitHub や <a href="https://archive.ics.uci.edu/ml/index.php">UCI Machine Learning Repository</a> で公開されている別のデータセットを選んで、上で紹介したテクニックを使ってローカルとリモートの両方で読み込んでみましょう。おまけとして、CSV やテキスト形式で保存されたデータセットの読み込みにも挑戦してみてください（これらの形式の詳細は<a href="https://huggingface.co/docs/datasets/loading#local-and-remote-files">ドキュメント</a>を参照）。</p>
+</div>
+</article>
+<nav class="page-nav"><a class="nav-link prev" href="1.html">← 前へ: はじめに</a><a class="nav-link toc-link" href="../index.html">目次へ</a><a class="nav-link next" href="3.html">次へ →: 切り分けて、加工して</a></nav>
+</main>
+<footer class="site-footer">
+  <p>原典: Hugging Face huggingface/course（<a href="https://github.com/huggingface/course">https://github.com/huggingface/course</a>）</p>
+  <p>日本語版の翻訳・公開: 霞ヶ関京 / 連絡先: GitHub <a href="https://github.com/yanikasumin">@yanikasumin</a> / YouTube <a href="https://www.youtube.com/@KASUMI_MOF">@KASUMI_MOF</a></p>
+  <p class="demo-note">このサイトはデモ版です。内容は順次更新されます。</p>
+</footer>
+<script src="../../site.js"></script>
+</body>
+</html>

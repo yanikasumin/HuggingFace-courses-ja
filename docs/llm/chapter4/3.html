@@ -1,0 +1,512 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>事前学習済みモデルを共有する | Hugging Face コース日本語版（デモ版）</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Shippori+Mincho:wght@500;700&family=Zen+Kaku+Gothic+New:wght@400;500;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../../style.css">
+<script>
+window.MathJax = { tex: { inlineMath: [['$', '$'], ['\\(', '\\)']], displayMath: [['$$', '$$'], ['\\[', '\\]']] }, options: { skipHtmlTags: ['script','noscript','style','textarea','pre','code'] } };
+</script>
+<script async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml.js"></script>
+</head>
+<body>
+<header class="site-header">
+  <div class="header-inner">
+    <a class="site-title" href="../../index.html">Hugging Face コース日本語版</a>
+    <span class="demo-badge">デモ版</span>
+  </div>
+</header>
+<main class="container">
+<p class="course-crumb"><a href="../index.html">LLM コース</a>
+<span class="badge badge-qa-pass">翻訳QA 最終合格</span></p>
+<nav class="page-nav"><a class="nav-link prev" href="2.html">← 前へ: 事前学習済みモデルを使う</a><a class="nav-link toc-link" href="../index.html">目次へ</a><a class="nav-link next" href="4.html">次へ →: モデルカードを作る</a></nav>
+<article class="content">
+<h1>事前学習済みモデルを共有する</h1>
+<p>{#if fw === 'pt'}</p>
+<p>{:else}</p>
+<p>{/if}</p>
+<p>ここでは、事前学習済みモデルを 🤗 Hub で共有するための最も簡単な方法を紹介します。モデルの公開や更新を容易にするツールやユーティリティを、順に見ていきましょう。</p>
+<div class="youtube-embed"><iframe src="https://www.youtube-nocookie.com/embed/9yY3RB_GSPM" title="YouTube video" loading="lazy" allowfullscreen referrerpolicy="strict-origin-when-cross-origin"></iframe></div>
+<p>モデルを学習させたすべてのユーザーに、コミュニティで共有することをおすすめします。非常に特殊なデータセットで学習したモデルであっても、共有すればほかの人の時間と計算リソースを節約でき、役立つ学習済みモデルをほかの人が利用できるようになります。そして、ほかの人が行った作業から恩恵を受けることもできます。</p>
+<p>新しいモデルリポジトリを作成する方法は3つあります。</p>
+<ul>
+<li><code>push_to_hub</code> API を使う</li>
+<li><code>huggingface_hub</code> Python ライブラリを使う</li>
+<li>Web インターフェースを使う</li>
+</ul>
+<p>リポジトリを作成したら、Git と Git LFS を使ってファイルをアップロードできます。以降のセクションでは、モデルリポジトリの作成とファイルのアップロード方法を順に説明します。</p>
+<h2><code>push_to_hub</code> API を使う</h2>
+<p>{#if fw === 'pt'}</p>
+<div class="youtube-embed"><iframe src="https://www.youtube-nocookie.com/embed/Zh0FfmVrKX0" title="YouTube video" loading="lazy" allowfullscreen referrerpolicy="strict-origin-when-cross-origin"></iframe></div>
+<p>{:else}</p>
+<div class="youtube-embed"><iframe src="https://www.youtube-nocookie.com/embed/pUh5cGmNV8Y" title="YouTube video" loading="lazy" allowfullscreen referrerpolicy="strict-origin-when-cross-origin"></iframe></div>
+<p>{/if}</p>
+<p>Hub にファイルをアップロードする最も簡単な方法は、<code>push_to_hub</code> API を活用することです。</p>
+<p>先に進む前に、<code>huggingface_hub</code> API があなたを識別し、書き込み権限のある名前空間を把握できるよう、認証トークンを生成する必要があります。<code>transformers</code> がインストールされた環境にいることを確認してください（<a href="../chapter0/1.html">セットアップ</a> を参照）。ノートブック環境では、次の関数でログインできます。</p>
+<div class="codehilite"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">huggingface_hub</span><span class="w"> </span><span class="kn">import</span> <span class="n">notebook_login</span>
+
+<span class="n">notebook_login</span><span class="p">()</span>
+</code></pre></div>
+
+<p>ターミナルでは次を実行します。</p>
+<div class="codehilite"><pre><span></span><code>huggingface-cli<span class="w"> </span>login
+</code></pre></div>
+
+<p>どちらの場合も、Hub へのログインに使うものと同じユーザー名とパスワードの入力を求められます。まだ Hub のプロフィールがない場合は、<a href="https://huggingface.co/join">こちら</a> で作成してください。</p>
+<p>これで認証トークンがキャッシュフォルダに保存されました。リポジトリを作成しましょう。</p>
+<p>{#if fw === 'pt'}</p>
+<p><code>Trainer</code> API を使ってモデルを学習したことがあるなら、Hub にアップロードする最も簡単な方法は、<code>TrainingArguments</code> を定義するときに <code>push_to_hub=True</code> を設定することです。</p>
+<div class="codehilite"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">transformers</span><span class="w"> </span><span class="kn">import</span> <span class="n">TrainingArguments</span>
+
+<span class="n">training_args</span> <span class="o">=</span> <span class="n">TrainingArguments</span><span class="p">(</span>
+    <span class="s2">"bert-finetuned-mrpc"</span><span class="p">,</span> <span class="n">save_strategy</span><span class="o">=</span><span class="s2">"epoch"</span><span class="p">,</span> <span class="n">push_to_hub</span><span class="o">=</span><span class="kc">True</span>
+<span class="p">)</span>
+</code></pre></div>
+
+<p><code>trainer.train()</code> を呼び出すと、<code>Trainer</code> はモデルが保存されるたび（ここではエポックごと）に、あなたの名前空間のリポジトリへモデルをアップロードします。そのリポジトリの名前は、選んだ出力ディレクトリと同じ名前（ここでは <code>bert-finetuned-mrpc</code>）になりますが、<code>hub_model_id = "a_different_name"</code> で別の名前を選ぶこともできます。</p>
+<p>所属している組織にモデルをアップロードするには、<code>hub_model_id = "my_organization/my_repo_name"</code> のように渡すだけです。</p>
+<p>学習が終わったら、最後に <code>trainer.push_to_hub()</code> を実行して、モデルの最終バージョンをアップロードします。使ったハイパーパラメータや評価結果を報告するメタデータとともに、モデルカードも生成されます。そのようなモデルカードの内容の例がこちらです。</p>
+<div class="flex justify-center">
+  <img src="https://huggingface.co/datasets/huggingface-course/documentation-images/resolve/main/en/chapter4/model_card.png" alt="自動生成されたモデルカードの例。" width="100%"/>
+</div>
+
+<p>{:else}</p>
+<p>Keras でモデルを学習している場合、Hub にアップロードする最も簡単な方法は、<code>model.fit()</code> の呼び出し時に <code>PushToHubCallback</code> を渡すことです。</p>
+<div class="codehilite"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">transformers</span><span class="w"> </span><span class="kn">import</span> <span class="n">PushToHubCallback</span>
+
+<span class="n">callback</span> <span class="o">=</span> <span class="n">PushToHubCallback</span><span class="p">(</span>
+    <span class="s2">"bert-finetuned-mrpc"</span><span class="p">,</span> <span class="n">save_strategy</span><span class="o">=</span><span class="s2">"epoch"</span><span class="p">,</span> <span class="n">tokenizer</span><span class="o">=</span><span class="n">tokenizer</span>
+<span class="p">)</span>
+</code></pre></div>
+
+<p>続いて、<code>model.fit()</code> の呼び出しに <code>callbacks=[callback]</code> を加えます。するとコールバックは、モデルが保存されるたび（ここではエポックごと）に、あなたの名前空間のリポジトリへモデルをアップロードします。そのリポジトリの名前は、選んだ出力ディレクトリと同じ名前（ここでは <code>bert-finetuned-mrpc</code>）になりますが、<code>hub_model_id = "a_different_name"</code> で別の名前を選ぶこともできます。</p>
+<p>所属している組織にモデルをアップロードするには、<code>hub_model_id = "my_organization/my_repo_name"</code> のように渡すだけです。</p>
+<p>{/if}</p>
+<p>より低レベルでは、モデル、トークナイザ、設定オブジェクトの <code>push_to_hub()</code> メソッドを使って、Model Hub に直接アクセスできます。このメソッドは、リポジトリの作成と、モデルとトークナイザのファイルのリポジトリへのプッシュの両方を行います。後述する API とは異なり、リポジトリ作成やファイルのプッシュを手作業で行う必要はありません。</p>
+<p>仕組みを把握するため、まずモデルとトークナイザを初期化しましょう。</p>
+<p>{#if fw === 'pt'}</p>
+<div class="codehilite"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">transformers</span><span class="w"> </span><span class="kn">import</span> <span class="n">AutoModelForMaskedLM</span><span class="p">,</span> <span class="n">AutoTokenizer</span>
+
+<span class="n">checkpoint</span> <span class="o">=</span> <span class="s2">"camembert-base"</span>
+
+<span class="n">model</span> <span class="o">=</span> <span class="n">AutoModelForMaskedLM</span><span class="o">.</span><span class="n">from_pretrained</span><span class="p">(</span><span class="n">checkpoint</span><span class="p">)</span>
+<span class="n">tokenizer</span> <span class="o">=</span> <span class="n">AutoTokenizer</span><span class="o">.</span><span class="n">from_pretrained</span><span class="p">(</span><span class="n">checkpoint</span><span class="p">)</span>
+</code></pre></div>
+
+<p>{:else}</p>
+<div class="codehilite"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">transformers</span><span class="w"> </span><span class="kn">import</span> <span class="n">TFAutoModelForMaskedLM</span><span class="p">,</span> <span class="n">AutoTokenizer</span>
+
+<span class="n">checkpoint</span> <span class="o">=</span> <span class="s2">"camembert-base"</span>
+
+<span class="n">model</span> <span class="o">=</span> <span class="n">TFAutoModelForMaskedLM</span><span class="o">.</span><span class="n">from_pretrained</span><span class="p">(</span><span class="n">checkpoint</span><span class="p">)</span>
+<span class="n">tokenizer</span> <span class="o">=</span> <span class="n">AutoTokenizer</span><span class="o">.</span><span class="n">from_pretrained</span><span class="p">(</span><span class="n">checkpoint</span><span class="p">)</span>
+</code></pre></div>
+
+<p>{/if}</p>
+<p>これらを使って自由に作業できます。トークナイザにトークンを追加したり、モデルを学習したり、ファインチューニングしたりしてください。得られたモデル、重み、トークナイザが思いどおりに仕上がったら、<code>model</code> オブジェクトで直接使える <code>push_to_hub()</code> メソッドを活用できます。</p>
+<div class="codehilite"><pre><span></span><code><span class="n">model</span><span class="o">.</span><span class="n">push_to_hub</span><span class="p">(</span><span class="s2">"dummy-model"</span><span class="p">)</span>
+</code></pre></div>
+
+<p>これにより、自分のユーザー名に対応する名前空間に新しいリポジトリ <code>dummy-model</code> が作成され、モデルファイルが配置されます。
+トークナイザについても同じことを行い、すべてのファイルがこのリポジトリで利用できるようにします。</p>
+<div class="codehilite"><pre><span></span><code><span class="n">tokenizer</span><span class="o">.</span><span class="n">push_to_hub</span><span class="p">(</span><span class="s2">"dummy-model"</span><span class="p">)</span>
+</code></pre></div>
+
+<p>組織に所属している場合は、<code>organization</code> 引数を指定するだけで、その組織の名前空間にアップロードできます。</p>
+<div class="codehilite"><pre><span></span><code><span class="n">tokenizer</span><span class="o">.</span><span class="n">push_to_hub</span><span class="p">(</span><span class="s2">"dummy-model"</span><span class="p">,</span> <span class="n">organization</span><span class="o">=</span><span class="s2">"huggingface"</span><span class="p">)</span>
+</code></pre></div>
+
+<p>特定の Hugging Face トークンを使いたい場合も、<code>push_to_hub()</code> メソッドに指定できます。</p>
+<div class="codehilite"><pre><span></span><code><span class="n">tokenizer</span><span class="o">.</span><span class="n">push_to_hub</span><span class="p">(</span><span class="s2">"dummy-model"</span><span class="p">,</span> <span class="n">organization</span><span class="o">=</span><span class="s2">"huggingface"</span><span class="p">,</span> <span class="n">use_auth_token</span><span class="o">=</span><span class="s2">"&lt;TOKEN&gt;"</span><span class="p">)</span>
+</code></pre></div>
+
+<p>では Model Hub に行って、新しくアップロードしたモデルを見てみましょう。<em>https://huggingface.co/user-or-organization/dummy-model</em>.</p>
+<p>「Files and versions」タブをクリックすると、次のスクリーンショットに表示されているファイルが見えるはずです。</p>
+<p>{#if fw === 'pt'}</p>
+<div class="flex justify-center">
+<img src="https://huggingface.co/datasets/huggingface-course/documentation-images/resolve/main/en/chapter4/push_to_hub_dummy_model.png" alt="トークナイザとモデルの両方のファイルを含むダミーモデル。" width="80%"/>
+</div>
+<p>{:else}</p>
+<div class="flex justify-center">
+<img src="https://huggingface.co/datasets/huggingface-course/documentation-images/resolve/main/en/chapter4/push_to_hub_dummy_model_tf.png" alt="トークナイザとモデルの両方のファイルを含むダミーモデル。" width="80%"/>
+</div>
+<p>{/if}</p>
+<div class="callout callout-tip">
+<p class="callout-title">💡 ヒント</p>
+<p>✏️ <strong>試してみましょう！</strong> <code>bert-base-cased</code> チェックポイントに紐づくモデルとトークナイザを用意し、<code>push_to_hub()</code> メソッドを使って自分の名前空間のリポジトリにアップロードしてみてください。削除する前に、リポジトリが自分のページに正しく表示されているか再確認しましょう。</p>
+</div>
+<p>ここまで見てきたように、<code>push_to_hub()</code> メソッドはいくつかの引数を受け付けるため、特定のリポジトリや組織の名前空間へのアップロードや、別の認証トークンの使用が可能です。何ができるかを把握するために、<a href="https://huggingface.co/transformers/model_sharing">🤗 Transformers ドキュメント</a> で直接確認できるメソッド仕様を参照してください。</p>
+<p><code>push_to_hub()</code> メソッドは、Hugging Face Hub への直接の API を提供する <a href="https://github.com/huggingface/huggingface_hub"><code>huggingface_hub</code></a> Python パッケージに支えられています。これは 🤗 Transformers や <a href="https://github.com/allenai/allennlp"><code>allenlp</code></a> のようないくつかの機械学習ライブラリに統合されています。この章では 🤗 Transformers との統合に焦点を当てますが、自分のコードやライブラリへの統合も簡単です。</p>
+<p>新しく作成したリポジトリにファイルをアップロードする方法は、最後のセクションへ進んで確認してください。</p>
+<h2><code>huggingface_hub</code> Python ライブラリを使う</h2>
+<p><code>huggingface_hub</code> Python ライブラリは、モデルハブとデータセットハブのためのツール群を提供するパッケージです。Hub 上のリポジトリの情報を取得したり管理したりといった一般的なタスクを、シンプルなメソッドとクラスで実行できます。また、Git を基盤とするシンプルな API によって、リポジトリのコンテンツを管理したり、Hub をプロジェクトやライブラリに統合したりできます。</p>
+<p><code>push_to_hub</code> API を使う場合と同様に、認証トークンがキャッシュに保存されている必要があります。そのためには、前のセクションで触れたように、CLI の <code>login</code> コマンドを使う必要があります（Google Colab で実行する場合は、これらのコマンドの前に <code>!</code> 文字を付けることを忘れないでください）。</p>
+<div class="codehilite"><pre><span></span><code>huggingface-cli<span class="w"> </span>login
+</code></pre></div>
+
+<p><code>huggingface_hub</code> パッケージは、私たちの目的に役立つメソッドとクラスをいくつか提供します。まず、リポジトリの作成や削除などを管理するためのメソッドがあります。</p>
+<p>```python no-format
+from huggingface_hub import (
+    # ユーザー管理
+    login,
+    logout,
+    whoami,</p>
+<div class="codehilite"><pre><span></span><code># リポジトリの作成と管理
+create_repo,
+delete_repo,
+update_repo_visibility,
+
+# コンテンツに関する情報の取得・変更のためのメソッド
+list_models,
+list_datasets,
+list_metrics,
+list_repo_files,
+upload_file,
+delete_file,
+</code></pre></div>
+
+<p>)</p>
+<div class="codehilite"><pre><span></span><code>また、ローカルリポジトリを管理するための `Repository` クラスも用意されています。これらのメソッドとそのクラスは、次のセクションで詳しく見ていきます。
+
+`create_repo` メソッドは、Hub に新しいリポジトリを作成するために使えます。
+
+```py
+from huggingface_hub import create_repo
+
+create_repo("dummy-model")
+</code></pre></div>
+
+<p>これにより、あなたの名前空間に <code>dummy-model</code> リポジトリが作成されます。組織の名前空間に作成したい場合は、<code>organization</code> 引数で組織名を指定できます。</p>
+<div class="codehilite"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">huggingface_hub</span><span class="w"> </span><span class="kn">import</span> <span class="n">create_repo</span>
+
+<span class="n">create_repo</span><span class="p">(</span><span class="s2">"dummy-model"</span><span class="p">,</span> <span class="n">organization</span><span class="o">=</span><span class="s2">"huggingface"</span><span class="p">)</span>
+</code></pre></div>
+
+<p>これにより、<code>huggingface</code> 名前空間に <code>dummy-model</code> リポジトリが作成されます（その組織に所属していることが前提です）。
+役立つかもしれない他の引数には次のものがあります。</p>
+<ul>
+<li><code>private</code>: リポジトリを非公開にするかどうかを指定します。True にすると非公開になります。</li>
+<li><code>token</code>: キャッシュに保存された認証トークンの代わりに、指定したトークンを使用する場合に指定します。</li>
+<li><code>repo_type</code>: モデルではなく <code>dataset</code> や <code>space</code> を作成したい場合に使います。指定できる値は <code>"dataset"</code> と <code>"space"</code> です。</li>
+</ul>
+<p>リポジトリを作成したら、ファイルを追加しましょう。3つの方法は次のセクションをご覧ください。</p>
+<h2>Web インターフェースを使う</h2>
+<p>Web インターフェースは、Hub で直接リポジトリを管理するためのツールを提供します。インターフェースを使えば、リポジトリの作成、ファイルの追加（大きなファイルでも）、モデルの探索、差分の可視化などが簡単に行えます。</p>
+<p>新しいリポジトリを作成するには、<a href="https://huggingface.co/new">huggingface.co/new</a> にアクセスします。</p>
+<div class="flex justify-center">
+<img src="https://huggingface.co/datasets/huggingface-course/documentation-images/resolve/main/en/chapter4/new_model.png" alt="新しいモデルリポジトリの作成ページ。" width="80%"/>
+</div>
+
+<p>まず、リポジトリの所有者を指定します。あなた自身か、所属している組織のいずれかです。組織を選ぶと、モデルはその組織のページに掲載され、組織のメンバー全員がリポジトリに貢献できるようになります。</p>
+<p>次に、モデルの名前を入力します。これがリポジトリの名前にもなります。最後に、モデルを公開するか非公開にするかを指定できます。非公開のモデルは公には表示されません。</p>
+<p>モデルリポジトリを作成すると、次のようなページが表示されます。</p>
+<div class="flex justify-center">
+<img src="https://huggingface.co/datasets/huggingface-course/documentation-images/resolve/main/en/chapter4/empty_model.png" alt="新しいリポジトリを作成した直後の、空のモデルページ。" width="80%"/>
+</div>
+
+<p>このリポジトリにモデルのファイルが保存・公開されます。ファイルを追加し始めるには、Web インターフェースから直接 README ファイルを追加できます。</p>
+<div class="flex justify-center">
+<img src="https://huggingface.co/datasets/huggingface-course/documentation-images/resolve/main/en/chapter4/dummy_model.png" alt="Markdown の機能を示す README ファイル。" width="80%"/>
+</div>
+
+<p>README ファイルは Markdown です。自由に書いてください。この章の第3パートでは、モデルカードの作成方法を説明します。モデルカードは、そのモデルで何ができるかをほかのユーザーに伝えるものであり、モデルの価値を高めるうえで非常に重要です。</p>
+<p>「Files and versions」タブを見ると、まだファイルはあまりありません。作成したばかりの <em>README.md</em> と、大きなファイルを追跡する <em>.gitattributes</em> ファイルだけです。</p>
+<div class="flex justify-center">
+<img src="https://huggingface.co/datasets/huggingface-course/documentation-images/resolve/main/en/chapter4/files.png" alt="「Files and versions」タブには .gitattributes と README.md ファイルだけが表示されている。" width="80%"/>
+</div>
+
+<p>次に、新しいファイルを追加する方法を見ていきます。</p>
+<h2>モデルファイルをアップロードする</h2>
+<p>Hugging Face Hub でファイルを管理するシステムは、通常のファイルについては Git、大きなファイルについては Git LFS（<a href="https://git-lfs.github.com/">Git Large File Storage</a> の略）に基づいています。</p>
+<p>次のセクションでは、Hub にファイルをアップロードする3つの異なる方法を説明します。<code>huggingface_hub</code> を通す方法と、git コマンドを使う方法です。</p>
+<h3><code>upload_file</code> による方法</h3>
+<p><code>upload_file</code> を使う方法では、システムに Git と Git LFS がインストールされている必要はありません。HTTP の POST リクエストを使って、ファイルを 🤗 Hub に直接プッシュします。この方法の制限は、5GB を超えるサイズのファイルを扱えないことです。
+ファイルが 5GB を超える場合は、以下で詳しく説明する他の2つの方法のいずれかに従ってください。</p>
+<p>API は次のように使えます。</p>
+<div class="codehilite"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">huggingface_hub</span><span class="w"> </span><span class="kn">import</span> <span class="n">upload_file</span>
+
+<span class="n">upload_file</span><span class="p">(</span>
+    <span class="s2">"&lt;path_to_file&gt;/config.json"</span><span class="p">,</span>
+    <span class="n">path_in_repo</span><span class="o">=</span><span class="s2">"config.json"</span><span class="p">,</span>
+    <span class="n">repo_id</span><span class="o">=</span><span class="s2">"&lt;namespace&gt;/dummy-model"</span><span class="p">,</span>
+<span class="p">)</span>
+</code></pre></div>
+
+<p>これにより、<code>&lt;path_to_file&gt;</code> にある <code>config.json</code> ファイルが、<code>dummy-model</code> リポジトリのルートに <code>config.json</code> としてアップロードされます。
+役立つかもしれない他の引数には次のものがあります。</p>
+<ul>
+<li><code>token</code>: キャッシュに保存された認証トークンの代わりに、指定したトークンを使用する場合に指定します。</li>
+<li><code>repo_type</code>: モデルではなく <code>dataset</code> や <code>space</code> にアップロードしたい場合に使います。指定できる値は <code>"dataset"</code> と <code>"space"</code> です。</li>
+</ul>
+<h3><code>Repository</code> クラス</h3>
+<p><code>Repository</code> クラスを使うと、ローカルの Git リポジトリを Python から操作できます。Git の複雑な操作の多くが抽象化されており、必要な処理を簡単なメソッド呼び出しで実行できます。</p>
+<p>このクラスを使うには Git と Git LFS がインストールされている必要があるため、始める前に Git LFS がインストールされ（インストール手順は <a href="https://git-lfs.github.com/">こちら</a> を参照）、セットアップされていることを確認してください。</p>
+<p>まず、作成したリポジトリをローカルフォルダにクローンしましょう。</p>
+<div class="codehilite"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">huggingface_hub</span><span class="w"> </span><span class="kn">import</span> <span class="n">Repository</span>
+
+<span class="n">repo</span> <span class="o">=</span> <span class="n">Repository</span><span class="p">(</span><span class="s2">"&lt;path_to_dummy_folder&gt;"</span><span class="p">,</span> <span class="n">clone_from</span><span class="o">=</span><span class="s2">"&lt;namespace&gt;/dummy-model"</span><span class="p">)</span>
+</code></pre></div>
+
+<p>これにより、作業ディレクトリに <code>&lt;path_to_dummy_folder&gt;</code> フォルダが作成されました。このフォルダには <code>.gitattributes</code> ファイルだけが含まれています。<code>create_repo</code> でリポジトリをインスタンス化したときに作成されるファイルはそれだけだからです。</p>
+<p>ここからは、従来の Git のメソッドをいくつか活用できます。</p>
+<div class="codehilite"><pre><span></span><code><span class="n">repo</span><span class="o">.</span><span class="n">git_pull</span><span class="p">()</span>
+<span class="n">repo</span><span class="o">.</span><span class="n">git_add</span><span class="p">()</span>
+<span class="n">repo</span><span class="o">.</span><span class="n">git_commit</span><span class="p">()</span>
+<span class="n">repo</span><span class="o">.</span><span class="n">git_push</span><span class="p">()</span>
+<span class="n">repo</span><span class="o">.</span><span class="n">git_tag</span><span class="p">()</span>
+</code></pre></div>
+
+<p>ほかにもあります。利用できるすべてのメソッドの概要については、<a href="https://github.com/huggingface/huggingface_hub/tree/main/src/huggingface_hub#advanced-programmatic-repository-management">こちら</a> で確認できる <code>Repository</code> のドキュメントをご覧になることをおすすめします。</p>
+<p>現在、Hub にプッシュしたいモデルとトークナイザがあります。リポジトリのクローンは無事にできたので、そのリポジトリ内にファイルを保存できます。</p>
+<p>まず、最新の変更をプルして、ローカルのクローンが最新であることを確認します。</p>
+<div class="codehilite"><pre><span></span><code><span class="n">repo</span><span class="o">.</span><span class="n">git_pull</span><span class="p">()</span>
+</code></pre></div>
+
+<p>それが終わったら、モデルとトークナイザのファイルを保存します。</p>
+<div class="codehilite"><pre><span></span><code><span class="n">model</span><span class="o">.</span><span class="n">save_pretrained</span><span class="p">(</span><span class="s2">"&lt;path_to_dummy_folder&gt;"</span><span class="p">)</span>
+<span class="n">tokenizer</span><span class="o">.</span><span class="n">save_pretrained</span><span class="p">(</span><span class="s2">"&lt;path_to_dummy_folder&gt;"</span><span class="p">)</span>
+</code></pre></div>
+
+<p><code>&lt;path_to_dummy_folder&gt;</code> には、モデルとトークナイザのファイルがすべて含まれました。通常の Git のワークフローに従って、ファイルをステージングエリアに追加し、コミットして、Hub にプッシュします。</p>
+<div class="codehilite"><pre><span></span><code><span class="n">repo</span><span class="o">.</span><span class="n">git_add</span><span class="p">()</span>
+<span class="n">repo</span><span class="o">.</span><span class="n">git_commit</span><span class="p">(</span><span class="s2">"Add model and tokenizer files"</span><span class="p">)</span>
+<span class="n">repo</span><span class="o">.</span><span class="n">git_push</span><span class="p">()</span>
+</code></pre></div>
+
+<p>おめでとうございます。Hub に初めてファイルをプッシュできました。</p>
+<h3>Git ベースの方法</h3>
+<p>この方法では、Git と Git LFS を直接操作してファイルをアップロードします。これまでの方法では難しさのほとんどが抽象化されていましたが、この方法にはいくつか注意点があるため、より複雑なユースケースに沿って進めます。</p>
+<p>この方法を使うには Git と Git LFS がインストールされている必要があるため、始める前に <a href="https://git-lfs.github.com/">Git LFS</a> がインストールされ（インストール手順はこちらを参照）、セットアップされていることを確認してください。</p>
+<p>まず Git LFS を初期化します。</p>
+<div class="codehilite"><pre><span></span><code>git<span class="w"> </span>lfs<span class="w"> </span>install
+</code></pre></div>
+
+<div class="codehilite"><pre><span></span><code>Updated<span class="w"> </span>git<span class="w"> </span>hooks.
+Git<span class="w"> </span>LFS<span class="w"> </span>initialized.
+</code></pre></div>
+
+<p>それが終わったら、最初のステップはモデルリポジトリをクローンすることです。</p>
+<div class="codehilite"><pre><span></span><code>git<span class="w"> </span>clone<span class="w"> </span>https://huggingface.co/&lt;namespace&gt;/&lt;your-model-id&gt;
+</code></pre></div>
+
+<p>私のユーザー名は <code>lysandre</code> で、モデル名には <code>dummy</code> を使ったため、私の場合はコマンドは次のようになります。</p>
+<div class="codehilite"><pre><span></span><code>git clone https://huggingface.co/lysandre/dummy
+</code></pre></div>
+
+<p>作業ディレクトリに <em>dummy</em> という名前のフォルダができました。そのフォルダに <code>cd</code> して、中身を見てみましょう。</p>
+<div class="codehilite"><pre><span></span><code><span class="nb">cd</span><span class="w"> </span>dummy<span class="w"> </span><span class="o">&amp;&amp;</span><span class="w"> </span>ls
+</code></pre></div>
+
+<div class="codehilite"><pre><span></span><code>README.md
+</code></pre></div>
+
+<p><code>create_repo</code> メソッドを使ってリポジトリを作成したばかりであれば、このフォルダには隠しファイルの <code>.gitattributes</code> だけが含まれているはずです。前のセクションの指示に従って Web インターフェースでリポジトリを作成した場合は、ここに示すように、隠しファイルの <code>.gitattributes</code> とともに <em>README.md</em> ファイルが1つ含まれています。</p>
+<p>設定ファイル、語彙ファイル、あるいは数メガバイト未満の基本的にあらゆるファイルといった通常サイズのファイルの追加は、Git ベースのシステムで通常行うのとまったく同じ方法で行います。しかし、より大きなファイルは、<em>huggingface.co</em> にプッシュするために Git LFS を通じて登録しなければなりません。</p>
+<p>Python に少し戻って、ダミーリポジトリにコミットしたいモデルとトークナイザを生成しましょう。</p>
+<p>{#if fw === 'pt'}</p>
+<div class="codehilite"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">transformers</span><span class="w"> </span><span class="kn">import</span> <span class="n">AutoModelForMaskedLM</span><span class="p">,</span> <span class="n">AutoTokenizer</span>
+
+<span class="n">checkpoint</span> <span class="o">=</span> <span class="s2">"camembert-base"</span>
+
+<span class="n">model</span> <span class="o">=</span> <span class="n">AutoModelForMaskedLM</span><span class="o">.</span><span class="n">from_pretrained</span><span class="p">(</span><span class="n">checkpoint</span><span class="p">)</span>
+<span class="n">tokenizer</span> <span class="o">=</span> <span class="n">AutoTokenizer</span><span class="o">.</span><span class="n">from_pretrained</span><span class="p">(</span><span class="n">checkpoint</span><span class="p">)</span>
+
+<span class="c1"># モデルを使って自由に作業します。学習させたり、ファインチューニングしたり…</span>
+
+<span class="n">model</span><span class="o">.</span><span class="n">save_pretrained</span><span class="p">(</span><span class="s2">"&lt;path_to_dummy_folder&gt;"</span><span class="p">)</span>
+<span class="n">tokenizer</span><span class="o">.</span><span class="n">save_pretrained</span><span class="p">(</span><span class="s2">"&lt;path_to_dummy_folder&gt;"</span><span class="p">)</span>
+</code></pre></div>
+
+<p>{:else}</p>
+<div class="codehilite"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">transformers</span><span class="w"> </span><span class="kn">import</span> <span class="n">TFAutoModelForMaskedLM</span><span class="p">,</span> <span class="n">AutoTokenizer</span>
+
+<span class="n">checkpoint</span> <span class="o">=</span> <span class="s2">"camembert-base"</span>
+
+<span class="n">model</span> <span class="o">=</span> <span class="n">TFAutoModelForMaskedLM</span><span class="o">.</span><span class="n">from_pretrained</span><span class="p">(</span><span class="n">checkpoint</span><span class="p">)</span>
+<span class="n">tokenizer</span> <span class="o">=</span> <span class="n">AutoTokenizer</span><span class="o">.</span><span class="n">from_pretrained</span><span class="p">(</span><span class="n">checkpoint</span><span class="p">)</span>
+
+<span class="c1"># モデルを使って自由に作業します。学習させたり、ファインチューニングしたり…</span>
+
+<span class="n">model</span><span class="o">.</span><span class="n">save_pretrained</span><span class="p">(</span><span class="s2">"&lt;path_to_dummy_folder&gt;"</span><span class="p">)</span>
+<span class="n">tokenizer</span><span class="o">.</span><span class="n">save_pretrained</span><span class="p">(</span><span class="s2">"&lt;path_to_dummy_folder&gt;"</span><span class="p">)</span>
+</code></pre></div>
+
+<p>{/if}</p>
+<p>モデルとトークナイザの成果物を保存できたので、<em>dummy</em> フォルダをもう一度見てみましょう。</p>
+<div class="codehilite"><pre><span></span><code>ls
+</code></pre></div>
+
+<p>{#if fw === 'pt'}</p>
+<div class="codehilite"><pre><span></span><code>config.json<span class="w">  </span>pytorch_model.bin<span class="w">  </span>README.md<span class="w">  </span>sentencepiece.bpe.model<span class="w">  </span>special_tokens_map.json<span class="w"> </span>tokenizer_config.json<span class="w">  </span>tokenizer.json
+</code></pre></div>
+
+<p>ファイルサイズを見ると（たとえば <code>ls -lh</code> で）、モデルの重みを保存した <em>pytorch_model.bin</em> だけが 400 MB を超える突出したサイズだと分かるはずです。</p>
+<p>{:else}</p>
+<div class="codehilite"><pre><span></span><code>config.json<span class="w">  </span>README.md<span class="w">  </span>sentencepiece.bpe.model<span class="w">  </span>special_tokens_map.json<span class="w">  </span>tf_model.h5<span class="w">  </span>tokenizer_config.json<span class="w">  </span>tokenizer.json
+</code></pre></div>
+
+<p>ファイルサイズを見ると（たとえば <code>ls -lh</code> で）、モデルの state dict ファイル（<em>t5_model.h5</em>）だけが 400 MB を超える突出したサイズだと分かるはずです。</p>
+<p>{/if}</p>
+<div class="callout callout-tip">
+<p class="callout-title">💡 ヒント</p>
+<p>✏️ Web インターフェースからリポジトリを作成すると、<em>.gitattributes</em> ファイルは自動的に設定され、<em>.bin</em> や <em>.h5</em> といった特定の拡張子を持つファイルを大きなファイルとして扱うため、こちらで必要な設定なしに Git LFS がそれらを追跡します。</p>
+</div>
+<p>ここからは、従来の Git リポジトリで通常行うのと同じ手順に進めます。<code>git add</code> コマンドを使って、すべてのファイルを Git のステージングエリアに追加できます。</p>
+<div class="codehilite"><pre><span></span><code>git<span class="w"> </span>add<span class="w"> </span>.
+</code></pre></div>
+
+<p>続いて、現在ステージングされているファイルを確認できます。</p>
+<div class="codehilite"><pre><span></span><code>git<span class="w"> </span>status
+</code></pre></div>
+
+<p>{#if fw === 'pt'}</p>
+<div class="codehilite"><pre><span></span><code>On<span class="w"> </span>branch<span class="w"> </span>main
+Your<span class="w"> </span>branch<span class="w"> </span>is<span class="w"> </span>up<span class="w"> </span>to<span class="w"> </span>date<span class="w"> </span>with<span class="w"> </span><span class="s1">'origin/main'</span>.
+
+Changes<span class="w"> </span>to<span class="w"> </span>be<span class="w"> </span>committed:
+<span class="w">  </span><span class="o">(</span>use<span class="w"> </span><span class="s2">"git restore --staged &lt;file&gt;..."</span><span class="w"> </span>to<span class="w"> </span>unstage<span class="o">)</span>
+<span class="w">  </span>modified:<span class="w">   </span>.gitattributes
+<span class="w">    </span>new<span class="w"> </span>file:<span class="w">   </span>config.json
+<span class="w">    </span>new<span class="w"> </span>file:<span class="w">   </span>pytorch_model.bin
+<span class="w">    </span>new<span class="w"> </span>file:<span class="w">   </span>sentencepiece.bpe.model
+<span class="w">    </span>new<span class="w"> </span>file:<span class="w">   </span>special_tokens_map.json
+<span class="w">    </span>new<span class="w"> </span>file:<span class="w">   </span>tokenizer.json
+<span class="w">    </span>new<span class="w"> </span>file:<span class="w">   </span>tokenizer_config.json
+</code></pre></div>
+
+<p>{:else}</p>
+<div class="codehilite"><pre><span></span><code>On<span class="w"> </span>branch<span class="w"> </span>main
+Your<span class="w"> </span>branch<span class="w"> </span>is<span class="w"> </span>up<span class="w"> </span>to<span class="w"> </span>date<span class="w"> </span>with<span class="w"> </span><span class="s1">'origin/main'</span>.
+
+Changes<span class="w"> </span>to<span class="w"> </span>be<span class="w"> </span>committed:
+<span class="w">  </span><span class="o">(</span>use<span class="w"> </span><span class="s2">"git restore --staged &lt;file&gt;..."</span><span class="w"> </span>to<span class="w"> </span>unstage<span class="o">)</span>
+<span class="w">  </span>modified:<span class="w">   </span>.gitattributes
+<span class="w">    </span>new<span class="w"> </span>file:<span class="w">   </span>config.json
+<span class="w">    </span>new<span class="w"> </span>file:<span class="w">   </span>sentencepiece.bpe.model
+<span class="w">    </span>new<span class="w"> </span>file:<span class="w">   </span>special_tokens_map.json
+<span class="w">    </span>new<span class="w"> </span>file:<span class="w">   </span>tf_model.h5
+<span class="w">    </span>new<span class="w"> </span>file:<span class="w">   </span>tokenizer.json
+<span class="w">    </span>new<span class="w"> </span>file:<span class="w">   </span>tokenizer_config.json
+</code></pre></div>
+
+<p>{/if}</p>
+<p>同様に、Git LFS が正しいファイルを追跡しているかを、その <code>status</code> コマンドで確認できます。</p>
+<div class="codehilite"><pre><span></span><code>git<span class="w"> </span>lfs<span class="w"> </span>status
+</code></pre></div>
+
+<p>{#if fw === 'pt'}</p>
+<div class="codehilite"><pre><span></span><code>On<span class="w"> </span>branch<span class="w"> </span>main
+Objects<span class="w"> </span>to<span class="w"> </span>be<span class="w"> </span>pushed<span class="w"> </span>to<span class="w"> </span>origin/main:
+
+
+Objects<span class="w"> </span>to<span class="w"> </span>be<span class="w"> </span>committed:
+
+<span class="w">    </span>config.json<span class="w"> </span><span class="o">(</span>Git:<span class="w"> </span>bc20ff2<span class="o">)</span>
+<span class="w">    </span>pytorch_model.bin<span class="w"> </span><span class="o">(</span>LFS:<span class="w"> </span>35686c2<span class="o">)</span>
+<span class="w">    </span>sentencepiece.bpe.model<span class="w"> </span><span class="o">(</span>LFS:<span class="w"> </span>988bc5a<span class="o">)</span>
+<span class="w">    </span>special_tokens_map.json<span class="w"> </span><span class="o">(</span>Git:<span class="w"> </span>cb23931<span class="o">)</span>
+<span class="w">    </span>tokenizer.json<span class="w"> </span><span class="o">(</span>Git:<span class="w"> </span>851ff3e<span class="o">)</span>
+<span class="w">    </span>tokenizer_config.json<span class="w"> </span><span class="o">(</span>Git:<span class="w"> </span>f0f7783<span class="o">)</span>
+
+Objects<span class="w"> </span>not<span class="w"> </span>staged<span class="w"> </span><span class="k">for</span><span class="w"> </span>commit:
+</code></pre></div>
+
+<p>すべてのファイルは <code>Git</code> で管理されていますが、<em>pytorch_model.bin</em> と <em>sentencepiece.bpe.model</em> は <code>LFS</code> で管理されています。うまくいきました。</p>
+<p>{:else}</p>
+<div class="codehilite"><pre><span></span><code>On<span class="w"> </span>branch<span class="w"> </span>main
+Objects<span class="w"> </span>to<span class="w"> </span>be<span class="w"> </span>pushed<span class="w"> </span>to<span class="w"> </span>origin/main:
+
+
+Objects<span class="w"> </span>to<span class="w"> </span>be<span class="w"> </span>committed:
+
+<span class="w">    </span>config.json<span class="w"> </span><span class="o">(</span>Git:<span class="w"> </span>bc20ff2<span class="o">)</span>
+<span class="w">    </span>sentencepiece.bpe.model<span class="w"> </span><span class="o">(</span>LFS:<span class="w"> </span>988bc5a<span class="o">)</span>
+<span class="w">    </span>special_tokens_map.json<span class="w"> </span><span class="o">(</span>Git:<span class="w"> </span>cb23931<span class="o">)</span>
+<span class="w">    </span>tf_model.h5<span class="w"> </span><span class="o">(</span>LFS:<span class="w"> </span>86fce29<span class="o">)</span>
+<span class="w">    </span>tokenizer.json<span class="w"> </span><span class="o">(</span>Git:<span class="w"> </span>851ff3e<span class="o">)</span>
+<span class="w">    </span>tokenizer_config.json<span class="w"> </span><span class="o">(</span>Git:<span class="w"> </span>f0f7783<span class="o">)</span>
+
+Objects<span class="w"> </span>not<span class="w"> </span>staged<span class="w"> </span><span class="k">for</span><span class="w"> </span>commit:
+</code></pre></div>
+
+<p>すべてのファイルのハンドラが <code>Git</code> であることが分かります。ただし <em>t5_model.h5</em> は <code>LFS</code> です。うまくいきました。</p>
+<p>{/if}</p>
+<p>最後のステップに進み、<em>huggingface.co</em> のリモートリポジトリにコミットとプッシュを行います。</p>
+<div class="codehilite"><pre><span></span><code>git<span class="w"> </span>commit<span class="w"> </span>-m<span class="w"> </span><span class="s2">"First model version"</span>
+</code></pre></div>
+
+<p>{#if fw === 'pt'}</p>
+<div class="codehilite"><pre><span></span><code><span class="o">[</span>main<span class="w"> </span>b08aab1<span class="o">]</span><span class="w"> </span>First<span class="w"> </span>model<span class="w"> </span>version
+<span class="w"> </span><span class="m">7</span><span class="w"> </span>files<span class="w"> </span>changed,<span class="w"> </span><span class="m">29027</span><span class="w"> </span>insertions<span class="o">(</span>+<span class="o">)</span>
+<span class="w">  </span><span class="m">6</span><span class="w"> </span>files<span class="w"> </span>changed,<span class="w"> </span><span class="m">36</span><span class="w"> </span>insertions<span class="o">(</span>+<span class="o">)</span>
+<span class="w"> </span>create<span class="w"> </span>mode<span class="w"> </span><span class="m">100644</span><span class="w"> </span>config.json
+<span class="w"> </span>create<span class="w"> </span>mode<span class="w"> </span><span class="m">100644</span><span class="w"> </span>pytorch_model.bin
+<span class="w"> </span>create<span class="w"> </span>mode<span class="w"> </span><span class="m">100644</span><span class="w"> </span>sentencepiece.bpe.model
+<span class="w"> </span>create<span class="w"> </span>mode<span class="w"> </span><span class="m">100644</span><span class="w"> </span>special_tokens_map.json
+<span class="w"> </span>create<span class="w"> </span>mode<span class="w"> </span><span class="m">100644</span><span class="w"> </span>tokenizer.json
+<span class="w"> </span>create<span class="w"> </span>mode<span class="w"> </span><span class="m">100644</span><span class="w"> </span>tokenizer_config.json
+</code></pre></div>
+
+<p>{:else}</p>
+<div class="codehilite"><pre><span></span><code><span class="o">[</span>main<span class="w"> </span>b08aab1<span class="o">]</span><span class="w"> </span>First<span class="w"> </span>model<span class="w"> </span>version
+<span class="w"> </span><span class="m">6</span><span class="w"> </span>files<span class="w"> </span>changed,<span class="w"> </span><span class="m">36</span><span class="w"> </span>insertions<span class="o">(</span>+<span class="o">)</span>
+<span class="w"> </span>create<span class="w"> </span>mode<span class="w"> </span><span class="m">100644</span><span class="w"> </span>config.json
+<span class="w"> </span>create<span class="w"> </span>mode<span class="w"> </span><span class="m">100644</span><span class="w"> </span>sentencepiece.bpe.model
+<span class="w"> </span>create<span class="w"> </span>mode<span class="w"> </span><span class="m">100644</span><span class="w"> </span>special_tokens_map.json
+<span class="w"> </span>create<span class="w"> </span>mode<span class="w"> </span><span class="m">100644</span><span class="w"> </span>tf_model.h5
+<span class="w"> </span>create<span class="w"> </span>mode<span class="w"> </span><span class="m">100644</span><span class="w"> </span>tokenizer.json
+<span class="w"> </span>create<span class="w"> </span>mode<span class="w"> </span><span class="m">100644</span><span class="w"> </span>tokenizer_config.json
+</code></pre></div>
+
+<p>{/if}</p>
+<p>ファイルサイズやインターネット接続の速度によっては、プッシュに時間がかかることがあります。</p>
+<div class="codehilite"><pre><span></span><code>git<span class="w"> </span>push
+</code></pre></div>
+
+<div class="codehilite"><pre><span></span><code>Uploading<span class="w"> </span>LFS<span class="w"> </span>objects:<span class="w"> </span><span class="m">100</span>%<span class="w"> </span><span class="o">(</span><span class="m">1</span>/1<span class="o">)</span>,<span class="w"> </span><span class="m">433</span><span class="w"> </span>MB<span class="w"> </span><span class="p">|</span><span class="w"> </span><span class="m">1</span>.3<span class="w"> </span>MB/s,<span class="w"> </span><span class="k">done</span>.
+Enumerating<span class="w"> </span>objects:<span class="w"> </span><span class="m">11</span>,<span class="w"> </span><span class="k">done</span>.
+Counting<span class="w"> </span>objects:<span class="w"> </span><span class="m">100</span>%<span class="w"> </span><span class="o">(</span><span class="m">11</span>/11<span class="o">)</span>,<span class="w"> </span><span class="k">done</span>.
+Delta<span class="w"> </span>compression<span class="w"> </span>using<span class="w"> </span>up<span class="w"> </span>to<span class="w"> </span><span class="m">12</span><span class="w"> </span>threads
+Compressing<span class="w"> </span>objects:<span class="w"> </span><span class="m">100</span>%<span class="w"> </span><span class="o">(</span><span class="m">9</span>/9<span class="o">)</span>,<span class="w"> </span><span class="k">done</span>.
+Writing<span class="w"> </span>objects:<span class="w"> </span><span class="m">100</span>%<span class="w"> </span><span class="o">(</span><span class="m">9</span>/9<span class="o">)</span>,<span class="w"> </span><span class="m">288</span>.27<span class="w"> </span>KiB<span class="w"> </span><span class="p">|</span><span class="w"> </span><span class="m">6</span>.27<span class="w"> </span>MiB/s,<span class="w"> </span><span class="k">done</span>.
+Total<span class="w"> </span><span class="m">9</span><span class="w"> </span><span class="o">(</span>delta<span class="w"> </span><span class="m">1</span><span class="o">)</span>,<span class="w"> </span>reused<span class="w"> </span><span class="m">0</span><span class="w"> </span><span class="o">(</span>delta<span class="w"> </span><span class="m">0</span><span class="o">)</span>,<span class="w"> </span>pack-reused<span class="w"> </span><span class="m">0</span>
+To<span class="w"> </span>https://huggingface.co/lysandre/dummy
+<span class="w">   </span>891b41d..b08aab1<span class="w">  </span>main<span class="w"> </span>-&gt;<span class="w"> </span>main
+</code></pre></div>
+
+<p>{#if fw === 'pt'}
+これが終わった時点でモデルリポジトリを見ると、最近追加されたファイルがすべて確認できます。</p>
+<div class="flex justify-center">
+<img src="https://huggingface.co/datasets/huggingface-course/documentation-images/resolve/main/en/chapter4/full_model.png" alt="「Files and versions」タブに、最近アップロードされたファイルがすべて含まれている。" width="80%"/>
+</div>
+
+<p>UI を使えば、モデルのファイルやコミットを探索したり、各コミットで導入された差分を見たりできます。</p>
+<div class="flex justify-center">
+<img src="https://huggingface.co/datasets/huggingface-course/documentation-images/resolve/main/en/chapter4/diffs.gif" alt="最近のコミットで導入された差分。" width="80%"/>
+</div>
+<p>{:else}
+これが終わった時点でモデルリポジトリを見ると、最近追加されたファイルがすべて確認できます。</p>
+<div class="flex justify-center">
+<img src="https://huggingface.co/datasets/huggingface-course/documentation-images/resolve/main/en/chapter4/full_model_tf.png" alt="「Files and versions」タブに、最近アップロードされたファイルがすべて含まれている。" width="80%"/>
+</div>
+
+<p>UI を使えば、モデルのファイルやコミットを探索したり、各コミットで導入された差分を見たりできます。</p>
+<div class="flex justify-center">
+<img src="https://huggingface.co/datasets/huggingface-course/documentation-images/resolve/main/en/chapter4/diffstf.gif" alt="最近のコミットで導入された差分。" width="80%"/>
+</div>
+<p>{/if}</p>
+</article>
+<nav class="page-nav"><a class="nav-link prev" href="2.html">← 前へ: 事前学習済みモデルを使う</a><a class="nav-link toc-link" href="../index.html">目次へ</a><a class="nav-link next" href="4.html">次へ →: モデルカードを作る</a></nav>
+</main>
+<footer class="site-footer">
+  <p>原典: Hugging Face huggingface/course（<a href="https://github.com/huggingface/course">https://github.com/huggingface/course</a>）</p>
+  <p>日本語版の翻訳・公開: 霞ヶ関京 / 連絡先: GitHub <a href="https://github.com/yanikasumin">@yanikasumin</a> / YouTube <a href="https://www.youtube.com/@KASUMI_MOF">@KASUMI_MOF</a></p>
+  <p class="demo-note">このサイトはデモ版です。内容は順次更新されます。</p>
+</footer>
+<script src="../../site.js"></script>
+</body>
+</html>

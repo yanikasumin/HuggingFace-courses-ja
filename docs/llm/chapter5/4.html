@@ -1,0 +1,273 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ビッグデータ？🤗 Datasets にお任せ！ | Hugging Face コース日本語版（デモ版）</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Shippori+Mincho:wght@500;700&family=Zen+Kaku+Gothic+New:wght@400;500;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../../style.css">
+<script>
+window.MathJax = { tex: { inlineMath: [['$', '$'], ['\\(', '\\)']], displayMath: [['$$', '$$'], ['\\[', '\\]']] }, options: { skipHtmlTags: ['script','noscript','style','textarea','pre','code'] } };
+</script>
+<script async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml.js"></script>
+</head>
+<body>
+<header class="site-header">
+  <div class="header-inner">
+    <a class="site-title" href="../../index.html">Hugging Face コース日本語版</a>
+    <span class="demo-badge">デモ版</span>
+  </div>
+</header>
+<main class="container">
+<p class="course-crumb"><a href="../index.html">LLM コース</a>
+<span class="badge badge-qa-pass">翻訳QA 最終合格</span></p>
+<nav class="page-nav"><a class="nav-link prev" href="3.html">← 前へ: 切り分けて、加工して</a><a class="nav-link toc-link" href="../index.html">目次へ</a><a class="nav-link next" href="5.html">次へ →: 独自のデータセットを作成する</a></nav>
+<article class="content">
+<h1>ビッグデータ？🤗 Datasets にお任せ！</h1>
+<p>BERT や GPT-2 のような Transformer をゼロから事前学習しようとする場合など、最近では数ギガバイト規模のデータセットを扱うことも珍しくありません。こうした場合、データを読み込むこと自体が難題になることがあります。たとえば、GPT-2 の事前学習に使われた WebText コーパスは、800万件を超えるドキュメントと40 GB のテキストから構成されており、これをノートパソコンの RAM に読み込もうとすれば、ノートパソコンに大きな負荷がかかってしまうでしょう！</p>
+<p>幸い、🤗 Datasets はこうした制約を克服できるよう設計されています。データセットをメモリマップドファイルとして扱うことでメモリ管理の問題から解放し、コーパスのエントリをストリーミングすることでハードドライブの容量制限からも解放します。</p>
+<div class="youtube-embed"><iframe src="https://www.youtube-nocookie.com/embed/JwISwTCPPWo" title="YouTube video" loading="lazy" allowfullscreen referrerpolicy="strict-origin-when-cross-origin"></iframe></div>
+<p>このセクションでは、825 GB という巨大なコーパスである <a href="https://pile.eleuther.ai">the Pile</a> を使って、🤗 Datasets のこれらの機能を探っていきます。さっそく始めましょう！</p>
+<h2>Pile とは？</h2>
+<p>Pile は、大規模言語モデルの訓練のために <a href="https://www.eleuther.ai">EleutherAI</a> が作成した英語テキストコーパスです。科学論文、GitHub のコードリポジトリ、フィルタリングされた Web テキストなど、多様なデータセットを含んでいます。訓練コーパスは <a href="https://the-eye.eu/public/AI/pile/">14 GB のチャンク</a>で入手でき、<a href="https://the-eye.eu/public/AI/pile_preliminary_components/">個別の構成要素</a>もいくつかダウンロードできます。まず、PubMed Abstracts データセットを見てみましょう。これは <a href="https://pubmed.ncbi.nlm.nih.gov/">PubMed</a> に掲載された1500万件の生物医学系出版物の抄録を集めたコーパスです。このデータセットは <a href="https://jsonlines.org">JSON Lines 形式</a>で、<code>zstandard</code> ライブラリで圧縮されているので、まずそれをインストールする必要があります。</p>
+<div class="codehilite"><pre><span></span><code><span class="err">!</span><span class="n">pip</span> <span class="n">install</span> <span class="n">zstandard</span>
+</code></pre></div>
+
+<p>次に、<a href="2.html">セクション2</a> で学んだリモートファイルの読み込み方法で、データセットを読み込みます。</p>
+<div class="codehilite"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">datasets</span><span class="w"> </span><span class="kn">import</span> <span class="n">load_dataset</span>
+
+<span class="c1"># 実行には数分かかります。お茶かコーヒーでも用意して待ちましょう :)</span>
+<span class="n">data_files</span> <span class="o">=</span> <span class="s2">"https://the-eye.eu/public/AI/pile_preliminary_components/PUBMED_title_abstracts_2019_baseline.jsonl.zst"</span>
+<span class="n">pubmed_dataset</span> <span class="o">=</span> <span class="n">load_dataset</span><span class="p">(</span><span class="s2">"json"</span><span class="p">,</span> <span class="n">data_files</span><span class="o">=</span><span class="n">data_files</span><span class="p">,</span> <span class="n">split</span><span class="o">=</span><span class="s2">"train"</span><span class="p">)</span>
+<span class="n">pubmed_dataset</span>
+</code></pre></div>
+
+<p>```python out
+Dataset({
+    features: ['meta', 'text'],
+    num_rows: 15518009
+})</p>
+<div class="codehilite"><pre><span></span><code>データセットには15,518,009行と2つの列があることが分かります。かなりの量です！
+
+&lt;div class="callout callout-tip" markdown="block"&gt;
+&lt;p class="callout-title"&gt;💡 ヒント&lt;/p&gt;
+✎ デフォルトでは、🤗 Datasets はデータセットの読み込みに必要なファイルを解凍します。ハードドライブの空き容量を節約したい場合は、`load_dataset()` の `download_config` 引数に `DownloadConfig(delete_extracted=True)` を渡せます。詳細は[ドキュメント](https://huggingface.co/docs/datasets/package_reference/builder_classes#datasets.DownloadConfig)を参照してください。
+&lt;/div&gt;
+
+
+最初のサンプルの内容を確認してみましょう。
+
+```py
+pubmed_dataset[0]
+</code></pre></div>
+
+<p>```python out
+{'meta': {'pmid': 11409574, 'language': 'eng'},
+ 'text': 'Epidemiology of hypoxaemia in children with acute lower respiratory infection.\nTo determine the prevalence of hypoxaemia in children aged under 5 years suffering acute lower respiratory infections (ALRI), the risk factors for hypoxaemia in children under 5 years of age with ALRI, and the association of hypoxaemia with an increased risk of dying in children of the same age ...'}</p>
+<div class="codehilite"><pre><span></span><code>医学論文の抄録のようですね。では、このデータセットの読み込みにどれだけの RAM を使ったか見てみましょう！
+
+## メモリマッピングの魔法
+
+Python でメモリ使用量を測る簡単な方法として、[`psutil`](https://psutil.readthedocs.io/en/latest/) ライブラリがあります。`pip` で次のようにインストールできます。
+
+```python
+!pip install psutil
+</code></pre></div>
+
+<p>このライブラリの <code>Process</code> クラスを使うと、現在のプロセスのメモリ使用量を次のように確認できます。</p>
+<div class="codehilite"><pre><span></span><code><span class="kn">import</span><span class="w"> </span><span class="nn">psutil</span>
+
+<span class="c1"># Process.memory_info はバイト単位で表されるので、メガバイトに変換します</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"RAM 使用量: </span><span class="si">{</span><span class="n">psutil</span><span class="o">.</span><span class="n">Process</span><span class="p">()</span><span class="o">.</span><span class="n">memory_info</span><span class="p">()</span><span class="o">.</span><span class="n">rss</span><span class="w"> </span><span class="o">/</span><span class="w"> </span><span class="p">(</span><span class="mi">1024</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="mi">1024</span><span class="p">)</span><span class="si">:</span><span class="s2">.2f</span><span class="si">}</span><span class="s2"> MB"</span><span class="p">)</span>
+</code></pre></div>
+
+<p>```python out
+RAM 使用量: 5678.33 MB</p>
+<div class="codehilite"><pre><span></span><code>ここで `rss` 属性は resident set size（常駐セットサイズ）を指し、プロセスが RAM 上で占有しているメモリの割合です。この測定値には Python インタプリタや読み込んだライブラリが使うメモリも含まれるため、データセットの読み込みに実際に使われたメモリ量はもう少し小さくなります。比較のために、`dataset_size` 属性でデータセットのディスク上の大きさを見てみましょう。結果は先ほどと同様にバイト単位で表されるので、手動でギガバイトに変換する必要があります。
+
+```py
+print(f"データセットのサイズ（バイト）: {pubmed_dataset.dataset_size}")
+size_gb = pubmed_dataset.dataset_size / (1024**3)
+print(f"データセットのサイズ（キャッシュファイル）: {size_gb:.2f} GB")
+</code></pre></div>
+
+<p>```python out
+データセットのサイズ（バイト）: 20979437051
+データセットのサイズ（キャッシュファイル）: 19.54 GB</p>
+<div class="codehilite"><pre><span></span><code>素晴らしいことに、20 GB 近い大きさにもかかわらず、はるかに少ない RAM でデータセットを読み込んでアクセスできています！
+
+&lt;div class="callout callout-tip" markdown="block"&gt;
+&lt;p class="callout-title"&gt;💡 ヒント&lt;/p&gt;
+✏️ **やってみよう！** Pile の[サブセット](https://the-eye.eu/public/AI/pile_preliminary_components/)の中から、自分のノートパソコンやデスクトップの RAM より大きいものを1つ選んで 🤗 Datasets で読み込み、使用された RAM の量を測ってみましょう。正確に測るには、新しいプロセスで実行するのがよいでしょう。各サブセットの解凍後のサイズは、[the Pile の論文](https://arxiv.org/abs/2101.00027)の Table 1 に載っています。
+&lt;/div&gt;
+
+
+Pandas に慣れている人には、この結果は意外かもしれません。Wes Kinney の有名な[経験則](https://wesmckinney.com/blog/apache-arrow-pandas-internals/)では、通常、データセットのサイズの5倍から10倍の RAM が必要とされるからです。では、🤗 Datasets はこのメモリ管理の問題をどう解決しているのでしょうか。🤗 Datasets は各データセットを[メモリマップドファイル](https://en.wikipedia.org/wiki/Memory-mapped_file)として扱います。これは RAM とファイルシステムストレージの間のマッピングを提供し、データセット全体をメモリに読み込まなくても、その要素にアクセスして操作できるようにするものです。
+
+メモリマップドファイルは複数のプロセス間で共有もできるため、`Dataset.map()` のようなメソッドを、データセットを移動したりコピーしたりすることなく並列化できます。これらの機能はすべて、裏側では [Apache Arrow](https://arrow.apache.org) のメモリ形式と [`pyarrow`](https://arrow.apache.org/docs/python/index.html) ライブラリによって実現されており、データの読み込みと処理を非常に高速にしています。（Apache Arrow の詳細や Pandas との比較については、[Dejan Simic のブログ記事](https://towardsdatascience.com/apache-arrow-read-dataframe-with-zero-memory-69634092b1a)を参照してください。）実際に確かめるために、PubMed Abstracts データセットのすべての要素をたどる簡単な速度テストをしてみましょう。
+
+```py
+import timeit
+
+code_snippet = """batch_size = 1000
+
+for idx in range(0, len(pubmed_dataset), batch_size):
+    _ = pubmed_dataset[idx:idx + batch_size]
+"""
+
+time = timeit.timeit(stmt=code_snippet, number=1, globals=globals())
+print(
+    f"{len(pubmed_dataset)} 件のサンプル（約 {size_gb:.1f} GB）を "
+    f"{time:.1f} 秒で走査しました。処理速度: {size_gb/time:.3f} GB/秒"
+)
+</code></pre></div>
+
+<p>```python out
+'15518009 件のサンプル（約 19.5 GB）を 64.2 秒で走査しました。処理速度: 0.304 GB/秒'</p>
+<div class="codehilite"><pre><span></span><code>ここでは Python の `timeit` モジュールを使って、`code_snippet` の実行時間を測りました。通常、データセットは1秒あたり数百 MB から数 GB の速度でたどることができます。これは大半の用途では十分にうまく機能しますが、ノートパソコンのハードドライブにすら保存できないほど大きなデータセットを扱わなければならない場合もあります。たとえば、Pile 全体をダウンロードしようとすると、825 GB の空きディスク容量が必要になります！こうした場合に対応するため、🤗 Datasets にはストリーミング機能があり、データセット全体をダウンロードすることなく、要素をその場でダウンロードしてアクセスできます。その仕組みを見ていきましょう。
+
+&lt;div class="callout callout-tip" markdown="block"&gt;
+&lt;p class="callout-title"&gt;💡 ヒント&lt;/p&gt;
+💡 Jupyter ノートブックでは、[`%%timeit` マジック関数](https://ipython.readthedocs.io/en/stable/interactive/magics.html#magic-timeit)を使ってセルの時間を測ることもできます。
+&lt;/div&gt;
+
+
+## データセットのストリーミング
+
+データセットのストリーミングを有効にするには、`load_dataset()` 関数に `streaming=True` 引数を渡すだけです。たとえば、PubMed Abstracts データセットを今度はストリーミングモードで読み込んでみましょう。
+
+```py
+pubmed_dataset_streamed = load_dataset(
+    "json", data_files=data_files, split="train", streaming=True
+)
+</code></pre></div>
+
+<p>この章の他の場所で見てきたおなじみの <code>Dataset</code> とは違い、<code>streaming=True</code> で返されるオブジェクトは <code>IterableDataset</code> です。その名のとおり、<code>IterableDataset</code> の要素にアクセスするには、要素をイテレーション（反復処理）する必要があります。ストリーミングされたデータセットの最初の要素には、次のようにアクセスできます。</p>
+<div class="codehilite"><pre><span></span><code><span class="nb">next</span><span class="p">(</span><span class="nb">iter</span><span class="p">(</span><span class="n">pubmed_dataset_streamed</span><span class="p">))</span>
+</code></pre></div>
+
+<p>```python out
+{'meta': {'pmid': 11409574, 'language': 'eng'},
+ 'text': 'Epidemiology of hypoxaemia in children with acute lower respiratory infection.\nTo determine the prevalence of hypoxaemia in children aged under 5 years suffering acute lower respiratory infections (ALRI), the risk factors for hypoxaemia in children under 5 years of age with ALRI, and the association of hypoxaemia with an increased risk of dying in children of the same age ...'}</p>
+<div class="codehilite"><pre><span></span><code>ストリーミングされたデータセットの要素は `IterableDataset.map()` を使ってその場で処理できます。これは、訓練時に入力をトークナイズする必要がある場合に便利です。手順は、[Chapter 3](/course/chapter3) でデータセットをトークナイズしたときに使ったものとまったく同じで、唯一の違いは出力が1つずつ返されることです。
+
+```py
+from transformers import AutoTokenizer
+
+tokenizer = AutoTokenizer.from_pretrained("distilbert-base-uncased")
+tokenized_dataset = pubmed_dataset_streamed.map(lambda x: tokenizer(x["text"]))
+next(iter(tokenized_dataset))
+</code></pre></div>
+
+<p 1_ 4328_ 4958_ 5178_ 6779_ _101_ _1_ _attention_mask_: _input_ids_: class="..], ..]">```python out</p>
+<div class="codehilite"><pre><span></span><code>&lt;div class="callout callout-tip" markdown="block"&gt;
+&lt;p class="callout-title"&gt;💡 ヒント&lt;/p&gt;
+💡 ストリーミングでのトークナイズを高速化するには、前のセクションで見たように `batched=True` を渡せます。サンプルがバッチごとに処理されます。デフォルトのバッチサイズは1,000で、`batch_size` 引数で指定できます。
+&lt;/div&gt;
+
+
+`IterableDataset.shuffle()` を使ってストリーミングされたデータセットをシャッフルすることもできますが、`Dataset.shuffle()` とは違い、シャッフルされるのは事前に定義された `buffer_size` の範囲内の要素だけです。
+
+```py
+shuffled_dataset = pubmed_dataset_streamed.shuffle(buffer_size=10_000, seed=42)
+next(iter(shuffled_dataset))
+</code></pre></div>
+
+<p>```python out
+{'meta': {'pmid': 11410799, 'language': 'eng'},
+ 'text': 'Randomized study of dose or schedule modification of granulocyte colony-stimulating factor in platinum-based chemotherapy for elderly patients with lung cancer ...'}</p>
+<div class="codehilite"><pre><span></span><code>この例では、バッファ内の最初の10,000件のサンプルの中からランダムに1件を選んでいます。サンプルにアクセスすると、空いた場所にはコーパスの次のサンプル（上の例では10,001番目のサンプル）が補充されます。`Dataset.select()` と似た働きをする `IterableDataset.take()` と `IterableDataset.skip()` 関数を使って、ストリーミングされたデータセットから要素を選ぶこともできます。たとえば、PubMed Abstracts データセットの最初の5件を選ぶには、次のようにします。
+
+```py
+dataset_head = pubmed_dataset_streamed.take(5)
+list(dataset_head)
+</code></pre></div>
+
+<p>```python out
+[{'meta': {'pmid': 11409574, 'language': 'eng'},
+  'text': 'Epidemiology of hypoxaemia in children with acute lower respiratory infection ...'},
+ {'meta': {'pmid': 11409575, 'language': 'eng'},
+  'text': 'Clinical signs of hypoxaemia in children with acute lower respiratory infection: indicators of oxygen therapy ...'},
+ {'meta': {'pmid': 11409576, 'language': 'eng'},
+  'text': "Hypoxaemia in children with severe pneumonia in Papua New Guinea ..."},
+ {'meta': {'pmid': 11409577, 'language': 'eng'},
+  'text': 'Oxygen concentrators and cylinders ...'},
+ {'meta': {'pmid': 11409578, 'language': 'eng'},
+  'text': 'Oxygen supply in rural africa: a personal experience ...'}]</p>
+<div class="codehilite"><pre><span></span><code>同様に、`IterableDataset.skip()` 関数を使えば、シャッフルされたデータセットから訓練用と検証用の分割を作れます。
+
+```py
+# 最初の1,000件のサンプルをスキップし、残りを訓練セットに含めます
+train_dataset = shuffled_dataset.skip(1000)
+# 最初の1,000件のサンプルを検証セット用に取得します
+validation_dataset = shuffled_dataset.take(1000)
+</code></pre></div>
+
+<p>最後に、よくある用途である、複数のデータセットを組み合わせて1つのコーパスを作る方法を見てみましょう。🤗 Datasets には <code>interleave_datasets()</code> 関数があり、<code>IterableDataset</code> オブジェクトのリストを1つの <code>IterableDataset</code> に変換します。新しいデータセットの要素は、元のサンプルを交互に取り出すことで得られます。この関数は大きなデータセット同士を組み合わせたい場合に特に便利です。例として、米国の裁判所の判決文を集めた51 GB のデータセットである Pile の FreeLaw サブセットをストリーミングしてみましょう。</p>
+<div class="codehilite"><pre><span></span><code><span class="n">law_dataset_streamed</span> <span class="o">=</span> <span class="n">load_dataset</span><span class="p">(</span>
+    <span class="s2">"json"</span><span class="p">,</span>
+    <span class="n">data_files</span><span class="o">=</span><span class="s2">"https://the-eye.eu/public/AI/pile_preliminary_components/FreeLaw_Opinions.jsonl.zst"</span><span class="p">,</span>
+    <span class="n">split</span><span class="o">=</span><span class="s2">"train"</span><span class="p">,</span>
+    <span class="n">streaming</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+<span class="p">)</span>
+<span class="nb">next</span><span class="p">(</span><span class="nb">iter</span><span class="p">(</span><span class="n">law_dataset_streamed</span><span class="p">))</span>
+</code></pre></div>
+
+<p>```python out
+{'meta': {'case_ID': '110921.json',
+  'case_jurisdiction': 'scotus.tar.gz',
+  'date_created': '2010-04-28T17:12:49Z'},
+ 'text': '\n461 U.S. 238 (1983)\nOLIM ET AL.\nv.\nWAKINEKONA\nNo. 81-1581.\nSupreme Court of United States.\nArgued January 19, 1983.\nDecided April 26, 1983.\nCERTIORARI TO THE UNITED STATES COURT OF APPEALS FOR THE NINTH CIRCUIT\n*239 Michael A. Lilly, First Deputy Attorney General of Hawaii, argued the cause for petitioners. With him on the brief was James H. Dannenberg, Deputy Attorney General...'}</p>
+<div class="codehilite"><pre><span></span><code>このデータセットは大半のノートパソコンの RAM に負荷をかける大きさですが、メモリを圧迫することなく読み込んでアクセスできました！では、FreeLaw と PubMed Abstracts の両データセットのサンプルを `interleave_datasets()` 関数で組み合わせてみましょう。
+
+```py
+from itertools import islice
+from datasets import interleave_datasets
+
+combined_dataset = interleave_datasets([pubmed_dataset_streamed, law_dataset_streamed])
+list(islice(combined_dataset, 2))
+</code></pre></div>
+
+<p>```python out
+[{'meta': {'pmid': 11409574, 'language': 'eng'},
+  'text': 'Epidemiology of hypoxaemia in children with acute lower respiratory infection ...'},
+ {'meta': {'case_ID': '110921.json',
+   'case_jurisdiction': 'scotus.tar.gz',
+   'date_created': '2010-04-28T17:12:49Z'},
+  'text': '\n461 U.S. 238 (1983)\nOLIM ET AL.\nv.\nWAKINEKONA\nNo. 81-1581.\nSupreme Court of United States.\nArgued January 19, 1983.\nDecided April 26, 1983.\nCERTIORARI TO THE UNITED STATES COURT OF APPEALS FOR THE NINTH CIRCUIT\n*239 Michael A. Lilly, First Deputy Attorney General of Hawaii, argued the cause for petitioners. With him on the brief was James H. Dannenberg, Deputy Attorney General...'}]</p>
+<div class="codehilite"><pre><span></span><code>ここでは Python の `itertools` モジュールにある `islice()` 関数を使って、結合されたデータセットから最初の2件のサンプルを選びました。元になった2つのデータセットそれぞれの最初のサンプルと一致していることが分かります。
+
+最後に、825 GB の Pile 全体をストリーミングしたい場合は、用意されたファイルをすべて次のように取得できます。
+
+```py
+base_url = "https://the-eye.eu/public/AI/pile/"
+data_files = {
+    "train": [base_url + "train/" + f"{idx:02d}.jsonl.zst" for idx in range(30)],
+    "validation": base_url + "val.jsonl.zst",
+    "test": base_url + "test.jsonl.zst",
+}
+pile_dataset = load_dataset("json", data_files=data_files, streaming=True)
+next(iter(pile_dataset["train"]))
+</code></pre></div>
+
+<p><code>python out
+{'meta': {'pile_set_name': 'Pile-CC'},
+ 'text': 'It is done, and submitted. You can play “Survival of the Tastiest” on Android, and on the web...'}</code></p>
+<div class="callout callout-tip">
+<p class="callout-title">💡 ヒント</p>
+<p>✏️ <strong>やってみよう！</strong> <a href="https://huggingface.co/datasets/mc4"><code>mc4</code></a> や <a href="https://huggingface.co/datasets/oscar"><code>oscar</code></a> のような大規模な Common Crawl コーパスの1つを使って、選んだ国における各言語の話者比率を反映したストリーミング多言語データセットを作ってみましょう。たとえば、スイスの公用語はドイツ語、フランス語、イタリア語、ロマンシュ語の4つなので、Oscar のサブセットを話者割合に応じてサンプリングし、スイスコーパスを作ってみることができます。</p>
+</div>
+<p>これで、あらゆる形や大きさのデータセットを読み込んで処理するための道具がすべて揃いました。しかし、よほど幸運でない限り、NLP の旅のどこかで、手元の問題を解くために実際にデータセットを作成しなければならない場面が訪れるはずです。それが次のセクションのテーマです！</p>
+</article>
+<nav class="page-nav"><a class="nav-link prev" href="3.html">← 前へ: 切り分けて、加工して</a><a class="nav-link toc-link" href="../index.html">目次へ</a><a class="nav-link next" href="5.html">次へ →: 独自のデータセットを作成する</a></nav>
+</main>
+<footer class="site-footer">
+  <p>原典: Hugging Face huggingface/course（<a href="https://github.com/huggingface/course">https://github.com/huggingface/course</a>）</p>
+  <p>日本語版の翻訳・公開: 霞ヶ関京 / 連絡先: GitHub <a href="https://github.com/yanikasumin">@yanikasumin</a> / YouTube <a href="https://www.youtube.com/@KASUMI_MOF">@KASUMI_MOF</a></p>
+  <p class="demo-note">このサイトはデモ版です。内容は順次更新されます。</p>
+</footer>
+<script src="../../site.js"></script>
+</body>
+</html>

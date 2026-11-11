@@ -1,0 +1,234 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>TRL で GRPO を実装する | Hugging Face コース日本語版（デモ版）</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Shippori+Mincho:wght@500;700&family=Zen+Kaku+Gothic+New:wght@400;500;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../../style.css">
+<script>
+window.MathJax = { tex: { inlineMath: [['$', '$'], ['\\(', '\\)']], displayMath: [['$$', '$$'], ['\\[', '\\]']] }, options: { skipHtmlTags: ['script','noscript','style','textarea','pre','code'] } };
+</script>
+<script async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml.js"></script>
+</head>
+<body>
+<header class="site-header">
+  <div class="header-inner">
+    <a class="site-title" href="../../index.html">Hugging Face コース日本語版</a>
+    <span class="demo-badge">デモ版</span>
+  </div>
+</header>
+<main class="container">
+<p class="course-crumb"><a href="../index.html">LLM コース</a>
+<span class="badge badge-qa-pass">翻訳QA 最終合格</span></p>
+<nav class="page-nav"><a class="nav-link prev" href="3b.html">← 前へ: DeepSeekMath の Group Relative Policy Optimization（GRPO）を深く理解する</a><a class="nav-link toc-link" href="../index.html">目次へ</a><a class="nav-link next" href="5.html">次へ →: 実践演習： GRPO でモデルをファインチューニングする</a></nav>
+<article class="content">
+<h1>TRL で GRPO を実装する</h1>
+<p>このページでは、Transformer Reinforcement Learning（TRL）ライブラリを使って Group Relative Policy Optimization（GRPO）を実装する方法を学びます。最小限のコードで実践的な実装に焦点を当てます。</p>
+<p>TRL の GRPOTrainer が GRPO の主要な概念をどのように実装しているのか、TRL の公式ドキュメントに掲載されているコード例を使って解説します。</p>
+<div class="callout callout-tip">
+<p class="callout-title">💡 ヒント</p>
+<p>この章は TRL の初心者を対象としています。すでに TRL に馴染みがある方は、GRPO の <a href="https://github.com/huggingface/open-r1/blob/main/src/open_r1/grpo.py">Open R1 による実装</a>もチェックするとよいでしょう。</p>
+</div>
+<p>まず、GRPO アルゴリズムの重要な概念を思い出しましょう。</p>
+<ul>
+<li>グループの形成： モデルは各プロンプトに対して複数の補完を生成します。</li>
+<li>選好の学習： モデルは、補完のグループを比較する報酬関数から学びます。</li>
+<li>学習の設定： モデルは、学習プロセスを制御するための設定を使います。</li>
+</ul>
+<p>GRPO を実装するために必要なことは何でしょうか？</p>
+<ul>
+<li>プロンプトのデータセットを定義する。</li>
+<li>補完のリストを受け取り、報酬のリストを返す報酬関数を定義する。</li>
+<li>GRPOConfig で学習プロセスを設定する。</li>
+<li>GRPOTrainer を使ってモデルを学習する。</li>
+</ul>
+<p>GRPO 学習を始めるための最小限の例はこちらです。</p>
+<div class="codehilite"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">trl</span><span class="w"> </span><span class="kn">import</span> <span class="n">GRPOTrainer</span><span class="p">,</span> <span class="n">GRPOConfig</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">datasets</span><span class="w"> </span><span class="kn">import</span> <span class="n">load_dataset</span>
+
+<span class="c1"># 1. データセットを読み込む</span>
+<span class="n">dataset</span> <span class="o">=</span> <span class="n">load_dataset</span><span class="p">(</span><span class="s2">"your_dataset"</span><span class="p">,</span> <span class="n">split</span><span class="o">=</span><span class="s2">"train"</span><span class="p">)</span>
+
+
+<span class="c1"># 2. 簡単な報酬関数を定義する</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">reward_func</span><span class="p">(</span><span class="n">completions</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">"""例: 長い補完に報酬を与える"""</span>
+    <span class="k">return</span> <span class="p">[</span><span class="nb">float</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">completion</span><span class="p">))</span> <span class="k">for</span> <span class="n">completion</span> <span class="ow">in</span> <span class="n">completions</span><span class="p">]</span>
+
+
+<span class="c1"># 3. 学習を設定する</span>
+<span class="n">training_args</span> <span class="o">=</span> <span class="n">GRPOConfig</span><span class="p">(</span>
+    <span class="n">output_dir</span><span class="o">=</span><span class="s2">"output"</span><span class="p">,</span>
+    <span class="n">num_train_epochs</span><span class="o">=</span><span class="mi">3</span><span class="p">,</span>
+    <span class="n">per_device_train_batch_size</span><span class="o">=</span><span class="mi">4</span><span class="p">,</span>
+    <span class="n">gradient_accumulation_steps</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span>
+    <span class="n">logging_steps</span><span class="o">=</span><span class="mi">10</span><span class="p">,</span>
+<span class="p">)</span>
+
+<span class="c1"># 4. 初期化して学習する</span>
+<span class="n">trainer</span> <span class="o">=</span> <span class="n">GRPOTrainer</span><span class="p">(</span>
+    <span class="n">model</span><span class="o">=</span><span class="s2">"your_model"</span><span class="p">,</span>  <span class="c1"># 例: "Qwen/Qwen2-0.5B-Instruct"</span>
+    <span class="n">args</span><span class="o">=</span><span class="n">training_args</span><span class="p">,</span>
+    <span class="n">train_dataset</span><span class="o">=</span><span class="n">dataset</span><span class="p">,</span>
+    <span class="n">reward_funcs</span><span class="o">=</span><span class="n">reward_func</span><span class="p">,</span>
+<span class="p">)</span>
+<span class="n">trainer</span><span class="o">.</span><span class="n">train</span><span class="p">()</span>
+</code></pre></div>
+
+<h2>主要な構成要素</h2>
+<h3>1. データセットの形式</h3>
+<p>データセットには、モデルが応答するプロンプトが含まれている必要があります。GRPO トレーナーは、各プロンプトに対して複数の補完を生成し、報酬関数を使ってそれらを比較します。</p>
+<h3>2. 報酬関数</h3>
+<p>報酬関数は決定的に重要です。モデルがどう学ぶかを決めるためです。実践的な例を2つ示します。</p>
+<div class="codehilite"><pre><span></span><code><span class="c1"># 例1: 補完の長さに基づく報酬</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">reward_length</span><span class="p">(</span><span class="n">completions</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+    <span class="k">return</span> <span class="p">[</span><span class="nb">float</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">completion</span><span class="p">))</span> <span class="k">for</span> <span class="n">completion</span> <span class="ow">in</span> <span class="n">completions</span><span class="p">]</span>
+
+
+<span class="c1"># 例2: パターンへの一致に基づく報酬</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">re</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">reward_format</span><span class="p">(</span><span class="n">completions</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+    <span class="n">pattern</span> <span class="o">=</span> <span class="sa">r</span><span class="s2">"^&lt;think&gt;.*?&lt;/think&gt;&lt;answer&gt;.*?&lt;/answer&gt;$"</span>
+    <span class="k">return</span> <span class="p">[</span><span class="mf">1.0</span> <span class="k">if</span> <span class="n">re</span><span class="o">.</span><span class="n">match</span><span class="p">(</span><span class="n">pattern</span><span class="p">,</span> <span class="n">c</span><span class="p">)</span> <span class="k">else</span> <span class="mf">0.0</span> <span class="k">for</span> <span class="n">c</span> <span class="ow">in</span> <span class="n">completions</span><span class="p">]</span>
+</code></pre></div>
+
+<h3>3. 学習の設定</h3>
+<p><code>GRPOConfig</code> で考慮すべき主要なパラメータ：</p>
+<div class="codehilite"><pre><span></span><code><span class="n">training_args</span> <span class="o">=</span> <span class="n">GRPOConfig</span><span class="p">(</span>
+    <span class="c1"># 必須パラメータ</span>
+    <span class="n">output_dir</span><span class="o">=</span><span class="s2">"output"</span><span class="p">,</span>
+    <span class="n">num_train_epochs</span><span class="o">=</span><span class="mi">3</span><span class="p">,</span>
+    <span class="n">num_generation</span><span class="o">=</span><span class="mi">4</span><span class="p">,</span>  <span class="c1"># 各プロンプトに対して生成する補完の数</span>
+    <span class="n">per_device_train_batch_size</span><span class="o">=</span><span class="mi">4</span><span class="p">,</span>  <span class="c1"># すべての生成を1つのデバイスバッチで取得したい</span>
+    <span class="c1"># 任意だが便利</span>
+    <span class="n">gradient_accumulation_steps</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span>
+    <span class="n">learning_rate</span><span class="o">=</span><span class="mf">1e-5</span><span class="p">,</span>
+    <span class="n">logging_steps</span><span class="o">=</span><span class="mi">10</span><span class="p">,</span>
+    <span class="c1"># GRPO 固有（任意）</span>
+    <span class="n">use_vllm</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>  <span class="c1"># 生成を高速化</span>
+<span class="p">)</span>
+</code></pre></div>
+
+<p><code>num_generation</code> パラメータは、グループサイズ、すなわちモデルが各プロンプトに対して何件の異なる補完を生成するかを定義するため、GRPO にとって特に重要です。これは他の RL 手法との重要な差別化要因です。</p>
+<ul>
+<li>小さすぎる場合（例： 2〜3）： 意味のある比較のための多様性が十分に得られない場合があります</li>
+<li>推奨（4〜16）： 多様性と計算効率の良いバランスが得られます</li>
+<li>より大きな値： 学習が改善する可能性がありますが、計算コストが大幅に増加します</li>
+</ul>
+<p>グループサイズは、計算リソースとタスクの複雑さに基づいて選ぶべきです。簡単なタスクでは、より小さなグループ（4〜8）で十分な場合があり、より複雑な推論タスクでは、より大きなグループ（8〜16）の恩恵を受けられます。</p>
+<h2>成功のためのヒント</h2>
+<ol>
+<li><strong>メモリ管理</strong>： GPU メモリに基づいて <code>per_device_train_batch_size</code> と <code>gradient_accumulation_steps</code> を調整してください。</li>
+<li><strong>速度</strong>： モデルがサポートされている場合は、<code>use_vllm=True</code> を有効にして生成を高速化してください。</li>
+<li><strong>監視</strong>： 学習中に記録されるメトリクスを注視してください。
+   - <code>reward</code>： 補完全体の平均報酬
+   - <code>reward_std</code>： 報酬グループ内の標準偏差
+   - <code>kl</code>： 参照モデルからの KL ダイバージェンス</li>
+</ol>
+<h2>報酬関数の設計</h2>
+<p>DeepSeek R1 論文は、報酬関数の設計について、皆さん自身の GRPO 実装に適応できる効果的なアプローチをいくつか示しています。</p>
+<h3>1. 長さベースの報酬</h3>
+<p>実装が最も簡単な報酬の一つが、長さベースの報酬です。より長い補完に報酬を与えることができます。</p>
+<div class="codehilite"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">reward_len</span><span class="p">(</span><span class="n">completions</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+    <span class="n">ideal_length</span> <span class="o">=</span> <span class="mi">20</span>
+    <span class="k">return</span> <span class="p">[</span><span class="o">-</span><span class="nb">abs</span><span class="p">(</span><span class="n">ideal_length</span> <span class="o">-</span> <span class="nb">len</span><span class="p">(</span><span class="n">completion</span><span class="p">))</span> <span class="k">for</span> <span class="n">completion</span> <span class="ow">in</span> <span class="n">completions</span><span class="p">]</span>
+</code></pre></div>
+
+<p>この報酬関数は、短すぎる補完や長すぎる補完にペナルティを与え、理想的な長さである20トークンに近い補完を生成するようモデルを促します。</p>
+<iframe 
+    src="https://marimo.app/gh/huggingface/notebooks/main/e?entrypoint=course%2Fen%2Fchapter13%2Fgrpo_length.py&embed=true&show-chrome=false"
+    title="Marimo ノートブック"
+    width="100%"
+    height="800px"
+    frameBorder="0"
+    allow="clipboard-write"
+></iframe>
+
+<h2>2. 検証可能なタスクのためのルールベースの報酬</h2>
+<p>客観的に正しい答えを持つタスク（数学やコーディングなど）については、ルールベースの報酬関数を実装できます。</p>
+<div class="codehilite"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">problem_reward</span><span class="p">(</span><span class="n">completions</span><span class="p">,</span> <span class="n">answers</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">"""検証可能な答えを持つ数学問題のための報酬関数</span>
+<span class="sd">    completions: 評価する補完のリスト</span>
+<span class="sd">    answers: データセットの問題に対する答えのリスト</span>
+<span class="sd">    """</span>
+
+    <span class="n">rewards</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="k">for</span> <span class="n">completion</span><span class="p">,</span> <span class="n">correct_answer</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="n">completions</span><span class="p">,</span> <span class="n">answers</span><span class="p">):</span>
+        <span class="c1"># 補完から答えを取り出す</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="c1"># これは簡略化した例です。適切な解析が必要になります</span>
+            <span class="n">answer</span> <span class="o">=</span> <span class="n">extract_final_answer</span><span class="p">(</span><span class="n">completion</span><span class="p">)</span>
+            <span class="c1"># 二値報酬: 正しければ1、誤っていれば0</span>
+            <span class="n">reward</span> <span class="o">=</span> <span class="mf">1.0</span> <span class="k">if</span> <span class="n">answer</span> <span class="o">==</span> <span class="n">correct_answer</span> <span class="k">else</span> <span class="mf">0.0</span>
+            <span class="n">rewards</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">reward</span><span class="p">)</span>
+        <span class="k">except</span><span class="p">:</span>
+            <span class="c1"># 答えを解析できない場合は、低い報酬を与える</span>
+            <span class="n">rewards</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="mf">0.0</span><span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">rewards</span>
+</code></pre></div>
+
+<iframe 
+    src="https://marimo.app/gh/huggingface/notebooks/main/e?entrypoint=course%2Fen%2Fchapter13%2Fgrpo_math.py&embed=true&show-chrome=false"
+    title="Marimo ノートブック"
+    width="100%"
+    height="800px"
+    frameBorder="0"
+    allow="clipboard-write"
+></iframe>
+
+<h2>3. 形式ベースの報酬</h2>
+<p>適切な形式に報酬を与えることもできます。これは DeepSeek R1 の学習において重要でした。</p>
+<div class="codehilite"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">format_reward</span><span class="p">(</span><span class="n">completions</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">"""望ましい形式に従った補完に報酬を与える"""</span>
+    <span class="c1"># 例: 補完が think の後に answer が続く形式に従っているかをチェックする</span>
+    <span class="n">pattern</span> <span class="o">=</span> <span class="sa">r</span><span class="s2">"&lt;think&gt;(.*?)&lt;/think&gt;\s*&lt;answer&gt;(.*?)&lt;/answer&gt;"</span>
+
+    <span class="n">rewards</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="k">for</span> <span class="n">completion</span> <span class="ow">in</span> <span class="n">completions</span><span class="p">:</span>
+        <span class="n">match</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">search</span><span class="p">(</span><span class="n">pattern</span><span class="p">,</span> <span class="n">completion</span><span class="p">,</span> <span class="n">re</span><span class="o">.</span><span class="n">DOTALL</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">match</span><span class="p">:</span>
+            <span class="c1"># 両方のセクションに十分な内容があるかをチェックする</span>
+            <span class="n">think_content</span> <span class="o">=</span> <span class="n">match</span><span class="o">.</span><span class="n">group</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span>
+            <span class="n">answer_content</span> <span class="o">=</span> <span class="n">match</span><span class="o">.</span><span class="n">group</span><span class="p">(</span><span class="mi">2</span><span class="p">)</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span>
+
+            <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">think_content</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">20</span> <span class="ow">and</span> <span class="nb">len</span><span class="p">(</span><span class="n">answer_content</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+                <span class="n">rewards</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="mf">1.0</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">rewards</span><span class="o">.</span><span class="n">append</span><span class="p">(</span>
+                    <span class="mf">0.5</span>
+                <span class="p">)</span>  <span class="c1"># 形式は正しいが内容が乏しい場合の部分的な報酬</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">rewards</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="mf">0.0</span><span class="p">)</span>  <span class="c1"># 形式が正しくない場合は報酬なし</span>
+
+    <span class="k">return</span> <span class="n">rewards</span>
+</code></pre></div>
+
+<iframe 
+    src="https://marimo.app/gh/huggingface/notebooks/main/e?entrypoint=course%2Fen%2Fchapter13%2Fgrpo_format.py&embed=true&show-chrome=false"
+    title="Marimo ノートブック"
+    width="100%"
+    height="800px"
+    frameBorder="0"
+    allow="clipboard-write"
+></iframe>
+
+<p>これらの例は、正しさ、形式、組み合わされた信号に焦点を当て、DeepSeek R1 の学習プロセスに着想を得た報酬関数をどう実装できるかを示しています。</p>
+<h2>以上です！</h2>
+<p>次のセクションでは、演習に沿って TRL で GRPO を実装します。</p>
+</article>
+<nav class="page-nav"><a class="nav-link prev" href="3b.html">← 前へ: DeepSeekMath の Group Relative Policy Optimization（GRPO）を深く理解する</a><a class="nav-link toc-link" href="../index.html">目次へ</a><a class="nav-link next" href="5.html">次へ →: 実践演習： GRPO でモデルをファインチューニングする</a></nav>
+</main>
+<footer class="site-footer">
+  <p>原典: Hugging Face huggingface/course（<a href="https://github.com/huggingface/course">https://github.com/huggingface/course</a>）</p>
+  <p>日本語版の翻訳・公開: 霞ヶ関京 / 連絡先: GitHub <a href="https://github.com/yanikasumin">@yanikasumin</a> / YouTube <a href="https://www.youtube.com/@KASUMI_MOF">@KASUMI_MOF</a></p>
+  <p class="demo-note">このサイトはデモ版です。内容は順次更新されます。</p>
+</footer>
+<script src="../../site.js"></script>
+</body>
+</html>

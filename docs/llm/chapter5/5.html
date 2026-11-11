@@ -1,0 +1,375 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>独自のデータセットを作成する | Hugging Face コース日本語版（デモ版）</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Shippori+Mincho:wght@500;700&family=Zen+Kaku+Gothic+New:wght@400;500;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../../style.css">
+<script>
+window.MathJax = { tex: { inlineMath: [['$', '$'], ['\\(', '\\)']], displayMath: [['$$', '$$'], ['\\[', '\\]']] }, options: { skipHtmlTags: ['script','noscript','style','textarea','pre','code'] } };
+</script>
+<script async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml.js"></script>
+</head>
+<body>
+<header class="site-header">
+  <div class="header-inner">
+    <a class="site-title" href="../../index.html">Hugging Face コース日本語版</a>
+    <span class="demo-badge">デモ版</span>
+  </div>
+</header>
+<main class="container">
+<p class="course-crumb"><a href="../index.html">LLM コース</a>
+<span class="badge badge-qa-pass">翻訳QA 最終合格</span></p>
+<nav class="page-nav"><a class="nav-link prev" href="4.html">← 前へ: ビッグデータ？🤗 Datasets にお任せ！</a><a class="nav-link toc-link" href="../index.html">目次へ</a><a class="nav-link next" href="6.html">次へ →: FAISS によるセマンティック検索</a></nav>
+<article class="content">
+<h1>独自のデータセットを作成する</h1>
+<p>NLP アプリケーションを構築するのに必要なデータセットが存在しない場合もあり、その場合は自分で作成する必要があります。このセクションでは、GitHub リポジトリのバグや機能を追跡するためによく使われる <a href="https://github.com/features/issues/">GitHub issues</a> のコーパスの作り方を紹介します。このコーパスは、次のようなさまざまな用途に使えます。</p>
+<ul>
+<li>オープンな issue やプルリクエストをクローズするのにかかる時間を調べる</li>
+<li>issue の説明文に基づいて、"bug"、"enhancement"、"question" などのラベルを複数予測し、自動的に付与するマルチラベル分類器を訓練する</li>
+<li>ユーザーのクエリに一致する issue を探すセマンティック検索エンジンを作る</li>
+</ul>
+<p>ここではコーパスの作成に焦点を当て、次のセクションでセマンティック検索アプリケーションに取り組みます。今回は、教材で扱っている人気のオープンソースプロジェクト 🤗 Datasets 自身を題材に、その GitHub issues を使います。データの取得方法と、これらの issue に含まれる情報の探索方法を見ていきましょう。</p>
+<h2>データの取得</h2>
+<p>🤗 Datasets のすべての issue は、リポジトリの <a href="https://github.com/huggingface/datasets/issues">Issues タブ</a>に移動すれば確認できます。次のスクリーンショットに示すように、執筆時点では331件のオープンな issue と668件のクローズされた issue がありました。</p>
+<div class="flex justify-center">
+<img src="https://huggingface.co/datasets/huggingface-course/documentation-images/resolve/main/en/chapter5/datasets-issues.png" alt="🤗 Datasets に関連する GitHub の issue。" width="80%"/>
+</div>
+
+<p>これらの issue のいずれかをクリックすると、タイトル、説明、そして issue を特徴づけるラベルの集合が含まれていることが分かります。例を下のスクリーンショットに示します。</p>
+<div class="flex justify-center">
+<img src="https://huggingface.co/datasets/huggingface-course/documentation-images/resolve/main/en/chapter5/datasets-issues-single.png" alt="🤗 Datasets リポジトリにおける典型的な GitHub issue。" width="80%"/>
+</div>
+
+<p>リポジトリのすべての issue をダウンロードするには、<a href="https://docs.github.com/en/rest">GitHub REST API</a> を使って <a href="https://docs.github.com/en/rest/reference/issues#list-repository-issues"><code>Issues</code> エンドポイント</a>をポーリングします。このエンドポイントは JSON オブジェクトのリストを返し、各オブジェクトにはタイトルと説明のほか、issue のステータスに関するメタデータなど、多数のフィールドが含まれています。</p>
+<p>issue をダウンロードする便利な方法は、Python で HTTP リクエストを行う標準的な方法である <code>requests</code> ライブラリを使うことです。ライブラリは次のように実行してインストールできます。</p>
+<div class="codehilite"><pre><span></span><code><span class="err">!</span><span class="n">pip</span> <span class="n">install</span> <span class="n">requests</span>
+</code></pre></div>
+
+<p>ライブラリがインストールできたら、<code>requests.get()</code> 関数を呼び出して <code>Issues</code> エンドポイントに GET リクエストを送れます。たとえば、次のコマンドを実行すると、最初のページの最初の issue を取得できます。</p>
+<div class="codehilite"><pre><span></span><code><span class="kn">import</span><span class="w"> </span><span class="nn">requests</span>
+
+<span class="n">url</span> <span class="o">=</span> <span class="s2">"https://api.github.com/repos/huggingface/datasets/issues?page=1&amp;per_page=1"</span>
+<span class="n">response</span> <span class="o">=</span> <span class="n">requests</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">url</span><span class="p">)</span>
+</code></pre></div>
+
+<p><code>response</code> オブジェクトには、HTTP ステータスコードを含め、リクエストに関する有用な情報がたくさん含まれています。</p>
+<div class="codehilite"><pre><span></span><code><span class="n">response</span><span class="o">.</span><span class="n">status_code</span>
+</code></pre></div>
+
+<p>```python out
+200</p>
+<div class="codehilite"><pre><span></span><code>ステータス `200` はリクエストが成功したことを意味します（HTTP ステータスコードの一覧は[こちら](https://en.wikipedia.org/wiki/List_of_HTTP_status_codes)で確認できます）。ここで確認したいのは、レスポンスの本文に当たるペイロードで、バイト、文字列、JSON などさまざまな形式でアクセスできます。issue が JSON 形式であることが分かっているので、ペイロードを次のように確認しましょう。
+
+```py
+response.json()
+</code></pre></div>
+
+<p>```python out
+[{'url': 'https://api.github.com/repos/huggingface/datasets/issues/2792',
+  'repository_url': 'https://api.github.com/repos/huggingface/datasets',
+  'labels_url': 'https://api.github.com/repos/huggingface/datasets/issues/2792/labels{/name}',
+  'comments_url': 'https://api.github.com/repos/huggingface/datasets/issues/2792/comments',
+  'events_url': 'https://api.github.com/repos/huggingface/datasets/issues/2792/events',
+  'html_url': 'https://github.com/huggingface/datasets/pull/2792',
+  'id': 968650274,
+  'node_id': 'MDExOlB1bGxSZXF1ZXN0NzEwNzUyMjc0',
+  'number': 2792,
+  'title': 'Update GooAQ',
+  'user': {'login': 'bhavitvyamalik',
+   'id': 19718818,
+   'node_id': 'MDQ6VXNlcjE5NzE4ODE4',
+   'avatar_url': 'https://avatars.githubusercontent.com/u/19718818?v=4',
+   'gravatar_id': '',
+   'url': 'https://api.github.com/users/bhavitvyamalik',
+   'html_url': 'https://github.com/bhavitvyamalik',
+   'followers_url': 'https://api.github.com/users/bhavitvyamalik/followers',
+   'following_url': 'https://api.github.com/users/bhavitvyamalik/following{/other_user}',
+   'gists_url': 'https://api.github.com/users/bhavitvyamalik/gists{/gist_id}',
+   'starred_url': 'https://api.github.com/users/bhavitvyamalik/starred{/owner}{/repo}',
+   'subscriptions_url': 'https://api.github.com/users/bhavitvyamalik/subscriptions',
+   'organizations_url': 'https://api.github.com/users/bhavitvyamalik/orgs',
+   'repos_url': 'https://api.github.com/users/bhavitvyamalik/repos',
+   'events_url': 'https://api.github.com/users/bhavitvyamalik/events{/privacy}',
+   'received_events_url': 'https://api.github.com/users/bhavitvyamalik/received_events',
+   'type': 'User',
+   'site_admin': False},
+  'labels': [],
+  'state': 'open',
+  'locked': False,
+  'assignee': None,
+  'assignees': [],
+  'milestone': None,
+  'comments': 1,
+  'created_at': '2021-08-12T11:40:18Z',
+  'updated_at': '2021-08-12T12:31:17Z',
+  'closed_at': None,
+  'author_association': 'CONTRIBUTOR',
+  'active_lock_reason': None,
+  'pull_request': {'url': 'https://api.github.com/repos/huggingface/datasets/pulls/2792',
+   'html_url': 'https://github.com/huggingface/datasets/pull/2792',
+   'diff_url': 'https://github.com/huggingface/datasets/pull/2792.diff',
+   'patch_url': 'https://github.com/huggingface/datasets/pull/2792.patch'},
+  'body': '<a href="https://github.com/allenai/gooaq">GooAQ</a> dataset was recently updated after splits were added for the same. This PR contains new updated GooAQ with train/val/test splits and updated README as well.',
+  'performed_via_github_app': None}]</p>
+<div class="codehilite"><pre><span></span><code>おお、情報量がすごいですね！issue を表す `title`、`body`、`number` のような有用なフィールドのほか、issue を開いた GitHub ユーザーに関する情報も見えます。
+
+&lt;div class="callout callout-tip" markdown="block"&gt;
+&lt;p class="callout-title"&gt;💡 ヒント&lt;/p&gt;
+✏️ **やってみよう！** 上の JSON ペイロードにある URL をいくつかクリックして、それぞれのリンク先で、どのような情報が得られるか確認してみましょう。
+&lt;/div&gt;
+
+
+GitHub の[ドキュメント](https://docs.github.com/en/rest/overview/resources-in-the-rest-api#rate-limiting)に記載されているように、認証されていないリクエストは1時間あたり60リクエストに制限されます。`per_page` クエリパラメータを増やしてリクエスト回数を減らすことはできますが、数千件を超える issue を持つリポジトリでは、それでもレート制限に引っかかります。そのため、代わりに GitHub の[手順](https://docs.github.com/en/github/authenticating-to-github/creating-a-personal-access-token)に従って個人アクセストークンを作成し、レート制限を1時間あたり5,000リクエストまで引き上げるべきです。トークンが用意できたら、リクエストヘッダの一部として含めることができます。
+
+```py
+GITHUB_TOKEN = xxx  # ここに自分の GitHub トークンを貼り付けます
+headers = {"Authorization": f"token {GITHUB_TOKEN}"}
+</code></pre></div>
+
+<div class="callout callout-warning">
+<p class="callout-title">⚠️ 注意</p>
+<p>⚠️ <code>GITHUB_TOKEN</code> を貼り付けたノートブックを共有しないでください。誤ってこの情報を漏らさないよう、実行後は最後のセルを削除することをおすすめします。さらに良いのは、トークンを <em>.env</em> ファイルに保存し、<a href="https://github.com/theskumar/python-dotenv"><code>python-dotenv</code> ライブラリ</a>を使って環境変数として自動的に読み込む方法です。</p>
+</div>
+<p>アクセストークンが用意できたので、GitHub リポジトリからすべての issue をダウンロードできる関数を作りましょう。</p>
+<div class="codehilite"><pre><span></span><code><span class="kn">import</span><span class="w"> </span><span class="nn">time</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">math</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">pathlib</span><span class="w"> </span><span class="kn">import</span> <span class="n">Path</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">pandas</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">pd</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">tqdm.notebook</span><span class="w"> </span><span class="kn">import</span> <span class="n">tqdm</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">fetch_issues</span><span class="p">(</span>
+    <span class="n">owner</span><span class="o">=</span><span class="s2">"huggingface"</span><span class="p">,</span>
+    <span class="n">repo</span><span class="o">=</span><span class="s2">"datasets"</span><span class="p">,</span>
+    <span class="n">num_issues</span><span class="o">=</span><span class="mi">10_000</span><span class="p">,</span>
+    <span class="n">rate_limit</span><span class="o">=</span><span class="mi">5_000</span><span class="p">,</span>
+    <span class="n">issues_path</span><span class="o">=</span><span class="n">Path</span><span class="p">(</span><span class="s2">"."</span><span class="p">),</span>
+<span class="p">):</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">issues_path</span><span class="o">.</span><span class="n">is_dir</span><span class="p">():</span>
+        <span class="n">issues_path</span><span class="o">.</span><span class="n">mkdir</span><span class="p">(</span><span class="n">exist_ok</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+
+    <span class="n">batch</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="n">all_issues</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="n">per_page</span> <span class="o">=</span> <span class="mi">100</span>  <span class="c1"># 1ページあたりに返す issue の数</span>
+    <span class="n">num_pages</span> <span class="o">=</span> <span class="n">math</span><span class="o">.</span><span class="n">ceil</span><span class="p">(</span><span class="n">num_issues</span> <span class="o">/</span> <span class="n">per_page</span><span class="p">)</span>
+    <span class="n">base_url</span> <span class="o">=</span> <span class="s2">"https://api.github.com/repos"</span>
+
+    <span class="k">for</span> <span class="n">page</span> <span class="ow">in</span> <span class="n">tqdm</span><span class="p">(</span><span class="nb">range</span><span class="p">(</span><span class="n">num_pages</span><span class="p">)):</span>
+        <span class="c1"># state=all でクエリし、オープンとクローズの両方の issue を取得します</span>
+        <span class="n">query</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">"issues?page=</span><span class="si">{</span><span class="n">page</span><span class="si">}</span><span class="s2">&amp;per_page=</span><span class="si">{</span><span class="n">per_page</span><span class="si">}</span><span class="s2">&amp;state=all"</span>
+        <span class="n">issues</span> <span class="o">=</span> <span class="n">requests</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">base_url</span><span class="si">}</span><span class="s2">/</span><span class="si">{</span><span class="n">owner</span><span class="si">}</span><span class="s2">/</span><span class="si">{</span><span class="n">repo</span><span class="si">}</span><span class="s2">/</span><span class="si">{</span><span class="n">query</span><span class="si">}</span><span class="s2">"</span><span class="p">,</span> <span class="n">headers</span><span class="o">=</span><span class="n">headers</span><span class="p">)</span>
+        <span class="n">batch</span><span class="o">.</span><span class="n">extend</span><span class="p">(</span><span class="n">issues</span><span class="o">.</span><span class="n">json</span><span class="p">())</span>
+
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">batch</span><span class="p">)</span> <span class="o">&gt;</span> <span class="n">rate_limit</span> <span class="ow">and</span> <span class="nb">len</span><span class="p">(</span><span class="n">all_issues</span><span class="p">)</span> <span class="o">&lt;</span> <span class="n">num_issues</span><span class="p">:</span>
+            <span class="n">all_issues</span><span class="o">.</span><span class="n">extend</span><span class="p">(</span><span class="n">batch</span><span class="p">)</span>
+            <span class="n">batch</span> <span class="o">=</span> <span class="p">[]</span>  <span class="c1"># 次の期間のためにバッチを空にします</span>
+            <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"GitHub API のレート制限に達しました。1時間待機します..."</span><span class="p">)</span>
+            <span class="n">time</span><span class="o">.</span><span class="n">sleep</span><span class="p">(</span><span class="mi">60</span> <span class="o">*</span> <span class="mi">60</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)</span>
+
+    <span class="n">all_issues</span><span class="o">.</span><span class="n">extend</span><span class="p">(</span><span class="n">batch</span><span class="p">)</span>
+    <span class="n">df</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="o">.</span><span class="n">from_records</span><span class="p">(</span><span class="n">all_issues</span><span class="p">)</span>
+    <span class="n">df</span><span class="o">.</span><span class="n">to_json</span><span class="p">(</span><span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">issues_path</span><span class="si">}</span><span class="s2">/</span><span class="si">{</span><span class="n">repo</span><span class="si">}</span><span class="s2">-issues.jsonl"</span><span class="p">,</span> <span class="n">orient</span><span class="o">=</span><span class="s2">"records"</span><span class="p">,</span> <span class="n">lines</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+    <span class="nb">print</span><span class="p">(</span>
+        <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">repo</span><span class="si">}</span><span class="s2"> のすべての issue をダウンロードしました。データセットの保存先: </span><span class="si">{</span><span class="n">issues_path</span><span class="si">}</span><span class="s2">/</span><span class="si">{</span><span class="n">repo</span><span class="si">}</span><span class="s2">-issues.jsonl"</span>
+    <span class="p">)</span>
+</code></pre></div>
+
+<p><code>fetch_issues()</code> を呼び出すと、GitHub の1時間あたりのリクエスト数の上限を超えないよう、すべての issue がバッチ単位でダウンロードされます。結果は <em>リポジトリ名-issues.jsonl</em> ファイルに保存され、各行が issue を表す JSON オブジェクトになります。この関数を使って、🤗 Datasets のすべての issue を取得しましょう。</p>
+<div class="codehilite"><pre><span></span><code><span class="c1"># インターネット接続によっては、実行に数分かかることがあります...</span>
+<span class="n">fetch_issues</span><span class="p">()</span>
+</code></pre></div>
+
+<p>issue がダウンロードできたら、<a href="2.html">セクション2</a> で身につけたスキルを使って、ローカルで読み込むことができます。</p>
+<div class="codehilite"><pre><span></span><code><span class="n">issues_dataset</span> <span class="o">=</span> <span class="n">load_dataset</span><span class="p">(</span><span class="s2">"json"</span><span class="p">,</span> <span class="n">data_files</span><span class="o">=</span><span class="s2">"datasets-issues.jsonl"</span><span class="p">,</span> <span class="n">split</span><span class="o">=</span><span class="s2">"train"</span><span class="p">)</span>
+<span class="n">issues_dataset</span>
+</code></pre></div>
+
+<p>```python out
+Dataset({
+    features: ['url', 'repository_url', 'labels_url', 'comments_url', 'events_url', 'html_url', 'id', 'node_id', 'number', 'title', 'user', 'labels', 'state', 'locked', 'assignee', 'assignees', 'milestone', 'comments', 'created_at', 'updated_at', 'closed_at', 'author_association', 'active_lock_reason', 'pull_request', 'body', 'timeline_url', 'performed_via_github_app'],
+    num_rows: 3019
+})</p>
+<div class="codehilite"><pre><span></span><code>素晴らしい。これで初めてのデータセットをゼロから作れました！しかし、🤗 Datasets リポジトリの [Issues タブ](https://github.com/huggingface/datasets/issues)には合計で約1,000件の issue しか表示されないのに、なぜ数千件もの issue があるのでしょうか 🤔？GitHub の[ドキュメント](https://docs.github.com/en/rest/reference/issues#list-issues-assigned-to-the-authenticated-user)に記載されているように、これはプルリクエストもすべてダウンロードしているためです。
+
+&gt; GitHub の REST API v3 は、すべてのプルリクエストを issue とみなしますが、すべての issue がプルリクエストであるとは限りません。このため、「Issues」エンドポイントはレスポンスに issue とプルリクエストの両方を返すことがあります。プルリクエストは `pull_request` キーで識別できます。「Issues」エンドポイントから返されるプルリクエストの `id` は issue の id になることに注意してください。
+
+issue とプルリクエストの内容はかなり異なるため、両者を区別できるよう、軽い前処理を行いましょう。
+
+## データのクリーニング
+
+GitHub ドキュメントの上記の抜粋によれば、`pull_request` 列を使って issue とプルリクエストを区別できます。ランダムサンプルを見て、違いを確認してみましょう。[セクション3](/course/chapter5/3) で行ったように、`Dataset.shuffle()` と `Dataset.select()` をつないでランダムサンプルを作り、`html_url` 列と `pull_request` 列を zip して、さまざまな URL を比較できるようにします。
+
+```py
+sample = issues_dataset.shuffle(seed=666).select(range(3))
+
+# URL とプルリクエストのエントリを表示します
+for url, pr in zip(sample["html_url"], sample["pull_request"]):
+    print(f"&gt;&gt; URL: {url}")
+    print(f"&gt;&gt; プルリクエスト: {pr}\n")
+</code></pre></div>
+
+<p>```python out</p>
+<blockquote>
+<blockquote>
+<p>URL: https://github.com/huggingface/datasets/pull/850
+プルリクエスト: {'url': 'https://api.github.com/repos/huggingface/datasets/pulls/850', 'html_url': 'https://github.com/huggingface/datasets/pull/850', 'diff_url': 'https://github.com/huggingface/datasets/pull/850.diff', 'patch_url': 'https://github.com/huggingface/datasets/pull/850.patch'}</p>
+<p>URL: https://github.com/huggingface/datasets/issues/2773
+プルリクエスト: None</p>
+<p>URL: https://github.com/huggingface/datasets/pull/783
+プルリクエスト: {'url': 'https://api.github.com/repos/huggingface/datasets/pulls/783', 'html_url': 'https://github.com/huggingface/datasets/pull/783', 'diff_url': 'https://github.com/huggingface/datasets/pull/783.diff', 'patch_url': 'https://github.com/huggingface/datasets/pull/783.patch'}</p>
+</blockquote>
+</blockquote>
+<div class="codehilite"><pre><span></span><code>ここでは、各プルリクエストにはさまざまな URL が関連付けられている一方、通常の issue は `None` のエントリを持っていることが分かります。この違いを使って、`pull_request` フィールドが `None` かどうかをチェックする新しい `is_pull_request` 列を作ることができます。
+
+```py
+issues_dataset = issues_dataset.map(
+    lambda x: {"is_pull_request": False if x["pull_request"] is None else True}
+)
+</code></pre></div>
+
+<div class="callout callout-tip">
+<p class="callout-title">💡 ヒント</p>
+<p>✏️ <strong>やってみよう！</strong> 🤗 Datasets の issue がクローズされるまでの平均時間を計算してみましょう。プルリクエストとオープンな issue を除外するには <code>Dataset.filter()</code> 関数が役立ちます。また、<code>Dataset.set_format()</code> 関数を使ってデータセットを <code>DataFrame</code> に変換すれば、<code>created_at</code> と <code>closed_at</code> のタイムスタンプを簡単に操作できます。おまけとして、プルリクエストがクローズされるまでの平均時間も計算してみましょう。</p>
+</div>
+<p>一部の列を削除したり名前を変更したりしてデータセットをさらにクリーニングすることもできますが、この段階ではデータセットをできるだけ「生」の状態に保つのが一般に良い実践です。そうすれば、複数のアプリケーションで簡単に使えます。</p>
+<p>データセットを Hugging Face Hub にプッシュする前に、まだ取得していない情報を追加しましょう。それは、各 issue やプルリクエストに寄せられたコメントです。次に、お察しのとおり GitHub REST API を使って、それらを追加します！</p>
+<h2>データセットの拡張</h2>
+<p>次のスクリーンショットに示すように、issue やプルリクエストに関連するコメントは、特にライブラリに関するユーザーの質問に答える検索エンジンを構築したい場合に、豊富な情報源となります。</p>
+<div class="flex justify-center">
+<img src="https://huggingface.co/datasets/huggingface-course/documentation-images/resolve/main/en/chapter5/datasets-issues-comment.png" alt="🤗 Datasets に関する issue に関連するコメント。" width="80%"/>
+</div>
+
+<p>GitHub REST API には、issue 番号に関連するすべてのコメントを返す <a href="https://docs.github.com/en/rest/reference/issues#list-issue-comments"><code>Comments</code> エンドポイント</a>があります。エンドポイントをテストして、何が返るか見てみましょう。</p>
+<div class="codehilite"><pre><span></span><code><span class="n">issue_number</span> <span class="o">=</span> <span class="mi">2792</span>
+<span class="n">url</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">"https://api.github.com/repos/huggingface/datasets/issues/</span><span class="si">{</span><span class="n">issue_number</span><span class="si">}</span><span class="s2">/comments"</span>
+<span class="n">response</span> <span class="o">=</span> <span class="n">requests</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">url</span><span class="p">,</span> <span class="n">headers</span><span class="o">=</span><span class="n">headers</span><span class="p">)</span>
+<span class="n">response</span><span class="o">.</span><span class="n">json</span><span class="p">()</span>
+</code></pre></div>
+
+<p><code>python out
+[{'url': 'https://api.github.com/repos/huggingface/datasets/issues/comments/897594128',
+  'html_url': 'https://github.com/huggingface/datasets/pull/2792#issuecomment-897594128',
+  'issue_url': 'https://api.github.com/repos/huggingface/datasets/issues/2792',
+  'id': 897594128,
+  'node_id': 'IC_kwDODunzps41gDMQ',
+  'user': {'login': 'bhavitvyamalik',
+   'id': 19718818,
+   'node_id': 'MDQ6VXNlcjE5NzE4ODE4',
+   'avatar_url': 'https://avatars.githubusercontent.com/u/19718818?v=4',
+   'gravatar_id': '',
+   'url': 'https://api.github.com/users/bhavitvyamalik',
+   'html_url': 'https://github.com/bhavitvyamalik',
+   'followers_url': 'https://api.github.com/users/bhavitvyamalik/followers',
+   'following_url': 'https://api.github.com/users/bhavitvyamalik/following{/other_user}',
+   'gists_url': 'https://api.github.com/users/bhavitvyamalik/gists{/gist_id}',
+   'starred_url': 'https://api.github.com/users/bhavitvyamalik/starred{/owner}{/repo}',
+   'subscriptions_url': 'https://api.github.com/users/bhavitvyamalik/subscriptions',
+   'organizations_url': 'https://api.github.com/users/bhavitvyamalik/orgs',
+   'repos_url': 'https://api.github.com/users/bhavitvyamalik/repos',
+   'events_url': 'https://api.github.com/users/bhavitvyamalik/events{/privacy}',
+   'received_events_url': 'https://api.github.com/users/bhavitvyamalik/received_events',
+   'type': 'User',
+   'site_admin': False},
+  'created_at': '2021-08-12T12:21:52Z',
+  'updated_at': '2021-08-12T12:31:17Z',
+  'author_association': 'CONTRIBUTOR',
+  'body': "@albertvillanova my tests are failing here:\r\n</code>\r\ndataset_name = 'gooaq'\r\n\r\n    def test_load_dataset(self, dataset_name):\r\n        configs = self.dataset_tester.load_all_configs(dataset_name, is_local=True)[:1]\r\n&gt;       self.dataset_tester.check_load_dataset(dataset_name, configs, is_local=True, use_local_dummy_data=True)\r\n\r\ntests/test_dataset_common.py:234: \r\n_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ \r\ntests/test_dataset_common.py:187: in check_load_dataset\r\n    self.parent.assertTrue(len(dataset[split]) &gt; 0)\r\nE   AssertionError: False is not true\r\n```\r\nWhen I try loading dataset on local machine it works fine. Any suggestions on how can I avoid this error?",
+  'performed_via_github_app': None}]</p>
+<div class="codehilite"><pre><span></span><code>コメントは `body` フィールドに保存されていることが分かります。そこで、`response.json()` の各要素について `body` の内容を取り出すことで、issue に関連するすべてのコメントを返す単純な関数を書きましょう。
+
+```py
+def get_comments(issue_number):
+    url = f"https://api.github.com/repos/huggingface/datasets/issues/{issue_number}/comments"
+    response = requests.get(url, headers=headers)
+    return [r["body"] for r in response.json()]
+
+
+# 関数が期待どおりに動くかテストします
+get_comments(2792)
+</code></pre></div>
+
+<p><code>python out
+["@albertvillanova my tests are failing here:\r\n</code>\r\ndataset_name = 'gooaq'\r\n\r\n    def test_load_dataset(self, dataset_name):\r\n        configs = self.dataset_tester.load_all_configs(dataset_name, is_local=True)[:1]\r\n&gt;       self.dataset_tester.check_load_dataset(dataset_name, configs, is_local=True, use_local_dummy_data=True)\r\n\r\ntests/test_dataset_common.py:234: \r\n_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ \r\ntests/test_dataset_common.py:187: in check_load_dataset\r\n    self.parent.assertTrue(len(dataset[split]) &gt; 0)\r\nE   AssertionError: False is not true\r\n```\r\nWhen I try loading dataset on local machine it works fine. Any suggestions on how can I avoid this error?"]</p>
+<div class="codehilite"><pre><span></span><code>良さそうです。では、`Dataset.map()` を使って、データセット内の各 issue に新しい `comments` 列を追加しましょう。
+
+```py
+# インターネット接続によっては、数分かかることがあります...
+issues_with_comments_dataset = issues_dataset.map(
+    lambda x: {"comments": get_comments(x["number"])}
+)
+</code></pre></div>
+
+<p>最後のステップは、データセットを Hub にプッシュすることです。その方法を見ていきましょう。</p>
+<h2>データセットを Hugging Face Hub にアップロードする</h2>
+<div class="youtube-embed"><iframe src="https://www.youtube-nocookie.com/embed/HaN6qCr_Afc" title="YouTube video" loading="lazy" allowfullscreen referrerpolicy="strict-origin-when-cross-origin"></iframe></div>
+<p>拡張したデータセットが用意できたので、コミュニティと共有するために Hub にプッシュしましょう！データセットのアップロードは非常に簡単です。🤗 Transformers のモデルやトークナイザと同様に、<code>push_to_hub()</code> メソッドを使ってデータセットをプッシュできます。そのためには認証トークンが必要です。まず <code>notebook_login()</code> 関数で Hugging Face Hub にログインすれば取得できます。</p>
+<div class="codehilite"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">huggingface_hub</span><span class="w"> </span><span class="kn">import</span> <span class="n">notebook_login</span>
+
+<span class="n">notebook_login</span><span class="p">()</span>
+</code></pre></div>
+
+<p>これにより、ユーザー名とパスワードを入力できるウィジェットが作られ、API トークンが <em>~/.huggingface/token</em> に保存されます。ターミナルでコードを実行している場合は、代わりに CLI でログインできます。</p>
+<div class="codehilite"><pre><span></span><code>huggingface-cli<span class="w"> </span>login
+</code></pre></div>
+
+<p>ログインできたら、次のように実行してデータセットをアップロードできます。</p>
+<div class="codehilite"><pre><span></span><code><span class="n">issues_with_comments_dataset</span><span class="o">.</span><span class="n">push_to_hub</span><span class="p">(</span><span class="s2">"github-issues"</span><span class="p">)</span>
+</code></pre></div>
+
+<p>これ以降は、誰でもリポジトリ ID を <code>load_dataset()</code> の <code>path</code> 引数として渡すだけで、データセットをダウンロードできます。</p>
+<div class="codehilite"><pre><span></span><code><span class="n">remote_dataset</span> <span class="o">=</span> <span class="n">load_dataset</span><span class="p">(</span><span class="s2">"lewtun/github-issues"</span><span class="p">,</span> <span class="n">split</span><span class="o">=</span><span class="s2">"train"</span><span class="p">)</span>
+<span class="n">remote_dataset</span>
+</code></pre></div>
+
+<p><code>python out
+Dataset({
+    features: ['url', 'repository_url', 'labels_url', 'comments_url', 'events_url', 'html_url', 'id', 'node_id', 'number', 'title', 'user', 'labels', 'state', 'locked', 'assignee', 'assignees', 'milestone', 'comments', 'created_at', 'updated_at', 'closed_at', 'author_association', 'active_lock_reason', 'pull_request', 'body', 'performed_via_github_app', 'is_pull_request'],
+    num_rows: 2855
+})</code></p>
+<p>やりました。データセットを Hub にプッシュし、他の人が使えるようになりました！残る重要な作業は1つだけです。コーパスがどのように作成されたかを説明し、コミュニティに他の有用な情報を提供するデータセットカードを追加することです。</p>
+<div class="callout callout-tip">
+<p class="callout-title">💡 ヒント</p>
+<p>💡 データセットは、<code>huggingface-cli</code> と少しの Git の工夫を使って、ターミナルから直接 Hugging Face Hub にアップロードすることもできます。方法の詳細は <a href="https://huggingface.co/docs/datasets/share#share-a-dataset-using-the-cli">🤗 Datasets ガイド</a>を参照してください。</p>
+</div>
+<h2>データセットカードの作成</h2>
+<p>説明や利用上の注意が十分に記載されたデータセットは、他の人（そして未来の自分！）にとって有用である可能性が高くなります。データセットが自分のタスクに関連するかどうかをユーザーが判断したり、データセットの使用に伴う潜在的なバイアスやリスクを評価したりするための文脈を提供してくれるからです。</p>
+<p>Hugging Face Hub では、この情報は各データセットリポジトリの <em>README.md</em> ファイルに保存されます。このファイルを作成する前に、主に次の2つのステップを行うべきです。</p>
+<ol>
+<li><a href="https://huggingface.co/datasets/tagging/"><code>datasets-tagging</code> アプリケーション</a>を使って、YAML 形式のメタデータタグを作成します。これらのタグは Hugging Face Hub のさまざまな検索機能に使われ、データセットがコミュニティのメンバーに簡単に見つけてもらえるようにします。ここではカスタムデータセットを作成したため、<code>datasets-tagging</code> リポジトリをクローンして、アプリケーションをローカルで実行する必要があります。インターフェースは次のようになっています。</li>
+</ol>
+<div class="flex justify-center">
+<img src="https://huggingface.co/datasets/huggingface-course/documentation-images/resolve/main/en/chapter5/datasets-tagger.png" alt="`datasets-tagging` のインターフェース。" width="80%"/>
+</div>
+
+<ol start="2">
+<li>データセットカードの作成に関する <a href="https://github.com/huggingface/datasets/blob/master/templates/README_guide.md">🤗 Datasets ガイド</a>を読み、テンプレートとして使います。</li>
+</ol>
+<p><em>README.md</em> ファイルは Hub 上で直接作成できます。記入済みのデータセットカードのテンプレートは、<code>lewtun/github-issues</code> データセットリポジトリにあります。記入されたデータセットカードのスクリーンショットを下に示します。</p>
+<div class="flex justify-center">
+<img src="https://huggingface.co/datasets/huggingface-course/documentation-images/resolve/main/en/chapter5/dataset-card.png" alt="データセットカード。" width="80%"/>
+</div>
+
+<div class="callout callout-tip">
+<p class="callout-title">💡 ヒント</p>
+<p>✏️ <strong>やってみよう！</strong> <code>dataset-tagging</code> アプリケーションと <a href="https://github.com/huggingface/datasets/blob/master/templates/README_guide.md">🤗 Datasets ガイド</a>を使って、自分の GitHub issues データセットの <em>README.md</em> ファイルを完成させてみましょう。</p>
+</div>
+<p>以上です！このセクションでは、良いデータセットの作成にはかなり手間がかかることを見てきましたが、幸いなことに、アップロードしてコミュニティと共有するのは難しくありません。次のセクションでは、新しいデータセットを使って、質問に最も関連性の高い issue やコメントを見つけるセマンティック検索エンジンを 🤗 Datasets で作成します。</p>
+<div class="callout callout-tip">
+<p class="callout-title">💡 ヒント</p>
+<p>✏️ <strong>やってみよう！</strong> このセクションでたどった手順を追って、好きなオープンソースライブラリ（もちろん 🤗 Datasets 以外のものを選んでください！）の GitHub issues のデータセットを作成してみましょう。おまけとして、<code>labels</code> フィールドに存在するタグを予測するマルチラベル分類器をファインチューニングしてみましょう。</p>
+</div>
+</article>
+<nav class="page-nav"><a class="nav-link prev" href="4.html">← 前へ: ビッグデータ？🤗 Datasets にお任せ！</a><a class="nav-link toc-link" href="../index.html">目次へ</a><a class="nav-link next" href="6.html">次へ →: FAISS によるセマンティック検索</a></nav>
+</main>
+<footer class="site-footer">
+  <p>原典: Hugging Face huggingface/course（<a href="https://github.com/huggingface/course">https://github.com/huggingface/course</a>）</p>
+  <p>日本語版の翻訳・公開: 霞ヶ関京 / 連絡先: GitHub <a href="https://github.com/yanikasumin">@yanikasumin</a> / YouTube <a href="https://www.youtube.com/@KASUMI_MOF">@KASUMI_MOF</a></p>
+  <p class="demo-note">このサイトはデモ版です。内容は順次更新されます。</p>
+</footer>
+<script src="../../site.js"></script>
+</body>
+</html>

@@ -1,0 +1,390 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>DeepSeekMath の Group Relative Policy Optimization（GRPO）を深く理解する | Hugging Face コース日本語版（デモ版）</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Shippori+Mincho:wght@500;700&family=Zen+Kaku+Gothic+New:wght@400;500;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../../style.css">
+<script>
+window.MathJax = { tex: { inlineMath: [['$', '$'], ['\\(', '\\)']], displayMath: [['$$', '$$'], ['\\[', '\\]']] }, options: { skipHtmlTags: ['script','noscript','style','textarea','pre','code'] } };
+</script>
+<script async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml.js"></script>
+</head>
+<body>
+<header class="site-header">
+  <div class="header-inner">
+    <a class="site-title" href="../../index.html">Hugging Face コース日本語版</a>
+    <span class="demo-badge">デモ版</span>
+  </div>
+</header>
+<main class="container">
+<p class="course-crumb"><a href="../index.html">LLM コース</a>
+<span class="badge badge-qa-pass">翻訳QA 最終合格</span></p>
+<nav class="page-nav"><a class="nav-link prev" href="3.html">← 前へ: DeepSeek R1 論文を理解する</a><a class="nav-link toc-link" href="../index.html">目次へ</a><a class="nav-link next" href="4.html">次へ →: TRL で GRPO を実装する</a></nav>
+<article class="content">
+<h1>DeepSeekMath の Group Relative Policy Optimization（GRPO）を深く理解する</h1>
+<div class="callout callout-tip">
+<p class="callout-title">💡 ヒント</p>
+<p>このセクションでは、GRPO の技術的・数学的な詳細に踏み込みます。執筆は <a href="https://huggingface.com/shirinyamani" target="_blank">Shirin Yamani</a> です。</p>
+</div>
+<p>GRPO をより深く理解し、モデルの学習プロセスを改善できるようになりましょう。</p>
+<p>GRPO は、別の価値モデル（Critic）を学習する代わりに、モデルが生成した応答を生成のグループ内で比較することで直接評価し、方策モデルを最適化します。このアプローチにより、計算コストが大幅に削減されます！</p>
+<p>GRPO は、応答の正しさを判定できる、検証可能なあらゆるタスクに適用できます。たとえば数学の推論では、応答の正しさを正解と比較することで簡単に検証できます。</p>
+<p>技術的な詳細に入る前に、GRPO が高いレベルでどのように機能するかを視覚化してみましょう。</p>
+<p><img alt="GRPO の概要" src="https://huggingface.co/reasoning-course/images/resolve/main/grpo/16.png" /></p>
+<p>視覚的な概要が得られたところで、GRPO の仕組みをステップごとに分解してみましょう。</p>
+<h2>GRPO アルゴリズム</h2>
+<p>GRPO の中核的な革新は、生成された複数の応答を同時に評価し、そこから学ぶアプローチです。別の報酬モデルに頼るのではなく、同じグループ内の出力を比較して、どれを強化すべきかを決定します。</p>
+<p>アルゴリズムの各ステップを詳しく見ていきましょう。</p>
+<h3>ステップ1： グループサンプリング</h3>
+<p>最初のステップは、各質問に対して複数の候補の答えを生成することです。これにより、互いに比較できる多様な出力の集合が作られます。</p>
+<p>各質問 \( q \) に対して、モデルは、学習された方策から \( G \) 件の出力（グループサイズ）を生成します： { \( {o_1, o_2, o_3, \dots, o_G}\pi_{\theta_{\text{old}}} \) }。ここで \( G=8 \) とし、各 \( o_i \) はモデルからの1件の補完を表します。</p>
+<h4>例</h4>
+<p>具体的にするために、簡単な算数の問題を見てみましょう。</p>
+<p><strong>質問</strong></p>
+<p>\( q \) : \( \text{計算}\space2 + 2 \times 6 \)</p>
+<p><strong>出力</strong></p>
+<p>\( (G = 8) \): \( {o_1:14 \text{ (正解)}, o_2:16 \text{ (不正解)}, o_3:10 \text{ (不正解)}, \ldots, o_8:14 \text{ (正解)}} \)</p>
+<p>生成された答えの一部は正解（14）で、他は不正解（16 や 10）であることに注目してください。この多様性が、次のステップでは決定的に重要です。</p>
+<h3>ステップ2： アドバンテージの計算</h3>
+<p>複数の応答が得られたら、どれが他より優れているかを決める方法が必要です。ここでアドバンテージの計算が登場します。</p>
+<h4>報酬の分布</h4>
+<p>まず、生成された各応答に報酬スコアを割り当てます。この例では報酬モデルを使いますが、前のセクションで学んだとおり、報酬を返す任意の関数を使うこともできます。</p>
+<p>正しさに基づいて、生成された各応答に RM スコア \( r_i \) を割り当てます <em>（例： 正しい応答には1、誤った応答には0）</em>。次に、各 \( r_i \) について、次のアドバンテージ値を計算します。</p>
+<h4>アドバンテージ値の式</h4>
+<p>GRPO の重要な洞察は、品質の絶対的な尺度は必要なく、同じグループ内の出力を比較できるということです。これは標準化によって行われます。</p>
+<p>$$A_i = \frac{r_i - \text{mean}({r_1, r_2, \ldots, r_G})}{\text{std}({r_1, r_2, \ldots, r_G})}$$</p>
+<h4>例</h4>
+<p>上記の算数の例を続けます。8件の応答があり、そのうち4件が正解で残りが不正解だと想像してください。すると次のようになります。</p>
+<table>
+<thead>
+<tr>
+<th>指標</th>
+<th>値</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>グループ平均</td>
+<td>\( mean(r_i) = 0.5 \)</td>
+</tr>
+<tr>
+<td>標準偏差</td>
+<td>\( std(r_i) = 0.53 \)</td>
+</tr>
+<tr>
+<td>アドバンテージ値（正しい応答）</td>
+<td>\( A_i = \frac{1 - 0.5}{0.53}= 0.94 \)</td>
+</tr>
+<tr>
+<td>アドバンテージ値（誤った応答）</td>
+<td>\( A_i = \frac{0 - 0.5}{0.53}= -0.94 \)</td>
+</tr>
+</tbody>
+</table>
+<h4>解釈</h4>
+<p>アドバンテージ値が計算できたところで、それが何を意味するかを理解しましょう。</p>
+<p>この標準化（すなわち \( A_i \) による重み付け）により、モデルは各応答の相対的な性能を評価でき、最適化プロセスを、平均より優れた望ましい応答（高い報酬）へと導き、劣った応答を抑制します。たとえば、\( A_i &gt; 0 \) であれば、その \( o_i \) はグループ内の平均水準より優れた応答です。\( A_i &lt; 0 \) であれば、その応答の品質は平均未満（すなわち低品質／低性能）です。</p>
+<p>上記の例では、\( A_i = 0.94 \text{(正しい出力)} \) であれば、最適化のステップ中にその生成確率が増加します。</p>
+<p>アドバンテージ値が計算できたので、方策を更新する準備が整いました。</p>
+<h3>ステップ3： 方策の更新</h3>
+<p>最後のステップは、これらのアドバンテージ値を使ってモデルを更新し、将来、良い応答を生成する可能性を高めることです。</p>
+<p>方策更新の目的関数は次のとおりです。</p>
+<p>$$J_{GRPO}(\theta) = \left[\frac{1}{G} \sum_{i=1}^{G} \min \left( \frac{\pi_{\theta}(o_i|q)}{\pi_{\theta_{old}}(o_i|q)} A_i \text{clip}\left( \frac{\pi_{\theta}(o_i|q)}{\pi_{\theta_{old}}(o_i|q)}, 1 - \epsilon, 1 + \epsilon \right) A_i \right)\right]- \beta D_{KL}(\pi_{\theta} || \pi_{ref})$$</p>
+<p>この式は一見すると威圧的に見えるかもしれませんが、それぞれ重要な目的を果たすいくつかの構成要素から成り立っています。一つずつ分解してみましょう。</p>
+<h2>目的関数の主要な構成要素</h2>
+<p>GRPO の更新関数は、安定して効果的な学習を保証するために、いくつかの手法を組み合わせています。各構成要素を調べていきましょう。</p>
+<h3>1. 確率比</h3>
+<p>確率比は次のように定義されます。</p>
+<p>\( \left(\frac{\pi_{\theta}(o_i|q)}{\pi_{\theta_{old}}(o_i|q)}\right) \) </p>
+<p>直感的には、この式は、新しいモデルの応答確率が古いモデルの応答確率とどれだけ異なるかを比較し、期待される結果を改善する応答を優先する要素を組み込んでいます。</p>
+<h4>解釈</h4>
+<ul>
+<li>\( \text{ratio} &gt; 1 \) であれば、新しいモデルは古いモデルよりも応答 \( o_i \) に高い確率を割り当てています。</li>
+<li>\( \text{ratio} &lt; 1 \) であれば、新しいモデルは \( o_i \) に低い確率を割り当てています。</li>
+</ul>
+<p>この比により、各ステップでモデルがどれだけ変化するかを制御できます。これが次の構成要素につながります。</p>
+<h3>2. クリップ関数</h3>
+<p>クリッピング関数は次のように定義されます。</p>
+<p>\( \text{clip}\left( \frac{\pi_{\theta}(o_i|q)}{\pi_{\theta_{old}}(o_i|q)}, 1 - \epsilon, 1 + \epsilon\right) \) </p>
+<p>上記の比を \( [1 - \epsilon, 1 + \epsilon] \) の範囲内に制限することで、方策が古い方策から大きく離れすぎないようにします。言い換えれば、確率比がどれだけ増加できるかを制限し、新しいモデルを古いモデルから遠ざけすぎる更新を避けることで、安定性の維持を助けます。</p>
+<h4>例（ε = 0.2）</h4>
+<p>このクリッピング関数をよりよく理解するために、2つの異なるシナリオを見てみましょう。</p>
+<ul>
+<li><strong>ケース1</strong>： 新しい方策がある特定の応答に確率0.9を割り当て、古い方策が確率0.5を割り当てている場合、その応答は新しい方策によってより高い確率になるよう強化されています。ただし、過度な更新の影響はクリッピングによって抑制されます<ul>
+<li>\( \text{比}: \frac{\pi_{\theta}(o_i|q)}{\pi_{\theta_{old}}(o_i|q)} = \frac{0.9}{0.5} = 1.8  → \text{クリップ}\space1.2 \) （上限の1.2にクリップ）</li>
+</ul>
+</li>
+<li><strong>ケース2</strong>： 新しい方策がある応答を好まない場合（確率が0.2など低い場合）です。つまり、その応答が有益でない場合に確率を高める更新は望ましくなく、モデルはペナルティを受けます。<ul>
+<li>\( \text{比}: \frac{\pi_{\theta}(o_i|q)}{\pi_{\theta_{old}}(o_i|q)} = \frac{0.2}{0.5} = 0.4  →\text{クリップ}\space0.8 \) （下限の0.8にクリップ）</li>
+</ul>
+</li>
+</ul>
+<h4>解釈</h4>
+<ul>
+<li>この式は、古いモデルが過小評価していた応答を、<strong>結果を改善する場合に</strong>、新しいモデルが優先するよう促します。</li>
+<li>古いモデルがすでに高い確率で応答を優先していた場合、新しいモデルはそれを強化できますが、<strong>制御された制限 \( [1 - \epsilon, 1 + \epsilon] \) の範囲内でのみ</strong>可能です <strong>\( \text{（例：}\epsilon = 0.2, \space \text{したがって} \space [0.8-1.2]) \)</strong>。</li>
+<li>古いモデルが性能の低い応答を過大評価していた場合、新しいモデルはその高い確率を維持することに<strong>抑制</strong>が働きます。</li>
+<li>したがって、直感的には、確率比を組み込むことで、目的関数は、方策への更新がアドバンテージ \( A_i \) に比例しつつ、急激な変化を防ぐよう調整されることを保証します。</li>
+</ul>
+<p>クリッピング関数は急激な変化を防ぐ助けになりますが、モデルが元の振る舞いから乖離しすぎないようにする、もう一つの安全装置が必要です。</p>
+<h3>3. KL ダイバージェンス</h3>
+<p>KL ダイバージェンスの項は次のとおりです。</p>
+<p>\( \beta D_{KL}(\pi_{\theta} || \pi_{ref}) \)</p>
+<p>KL ダイバージェンスの項において、\( \pi_{ref} \) は基本的に更新前のモデルの出力 <code>per_token_logps</code> であり、\( \pi_{\theta} \) は新しいモデルの出力 <code>new_per_token_logps</code> です。理論的には、KL ダイバージェンスは、最適化中にモデルが元の振る舞いから乖離しすぎることを防ぐために最小化されます。これは、報酬信号に基づいて性能を改善することと、一貫性を維持することのバランスを取る助けになります。この文脈では、KL ダイバージェンスを最小化することで、モデルが意味不明なテキストを生成したり、数学的推論の場合に極端に誤った答えを出したりするリスクを減らします。</p>
+<h4>解釈</h4>
+<ul>
+<li>KL ダイバージェンスのペナルティにより、モデルの出力は元の分布の近くに保たれ、極端な変化を防ぎます。</li>
+<li>完全に非合理的な出力へ漂流する代わりに、モデルはある程度の探索を許しながら、理解を洗練させていきます</li>
+</ul>
+<h4>数学的な定義</h4>
+<p>数学的な詳細に興味がある方のために、正式な定義を見てみましょう。</p>
+<p>KL 距離は次のように定義されることを思い出してください。
+$$D_{KL}(P || Q) = \sum_{x \in X} P(x) \log \frac{P(x)}{Q(x)}$$
+RLHF では、関心のある2つの分布は、多くの場合、新しいモデルバージョンの分布 P(x) と、参照方策の分布 Q(x) です。</p>
+<h4>β パラメータの役割</h4>
+<p>係数 \( \beta \) は、KL ダイバージェンスの制約をどれだけ強く強制するかを制御します。</p>
+<ul>
+<li><strong>β が大きい（KL ペナルティが強い）</strong><ul>
+<li>方策の更新に対する制約が強くなります。モデルは参照分布の近くにとどまります。</li>
+<li>適応が遅くなる可能性があります。モデルはより良い応答を探索するのに苦労するかもしれません。</li>
+</ul>
+</li>
+<li><strong>β が小さい（KL ペナルティが弱い）</strong><ul>
+<li>方策を更新する自由度が増します。モデルは参照からより大きく乖離できます。</li>
+<li>適応が速い反面、不安定になるリスクがあります。モデルが報酬ハッキング的な振る舞いを学習するかもしれません。</li>
+<li>過剰最適化のリスク： 報酬モデルに欠陥がある場合、方策が意味不明な出力を生成するかもしれません。</li>
+</ul>
+</li>
+<li><strong>原論文</strong> <a href="https://arxiv.org/abs/2402.03300">DeepSeekMath</a> では、この \( \beta= 0.04 \) と設定されました</li>
+</ul>
+<p>GRPO の構成要素を理解したところで、それらが完全な例の中でどう連動するかを見てみましょう。</p>
+<h2>GRPO の具体例</h2>
+<p>GRPO の理解を固めるために、最初から最後まで完全な例を見ていきましょう。</p>
+<h3>問題例</h3>
+<p>$$\text{Q: 計算}\space2 + 2 \times 6$$</p>
+<h3>ステップ1： グループサンプリング</h3>
+<p>まず、モデルから複数の応答を生成します。</p>
+<p>\( (G = 8) \) 件の応答を生成します。そのうち \( 4 \) 件が正解（\( 14, \text{reward=} 1 \)）で、\( 4 \) 件が不正解 \( \text{(reward= 0)} \) です。したがって次のようになります。</p>
+<p>$${o_1:14(正解), o_2:10 (不正解), o_3:16 (不正解), ... o_G:14(正解)}$$</p>
+<h3>ステップ2： アドバンテージの計算</h3>
+<p>次に、どの応答が平均より優れているかを判断するために、アドバンテージ値を計算します。</p>
+<table>
+<thead>
+<tr>
+<th>統計量</th>
+<th>値</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>グループ平均</td>
+<td>\( mean(r_i) = 0.5 \)</td>
+</tr>
+<tr>
+<td>標準偏差</td>
+<td>\( std(r_i) = 0.53 \)</td>
+</tr>
+<tr>
+<td>アドバンテージ値（正しい応答）</td>
+<td>\( A_i = \frac{1 - 0.5}{0.53}= 0.94 \)</td>
+</tr>
+<tr>
+<td>アドバンテージ値（誤った応答）</td>
+<td>\( A_i = \frac{0 - 0.5}{0.53}= -0.94 \)</td>
+</tr>
+</tbody>
+</table>
+<h3>ステップ3： 方策の更新</h3>
+<p>最後に、正しい応答を強化するようモデルを更新します。</p>
+<ul>
+<li>正しい出力 \( o_1 \) に対する古い方策（\( \pi_{\theta_{old}} \)）の確率が \( 0.5 \) で、新しい方策で \( 0.7 \) に増加したとします。すると次のようになります。
+$$\text{比}: \frac{0.7}{0.5} = 1.4  →\text{クリップ後}\space1.2 \space (\epsilon = 0.2)$$</li>
+<li>その後、目的関数が再び重み付けされると、モデルは正しい出力の生成を強化する傾向を持ち、\( \text{KL ダイバージェンス} \) が参照方策からの乖離を制限します。</li>
+</ul>
+<p>理論的な理解が得られたところで、GRPO がコードでどう実装できるかを見てみましょう。</p>
+<h2>実装例</h2>
+<p>実践的な例として、すべてをまとめましょう。次のコードは、PyTorch で GRPO を実装する方法を示しています。</p>
+<h3>1. モデルの読み込みと応答の生成</h3>
+<p>まず、モデルを読み込み、与えられた質問に対して複数の応答を生成する必要があります。</p>
+<div class="codehilite"><pre><span></span><code><span class="kn">import</span><span class="w"> </span><span class="nn">torch</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">torch.nn.functional</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">F</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">transformers</span><span class="w"> </span><span class="kn">import</span> <span class="n">AutoModelForCausalLM</span><span class="p">,</span> <span class="n">AutoTokenizer</span>
+
+<span class="c1"># モデルとトークナイザを読み込む</span>
+<span class="n">model_name</span> <span class="o">=</span> <span class="s2">"Qwen/Qwen2-Math-1.5B"</span>
+<span class="n">model</span> <span class="o">=</span> <span class="n">AutoModelForCausalLM</span><span class="o">.</span><span class="n">from_pretrained</span><span class="p">(</span><span class="n">model_name</span><span class="p">)</span>
+<span class="n">tokenizer</span> <span class="o">=</span> <span class="n">AutoTokenizer</span><span class="o">.</span><span class="n">from_pretrained</span><span class="p">(</span><span class="n">model_name</span><span class="p">)</span>
+<span class="n">model</span><span class="o">.</span><span class="n">eval</span><span class="p">()</span>
+
+<span class="c1"># 利用可能ならモデルを GPU に移動する</span>
+<span class="n">device</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">device</span><span class="p">(</span><span class="s2">"cuda"</span> <span class="k">if</span> <span class="n">torch</span><span class="o">.</span><span class="n">cuda</span><span class="o">.</span><span class="n">is_available</span><span class="p">()</span> <span class="k">else</span> <span class="s2">"cpu"</span><span class="p">)</span>
+<span class="n">model</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="n">device</span><span class="p">)</span>
+
+<span class="c1"># 入力プロンプト</span>
+<span class="n">prompt</span> <span class="o">=</span> <span class="s2">"Solve y = 2x + 1 for x = 2, y = "</span>  <span class="c1"># 正解: 5</span>
+<span class="n">inputs</span> <span class="o">=</span> <span class="n">tokenizer</span><span class="p">(</span><span class="n">prompt</span><span class="p">,</span> <span class="n">return_tensors</span><span class="o">=</span><span class="s2">"pt"</span><span class="p">,</span> <span class="n">padding</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+<span class="n">input_ids</span> <span class="o">=</span> <span class="n">inputs</span><span class="p">[</span><span class="s2">"input_ids"</span><span class="p">]</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="n">device</span><span class="p">)</span>  <span class="c1"># 形状: (1, prompt_len)</span>
+<span class="n">attention_mask</span> <span class="o">=</span> <span class="n">inputs</span><span class="p">[</span><span class="s2">"attention_mask"</span><span class="p">]</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="n">device</span><span class="p">)</span>
+
+<span class="c1"># ステップ1: 8件の応答を生成する（B = 2グループ、G = グループあたり4件の応答）</span>
+<span class="n">batch_size</span><span class="p">,</span> <span class="n">num_generations</span> <span class="o">=</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">4</span>
+<span class="n">outputs</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">generate</span><span class="p">(</span>
+    <span class="n">input_ids</span><span class="o">=</span><span class="n">input_ids</span><span class="p">,</span>  <span class="c1"># 形状: (1, prompt_len)</span>
+    <span class="n">attention_mask</span><span class="o">=</span><span class="n">attention_mask</span><span class="p">,</span>
+    <span class="n">max_new_tokens</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span>  <span class="c1"># seq_len = 1（応答あたり1トークン）</span>
+    <span class="n">num_return_sequences</span><span class="o">=</span><span class="n">batch_size</span> <span class="o">*</span> <span class="n">num_generations</span><span class="p">,</span>  <span class="c1"># 合計8件の応答</span>
+    <span class="n">do_sample</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+    <span class="n">top_k</span><span class="o">=</span><span class="mi">10</span><span class="p">,</span>
+    <span class="n">temperature</span><span class="o">=</span><span class="mf">0.7</span><span class="p">,</span>
+    <span class="n">pad_token_id</span><span class="o">=</span><span class="n">tokenizer</span><span class="o">.</span><span class="n">eos_token_id</span><span class="p">,</span>
+    <span class="n">return_dict_in_generate</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+    <span class="n">output_scores</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+<span class="p">)</span>
+</code></pre></div>
+
+<p>この初期生成（ステップ実行前）は、次のような出力を返します。</p>
+<div class="codehilite"><pre><span></span><code>Output 1: 5.0
+Output 2: 6.0
+Output 3: 7.0
+Output 4: 5.0
+Output 5: 10.0
+Output 6: 2.0
+Output 7: 5.0
+Output 8: 5.0
+</code></pre></div>
+
+<h3>2. 報酬の計算</h3>
+<p>次に、どの応答が正しいかを判断し、それに応じた報酬を割り当てる必要があります。</p>
+<p>GRPO では、同じサンプルプロンプトに対して、複数の補完を生成します。たとえば、<code>"Solve y = 2x + 1 for x = 2, y = "</code> と <code>Solve y = 2x + 1 for x = 4, y = "</code> というプロンプトに対して、与えられたプロンプトごとの生成出力のグループが2つあるとします。一つは
+- <code>[5, 6, 7, 5]</code> で、もう一つは
+- <code>[10, 2, 9, 9]</code> で、正解は5と9です。</p>
+<p>なお、実際にはこれらの報酬スコアは、応答の正しさに基づいて報酬を割り当てるルールベースの報酬関数、あるいは応答の正しさに基づいて報酬を割り当てるよう学習できるより複雑なニューラルネットワークベースのモデル、またはその両方の混合によって得られます。しかし、簡単のため、ここでは応答が正しければ報酬を1、誤っていれば0とします。したがって次のようになります。</p>
+<div class="codehilite"><pre><span></span><code><span class="n">reward_1</span> <span class="o">=</span> <span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">]</span>
+<span class="n">reward_2</span> <span class="o">=</span> <span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">]</span>
+</code></pre></div>
+
+<p>次に、報酬のグループごとの平均と標準偏差を求めます。</p>
+<div class="codehilite"><pre><span></span><code><span class="c1"># 形状: (B * G,) = (8,)。4件の生成からなるグループが2つあり、それらを平坦化するため</span>
+<span class="n">rewards</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">tensor</span><span class="p">([</span><span class="mi">1</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">],</span> <span class="n">dtype</span><span class="o">=</span><span class="n">torch</span><span class="o">.</span><span class="n">float32</span><span class="p">)</span>
+<span class="n">num_generations</span> <span class="o">=</span> <span class="mi">4</span>
+
+<span class="c1"># グループ化した報酬: 形状 (B, G) = (2, 4)</span>
+<span class="n">rewards_grouped</span> <span class="o">=</span> <span class="n">rewards</span><span class="o">.</span><span class="n">view</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="n">num_generations</span><span class="p">)</span>
+
+<span class="c1"># グループごとの平均: 形状 (B,) = (2,)</span>
+<span class="n">mean_grouped_rewards</span> <span class="o">=</span> <span class="n">rewards_grouped</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">dim</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+
+<span class="c1"># グループごとの標準偏差: 形状 (B,) = (2,)</span>
+<span class="n">std_grouped_rewards</span> <span class="o">=</span> <span class="n">rewards_grouped</span><span class="o">.</span><span class="n">std</span><span class="p">(</span><span class="n">dim</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+
+<span class="c1"># 報酬に合わせてブロードキャストし、正規化する: 形状 (B * G,) = (8,)</span>
+<span class="c1"># なぜブロードキャストが必要か？ グループ内の各応答のアドバンテージ値を計算する必要があるため</span>
+<span class="n">mean_grouped_rewards</span> <span class="o">=</span> <span class="n">mean_grouped_rewards</span><span class="o">.</span><span class="n">repeat_interleave</span><span class="p">(</span><span class="n">num_generations</span><span class="p">,</span> <span class="n">dim</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+<span class="n">std_grouped_rewards</span> <span class="o">=</span> <span class="n">std_grouped_rewards</span><span class="o">.</span><span class="n">repeat_interleave</span><span class="p">(</span><span class="n">num_generations</span><span class="p">,</span> <span class="n">dim</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+</code></pre></div>
+
+<p>出力は次のようになります。</p>
+<div class="codehilite"><pre><span></span><code>グループ化した報酬: tensor([[1., 0., 0., 1.],
+                        [0., 0., 1., 1.]])
+グループごとの平均: tensor([0.5000, 0.5000])
+グループごとの標準偏差: tensor([0.5774, 0.5774])
+ブロードキャストした平均: tensor([0.5000, 0.5000, 0.5000, 0.5000, 0.5000, 0.5000, 0.5000, 0.5000])
+ブロードキャストした標準偏差: tensor([0.5774, 0.5774, 0.5774, 0.5774, 0.5774, 0.5774, 0.5774, 0.5774])
+</code></pre></div>
+
+<p>これで、各応答のアドバンテージ値を計算できます。</p>
+<div class="codehilite"><pre><span></span><code><span class="c1"># アドバンテージ: 形状 (B * G,) = (8,)</span>
+<span class="n">advantages</span> <span class="o">=</span> <span class="p">(</span><span class="n">rewards</span> <span class="o">-</span> <span class="n">mean_grouped_rewards</span><span class="p">)</span> <span class="o">/</span> <span class="p">(</span><span class="n">std_grouped_rewards</span> <span class="o">+</span> <span class="mf">1e-8</span><span class="p">)</span>
+</code></pre></div>
+
+<p>出力は次のようになります。</p>
+<div class="codehilite"><pre><span></span><code>アドバンテージ: tensor([ 0.8659, -0.8660, -0.8660,  0.8659, -0.8660, -0.8660,  0.8659,  0.8659])
+</code></pre></div>
+
+<p>これは上記のアドバンテージの式から来ています。つまり次のとおりです。</p>
+<div class="codehilite"><pre><span></span><code>reward_1 = [1, 0, 0, 1] の場合:
+1 - 0.5 / 0.5774 ≈ 0.8659
+0 - 0.5 / 0.5774 ≈ -0.8660
+reward_2 = [0, 0, 1, 1] の場合: 同様に計算できます。
+</code></pre></div>
+
+<p>ただし、ここの形状は <code>(B*G,) = (8,)</code> ですが、実際にはロジットの形状に合わせるために <code>(B, G) = (2, 4)</code> の形状が必要です。そのため、ロジットの形状に合わせて、アドバンテージのテンソルを <code>(B*G, 1) = (8, 1)</code> の形状に unsqueeze する必要があります。</p>
+<div class="codehilite"><pre><span></span><code><span class="c1"># ロジットの形状に合わせるため、形状 (B * G, 1) = (8, 1)</span>
+<span class="n">advantages</span> <span class="o">=</span> <span class="n">advantages</span><span class="o">.</span><span class="n">unsqueeze</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
+</code></pre></div>
+
+<p>出力は次のようになります。</p>
+<div class="codehilite"><pre><span></span><code>アドバンテージ: tensor([[ 0.8659],
+                    [-0.8660],
+                    [-0.8660],
+                    [ 0.8659],
+                    [-0.8660],
+                    [-0.8660],
+                    [ 0.8659],
+                    [ 0.8659]])
+</code></pre></div>
+
+<p>これで準備ができました。アドバンテージ値に基づいて方策モデルを更新する次のステップに進みましょう。</p>
+<h3>3. 方策の更新</h3>
+<p>最後に、アドバンテージ値を使ってモデルを更新します。</p>
+<div class="codehilite"><pre><span></span><code><span class="c1"># 新しい方策と古い方策の間の確率比を計算する</span>
+<span class="n">ratio</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">exp</span><span class="p">(</span>
+    <span class="n">new_per_token_logps</span> <span class="o">-</span> <span class="n">per_token_logps</span>
+<span class="p">)</span>  <span class="c1"># 形状: (B*G, seq_len)。seq_len は出力の長さ、すなわち生成されたトークンの数。ここでは簡単のため 1 と仮定する # (8, 1)</span>
+</code></pre></div>
+
+<p>なお、<code>per_token_logps</code> は、生成された出力をモデルに渡してロジットを取得し、softmax 関数 <code>F.softmax(logits, dim=-1)</code> を適用して確率を得ることで取得できます。</p>
+<div class="codehilite"><pre><span></span><code><span class="c1"># クリッピング関数</span>
+<span class="n">eps</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">cliprange</span>  <span class="c1"># 例: 0.2</span>
+<span class="n">pg_losses1</span> <span class="o">=</span> <span class="o">-</span><span class="n">advantages</span> <span class="o">*</span> <span class="n">ratio</span>  <span class="c1"># 形状: (B*G, seq_len)  #(8, 1)</span>
+<span class="n">pg_losses2</span> <span class="o">=</span> <span class="o">-</span><span class="n">advantages</span> <span class="o">*</span> <span class="n">torch</span><span class="o">.</span><span class="n">clamp</span><span class="p">(</span>
+    <span class="n">ratio</span><span class="p">,</span> <span class="mf">1.0</span> <span class="o">-</span> <span class="n">eps</span><span class="p">,</span> <span class="mf">1.0</span> <span class="o">+</span> <span class="n">eps</span>
+<span class="p">)</span>  <span class="c1"># 形状: (B*G, seq_len) #(8, 1)</span>
+<span class="n">pg_loss_max</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">max</span><span class="p">(</span><span class="n">pg_losses1</span><span class="p">,</span> <span class="n">pg_losses2</span><span class="p">)</span>  <span class="c1"># 形状: (B*G, seq_len) #(8, 1)</span>
+
+
+<span class="c1"># KL ペナルティと組み合わせる # 形状: (B*G, seq_len) #(8, 1)</span>
+<span class="n">per_token_loss</span> <span class="o">=</span> <span class="n">pg_loss_max</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">beta</span> <span class="o">*</span> <span class="n">per_token_kl</span>
+</code></pre></div>
+
+<p><code>per_token_kl</code> は、次のように計算することもできます。</p>
+<div class="codehilite"><pre><span></span><code><span class="c1"># 形状: (B*G, seq_len) #(8, 1)</span>
+<span class="n">per_token_kl</span> <span class="o">=</span> <span class="n">F</span><span class="o">.</span><span class="n">kl_div</span><span class="p">(</span>
+    <span class="n">F</span><span class="o">.</span><span class="n">log_softmax</span><span class="p">(</span><span class="n">new_per_token_logps</span><span class="p">,</span> <span class="n">dim</span><span class="o">=-</span><span class="mi">1</span><span class="p">),</span>
+    <span class="n">F</span><span class="o">.</span><span class="n">softmax</span><span class="p">(</span><span class="n">per_token_logps</span><span class="p">,</span> <span class="n">dim</span><span class="o">=-</span><span class="mi">1</span><span class="p">),</span>
+    <span class="n">reduction</span><span class="o">=</span><span class="s2">"none"</span><span class="p">,</span>
+<span class="p">)</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">dim</span><span class="o">=-</span><span class="mi">1</span><span class="p">,</span> <span class="n">keepdim</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+</code></pre></div>
+
+<p>完全な例は<a href="./basic_example.py">こちら</a>にあります。GRPO は優れた TRL チームによっても実装されています。詳細は <a href="https://github.com/huggingface/trl/blob/main/trl/trainer/grpo_trainer.py">TRL/GRPO_trainer</a> の実装をチェックしてください。</p>
+<h2>まとめと次のステップ</h2>
+<p>おめでとうございます！Group Relative Policy Optimization（GRPO）について学びました。ここまでで扱った内容を振り返りましょう。</p>
+<ol>
+<li>GRPO は、別の価値モデルを必要とせずに、グループ内の複数の出力を比較して、どれが他より優れているかを判断します。</li>
+<li>アドバンテージの計算では、報酬を標準化して、どの応答が平均以上か平均以下かを特定します。</li>
+<li>方策の更新では、クリッピングされた目的関数と KL ダイバージェンスのペナルティを使い、安定した学習を保証します。</li>
+</ol>
+<p>このアプローチは、正しさを客観的に検証できる数学的推論タスクで特に強力です。GRPO の手法は、別の Critic モデルを必要とする従来の RLHF アプローチと比べて、より効率的な学習を可能にします。</p>
+<p>GRPO の探求を続ける際は、異なるグループサイズ、報酬関数、KL ペナルティの係数を試して、それらがモデルの性能にどう影響するかを確認してみてください。</p>
+<p>良い学習を！ 🚀</p>
+<h2>参考文献</h2>
+<ol>
+<li><a href="https://github.com/natolambert/rlhf-book">RLHF Book by Nathan Lambert</a></li>
+<li><a href="https://huggingface.co/papers/2412.19437">DeepSeek-V3 Technical Report</a></li>
+<li><a href="https://huggingface.co/papers/2402.03300">DeepSeekMath</a></li>
+</ol>
+</article>
+<nav class="page-nav"><a class="nav-link prev" href="3.html">← 前へ: DeepSeek R1 論文を理解する</a><a class="nav-link toc-link" href="../index.html">目次へ</a><a class="nav-link next" href="4.html">次へ →: TRL で GRPO を実装する</a></nav>
+</main>
+<footer class="site-footer">
+  <p>原典: Hugging Face huggingface/course（<a href="https://github.com/huggingface/course">https://github.com/huggingface/course</a>）</p>
+  <p>日本語版の翻訳・公開: 霞ヶ関京 / 連絡先: GitHub <a href="https://github.com/yanikasumin">@yanikasumin</a> / YouTube <a href="https://www.youtube.com/@KASUMI_MOF">@KASUMI_MOF</a></p>
+  <p class="demo-note">このサイトはデモ版です。内容は順次更新されます。</p>
+</footer>
+<script src="../../site.js"></script>
+</body>
+</html>
