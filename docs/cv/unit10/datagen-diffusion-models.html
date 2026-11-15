@@ -180,13 +180,12 @@ window.MathJax = { tex: { inlineMath: [['$', '$'], ['\\(', '\\)']], displayMath:
 <nav class="page-nav"><a class="nav-link prev" href="synthetic-lung-images.html">← 前へ: DCGAN を使った合成データの生成</a><a class="nav-link toc-link" href="../index.html">目次へ</a><a class="nav-link next" href="challenges.html">次へ →: 合成データの利用に伴う課題と可能性</a></nav>
 <article class="content">
 <h1>拡散モデルを使った合成データの生成</h1>
-<p>腫瘍の領域をセグメンテーションするモデルを訓練したいとしましょう。医療画像は収集が難しいため、モデルの学習を収束させるのは非常に大変です。
-理想的には、シンプルなベースラインを構築するのに十分なデータが少なくとも欲しいところですが、サンプルがほんの少ししかなかったらどうでしょうか？合成データの生成手法はこのジレンマを解決しようとするものであり、生成モデルのブームによって、現在では多くの選択肢があります！</p>
+<p>腫瘍の領域をセグメンテーションするモデルを訓練したいとしましょう。医療画像は収集が難しいため、モデルの学習を収束させるのは非常に大変です。理想的には、シンプルなベースラインを構築するのに十分なデータが少なくとも欲しいところですが、サンプルがほんの少ししかなかったらどうでしょうか？合成データの生成手法はこのジレンマを解決しようとするものであり、生成モデルのブームによって、現在では多くの選択肢があります！</p>
 <p>前のセクションで見たように、DCGAN のような生成モデルを使って合成画像を生成することができます。このセクションでは、<a href="https://huggingface.co/docs/diffusers/index">diffusers</a> を使った拡散モデル（diffusion models）に焦点を当てます！</p>
 <h2>拡散モデルのおさらい</h2>
 <p>拡散モデルは、高品質な画像を生成する能力のおかげで、近年大きな人気を集めている生成モデルです。現在では、画像、動画、テキストの合成に広く使われています。</p>
 <p>拡散モデルは、ランダムなガウスノイズを段階的に取り除く方法を学習して画像を生成します。訓練時には、入力データにガウスノイズを加え、それを取り除く処理をモデルに学習させます。</p>
-<p>拡散モデルは一般に、データ分布とは別に、テキストプロンプト、画像、さらには音声といった何らかの入力で条件付けされます。さらに、<a href="https://huggingface.co/docs/diffusers/training/unconditional_training">無条件の生成器を構築する</a>ことも可能です。</p>
+<p>拡散モデルは一般に、データ分布とは別に、テキストプロンプト、画像、更には音声といった何らかの入力で条件付けされます。更に、<a href="https://huggingface.co/docs/diffusers/training/unconditional_training">無条件の生成器を構築する</a>ことも可能です。</p>
 <p>拡散モデルの仕組みには多くの基礎概念が関わっていますが、簡単に説明すると次のようになります。</p>
 <p>まず、モデルは入力にノイズを加えて処理します。</p>
 <p><img alt="ノイズ付加" src="https://huggingface.co/datasets/hf-vision/course-assets/resolve/main/synthetic-data-creation-diffusion-models/noising.jpg?download=true" /></p>
@@ -211,7 +210,7 @@ window.MathJax = { tex: { inlineMath: [['$', '$'], ['\\(', '\\)']], displayMath:
 <p>当初は、プロンプトでモデルを条件付けるためにテキストエンコーダを使っていました。
 <img alt="元の Stable Diffusion のワークフロー" src="https://huggingface.co/datasets/hf-vision/course-assets/resolve/main/synthetic-data-creation-diffusion-models/stable-diffusion-workflow.png?download=true" /></p>
 <p>この短い概要は氷山の一角にすぎません！Stable Diffusion（あるいは拡散モデル）の背後にある理論を深く掘り下げたい場合は、<a href="#further-reading-about-stable-diffusion">参考資料のセクション</a>をご覧ください！</p>
-<p><a href="https://huggingface.co/docs/diffusers/index">diffusers</a> は、さまざまなタスクにすぐ使える pipeline を提供しています。たとえば次のようなものです。</p>
+<p><a href="https://huggingface.co/docs/diffusers/index">diffusers</a> は、様々なタスクにすぐ使える pipeline を提供しています。たとえば次のようなものです。</p>
 <table>
 <thead>
 <tr>
@@ -264,7 +263,7 @@ window.MathJax = { tex: { inlineMath: [['$', '$'], ['\\(', '\\)']], displayMath:
 <ul>
 <li>病院は患者の膨大なデータを収集し、監視カメラは人々の顔や行動に関する生の情報を記録します。こうしたデータには、プライバシー侵害のリスクがあります。拡散モデルを使えば、個人のプライバシーを犠牲にすることなく、プライバシーに配慮した合成データセットを生成し、システム開発に利用できます。</li>
 </ul>
-<p>テキストから画像を生成する拡散モデルを使って、目的に合わせた画像を作る方法はいくつかあります。たとえば、<a href="https://huggingface.co/docs/diffusers/api/pipelines/stable_diffusion/stable_diffusion_xl">Stable Diffusion XL</a> などの事前学習済みモデルに適切なプロンプトを入力して生成する方法です。ただし、画像の品質が安定しないこともあり、特定の用途に適したプロンプトを作るのは簡単ではありません。</p>
+<p>テキストから画像を生成する拡散モデルを使って、目的に合わせた画像を作る方法はいくつかあります。たとえば、<a href="https://huggingface.co/docs/diffusers/api/pipelines/stable_diffusion/stable_diffusion_xl">Stable Diffusion XL</a> などの事前学習済みモデルに適切なプロンプトを入力して生成する方法です。但し、画像の品質が安定しないこともあり、特定の用途に適したプロンプトを作るのは簡単ではありません。</p>
 <p>通常、望むパーソナライズされた出力を生成するには、モデルの一部を変更する必要があります。そのために使える手法をいくつか紹介します。</p>
 <p><strong><a href="https://huggingface.co/docs/diffusers/main/en/training/text_inversion">Textual Inversion</a> で訓練する：</strong></p>
 <p><img alt="Textual Inversion" src="https://huggingface.co/datasets/hf-vision/course-assets/resolve/main/synthetic-data-creation-diffusion-models/textual_inversion.png?download=true" /></p>
@@ -282,7 +281,7 @@ window.MathJax = { tex: { inlineMath: [['$', '$'], ['\\(', '\\)']], displayMath:
 <p><strong><a href="https://huggingface.co/docs/diffusers/main/en/training/custom_diffusion">Custom Diffusion</a> で訓練する：</strong></p>
 <p><img alt="Custom Diffusion" src="https://huggingface.co/datasets/hf-vision/course-assets/resolve/main/synthetic-data-creation-diffusion-models/custom_diffusion.png?download=true" /></p>
 <p>Custom Diffusion は、モデルを用途に合わせて調整できる非常に強力な手法です。前述の手法と同様に、少数のサンプルしか必要としません。特に優れているのは、複数の概念を同時に学習できる点です。</p>
-<p>上で述べた拡散プロセスの一部とテキストエンコーダだけを訓練することで動作し、最適化するパラメータが少なくなります。したがって、この方法でも高速なファインチューニングが可能です！</p>
+<p>上で述べた拡散プロセスの一部とテキストエンコーダだけを訓練することで動作し、最適化するパラメータが少なくなります。従って、この方法でも高速なファインチューニングが可能です！</p>
 <h2>拡散モデルを使ったデータセット生成の実例</h2>
 <p>拡散モデルを使って合成データセットを生成する、ユニークな事例は数多くあります！</p>
 <p>以下に挙げます。</p>

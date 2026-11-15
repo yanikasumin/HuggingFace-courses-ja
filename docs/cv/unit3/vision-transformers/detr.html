@@ -181,22 +181,20 @@ window.MathJax = { tex: { inlineMath: [['$', '$'], ['\\(', '\\)']], displayMath:
 <article class="content">
 <h1>DEtection TRansformer (DETR)</h1>
 <h2>アーキテクチャの概要</h2>
-<p>DETR は主に物体検出タスクに使われます。物体検出とは、画像の中の物体を検出する処理です。たとえば、モデルの入力は道路の画像で、出力は <code>[('car',X1,Y1,W1,H1),('pedestrian',X2,Y2,W2,H2)]</code> のようになります。ここで X、Y、W、H は、バウンディングボックスの位置を示す x、y 座標と、ボックスの幅と高さを表します。
-YOLO のような従来の物体検出モデルでは、アンカーボックスの事前設定など、人手で設計した要素を使います。物体の位置や形状についてあらかじめ仮定を置く必要があり、その設定は後の学習にも影響します。また、重なり合うバウンディングボックスを取り除く後処理も必要で、その際の判定基準は慎重に選ばなければなりません。
-DEtection TRansformer、略して DETR は、特徴抽出のバックボーンの後に encoder-decoder Transformer を使ってバウンディングボックスを並列に直接予測することで検出器を簡素化し、後処理を最小限に抑えます。</p>
+<p>DETR は主に物体検出タスクに使われます。物体検出とは、画像の中の物体を検出する処理です。たとえば、モデルの入力は道路の画像で、出力は <code>[('car',X1,Y1,W1,H1),('pedestrian',X2,Y2,W2,H2)]</code> のようになります。ここで X、Y、W、H は、バウンディングボックスの位置を示す x、y 座標と、ボックスの幅と高さを表します。YOLO のような従来の物体検出モデルでは、アンカーボックスの事前設定など、人手で設計した要素を使います。物体の位置や形状について予め仮定を置く必要があり、その設定は後の学習にも影響します。また、重なり合うバウンディングボックスを取り除く後処理も必要で、その際の判定基準は慎重に選ばなければなりません。DEtection TRansformer、略して DETR は、特徴抽出のバックボーンの後に encoder-decoder Transformer を使ってバウンディングボックスを並列に直接予測することで検出器を簡素化し、後処理を最小限に抑えます。</p>
 <p><img alt="DETR のアーキテクチャ図" src="https://huggingface.co/datasets/hf-vision/course-assets/resolve/main/DETR.png" />
-DETR のモデルアーキテクチャは、他の画像ベースのネットワークと同様に CNN バックボーンから始まります。その出力を処理して Transformer encoder に入力すると、N 個の埋め込みが得られます。encoder の埋め込みは、学習された位置埋め込み（object queries と呼ばれます）に加えられ、Transformer decoder で使われて、さらに N 個の埋め込みが生成されます。最後のステップとして、N 個の埋め込みはそれぞれ個別の feed forward 層に通され、バウンディングボックスの幅、高さ、座標と、物体のクラス（または物体が存在するかどうか）を予測します。</p>
+DETR のモデルアーキテクチャは、他の画像ベースのネットワークと同様に CNN バックボーンから始まります。その出力を処理して Transformer encoder に入力すると、N 個の埋め込みが得られます。encoder の埋め込みは、学習された位置埋め込み（object queries と呼ばれます）に加えられ、Transformer decoder で使われて、更に N 個の埋め込みが生成されます。最後のステップとして、N 個の埋め込みはそれぞれ個別の feed forward 層に通され、バウンディングボックスの幅、高さ、座標と、物体のクラス（又は物体が存在するかどうか）を予測します。</p>
 <h2>主な特徴</h2>
 <h3>Encoder-Decoder</h3>
 <p>他の Transformer と同様に、Transformer encoder は CNN バックボーンの出力が列であることを想定しています。そのため、<code>[dimension, height, width]</code> サイズの特徴マップは縮小され、<code>[dimension, less than height x width]</code> に平坦化されます。
 <img alt="Encoder の特徴マップ" src="https://huggingface.co/datasets/hf-vision/course-assets/resolve/main/DETR_FeatureMaps.png" />
 <em><strong>左</strong>：特徴マップの256次元のうち、12次元を可視化したものです。各次元では、画像を縮小しながら、元の猫の画像から異なる特徴を抽出しています。猫の模様に強く反応する次元もあれば、ベッドシーツに強く反応する次元もあります。</em>
-<em><strong>右</strong>：元の特徴次元である 256 というサイズを保ったまま、幅と高さはさらに縮小され、850 というサイズに平坦化されています。</em>
+<em><strong>右</strong>：元の特徴次元である 256 というサイズを保ったまま、幅と高さは更に縮小され、850 というサイズに平坦化されています。</em>
 Transformer は入力要素の順序を入れ替えても、その関係を区別できないため、各埋め込みが画像のどの位置に対応するかをモデルに伝える必要があります。そのため、エンコーダーとデコーダーの両方に位置埋め込みを加えます。エンコーダーでは固定の位置エンコーディングを使い、デコーダーでは学習可能な位置エンコーディング（object queries）を使います。固定の位置エンコーディングは、元の Transformer 論文で使われたものと似ており、特徴次元ごとに異なる周波数の正弦波関数で定義されます。学習するパラメータを持たず、画像内の位置に応じて値が決まることで、位置情報をモデルに与えます。一方、学習可能な位置エンコーディングでは、位置ごとに異なる表現を持ち、その値を訓練を通じて学習します。</p>
 <h3>集合ベースの大域損失関数</h3>
 <p>人気のある物体検出モデルである YOLO では、損失関数はバウンディングボックス、objectness（すなわち、注目領域に物体が存在する確率）、クラスの損失から構成されます。損失は各グリッドセルに対する複数のバウンディングボックスについて計算され、その数は固定です。一方 DETR では、アーキテクチャは順序不変な方法で一意なバウンディングボックスを生成することが求められます（すなわち、出力における検出の順序は重要ではなく、バウンディングボックスは互いに異ならなければならず、すべて同じではいけません）。そのため、予測がどれほど良いかを評価するにはマッチングが必要です。</p>
 <p><strong>二部マッチング（Bipartite Matching）</strong>
-二部マッチングは、正解のバウンディングボックスと予測されたボックスとの間で 1 対 1 のマッチングを計算する方法です。正解と予測されたバウンディングボックス、およびクラスとの間で最も類似度が高いマッチを見つけます。これにより、最も近い予測が対応する正解とマッチし、損失関数の中でボックスとクラスを適切に調整できます。マッチングを行わないと、正解の順序と揃っていない予測は、正しくても誤りとして扱われてしまいます。</p>
+二部マッチングは、正解のバウンディングボックスと予測されたボックスとの間で 1 対 1 のマッチングを計算する方法です。正解と予測されたバウンディングボックス、及びクラスとの間で最も類似度が高いマッチを見つけます。これにより、最も近い予測が対応する正解とマッチし、損失関数の中でボックスとクラスを適切に調整できます。マッチングを行わないと、正解の順序と揃っていない予測は、正しくても誤りとして扱われてしまいます。</p>
 <h2>DETR を使って物体を検出する</h2>
 <p>Hugging Face の <code>transformers</code> ライブラリを使って DETR で推論を行う例については、<code>DETR.ipynb</code> を参照してください。</p>
 <h2>DETR の進化</h2>
@@ -205,13 +203,12 @@ Transformer は入力要素の順序を入れ替えても、その関係を区�
 <strong>Deformable Attention</strong>
 1つ目の課題は、注目するサンプリング点の数を減らす Deformable Attention によって解決します。従来のアテンションは画像全体を対象とするため計算効率が悪く、扱える画像の解像度にも大きな制約があります。これに対して Deformable Attention は、入力に応じて学習した各参照点の周囲から、一定数のサンプリング点だけを選んで注目します。たとえば犬の画像なら、犬の中心を参照点とし、耳や口、尻尾の付近をサンプリング点とする、といった具合です。</p>
 <p><strong>Multi-scale Deformable Attention Module</strong>
-2つ目の課題は、マルチスケールの特徴マップを導入した YOLOv3 と同様の方法で解決します。畳み込みニューラルネットワークでは、浅い層で線などの細かい特徴を抽出し、深い層では車輪や耳など、より大きな特徴を抽出します。同様に、Deformable Attention の異なる層からは、解像度の異なる特徴マップが得られます。エンコーダーの複数の層からの出力をデコーダーにつなぐことで、さまざまな大きさの物体を検出できるようになります。</p>
+2つ目の課題は、マルチスケールの特徴マップを導入した YOLOv3 と同様の方法で解決します。畳み込みニューラルネットワークでは、浅い層で線などの細かい特徴を抽出し、深い層では車輪や耳など、より大きな特徴を抽出します。同様に、Deformable Attention の異なる層からは、解像度の異なる特徴マップが得られます。エンコーダーの複数の層からの出力をデコーダーにつなぐことで、様々な大きさの物体を検出できるようになります。</p>
 <h3>Conditional DETR</h3>
 <p>Conditional DETR も、元の DETR で学習の収束に時間がかかる問題の解決を目指したモデルで、6.7倍以上速い収束を実現します。著者らは、object queries が特定の入力画像に依存しない、汎用的なものであることを発見しました。デコーダーで <strong>Conditional Cross-Attention</strong> を使うことで、バウンディングボックス回帰の対象となる領域を、クエリがより正確に特定できるようになります。
 <img alt="Conditional DETR の decoder 層" src="https://huggingface.co/datasets/hf-vision/course-assets/resolve/main/DETR_DecoderLayer.png" />
 <em>左：DETR の Decoder 層。右：Conditional DETR の Decoder 層</em>
-上の図では、元の DETR と Conditional DETR の decoder 層が比較されており、主な違いは cross-attention ブロックのクエリ入力です。著者らは、content query c<sub>q</sub>（decoder の self attention の出力）と spatial query p<sub>q</sub> を区別しています。元の DETR は単に両者を足し合わせます。Conditional DETR では両者は連結され、c<sub>q</sub> は物体の内容に注目し、p<sub>q</sub> はバウンディングボックスの領域に注目します。
-spatial query p<sub>q</sub> は、decoder の埋め込みと object queries の両方が同じ空間に射影され（それぞれ T と p<sub>s</sub> になります）、互いに掛け合わされた結果です。前の層の decoder の埋め込みにはバウンディングボックス領域のための情報が含まれ、object queries には各バウンディングボックスについて学習された参照点の情報が含まれます。そのため、それらの射影が組み合わさって、cross-attention が encoder 入力および正弦波の位置埋め込みとの類似度を測れる表現となります。これは、object queries と固定の参照点だけを使う DETR よりも効果的です。</p>
+上の図では、元の DETR と Conditional DETR の decoder 層が比較されており、主な違いは cross-attention ブロックのクエリ入力です。著者らは、content query c<sub>q</sub>（decoder の self attention の出力）と spatial query p<sub>q</sub> を区別しています。元の DETR は単に両者を足し合わせます。Conditional DETR では両者は連結され、c<sub>q</sub> は物体の内容に注目し、p<sub>q</sub> はバウンディングボックスの領域に注目します。spatial query p<sub>q</sub> は、decoder の埋め込みと object queries の両方が同じ空間に射影され（それぞれ T と p<sub>s</sub> になります）、互いに掛け合わされた結果です。前の層の decoder の埋め込みにはバウンディングボックス領域のための情報が含まれ、object queries には各バウンディングボックスについて学習された参照点の情報が含まれます。そのため、それらの射影が組み合わさって、cross-attention が encoder 入力及び正弦波の位置埋め込みとの類似度を測れる表現となります。これは、object queries と固定の参照点だけを使う DETR よりも効果的です。</p>
 <h2>DETR の推論</h2>
 <p>Hugging Face Hub にある既存の DETR モデルを使って、次のように推論できます。</p>
 <div class="codehilite"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">transformers</span><span class="w"> </span><span class="kn">import</span> <span class="n">DetrImageProcessor</span><span class="p">,</span> <span class="n">DetrForObjectDetection</span>

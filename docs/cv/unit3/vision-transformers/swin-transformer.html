@@ -182,7 +182,7 @@ window.MathJax = { tex: { inlineMath: [['$', '$'], ['\\(', '\\)']], displayMath:
 <h1>Swin Transformer</h1>
 <p>2021年の論文 <a href="https://arxiv.org/pdf/2103.14030.pdf">Swin Transformer：シフトウィンドウを用いた階層型 Vision Transformer（Swin Transformer: Hierarchical Vision Transformer using Shifted Windows）</a> で提案された Swin Transformer は、シフトウィンドウ（sliding window ではなく shifted window）を使うことで必要な演算量を減らし、レイテンシと性能を最適化したアーキテクチャです。Swin はコンピュータビジョンにおける <strong>階層型バックボーン（hierarchical backbone）</strong> とみなされています。画像分類などのタスクに使えます。</p>
 <div class="callout callout-tip">
-<p>深層学習でいうバックボーンとは、ニューラルネットワークのうち特徴抽出を担う部分のことです。バックボーンにレイヤーを追加すれば、さまざまなビジョンタスクに対応できます。階層型バックボーンは段階的な構造を持ち、解像度が途中で変わることもあります。これに対して、<a href="https://arxiv.org/abs/2203.16527">ViTDet</a> のように、階層構造を持たない <strong>単純なバックボーン（plain backbone）</strong> もあります。</p>
+<p>深層学習でいうバックボーンとは、ニューラルネットワークのうち特徴抽出を担う部分のことです。バックボーンにレイヤーを追加すれば、様々なビジョンタスクに対応できます。階層型バックボーンは段階的な構造を持ち、解像度が途中で変わることもあります。これに対して、<a href="https://arxiv.org/abs/2203.16527">ViTDet</a> のように、階層構造を持たない <strong>単純なバックボーン（plain backbone）</strong> もあります。</p>
 </div>
 <h2>主な特徴</h2>
 <h3>シフトウィンドウ</h3>
@@ -206,7 +206,7 @@ window.MathJax = { tex: { inlineMath: [['$', '$'], ['\\(', '\\)']], displayMath:
 <h3>Swin Transformer クラス</h3>
 <ol>
 <li>
-<p><strong>パラメータの初期化</strong>：さまざまな dropout や正規化のパラメータに加えて、次のパラメータがあります。</p>
+<p><strong>パラメータの初期化</strong>：様々な dropout や正規化のパラメータに加えて、次のパラメータがあります。</p>
 <ul>
 <li><code>window_size</code>：ローカル self-attention 用のウィンドウのサイズ。</li>
 <li><code>ape (bool)</code>：True の場合、パッチ埋め込みに絶対位置埋め込みを追加します。</li>
@@ -550,7 +550,7 @@ window.MathJax = { tex: { inlineMath: [['$', '$'], ['\\(', '\\)']], displayMath:
 <p>重要なステップは4つです。</p>
 <ol>
 <li><strong>循環シフト（cyclic shift）</strong>：
-特徴マップは <code>window_partition</code> でウィンドウに分割されます。その区画に <strong>cyclic shift</strong> が適用されます。cyclic shift とは、列の中の要素（ここでは区画）を左または右へずらし、一端からはみ出した要素を反対側に回り込ませる操作です。要素同士の相対的な位置は変わりますが、列そのものはそのまま保たれます。たとえば、列 <code>A, B, C, D</code> を右へ1つ cyclic shift すると <code>D, A, B, C</code> になります。</li>
+特徴マップは <code>window_partition</code> でウィンドウに分割されます。その区画に <strong>cyclic shift</strong> が適用されます。cyclic shift とは、列の中の要素（ここでは区画）を左又は右へずらし、一端からはみ出した要素を反対側に回り込ませる操作です。要素同士の相対的な位置は変わりますが、列そのものはそのまま保たれます。たとえば、列 <code>A, B, C, D</code> を右へ1つ cyclic shift すると <code>D, A, B, C</code> になります。</li>
 </ol>
 <p>cyclic shift により、モデルは隣接するウィンドウ同士の関係を捉えられるようになり、個々のウィンドウのローカルな範囲を超えた空間的文脈を学習する能力が高まります。</p>
 <ol start="2">

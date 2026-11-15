@@ -186,7 +186,7 @@ window.MathJax = { tex: { inlineMath: [['$', '$'], ['\\(', '\\)']], displayMath:
 <p>論文「MobileViT: Light-weight, General-purpose, and Mobile-friendly Vision Transformer」（Sachin Mehta と Mohammad Rastegari による）で提示された MobileViT のアーキテクチャは次のとおりです。
 <img alt="MobileViT アーキテクチャ" src="https://huggingface.co/datasets/hf-vision/course-assets/resolve/main/MobileViT-Architecture.png" /></p>
 <p>一部は前の章で見たものと似ているはずです。MobileNet ブロック、nxn 畳み込み、ダウンサンプリング、グローバルプーリング、そして最後の線形層です。</p>
-<p>グローバルプーリング層と線形層から分かるように、ここで示しているモデルは分類用です。ただし、この論文で導入されたブロック自体は、さまざまな視覚アプリケーションに使えます。</p>
+<p>グローバルプーリング層と線形層から分かるように、ここで示しているモデルは分類用です。但し、この論文で導入されたブロック自体は、様々な視覚アプリケーションに使えます。</p>
 <h2>MobileViT Block</h2>
 <p>MobileViT ブロックは、CNN の局所的な処理と、Transformer に見られるグローバルな処理を組み合わせています。畳み込みと Transformer 層を組み合わせて使うことで、空間的に局所的な情報と、データ中のグローバルな依存関係の両方を捉えられます。</p>
 <p>MobileViT Block の図を次に示します。
@@ -213,23 +213,23 @@ window.MathJax = { tex: { inlineMath: [['$', '$'], ['\\(', '\\)']], displayMath:
 <p>同じ著者らは、attention をいかに高速化するかを扱った別の論文も書いています。その手法は separable self-attention と呼ばれています。</p>
 <h1>Separable Self-attention</h1>
 <p>従来の multi-head attention では、入力トークンに対する計算量は二次（O(k^2)）です。この論文で導入された separable self-attention の計算量は、入力トークンに対して O(k) です。</p>
-<p>さらに、この attention 手法はバッチ単位の行列積を一切使わないため、携帯電話のようなリソースに制約のあるデバイスでのレイテンシ削減に役立ちます。</p>
+<p>更に、この attention 手法はバッチ単位の行列積を一切使わないため、携帯電話のようなリソースに制約のあるデバイスでのレイテンシ削減に役立ちます。</p>
 <p>これは大きな改善です。</p>
 <div class="callout callout-tip">
-<p>Attention には他にも多くの形式があり、計算量は O(k)、O(k<em>sqrt(k))、O(k</em>log(k)) などさまざまです。</p>
+<p>Attention には他にも多くの形式があり、計算量は O(k)、O(k<em>sqrt(k))、O(k</em>log(k)) など様々です。</p>
 <p>Separable self-attention は、計算量 O(k) を初めて実現した手法ではありません。これより前に、<a href="https://arxiv.org/abs/2006.04768">Linformer</a> でもアテンションの計算量 O(k) が達成されていました。</p>
-<p>ただし、Linformer ではバッチ単位の行列積のようなコストの高い演算が依然として使われていました。</p>
+<p>但し、Linformer ではバッチ単位の行列積のようなコストの高い演算が依然として使われていました。</p>
 </div>
 <p>Transformer、Linformer、MobileViT の attention の仕組みの比較を次に示します。
 <img alt="Attention の比較" src="https://huggingface.co/datasets/hf-vision/course-assets/resolve/main/MobileViT-Attention.png" />  </p>
 <p>上の画像は、Transformer、Linformer、MobileViT v2 の各アーキテクチャにおける attention の種類ごとの比較です。</p>
 <p>たとえば、Transformer と Linformer のどちらのアーキテクチャでも、アテンションの計算ではバッチ単位の行列積を2回行います。  </p>
-<p>一方、separable self-attention では、この2回のバッチ単位の行列積を、それぞれ別の線形演算に置き換えます。これにより、推論速度がさらに向上します。 </p>
+<p>一方、separable self-attention では、この2回のバッチ単位の行列積を、それぞれ別の線形演算に置き換えます。これにより、推論速度が更に向上します。 </p>
 <h1>まとめ</h1>
 <p>MobileViT ブロックは、空間的に局所的な情報を保持しながらグローバルな表現を構築し、Transformer と CNN の強みを組み合わせています。画像全体をカバーする受容野を提供します。</p>
-<p>この既存のアーキテクチャに separable self-attention を導入したことで、精度と推論速度の両方がさらに向上しました。
+<p>この既存のアーキテクチャに separable self-attention を導入したことで、精度と推論速度の両方が更に向上しました。
 <img alt="推論テスト" src="https://huggingface.co/datasets/hf-vision/course-assets/resolve/main/MobileViT-Inference.png" /></p>
-<p>iPhone 12 でさまざまなアーキテクチャを使って行ったテストでは、上に示すように、separable attention の導入により性能が大きく向上しました。</p>
+<p>iPhone 12 で様々なアーキテクチャを使って行ったテストでは、上に示すように、separable attention の導入により性能が大きく向上しました。</p>
 <p>全体として、MobileViT アーキテクチャは、リソースに制約のある視覚タスク向けの非常に強力なアーキテクチャであり、高速な推論と高い精度を提供します。</p>
 <h1>Transformers ライブラリ</h1>
 <p>MobileViT v2 をローカルで試したい場合は、Hugging Face の <code>transformers</code> ライブラリを使えます。方法は次のとおりです。</p>
@@ -261,9 +261,7 @@ window.MathJax = { tex: { inlineMath: [['$', '$'], ['\\(', '\\)']], displayMath:
 </code></pre></div>
 
 <h1>Inference API</h1>
-<p>さらに軽量なコンピュータビジョン環境として、MobileViT v2 で Hugging Face Inference API を使うこともできます。
-Inference API は、Hugging Face Hub で公開されている多くのモデルとやり取りするための API です。
-Inference API には、Python から次のように問い合わせできます。</p>
+<p>更に軽量なコンピュータビジョン環境として、MobileViT v2 で Hugging Face Inference API を使うこともできます。Inference API は、Hugging Face Hub で公開されている多くのモデルとやり取りするための API です。Inference API には、Python から次のように問い合わせできます。</p>
 <div class="codehilite"><pre><span></span><code><span class="kn">import</span><span class="w"> </span><span class="nn">json</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">requests</span>
 

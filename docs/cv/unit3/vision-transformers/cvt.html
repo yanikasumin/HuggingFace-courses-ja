@@ -184,7 +184,7 @@ window.MathJax = { tex: { inlineMath: [['$', '$'], ['\\(', '\\)']], displayMath:
 <h2>振り返り</h2>
 <p>CvT に入る前に、前セクションで扱った ViT のアーキテクチャを簡単に振り返っておくと、CvT の特徴が分かりやすくなります。ViT は各画像を固定長のトークン列（重ならないパッチ）に分解し、Multi-head Self Attention と Position-wise Feed-forward module (FFN) からなる標準的な Transformer 層を複数重ねて、分類のための大域的な関係をモデル化します。</p>
 <h2>概要</h2>
-<p>Convolutional Vision Transformer (CvT) は、論文 CvT: Introducing Convolutions to Vision Transformers <a href="#cvt">[2]</a> で提案されたモデルです。著者は Haiping Wu、Bin Xiao、Noel Codella、Mengchen Liu、Xiyang Dai、Lu Yuan、Lei Zhang です。CvT は CNN の利点である <em>local receptive fields</em>（局所受容野）、<em>shared weights</em>（重みの共有）、<em>spatial subsampling</em>（空間サブサンプリング）と、<em>shift</em>、<em>scale</em>、<em>distortion invariance</em>（平行移動・スケール・歪みに対する不変性）を取り入れつつ、Transformer の利点である <em>dynamic attention</em>、<em>global context fusion</em>、<em>better generalization</em>（動的アテンション、大域的な文脈の融合、より良い汎化）も保っています。CvT は ViT と比べて計算効率を維持しながら、より高い性能を達成します。さらに、畳み込みによって組み込まれた局所的な文脈構造のおかげで、CvT は位置埋め込みを必要としません。そのため、可変の入力解像度を必要とする幅広いビジョンタスクへの適応で有利になる可能性があります。</p>
+<p>Convolutional Vision Transformer (CvT) は、論文 CvT: Introducing Convolutions to Vision Transformers <a href="#cvt">[2]</a> で提案されたモデルです。著者は Haiping Wu、Bin Xiao、Noel Codella、Mengchen Liu、Xiyang Dai、Lu Yuan、Lei Zhang です。CvT は CNN の利点である <em>local receptive fields</em>（局所受容野）、<em>shared weights</em>（重みの共有）、<em>spatial subsampling</em>（空間サブサンプリング）と、<em>shift</em>、<em>scale</em>、<em>distortion invariance</em>（平行移動・スケール・歪みに対する不変性）を取り入れつつ、Transformer の利点である <em>dynamic attention</em>、<em>global context fusion</em>、<em>better generalization</em>（動的アテンション、大域的な文脈の融合、より良い汎化）も保っています。CvT は ViT と比べて計算効率を維持しながら、より高い性能を達成します。更に、畳み込みによって組み込まれた局所的な文脈構造のおかげで、CvT は位置埋め込みを必要としません。そのため、可変の入力解像度を必要とする幅広いビジョンタスクへの適応で有利になる可能性があります。</p>
 <h2>アーキテクチャ</h2>
 <p><img alt="CvT アーキテクチャ" src="https://huggingface.co/datasets/hf-vision/course-assets/resolve/main/cvt_architecture.png" />
 <em>（a）全体のアーキテクチャ。Convolutional Token Embedding 層によって実現される階層的な多段階構造を示します。（b）Convolutional Transformer Block の詳細。最初の層として畳み込み射影を含みます。 <a href="#cvt">[2]</a></em></p>
@@ -485,7 +485,7 @@ window.MathJax = { tex: { inlineMath: [['$', '$'], ['\\(', '\\)']], displayMath:
 <p>このコードは Vision Transformer モジュールを定義しています。概要は次のとおりです。</p>
 <ul>
 <li>
-<p><strong>初期化</strong>：<code>VisionTransformer</code> クラスは、パッチサイズ、埋め込み次元、層の数、アテンションのヘッド数、ドロップアウト率など、モデルのアーキテクチャを決めるさまざまなパラメータで初期化されます。</p>
+<p><strong>初期化</strong>：<code>VisionTransformer</code> クラスは、パッチサイズ、埋め込み次元、層の数、アテンションのヘッド数、ドロップアウト率など、モデルのアーキテクチャを決める様々なパラメータで初期化されます。</p>
 </li>
 <li>
 <p><strong>Patch Embedding</strong>：モデルにはパッチ埋め込み層 (`patch_embed) が含まれます。これは入力画像を重ならないパッチに分割し、畳み込みを使って埋め込みます。</p>
@@ -500,7 +500,7 @@ window.MathJax = { tex: { inlineMath: [['$', '$'], ['\\(', '\\)']], displayMath:
 <p><strong>Stochastic Depth</strong>：Transformer ブロックには stochastic depth が適用され、訓練時にブロックのランダムな部分集合をスキップすることで正則化を改善します。これは <code>drop_path_rate</code> パラメータで制御されます。</p>
 </li>
 <li>
-<p><strong>重みの初期化</strong>：モデルの重みは、切断正規分布（<code>trunc_norm</code>）または Xavier 初期化（<code>xavier</code>）のいずれかで初期化されます。</p>
+<p><strong>重みの初期化</strong>：モデルの重みは、切断正規分布（<code>trunc_norm</code>）又は Xavier 初期化（<code>xavier</code>）のいずれかで初期化されます。</p>
 </li>
 <li>
 <p><strong>Forward メソッド</strong>：forward メソッドは、入力をパッチ埋め込みで処理し、次元を並び替え、classification token があれば加え、ドロップアウトを適用した後、Transformer ブロックのスタックにデータを通します。最後に、出力を元の形に並び替え、classification token があれば残りの列から分離して、出力を返します。</p>

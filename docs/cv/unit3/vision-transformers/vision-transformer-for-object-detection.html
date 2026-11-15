@@ -205,11 +205,11 @@ window.MathJax = { tex: { inlineMath: [['$', '$'], ['\\(', '\\)']], displayMath:
 <h3>物体検出でモデルをファインチューニングする必要性 🤔</h3>
 <p>新しいモデルを作るべきか、それとも既存のモデルを改変すべきか。これはとても良い問いです。物体検出モデルをゼロから学習させるということは、次のようなことを意味します。</p>
 <ul>
-<li>すでに終わっている研究を、何度もやり直すことになります。</li>
+<li>既に終わっている研究を、何度もやり直すことになります。</li>
 <li>モデルのコードを繰り返し書いて学習させ、ユースケースごとに別々のリポジトリを維持することになります。</li>
 <li>多くの実験が必要になり、リソースも無駄になります。</li>
 </ul>
-<p>こうした作業をする代わりに、性能の良い事前学習済みモデル（一般的な特徴の認識が得意なモデル）を用意し、その重み（または重みの一部）を調整して、自分のユースケースに適応させます。事前学習済みモデルは、画像の中から物体の位置特定と分類に役立つ重要な特徴を抽出する方法を、すでに十分に学習していると考えられます。そのため、新しい物体が加わっても、すでに学習した特徴と新しい特徴を使って、短時間の学習と少ない計算でその物体を検出できるようになります。</p>
+<p>こうした作業をする代わりに、性能の良い事前学習済みモデル（一般的な特徴の認識が得意なモデル）を用意し、その重み（又は重みの一部）を調整して、自分のユースケースに適応させます。事前学習済みモデルは、画像の中から物体の位置特定と分類に役立つ重要な特徴を抽出する方法を、既に十分に学習していると考えられます。そのため、新しい物体が加わっても、既に学習した特徴と新しい特徴を使って、短時間の学習と少ない計算でその物体を検出できるようになります。</p>
 <p>このチュートリアルが終わる頃には、物体検出のユースケースについて、データセットの読み込みからモデルのファインチューニング、推論までを行う一連の pipeline を作れるようになります。</p>
 <h2>必要なライブラリのインストール</h2>
 <p>まずはインストールから始めます。以下のセルを実行して、必要なパッケージをインストールしてください。このチュートリアルでは Hugging Face Transformers と PyTorch を使います。</p>
@@ -241,8 +241,7 @@ window.MathJax = { tex: { inlineMath: [['$', '$'], ['\\(', '\\)']], displayMath:
 })
 </code></pre></div>
 
-<p>上記は <a href="https://huggingface.co/docs/datasets/v2.17.1/en/package_reference/main_classes#datasets.DatasetDict">DatasetDict</a> です。辞書のように扱える構造で、データセット全体を train スプリットと test スプリットに分けて保持します。各スプリットには <code>features</code> と <code>num_rows</code> が含まれています。<code>features</code> には、<a href="https://realpython.com/image-processing-with-the-python-pillow-library/">Pillow</a> の画像オブジェクトである <code>image</code>、画像IDの <code>image_id</code>、画像の幅と高さを示す <code>width</code> と <code>height</code>、物体の情報を持つ <code>objects</code> が定義されています。
-次に、（train/test セット内の）各データ点がどのようなものかを見てみましょう。そのためには、次の行を実行します。</p>
+<p>上記は <a href="https://huggingface.co/docs/datasets/v2.17.1/en/package_reference/main_classes#datasets.DatasetDict">DatasetDict</a> です。辞書のように扱える構造で、データセット全体を train スプリットと test スプリットに分けて保持します。各スプリットには <code>features</code> と <code>num_rows</code> が含まれています。<code>features</code> には、<a href="https://realpython.com/image-processing-with-the-python-pillow-library/">Pillow</a> の画像オブジェクトである <code>image</code>、画像IDの <code>image_id</code>、画像の幅と高さを示す <code>width</code> と <code>height</code>、物体の情報を持つ <code>objects</code> が定義されています。次に、（train/test セット内の）各データ点がどのようなものかを見てみましょう。そのためには、次の行を実行します。</p>
 <div class="codehilite"><pre><span></span><code><span class="n">dataset</span><span class="p">[</span><span class="s2">"train"</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span>
 </code></pre></div>
 
@@ -364,8 +363,8 @@ window.MathJax = { tex: { inlineMath: [['$', '$'], ['\\(', '\\)']], displayMath:
 </code></pre></div>
 
 <h2>データセットの前処理</h2>
-<p>画像を <code>image_processor</code> に渡す前に、画像とそれに対応するバウンディングボックスに対して、さまざまな種類のデータ拡張も適用しましょう。</p>
-<p>簡単に言うと、データ拡張とは、回転やリサイズなどのランダムな変換の集合です。これらを適用することでサンプル数を増やし、ビジョンモデルを画像のさまざまな条件に対して頑健にします。これには <a href="https://github.com/albumentations-team/albumentations">albumentations</a> ライブラリを使います。画像にランダムな変換を作成できるため、学習用のサンプルサイズを増やせます。</p>
+<p>画像を <code>image_processor</code> に渡す前に、画像とそれに対応するバウンディングボックスに対して、様々な種類のデータ拡張も適用しましょう。</p>
+<p>簡単に言うと、データ拡張とは、回転やリサイズなどのランダムな変換の集合です。これらを適用することでサンプル数を増やし、ビジョンモデルを画像の様々な条件に対して頑健にします。これには <a href="https://github.com/albumentations-team/albumentations">albumentations</a> ライブラリを使います。画像にランダムな変換を作成できるため、学習用のサンプルサイズを増やせます。</p>
 <div class="codehilite"><pre><span></span><code><span class="kn">import</span><span class="w"> </span><span class="nn">albumentations</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">torch</span>
@@ -501,7 +500,7 @@ window.MathJax = { tex: { inlineMath: [['$', '$'], ['\\(', '\\)']], displayMath:
 </li>
 </ol>
 <blockquote>
-<p>前処理で使ったのと同じチェックポイントからモデルを読み込む際は、データセットのメタデータから先に作成した <code>label2id</code> と <code>id2label</code> のマップを渡すのを忘れないでください。さらに、<code>ignore_mismatched_sizes=True</code> を指定して、既存の分類ヘッドを新しいものに置き換えます。</p>
+<p>前処理で使ったのと同じチェックポイントからモデルを読み込む際は、データセットのメタデータから先に作成した <code>label2id</code> と <code>id2label</code> のマップを渡すのを忘れないでください。更に、<code>ignore_mismatched_sizes=True</code> を指定して、既存の分類ヘッドを新しいものに置き換えます。</p>
 </blockquote>
 <div class="codehilite"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">transformers</span><span class="w"> </span><span class="kn">import</span> <span class="n">AutoModelForObjectDetection</span>
 
@@ -558,7 +557,7 @@ window.MathJax = { tex: { inlineMath: [['$', '$'], ['\\(', '\\)']], displayMath:
 <span class="n">trainer</span><span class="o">.</span><span class="n">train</span><span class="p">()</span>
 </code></pre></div>
 
-<p>学習が終わったら、チェックポイントはすでに Hugging Face Hub にアップロードされているため、モデルを削除できます。</p>
+<p>学習が終わったら、チェックポイントは既に Hugging Face Hub にアップロードされているため、モデルを削除できます。</p>
 <div class="codehilite"><pre><span></span><code><span class="k">del</span> <span class="n">model</span>
 <span class="n">torch</span><span class="o">.</span><span class="n">cuda</span><span class="o">.</span><span class="n">synchronize</span><span class="p">()</span>
 </code></pre></div>
@@ -624,7 +623,7 @@ plot_results(image, results)
 <span class="n">predict</span><span class="p">(</span><span class="n">img</span><span class="p">,</span> <span class="n">obj_detector</span><span class="p">)</span>
 </code></pre></div>
 
-<p>さらに、小さなテストサンプルに対して、推論関数を使って複数の画像も描画してみましょう。</p>
+<p>更に、小さなテストサンプルに対して、推論関数を使って複数の画像も描画してみましょう。</p>
 <div class="codehilite"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">tqdm.auto</span><span class="w"> </span><span class="kn">import</span> <span class="n">tqdm</span>
 
 
@@ -656,7 +655,7 @@ plot_results(image, results)
 
 <p>この関数を実行すると、次のような出力が得られます。</p>
 <p><img alt="テストデータの複数画像に対する物体検出結果" src="https://huggingface.co/datasets/hf-vision/course-assets/resolve/main/sample_od_test_set_inference_output.png" /></p>
-<p>悪くない結果です。さらにファインチューニングすれば、結果を改善できます。ファインチューニング済みのこのチェックポイントは<a href="hf-vision/detr-resnet-50-dc5-harhat-finetuned">こちら</a>で確認できます。</p>
+<p>悪くない結果です。更にファインチューニングすれば、結果を改善できます。ファインチューニング済みのこのチェックポイントは<a href="hf-vision/detr-resnet-50-dc5-harhat-finetuned">こちら</a>で確認できます。</p>
 </article>
 
 <nav class="page-nav"><a class="nav-link prev" href="mobilevit.html">← 前へ: MobileViT v2</a><a class="nav-link toc-link" href="../../index.html">目次へ</a><a class="nav-link next" href="detr.html">次へ →: DEtection TRansformer (DETR)</a></nav>
