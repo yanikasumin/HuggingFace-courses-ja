@@ -7,13 +7,13 @@
     {label: "Aws Studio", value: "https://studiolab.sagemaker.aws/import/github/huggingface/notebooks/blob/master/course/en/chapter5/section5.ipynb"},
 ]} />
 
-NLP アプリケーションを構築するのに必要なデータセットが存在しない場合もあり、その場合は自分で作成する必要があります。このセクションでは、GitHub リポジトリのバグや機能を追跡するためによく使われる [GitHub issues](https://github.com/features/issues/) のコーパスの作り方を紹介します。このコーパスは、次のような様々な用途に使えます。
+NLP アプリケーションに必要なデータセットが存在しないときは、自分で作る必要があります。このセクションでは、GitHub リポジトリのバグや機能追加の対応状況を追跡するためによく使われる [GitHub issues](https://github.com/features/issues/) を集めて、コーパスを作る方法を紹介します。このコーパスには、次のような使い道があります。
 
 * オープンな issue やプルリクエストをクローズするのにかかる時間を調べる
-* issue の説明文に基づいて、"bug"、"enhancement"、"question" などのラベルを複数予測し、自動的に付与するマルチラベル分類器を訓練する
+* issue の説明文に基づいて、"bug"、"enhancement"、"question" などのメタデータ（ラベル）を付けるマルチラベル分類器を訓練する
 * ユーザーのクエリに一致する issue を探すセマンティック検索エンジンを作る
 
-ここではコーパスの作成に焦点を当て、次のセクションでセマンティック検索アプリケーションに取り組みます。今回は、教材で扱っている人気のオープンソースプロジェクト 🤗 Datasets 自身を題材に、その GitHub issues を使います。データの取得方法と、これらの issue に含まれる情報の探索方法を見ていきましょう。
+ここではコーパスの作成に焦点を当て、次のセクションでセマンティック検索アプリケーションに取り組みます。今回は少し趣向を凝らして、人気のオープンソースプロジェクトである 🤗 Datasets 自身の GitHub issues を題材にします。データの取得方法と、これらの issue にどのような情報が含まれているかを見ていきましょう。
 
 ## データの取得[[getting-the-data]]
 
@@ -23,7 +23,7 @@ NLP アプリケーションを構築するのに必要なデータセットが�
 <img src="https://huggingface.co/datasets/huggingface-course/documentation-images/resolve/main/en/chapter5/datasets-issues.png" alt="🤗 Datasets に関連する GitHub の issue。" width="80%"/>
 </div>
 
-これらの issue のいずれかをクリックすると、タイトル、説明、そして issue を特徴づけるラベルの集合が含まれていることが分かります。例を下のスクリーンショットに示します。
+いずれかの issue をクリックすると、そのタイトルや説明、issue の内容を表すラベルが表示されます。下のスクリーンショットはその一例です。
 
 <div class="flex justify-center">
 <img src="https://huggingface.co/datasets/huggingface-course/documentation-images/resolve/main/en/chapter5/datasets-issues-single.png" alt="🤗 Datasets リポジトリにおける典型的な GitHub issue。" width="80%"/>
@@ -31,7 +31,7 @@ NLP アプリケーションを構築するのに必要なデータセットが�
 
 リポジトリのすべての issue をダウンロードするには、[GitHub REST API](https://docs.github.com/en/rest) を使って [`Issues` エンドポイント](https://docs.github.com/en/rest/reference/issues#list-repository-issues)をポーリングします。このエンドポイントは JSON オブジェクトのリストを返し、各オブジェクトにはタイトルと説明のほか、issue のステータスに関するメタデータなど、多数のフィールドが含まれています。
 
-issue をダウンロードする便利な方法は、Python で HTTP リクエストを行う標準的な方法である `requests` ライブラリを使うことです。ライブラリは次のように実行してインストールできます。
+issue をダウンロードするには、Python で HTTP リクエストを送る際によく使われる `requests` ライブラリが便利です。次のコマンドでインストールできます。
 
 ```python
 !pip install requests
@@ -56,7 +56,7 @@ response.status_code
 200
 ```
 
-ステータス `200` はリクエストが成功したことを意味します（HTTP ステータスコードの一覧は[こちら](https://en.wikipedia.org/wiki/List_of_HTTP_status_codes)で確認できます）。ここで確認したいのは、レスポンスの本文に当たるペイロードで、バイト、文字列、JSON など様々な形式でアクセスできます。issue が JSON 形式であることが分かっているので、ペイロードを次のように確認しましょう。
+ステータス `200` はリクエストが成功したことを意味します（HTTP ステータスコードの一覧は[こちら](https://en.wikipedia.org/wiki/List_of_HTTP_status_codes)で確認できます）。しかし、本当に確認したいのはレスポンスの中身であるペイロードです。ペイロードはバイト列、文字列、JSON など、様々な形式で取得できます。issue のデータが JSON 形式であることは分かっているので、次のようにペイロードを確認しましょう。
 
 ```py
 response.json()
@@ -116,7 +116,7 @@ response.json()
 > [!TIP]
 > ✏️ **やってみよう！** 上の JSON ペイロードにある URL をいくつかクリックして、それぞれのリンク先で、どのような情報が得られるか確認してみましょう。
 
-GitHub の[ドキュメント](https://docs.github.com/en/rest/overview/resources-in-the-rest-api#rate-limiting)に記載されているように、認証されていないリクエストは1時間あたり60リクエストに制限されます。`per_page` クエリパラメータを増やしてリクエスト回数を減らすことはできますが、数千件を超える issue を持つリポジトリでは、それでもレート制限に引っかかります。そのため、代わりに GitHub の[手順](https://docs.github.com/en/github/authenticating-to-github/creating-a-personal-access-token)に従って個人アクセストークンを作成し、レート制限を1時間あたり5,000リクエストまで引き上げるべきです。トークンが用意できたら、リクエストヘッダの一部として含めることができます。
+GitHub の[ドキュメント](https://docs.github.com/en/rest/overview/resources-in-the-rest-api#rate-limiting)に記載されているように、認証されていないリクエストは1時間あたり60リクエストに制限されます。`per_page` クエリパラメータを増やしてリクエスト回数を減らすことはできますが、数千件を超える issue を持つリポジトリでは、それでもレート制限に引っかかります。そこで、GitHub の[手順](https://docs.github.com/en/github/authenticating-to-github/creating-a-personal-access-token)に従って個人アクセストークンを作成し、レート制限を1時間あたり5,000リクエストまで引き上げるべきです。トークンが用意できたら、リクエストヘッダの一部として含めることができます。
 
 ```py
 GITHUB_TOKEN = xxx  # ここに自分の GitHub トークンを貼り付けます
@@ -193,15 +193,15 @@ Dataset({
 })
 ```
 
-素晴らしい。これで初めてのデータセットをゼロから作れました！しかし、🤗 Datasets リポジトリの [Issues タブ](https://github.com/huggingface/datasets/issues)には合計で約1,000件の issue しか表示されないのに、なぜ数千件もの issue があるのでしょうか 🤔？GitHub の[ドキュメント](https://docs.github.com/en/rest/reference/issues#list-issues-assigned-to-the-authenticated-user)に記載されているように、これはプルリクエストもすべてダウンロードしているためです。
+素晴らしい。これで初めてのデータセットをゼロから作れました！しかし、🤗 Datasets リポジトリの [Issues タブ](https://github.com/huggingface/datasets/issues)には合計で約1,000件の issue しか表示されないのに、なぜ数千件もの issue があるのでしょうか？ 🤔 GitHub の[ドキュメント](https://docs.github.com/en/rest/reference/issues#list-issues-assigned-to-the-authenticated-user)に記載されているように、これはプルリクエストもすべてダウンロードしているためです。
 
-> GitHub の REST API v3 は、すべてのプルリクエストを issue とみなしますが、すべての issue がプルリクエストであるとは限りません。このため、「Issues」エンドポイントはレスポンスに issue とプルリクエストの両方を返すことがあります。プルリクエストは `pull_request` キーで識別できます。「Issues」エンドポイントから返されるプルリクエストの `id` は issue の id になることに注意してください。
+> GitHub の REST API v3 では、すべてのプルリクエストを issue とみなしますが、すべての issue がプルリクエストであるとは限りません。そのため、「Issues」エンドポイントは issue とプルリクエストの両方を返すことがあります。プルリクエストは `pull_request` キーで識別できます。なお、「Issues」エンドポイントから取得したプルリクエストの `id` は、プルリクエスト自身の ID ではなく、issue としての ID であることに注意してください。
 
 issue とプルリクエストの内容はかなり異なるため、両者を区別できるよう、軽い前処理を行いましょう。
 
 ## データのクリーニング[[cleaning-up-the-data]]
 
-GitHub ドキュメントの上記の抜粋によれば、`pull_request` 列を使って issue とプルリクエストを区別できます。ランダムサンプルを見て、違いを確認してみましょう。[セクション3](/course/chapter5/3) で行ったように、`Dataset.shuffle()` と `Dataset.select()` をつないでランダムサンプルを作り、`html_url` 列と `pull_request` 列を zip して、様々な URL を比較できるようにします。
+上で引用した GitHub のドキュメントによると、`pull_request` 列を使って issue とプルリクエストを区別できます。ランダムに選んだデータを見て、違いを確認してみましょう。[セクション3](/course/chapter5/3) と同じように、`Dataset.shuffle()` と `Dataset.select()` を続けて呼び出してランダムサンプルを作ります。そして、`zip()` を使って `html_url` 列と `pull_request` 列の値を組み合わせ、様々な URL を比較します。
 
 ```py
 sample = issues_dataset.shuffle(seed=666).select(range(3))
@@ -223,7 +223,7 @@ for url, pr in zip(sample["html_url"], sample["pull_request"]):
 >> プルリクエスト: {'url': 'https://api.github.com/repos/huggingface/datasets/pulls/783', 'html_url': 'https://github.com/huggingface/datasets/pull/783', 'diff_url': 'https://github.com/huggingface/datasets/pull/783.diff', 'patch_url': 'https://github.com/huggingface/datasets/pull/783.patch'}
 ```
 
-ここでは、各プルリクエストには様々な URL が関連付けられている一方、通常の issue は `None` のエントリを持っていることが分かります。この違いを使って、`pull_request` フィールドが `None` かどうかをチェックする新しい `is_pull_request` 列を作ることができます。
+この結果を見ると、各プルリクエストには様々な URL が関連付けられているのに対し、通常の issue では `pull_request` フィールドの値が `None` になっています。この違いを利用して、`pull_request` フィールドが `None` かどうかを判定する新しい `is_pull_request` 列を作成できます。
 
 ```py
 issues_dataset = issues_dataset.map(
@@ -234,9 +234,9 @@ issues_dataset = issues_dataset.map(
 > [!TIP]
 > ✏️ **やってみよう！** 🤗 Datasets の issue がクローズされるまでの平均時間を計算してみましょう。プルリクエストとオープンな issue を除外するには `Dataset.filter()` 関数が役立ちます。また、`Dataset.set_format()` 関数を使ってデータセットを `DataFrame` に変換すれば、`created_at` と `closed_at` のタイムスタンプを簡単に操作できます。おまけとして、プルリクエストがクローズされるまでの平均時間も計算してみましょう。
 
-一部の列を削除したり名前を変更したりしてデータセットを更にクリーニングすることもできますが、この段階ではデータセットをできるだけ「生」の状態に保つのが一般に良い実践です。そうすれば、複数のアプリケーションで簡単に使えます。
+一部の列を削除したり名前を変更したりして、データセットを更にクリーニングすることもできます。但し、この段階ではデータセットをできるだけ「生」の状態に保っておくのが一般におすすめです。そうしておけば、様々なアプリケーションで簡単に使えます。
 
-データセットを Hugging Face Hub にプッシュする前に、まだ取得していない情報を追加しましょう。それは、各 issue やプルリクエストに寄せられたコメントです。次に、お察しのとおり GitHub REST API を使って、それらを追加します！
+データセットを Hugging Face Hub にプッシュする前に、まだ取得していない情報を追加しましょう。それは、各 issue やプルリクエストに寄せられたコメントです。コメントの取得にも、もちろん GitHub REST API を使います！
 
 ## データセットの拡張[[augmenting-the-dataset]]
 
@@ -286,7 +286,7 @@ response.json()
   'performed_via_github_app': None}]
 ```
 
-コメントは `body` フィールドに保存されていることが分かります。そこで、`response.json()` の各要素について `body` の内容を取り出すことで、issue に関連するすべてのコメントを返す単純な関数を書きましょう。
+コメントは `body` フィールドに保存されています。そこで、`response.json()` が返す各要素から `body` の内容を取り出し、issue に関連するすべてのコメントを返す簡単な関数を書きましょう。
 
 ```py
 def get_comments(issue_number):
@@ -359,7 +359,7 @@ Dataset({
 
 ## データセットカードの作成[[creating-a-dataset-card]]
 
-説明や利用上の注意が十分に記載されたデータセットは、他の人（そして未来の自分！）にとって有用である可能性が高くなります。データセットが自分のタスクに関連するかどうかをユーザーが判断したり、データセットの使用に伴う潜在的なバイアスやリスクを評価したりするための文脈を提供してくれるからです。
+ドキュメントが十分に整備されたデータセットほど、他の人（そして未来の自分！）にとって役立つ可能性が高くなります。ドキュメントがあれば、利用者はそのデータセットが自分のタスクに適しているかを判断したり、使用する際に考えられるバイアスやリスクを評価したりできます。
 
 Hugging Face Hub では、この情報は各データセットリポジトリの *README.md* ファイルに保存されます。このファイルを作成する前に、主に次の2つのステップを行うべきです。
 
@@ -371,7 +371,7 @@ Hugging Face Hub では、この情報は各データセットリポジトリの
 
 2. データセットカードの作成に関する [🤗 Datasets ガイド](https://github.com/huggingface/datasets/blob/master/templates/README_guide.md)を読み、テンプレートとして使います。
 
-*README.md* ファイルは Hub 上で直接作成できます。記入済みのデータセットカードのテンプレートは、`lewtun/github-issues` データセットリポジトリにあります。記入されたデータセットカードのスクリーンショットを下に示します。
+*README.md* ファイルは Hub 上で直接作成できます。`lewtun/github-issues` データセットリポジトリには、テンプレートとして参考にできるデータセットカードがあります。下のスクリーンショットは、記入済みのデータセットカードを示しています。
 
 <div class="flex justify-center">
 <img src="https://huggingface.co/datasets/huggingface-course/documentation-images/resolve/main/en/chapter5/dataset-card.png" alt="データセットカード。" width="80%"/>
@@ -383,4 +383,4 @@ Hugging Face Hub では、この情報は各データセットリポジトリの
 以上です！このセクションでは、良いデータセットの作成にはかなり手間がかかることを見てきましたが、幸いなことに、アップロードしてコミュニティと共有するのは難しくありません。次のセクションでは、新しいデータセットを使って、質問に最も関連性の高い issue やコメントを見つけるセマンティック検索エンジンを 🤗 Datasets で作成します。
 
 > [!TIP]
-> ✏️ **やってみよう！** このセクションでたどった手順を追って、好きなオープンソースライブラリ（もちろん 🤗 Datasets 以外のものを選んでください！）の GitHub issues のデータセットを作成してみましょう。おまけとして、`labels` フィールドに存在するタグを予測するマルチラベル分類器をファインチューニングしてみましょう。
+> ✏️ **やってみよう！** このセクションと同じ手順で、好きなオープンソースライブラリ（もちろん 🤗 Datasets 以外のものを選んでください！）の GitHub issues のデータセットを作成してみましょう。おまけとして、`labels` フィールドにあるタグを予測するマルチラベル分類器をファインチューニングしてみましょう。

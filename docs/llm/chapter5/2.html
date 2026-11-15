@@ -97,14 +97,14 @@ window.MathJax = { tex: { inlineMath: [['$', '$'], ['\\(', '\\)']], displayMath:
 <li><a class="side-link" href="../chapter4/2.html">事前学習済みモデルを使う</a></li>
 <li><a class="side-link" href="../chapter4/3.html">事前学習済みモデルを共有する</a></li>
 <li><a class="side-link" href="../chapter4/4.html">モデルカードを作る</a></li>
-<li><a class="side-link" href="../chapter4/5.html">Part 1 完了！</a></li>
+<li><a class="side-link" href="../chapter4/5.html">Part 1 修了！</a></li>
 <li><a class="side-link" href="../chapter4/6.html">章末クイズ</a></li>
 </ul>
 <p class="side-group">第5章 🤗 Datasets ライブラリ</p>
 <ul class="side-list">
 <li><a class="side-link" href="1.html">はじめに</a></li>
 <li><a class="side-link active" href="2.html">データセットが Hub にない場合は？</a></li>
-<li><a class="side-link" href="3.html">切り分けて、加工して</a></li>
+<li><a class="side-link" href="3.html">データを切り分けて加工しよう</a></li>
 <li><a class="side-link" href="4.html">ビッグデータ？🤗 Datasets にお任せ！</a></li>
 <li><a class="side-link" href="5.html">独自のデータセットを作成する</a></li>
 <li><a class="side-link" href="6.html">FAISS によるセマンティック検索</a></li>
@@ -201,13 +201,13 @@ window.MathJax = { tex: { inlineMath: [['$', '$'], ['\\(', '\\)']], displayMath:
 <main class="container">
 <p class="course-crumb"><a href="../index.html">LLM コース</a></p>
 <p class="official-link"><a class="btn btn-official" href="https://huggingface.co/learn/llm-course/chapter5/2" target="_blank" rel="noopener">🤗 Hugging Face 公式ページでこの節を読む（英語）</a></p>
-<nav class="page-nav"><a class="nav-link prev" href="1.html">← 前へ: はじめに</a><a class="nav-link toc-link" href="../index.html">目次へ</a><a class="nav-link next" href="3.html">次へ →: 切り分けて、加工して</a></nav>
+<nav class="page-nav"><a class="nav-link prev" href="1.html">← 前へ: はじめに</a><a class="nav-link toc-link" href="../index.html">目次へ</a><a class="nav-link next" href="3.html">次へ →: データを切り分けて加工しよう</a></nav>
 <article class="content">
 <h1>データセットが Hub にない場合は？</h1>
 <p><a href="https://huggingface.co/datasets">Hugging Face Hub</a> からデータセットをダウンロードする方法は既に知っていると思いますが、実際に扱うデータは、自分のノートパソコンやリモートサーバーに置かれていることも多いはずです。このセクションでは、Hugging Face Hub にないデータセットを 🤗 Datasets で読み込む方法を紹介します。</p>
 <div class="youtube-embed"><iframe src="https://www.youtube-nocookie.com/embed/HyQgpJTkRdE" title="YouTube video" loading="lazy" allowfullscreen referrerpolicy="strict-origin-when-cross-origin"></iframe></div>
 <h2>ローカル及びリモートのデータセットを扱う</h2>
-<p>🤗 Datasets には、ローカル及びリモートのデータセットを読み込むためのローディングスクリプトが用意されています。次のような一般的なデータ形式に対応しています。</p>
+<p>🤗 Datasets では、ローカル及びリモートのデータセットを、形式に応じたローディングスクリプトで読み込めます。対応している主なデータ形式は次のとおりです。</p>
 <table>
 <thead>
 <tr>
@@ -239,7 +239,7 @@ window.MathJax = { tex: { inlineMath: [['$', '$'], ['\\(', '\\)']], displayMath:
 </tr>
 </tbody>
 </table>
-<p>表のとおり、データ形式ごとに <code>load_dataset()</code> 関数でローディングスクリプトの種類を指定し、1つ以上のファイルへのパスを指定する <code>data_files</code> 引数を渡すだけです。まずはローカルファイルからデータセットを読み込み、後でリモートファイルでも同じことができることを見ていきます。</p>
+<p>表のとおり、<code>load_dataset()</code> にはデータ形式に応じたローディングスクリプトの種類と、1つ以上のファイルのパスを表す <code>data_files</code> 引数を指定するだけです。まずはローカルファイルからデータセットを読み込み、後でリモートファイルでも同じことができることを見ていきます。</p>
 <h2>ローカルデータセットの読み込み</h2>
 <p>この例では、イタリア語の質問応答用の大規模データセットである <a href="https://github.com/crux82/squad-it/">SQuAD-it データセット</a> を使います。</p>
 <p>訓練用とテスト用の分割（split）は GitHub で公開されているので、簡単な <code>wget</code> コマンドでダウンロードできます。</p>
@@ -301,7 +301,7 @@ squad_it_dataset["train"][0]
         ...
     ],
 }</p>
-<div class="codehilite"><pre><span></span><code>これで、初めてのローカルデータセットが読み込めました！但し、訓練セットについてはうまくいきましたが、本当に欲しいのは `train` と `test` の両方の分割を1つの `DatasetDict` オブジェクトにまとめ、両方の分割に対してまとめて `Dataset.map()` 関数を適用できるようにすることです。そのためには、`data_files` 引数に、各分割名とその分割に対応するファイルを対応づける辞書を渡します。
+<div class="codehilite"><pre><span></span><code>これで、初めてのローカルデータセットを読み込めました！但し、今読み込めたのは訓練セットだけです。本当に欲しいのは、`train` と `test` の両方を1つの `DatasetDict` オブジェクトにまとめ、`Dataset.map()` を両方の分割に一度に適用できる形です。そのためには、`data_files` 引数に、各分割名と対応するファイルを組にした辞書を渡します。
 
 ```py
 data_files = {"train": "SQuAD_it-train.json", "test": "SQuAD_it-test.json"}
@@ -336,7 +336,7 @@ squad_it_dataset = load_dataset("json", data_files=data_files, field="data")
 </code></pre></div>
 
 <p>多数の GZIP ファイルを手作業で解凍したくない場合に便利です。自動解凍は ZIP や TAR など他の一般的な形式にも適用されるので、<code>data_files</code> に圧縮ファイルを指定するだけで済みます！</p>
-<p>ノートパソコンやデスクトップ上のローカルファイルを読み込む方法が分かったところで、次はリモートファイルの読み込みを見ていきます。</p>
+<p>ノートパソコンやデスクトップPCにあるローカルファイルを読み込む方法が分かったところで、次はリモートファイルの読み込みを見ていきます。</p>
 <h2>リモートデータセットの読み込み</h2>
 <p>企業でデータサイエンティストやプログラマーとして働いている場合、分析したいデータセットはリモートサーバーに保存されていることが多いでしょう。幸い、リモートファイルの読み込みはローカルファイルと同じくらい簡単です！ローカルファイルへのパスを与える代わりに、<code>load_dataset()</code> の <code>data_files</code> 引数に、リモートファイルの URL を1つ以上指定します。たとえば、GitHub で公開されている SQuAD-it データセットなら、次のように <code>data_files</code> に <em>SQuAD_it-*.json.gz</em> の URL を指定するだけです。</p>
 <div class="codehilite"><pre><span></span><code><span class="n">url</span> <span class="o">=</span> <span class="s2">"https://github.com/crux82/squad-it/raw/master/"</span>
@@ -347,14 +347,14 @@ squad_it_dataset = load_dataset("json", data_files=data_files, field="data")
 <span class="n">squad_it_dataset</span> <span class="o">=</span> <span class="n">load_dataset</span><span class="p">(</span><span class="s2">"json"</span><span class="p">,</span> <span class="n">data_files</span><span class="o">=</span><span class="n">data_files</span><span class="p">,</span> <span class="n">field</span><span class="o">=</span><span class="s2">"data"</span><span class="p">)</span>
 </code></pre></div>
 
-<p>これにより、上で得たのと同じ <code>DatasetDict</code> オブジェクトが返ってきますが、<em>SQuAD_it-*.json.gz</em> ファイルを手作業でダウンロード・解凍する手間が省けます。以上で、Hugging Face Hub にホストされていないデータセットの様々な読み込み方法を見てきました。手元にデータセットが用意できたので、次は実際に手を動かしながら、様々なデータ加工の方法を試していきましょう！</p>
+<p>これにより、上で得たのと同じ <code>DatasetDict</code> オブジェクトが返ってきますが、<em>SQuAD_it-*.json.gz</em> ファイルを手作業でダウンロード・解凍する手間が省けます。以上で、Hugging Face Hub にホストされていないデータセットの様々な読み込み方法を見てきました。これでデータセットを扱う準備ができたので、次は実際に手を動かしながら、様々なデータ加工の方法を試していきましょう！</p>
 <div class="callout callout-tip">
 <p class="callout-title">💡 ヒント</p>
 <p>✏️ <strong>やってみよう！</strong> GitHub や <a href="https://archive.ics.uci.edu/ml/index.php">UCI Machine Learning Repository</a> で公開されている別のデータセットを選んで、上で紹介したテクニックを使ってローカルとリモートの両方で読み込んでみましょう。おまけとして、CSV やテキスト形式で保存されたデータセットの読み込みにも挑戦してみてください（これらの形式の詳細は<a href="https://huggingface.co/docs/datasets/loading#local-and-remote-files">ドキュメント</a>を参照）。</p>
 </div>
 </article>
 
-<nav class="page-nav"><a class="nav-link prev" href="1.html">← 前へ: はじめに</a><a class="nav-link toc-link" href="../index.html">目次へ</a><a class="nav-link next" href="3.html">次へ →: 切り分けて、加工して</a></nav>
+<nav class="page-nav"><a class="nav-link prev" href="1.html">← 前へ: はじめに</a><a class="nav-link toc-link" href="../index.html">目次へ</a><a class="nav-link next" href="3.html">次へ →: データを切り分けて加工しよう</a></nav>
 </main>
 </div>
 <footer class="site-footer">

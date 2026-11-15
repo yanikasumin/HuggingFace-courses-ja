@@ -8,9 +8,9 @@
 ]} />
 
 
-BERT や GPT-2 のような Transformer をゼロから事前学習しようとする場合など、最近では数ギガバイト規模のデータセットを扱うことも珍しくありません。こうした場合、データを読み込むこと自体が難題になることがあります。たとえば、GPT-2 の事前学習に使われた WebText コーパスは、800万件を超えるドキュメントと40 GB のテキストから構成されており、これをノートパソコンの RAM に読み込もうとすれば、ノートパソコンに大きな負荷がかかってしまうでしょう！
+近年では、BERT や GPT-2 のような Transformer モデルをゼロから事前学習する場合など、数ギガバイト規模のデータセットを扱うことも珍しくありません。こうした場合、データを読み込むこと自体が難題になることがあります。たとえば、GPT-2 の事前学習に使われた WebText コーパスは、800万件を超えるドキュメントと40 GB のテキストから構成されており、これをノートパソコンの RAM に読み込もうとすれば、ノートパソコンが悲鳴を上げてしまうでしょう！
 
-幸い、🤗 Datasets はこうした制約を克服できるよう設計されています。データセットをメモリマップドファイルとして扱うことでメモリ管理の問題から解放し、コーパスのエントリをストリーミングすることでハードドライブの容量制限からも解放します。
+幸い、🤗 Datasets はこうした制約を克服できるよう設計されています。データセットをメモリマップドファイルとして扱うことでメモリ管理の問題からユーザーを解放し、コーパス内のデータをストリーミングすることでハードドライブの容量制限からも解放してくれます。
 
 <Youtube id="JwISwTCPPWo"/>
 
@@ -18,13 +18,13 @@ BERT や GPT-2 のような Transformer をゼロから事前学習しようと�
 
 ## Pile とは？[[what-is-the-pile]]
 
-Pile は、大規模言語モデルの訓練のために [EleutherAI](https://www.eleuther.ai) が作成した英語テキストコーパスです。科学論文、GitHub のコードリポジトリ、フィルタリングされた Web テキストなど、多様なデータセットを含んでいます。訓練コーパスは [14 GB のチャンク](https://the-eye.eu/public/AI/pile/)で入手でき、[個別の構成要素](https://the-eye.eu/public/AI/pile_preliminary_components/)もいくつかダウンロードできます。まず、PubMed Abstracts データセットを見てみましょう。これは [PubMed](https://pubmed.ncbi.nlm.nih.gov/) に掲載された1500万件の生物医学系出版物の抄録を集めたコーパスです。このデータセットは [JSON Lines 形式](https://jsonlines.org)で、`zstandard` ライブラリで圧縮されているので、まずそれをインストールする必要があります。
+Pile は、大規模言語モデルの訓練のために [EleutherAI](https://www.eleuther.ai) が作成した英語テキストコーパスです。科学論文、GitHub のコードリポジトリ、フィルタリングされた Web テキストなど、多様なデータセットを含んでいます。訓練コーパスは [14 GB のチャンク](https://the-eye.eu/public/AI/pile/)で入手でき、[個別の構成要素](https://the-eye.eu/public/AI/pile_preliminary_components/)もいくつかダウンロードできます。まず、PubMed Abstracts データセットを見てみましょう。これは [PubMed](https://pubmed.ncbi.nlm.nih.gov/) に掲載された1500万件の生物医学系出版物の抄録を集めたコーパスです。このデータセットは [JSON Lines 形式](https://jsonlines.org)で保存され、`zstandard` ライブラリで圧縮されています。そのため、まずこのライブラリをインストールする必要があります。
 
 ```py
 !pip install zstandard
 ```
 
-次に、[セクション2](/course/chapter5/2) で学んだリモートファイルの読み込み方法で、データセットを読み込みます。
+次に、[セクション2](/course/chapter5/2) で学んだ方法を使って、リモートにあるデータセットを読み込みます。
 
 ```py
 from datasets import load_dataset
@@ -94,12 +94,12 @@ print(f"データセットのサイズ（キャッシュファイル）: {size_g
 データセットのサイズ（キャッシュファイル）: 19.54 GB
 ```
 
-素晴らしいことに、20 GB 近い大きさにもかかわらず、はるかに少ない RAM でデータセットを読み込んでアクセスできています！
+素晴らしいことに、このデータセットは 20 GB 近い大きさですが、それを大幅に下回る量の RAM で読み込み、内容にアクセスできています！
 
 > [!TIP]
-> ✏️ **やってみよう！** Pile の[サブセット](https://the-eye.eu/public/AI/pile_preliminary_components/)の中から、自分のノートパソコンやデスクトップの RAM より大きいものを1つ選んで 🤗 Datasets で読み込み、使用された RAM の量を測ってみましょう。正確に測るには、新しいプロセスで実行するのがよいでしょう。各サブセットの解凍後のサイズは、[the Pile の論文](https://arxiv.org/abs/2101.00027)の Table 1 に載っています。
+> ✏️ **やってみよう！** Pile の[サブセット](https://the-eye.eu/public/AI/pile_preliminary_components/)の中から、自分のノートパソコンやデスクトップの RAM より大きいものを1つ選んで 🤗 Datasets で読み込み、使用された RAM の量を測ってみましょう。正確に測るには、新しいプロセスで実行するのがよいでしょう。各サブセットの解凍後のサイズは、[the Pile の論文](https://arxiv.org/abs/2101.00027)の表1に載っています。
 
-Pandas に慣れている人には、この結果は意外かもしれません。Wes Kinney の有名な[経験則](https://wesmckinney.com/blog/apache-arrow-pandas-internals/)では、通常、データセットのサイズの5倍から10倍の RAM が必要とされるからです。では、🤗 Datasets はこのメモリ管理の問題をどう解決しているのでしょうか。🤗 Datasets は各データセットを[メモリマップドファイル](https://en.wikipedia.org/wiki/Memory-mapped_file)として扱います。これは RAM とファイルシステムストレージの間のマッピングを提供し、データセット全体をメモリに読み込まなくても、その要素にアクセスして操作できるようにするものです。
+Pandas に慣れている人には、この結果は意外かもしれません。Wes Kinney の有名な[経験則](https://wesmckinney.com/blog/apache-arrow-pandas-internals/)では、通常、データセットのサイズの5倍から10倍の RAM が必要とされるからです。では、🤗 Datasets はこのメモリ管理の問題をどう解決しているのでしょうか。🤗 Datasets は各データセットを[メモリマップドファイル](https://en.wikipedia.org/wiki/Memory-mapped_file)として扱います。これは RAM とファイルシステム上のストレージを対応付ける仕組みであり、データセット全体をメモリに読み込まなくても、その要素にアクセスして操作できます。
 
 メモリマップドファイルは複数のプロセス間で共有もできるため、`Dataset.map()` のようなメソッドを、データセットを移動したりコピーしたりすることなく並列化できます。これらの機能はすべて、裏側では [Apache Arrow](https://arrow.apache.org) のメモリ形式と [`pyarrow`](https://arrow.apache.org/docs/python/index.html) ライブラリによって実現されており、データの読み込みと処理を非常に高速にしています。（Apache Arrow の詳細や Pandas との比較については、[Dejan Simic のブログ記事](https://towardsdatascience.com/apache-arrow-read-dataframe-with-zero-memory-69634092b1a)を参照してください。）実際に確かめるために、PubMed Abstracts データセットのすべての要素をたどる簡単な速度テストをしてみましょう。
 
@@ -123,7 +123,7 @@ print(
 '15518009 件のサンプル（約 19.5 GB）を 64.2 秒で走査しました。処理速度: 0.304 GB/秒'
 ```
 
-ここでは Python の `timeit` モジュールを使って、`code_snippet` の実行時間を測りました。通常、データセットは1秒あたり数百 MB から数 GB の速度でたどることができます。これは大半の用途では十分にうまく機能しますが、ノートパソコンのハードドライブにすら保存できないほど大きなデータセットを扱わなければならない場合もあります。たとえば、Pile 全体をダウンロードしようとすると、825 GB の空きディスク容量が必要になります！こうした場合に対応するため、🤗 Datasets にはストリーミング機能があり、データセット全体をダウンロードすることなく、要素をその場でダウンロードしてアクセスできます。その仕組みを見ていきましょう。
+ここでは Python の `timeit` モジュールを使って、`code_snippet` の実行時間を測りました。通常、データセットは1秒あたり数百 MB から数 GB の速度でたどることができます。この処理速度は大半の用途には十分ですが、ノートパソコンのハードドライブにすら保存できないほど大きなデータセットを扱わなければならない場合もあります。たとえば、Pile 全体をダウンロードしようとすると、825 GB の空きディスク容量が必要になります！こうした場合に備えて、🤗 Datasets にはストリーミング機能が用意されています。データセット全体をダウンロードせずに、必要な要素をその都度ダウンロードして利用できます。その仕組みを見ていきましょう。
 
 > [!TIP]
 > 💡 Jupyter ノートブックでは、[`%%timeit` マジック関数](https://ipython.readthedocs.io/en/stable/interactive/magics.html#magic-timeit)を使ってセルの時間を測ることもできます。
@@ -138,7 +138,7 @@ pubmed_dataset_streamed = load_dataset(
 )
 ```
 
-この章の他の場所で見てきたおなじみの `Dataset` とは違い、`streaming=True` で返されるオブジェクトは `IterableDataset` です。その名のとおり、`IterableDataset` の要素にアクセスするには、要素をイテレーション（反復処理）する必要があります。ストリーミングされたデータセットの最初の要素には、次のようにアクセスできます。
+この章でこれまで見てきた `Dataset` とは異なり、`streaming=True` を指定すると `IterableDataset` オブジェクトが返されます。その名のとおり、`IterableDataset` の要素にアクセスするには、データセットを反復処理する必要があります。ストリーミングされたデータセットの最初の要素には、次のようにアクセスできます。
 
 
 ```py
@@ -150,7 +150,7 @@ next(iter(pubmed_dataset_streamed))
  'text': 'Epidemiology of hypoxaemia in children with acute lower respiratory infection.\nTo determine the prevalence of hypoxaemia in children aged under 5 years suffering acute lower respiratory infections (ALRI), the risk factors for hypoxaemia in children under 5 years of age with ALRI, and the association of hypoxaemia with an increased risk of dying in children of the same age ...'}
 ```
 
-ストリーミングされたデータセットの要素は `IterableDataset.map()` を使ってその場で処理できます。これは、訓練時に入力をトークナイズする必要がある場合に便利です。手順は、[Chapter 3](/course/chapter3) でデータセットをトークナイズしたときに使ったものとまったく同じで、唯一の違いは出力が1つずつ返されることです。
+ストリーミングされたデータセットの要素は `IterableDataset.map()` を使ってその場で処理できます。これは、訓練時に入力をトークナイズする必要がある場合に便利です。手順は、[第3章](/course/chapter3) でデータセットをトークナイズしたときに使ったものとまったく同じで、唯一の違いは出力が1つずつ返されることです。
 
 ```py
 from transformers import AutoTokenizer
@@ -167,7 +167,7 @@ next(iter(tokenized_dataset))
 > [!TIP]
 > 💡 ストリーミングでのトークナイズを高速化するには、前のセクションで見たように `batched=True` を渡せます。サンプルがバッチごとに処理されます。デフォルトのバッチサイズは1,000で、`batch_size` 引数で指定できます。
 
-`IterableDataset.shuffle()` を使ってストリーミングされたデータセットをシャッフルすることもできますが、`Dataset.shuffle()` とは違い、シャッフルされるのは事前に定義された `buffer_size` の範囲内の要素だけです。
+ストリーミングされたデータセットでも `IterableDataset.shuffle()` を使ってシャッフルできます。ただし、`Dataset.shuffle()` とは異なり、シャッフルの対象は指定された `buffer_size` 件分のバッファ内にある要素に限られます。
 
 ```py
 shuffled_dataset = pubmed_dataset_streamed.shuffle(buffer_size=10_000, seed=42)
@@ -208,7 +208,7 @@ train_dataset = shuffled_dataset.skip(1000)
 validation_dataset = shuffled_dataset.take(1000)
 ```
 
-最後に、よくある用途である、複数のデータセットを組み合わせて1つのコーパスを作る方法を見てみましょう。🤗 Datasets には `interleave_datasets()` 関数があり、`IterableDataset` オブジェクトのリストを1つの `IterableDataset` に変換します。新しいデータセットの要素は、元のサンプルを交互に取り出すことで得られます。この関数は大きなデータセット同士を組み合わせたい場合に特に便利です。例として、米国の裁判所の判決文を集めた51 GB のデータセットである Pile の FreeLaw サブセットをストリーミングしてみましょう。
+最後に、よくある使い方として、複数のデータセットを組み合わせて1つのコーパスを作る方法を見てみましょう。🤗 Datasets には `interleave_datasets()` 関数があり、`IterableDataset` オブジェクトのリストを1つの `IterableDataset` に変換します。新しいデータセットの要素は、元のサンプルを交互に取り出すことで得られます。この関数は大きなデータセット同士を組み合わせたい場合に特に便利です。例として、米国の裁判所の判決文を集めた51 GB のデータセットである Pile の FreeLaw サブセットをストリーミングしてみましょう。
 
 ```py
 law_dataset_streamed = load_dataset(
@@ -227,7 +227,7 @@ next(iter(law_dataset_streamed))
  'text': '\n461 U.S. 238 (1983)\nOLIM ET AL.\nv.\nWAKINEKONA\nNo. 81-1581.\nSupreme Court of United States.\nArgued January 19, 1983.\nDecided April 26, 1983.\nCERTIORARI TO THE UNITED STATES COURT OF APPEALS FOR THE NINTH CIRCUIT\n*239 Michael A. Lilly, First Deputy Attorney General of Hawaii, argued the cause for petitioners. With him on the brief was James H. Dannenberg, Deputy Attorney General...'}
 ```
 
-このデータセットは大半のノートパソコンの RAM に負荷をかける大きさですが、メモリを圧迫することなく読み込んでアクセスできました！では、FreeLaw と PubMed Abstracts の両データセットのサンプルを `interleave_datasets()` 関数で組み合わせてみましょう。
+このデータセットは大半のノートパソコンの RAM に負荷がかかるほど大きいものの、問題なく読み込み、内容にアクセスできました！では、FreeLaw と PubMed Abstracts の両データセットのサンプルを `interleave_datasets()` 関数で組み合わせてみましょう。
 
 ```py
 from itertools import islice
@@ -267,6 +267,6 @@ next(iter(pile_dataset["train"]))
 ```
 
 > [!TIP]
-> ✏️ **やってみよう！** [`mc4`](https://huggingface.co/datasets/mc4) や [`oscar`](https://huggingface.co/datasets/oscar) のような大規模な Common Crawl コーパスの1つを使って、選んだ国における各言語の話者比率を反映したストリーミング多言語データセットを作ってみましょう。たとえば、スイスの公用語はドイツ語、フランス語、イタリア語、ロマンシュ語の4つなので、Oscar のサブセットを話者割合に応じてサンプリングし、スイスコーパスを作ってみることができます。
+> ✏️ **やってみよう！** [`mc4`](https://huggingface.co/datasets/mc4) や [`oscar`](https://huggingface.co/datasets/oscar) のような大規模な Common Crawl コーパスの1つを使って、選んだ国における各言語の話者比率を反映したストリーミング多言語データセットを作ってみましょう。たとえば、スイスにはドイツ語、フランス語、イタリア語、ロマンシュ語という4つの国語（国家言語）があるので、Oscar のサブセットを各言語の話者割合に応じてサンプリングし、スイスのコーパスを作ってみることができます。
 
 これで、あらゆる形や大きさのデータセットを読み込んで処理するための道具がすべて揃いました。しかし、よほど幸運でない限り、NLP の旅のどこかで、手元の問題を解くために実際にデータセットを作成しなければならない場面が訪れるはずです。それが次のセクションのテーマです！
