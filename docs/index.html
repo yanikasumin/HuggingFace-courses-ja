@@ -24,130 +24,53 @@
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&family=Zen+Kaku+Gothic+New:wght@400;500;700;900&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="style.css">
 <style>
-/* Home edition: scoped editorial design; lesson pages keep their existing styles */
-.layout.no-sidebar:has(.home-landing){max-width:none}
-.layout.no-sidebar .home-landing{max-width:1180px;padding:0 26px 100px;margin:0 auto}
-.home-landing{--h-bg:#0b0f19;--h-panel:#111827;--h-panel2:#151e30;--h-border:#293348;--h-ink:#eff2f8;--h-copy:#bac5d6;--h-mute:#93a0b6;--h-gold:#ffd21e;--h-line:#40516c;color:var(--h-copy);font-size:16px;line-height:1.86}
-.home-landing a{text-underline-offset:3px}
-.home-landing p{margin:0 0 1.15em}
-.home-landing h1,.home-landing h2,.home-landing h3{color:var(--h-ink);border:0;padding:0;letter-spacing:-.035em}
-.home-landing h1{font-size:clamp(2.5rem,6.4vw,5.25rem);line-height:1.24;font-weight:800;margin:0 0 .36em}
-.home-landing h2{font-size:clamp(1.65rem,3.1vw,2.35rem);line-height:1.42;margin:0 0 .68em}
-.home-landing h3{font-size:1.19rem;line-height:1.5;margin:0 0 .45em}
-.home-landing .eyebrow{font-family:"IBM Plex Mono",monospace;letter-spacing:.13em;font-size:.77rem;color:var(--h-gold);font-weight:500;text-transform:uppercase;margin:0 0 18px}
-.home-landing .section{padding:86px 0;border-top:1px solid var(--h-border);scroll-margin-top:90px}
-.home-landing .section-lead{max-width:730px;color:var(--h-copy);font-size:1.06rem;margin-bottom:36px}
-.home-landing .text-narrow{max-width:735px}
-.home-landing .hero{padding:104px 0 96px;display:grid;grid-template-columns:minmax(0,1.6fr) minmax(260px,.7fr);gap:78px;align-items:end}
-.home-landing .hero-lead{font-size:clamp(1.08rem,1.7vw,1.22rem);line-height:1.98;max-width:660px;color:#ccd4e2}
-.home-landing .hero-note{color:var(--h-mute);font-size:.89rem;max-width:630px}
-.home-landing .hero-title-light{color:var(--h-gold)}
-.home-landing .hero-actions{display:flex;flex-wrap:wrap;gap:11px;margin:32px 0 28px}
-.home-landing .action{display:inline-flex;align-items:center;justify-content:center;padding:11px 20px;border:1px solid var(--h-line);border-radius:6px;color:var(--h-ink);font-weight:700;text-decoration:none;transition:background .2s,color .2s,border-color .2s}
-.home-landing .action.primary{background:var(--h-gold);border-color:var(--h-gold);color:#12151c}
-.home-landing .action:hover{background:#232e42;border-color:#6c819f;text-decoration:none}
-.home-landing .action.primary:hover{background:#ffe268;color:#12151c;border-color:#ffe268}
-.home-landing .hero-aside{border-left:1px solid var(--h-line);padding:0 0 0 32px;align-self:stretch;display:flex;flex-direction:column;justify-content:flex-end;gap:10px}
-.home-landing .metric-value{font-family:Inter,sans-serif;font-size:clamp(3.8rem,6vw,6rem);color:var(--h-ink);line-height:1.1;font-weight:700;letter-spacing:-.08em}
-.home-landing .metric-name{color:var(--h-mute);font-size:.92rem;display:block}
-.home-landing .metric-row{padding:16px 0;border-bottom:1px solid var(--h-border)}
-.home-landing .metric-row strong{display:block;font-size:1.85rem;line-height:1.3;color:var(--h-ink);font-family:Inter,sans-serif}
-.home-landing .mini-nav{display:flex;flex-wrap:wrap;gap:8px;padding:0 0 24px;margin-bottom:10px;border-bottom:1px solid var(--h-border)}
-.home-landing .mini-nav a{font-size:.85rem;color:var(--h-mute);padding:7px 13px;border:1px solid var(--h-border);border-radius:4px;text-decoration:none}
-.home-landing .mini-nav a:hover{color:var(--h-ink);border-color:var(--h-gold)}
-.home-landing .split{display:grid;grid-template-columns:1fr 1.07fr;gap:65px}
-.home-landing .statement{font-size:clamp(1.42rem,2.35vw,1.86rem);line-height:1.85;letter-spacing:-.03em;font-weight:600;color:var(--h-ink);margin:0}
-.home-landing .statement em{color:var(--h-gold);font-style:normal}
-.home-landing .fineprint{font-size:.86rem;color:var(--h-mute)}
-.home-landing .definition{margin-top:35px;padding:24px 26px;border-left:3px solid var(--h-gold);background:#111929;color:var(--h-copy)}
-.home-landing .definition strong{color:var(--h-ink)}
-.home-landing .course-list{display:grid;grid-template-columns:1.17fr 1fr 1fr;gap:15px}
-.home-landing .course-tile{background:var(--h-panel);border:1px solid var(--h-border);border-radius:8px;padding:27px;min-height:245px;display:flex;flex-direction:column;transition:transform .2s,border-color .2s}
-.home-landing .course-tile:hover{border-color:#b89c44;transform:translateY(-3px)}
-.home-landing .course-tile.feature{grid-row:span 2;background:linear-gradient(145deg,#1c2639,#101828);min-height:500px}
-.home-landing .course-top{display:flex;justify-content:space-between;gap:12px;align-items:center;margin-bottom:24px}
-.home-landing .course-code{color:var(--h-gold);font-family:"IBM Plex Mono",monospace;letter-spacing:.06em;font-size:.86rem}
-.home-landing .course-count{font-size:.78rem;color:var(--h-mute);white-space:nowrap}
-.home-landing .course-tile h3{font-size:1.39rem}
-.home-landing .course-tile.feature h3{font-size:2.2rem}
-.home-landing .course-tile p{font-size:.96rem}
-.home-landing .course-tile .output{font-size:.86rem;color:var(--h-mute);margin-top:0}
-.home-landing .course-tile .tile-link{margin-top:auto;padding-top:24px;font-size:.91rem;color:var(--h-gold);font-weight:700;text-decoration:none}
-.home-landing .course-tile .tile-link:hover{text-decoration:underline}
-.home-landing .course-tile .feature-label{margin-top:auto;padding:17px 0 0;border-top:1px solid var(--h-line);font-size:.9rem;color:var(--h-mute)}
-.home-landing .reader-flow{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px}
-.home-landing .reader-step{border-top:2px solid var(--h-gold);padding:22px 22px 12px;background:var(--h-panel);min-height:255px}
-.home-landing .reader-num{display:block;font-family:"IBM Plex Mono",monospace;font-size:.8rem;color:var(--h-gold);margin-bottom:18px}
-.home-landing .reader-step p{font-size:.94rem}
-.home-landing .reader-step a{font-size:.91rem}
-.home-landing .editorial-side{padding:24px 25px;background:var(--h-panel);border:1px solid var(--h-border);border-radius:6px}
-.home-landing .editorial-side h3{font-size:1rem;margin-bottom:12px}
-.home-landing .terminal{background:#080c14;color:#d8e8c1;border:1px solid var(--h-border);padding:17px 19px;border-radius:6px;overflow-x:auto;font-family:"IBM Plex Mono",monospace;font-size:.82rem;line-height:1.75;margin:15px 0}
-.home-landing .terminal .prompt{color:#d5b63c}
-.home-landing .route{display:grid;grid-template-columns:1fr 40px 1fr 40px 1fr;gap:12px;align-items:stretch;margin:36px 0 25px}
-.home-landing .route-node{border:1px solid var(--h-border);background:var(--h-panel);border-radius:8px;padding:24px 20px}
-.home-landing .route-node small{display:block;font-family:"IBM Plex Mono",monospace;color:var(--h-gold);font-size:.72rem;letter-spacing:.07em;margin-bottom:9px}
-.home-landing .route-node strong{display:block;color:var(--h-ink);font-size:1.05rem;line-height:1.5;margin-bottom:10px}
-.home-landing .route-node span{font-size:.87rem;line-height:1.65;color:var(--h-mute)}
-.home-landing .route-arrow{display:flex;align-items:center;justify-content:center;color:var(--h-gold);font-size:2rem}
-.home-landing .routes-special{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px}
-.home-landing .routes-special a{display:block;border:1px solid var(--h-border);border-radius:5px;padding:16px;color:var(--h-ink);text-decoration:none}
-.home-landing .routes-special a:hover{background:var(--h-panel);border-color:var(--h-gold)}
-.home-landing .routes-special strong{display:block;margin-bottom:6px}
-.home-landing .routes-special small{color:var(--h-mute);font-size:.78rem;line-height:1.5;display:block}
-.home-landing .path-note{font-size:.87rem;color:var(--h-mute);margin-top:18px}
-.home-landing .workflow{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:13px;margin-top:32px}
-.home-landing .worker{background:var(--h-panel);border:1px solid var(--h-border);padding:21px;border-radius:6px}
-.home-landing .worker small{display:block;font-size:.75rem;color:var(--h-gold);font-family:"IBM Plex Mono",monospace;margin-bottom:12px}
-.home-landing .worker strong{color:var(--h-ink);display:block;font-size:1.06rem;margin-bottom:10px}
-.home-landing .worker p{font-size:.88rem;margin:0}
-.home-landing .flowchart{padding:26px 24px;background:#0f1624;border:1px solid var(--h-border);border-radius:9px;margin:20px 0 26px}
-.home-landing .flowchain{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:8px;align-items:stretch}
-.home-landing .flowbox{border:1px solid #33415b;border-radius:5px;padding:13px 11px;min-width:0}
-.home-landing .flowbox small{display:block;font-family:"IBM Plex Mono",monospace;color:var(--h-gold);font-size:.68rem;margin-bottom:8px}
-.home-landing .flowbox strong{color:var(--h-ink);font-size:.84rem;line-height:1.55;display:block}
-.home-landing .flowbox span{display:block;color:var(--h-mute);font-size:.72rem;margin-top:8px}
-.home-landing .flow-return{border-top:1px dashed #b79a42;margin:20px auto 0;padding-top:13px;text-align:center;color:#e2c358;font-size:.86rem}
-.home-landing .workflow-details{display:grid;grid-template-columns:1fr 1fr;gap:38px}
-.home-landing .workflow-details p{font-size:.94rem}
-.home-landing .resource-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin-top:25px}
-.home-landing .resource-link{background:var(--h-panel);border:1px solid var(--h-border);padding:17px 20px;border-radius:6px;color:var(--h-ink);text-decoration:none}
-.home-landing .resource-link:hover{border-color:var(--h-gold);text-decoration:none}
-.home-landing .resource-link small{display:block;color:var(--h-mute);margin-top:6px;font-size:.79rem}
-.home-landing .forward-grid{display:grid;grid-template-columns:1fr 1fr;gap:36px}
-.home-landing .forward-item{border-top:1px solid var(--h-line);padding-top:18px;margin-top:18px}
-.home-landing .forward-item strong{color:var(--h-ink);display:block;margin-bottom:7px}
-.home-landing .forward-item p{font-size:.92rem;margin-bottom:0}
-.home-landing .foot-credits{padding-top:34px;border-top:1px solid var(--h-border);display:flex;justify-content:space-between;flex-wrap:wrap;gap:20px;color:var(--h-mute);font-size:.87rem}
-.home-landing .foot-credits strong{color:var(--h-ink)}
-@media(max-width:970px){
-.home-landing .hero{gap:40px;grid-template-columns:minmax(0,1fr) 230px}
-.home-landing .course-list{grid-template-columns:1fr 1fr}
-.home-landing .course-tile.feature{grid-row:auto;grid-column:span 2;min-height:300px}
-.home-landing .split{gap:35px}
-.home-landing .flowchain{grid-template-columns:repeat(3,1fr)}
-}
-@media(max-width:720px){
-.layout.no-sidebar .home-landing{padding:0 18px 65px}
-.home-landing .hero{grid-template-columns:1fr;padding:67px 0 55px;gap:22px}
-.home-landing .hero-aside{border-left:0;border-top:1px solid var(--h-border);padding:14px 0 0;display:grid;grid-template-columns:1fr 1fr;gap:12px}
-.home-landing .hero-aside>.metric-primary{display:none}
-.home-landing .metric-row{padding:9px 0}
-.home-landing .section{padding:57px 0}
-.home-landing .split,.home-landing .reader-flow,.home-landing .workflow,.home-landing .workflow-details,.home-landing .forward-grid{grid-template-columns:1fr;gap:18px}
-.home-landing .course-list{grid-template-columns:1fr}
-.home-landing .course-tile.feature{grid-column:auto;min-height:300px}
-.home-landing .course-tile{min-height:200px;padding:22px}
-.home-landing .route{grid-template-columns:1fr;gap:8px}
-.home-landing .route-arrow{font-size:1.6rem;transform:rotate(90deg);line-height:1}
-.home-landing .routes-special{grid-template-columns:1fr 1fr}
-.home-landing .flowchain{grid-template-columns:1fr 1fr}
-.home-landing .resource-grid{grid-template-columns:1fr}
-.home-landing .section-lead{margin-bottom:24px}
-.home-landing .statement{font-size:1.3rem}
-}
-@media(max-width:420px){.home-landing .routes-special,.home-landing .flowchain{grid-template-columns:1fr}.home-landing .hero-actions .action{width:100%}}
-@media(prefers-reduced-motion:reduce){.home-landing .course-tile,.home-landing .action{transition:none}.home-landing .course-tile:hover{transform:none}}
+/* Homepage only. Keep the typography and navigation of the course pages unchanged. */
+.layout.no-sidebar:has(.guide-home){max-width:none}
+.layout.no-sidebar .guide-home{max-width:760px;margin:0 auto;padding:38px 22px 78px}
+.guide-home{font-size:16px;line-height:1.85;overflow-wrap:break-word}
+.guide-home h1,.guide-home h2,.guide-home h3{border:0;padding:0;letter-spacing:normal;color:var(--text)}
+.guide-home h1{font-size:clamp(1.55rem,3vw,1.95rem);line-height:1.45;margin:0 0 20px;font-weight:700}
+.guide-home h2{font-size:1.36rem;line-height:1.5;margin:0 0 20px;font-weight:700}
+.guide-home h3{font-size:1.06rem;line-height:1.55;margin:0 0 6px;font-weight:700}
+.guide-home p{margin:0 0 17px}
+.guide-home section{padding:37px 0 22px;scroll-margin-top:80px}
+.guide-home section+section{border-top:1px solid var(--border)}
+.guide-home a{text-underline-offset:3px}
+.guide-home .home-summary{font-size:1.04rem}
+.guide-home .course-index{margin:24px 0 0;border-top:1px solid var(--border)}
+.guide-home .course-item{padding:19px 0 17px;border-bottom:1px solid var(--border-soft)}
+.guide-home .course-item h3{display:flex;gap:12px;align-items:baseline;justify-content:space-between;flex-wrap:wrap}
+.guide-home .course-item h3 a{color:var(--text)}
+.guide-home .course-item h3 a:hover{color:var(--yellow)}
+.guide-home .course-item h3 small{color:var(--muted);font-weight:400;font-size:.8rem;white-space:nowrap}
+.guide-home .course-item p{font-size:.96rem;margin:0 0 7px}
+.guide-home .course-item .example{font-size:.89rem;color:var(--muted);margin:0}
+.guide-home .steps{padding-left:1.5em;margin:15px 0 20px}
+.guide-home .steps li{margin:0 0 15px;padding-left:.18em}
+.guide-home .steps li::marker{color:var(--yellow);font-weight:700}
+.guide-home .steps strong{color:var(--text)}
+.guide-home .steps p{margin:5px 0 0}
+.guide-home .code-sample{border:1px solid var(--border);background:#0d1117;color:#e5eaf2;border-radius:6px;padding:14px 17px;overflow-x:auto;font:13px/1.8 "IBM Plex Mono",Menlo,monospace;margin:13px 0 18px}
+.guide-home .flow{list-style:none;border-left:2px solid var(--border);margin:22px 0 25px 7px;padding:0 0 0 23px}
+.guide-home .flow li{position:relative;padding:0 0 21px}
+.guide-home .flow li:last-child{padding-bottom:0}
+.guide-home .flow li::before{content:"";position:absolute;left:-30px;top:9px;width:10px;height:10px;border-radius:50%;background:var(--yellow);box-shadow:0 0 0 4px var(--bg)}
+.guide-home .flow strong{display:block;color:var(--text);font-weight:700;margin-bottom:5px}
+.guide-home .flow p{font-size:.94rem;margin:0}
+.guide-home .process{list-style:none;counter-reset:process;margin:22px 0 14px;padding:0}
+.guide-home .process li{counter-increment:process;position:relative;padding:0 0 21px 38px;min-height:51px}
+.guide-home .process li::before{content:counter(process);position:absolute;left:0;top:2px;font:700 13px/25px "IBM Plex Mono",monospace;text-align:center;color:#0b0f19;background:var(--yellow);height:25px;width:25px;border-radius:50%}
+.guide-home .process li:not(:last-child)::after{content:"";position:absolute;left:12px;top:31px;bottom:4px;border-left:1px solid var(--border)}
+.guide-home .process strong{color:var(--text);display:block}
+.guide-home .process strong span{font-size:.85rem;font-weight:400;color:var(--muted)}
+.guide-home .process p{font-size:.93rem;margin:4px 0 0}
+.guide-home .process-loop{border-left:3px solid var(--yellow);padding:7px 0 7px 14px;font-size:.94rem;margin:0 0 22px}
+.guide-home .resources{padding-left:1.25em;margin:15px 0 19px}
+.guide-home .resources li{margin:0 0 10px}
+.guide-home .site-notes{font-size:.93rem;color:var(--muted)}
+.guide-home .site-notes p{margin-bottom:12px}
+.guide-home .author{border-top:1px solid var(--border);padding-top:25px;margin-top:25px;font-size:.91rem;color:var(--muted)}
+@media(max-width:620px){.layout.no-sidebar .guide-home{padding:26px 18px 60px}.guide-home{font-size:15.5px}.guide-home section{padding:30px 0 15px}.guide-home h2{font-size:1.25rem}.guide-home .course-item{padding:16px 0}}
 </style>
 <script>
 window.MathJax = { tex: { inlineMath: [['$', '$'], ['\\(', '\\)']], displayMath: [['$$', '$$'], ['\\[', '\\]']] }, options: { skipHtmlTags: ['script','noscript','style','textarea','pre','code'] } };
@@ -168,131 +91,87 @@ window.MathJax = { tex: { inlineMath: [['$', '$'], ['\\(', '\\)']], displayMath:
 <div class="layout no-sidebar">
 
 
-<main class="container home-landing" id="top">
-  <section class="hero" aria-labelledby="hero-title">
-    <div>
-      <p class="eyebrow">Hugging Face Courses · Japanese Edition</p>
-      <h1 id="hero-title">機械学習を、<br><span class="hero-title-light">日本語で学び、</span><br>実際に動かす。</h1>
-      <p class="hero-lead">Hugging Face が公開している5つの無料学習コースを日本語に翻訳しました。大規模言語モデルから画像認識、AI エージェント、ロボット学習まで。仕組みを理解し、コードを試し、自分の手で作るための教材です。</p>
-      <div class="hero-actions"><a class="action primary" href="#courses">コースを選ぶ ↓</a><a class="action" href="#start">初めて学ぶ方へ →</a></div>
-      <p class="hero-note">Hugging Face 公式教材の非公式日本語訳。登録なしで閲覧できます。教材の英語原典にも各ページから移動できます。</p>
-    </div>
-    <aside class="hero-aside" aria-label="サイトの概要">
-      <div class="metric-primary"><div class="metric-value">316</div><span class="metric-name">収録セクション</span></div>
-      <div class="metric-row"><strong>05</strong><span class="metric-name">分野別の学習コース</span></div>
-      <div class="metric-row"><strong>無料</strong><span class="metric-name">閲覧・学習に料金は不要</span></div>
-      <div class="metric-row"><strong>原典併記</strong><span class="metric-name">英語版へ直接アクセス</span></div>
-    </aside>
-  </section>
-  <nav class="mini-nav" aria-label="このページの案内">
-    <a href="#about">このサイトについて</a><a href="#courses">コース一覧</a><a href="#start">始め方</a><a href="#roadmap">学習の道筋</a><a href="#translation">翻訳と検証</a><a href="#resources">参考教材・今後</a>
-  </nav>
+<main class="container guide-home">
+<h1>Hugging Face 学習コース日本語版</h1>
+<p class="home-summary">Hugging Face が公開している機械学習の学習コースを日本語に翻訳したサイトです。大規模言語モデル（LLM）、AI エージェント、MCP、コンピュータビジョン、ロボット工学の5コース、全316セクションを収録しています。</p>
+<p>教材はすべて無料で、登録せずに読むことができます。各ページには英語原典へのリンクがあり、原文と比較しながら学習できます。</p>
 
-  <section class="section" id="about" aria-labelledby="about-title">
-    <p class="eyebrow">01 / Why this project</p>
-    <div class="split">
-      <div><h2 id="about-title">技術を学ぶことと、<br>英語を読むことは違う。</h2>
-        <p class="statement">英語の読解に費やす時間を減らし、<em>技術そのものを考える時間</em>を増やしたい。</p></div>
-      <div>
-        <p>機械学習を独学するなかで、Hugging Face の教材を使おうとしました。内容は充実しているのに、日本語で通して学ぶ環境が十分にない。新しい概念を理解することと、英語の文章を逐一読み解くことを、同時に求められる点に不便を感じました。</p>
-        <p>もちろん、英語の論文や公式ドキュメントを読む力は重要です。しかし、最初からそれを学習の条件にする必要はありません。まず日本語で基本的な仕組みを理解し、必要になったときに原典へ進める。そのための入口を作ることが、このサイトの目的です。</p>
-        <div class="definition"><strong>Hugging Face とは</strong><br>世界中の開発者や研究者が、機械学習モデルやデータセットを公開・共有するプラットフォームと、その開発を支えるオープンソースライブラリ群を提供する企業です。モデルを探す「Hub」、プログラムから利用する「Transformers」などを通じて、研究成果を実際の開発に結び付けています。このサイトは、その Hugging Face が公開する学習コースを翻訳したものです。</div>
-      </div>
-    </div>
-  </section>
+<section id="about" aria-labelledby="about-title">
+<h2 id="about-title">Hugging Face とは</h2>
+<p>Hugging Face は、機械学習のモデルやデータセットを公開・共有するプラットフォームと、開発用のオープンソースライブラリを提供しています。研究者や開発者が公開したモデルを探し、自分のプログラムで利用したり、独自のモデルを公開したりできます。</p>
+<p>代表的なライブラリの Transformers を使うと、言語モデルや画像認識モデルなどを Python から利用できます。公式の学習コースでは、ライブラリの使い方だけでなく、モデルの仕組みや学習方法も説明しています。</p>
+<p>この翻訳サイトは、私自身が機械学習を独学する際、充実した英語の教材を日本語でも読みたいと考えたことから始めました。専門用語は英語の資料でも通用する表記を残しつつ、本文は日本語として読みやすくなるよう調整しています。</p>
+</section>
 
-  <section class="section" id="courses" aria-labelledby="courses-title">
-    <p class="eyebrow">02 / The library</p><h2 id="courses-title">学びたい分野から選ぶ</h2>
-    <p class="section-lead">5つのコースは、原典の章立てを維持して収録しています。機械学習の基礎から始めたい方には LLM コースをおすすめしますが、目的が決まっていれば興味のある分野から学んでも構いません。</p>
-    <div class="course-list">
-      <article class="course-tile feature"><div class="course-top"><span class="course-code">01 / LANGUAGE</span><span class="course-count">104 セクション</span></div><h3>LLM コース</h3><p>Transformer の仕組み、トークナイザ、データセット、学習済みモデルの利用、ファインチューニングなどを学びます。言語モデルを単に呼び出すだけでなく、中で何が起きているのか理解するための基礎となるコースです。</p><p class="output">学習後の制作例：文章の分類器、質問応答システム、独自データに合わせて調整したモデル。</p><p class="feature-label">初学者はここから。Python の基礎があると進めやすくなります。</p><a class="tile-link" href="llm/index.html" aria-label="LLM コースの目次を開く">目次と教材を開く →</a></article>
-      <article class="course-tile"><div class="course-top"><span class="course-code">02 / AGENTS</span><span class="course-count">74 セクション</span></div><h3>Agents コース</h3><p>LLM に外部ツールを使わせ、情報の取得や処理を進めるエージェントを開発します。smolagents や LangGraph などを扱います。</p><p class="output">制作例：検索・調査や定型作業を支援するエージェント。</p><a class="tile-link" href="agents/index.html">目次と教材を開く →</a></article>
-      <article class="course-tile"><div class="course-top"><span class="course-code">03 / PROTOCOLS</span><span class="course-count">36 セクション</span></div><h3>MCP コース</h3><p>AI と外部のデータ・ツールを接続する共通規格、Model Context Protocol の仕組みと実装を学びます。</p><p class="output">制作例：独自の MCP サーバーやクライアント。</p><a class="tile-link" href="mcp/index.html">目次と教材を開く →</a></article>
-      <article class="course-tile"><div class="course-top"><span class="course-code">04 / VISION</span><span class="course-count">91 セクション</span></div><h3>Community CV</h3><p>画像処理、CNN、Vision Transformer、物体検出、画像生成など、コンピュータビジョンの理論と実装を学びます。</p><p class="output">制作例：画像分類器、物体検出プログラム。</p><a class="tile-link" href="cv/index.html">目次と教材を開く →</a></article>
-      <article class="course-tile"><div class="course-top"><span class="course-code">05 / ROBOTICS</span><span class="course-count">11 セクション</span></div><h3>Robotics コース</h3><p>ロボットの運動と制御を学び、LeRobot を使ったデータセットや学習モデルの扱いへ進みます。</p><p class="output">制作例：ロボットの動作データを扱う実験。</p><a class="tile-link" href="robotics/index.html">目次と教材を開く →</a></article>
-    </div>
-    <p class="fineprint" style="margin-top:17px">※ 収録数は日本語版の掲載セクション数です。学習コースは現在も更新されるため、内容や範囲が英語原典と異なる場合があります。</p>
-  </section>
+<section id="courses" aria-labelledby="courses-title">
+<h2 id="courses-title">収録コース</h2>
+<p>興味のあるコースから読み始められます。Python や機械学習を初めて学ぶ場合は、基礎から説明している LLM コースがおすすめです。</p>
+<div class="course-index">
+<article class="course-item"><h3><a href="llm/index.html">LLM コース</a><small>104セクション</small></h3><p>Transformer の仕組み、トークナイザ、データセットの扱い方、学習済みモデルの利用、ファインチューニングなどを学びます。</p><p class="example">実装例：文章の分類、質問応答、既存モデルの追加学習</p></article>
+<article class="course-item"><h3><a href="agents/index.html">Agents コース</a><small>74セクション</small></h3><p>言語モデルに外部ツールを使わせ、情報を検索・処理する AI エージェントを開発します。smolagents、LlamaIndex、LangGraph などを扱います。</p><p class="example">実装例：検索や作業を支援する AI エージェント</p></article>
+<article class="course-item"><h3><a href="mcp/index.html">MCP コース</a><small>36セクション</small></h3><p>AI と外部のデータやツールを接続する共通規格、Model Context Protocol（MCP）の仕組みを学び、クライアントやサーバーを実装します。</p><p class="example">実装例：独自の MCP サーバー、ツール連携機能</p></article>
+<article class="course-item"><h3><a href="cv/index.html">Community CV コース</a><small>91セクション</small></h3><p>画像処理、畳み込みニューラルネットワーク（CNN）、Vision Transformer、物体検出、画像生成などを学びます。</p><p class="example">実装例：画像分類、物体検出、画像生成</p></article>
+<article class="course-item"><h3><a href="robotics/index.html">Robotics コース</a><small>11セクション</small></h3><p>ロボットの運動や制御の基礎を学び、LeRobot を使ってロボット学習用のデータセットやモデルを扱います。</p><p class="example">実装例：ロボットの動作データを使った学習実験</p></article>
+</div>
+</section>
 
-  <section class="section" id="start" aria-labelledby="start-title">
-    <p class="eyebrow">03 / Your first session</p><h2 id="start-title">読むだけで終わらせないために</h2>
-    <p class="section-lead">初学者にも勧められる理由は、説明のすぐ後にコードと実習が用意されていることです。最初から難しい開発環境を用意する必要はありません。まずは小さなプログラムを実行してみてください。</p>
-    <div class="reader-flow" aria-label="学習を始める3つの手順">
-      <div class="reader-step"><span class="reader-num">STEP 01</span><h3>Python に慣れる</h3><p>変数、関数、繰り返し処理、リストや辞書を読めることが目安です。初心者は日本語で読める無料教材から始められます。</p><a href="https://utokyo-ipp.github.io/" target="_blank" rel="noopener noreferrer">東京大学「Python プログラミング入門」 ↗</a></div>
-      <div class="reader-step"><span class="reader-num">STEP 02</span><h3>ブラウザで実行する</h3><p>Google Colab なら、パソコンに Python をインストールせずにコードを試せます。無料枠には利用制限があり、GPU の利用は保証されません。</p><a href="https://colab.research.google.com/" target="_blank" rel="noopener noreferrer">Google Colab を開く ↗</a></div>
-      <div class="reader-step"><span class="reader-num">STEP 03</span><h3>最初の教材を開く</h3><p>LLM コースの第0章では、Colab とローカルの仮想環境の両方について説明しています。迷ったら、最初は Colab を選んでください。</p><a href="llm/chapter0/1.html">LLM コース：作業環境の準備 →</a></div>
-    </div>
-    <div class="split" style="margin-top:22px">
-      <div class="editorial-side"><h3>Colab での最初の操作</h3><p class="fineprint">① Colab で新しいノートブックを作る。② コードセルに以下を入力して実行する。③ エラーが出なければ次の教材へ進む。</p><div class="terminal"><span class="prompt"># 新しいコードセルで実行</span><br>!pip install transformers datasets<br>import transformers<br>print(transformers.__version__)</div><p class="fineprint">これは初期動作の確認例です。実際の演習では、各ページに記載された依存ライブラリやバージョンの指定を優先してください。</p></div>
-      <div class="editorial-side"><h3>このサイトの使い方</h3><p>各コースの目次から章を選び、前後のページへ順番に移動できます。クイズがあるページでは、その場で答え合わせができます。</p><p>本文のコードはこのサイト上では実行できません。Colab などにコピーして試してください。分からない用語はページ上部の検索欄や用語集で調べ、必要なときは各ページの「公式ページで読む」から英語原典に戻れます。</p><p class="fineprint">読むだけなら Hugging Face の登録は不要です。モデルの取得条件や公開作業によってはアカウントやアクセストークンが必要になります。</p></div>
-    </div>
-  </section>
+<section id="start" aria-labelledby="start-title">
+<h2 id="start-title">学習の始め方</h2>
+<p>コードを実行しながら学ぶには、Python の基本的な文法と実行環境が必要です。最初はブラウザ上で Python を動かせる Google Colab を使うと、パソコンに開発環境を構築せずに始められます。</p>
+<ol class="steps">
+<li><strong>Python の基礎を確認する。</strong><p>変数、関数、リスト、辞書、繰り返し処理などに慣れていない場合は、<a href="https://utokyo-ipp.github.io/" target="_blank" rel="noopener noreferrer">東京大学「Python プログラミング入門」</a>などの無料教材が役立ちます。</p></li>
+<li><strong>Google Colab でノートブックを作る。</strong><p><a href="https://colab.research.google.com/" target="_blank" rel="noopener noreferrer">Google Colab</a>を開き、新しいノートブックを作成します。初めは通常の CPU 環境で構いません。GPU が必要な演習では、利用条件を確認して設定してください。</p></li>
+<li><strong>必要なライブラリを導入する。</strong><p>例えば、以下を Colab のコードセルに入力すると、Transformers と Datasets をインストールし、Transformers のバージョンを確認できます。</p></li>
+</ol>
+<pre class="code-sample"><code>!pip install transformers datasets
 
-  <section class="section" id="roadmap" aria-labelledby="roadmap-title">
-    <p class="eyebrow">04 / Learning routes</p><h2 id="roadmap-title">基礎から、自分で作るところまで</h2>
-    <p class="section-lead">学習の順番は一つではありません。Python に触れた後、言語モデルの基礎と実装を押さえ、興味のある専門分野へ進むのが一つの道筋です。すでに経験があれば途中から始めても構いません。</p>
-    <div class="route" role="img" aria-label="Python の準備、LLM コースの基礎と実装、専門コースへ進む3段階の学習ロードマップ">
-      <div class="route-node"><small>FOUNDATION</small><strong>Python と機械学習の基礎</strong><span>Python の文法、データの扱い、必要に応じた線形代数と確率・統計の補強</span></div>
-      <div class="route-arrow" aria-hidden="true">→</div>
-      <div class="route-node"><small>PRACTICE</small><strong>LLM コースでモデルを動かす</strong><span>Transformer を理解し、学習済みモデルの利用・追加学習・共有を試す</span></div>
-      <div class="route-arrow" aria-hidden="true">→</div>
-      <div class="route-node"><small>SPECIALIZATION</small><strong>作りたいものに進む</strong><span>エージェント、MCP、画像認識、ロボット学習などの専門分野へ</span></div>
-    </div>
-    <div class="routes-special">
-      <a href="agents/index.html"><strong>Agents →</strong><small>調べる・判断する・ツールを使う AI</small></a>
-      <a href="mcp/index.html"><strong>MCP →</strong><small>外部ツールやデータとの接続</small></a>
-      <a href="cv/index.html"><strong>Computer Vision →</strong><small>画像の分類・検出・生成</small></a>
-      <a href="robotics/index.html"><strong>Robotics →</strong><small>データによるロボット学習</small></a>
-    </div>
-    <p class="path-note">Agents のオンボーディングには Hugging Face アカウントの準備や Ollama によるローカル実行の説明があります。ロボット学習には <a href="robotics/unit0/2.html">LeRobot の導入案内</a>も用意されています。</p>
-  </section>
+import transformers
+print(transformers.__version__)</code></pre>
+<p>LLM コースの<a href="llm/chapter0/1.html">第0章「はじめに」</a>には、Google Colab の使い方に加え、macOS や Linux で仮想環境を作る方法も掲載しています。実際の演習では、各ページで指定されたライブラリや設定に従ってください。</p>
+<p>このサイトではコードを直接実行できません。本文を読み、掲載されたコードを Colab などで動かしてください。クイズのあるページでは理解度を確認でき、分からない用語はサイト内検索や各コースの用語集で調べられます。</p>
+<p>Hugging Face のアカウントは閲覧には不要ですが、モデルの公開や一部のモデルの利用では必要になります。Agents コースには<a href="agents/unit0/onboarding.html">アカウントの準備や Ollama の導入</a>、Robotics コースには<a href="robotics/unit0/2.html">LeRobot の導入</a>についての説明があります。</p>
+</section>
 
-  <section class="section" id="translation" aria-labelledby="translation-title">
-    <p class="eyebrow">05 / Translation &amp; review</p><h2 id="translation-title">機械翻訳を、そのまま公開しない。</h2>
-    <p class="section-lead">本サイトは、Muse、ChatGPT、制作者の3者で作成しました。AI に翻訳を任せるだけでは、意味の取り違えや日本語として不自然な表現が残ります。そのため、原典の版を固定し、翻訳、審査、修正、再検証を繰り返しています。</p>
-    <div class="workflow" aria-label="制作の役割分担">
-      <div class="worker"><small>01 / TRANSLATION</small><strong>Muse — 翻訳・修正・検証</strong><p>英語原典の取得、MDX ファイルの翻訳、指摘の照合と修正、コード・リンクなどの構造検証を担当。</p></div>
-      <div class="worker"><small>02 / REVIEW</small><strong>ChatGPT — 訳文の審査</strong><p>原典との意味の対応、日本語の自然さ、専門用語、表記・組版を確認し、該当行と修正案を提示。</p></div>
-      <div class="worker"><small>03 / EDITORIAL POLICY</small><strong>霞ヶ関京 — 方針と最終判断</strong><p>翻訳の目的、文章の基準、専門用語の扱い、公開方針などを決定。日本語の技術解説としての品質を重視。</p></div>
-    </div>
-    <div class="flowchart" aria-label="翻訳と品質管理の工程">
-      <p class="eyebrow" style="margin-bottom:18px">Review cycle / 実際の制作手順</p>
-      <div class="flowchain">
-        <div class="flowbox"><small>01 · MUSE</small><strong>原典の版を固定</strong><span>Git のコミットを指定</span></div>
-        <div class="flowbox"><small>02 · MUSE</small><strong>翻訳文を作成</strong><span>コード・数式・URL を保護</span></div>
-        <div class="flowbox"><small>03 · CHATGPT</small><strong>4観点でレビュー</strong><span>自然さ／意味／用語／組版</span></div>
-        <div class="flowbox"><small>04 · MUSE</small><strong>指摘を原文と照合</strong><span>根拠を確認して修正</span></div>
-        <div class="flowbox"><small>05 · BOTH</small><strong>再検証・再審査</strong><span>構造チェックと合否判定</span></div>
-      </div>
-      <div class="flow-return">↶　未解消の問題があれば、照合と修正に戻る。合格後にサイトへ反映する。</div>
-    </div>
-    <div class="workflow-details">
-      <div><h3>日本語の文章は、日本語として組み立てる</h3><p>英文の構造をそのまま移すと、文法的には正しくても読みにくい文章になります。長い一文を分け、主語と述語の関係を明らかにし、漢字・仮名の使い分けや改行を整えます。手本にしているのは『とほほのWWW入門』のような、平明な技術解説です。</p><p>ただし Transformer や Tokenizer などの用語は、無理に和訳しません。公式ドキュメントや実務で通用する表記を優先し、説明文の自然さと技術的な正確性を両立させます。</p></div>
-      <div><h3>レビューの指摘も、そのまま信用しない</h3><p>レビューでは「ファイル名・行番号・現行文の引用・問題点・修正案」を一組として記録します。指摘の引用が実ファイルに存在するかを調べ、原文の意味と合う場合に限って修正します。修正後は、アンカー、コード、リンク、画像などが意図せず変わっていないかを機械的に確認します。</p><p>原典に誤りがある場合も、翻訳者の判断で内容をひそかに書き換えることは避けています。翻訳に使った原典の版や作業経過は、<a href="https://github.com/yanikasumin/HuggingFace-courses-ja/blob/main/README.md">README</a> と <a href="https://github.com/yanikasumin/HuggingFace-courses-ja/blob/main/PROGRESS.md">作業記録</a>で公開しています。</p></div>
-    </div>
-  </section>
+<section id="roadmap" aria-labelledby="roadmap-title">
+<h2 id="roadmap-title">学習の順番</h2>
+<p>以下は、初学者が5つのコースを利用する場合の一例です。特定の分野を学びたい場合は、必要な前提知識を補いながら、そのコースから始めても構いません。</p>
+<ol class="flow" aria-label="初学者向けの学習ロードマップ">
+<li><strong>Python と数学の基礎</strong><p>Python の基本文法を学び、必要に応じて線形代数や確率・統計を復習します。</p></li>
+<li><strong>LLM コース：モデルの仕組みと使い方</strong><p>Transformer、トークナイザ、データセット、学習済みモデルの利用方法を学びます。</p></li>
+<li><strong>LLM コース：追加学習と公開</strong><p>ファインチューニングやモデルの共有などに取り組み、コードを変更して結果を確かめます。</p></li>
+<li><strong>目的に応じて専門コースへ</strong><p>AI エージェントなら <a href="agents/index.html">Agents</a>、ツール連携なら <a href="mcp/index.html">MCP</a>、画像認識なら <a href="cv/index.html">CV</a>、ロボット学習なら <a href="robotics/index.html">Robotics</a> に進みます。</p></li>
+</ol>
+<p>学習中に分からない部分が出てきた場合は、次の無料教材も参考になります。</p>
+<ul class="resources">
+<li><a href="https://www.python.jp/train/index.html" target="_blank" rel="noopener noreferrer">Python Japan「ゼロからの Python 入門講座」</a> — Python を初めて学ぶ方向けの日本語教材</li>
+<li><a href="https://utokyo-ipp.github.io/" target="_blank" rel="noopener noreferrer">東京大学「Python プログラミング入門」</a> — 基本文法とプログラミングの考え方</li>
+<li><a href="https://www.kaggle.com/learn" target="_blank" rel="noopener noreferrer">Kaggle Learn</a> — データ分析と機械学習の演習（英語）</li>
+<li><a href="https://pytorch.org/tutorials/" target="_blank" rel="noopener noreferrer">PyTorch 公式チュートリアル</a> — 深層学習の実装を詳しく学ぶための教材（英語）</li>
+</ul>
+</section>
 
-  <section class="section" id="resources" aria-labelledby="resources-title">
-    <p class="eyebrow">06 / Beyond this site</p><h2 id="resources-title">日本語の教材と組み合わせて学ぶ</h2>
-    <p class="section-lead">Hugging Face の教材だけで、あらゆる前提知識が身に付くわけではありません。足りない部分は別の教材で補いながら学ぶほうが効率的です。日本語で利用できる資料と無料の実行環境を中心に挙げました。</p>
-    <div class="resource-grid">
-      <a class="resource-link" href="https://utokyo-ipp.github.io/" target="_blank" rel="noopener noreferrer"><strong>東京大学「Python プログラミング入門」 ↗</strong><small>準備段階 / Python の文法と基本操作。日本語・無料</small></a>
-      <a class="resource-link" href="https://www.python.jp/train/index.html" target="_blank" rel="noopener noreferrer"><strong>Python Japan「ゼロからの Python 入門講座」 ↗</strong><small>準備段階 / プログラミング初心者向け。日本語・無料</small></a>
-      <a class="resource-link" href="https://colab.research.google.com/" target="_blank" rel="noopener noreferrer"><strong>Google Colab ↗</strong><small>実習段階 / ブラウザで Python を実行。無料枠あり</small></a>
-      <a class="resource-link" href="https://www.kaggle.com/learn" target="_blank" rel="noopener noreferrer"><strong>Kaggle Learn ↗</strong><small>実習段階 / 機械学習の短い演習。英語・無料</small></a>
-      <a class="resource-link" href="https://pytorch.org/tutorials/" target="_blank" rel="noopener noreferrer"><strong>PyTorch Tutorials ↗</strong><small>発展段階 / 深層学習の実装を掘り下げる。英語・無料</small></a>
-      <a class="resource-link" href="https://huggingface.co/docs" target="_blank" rel="noopener noreferrer"><strong>Hugging Face 公式ドキュメント ↗</strong><small>開発段階 / 最新 API と各ライブラリの仕様。英語中心</small></a>
-    </div>
-  </section>
+<section id="translation" aria-labelledby="translation-title">
+<h2 id="translation-title">翻訳と品質管理</h2>
+<p>翻訳は、Muse による翻訳・修正、ChatGPT によるレビュー、制作者による方針の決定と最終確認を組み合わせて行いました。翻訳対象の英語原典はコースごとに特定の Git コミットへ固定し、後から内容が更新されても翻訳の基準が分かるようにしています。</p>
+<ol class="process" aria-label="翻訳工程の流れ">
+<li><strong>原典の取得と翻訳 <span>担当：Muse</span></strong><p>英語の MDX ファイルを翻訳します。コード、数式、URL、見出しのアンカーなど、変更してはいけない箇所を保持します。</p></li>
+<li><strong>訳文のレビュー <span>担当：ChatGPT</span></strong><p>原文との意味の対応、日本語の自然さ、専門用語や表記の統一、改行・記号の扱いを確認します。問題箇所はファイル名、行番号、原文の引用、修正案とともに提示します。</p></li>
+<li><strong>指摘の照合と修正 <span>担当：Muse</span></strong><p>指摘された文が実際のファイルに存在するかを確認し、英語原典と照合してから修正します。原典に合わない修正案や、根拠のない指摘はそのまま適用しません。</p></li>
+<li><strong>構造の検証 <span>担当：Muse</span></strong><p>修正前後のコード、数式、リンク、画像、アンカーなどを機械的に比較し、翻訳によって教材の構造が壊れていないかを確認します。</p></li>
+<li><strong>再レビューと公開 <span>担当：ChatGPT・Muse・霞ヶ関京</span></strong><p>指摘が解消したかを再確認し、必要なら修正を繰り返します。用語や文体の扱いなど、判断を要する事項は制作者が決定します。</p></li>
+</ol>
+<p class="process-loop">問題が残っている場合は「指摘の照合と修正」に戻り、再検証します。</p>
+<p>文章は『とほほのWWW入門』のような平明な技術解説を参考にしています。英語の語順をそのまま日本語に移さず、文を分けたり語順を組み替えたりして読みやすくします。一方、ライブラリ名や一般的な技術用語は、実際の開発でも使われている表記を優先しています。</p>
+<p>原典の内容を勝手に省略・変更しないことも翻訳方針の一つです。原典に由来する誤りや重複は、必要に応じてその事実を記録し、翻訳とは区別して扱います。翻訳に使用した原典のコミットと作業記録は、<a href="https://github.com/yanikasumin/HuggingFace-courses-ja/blob/main/README.md">README</a>と<a href="https://github.com/yanikasumin/HuggingFace-courses-ja/blob/main/PROGRESS.md">進捗記録</a>で公開しています。</p>
+</section>
 
-  <section class="section" id="future" aria-labelledby="future-title">
-    <p class="eyebrow">07 / Notes &amp; future work</p><h2 id="future-title">完成した翻訳ではなく、育てる教材として</h2>
-    <div class="forward-grid">
-      <div><h3>現時点での限界</h3><div class="forward-item"><strong>最新情報への追従には時間差があります</strong><p>英語原典を特定のコミットに固定して翻訳しています。その後に変更された API やライブラリの仕様は、必ず公式ドキュメントと照合してください。</p></div><div class="forward-item"><strong>誤訳や読みにくい表現が残る可能性があります</strong><p>複数回のレビューを経ても、完全な正確性は保証できません。誤りを見つけた場合は、<a href="https://github.com/yanikasumin/HuggingFace-courses-ja/issues">GitHub Issues</a>で報告できます。</p></div><div class="forward-item"><strong>本サイトには実行環境がありません</strong><p>演習は Colab や各自の開発環境で実行してください。また、原典で案内されている認定や提出方法が、翻訳サイトだけで完結するわけではありません。</p></div></div>
-      <div><h3>今後加えていきたいもの</h3><div class="forward-item"><strong>各節に対応した参考文献と教材</strong><p>日本語の入門書から専門書まで、読者の学習段階に合う資料を案内します。書籍を紹介する場合、アフィリエイトリンクは分かる形で表示します。</p></div><div class="forward-item"><strong>重要論文・新しいリリース</strong><p>学習内容に関係する論文やモデルの更新情報を、公開日と原典へのリンク付きで紹介する構想です。現時点では未整備のため、最新動向は公式資料で確認してください。</p></div><div class="forward-item"><strong>技術が実際に使われている例</strong><p>各章で学ぶ仕組みが、どのようなサービスや研究に使われているのかを、具体的な実装例とともに示していきます。</p></div></div>
-    </div>
-  </section>
-  <div class="foot-credits"><div><strong>翻訳・公開：霞ヶ関京</strong><br>個人による非公式の日本語訳プロジェクト</div><div><a href="https://github.com/yanikasumin/HuggingFace-courses-ja">GitHub リポジトリ</a>　/　<a href="https://huggingface.co/learn">Hugging Face Learn（英語）</a><br>原典の権利とライセンスは各コースのリポジトリを参照してください。</div></div>
+<section id="site-info" aria-labelledby="site-info-title">
+<h2 id="site-info-title">本サイトについて</h2>
+<p>本サイトは、Hugging Face 公式学習コースの非公式日本語訳です。翻訳元の教材は更新されるため、日本語版と最新版の英語原典で内容が異なる場合があります。API やライブラリの使い方が変わっている場合は、公式ドキュメントも確認してください。</p>
+<p>今後は、各セクションに関連する参考書・無料教材、重要な論文や新しいリリース、実際に技術を使っているサービスの例などを追加する予定です。書籍にアフィリエイトリンクを使用する場合は、その旨を明示します。</p>
+<p>翻訳の誤りや読みづらい箇所を見つけた場合は、<a href="https://github.com/yanikasumin/HuggingFace-courses-ja/issues">GitHub Issues</a>で報告できます。</p>
+<p class="author">翻訳・公開：霞ヶ関京 ／ <a href="https://github.com/yanikasumin/HuggingFace-courses-ja">GitHub リポジトリ</a> ／ <a href="https://huggingface.co/learn">Hugging Face の学習コース（英語）</a></p>
+</section>
 </main>
 </div>
 <footer class="site-footer">
