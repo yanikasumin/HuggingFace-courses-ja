@@ -27,7 +27,7 @@ window.MathJax = { tex: { inlineMath: [['$', '$'], ['\\(', '\\)']], displayMath:
 </header>
 <div class="layout">
 <aside class="sidebar">
-<div class="sidebar-course"><a href="../index.html">Agents コース</a><br><span class="badge badge-qa-wip">翻訳済み・QA進行中（未検証の部分を含みます）</span></div>
+<div class="sidebar-course"><a href="../index.html">Agents コース</a><br><span class="badge badge-qa-pass">翻訳QA 最終合格</span></div>
 <p class="side-group">Unit 0. コースへようこそ</p>
 <ul class="side-list">
 <li><a class="side-link" href="../unit0/introduction.html">🤗 AI Agents コースへようこそ</a></li>
@@ -100,8 +100,8 @@ window.MathJax = { tex: { inlineMath: [['$', '$'], ['\\(', '\\)']], displayMath:
 <p class="side-group">Unit 3. ユースケース： Agentic RAG</p>
 <ul class="side-list">
 <li><a class="side-link" href="../unit3/agentic-rag/introduction.html">Agentic RAGのユースケース入門</a></li>
-<li><a class="side-link" href="../unit3/agentic-rag/agentic-rag.html">Agenticな検索拡張生成（RAG）</a></li>
-<li><a class="side-link" href="../unit3/agentic-rag/invitees.html">ゲストのエピソードのためのRAGツールの作成</a></li>
+<li><a class="side-link" href="../unit3/agentic-rag/agentic-rag.html">Agentic RAG（エージェント型検索拡張生成）</a></li>
+<li><a class="side-link" href="../unit3/agentic-rag/invitees.html">ゲストのエピソードを検索するRAGツールの作成</a></li>
 <li><a class="side-link" href="../unit3/agentic-rag/tools.html">エージェントのためのツールの構築と統合</a></li>
 <li><a class="side-link" href="../unit3/agentic-rag/agent.html">ガラ用エージェントの作成</a></li>
 <li><a class="side-link" href="../unit3/agentic-rag/conclusion.html">まとめ</a></li>
@@ -141,7 +141,7 @@ window.MathJax = { tex: { inlineMath: [['$', '$'], ['\\(', '\\)']], displayMath:
 </aside>
 <main class="container">
 <p class="course-crumb"><a href="../index.html">Agents コース</a>
-<span class="badge badge-qa-wip">翻訳済み・QA進行中（未検証の部分を含みます）</span></p>
+<span class="badge badge-qa-pass">翻訳QA 最終合格</span></p>
 <nav class="page-nav"><a class="nav-link prev" href="introduction.html">← 前へ: AI エージェントのオブザーバビリティと評価</a><a class="nav-link toc-link" href="../index.html">目次へ</a><a class="nav-link next" href="monitoring-and-evaluating-agents-notebook.html">次へ →: Bonus Unit 2：エージェントのオブザーバビリティと評価</a></nav>
 <article class="content">
 <h1>AI エージェントのオブザーバビリティと評価</h1>
@@ -184,7 +184,7 @@ window.MathJax = { tex: { inlineMath: [['$', '$'], ['\\(', '\\)']], displayMath:
 <p>AI エージェントの評価には、<strong>オンライン評価</strong> と <strong>オフライン評価</strong> の 2 つのカテゴリーがあります。どちらも価値があり、互いを補完します。通常は、オフライン評価から始めます。これは、エージェントをデプロイする前に最低限必要なステップだからです。</p>
 <h3>🥷 オフライン評価</h3>
 <p><img alt="Langfuse のデータセットアイテム" src="https://huggingface.co/datasets/agents-course/course-images/resolve/main/en/bonus-unit2/example-dataset.png" /></p>
-<p>オフライン評価とは、実際のユーザーからの質問ではなく、通常はテストデータセットを使って、管理された環境でエージェントを評価する方法です。期待される出力や正しい動作があらかじめ分かっているデータセットを用意し、それを使ってエージェントを実行します。</p>
+<p>オフライン評価とは、実際のユーザーからの質問ではなく、通常はテストデータセットを使って、管理された環境でエージェントを評価する方法です。期待される出力や正しい動作があらかじめ分かっている、厳選されたデータセットを用意し、それを使ってエージェントを実行します。</p>
 <p>たとえば、数学の文章題エージェントを作った場合、既知の答えを持つ 100 問の<a href="https://huggingface.co/datasets/gsm8k">テストデータセット</a> が使えます。オフライン評価は開発中に行われることが多く（CI/CD パイプラインに組み込むこともできます）、改善の確認やリグレッションの防止に役立ちます。利点は、<strong>正解（グラウンドトゥルース）があるため、再現可能で、明確な精度メトリクスが得られる</strong>ことです。ユーザークエリをシミュレーションして、エージェントの応答を理想の答えと比較したり、前述の自動メトリクスを使ったりすることもできます。 </p>
 <p>オフライン評価の主な課題は、テストデータセットが十分な範囲をカバーし、実際の用途に合った内容であり続けるようにすることです。エージェントは、決まったテスト問題では良い成績を出せても、本番環境ではまったく異なる質問を受けるかもしれません。そのため、実際の利用状況を反映した新しい例や例外的なケース（エッジケース）を、テストデータセットに追加し続ける必要があります。また、小規模な「スモークテスト」と大規模な評価用データセットを組み合わせると効果的です。小規模なテストは動作の素早い確認に、大規模なテストは幅広い性能指標の測定に使います。</p>
 <h3>🔄 オンライン評価</h3>
@@ -193,7 +193,7 @@ window.MathJax = { tex: { inlineMath: [['$', '$'], ['\\(', '\\)']], displayMath:
 <p>オンライン評価では、前述のように暗黙的・明示的なユーザーフィードバックを収集することが多く、シャドーテストや A/B テスト（新しいバージョンのエージェントを並行して実行し、旧バージョンと比較する）を実施する場合もあります。課題は、ライブのやり取りに対して信頼できるラベルやスコアを得るのが難しい点です。ユーザーフィードバックや下流のメトリクス（ユーザーが結果をクリックしたかどうかなど）に頼ることになるかもしれません。 </p>
 <h3>🤝 2 つを組み合わせる</h3>
 <p>実際には、AI エージェントを適切に評価するために、<strong>オンライン</strong> と <strong>オフライン</strong> の両方の方法を組み合わせます。定期的にオフラインのベンチマークを実行して、決められたタスクに対するエージェントの性能を数値で評価します。同時に、実際の利用状況を継続的に監視し、ベンチマークだけでは分からない問題を見つけます。たとえば、オフラインのテストでは、コード生成エージェントが既知の問題を解く成功率が向上しているか確認できます。一方、オンラインでの監視では、エージェントが苦手とする新しい種類の質問をユーザーがするようになったことに気づけるかもしれません。両方を組み合わせることで、エージェントの性能をより幅広く、確実に把握できます。</p>
-<p>実際、多くのチームが 「オフライン評価 → 新しいバージョンのエージェントをデプロイ → オンラインメトリクスを監視し、新しい失敗例を収集 → その例をオフラインのテストセットに追加 → 繰り返す」 というループを採用しています。これにより、評価を継続的に行い、改善を重ねることができます。</p>
+<p>実際、多くのチームが <strong>「オフライン評価 → 新しいバージョンのエージェントをデプロイ → オンラインメトリクスを監視し、新しい失敗例を収集 → その例をオフラインのテストセットに追加 → 繰り返す」</strong> というループを採用しています。これにより、評価を継続的に行い、改善を重ねることができます。</p>
 <h2>🧑‍💻 実際にはどう動くのか見てみよう</h2>
 <p>次のセクションでは、オブザーバビリティツールを使ってエージェントを監視し、評価する例を見ていきます。</p>
 </article>
