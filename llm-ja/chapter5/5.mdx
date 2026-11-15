@@ -7,7 +7,7 @@
     {label: "Aws Studio", value: "https://studiolab.sagemaker.aws/import/github/huggingface/notebooks/blob/master/course/en/chapter5/section5.ipynb"},
 ]} />
 
-NLP アプリケーションを構築するのに必要なデータセットが存在しない場合もあり、その場合は自分で作成する必要があります。このセクションでは、GitHub リポジトリのバグや機能を追跡するためによく使われる [GitHub issues](https://github.com/features/issues/) のコーパスの作り方を紹介します。このコーパスは、次のようなさまざまな用途に使えます。
+NLP アプリケーションを構築するのに必要なデータセットが存在しない場合もあり、その場合は自分で作成する必要があります。このセクションでは、GitHub リポジトリのバグや機能を追跡するためによく使われる [GitHub issues](https://github.com/features/issues/) のコーパスの作り方を紹介します。このコーパスは、次のような様々な用途に使えます。
 
 * オープンな issue やプルリクエストをクローズするのにかかる時間を調べる
 * issue の説明文に基づいて、"bug"、"enhancement"、"question" などのラベルを複数予測し、自動的に付与するマルチラベル分類器を訓練する
@@ -56,7 +56,7 @@ response.status_code
 200
 ```
 
-ステータス `200` はリクエストが成功したことを意味します（HTTP ステータスコードの一覧は[こちら](https://en.wikipedia.org/wiki/List_of_HTTP_status_codes)で確認できます）。ここで確認したいのは、レスポンスの本文に当たるペイロードで、バイト、文字列、JSON などさまざまな形式でアクセスできます。issue が JSON 形式であることが分かっているので、ペイロードを次のように確認しましょう。
+ステータス `200` はリクエストが成功したことを意味します（HTTP ステータスコードの一覧は[こちら](https://en.wikipedia.org/wiki/List_of_HTTP_status_codes)で確認できます）。ここで確認したいのは、レスポンスの本文に当たるペイロードで、バイト、文字列、JSON など様々な形式でアクセスできます。issue が JSON 形式であることが分かっているので、ペイロードを次のように確認しましょう。
 
 ```py
 response.json()
@@ -124,7 +124,7 @@ headers = {"Authorization": f"token {GITHUB_TOKEN}"}
 ```
 
 > [!WARNING]
-> ⚠️ `GITHUB_TOKEN` を貼り付けたノートブックを共有しないでください。誤ってこの情報を漏らさないよう、実行後は最後のセルを削除することをおすすめします。さらに良いのは、トークンを *.env* ファイルに保存し、[`python-dotenv` ライブラリ](https://github.com/theskumar/python-dotenv)を使って環境変数として自動的に読み込む方法です。
+> ⚠️ `GITHUB_TOKEN` を貼り付けたノートブックを共有しないでください。誤ってこの情報を漏らさないよう、実行後は最後のセルを削除することをおすすめします。更に良いのは、トークンを *.env* ファイルに保存し、[`python-dotenv` ライブラリ](https://github.com/theskumar/python-dotenv)を使って環境変数として自動的に読み込む方法です。
 
 アクセストークンが用意できたので、GitHub リポジトリからすべての issue をダウンロードできる関数を作りましょう。
 
@@ -201,7 +201,7 @@ issue とプルリクエストの内容はかなり異なるため、両者を�
 
 ## データのクリーニング[[cleaning-up-the-data]]
 
-GitHub ドキュメントの上記の抜粋によれば、`pull_request` 列を使って issue とプルリクエストを区別できます。ランダムサンプルを見て、違いを確認してみましょう。[セクション3](/course/chapter5/3) で行ったように、`Dataset.shuffle()` と `Dataset.select()` をつないでランダムサンプルを作り、`html_url` 列と `pull_request` 列を zip して、さまざまな URL を比較できるようにします。
+GitHub ドキュメントの上記の抜粋によれば、`pull_request` 列を使って issue とプルリクエストを区別できます。ランダムサンプルを見て、違いを確認してみましょう。[セクション3](/course/chapter5/3) で行ったように、`Dataset.shuffle()` と `Dataset.select()` をつないでランダムサンプルを作り、`html_url` 列と `pull_request` 列を zip して、様々な URL を比較できるようにします。
 
 ```py
 sample = issues_dataset.shuffle(seed=666).select(range(3))
@@ -223,7 +223,7 @@ for url, pr in zip(sample["html_url"], sample["pull_request"]):
 >> プルリクエスト: {'url': 'https://api.github.com/repos/huggingface/datasets/pulls/783', 'html_url': 'https://github.com/huggingface/datasets/pull/783', 'diff_url': 'https://github.com/huggingface/datasets/pull/783.diff', 'patch_url': 'https://github.com/huggingface/datasets/pull/783.patch'}
 ```
 
-ここでは、各プルリクエストにはさまざまな URL が関連付けられている一方、通常の issue は `None` のエントリを持っていることが分かります。この違いを使って、`pull_request` フィールドが `None` かどうかをチェックする新しい `is_pull_request` 列を作ることができます。
+ここでは、各プルリクエストには様々な URL が関連付けられている一方、通常の issue は `None` のエントリを持っていることが分かります。この違いを使って、`pull_request` フィールドが `None` かどうかをチェックする新しい `is_pull_request` 列を作ることができます。
 
 ```py
 issues_dataset = issues_dataset.map(
@@ -234,7 +234,7 @@ issues_dataset = issues_dataset.map(
 > [!TIP]
 > ✏️ **やってみよう！** 🤗 Datasets の issue がクローズされるまでの平均時間を計算してみましょう。プルリクエストとオープンな issue を除外するには `Dataset.filter()` 関数が役立ちます。また、`Dataset.set_format()` 関数を使ってデータセットを `DataFrame` に変換すれば、`created_at` と `closed_at` のタイムスタンプを簡単に操作できます。おまけとして、プルリクエストがクローズされるまでの平均時間も計算してみましょう。
 
-一部の列を削除したり名前を変更したりしてデータセットをさらにクリーニングすることもできますが、この段階ではデータセットをできるだけ「生」の状態に保つのが一般に良い実践です。そうすれば、複数のアプリケーションで簡単に使えます。
+一部の列を削除したり名前を変更したりしてデータセットを更にクリーニングすることもできますが、この段階ではデータセットをできるだけ「生」の状態に保つのが一般に良い実践です。そうすれば、複数のアプリケーションで簡単に使えます。
 
 データセットを Hugging Face Hub にプッシュする前に、まだ取得していない情報を追加しましょう。それは、各 issue やプルリクエストに寄せられたコメントです。次に、お察しのとおり GitHub REST API を使って、それらを追加します！
 
@@ -363,7 +363,7 @@ Dataset({
 
 Hugging Face Hub では、この情報は各データセットリポジトリの *README.md* ファイルに保存されます。このファイルを作成する前に、主に次の2つのステップを行うべきです。
 
-1. [`datasets-tagging` アプリケーション](https://huggingface.co/datasets/tagging/)を使って、YAML 形式のメタデータタグを作成します。これらのタグは Hugging Face Hub のさまざまな検索機能に使われ、データセットがコミュニティのメンバーに簡単に見つけてもらえるようにします。ここではカスタムデータセットを作成したため、`datasets-tagging` リポジトリをクローンして、アプリケーションをローカルで実行する必要があります。インターフェースは次のようになっています。
+1. [`datasets-tagging` アプリケーション](https://huggingface.co/datasets/tagging/)を使って、YAML 形式のメタデータタグを作成します。これらのタグは Hugging Face Hub の様々な検索機能に使われ、データセットがコミュニティのメンバーに簡単に見つけてもらえるようにします。ここではカスタムデータセットを作成したため、`datasets-tagging` リポジトリをクローンして、アプリケーションをローカルで実行する必要があります。インターフェースは次のようになっています。
 
 <div class="flex justify-center">
 <img src="https://huggingface.co/datasets/huggingface-course/documentation-images/resolve/main/en/chapter5/datasets-tagger.png" alt="`datasets-tagging` のインターフェース。" width="80%"/>

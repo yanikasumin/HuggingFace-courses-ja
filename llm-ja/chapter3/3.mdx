@@ -78,7 +78,7 @@ trainer = Trainer(
 トークナイザを `processing_class` として渡すと、`Trainer` が使用するデフォルトの `data_collator` は `DataCollatorWithPadding` になります。この場合、`data_collator=data_collator` の行は省略できますが、ここでは処理パイプラインの重要な部分を示すために含めています。
 
 > [!TIP]
-> 📖 **さらに学ぶ**: Trainer クラスとそのパラメータの包括的な詳細については、[Trainer API ドキュメント](https://huggingface.co/docs/transformers/main/en/main_classes/trainer) を参照し、[学習クックブックのレシピ](https://huggingface.co/learn/cookbook/en/fine_tuning_code_llm_on_single_gpu) で高度な使用パターンも確認してください。
+> 📖 **更に学ぶ**: Trainer クラスとそのパラメータの包括的な詳細については、[Trainer API ドキュメント](https://huggingface.co/docs/transformers/main/en/main_classes/trainer) を参照し、[学習クックブックのレシピ](https://huggingface.co/learn/cookbook/en/fine_tuning_code_llm_on_single_gpu) で高度な使用パターンも確認してください。
 
 データセットでモデルをファインチューニングするには、`Trainer` の `train()` メソッドを呼び出すだけです。
 
@@ -86,9 +86,9 @@ trainer = Trainer(
 trainer.train()
 ```
 
-これによりファインチューニングが開始され（GPU では数分かかります）、500ステップごとに学習損失が報告されます。しかし、モデルの性能がどの程度良いか（または悪いか）はわかりません。その理由は次のとおりです。
+これによりファインチューニングが開始され（GPU では数分かかります）、500ステップごとに学習損失が報告されます。しかし、モデルの性能がどの程度良いか（又は悪いか）はわかりません。その理由は次のとおりです。
 
-1. `TrainingArguments` の `eval_strategy` を `"steps"`（`eval_steps` ごとに評価）または `"epoch"`（各エポックの末尾に評価）に設定して、学習中に評価を行うよう `Trainer` に指示しなかったためです。
+1. `TrainingArguments` の `eval_strategy` を `"steps"`（`eval_steps` ごとに評価）又は `"epoch"`（各エポックの末尾に評価）に設定して、学習中に評価を行うよう `Trainer` に指示しなかったためです。
 2. 評価時にメトリクスを計算するための `compute_metrics()` 関数を `Trainer` に提供しなかったためです（提供しなければ、評価では損失が出力されるだけであり、あまり直感的な数値ではありません）。
 
 
@@ -129,7 +129,7 @@ metric.compute(predictions=preds, references=predictions.label_ids)
 ```
 
 > [!TIP]
-> さまざまな評価メトリクスと戦略については、[🤗 Evaluate ドキュメント](https://huggingface.co/docs/evaluate/) を参照してください。
+> 様々な評価メトリクスと戦略については、[🤗 Evaluate ドキュメント](https://huggingface.co/docs/evaluate/) を参照してください。
 
 得られる正確な結果は異なる場合があります。モデルヘッドのランダムな初期化により、達成されるメトリクスが変わる可能性があるためです。ここでは、モデルの検証セットに対する正解率が85.78%、F1 スコアが89.97であることがわかります。これらは、GLUE ベンチマークの MRPC データセットで結果を評価するために使用される2つのメトリクスです。[BERT 論文](https://arxiv.org/pdf/1810.04805.pdf) の表では、ベースモデルの F1 スコアが88.9と報告されていました。これは `uncased` モデルの結果であり、現在使用しているのは `cased` モデルであるため、より良い結果が得られたことが説明できます。
 
@@ -160,7 +160,7 @@ trainer = Trainer(
 )
 ```
 
-`eval_strategy` を `"epoch"` に設定した新しい `TrainingArguments` と、新しいモデルを作成している点に注意してください。そうしなければ、すでに学習済みのモデルの学習を継続することになってしまいます。新しい学習実行を開始するには、次を実行します。
+`eval_strategy` を `"epoch"` に設定した新しい `TrainingArguments` と、新しいモデルを作成している点に注意してください。そうしなければ、既に学習済みのモデルの学習を継続することになってしまいます。新しい学習実行を開始するには、次を実行します。
 
 ```py
 trainer.train()

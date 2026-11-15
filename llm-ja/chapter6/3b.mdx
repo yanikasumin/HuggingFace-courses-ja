@@ -170,7 +170,7 @@ torch.Size([1, 66]) torch.Size([1, 66])
 
 {/if}
 
-これらのロジットを確率に変換するために softmax 関数を適用しますが、その前に、文脈の一部ではないインデックスを確実にマスクする必要があります。入力は `[CLS] question [SEP] context [SEP]` なので、質問のトークンと `[SEP]` トークンをマスクする必要があります。ただし `[CLS]` トークンは保持します。一部のモデルは、回答が文脈に含まれていないことを示すためにそれを使うためです。
+これらのロジットを確率に変換するために softmax 関数を適用しますが、その前に、文脈の一部ではないインデックスを確実にマスクする必要があります。入力は `[CLS] question [SEP] context [SEP]` なので、質問のトークンと `[SEP]` トークンをマスクする必要があります。但し `[CLS]` トークンは保持します。一部のモデルは、回答が文脈に含まれていないことを示すためにそれを使うためです。
 
 後で softmax を適用するため、マスクしたいロジットを大きな負の数に置き換えるだけで済みます。ここでは `-10000` を使います。
 
@@ -232,7 +232,7 @@ end_probabilities = tf.math.softmax(end_logits, axis=-1)[0].numpy()
 
 $$\mathrm{start\_probabilities}[\mathrm{start\_index}] \times \mathrm{end\_probabilities}[\mathrm{end\_index}]$$ 
 
-したがって、すべてのスコアを計算するには、`start_index <= end_index` の範囲で積 \(\mathrm{start\_probabilities}[\mathrm{start\_index}] \times \mathrm{end\_probabilities}[\mathrm{end\_index}]\) をすべて計算するだけです。
+従って、すべてのスコアを計算するには、`start_index <= end_index` の範囲で積 \(\mathrm{start\_probabilities}[\mathrm{start\_index}] \times \mathrm{end\_probabilities}[\mathrm{end\_index}]\) をすべて計算するだけです。
 
 まず、可能な積をすべて計算しましょう。
 
@@ -269,7 +269,7 @@ end_index = max_index % scores.shape[1]
 print(scores[start_index, end_index])
 ```
 
-まだ完全には終わっていませんが、少なくとも回答の正しいスコアはすでに得られています（前のセクションの最初の結果と比較すれば確認できます）。
+まだ完全には終わっていませんが、少なくとも回答の正しいスコアは既に得られています（前のセクションの最初の結果と比較すれば確認できます）。
 
 ```python out
 0.97773
@@ -437,7 +437,7 @@ print(inputs["overflow_to_sample_mapping"])
 
 つまり、最初の文は前と同様に7つのチャンクに分割され、次の4つのチャンクは2番目の文に由来します。
 
-さて、長い文脈に戻りましょう。デフォルトでは、`question-answering` パイプラインは前述のとおり最大長384とストライド128を使います。これらはモデルがファインチューニングされた方法に対応しています（パイプラインの呼び出し時に `max_seq_len` と `stride` 引数を渡せば、これらのパラメータを調整できます）。したがって、トークン化の際にもこれらのパラメータを使います。パディング（サンプルを同じ長さにしてテンソルを構築できるようにするため）も追加し、オフセットも要求します。
+さて、長い文脈に戻りましょう。デフォルトでは、`question-answering` パイプラインは前述のとおり最大長384とストライド128を使います。これらはモデルがファインチューニングされた方法に対応しています（パイプラインの呼び出し時に `max_seq_len` と `stride` 引数を渡せば、これらのパラメータを調整できます）。従って、トークン化の際にもこれらのパラメータを使います。パディング（サンプルを同じ長さにしてテンソルを構築できるようにするため）も追加し、オフセットも要求します。
 
 ```py
 inputs = tokenizer(

@@ -41,12 +41,12 @@ optimizer.step()
 
 <Youtube id="_BZearw7f0w"/>
 
-Hub にあるのはモデルだけではありません。さまざまな言語のデータセットも多数そろっています。データセットは[Hub の一覧](https://huggingface.co/datasets)から探せます。このセクションを終えたら、別のデータセットも読み込んで処理してみてください。基本的な使い方は[データセットの読み込みに関するドキュメント](https://huggingface.co/docs/datasets/loading)を参照してください。ただし今は、MRPC データセットに集中しましょう！MRPC は [GLUE ベンチマーク](https://gluebenchmark.com/) を構成する10個のデータセットの1つです。このベンチマークは、10種類の異なるテキスト分類タスクにわたって ML モデルの性能を測定するために使用される学術ベンチマークです。
+Hub にあるのはモデルだけではありません。様々な言語のデータセットも多数そろっています。データセットは[Hub の一覧](https://huggingface.co/datasets)から探せます。このセクションを終えたら、別のデータセットも読み込んで処理してみてください。基本的な使い方は[データセットの読み込みに関するドキュメント](https://huggingface.co/docs/datasets/loading)を参照してください。但し今は、MRPC データセットに集中しましょう！MRPC は [GLUE ベンチマーク](https://gluebenchmark.com/) を構成する10個のデータセットの1つです。このベンチマークは、10種類の異なるテキスト分類タスクにわたって ML モデルの性能を測定するために使用される学術ベンチマークです。
 
 🤗 Datasets ライブラリには、Hub 上のデータセットをダウンロードしてキャッシュするための、とてもシンプルなコマンドが用意されています。MRPC データセットは次のようにダウンロードできます。
 
 > [!TIP]
-> 💡 **追加資料**: データセットの読み込みに関するテクニックや例をさらに知りたい場合は、[🤗 Datasets ドキュメント](https://huggingface.co/docs/datasets/) を確認してください。
+> 💡 **追加資料**: データセットの読み込みに関するテクニックや例を更に知りたい場合は、[🤗 Datasets ドキュメント](https://huggingface.co/docs/datasets/) を確認してください。
 
 ```py
 from datasets import load_dataset
@@ -91,7 +91,7 @@ raw_train_dataset[0]
  'sentence2': 'Referring to him as only " the witness " , Amrozi accused his brother of deliberately distorting his evidence .'}
 ```
 
-ラベルはすでに整数になっているので、その点に前処理は必要ないことがわかります。どの整数がどのラベルに対応するかは、`raw_train_dataset` の `features` を調べればわかります。各列の型もわかります。
+ラベルは既に整数になっているので、その点に前処理は必要ないことがわかります。どの整数がどのラベルに対応するかは、`raw_train_dataset` の `features` を調べればわかります。各列の型もわかります。
 
 ```py
 raw_train_dataset.features
@@ -125,9 +125,9 @@ tokenized_sentences_2 = tokenizer(raw_datasets["train"]["sentence2"])
 ```
 
 > [!TIP]
-> 💡 **深掘り**: より高度なトークン化のテクニックや、さまざまなトークナイザの動作の理解には、[🤗 Tokenizers ドキュメント](https://huggingface.co/docs/transformers/main/en/tokenizer_summary) と [クックブックのトークン化ガイド](https://huggingface.co/learn/cookbook/en/advanced_rag#tokenization-strategies) を参照してください。
+> 💡 **深掘り**: より高度なトークン化のテクニックや、様々なトークナイザの動作の理解には、[🤗 Tokenizers ドキュメント](https://huggingface.co/docs/transformers/main/en/tokenizer_summary) と [クックブックのトークン化ガイド](https://huggingface.co/learn/cookbook/en/advanced_rag#tokenization-strategies) を参照してください。
 
-ただし、2つのシーケンスをモデルにそのまま渡しても、2つの文がパラフレーズかどうかという予測は得られません。2つのシーケンスをペアとして扱い、適切な前処理を適用する必要があります。幸い、トークナイザはシーケンスのペアを受け取り、BERT モデルが想定する形に整えることもできます。
+但し、2つのシーケンスをモデルにそのまま渡しても、2つの文がパラフレーズかどうかという予測は得られません。2つのシーケンスをペアとして扱い、適切な前処理を適用する必要があります。幸い、トークナイザはシーケンスのペアを受け取り、BERT モデルが想定する形に整えることもできます。
 
 ```py
 inputs = tokenizer("This is the first sentence.", "This is the second one.")
@@ -229,7 +229,7 @@ DatasetDict({
 })
 ```
 
-`map()` で前処理関数を適用する際に、`num_proc` 引数を渡すことでマルチプロセッシングを使うこともできます。ここでは使用しませんでした。これは、🤗 Tokenizers ライブラリがすでに複数のスレッドを使用してサンプルをより高速にトークン化しているためです。ただし、このライブラリによる高速なトークナイザを使用していない場合は、これにより前処理を高速化できるでしょう。
+`map()` で前処理関数を適用する際に、`num_proc` 引数を渡すことでマルチプロセッシングを使うこともできます。ここでは使用しませんでした。これは、🤗 Tokenizers ライブラリが既に複数のスレッドを使用してサンプルをより高速にトークン化しているためです。但し、このライブラリによる高速なトークナイザを使用していない場合は、これにより前処理を高速化できるでしょう。
 
 `tokenize_function` は `input_ids`、`attention_mask`、`token_type_ids` をキーとする辞書を返すため、これら3つのフィールドがデータセットのすべての分割に追加されます。なお、`map()` を適用したデータセットの既存のキーに対して、前処理関数が新しい値を返すようにすれば、既存のフィールドを変更することも可能でした。
 
@@ -264,7 +264,7 @@ samples = {k: v for k, v in samples.items() if k not in ["idx", "sentence1", "se
 [50, 59, 47, 67, 59, 50, 62, 32]
 ```
 
-驚くことではありませんが、長さが32から67までばらばらのサンプルが得られました。動的パディングとは、このバッチ内のサンプルがすべて、バッチ内の最大長である67までパディングされることを意味します。動的パディングがなければ、すべてのサンプルはデータセット全体の最大長、またはモデルが受け入れ可能な最大長までパディングしなければなりません。`data_collator` がバッチを適切に動的パディングしているかを再確認しましょう。
+驚くことではありませんが、長さが32から67までばらばらのサンプルが得られました。動的パディングとは、このバッチ内のサンプルがすべて、バッチ内の最大長である67までパディングされることを意味します。動的パディングがなければ、すべてのサンプルはデータセット全体の最大長、又はモデルが受け入れ可能な最大長までパディングしなければなりません。`data_collator` がバッチを適切に動的パディングしているかを再確認しましょう。
 
 ```py
 batch = data_collator(samples)
@@ -372,7 +372,7 @@ batch = data_collator(samples)
 			explain: "バージョンの指定には異なるパラメータを使用します。"
 		},
 		{
-			text: "GLUE ベンチマーク内の特定のタスクまたはサブセットです。",
+			text: "GLUE ベンチマーク内の特定のタスク又はサブセットです。",
 			explain: "正解です！MRPC は、より大規模な GLUE ベンチマークコレクションの中の特定のタスクの1つです。",
             correct: true
 		},

@@ -52,8 +52,7 @@ gr.Interface(
 <iframe src="https://course-demos-Rick-and-Morty-QA.hf.space" frameBorder="0" height="800" title="Gradio アプリ" class="container p-0 flex-grow space-iframe" allow="accelerometer; ambient-light-sensor; autoplay; battery; camera; document-domain; encrypted-media; fullscreen; geolocation; gyroscope; layout-animations; legacy-image-formats; magnetometer; microphone; midi; oversized-images; payment; picture-in-picture; publickey-credentials-get; sync-xhr; usb; vr ; wake-lock; xr-spatial-tracking" sandbox="allow-forms allow-modals allow-popups allow-popups-to-escape-sandbox allow-same-origin allow-scripts allow-downloads"></iframe>
 
 ### 一時リンクでデモを共有する[[sharing-your-demo-with-temporary-links]]
-機械学習モデルのデモが動作するようになったので、インターフェースへのリンクを簡単に共有する方法を学びましょう。
-インターフェースは、`launch()` メソッドで `share=True` を設定することで、簡単に公開共有できます:
+機械学習モデルのデモが動作するようになったので、インターフェースへのリンクを簡単に共有する方法を学びましょう。インターフェースは、`launch()` メソッドで `share=True` を設定することで、簡単に公開共有できます:
 
 ```python
 gr.Interface(classify_image, "image", "label").launch(share=True)
@@ -61,13 +60,13 @@ gr.Interface(classify_image, "image", "label").launch(share=True)
 
 これにより、誰にでも送れる公開可能な共有リンクが生成されます！このリンクを送ると、受け取った人は最大72時間、ブラウザでモデルを試せます。処理は自分のデバイス上で行われるため（デバイスの電源が入っている限り！）、依存関係をパッケージ化する心配はいりません。Google Colab のノートブックで作業している場合、共有リンクは常に自動で作成されます。通常は **XXXXX.gradio.app** のような形です。リンクは Gradio のリンク経由で提供されますが、Gradio はローカルサーバーのプロキシとして動作しているだけで、インターフェースを通じて送信されたデータを保存することはありません。
 
-ただし、これらのリンクは公開アクセス可能であり、誰でもあなたのモデルで予測を行える点に注意してください。そのため、書いた関数を通じて機密情報を公開したり、デバイス上で重大な変更が起きたりしないよう注意してください。`share=False`（デフォルト）に設定すると、ローカルリンクのみが作成されます。
+但し、これらのリンクは公開アクセス可能であり、誰でもあなたのモデルで予測を行える点に注意してください。そのため、書いた関数を通じて機密情報を公開したり、デバイス上で重大な変更が起きたりしないよう注意してください。`share=False`（デフォルト）に設定すると、ローカルリンクのみが作成されます。
 
 ### Hugging Face Spaces にデモをホスティングする[[hosting-your-demo-on-hugging-face-spaces]]
 
 同僚に配れる共有リンクも便利ですが、デモを永続的にホスティングして、インターネット上に独自の「スペース」を持たせるにはどうすればよいでしょうか？
 
-Hugging Face Spaces は、Gradio モデルをインターネット上に **無料で** 永続的にホスティングできるインフラを提供しています！Spaces では（公開または非公開の）リポジトリを作成して push でき、Gradio のインターフェースコードは `app.py` ファイルとして配置されます。始めるには [ステップバイステップのチュートリアル](https://huggingface.co/blog/gradio-spaces) を読むか、下のサンプル動画を見てください。
+Hugging Face Spaces は、Gradio モデルをインターネット上に **無料で** 永続的にホスティングできるインフラを提供しています！Spaces では（公開又は非公開の）リポジトリを作成して push でき、Gradio のインターフェースコードは `app.py` ファイルとして配置されます。始めるには [ステップバイステップのチュートリアル](https://huggingface.co/blog/gradio-spaces) を読むか、下のサンプル動画を見てください。
 
 <Youtube id="LS9Y2wDVI0k" />
 
@@ -134,6 +133,6 @@ interface.launch(share=True)
 
 `Interface` の `live=True` パラメータに注目してください。これは、ユーザーがスケッチパッドに線を描くたびに、自動的に予測が実行されることを意味します（送信ボタンはありません！）。
 
-さらに、`launch()` メソッドで `share=True` 引数も設定しています。これにより、誰にでも送れる公開リンクが作成されます！このリンクを送ると、受け取った人はスケッチ認識モデルを試せます。繰り返しになりますが、モデルを Hugging Face Spaces にホスティングすることもできます。上のデモを埋め込めているのは、そのおかげです。
+更に、`launch()` メソッドで `share=True` 引数も設定しています。これにより、誰にでも送れる公開リンクが作成されます！このリンクを送ると、受け取った人はスケッチ認識モデルを試せます。繰り返しになりますが、モデルを Hugging Face Spaces にホスティングすることもできます。上のデモを埋め込めているのは、そのおかげです。
 
 次は、Gradio を Hugging Face エコシステムと組み合わせて使う他の方法を扱います！

@@ -7,13 +7,13 @@
     {label: "Aws Studio", value: "https://studiolab.sagemaker.aws/import/github/huggingface/notebooks/blob/master/course/en/chapter5/section2.ipynb"},
 ]} />
 
-[Hugging Face Hub](https://huggingface.co/datasets) からデータセットをダウンロードする方法はすでに知っていると思いますが、実際に扱うデータは、自分のノートパソコンやリモートサーバーに置かれていることも多いはずです。このセクションでは、Hugging Face Hub にないデータセットを 🤗 Datasets で読み込む方法を紹介します。
+[Hugging Face Hub](https://huggingface.co/datasets) からデータセットをダウンロードする方法は既に知っていると思いますが、実際に扱うデータは、自分のノートパソコンやリモートサーバーに置かれていることも多いはずです。このセクションでは、Hugging Face Hub にないデータセットを 🤗 Datasets で読み込む方法を紹介します。
 
 <Youtube id="HyQgpJTkRdE"/>
 
-## ローカルおよびリモートのデータセットを扱う[[working-with-local-and-remote-datasets]]
+## ローカル及びリモートのデータセットを扱う[[working-with-local-and-remote-datasets]]
 
-🤗 Datasets には、ローカルおよびリモートのデータセットを読み込むためのローディングスクリプトが用意されています。次のような一般的なデータ形式に対応しています。
+🤗 Datasets には、ローカル及びリモートのデータセットを読み込むためのローディングスクリプトが用意されています。次のような一般的なデータ形式に対応しています。
 
 |    データ形式     | ローディングスクリプト |                         例                         |
 | :----------------: | :------------: | :-----------------------------------------------------: |
@@ -100,7 +100,7 @@ squad_it_dataset["train"][0]
 }
 ```
 
-これで、初めてのローカルデータセットが読み込めました！ただし、訓練セットについてはうまくいきましたが、本当に欲しいのは `train` と `test` の両方の分割を1つの `DatasetDict` オブジェクトにまとめ、両方の分割に対してまとめて `Dataset.map()` 関数を適用できるようにすることです。そのためには、`data_files` 引数に、各分割名とその分割に対応するファイルを対応づける辞書を渡します。
+これで、初めてのローカルデータセットが読み込めました！但し、訓練セットについてはうまくいきましたが、本当に欲しいのは `train` と `test` の両方の分割を1つの `DatasetDict` オブジェクトにまとめ、両方の分割に対してまとめて `Dataset.map()` 関数を適用できるようにすることです。そのためには、`data_files` 引数に、各分割名とその分割に対応するファイルを対応づける辞書を渡します。
 
 ```py
 data_files = {"train": "SQuAD_it-train.json", "test": "SQuAD_it-test.json"}
@@ -121,7 +121,7 @@ DatasetDict({
 })
 ```
 
-まさに望んでいた形になりました。これで、データのクリーニングやレビューのトークナイズなど、さまざまな前処理を適用できます。
+まさに望んでいた形になりました。これで、データのクリーニングやレビューのトークナイズなど、様々な前処理を適用できます。
 
 > [!TIP]
 > `load_dataset()` 関数の `data_files` 引数はかなり柔軟で、単一のファイルパス、ファイルパスのリスト、分割名とファイルパスを対応づける辞書のいずれでも渡せます。Unix シェルの規則に従ったワイルドカードパターンで、条件に一致する複数のファイルを指定することもできます（たとえば `data_files="*.json"` と指定すれば、ディレクトリ内のすべての JSON ファイルを1つの分割として読み込めます）。詳細は 🤗 Datasets の[ドキュメント](https://huggingface.co/docs/datasets/loading#local-and-remote-files)を参照してください。
@@ -150,7 +150,7 @@ data_files = {
 squad_it_dataset = load_dataset("json", data_files=data_files, field="data")
 ```
 
-これにより、上で得たのと同じ `DatasetDict` オブジェクトが返ってきますが、_SQuAD_it-*.json.gz_ ファイルを手作業でダウンロード・解凍する手間が省けます。以上で、Hugging Face Hub にホストされていないデータセットのさまざまな読み込み方法を見てきました。手元にデータセットが用意できたので、次は実際に手を動かしながら、さまざまなデータ加工の方法を試していきましょう！
+これにより、上で得たのと同じ `DatasetDict` オブジェクトが返ってきますが、_SQuAD_it-*.json.gz_ ファイルを手作業でダウンロード・解凍する手間が省けます。以上で、Hugging Face Hub にホストされていないデータセットの様々な読み込み方法を見てきました。手元にデータセットが用意できたので、次は実際に手を動かしながら、様々なデータ加工の方法を試していきましょう！
 
 > [!TIP]
 > ✏️ **やってみよう！** GitHub や [UCI Machine Learning Repository](https://archive.ics.uci.edu/ml/index.php) で公開されている別のデータセットを選んで、上で紹介したテクニックを使ってローカルとリモートの両方で読み込んでみましょう。おまけとして、CSV やテキスト形式で保存されたデータセットの読み込みにも挑戦してみてください（これらの形式の詳細は[ドキュメント](https://huggingface.co/docs/datasets/loading#local-and-remote-files)を参照）。

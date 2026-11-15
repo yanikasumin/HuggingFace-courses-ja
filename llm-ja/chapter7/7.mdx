@@ -22,7 +22,7 @@
 
 {/if}
 
-質問応答を見ていきましょう！このタスクにはさまざまな種類がありますが、このセクションで焦点を当てるのは *抽出型* の質問応答と呼ばれるものです。ドキュメントについて質問を投げかけ、その答えをドキュメント自体の中の _テキストの範囲（スパン）_ として特定します。
+質問応答を見ていきましょう！このタスクには様々な種類がありますが、このセクションで焦点を当てるのは *抽出型* の質問応答と呼ばれるものです。ドキュメントについて質問を投げかけ、その答えをドキュメント自体の中の _テキストの範囲（スパン）_ として特定します。
 
 <Youtube id="ajPx5LwJD-I"/>
 
@@ -212,7 +212,7 @@ for ids in inputs["input_ids"]:
 '[CLS] To whom did the Virgin Mary allegedly appear in 1858 in Lourdes France? [SEP]. It is a replica of the grotto at Lourdes, France where the Virgin Mary reputedly appeared to Saint Bernadette Soubirous in 1858. At the end of the main drive ( and in a direct line that connects through 3 statues and the Gold Dome ), is a simple, modern stone statue of Mary. [SEP]'
 ```
 
-見てのとおり、この例は4つの入力に分割され、それぞれに質問とコンテキストの一部が含まれています。質問への答え（"Bernadette Soubirous"）は3番目と最後の入力にしか現れない点に注意してください。長いコンテキストをこの方法で扱うと、答えがコンテキストに含まれていない学習サンプルも生成されます。そうしたサンプルでは、ラベルは `start_position = end_position = 0` となります（つまり `[CLS]` トークンを予測します）。答えが切り捨てられて開始部分（または終了部分）しか残っていないという不運な場合も、これらのラベルを設定します。答えが完全にコンテキスト内に含まれるサンプルでは、ラベルは答えが始まるトークンのインデックスと、答えが終わるトークンのインデックスになります。
+見てのとおり、この例は4つの入力に分割され、それぞれに質問とコンテキストの一部が含まれています。質問への答え（"Bernadette Soubirous"）は3番目と最後の入力にしか現れない点に注意してください。長いコンテキストをこの方法で扱うと、答えがコンテキストに含まれていない学習サンプルも生成されます。そうしたサンプルでは、ラベルは `start_position = end_position = 0` となります（つまり `[CLS]` トークンを予測します）。答えが切り捨てられて開始部分（又は終了部分）しか残っていないという不運な場合も、これらのラベルを設定します。答えが完全にコンテキスト内に含まれるサンプルでは、ラベルは答えが始まるトークンのインデックスと、答えが終わるトークンのインデックスになります。
 
 データセットは、コンテキスト内での答えの開始文字を提供してくれます。答えの長さを加えると、コンテキスト内での終了文字がわかります。これらをトークンのインデックスに対応付けるには、[Chapter 6](/course/chapter6/4) で学んだオフセットマッピングを使う必要があります。`return_offsets_mapping=True` を渡すことで、トークナイザにこれらを返させることができます。
 
@@ -1077,7 +1077,7 @@ repo_name
 'sgugger/bert-finetuned-squad-accelerate'
 ```
 
-次に、そのリポジトリをローカルフォルダにクローンできます。すでに存在する場合は、そのローカルフォルダは作業対象リポジトリのクローンである必要があります。
+次に、そのリポジトリをローカルフォルダにクローンできます。既に存在する場合は、そのローカルフォルダは作業対象リポジトリのクローンである必要があります。
 
 ```py
 output_dir = "bert-finetuned-squad-accelerate"
@@ -1164,7 +1164,7 @@ unwrapped_model.save_pretrained(output_dir, save_function=accelerator.save)
 
 ## ファインチューニングしたモデルを使う[[using-the-fine-tuned-model]]
 
-Model Hub 上でファインチューニングしたモデルを推論ウィジェットで使う方法はすでに示しました。ローカルで `pipeline` を使って推論するには、モデル識別子を指定するだけです。
+Model Hub 上でファインチューニングしたモデルを推論ウィジェットで使う方法は既に示しました。ローカルで `pipeline` を使って推論するには、モデル識別子を指定するだけです。
 
 ```py
 from transformers import pipeline
