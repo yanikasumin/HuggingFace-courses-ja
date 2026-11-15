@@ -554,3 +554,12 @@
 - LLM chapter1: 再チェックで最終合格（残存P1=0、特例2件 R5-04部分適用・R6-04原典由来保持はレビュアー承認）。任意の新規P2（8.mdx:139 修正で生じた重複文）も提案どおり1文削除して適用し、指摘ゼロで確定。サイト反映・プッシュへ。
 - LLM chapter2: 再チェックで最終合格（残存 P0/P1/P2 すべて0件、追加修正不要）。サイト反映・プッシュへ。
 - 2026-11-15 サイト改善（サムネイル・アイコン・検索向け文）: 全ページに og:image（サイト共通＋コース別5種、1200×630）を追加し Twitter カードを summary_large_image 化。ファビコン（SVG/PNG 32）、apple-touch-icon、icon-192/512、web manifest、theme-color を追加。セクションページの meta description を定型文から各セクション冒頭の実文抜粋に変更（検索結果のスニペット改善）。生成スクリプトは hf-pages-build/gen_assets.py、素材は同 assets/。
+
+## 2026-11-15 アフィリエイト組み込み・記事投稿
+- Amazon アソシエイト（lieberalism-22）: 各コース目次ページに「おすすめ教材」3冊（表紙画像+アフィリエイトリンク+開示文）を build.py に実装し公開。トップページの既存の参考書3冊も表紙+Amazonリンク化し、開示文に差し替え（commit ad71cc56、ライブ確認済み）。トップページには表示調整の CSS（選択色・フォーカス表示・表紙レイアウト等）も併せて適用。
+- 告知記事: Qiita に公開（https://qiita.com/yanikasumin/items/73c400c0efe59d933459）。Zenn にも公開（https://zenn.dev/yanikasumin/articles/4f21d23219dbb3）。両媒体ともタグ最適化とメール通知オフまで実施。
+
+## 2026-11-15 レイアウト修正・アクセス解析
+- セクションページ: サイドバー+本文のグループが左に寄って見える問題を style.css で修正（.layout に justify-content: center、.container の flex を 0 1 900px に変更）。ローカル実測でグループ中心=画面中心を確認（commit 622243d1）。
+- トップページ: 本文カラム幅を 760px → 900px に統一し、コースカード幅と左右端をそろえた（commit 463a5bc1）。
+- Google Analytics（GA4）を導入: 通常用 Google アカウントにアカウント「Kasumigaseki Kyo」/ プロパティ「Hugging Face 学習コース日本語版」を新規作成、測定ID G-WFF350ZL06。全ページ共通の site.js に計測コードを実装（本番ホスト yanikasumin.github.io でのみ発火）。計測は導入時点から開始し、過去分は遡れない。

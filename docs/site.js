@@ -1,4 +1,19 @@
 // Hugging Face コース日本語版— クイズ / コードコピー / サイト内検索
+// Google Analytics (GA4) — 本番ホストでのみ計測する
+(function () {
+  if (location.hostname !== "yanikasumin.github.io") return;
+  var GA_ID = "G-WFF350ZL06";
+  window.dataLayer = window.dataLayer || [];
+  function gtag() { dataLayer.push(arguments); }
+  window.gtag = gtag;
+  gtag("js", new Date());
+  gtag("config", GA_ID);
+  var s = document.createElement("script");
+  s.async = true;
+  s.src = "https://www.googletagmanager.com/gtag/js?id=" + GA_ID;
+  document.head.appendChild(s);
+})();
+
 (function () {
   var scriptSrc = document.currentScript ? document.currentScript.src : "";
   var siteRoot = scriptSrc.replace(/site\.js(\?.*)?$/, "");
