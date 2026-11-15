@@ -4,11 +4,11 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>モデルカードを作る | Hugging Face 学習コース日本語版</title>
-<meta name="description" content="モデルカードを作る｜LLM コース（大規模言語モデルと Transformers を学ぶコース）の日本語訳。モデルカードは、モデルリポジトリの中で、モデルファイルやトークナイザファイルと同じくらい重要なファイルと言えます。">
+<meta name="description" content="モデルカードを作る｜LLM コース（大規模言語モデルと Transformers を学ぶコース）の日本語訳。モデルカードは、モデルリポジトリ内のモデルやトークナイザのファイルと同じくらい重要といえるでしょう。">
 <meta name="robots" content="index, follow">
 <link rel="canonical" href="https://yanikasumin.github.io/HuggingFace-courses-ja/llm/chapter4/4.html">
 <meta property="og:title" content="モデルカードを作る | Hugging Face 学習コース日本語版">
-<meta property="og:description" content="モデルカードを作る｜LLM コース（大規模言語モデルと Transformers を学ぶコース）の日本語訳。モデルカードは、モデルリポジトリの中で、モデルファイルやトークナイザファイルと同じくらい重要なファイルと言えます。">
+<meta property="og:description" content="モデルカードを作る｜LLM コース（大規模言語モデルと Transformers を学ぶコース）の日本語訳。モデルカードは、モデルリポジトリ内のモデルやトークナイザのファイルと同じくらい重要といえるでしょう。">
 <meta property="og:image" content="https://yanikasumin.github.io/HuggingFace-courses-ja/og-llm.png">
 <meta property="og:image:width" content="1200">
 <meta property="og:image:height" content="630">
@@ -20,7 +20,7 @@
 <meta property="og:locale" content="ja_JP">
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:title" content="モデルカードを作る | Hugging Face 学習コース日本語版">
-<meta name="twitter:description" content="モデルカードを作る｜LLM コース（大規模言語モデルと Transformers を学ぶコース）の日本語訳。モデルカードは、モデルリポジトリの中で、モデルファイルやトークナイザファイルと同じくらい重要なファイルと言えます。">
+<meta name="twitter:description" content="モデルカードを作る｜LLM コース（大規模言語モデルと Transformers を学ぶコース）の日本語訳。モデルカードは、モデルリポジトリ内のモデルやトークナイザのファイルと同じくらい重要といえるでしょう。">
 <meta name="twitter:image" content="https://yanikasumin.github.io/HuggingFace-courses-ja/og-llm.png">
 <link rel="icon" type="image/svg+xml" href="https://yanikasumin.github.io/HuggingFace-courses-ja/favicon.svg">
 <link rel="icon" type="image/png" sizes="32x32" href="https://yanikasumin.github.io/HuggingFace-courses-ja/favicon-32.png">
@@ -97,7 +97,7 @@ window.MathJax = { tex: { inlineMath: [['$', '$'], ['\\(', '\\)']], displayMath:
 <li><a class="side-link" href="2.html">事前学習済みモデルを使う</a></li>
 <li><a class="side-link" href="3.html">事前学習済みモデルを共有する</a></li>
 <li><a class="side-link active" href="4.html">モデルカードを作る</a></li>
-<li><a class="side-link" href="5.html">Part 1 完了！</a></li>
+<li><a class="side-link" href="5.html">Part 1 修了！</a></li>
 <li><a class="side-link" href="6.html">章末クイズ</a></li>
 </ul>
 <p class="side-group">第5章 🤗 Datasets ライブラリ</p>
@@ -201,13 +201,13 @@ window.MathJax = { tex: { inlineMath: [['$', '$'], ['\\(', '\\)']], displayMath:
 <main class="container">
 <p class="course-crumb"><a href="../index.html">LLM コース</a></p>
 <p class="official-link"><a class="btn btn-official" href="https://huggingface.co/learn/llm-course/chapter4/4" target="_blank" rel="noopener">🤗 Hugging Face 公式ページでこの節を読む（英語）</a></p>
-<nav class="page-nav"><a class="nav-link prev" href="3.html">← 前へ: 事前学習済みモデルを共有する</a><a class="nav-link toc-link" href="../index.html">目次へ</a><a class="nav-link next" href="5.html">次へ →: Part 1 完了！</a></nav>
+<nav class="page-nav"><a class="nav-link prev" href="3.html">← 前へ: 事前学習済みモデルを共有する</a><a class="nav-link toc-link" href="../index.html">目次へ</a><a class="nav-link next" href="5.html">次へ →: Part 1 修了！</a></nav>
 <article class="content">
 <h1>モデルカードを作る</h1>
-<p>モデルカードは、モデルリポジトリの中で、モデルファイルやトークナイザファイルと同じくらい重要なファイルと言えます。モデルの特徴や利用条件を記録する中心的なファイルであり、コミュニティの仲間がモデルを再利用したり、結果を再現したり、ほかのメンバーが自分の成果物の土台にしたりできるようにするためのものです。</p>
-<p>学習と評価の過程を文書化すれば、モデルに何を期待できるかをほかの人が理解しやすくなります。また、使用したデータや行った前処理・後処理について十分な情報を提供することで、モデルが役立つ場面とそうでない場面を特定し、その制限やバイアス、背景を理解できるようになります。</p>
-<p>そのため、モデルの特徴や利用条件を明確に記録するモデルカードを作ることはとても重要なステップです。ここでは、その助けになるヒントを紹介します。モデルカードは、先ほど見た <em>README.md</em> ファイル（Markdown ファイル）を通じて作成します。</p>
-<p>「モデルカード」という概念は、Google の研究活動から生まれたもので、Margaret Mitchell らによる論文 <a href="https://arxiv.org/abs/1810.03993">"Model Cards for Model Reporting"</a> で提唱されました。ここに含まれる情報の多くはその論文に基づいています。モデルの再現性、再利用性、公平性を確保するうえでモデルカードがなぜこれほど重要なのかを理解するためにも、ぜひ目を通してみてください。</p>
+<p>モデルカードは、モデルリポジトリ内のモデルやトークナイザのファイルと同じくらい重要といえるでしょう。モデルについて説明する基本的な文書で、コミュニティのほかの人がモデルを再利用したり、結果を再現したり、そのモデルを土台に新しい成果物を作ったりする際に役立ちます。</p>
+<p>モデルの学習方法と評価方法を記録すると、どのような結果が期待できるかをほかの人が理解しやすくなります。また、使ったデータや前処理・後処理についても十分に説明すれば、モデルの制限やバイアスに加え、どのような場面で役立ち、どのような場面では役立たないのかも把握できます。</p>
+<p>そのため、モデルについて明確に説明するモデルカードの作成は、とても重要です。ここでは、作成時に役立つポイントを紹介します。モデルカードは、先ほど紹介した Markdown 形式の <em>README.md</em> ファイルに記述します。</p>
+<p>「モデルカード」という考え方は Google の研究から生まれ、Margaret Mitchell らの論文 <a href="https://arxiv.org/abs/1810.03993">"Model Cards for Model Reporting"</a> で初めて発表されました。ここで説明する内容の多くも、この論文に基づいています。再現性、再利用性、公平性が重視される中で、モデルカードが重要な理由を理解するためにも、ぜひ読んでみてください。</p>
 <p>モデルカードは通常、モデルの用途についてのごく簡単な概要から始まり、その後のセクションで詳細を述べます。</p>
 <ul>
 <li>モデルの説明</li>
@@ -220,19 +220,19 @@ window.MathJax = { tex: { inlineMath: [['$', '$'], ['\\(', '\\)']], displayMath:
 </ul>
 <p>各セクションに何を書くべきかを見ていきましょう。</p>
 <h3>モデルの説明</h3>
-<p>モデルの説明では、モデルについての基本的な詳細を書きます。アーキテクチャ、バージョン、関連論文、元となる実装の有無、開発者などの基本情報が含まれます。著作権の帰属はここに記載します。学習手順やパラメータについての一般的な情報、重要な免責事項もこのセクションで触れられます。</p>
+<p>ここには、モデルの基本情報を記載します。たとえば、アーキテクチャ、バージョン、論文で発表されたモデルかどうか、元の実装が利用できるかどうか、開発者などです。著作権の帰属先もここに明記します。学習手順やパラメータの概要、重要な免責事項を載せることもできます。</p>
 <h3>想定される用途と制限</h3>
-<p>ここでは、モデルの想定用途を説明します。適用できる言語、分野、ドメインなどです。このセクションでは、モデルの適用範囲外であることが知られている領域や、性能が最適でない可能性が高い領域も文書化できます。</p>
+<p>ここでは、モデルの想定用途と、利用できる言語・分野・領域を説明します。また、適用範囲外と分かっている領域や、十分な性能を発揮できない可能性が高い領域も記載できます。</p>
 <h3>使い方</h3>
-<p>このセクションには、モデルの使い方の例を含めます。<code>pipeline()</code> 関数の使い方、モデルとトークナイザのクラスの使い方、その他役立つと思われるコードを紹介できます。</p>
+<p>ここでは、モデルの使い方を例とともに紹介します。<code>pipeline()</code> 関数を使う方法、モデルやトークナイザのクラスを使う方法のほか、利用者の参考になるコードを載せてもかまいません。</p>
 <h3>学習データ</h3>
 <p>このパートでは、モデルの学習に使ったデータセットを示します。データセットの概要も併せて説明するとよいでしょう。</p>
 <h3>学習手順</h3>
-<p>このセクションでは、ほかのユーザーが学習を再現できるように、学習条件や手順を詳しく記録します。データに行った前処理や後処理、モデルを学習したエポック数、バッチサイズ、学習率などの詳細が含まれます。</p>
-<h3>変数と指標</h3>
-<p>ここでは、評価に使う指標と、評価対象となる要素を説明します。どの評価指標を使い、どのデータセットのどの分割（検証用やテスト用など）で評価したかを示せば、ほかのモデルと性能を比較しやすくなります。これらは、想定するユーザーやユースケースといった前のセクションの内容を踏まえたものにします。</p>
+<p>ここでは、ほかのユーザーが学習を再現できるように、必要な手順や条件を詳しく記録します。たとえば、データの前処理と後処理、学習したエポック数、バッチサイズ、学習率などです。</p>
+<h3>変数と評価指標</h3>
+<p>ここでは、評価に使う指標と、何を測定するかを説明します。どの評価指標を使い、どのデータセットのどの分割（検証用やテスト用など）で評価したかを示すと、ほかのモデルと性能を比較しやすくなります。評価指標や測定対象は、前のセクションで説明した想定ユーザーや用途を踏まえて決めます。</p>
 <h3>評価結果</h3>
-<p>最後に、評価データセットでモデルがどの程度の性能を発揮するかを示します。モデルが決定しきい値を使う場合は、評価で使った決定しきい値を示すか、想定される用途ごとに異なるしきい値での評価の詳細を示してください。</p>
+<p>最後に、評価用データセットでモデルがどの程度の性能を発揮するかを示します。モデルが決定しきい値を使う場合は、評価時に使ったしきい値を示すか、想定される用途に応じてしきい値を変えた場合の評価結果を詳しく記載してください。</p>
 <h2>例</h2>
 <p>よくできたモデルカードの例をいくつか紹介します。</p>
 <ul>
@@ -240,12 +240,12 @@ window.MathJax = { tex: { inlineMath: [['$', '$'], ['\\(', '\\)']], displayMath:
 <li><a href="https://huggingface.co/gpt2"><code>gpt2</code></a></li>
 <li><a href="https://huggingface.co/distilbert-base-uncased"><code>distilbert</code></a></li>
 </ul>
-<p>様々な組織や企業の例が更に <a href="https://github.com/huggingface/model_card/blob/master/examples.md">こちら</a> にあります。</p>
+<p>様々な組織や企業が作成したモデルカードの例も、<a href="https://github.com/huggingface/model_card/blob/master/examples.md">こちら</a> で確認できます。</p>
 <h2>注意</h2>
-<p>モデルカードは、モデルを公開する際の必須要件ではありません。作る場合も、上で説明したセクションをすべて含める必要はありません。但し、モデルを明示的に文書化することは将来そのモデルを利用する人にとって大いに役立つため、分かる範囲でできるだけ多くのセクションを埋めることをおすすめします。</p>
+<p>モデルを公開するとき、モデルカードは必須ではありません。また、作成する場合でも、ここで紹介したすべてのセクションを含める必要はありません。但し、モデルについて詳しい説明を残しておけば、あとから利用する人の助けになります。自分が把握していて記載できる範囲で、できるだけ多くのセクションを埋めることをおすすめします。</p>
 <h2>モデルカードのメタデータ</h2>
 <p>Hugging Face Hub を少し探索したことがあれば、モデルが特定のカテゴリに属していることに気づいたはずです。タスク、言語、ライブラリなどで絞り込むことができます。モデルが属するカテゴリは、モデルカードのヘッダーに加えるメタデータに基づいて判定されます。</p>
-<p>たとえば、<a href="https://huggingface.co/camembert-base/blob/main/README.md"><code>camembert-base</code> のモデルカード</a> を見ると、モデルカードのヘッダーには次の行があります。</p>
+<p>たとえば、<a href="https://huggingface.co/camembert-base/blob/main/README.md"><code>camembert-base</code> のモデルカード</a> のヘッダーには、次のような行があります。</p>
 <div class="codehilite"><pre><span></span><code>---
 language: fr
 license: mit
@@ -254,11 +254,11 @@ datasets:
 ---
 </code></pre></div>
 
-<p>このメタデータは Hugging Face Hub によって解析され、このモデルはフランス語のモデルで、MIT ライセンスで、Oscar データセットで学習されたものとして識別されます。</p>
-<p><a href="https://github.com/huggingface/hub-docs/blame/main/modelcard.md">モデルカードの完全な仕様</a> では、言語、ライセンス、タグ、データセット、指標、そしてモデルの学習時に得られた評価結果を指定できます。</p>
+<p>Hugging Face Hub はこのメタデータを読み取り、フランス語に対応し、MIT ライセンスで提供され、Oscar データセットで学習されたモデルだと判別します。</p>
+<p><a href="https://github.com/huggingface/hub-docs/blame/main/modelcard.md">モデルカードの完全な仕様</a> に従って、言語、ライセンス、タグ、データセット、評価指標に加え、学習中に得られた評価結果も指定できます。</p>
 </article>
 
-<nav class="page-nav"><a class="nav-link prev" href="3.html">← 前へ: 事前学習済みモデルを共有する</a><a class="nav-link toc-link" href="../index.html">目次へ</a><a class="nav-link next" href="5.html">次へ →: Part 1 完了！</a></nav>
+<nav class="page-nav"><a class="nav-link prev" href="3.html">← 前へ: 事前学習済みモデルを共有する</a><a class="nav-link toc-link" href="../index.html">目次へ</a><a class="nav-link next" href="5.html">次へ →: Part 1 修了！</a></nav>
 </main>
 </div>
 <footer class="site-footer">

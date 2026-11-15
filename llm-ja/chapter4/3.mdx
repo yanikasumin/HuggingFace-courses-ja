@@ -26,7 +26,7 @@
 
 <Youtube id="9yY3RB_GSPM"/>
 
-モデルを学習させたすべてのユーザーに、コミュニティで共有することをおすすめします。非常に特殊なデータセットで学習したモデルであっても、共有すればほかの人の時間と計算リソースを節約でき、役立つ学習済みモデルをほかの人が利用できるようになります。そして、ほかの人が行った作業から恩恵を受けることもできます。
+モデルを学習したら、ぜひコミュニティで共有してください。特殊なデータセットで学習したモデルでも、公開することで、ほかの人の時間や計算リソースを節約できます。また、学習済みモデルなどの役立つ成果物を利用してもらえます。自分もほかの人が公開した成果物を利用できるので、お互いに助け合えます。
 
 新しいモデルリポジトリを作成する方法は3つあります。
 
@@ -51,7 +51,7 @@
 
 Hub にファイルをアップロードする最も簡単な方法は、`push_to_hub` API を活用することです。
 
-先に進む前に、`huggingface_hub` API があなたを識別し、書き込み権限のある名前空間を把握できるよう、認証トークンを生成する必要があります。`transformers` がインストールされた環境にいることを確認してください（[セットアップ](/course/chapter0) を参照）。ノートブック環境では、次の関数でログインできます。
+まず、認証トークンを生成する必要があります。このトークンを使って、`huggingface_hub` API はユーザーを識別し、どの名前空間への書き込み権限があるかを確認します。作業する環境に `transformers` がインストールされていることも確認してください（[セットアップ](/course/chapter0) を参照）。ノートブックを使っている場合は、次の関数でログインできます。
 
 ```python
 from huggingface_hub import notebook_login
@@ -81,11 +81,11 @@ training_args = TrainingArguments(
 )
 ```
 
-`trainer.train()` を呼び出すと、`Trainer` はモデルが保存されるたび（ここではエポックごと）に、あなたの名前空間のリポジトリへモデルをアップロードします。そのリポジトリの名前は、選んだ出力ディレクトリと同じ名前（ここでは `bert-finetuned-mrpc`）になりますが、`hub_model_id = "a_different_name"` で別の名前を選ぶこともできます。
+`trainer.train()` を呼び出すと、`Trainer` はモデルが保存されるたびに、あなたの名前空間にあるリポジトリへモデルをアップロードします。ここではエポックごとにアップロードされます。リポジトリには、指定した出力ディレクトリと同じ名前（ここでは `bert-finetuned-mrpc`）が付けられます。別の名前にしたい場合は、`hub_model_id = "a_different_name"` を指定できます。
 
-所属している組織にモデルをアップロードするには、`hub_model_id = "my_organization/my_repo_name"` のように渡すだけです。
+所属する組織の名前空間にモデルをアップロードしたい場合は、`hub_model_id = "my_organization/my_repo_name"` のように組織名とリポジトリ名を指定します。
 
-学習が終わったら、最後に `trainer.push_to_hub()` を実行して、モデルの最終バージョンをアップロードします。使ったハイパーパラメータや評価結果を報告するメタデータとともに、モデルカードも生成されます。そのようなモデルカードの内容の例がこちらです。
+学習が終わったら、最後に `trainer.push_to_hub()` を実行して、モデルの最終バージョンをアップロードします。同時に、使用したハイパーパラメータや評価結果などのメタデータを含むモデルカードも生成されます。モデルカードには、たとえば次のような内容が記載されます。
 
 <div class="flex justify-center">
   <img src="https://huggingface.co/datasets/huggingface-course/documentation-images/resolve/main/en/chapter4/model_card.png" alt="自動生成されたモデルカードの例。" width="100%"/>
@@ -103,13 +103,13 @@ callback = PushToHubCallback(
 )
 ```
 
-続いて、`model.fit()` の呼び出しに `callbacks=[callback]` を加えます。するとコールバックは、モデルが保存されるたび（ここではエポックごと）に、あなたの名前空間のリポジトリへモデルをアップロードします。そのリポジトリの名前は、選んだ出力ディレクトリと同じ名前（ここでは `bert-finetuned-mrpc`）になりますが、`hub_model_id = "a_different_name"` で別の名前を選ぶこともできます。
+次に、`model.fit()` を呼び出すときに `callbacks=[callback]` を追加します。すると、モデルが保存されるたびに、コールバックがあなたの名前空間にあるリポジトリへモデルをアップロードします。ここではエポックごとにアップロードされます。リポジトリには、指定した出力ディレクトリと同じ名前（ここでは `bert-finetuned-mrpc`）が付けられます。別の名前にしたい場合は、`hub_model_id = "a_different_name"` を指定できます。
 
-所属している組織にモデルをアップロードするには、`hub_model_id = "my_organization/my_repo_name"` のように渡すだけです。
+所属する組織の名前空間にモデルをアップロードしたい場合は、`hub_model_id = "my_organization/my_repo_name"` のように組織名とリポジトリ名を指定します。
 
 {/if}
 
-より低レベルでは、モデル、トークナイザ、設定オブジェクトの `push_to_hub()` メソッドを使って、Model Hub に直接アクセスできます。このメソッドは、リポジトリの作成と、モデルとトークナイザのファイルのリポジトリへのプッシュの両方を行います。後述する API とは異なり、リポジトリ作成やファイルのプッシュを手作業で行う必要はありません。
+モデル、トークナイザ、設定オブジェクトには、Model Hub を直接操作するための `push_to_hub()` メソッドも用意されています。このメソッドは、リポジトリの作成と、モデルやトークナイザのファイルのアップロードをまとめて行います。後で紹介する API とは異なり、リポジトリの作成やファイルのプッシュを自分で行う必要はありません。
 
 仕組みを把握するため、まずモデルとトークナイザを初期化しましょう。
 
@@ -133,7 +133,7 @@ tokenizer = AutoTokenizer.from_pretrained(checkpoint)
 ```
 {/if}
 
-これらを使って自由に作業できます。トークナイザにトークンを追加したり、モデルを学習したり、ファインチューニングしたりしてください。得られたモデル、重み、トークナイザが思いどおりに仕上がったら、`model` オブジェクトで直接使える `push_to_hub()` メソッドを活用できます。
+これらのモデルとトークナイザは自由に変更できます。たとえば、トークナイザにトークンを追加したり、モデルを学習させたり、ファインチューニングしたりできます。モデルやその重み、トークナイザが満足のいく状態になったら、`model` オブジェクトの `push_to_hub()` メソッドを使ってアップロードできます。
 
 ```py
 model.push_to_hub("dummy-model")
@@ -157,7 +157,7 @@ tokenizer.push_to_hub("dummy-model", organization="huggingface")
 tokenizer.push_to_hub("dummy-model", organization="huggingface", use_auth_token="<TOKEN>")
 ```
 
-では Model Hub に行って、新しくアップロードしたモデルを見てみましょう。*https://huggingface.co/user-or-organization/dummy-model*.
+では、Model Hub で新しくアップロードしたモデルを確認しましょう。URL は *https://huggingface.co/user-or-organization/dummy-model* です。
 
 「Files and versions」タブをクリックすると、次のスクリーンショットに表示されているファイルが見えるはずです。
 
@@ -172,11 +172,11 @@ tokenizer.push_to_hub("dummy-model", organization="huggingface", use_auth_token=
 {/if}
 
 > [!TIP]
-> ✏️ **試してみましょう！** `bert-base-cased` チェックポイントに紐づくモデルとトークナイザを用意し、`push_to_hub()` メソッドを使って自分の名前空間のリポジトリにアップロードしてみてください。削除する前に、リポジトリが自分のページに正しく表示されているか再確認しましょう。
+> ✏️ **試してみましょう！** `bert-base-cased` チェックポイントに対応するモデルとトークナイザを用意し、`push_to_hub()` メソッドを使って自分の名前空間のリポジトリにアップロードしてみてください。削除する前に、リポジトリが自分のページに正しく表示されているか再確認しましょう。
 
-ここまで見てきたように、`push_to_hub()` メソッドはいくつかの引数を受け付けるため、特定のリポジトリや組織の名前空間へのアップロードや、別の認証トークンの使用が可能です。何ができるかを把握するために、[🤗 Transformers ドキュメント](https://huggingface.co/transformers/model_sharing) で直接確認できるメソッド仕様を参照してください。
+`push_to_hub()` メソッドには、いくつかの引数があります。これらを使うと、アップロード先のリポジトリや組織の名前空間を指定したり、別の認証トークンを使ったりできます。詳しい引数や使い方は、[🤗 Transformers ドキュメント](https://huggingface.co/transformers/model_sharing) で確認してください。
 
-`push_to_hub()` メソッドは、Hugging Face Hub への直接の API を提供する [`huggingface_hub`](https://github.com/huggingface/huggingface_hub) Python パッケージに支えられています。これは 🤗 Transformers や [`allenlp`](https://github.com/allenai/allennlp) のようないくつかの機械学習ライブラリに統合されています。この章では 🤗 Transformers との統合に焦点を当てますが、自分のコードやライブラリへの統合も簡単です。
+`push_to_hub()` メソッドの内部では、Hugging Face Hub を直接操作するための API を提供する Python パッケージ [`huggingface_hub`](https://github.com/huggingface/huggingface_hub) が使われています。このパッケージは、🤗 Transformers や [`allenlp`](https://github.com/allenai/allennlp) など、いくつかの機械学習ライブラリに組み込まれています。この章では 🤗 Transformers との連携を中心に説明しますが、自分のコードやライブラリに組み込むことも簡単です。
 
 新しく作成したリポジトリにファイルをアップロードする方法は、最後のセクションへ進んで確認してください。
 
@@ -184,7 +184,7 @@ tokenizer.push_to_hub("dummy-model", organization="huggingface", use_auth_token=
 
 `huggingface_hub` Python ライブラリは、モデルハブとデータセットハブのためのツール群を提供するパッケージです。Hub 上のリポジトリの情報を取得したり管理したりといった一般的なタスクを、シンプルなメソッドとクラスで実行できます。また、Git を基盤とするシンプルな API によって、リポジトリのコンテンツを管理したり、Hub をプロジェクトやライブラリに統合したりできます。
 
-`push_to_hub` API を使う場合と同様に、認証トークンがキャッシュに保存されている必要があります。そのためには、前のセクションで触れたように、CLI の `login` コマンドを使う必要があります（Google Colab で実行する場合は、これらのコマンドの前に `!` 文字を付けることを忘れないでください）。
+`push_to_hub` API と同じく、`huggingface_hub` を使う場合も認証トークンをキャッシュに保存しておく必要があります。前のセクションで紹介した CLI の `login` コマンドを実行してください。Google Colab で実行する場合は、コマンドの先頭に `!` を付けます。
 
 ```bash
 huggingface-cli login
@@ -215,7 +215,7 @@ from huggingface_hub import (
 ```
 
 
-また、ローカルリポジトリを管理するための `Repository` クラスも用意されています。これらのメソッドとそのクラスは、次のセクションで詳しく見ていきます。
+また、ローカルリポジトリを管理するための `Repository` クラスも用意されています。ここで紹介したメソッドと `Repository` クラスの使い方は、以降のセクションで詳しく説明します。
 
 `create_repo` メソッドは、Hub に新しいリポジトリを作成するために使えます。
 
@@ -233,9 +233,9 @@ from huggingface_hub import create_repo
 create_repo("dummy-model", organization="huggingface")
 ```
 
-これにより、`huggingface` 名前空間に `dummy-model` リポジトリが作成されます（その組織に所属していることが前提です）。役立つかもしれない他の引数には次のものがあります。
+これにより、`huggingface` 名前空間に `dummy-model` リポジトリが作成されます。但し、その組織に所属している必要があります。ほかにも、次のような便利な引数があります。
 
-- `private`: リポジトリを非公開にするかどうかを指定します。True にすると非公開になります。
+- `private`: リポジトリを非公開にするかどうかを指定します。`True` にすると非公開になります。
 - `token`: キャッシュに保存された認証トークンの代わりに、指定したトークンを使用する場合に指定します。
 - `repo_type`: モデルではなく `dataset` や `space` を作成したい場合に使います。指定できる値は `"dataset"` と `"space"` です。
 
@@ -262,13 +262,13 @@ Web インターフェースは、Hub で直接リポジトリを管理するた
 <img src="https://huggingface.co/datasets/huggingface-course/documentation-images/resolve/main/en/chapter4/empty_model.png" alt="新しいリポジトリを作成した直後の、空のモデルページ。" width="80%"/>
 </div>
 
-このリポジトリにモデルのファイルが保存・公開されます。ファイルを追加し始めるには、Web インターフェースから直接 README ファイルを追加できます。
+このリポジトリが、モデルの保存先になります。まずは、Web インターフェースから README ファイルを追加してみましょう。
 
 <div class="flex justify-center">
 <img src="https://huggingface.co/datasets/huggingface-course/documentation-images/resolve/main/en/chapter4/dummy_model.png" alt="Markdown の機能を示す README ファイル。" width="80%"/>
 </div>
 
-README ファイルは Markdown です。自由に書いてください。この章の第3パートでは、モデルカードの作成方法を説明します。モデルカードは、そのモデルで何ができるかをほかのユーザーに伝えるものであり、モデルの価値を高めるうえで非常に重要です。
+README ファイルは Markdown 形式で書けるので、自由に内容を編集できます。この章の第3パートでは、モデルカードの作成方法を説明します。モデルカードは、モデルで何ができるのかをほかのユーザーに伝えるためのものです。モデルの価値を高めるうえで、とても重要な役割を果たします。
 
 「Files and versions」タブを見ると、まだファイルはあまりありません。作成したばかりの *README.md* と、大きなファイルを追跡する *.gitattributes* ファイルだけです。
 
@@ -286,7 +286,7 @@ Hugging Face Hub でファイルを管理するシステムは、通常のファ
 
 ### `upload_file` による方法[[the-uploadfile-approach]]
 
-`upload_file` を使う方法では、システムに Git と Git LFS がインストールされている必要はありません。HTTP の POST リクエストを使って、ファイルを 🤗 Hub に直接プッシュします。この方法の制限は、5GB を超えるサイズのファイルを扱えないことです。ファイルが 5GB を超える場合は、以下で詳しく説明する他の2つの方法のいずれかに従ってください。
+`upload_file` を使う方法では、システムに Git と Git LFS がインストールされている必要はありません。HTTP POST リクエストを使って、ファイルを 🤗 Hub に直接プッシュします。この方法の制限は、5GB を超えるサイズのファイルを扱えないことです。ファイルが 5GB を超える場合は、以下で詳しく説明する他の2つの方法のいずれかに従ってください。
 
 API は次のように使えます。
 
@@ -300,7 +300,7 @@ upload_file(
 )
 ```
 
-これにより、`<path_to_file>` にある `config.json` ファイルが、`dummy-model` リポジトリのルートに `config.json` としてアップロードされます。役立つかもしれない他の引数には次のものがあります。
+このコードを実行すると、`<path_to_file>` にある `config.json` ファイルが、`dummy-model` リポジトリのルートに同じ名前でアップロードされます。ほかにも、次のような便利な引数があります。
 
 - `token`: キャッシュに保存された認証トークンの代わりに、指定したトークンを使用する場合に指定します。
 - `repo_type`: モデルではなく `dataset` や `space` にアップロードしたい場合に使います。指定できる値は `"dataset"` と `"space"` です。
@@ -310,7 +310,7 @@ upload_file(
 
 `Repository` クラスを使うと、ローカルの Git リポジトリを Python から操作できます。Git の複雑な操作の多くが抽象化されており、必要な処理を簡単なメソッド呼び出しで実行できます。
 
-このクラスを使うには Git と Git LFS がインストールされている必要があるため、始める前に Git LFS がインストールされ（インストール手順は [こちら](https://git-lfs.github.com/) を参照）、セットアップされていることを確認してください。
+このクラスを使うには、Git と Git LFS が必要です。始める前に両方をインストールし、Git LFS の設定も済ませてください。Git LFS のインストール手順は [こちら](https://git-lfs.github.com/) で確認できます。
 
 まず、作成したリポジトリをローカルフォルダにクローンしましょう。
 
@@ -320,9 +320,9 @@ from huggingface_hub import Repository
 repo = Repository("<path_to_dummy_folder>", clone_from="<namespace>/dummy-model")
 ```
 
-これにより、作業ディレクトリに `<path_to_dummy_folder>` フォルダが作成されました。このフォルダには `.gitattributes` ファイルだけが含まれています。`create_repo` でリポジトリをインスタンス化したときに作成されるファイルはそれだけだからです。
+このコードを実行すると、作業ディレクトリに `<path_to_dummy_folder>` フォルダが作成されます。中にあるのは `.gitattributes` ファイルだけです。これは、`create_repo` でリポジトリを作成した時点では、ほかのファイルが作成されないためです。
 
-ここからは、従来の Git のメソッドをいくつか活用できます。
+ここからは、通常の Git 操作に相当する次のメソッドを使えます。
 
 ```py
 repo.git_pull()
@@ -332,9 +332,9 @@ repo.git_push()
 repo.git_tag()
 ```
 
-ほかにもあります。利用できるすべてのメソッドの概要については、[こちら](https://github.com/huggingface/huggingface_hub/tree/main/src/huggingface_hub#advanced-programmatic-repository-management) で確認できる `Repository` のドキュメントをご覧になることをおすすめします。
+このほかにも、さまざまなメソッドがあります。利用できるメソッドの一覧や概要は、[こちら](https://github.com/huggingface/huggingface_hub/tree/main/src/huggingface_hub#advanced-programmatic-repository-management) の `Repository` ドキュメントで確認できます。
 
-現在、Hub にプッシュしたいモデルとトークナイザがあります。リポジトリのクローンは無事にできたので、そのリポジトリ内にファイルを保存できます。
+Hub にアップロードしたいモデルとトークナイザは、すでに用意できています。リポジトリのクローンも完了したので、次はその中にファイルを保存しましょう。
 
 まず、最新の変更をプルして、ローカルのクローンが最新であることを確認します。
 
@@ -361,9 +361,9 @@ repo.git_push()
 
 ### Git ベースの方法[[the-git-based-approach]]
 
-この方法では、Git と Git LFS を直接操作してファイルをアップロードします。これまでの方法では難しさのほとんどが抽象化されていましたが、この方法にはいくつか注意点があるため、より複雑なユースケースに沿って進めます。
+この方法では、Git と Git LFS を直接操作してファイルをアップロードします。これまで紹介した方法では面倒な処理が自動化されていましたが、今回は自分で操作する必要があります。いくつか注意点もあるので、少し複雑なケースを例に手順を説明します。
 
-この方法を使うには Git と Git LFS がインストールされている必要があるため、始める前に [Git LFS](https://git-lfs.github.com/) がインストールされ（インストール手順はこちらを参照）、セットアップされていることを確認してください。
+この方法を使うには、Git と Git LFS が必要です。始める前に両方をインストールし、Git LFS の設定も済ませてください。[Git LFS](https://git-lfs.github.com/) のリンク先でインストール手順を確認できます。
 
 まず Git LFS を初期化します。
 
@@ -382,7 +382,7 @@ Git LFS initialized.
 git clone https://huggingface.co/<namespace>/<your-model-id>
 ```
 
-私のユーザー名は `lysandre` で、モデル名には `dummy` を使ったため、私の場合はコマンドは次のようになります。
+私のユーザー名は `lysandre` で、モデル名には `dummy` を使っています。そのため、実行するコマンドは次のようになります。
 
 ```
 git clone https://huggingface.co/lysandre/dummy
@@ -400,7 +400,7 @@ README.md
 
 `create_repo` メソッドを使ってリポジトリを作成したばかりであれば、このフォルダには隠しファイルの `.gitattributes` だけが含まれているはずです。前のセクションの指示に従って Web インターフェースでリポジトリを作成した場合は、ここに示すように、隠しファイルの `.gitattributes` とともに *README.md* ファイルが1つ含まれています。
 
-設定ファイル、語彙ファイル、あるいは数メガバイト未満の基本的にあらゆるファイルといった通常サイズのファイルの追加は、Git ベースのシステムで通常行うのとまったく同じ方法で行います。しかし、より大きなファイルは、*huggingface.co* にプッシュするために Git LFS を通じて登録しなければなりません。
+設定ファイルや語彙ファイルなど、数メガバイト未満のファイルなら、通常の Git と同じ方法で追加できます。基本的に、このサイズのファイルはすべて同じように扱えます。一方、大きなファイルを *huggingface.co* にプッシュする場合は、Git LFS に登録する必要があります。
 
 Python に少し戻って、ダミーリポジトリにコミットしたいモデルとトークナイザを生成しましょう。
 
@@ -445,21 +445,21 @@ ls
 config.json  pytorch_model.bin  README.md  sentencepiece.bpe.model  special_tokens_map.json tokenizer_config.json  tokenizer.json
 ```
 
-ファイルサイズを見ると（たとえば `ls -lh` で）、モデルの重みを保存した *pytorch_model.bin* だけが 400 MB を超える突出したサイズだと分かるはずです。
+`ls -lh` などでファイルサイズを確認すると、モデルの状態辞書（state dict）を保存した *pytorch_model.bin* だけが、ほかのファイルよりも突出して大きいことが分かります。このファイルのサイズは 400 MB を超えています。
 
 {:else}
 ```bash
 config.json  README.md  sentencepiece.bpe.model  special_tokens_map.json  tf_model.h5  tokenizer_config.json  tokenizer.json
 ```
 
-ファイルサイズを見ると（たとえば `ls -lh` で）、モデルの state dict ファイル（*t5_model.h5*）だけが 400 MB を超える突出したサイズだと分かるはずです。
+`ls -lh` などでファイルサイズを確認すると、モデルの状態辞書（state dict）を保存したファイル（*t5_model.h5*）だけが、ほかのファイルよりも突出して大きいことが分かります。このファイルのサイズは 400 MB を超えています。
 
 {/if}
 
 > [!TIP]
-> ✏️ Web インターフェースからリポジトリを作成すると、*.gitattributes* ファイルは自動的に設定され、*.bin* や *.h5* といった特定の拡張子を持つファイルを大きなファイルとして扱うため、こちらで必要な設定なしに Git LFS がそれらを追跡します。
+> ✏️ Web インターフェースからリポジトリを作成すると、*.gitattributes* ファイルが自動的に設定されます。これにより、*.bin* や *.h5* などの拡張子を持つファイルは大きなファイルとして扱われ、追加の設定をしなくても Git LFS によって追跡されます。
 
-ここからは、従来の Git リポジトリで通常行うのと同じ手順に進めます。`git add` コマンドを使って、すべてのファイルを Git のステージングエリアに追加できます。
+ここからは、通常の Git リポジトリと同じように操作できます。まず、`git add` コマンドを使って、すべてのファイルを Git のステージングエリアに追加します。
 
 ```bash
 git add .
@@ -503,7 +503,7 @@ Changes to be committed:
 ```
 {/if}
 
-同様に、Git LFS が正しいファイルを追跡しているかを、その `status` コマンドで確認できます。
+Git LFS が正しいファイルを追跡しているかどうかは、Git LFS の `status` コマンドで確認できます。
 
 ```bash
 git lfs status
@@ -529,7 +529,7 @@ Objects not staged for commit:
 
 ```
 
-すべてのファイルは `Git` で管理されていますが、*pytorch_model.bin* と *sentencepiece.bpe.model* は `LFS` で管理されています。うまくいきました。
+ほとんどのファイルは `Git` で管理されていますが、*pytorch_model.bin* と *sentencepiece.bpe.model* は `LFS` で管理されています。正しく設定できました。
 
 {:else}
 ```bash
@@ -551,7 +551,7 @@ Objects not staged for commit:
 
 ```
 
-すべてのファイルのハンドラが `Git` であることが分かります。但し *t5_model.h5* は `LFS` です。うまくいきました。
+ほとんどのファイルのハンドラは `Git` ですが、*t5_model.h5* のハンドラは `LFS` になっています。正しく設定できました。
 
 {/if}
 
@@ -611,7 +611,7 @@ To https://huggingface.co/lysandre/dummy
 <img src="https://huggingface.co/datasets/huggingface-course/documentation-images/resolve/main/en/chapter4/full_model.png" alt="「Files and versions」タブに、最近アップロードされたファイルがすべて含まれている。" width="80%"/>
 </div>
 
-UI を使えば、モデルのファイルやコミットを探索したり、各コミットで導入された差分を見たりできます。
+UI では、モデルのファイルやコミット履歴を確認したり、各コミットで加えられた変更点（差分）を見たりできます。
 
 <div class="flex justify-center">
 <img src="https://huggingface.co/datasets/huggingface-course/documentation-images/resolve/main/en/chapter4/diffs.gif" alt="最近のコミットで導入された差分。" width="80%"/>
@@ -623,7 +623,7 @@ UI を使えば、モデルのファイルやコミットを探索したり、�
 <img src="https://huggingface.co/datasets/huggingface-course/documentation-images/resolve/main/en/chapter4/full_model_tf.png" alt="「Files and versions」タブに、最近アップロードされたファイルがすべて含まれている。" width="80%"/>
 </div>
 
-UI を使えば、モデルのファイルやコミットを探索したり、各コミットで導入された差分を見たりできます。
+UI では、モデルのファイルやコミット履歴を確認したり、各コミットで加えられた変更点（差分）を見たりできます。
 
 <div class="flex justify-center">
 <img src="https://huggingface.co/datasets/huggingface-course/documentation-images/resolve/main/en/chapter4/diffstf.gif" alt="最近のコミットで導入された差分。" width="80%"/>

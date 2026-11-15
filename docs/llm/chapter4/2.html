@@ -4,11 +4,11 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>事前学習済みモデルを使う | Hugging Face 学習コース日本語版</title>
-<meta name="description" content="事前学習済みモデルを使う｜LLM コース（大規模言語モデルと Transformers を学ぶコース）の日本語訳。{:else} Model Hub では適切なモデルを簡単に選べるので、様々なライブラリからわずか数行のコードで利用できます。">
+<meta name="description" content="事前学習済みモデルを使う｜LLM コース（大規模言語モデルと Transformers を学ぶコース）の日本語訳。{:else} Model Hub では目的に合ったモデルを簡単に選べます。">
 <meta name="robots" content="index, follow">
 <link rel="canonical" href="https://yanikasumin.github.io/HuggingFace-courses-ja/llm/chapter4/2.html">
 <meta property="og:title" content="事前学習済みモデルを使う | Hugging Face 学習コース日本語版">
-<meta property="og:description" content="事前学習済みモデルを使う｜LLM コース（大規模言語モデルと Transformers を学ぶコース）の日本語訳。{:else} Model Hub では適切なモデルを簡単に選べるので、様々なライブラリからわずか数行のコードで利用できます。">
+<meta property="og:description" content="事前学習済みモデルを使う｜LLM コース（大規模言語モデルと Transformers を学ぶコース）の日本語訳。{:else} Model Hub では目的に合ったモデルを簡単に選べます。">
 <meta property="og:image" content="https://yanikasumin.github.io/HuggingFace-courses-ja/og-llm.png">
 <meta property="og:image:width" content="1200">
 <meta property="og:image:height" content="630">
@@ -20,7 +20,7 @@
 <meta property="og:locale" content="ja_JP">
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:title" content="事前学習済みモデルを使う | Hugging Face 学習コース日本語版">
-<meta name="twitter:description" content="事前学習済みモデルを使う｜LLM コース（大規模言語モデルと Transformers を学ぶコース）の日本語訳。{:else} Model Hub では適切なモデルを簡単に選べるので、様々なライブラリからわずか数行のコードで利用できます。">
+<meta name="twitter:description" content="事前学習済みモデルを使う｜LLM コース（大規模言語モデルと Transformers を学ぶコース）の日本語訳。{:else} Model Hub では目的に合ったモデルを簡単に選べます。">
 <meta name="twitter:image" content="https://yanikasumin.github.io/HuggingFace-courses-ja/og-llm.png">
 <link rel="icon" type="image/svg+xml" href="https://yanikasumin.github.io/HuggingFace-courses-ja/favicon.svg">
 <link rel="icon" type="image/png" sizes="32x32" href="https://yanikasumin.github.io/HuggingFace-courses-ja/favicon-32.png">
@@ -97,7 +97,7 @@ window.MathJax = { tex: { inlineMath: [['$', '$'], ['\\(', '\\)']], displayMath:
 <li><a class="side-link active" href="2.html">事前学習済みモデルを使う</a></li>
 <li><a class="side-link" href="3.html">事前学習済みモデルを共有する</a></li>
 <li><a class="side-link" href="4.html">モデルカードを作る</a></li>
-<li><a class="side-link" href="5.html">Part 1 完了！</a></li>
+<li><a class="side-link" href="5.html">Part 1 修了！</a></li>
 <li><a class="side-link" href="6.html">章末クイズ</a></li>
 </ul>
 <p class="side-group">第5章 🤗 Datasets ライブラリ</p>
@@ -207,13 +207,13 @@ window.MathJax = { tex: { inlineMath: [['$', '$'], ['\\(', '\\)']], displayMath:
 <p>{#if fw === 'pt'}</p>
 <p>{:else}</p>
 <p>{/if}</p>
-<p>Model Hub では適切なモデルを簡単に選べるので、様々なライブラリからわずか数行のコードで利用できます。実際にモデルの使い方と、コミュニティへ貢献する方法を見ていきましょう。</p>
-<p>フランス語の文章中で、マスクされた単語を予測できるモデルを探しているとしましょう。</p>
+<p>Model Hub では目的に合ったモデルを簡単に選べます。選んだモデルは、実際のタスクで使う様々なライブラリでも、わずか数行のコードで利用できます。ここからは、モデルの具体的な使い方と、コミュニティに貢献する方法を見ていきましょう。</p>
+<p>フランス語に対応し、文章中のマスクされた部分を予測できるモデルを探しているとしましょう。</p>
 <div class="flex justify-center">
 <img src="https://huggingface.co/datasets/huggingface-course/documentation-images/resolve/main/en/chapter4/camembert.gif" alt="CamemBERT モデルを選択する様子。" width="80%"/>
 </div>
 
-<p><code>camembert-base</code> チェックポイントを選んで試してみます。このモデルを読み込むには、モデル識別子の <code>camembert-base</code> を指定するだけです。前の章で見たように、<code>pipeline()</code> 関数を使っても読み込めます。</p>
+<p>ここでは <code>camembert-base</code> チェックポイントを試してみます。使うために必要なのは、モデル識別子として <code>camembert-base</code> を指定することだけです。前の章で見たように、<code>pipeline()</code> 関数で読み込めます。</p>
 <div class="codehilite"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">transformers</span><span class="w"> </span><span class="kn">import</span> <span class="n">pipeline</span>
 
 <span class="n">camembert_fill_mask</span> <span class="o">=</span> <span class="n">pipeline</span><span class="p">(</span><span class="s2">"fill-mask"</span><span class="p">,</span> <span class="n">model</span><span class="o">=</span><span class="s2">"camembert-base"</span><span class="p">)</span>
@@ -228,7 +228,7 @@ window.MathJax = { tex: { inlineMath: [['$', '$'], ['\\(', '\\)']], displayMath:
   {'sequence': 'Le camembert est meilleur :)', 'score': 0.0330314114689827, 'token': 528, 'token_str': 'meilleur'}, 
   {'sequence': 'Le camembert est parfait :)', 'score': 0.03007650189101696, 'token': 1654, 'token_str': 'parfait'}
 ]</p>
-<div class="codehilite"><pre><span></span><code>このように、パイプラインでモデルを読み込むのはとても簡単です。注意すべきは、選んだチェックポイントがこれから使うタスクに適しているかだけです。たとえば、ここでは `camembert-base` チェックポイントを `fill-mask` パイプラインで読み込んでおり、これはまったく問題ありません。しかし、このチェックポイントを `text-classification` パイプラインで読み込むと、`camembert-base` のヘッドがそのタスクに適していないため、結果は意味をなしません。適切なチェックポイントを選ぶには、Hugging Face Hub のインターフェースにあるタスクセレクタの利用をおすすめします。
+<div class="codehilite"><pre><span></span><code>このように、パイプラインを使えばモデルを簡単に読み込めます。但し、チェックポイントが目的のタスクに適しているかどうかには注意してください。たとえば、`camembert-base` チェックポイントは `fill-mask` パイプラインでは問題なく使えます。一方、`text-classification` パイプラインで使っても、`camembert-base` のヘッドがテキスト分類に対応していないため、意味のある結果は得られません。適切なチェックポイントを選ぶには、Hugging Face Hub の画面にあるタスクセレクタを使うことをおすすめします。
 
 &lt;div class="flex justify-center"&gt;
 &lt;img src="https://huggingface.co/datasets/huggingface-course/documentation-images/resolve/main/en/chapter4/tasks.png" alt="Web インターフェースのタスクセレクタ。" width="80%"/&gt;
@@ -244,7 +244,7 @@ tokenizer = CamembertTokenizer.from_pretrained("camembert-base")
 model = CamembertForMaskedLM.from_pretrained("camembert-base")
 </code></pre></div>
 
-<p>但し、代わりに <a href="https://huggingface.co/transformers/model_doc/auto?highlight=auto#auto-classes"><code>Auto*</code> クラス</a> の利用をおすすめします。これらのクラスは、チェックポイントに応じて適切なアーキテクチャのクラスを自動で選択してくれるためです。先ほどのコード例では、CamemBERT アーキテクチャで読み込めるチェックポイントに限られますが、<code>Auto*</code> クラスを使えばチェックポイントの切り替えが簡単になります。</p>
+<p>但し、特定のモデルアーキテクチャに依存しない <a href="https://huggingface.co/transformers/model_doc/auto?highlight=auto#auto-classes"><code>Auto*</code> クラス</a> を使う方がおすすめです。先ほどのコードでは CamemBERT アーキテクチャに対応するチェックポイントしか読み込めませんが、<code>Auto*</code> クラスならチェックポイントに応じて適切なクラスが自動で選ばれるため、別のチェックポイントにも簡単に切り替えられます。</p>
 <div class="codehilite"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">transformers</span><span class="w"> </span><span class="kn">import</span> <span class="n">AutoTokenizer</span><span class="p">,</span> <span class="n">AutoModelForMaskedLM</span>
 
 <span class="n">tokenizer</span> <span class="o">=</span> <span class="n">AutoTokenizer</span><span class="o">.</span><span class="n">from_pretrained</span><span class="p">(</span><span class="s2">"camembert-base"</span><span class="p">)</span>
@@ -258,7 +258,7 @@ model = CamembertForMaskedLM.from_pretrained("camembert-base")
 <span class="n">model</span> <span class="o">=</span> <span class="n">TFCamembertForMaskedLM</span><span class="o">.</span><span class="n">from_pretrained</span><span class="p">(</span><span class="s2">"camembert-base"</span><span class="p">)</span>
 </code></pre></div>
 
-<p>但し、代わりに <a href="https://huggingface.co/transformers/model_doc/auto?highlight=auto#auto-classes"><code>TFAuto*</code> クラス</a> の利用をおすすめします。これらのクラスは、チェックポイントに応じて適切なアーキテクチャのクラスを自動で選択してくれるためです。先ほどのコード例では、CamemBERT アーキテクチャで読み込めるチェックポイントに限られますが、<code>TFAuto*</code> クラスを使えばチェックポイントの切り替えが簡単になります。</p>
+<p>但し、特定のモデルアーキテクチャに依存しない <a href="https://huggingface.co/transformers/model_doc/auto?highlight=auto#auto-classes"><code>TFAuto*</code> クラス</a> を使う方がおすすめです。先ほどのコードでは CamemBERT アーキテクチャに対応するチェックポイントしか読み込めませんが、<code>TFAuto*</code> クラスならチェックポイントに応じて適切なクラスが自動で選ばれるため、別のチェックポイントにも簡単に切り替えられます。</p>
 <div class="codehilite"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">transformers</span><span class="w"> </span><span class="kn">import</span> <span class="n">AutoTokenizer</span><span class="p">,</span> <span class="n">TFAutoModelForMaskedLM</span>
 
 <span class="n">tokenizer</span> <span class="o">=</span> <span class="n">AutoTokenizer</span><span class="o">.</span><span class="n">from_pretrained</span><span class="p">(</span><span class="s2">"camembert-base"</span><span class="p">)</span>
@@ -268,7 +268,7 @@ model = CamembertForMaskedLM.from_pretrained("camembert-base")
 <p>{/if}</p>
 <div class="callout callout-tip">
 <p class="callout-title">💡 ヒント</p>
-<p>事前学習済みモデルを使うときは、そのモデルがどのように学習されたか、どのデータセットを使ったか、制限やバイアスを確認してください。これらの情報はすべてモデルカードで確認できます。</p>
+<p>事前学習済みモデルを使うときは、そのモデルがどのように学習され、どのデータセットが使われたか、また、どんな制限やバイアスがあるかを確認してください。こうした情報はモデルカードに記載されているはずです。</p>
 </div>
 </article>
 
