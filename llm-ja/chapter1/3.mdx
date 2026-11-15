@@ -16,7 +16,7 @@
 
 ## Transformer はあらゆるところに！[[transformers-are-everywhere]]
 
-Transformer モデルは、自然言語処理（NLP）、コンピュータビジョン、音声処理など、様々なモダリティの幅広いタスクを解くために使われています。Hugging Face と Transformer モデルを利用し、モデルを共有することでコミュニティにも貢献している企業や組織には、たとえば次のようなところがあります。
+Transformer モデルは、自然言語処理（NLP）、コンピュータビジョン、音声処理など、様々なモダリティの幅広いタスクを解くために使われています。Hugging Face と Transformer モデルを活用する企業・組織の中には、自社のモデルを公開してコミュニティに貢献しているところもあります。たとえば、次の企業・組織です。
 
 <img src="https://huggingface.co/datasets/huggingface-course/documentation-images/resolve/main/en/chapter1/companies.PNG" alt="Hugging Face を利用している企業" width="100%">
 
@@ -103,7 +103,7 @@ classifier(
 
 ## ゼロショット分類[[zero-shot-classification]]
 
-まずは、ラベル付けされていないテキストを分類するという、より難しいタスクに取り組みます。テキストへのアノテーションには通常、時間がかかり専門知識も必要なので、これは実世界のプロジェクトでよくあるシナリオです。この用途には `zero-shot-classification` パイプラインが非常に強力です。使用するラベルを自分で指定できるので、事前学習済みモデルのラベルに頼る必要がありません。モデルが文を positive と negative の2つのラベルを使って分類できることは既に見ましたが、それ以外の任意のラベルの集合を使ってテキストを分類することもできます。
+まずは、ラベルの付いていないテキストを分類する、少し難しいタスクに取り組みます。実際のプロジェクトでも、ラベルの付いていないテキストを扱うことは珍しくありません。ラベル付けには時間がかかり、専門知識も必要だからです。この用途には `zero-shot-classification` パイプラインが非常に強力です。使用するラベルを自分で指定できるので、事前学習済みモデルのラベルに頼る必要がありません。モデルが文を positive と negative の2つのラベルを使って分類できることは既に見ましたが、それ以外の任意のラベルの集合を使ってテキストを分類することもできます。
 
 ```python
 from transformers import pipeline
@@ -152,7 +152,7 @@ generator("In this course, we will teach you how to")
 
 ## Hub の任意のモデルをパイプラインで使う[[using-any-model-from-the-hub-in-a-pipeline]]
 
-これまでの例では、そのタスク向けのデフォルトモデルを使いましたが、特定のタスクに向けて、Hub の中から特定のモデルを選んでパイプラインで使うこともできます。たとえばテキスト生成です。[Model Hub](https://huggingface.co/models)に移動し、左側の対応するタグをクリックすると、そのタスクでサポートされるモデルだけが表示されます。[こちらのページ](https://huggingface.co/models?pipeline_tag=text-generation)のようなページが表示されるはずです。
+これまでの例では、タスクごとに用意されたデフォルトモデルを使いました。Hub から好きなモデルを選び、パイプラインで使うこともできます。たとえばテキスト生成です。[Model Hub](https://huggingface.co/models)に移動し、左側の対応するタグをクリックすると、そのタスクでサポートされるモデルだけが表示されます。[こちらのページ](https://huggingface.co/models?pipeline_tag=text-generation)のようなページが表示されるはずです。
 
 [`HuggingFaceTB/SmolLM2-360M`](https://huggingface.co/HuggingFaceTB/SmolLM2-360M)モデルを試してみましょう！前と同じパイプラインに読み込む方法は次のとおりです。
 
@@ -186,7 +186,7 @@ generator(
 
 Hugging Face の[ウェブサイト](https://huggingface.co/docs/inference-providers/en/index)では、Inference Providers を通じてモデルをブラウザ上で直接試せます。任意のテキストを入力し、モデルがどのように処理するかをその場で確認できます。
 
-ウィジェットを動かしている Inference Providers は、有料プロダクトとしても提供されており、自分のワークフローで必要になったときに便利です。詳しくは[料金ページ](https://huggingface.co/docs/inference-providers/en/pricing)を参照してください。
+ウィジェットの動作を支える Inference Providers は、有料サービスとしても利用できます。自分のアプリケーションや作業の流れにモデルの推論機能を組み込みたいときに役立ちます。詳しくは[料金ページ](https://huggingface.co/docs/inference-providers/en/pricing)を参照してください。
 
 ## マスク補完[[mask-filling]]
 
@@ -210,7 +210,7 @@ unmasker("This course will teach you all about <mask> models.", top_k=2)
   'token_str': ' computational'}]
 ```
 
-`top_k` 引数は、表示したい候補の数を制御します。ここでモデルが補完しているのは特殊な単語 `<mask>` で、これはしばしば *マスクトークン* と呼ばれます。モデルによっては異なるマスクトークンを使う場合もあるので、他のモデルを調べるときは、そのモデルが使用するマスクトークンを確認するのがよい習慣です。確認する方法の1つは、ウィジェットで使われているマスクトークンを調べることです。
+`top_k` 引数は、表示したい候補の数を制御します。ここでモデルが補完しているのは特殊な単語 `<mask>` で、これはしばしば *マスクトークン* と呼ばれます。モデルによってマスクトークンが異なる場合があるため、別のモデルを使う際は、どのトークンを使うか確認しましょう。モデルのウィジェットでも確認できます。
 
 > [!TIP]
 > ✏️ **試してみましょう！** Hub で `bert-base-cased` モデルを検索し、Inference API ウィジェットでそのマスクトークンを確認してください。このモデルは、上記の `pipeline` の例の文に対して何を予測するでしょうか？
@@ -380,7 +380,7 @@ Transformer モデルの強力な応用の1つは、複数のソースからデ�
 
 たとえば、次のようなシステムを構築できます。
 - テキストや画像といった複数のモダリティにわたって、データベース内の情報を検索する。
-- 異なるソースからの結果を、1つの首尾一貫した応答にまとめる。たとえば、音声ファイルとテキストによる説明から。
+- 異なるソースから得た情報を組み合わせ、矛盾のない1つの回答にまとめる。たとえば、音声ファイルとテキストによる説明を組み合わせて回答を作成する。
 - ドキュメントとメタデータのデータベースの中から、最も関連性の高い情報を提示する。
 
 ## 結論
