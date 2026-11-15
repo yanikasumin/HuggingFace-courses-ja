@@ -80,6 +80,25 @@
 .guide-home #courses .course-card p{margin-bottom:1em}
 .guide-home #courses .course-card .card-actions{margin-top:auto;margin-bottom:0}
 @media(max-width:700px){.guide-home #courses{width:100%;left:auto;transform:none}.guide-home #courses .course-grid{grid-template-columns:1fr}}
+
+/* Simple explanations and diagrams on the home page */
+.guide-home .home-example{border:1px solid var(--border);border-radius:7px;padding:19px 21px;margin:23px 0 25px}
+.guide-home .diagram-title{color:var(--text);font-weight:700;font-size:.94rem;margin:0 0 16px}
+.guide-home .example-step{padding:13px 16px;background:var(--surface);border:1px solid var(--border-soft);border-radius:5px}
+.guide-home .example-step strong{display:block;color:var(--text);font-size:.96rem}
+.guide-home .example-step span{display:block;color:var(--muted);font-size:.88rem;margin-top:3px}
+.guide-home .example-arrow{line-height:1.3;text-align:center;font-size:1.05rem;color:var(--yellow);padding:4px 0}
+.guide-home .route-choices{border:1px solid var(--border);border-radius:7px;padding:18px 20px;margin:7px 0 25px}
+.guide-home .route-choices>div{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:11px}
+.guide-home .route-choices a{display:block;text-decoration:none;background:var(--surface);border:1px solid var(--border-soft);border-radius:5px;padding:13px 15px}
+.guide-home .route-choices a:hover{border-color:var(--yellow)}
+.guide-home .route-choices strong{color:var(--text);display:block;font-size:.96rem}
+.guide-home .route-choices span{color:var(--muted);display:block;font-size:.87rem;line-height:1.65;margin-top:4px}
+.guide-home .process-loop{background:var(--surface);border-left:3px solid var(--yellow);padding:13px 16px;margin:7px 0 25px}
+.guide-home .process-loop strong,.guide-home .process-loop span{display:block}
+.guide-home .process-loop strong{color:var(--text);font-size:.94rem}
+.guide-home .process-loop span{font-size:.86rem;line-height:1.7;margin-top:5px}
+@media(max-width:560px){.guide-home .route-choices>div{grid-template-columns:1fr}.guide-home .home-example,.guide-home .route-choices{padding:15px}}
 </style>
 <script>
 window.MathJax = { tex: { inlineMath: [['$', '$'], ['\\(', '\\)']], displayMath: [['$$', '$$'], ['\\[', '\\]']] }, options: { skipHtmlTags: ['script','noscript','style','textarea','pre','code'] } };
@@ -102,14 +121,26 @@ window.MathJax = { tex: { inlineMath: [['$', '$'], ['\\(', '\\)']], displayMath:
 
 <main class="container guide-home">
 <h1>Hugging Face 学習コース日本語版</h1>
-<p class="home-summary">Hugging Face が公開している機械学習の学習コースを日本語に翻訳したサイトです。大規模言語モデル（LLM）、AI エージェント、MCP、コンピュータビジョン、ロボット工学の5コース、全316セクションを収録しています。</p>
-<p>教材はすべて無料で、登録せずに読むことができます。各ページには英語原典へのリンクがあり、原文と比較しながら学習できます。</p>
+<p class="home-summary">このサイトでは、Hugging Face が無料で公開しているAI・機械学習の学習コースを、日本語で読むことができます。文章を扱うAIや画像を認識するAIなどについて、仕組みを学び、実際にプログラムを動かしながら理解を深めるための教材です。</p>
+<p>大規模言語モデル（LLM）、AI エージェント、MCP、コンピュータビジョン、ロボット工学の5コース、全316セクションを収録しています。教材は登録せずに読めます。原文を確認したい場合は、各ページから英語の公式サイトを開けます。</p>
+<p>機械学習を初めて学ぶ方は、<a href="#about">Hugging Face の説明</a>を読んでから、<a href="#start">学習の始め方</a>へ進んでください。すでに学びたい分野が決まっている方は、<a href="#courses">収録コース</a>から選べます。</p>
 
 <section id="about" aria-labelledby="about-title">
 <h2 id="about-title">Hugging Face とは</h2>
-<p>Hugging Face は、機械学習のモデルやデータセットを公開・共有するプラットフォームと、開発用のオープンソースライブラリを提供しています。研究者や開発者が公開したモデルを探し、自分のプログラムで利用したり、独自のモデルを公開したりできます。</p>
-<p>代表的なライブラリの Transformers を使うと、言語モデルや画像認識モデルなどを Python から利用できます。公式の学習コースでは、ライブラリの使い方だけでなく、モデルの仕組みや学習方法も説明しています。</p>
-<p>この翻訳サイトは、私自身が機械学習を独学する際、充実した英語の教材を日本語でも読みたいと考えたことから始めました。専門用語は英語の資料でも通用する表記を残しつつ、本文は日本語として読みやすくなるよう調整しています。</p>
+<p>Hugging Face は、AI の開発に使うプログラムやデータを公開・共有できるサービスを運営している企業です。研究者や開発者が作ったAIを、ほかの人も利用できるようにしています。</p>
+<p>例えば、商品のレビューが好意的か否定的かを判定するAIを作りたいとします。最初から自分でAIを学習させる方法もありますが、Hugging Face で公開されているものを使えば、すでに学習を終えたAIを試すことができます。</p>
+<p>このような、データを使って学習したAIを「学習済みモデル」と呼びます。また、AIの学習や性能の確認に使う文章・画像などをまとめたものが「データセット」です。Hugging Face の「Hub」には、モデルとデータセットが多数公開されています。</p>
+<p>公開されているモデルは、Python というプログラミング言語から利用できます。その際によく使われるのが、Hugging Face の「Transformers」というライブラリです。ライブラリとは、必要な処理をまとめて、ほかのプログラムから利用できるようにしたものです。</p>
+<div class="home-example" role="group" aria-label="Hugging Face に公開されたモデルを利用する流れ">
+<p class="diagram-title">例：文章を判定するAIを試す場合</p>
+<div class="example-step"><strong>Hugging Face Hub でモデルを探す</strong><span>文章の内容を判定できる学習済みモデルを選ぶ</span></div>
+<div class="example-arrow" aria-hidden="true">↓</div>
+<div class="example-step"><strong>Python からモデルを使う</strong><span>Transformers でモデルを読み込み、文章を入力する</span></div>
+<div class="example-arrow" aria-hidden="true">↓</div>
+<div class="example-step"><strong>結果を確認する</strong><span>入力したレビューが好意的か否定的かなどを判定する</span></div>
+</div>
+<p>Hugging Face の学習コースでは、こうしたプログラムの使い方に加え、AIが文章を処理する仕組みや、モデルを追加学習させる方法まで学べます。</p>
+<p>このサイトは、私自身が機械学習を独学する際、日本語で読める教材が欲しいと考えて制作しました。英語原典の内容を維持しながら、日本語として自然に読める文章になるよう翻訳しています。</p>
 </section>
 
 <section id="courses" aria-labelledby="courses-title">
@@ -162,60 +193,70 @@ window.MathJax = { tex: { inlineMath: [['$', '$'], ['\\(', '\\)']], displayMath:
 
 <section id="start" aria-labelledby="start-title">
 <h2 id="start-title">学習の始め方</h2>
-<p>コードを実行しながら学ぶには、Python の基本的な文法と実行環境が必要です。最初はブラウザ上で Python を動かせる Google Colab を使うと、パソコンに開発環境を構築せずに始められます。</p>
+<p>各コースには、説明文だけでなく、実際に動かせるプログラムやクイズもあります。AIの仕組みを理解するには、コードを動かして結果を確かめながら読むのがおすすめです。</p>
+<p>多くの教材では Python（パイソン）というプログラミング言語を使用します。プログラミングを初めて学ぶ場合は、次の順番で準備してください。</p>
 <ol class="steps">
-<li><strong>Python の基礎を確認する。</strong><p>変数、関数、リスト、辞書、繰り返し処理などに慣れていない場合は、<a href="https://utokyo-ipp.github.io/" target="_blank" rel="noopener noreferrer">東京大学「Python プログラミング入門」</a>などの無料教材が役立ちます。</p></li>
-<li><strong>Google Colab でノートブックを作る。</strong><p><a href="https://colab.research.google.com/" target="_blank" rel="noopener noreferrer">Google Colab</a>を開き、新しいノートブックを作成します。初めは通常の CPU 環境で構いません。GPU が必要な演習では、利用条件を確認して設定してください。</p></li>
-<li><strong>必要なライブラリを導入する。</strong><p>例えば、以下を Colab のコードセルに入力すると、Transformers と Datasets をインストールし、Transformers のバージョンを確認できます。</p></li>
+<li><strong>Python の基本を学ぶ</strong><p>変数、関数、繰り返し処理などの基本を覚えます。まだ分からない方は、無料の日本語教材である<a href="https://www.python.jp/train/index.html" target="_blank" rel="noopener noreferrer">「ゼロからの Python 入門講座」</a>から始められます。</p></li>
+<li><strong>Google Colab を開く</strong><p><a href="https://colab.research.google.com/" target="_blank" rel="noopener noreferrer">Google Colab</a>は、ブラウザ上で Python を動かせるサービスです。Google アカウントでログインし、「新しいノートブック」を作成します。最初は自分のパソコンに Python をインストールする必要はありません。</p></li>
+<li><strong>プログラムを実行する</strong><p>画面にある入力欄（コードセル）に次の1行を入力し、左側の実行ボタンを押してください。</p></li>
 </ol>
+<pre class="code-sample"><code>print("こんにちは")</code></pre>
+<p>入力欄の下に「こんにちは」と表示されれば、Python が動いています。</p>
+<p>次に、機械学習のモデルを扱うためのライブラリをインストールします。新しいコードセルに次の内容を入力して実行してください。</p>
 <pre class="code-sample"><code>!pip install transformers datasets
 
 import transformers
 print(transformers.__version__)</code></pre>
-<p>LLM コースの<a href="llm/chapter0/1.html">第0章「はじめに」</a>には、Google Colab の使い方に加え、macOS や Linux で仮想環境を作る方法も掲載しています。実際の演習では、各ページで指定されたライブラリや設定に従ってください。</p>
-<p>このサイトではコードを直接実行できません。本文を読み、掲載されたコードを Colab などで動かしてください。クイズのあるページでは理解度を確認でき、分からない用語はサイト内検索や各コースの用語集で調べられます。</p>
-<p>Hugging Face のアカウントは閲覧には不要ですが、モデルの公開や一部のモデルの利用では必要になります。Agents コースには<a href="agents/unit0/onboarding.html">アカウントの準備や Ollama の導入</a>、Robotics コースには<a href="robotics/unit0/2.html">LeRobot の導入</a>についての説明があります。</p>
+<p>最初の行は Transformers と Datasets をインストールする命令です。最後の行でバージョン番号が表示されれば、Transformers を読み込めています。</p>
+<p>より詳しい設定方法は、<a href="llm/chapter0/1.html">LLM コース第0章「はじめに」</a>で説明しています。パソコンに Python の実行環境を作る方法も掲載されています。演習によって必要なライブラリが異なる場合は、教材に書かれた手順に従ってください。</p>
+<h3>このサイトでの学習方法</h3>
+<p>収録コースの目次から章を選び、説明を読みながら進めてください。コードは Colab などにコピーして実行します。このサイトの画面上でコードを実行することはできませんが、クイズはその場で答え合わせができます。</p>
+<p>各ページには前後の節へ進むリンクと英語原典へのリンクがあります。専門用語が分からない場合は、サイト内検索や各コースの用語集も利用できます。</p>
+<p>教材を読むだけなら Hugging Face のアカウントは不要です。モデルの公開など一部の作業では登録が必要になります。<a href="agents/unit0/onboarding.html">Agents コースの準備ページ</a>にはアカウント作成やローカル実行の説明があり、<a href="robotics/unit0/2.html">Robotics コースの導入ページ</a>では LeRobot のインストール方法を確認できます。</p>
 </section>
 
 <section id="roadmap" aria-labelledby="roadmap-title">
-<h2 id="roadmap-title">学習の順番</h2>
-<p>以下は、初学者が5つのコースを利用する場合の一例です。特定の分野を学びたい場合は、必要な前提知識を補いながら、そのコースから始めても構いません。</p>
-<ol class="flow" aria-label="初学者向けの学習ロードマップ">
-<li><strong>Python と数学の基礎</strong><p>Python の基本文法を学び、必要に応じて線形代数や確率・統計を復習します。</p></li>
-<li><strong>LLM コース：モデルの仕組みと使い方</strong><p>Transformer、トークナイザ、データセット、学習済みモデルの利用方法を学びます。</p></li>
-<li><strong>LLM コース：追加学習と公開</strong><p>ファインチューニングやモデルの共有などに取り組み、コードを変更して結果を確かめます。</p></li>
-<li><strong>目的に応じて専門コースへ</strong><p>AI エージェントなら <a href="agents/index.html">Agents</a>、ツール連携なら <a href="mcp/index.html">MCP</a>、画像認識なら <a href="cv/index.html">CV</a>、ロボット学習なら <a href="robotics/index.html">Robotics</a> に進みます。</p></li>
+<h2 id="roadmap-title">何から学べばよいか</h2>
+<p>機械学習を初めて学ぶ方には、Python の基本を覚えた後、LLM コースでモデルを動かし、興味のある専門分野へ進む方法をおすすめします。すべてのコースを決まった順番で終える必要はありません。</p>
+<ol class="flow" aria-label="初心者向けの学習ロードマップ">
+<li><strong>Python の基本を学ぶ</strong><p>簡単なプログラムを読んだり書いたりできるようにします。<a href="https://www.python.jp/train/index.html" target="_blank" rel="noopener noreferrer">Python Japan の無料教材</a>や<a href="https://utokyo-ipp.github.io/" target="_blank" rel="noopener noreferrer">東京大学の Python 教材</a>が参考になります。</p></li>
+<li><strong>LLM コースでAIを動かす</strong><p>文章を分類したり、質問に答えたりする学習済みモデルを使ってみます。モデルが文章を処理する仕組みも学びます。</p></li>
+<li><strong>自分のデータでモデルを調整する</strong><p>既存のモデルを追加学習させる「ファインチューニング」などに取り組み、作成したモデルを公開する方法も学びます。</p></li>
+<li><strong>作りたいものに合わせて進む</strong><p>文章以外のデータを扱いたい場合や、AIに複数の作業をさせたい場合は、専門コースへ進みます。</p></li>
 </ol>
-<p>学習中に分からない部分が出てきた場合は、次の無料教材も参考になります。</p>
-<ul class="resources">
-<li><a href="https://www.python.jp/train/index.html" target="_blank" rel="noopener noreferrer">Python Japan「ゼロからの Python 入門講座」</a> — Python を初めて学ぶ方向けの日本語教材</li>
-<li><a href="https://utokyo-ipp.github.io/" target="_blank" rel="noopener noreferrer">東京大学「Python プログラミング入門」</a> — 基本文法とプログラミングの考え方</li>
-<li><a href="https://www.kaggle.com/learn" target="_blank" rel="noopener noreferrer">Kaggle Learn</a> — データ分析と機械学習の演習（英語）</li>
-<li><a href="https://pytorch.org/tutorials/" target="_blank" rel="noopener noreferrer">PyTorch 公式チュートリアル</a> — 深層学習の実装を詳しく学ぶための教材（英語）</li>
-</ul>
+<div class="route-choices" role="group" aria-label="興味に応じた専門コースへの分岐">
+<p class="diagram-title">興味のある分野を選ぶ</p>
+<div><a href="agents/index.html"><strong>Agents</strong><span>検索や情報処理などの作業を行うAI</span></a>
+<a href="mcp/index.html"><strong>MCP</strong><span>AIと外部のツールを接続する仕組み</span></a>
+<a href="cv/index.html"><strong>Community CV</strong><span>画像の分類・検出・生成</span></a>
+<a href="robotics/index.html"><strong>Robotics</strong><span>ロボットの制御と学習</span></a></div>
+</div>
+<p>数学の知識が必要になった場合は、線形代数や確率・統計を学び直すと理解しやすくなります。実際のデータを使う練習には、無料の<a href="https://www.kaggle.com/learn" target="_blank" rel="noopener noreferrer">Kaggle Learn</a>（英語）も役立ちます。モデルの学習方法をさらに詳しく知りたい場合は、<a href="https://pytorch.org/tutorials/" target="_blank" rel="noopener noreferrer">PyTorch 公式チュートリアル</a>（英語）などを併用できます。</p>
 </section>
 
 <section id="translation" aria-labelledby="translation-title">
-<h2 id="translation-title">翻訳と品質管理</h2>
-<p>翻訳は、Muse による翻訳・修正、ChatGPT によるレビュー、制作者による方針の決定と最終確認を組み合わせて行いました。翻訳対象の英語原典はコースごとに特定の Git コミットへ固定し、後から内容が更新されても翻訳の基準が分かるようにしています。</p>
-<ol class="process" aria-label="翻訳工程の流れ">
-<li><strong>原典の取得と翻訳 <span>担当：Muse</span></strong><p>英語の MDX ファイルを翻訳します。コード、数式、URL、見出しのアンカーなど、変更してはいけない箇所を保持します。</p></li>
-<li><strong>訳文のレビュー <span>担当：ChatGPT</span></strong><p>原文との意味の対応、日本語の自然さ、専門用語や表記の統一、改行・記号の扱いを確認します。問題箇所はファイル名、行番号、原文の引用、修正案とともに提示します。</p></li>
-<li><strong>指摘の照合と修正 <span>担当：Muse</span></strong><p>指摘された文が実際のファイルに存在するかを確認し、英語原典と照合してから修正します。原典に合わない修正案や、根拠のない指摘はそのまま適用しません。</p></li>
-<li><strong>構造の検証 <span>担当：Muse</span></strong><p>修正前後のコード、数式、リンク、画像、アンカーなどを機械的に比較し、翻訳によって教材の構造が壊れていないかを確認します。</p></li>
-<li><strong>再レビューと公開 <span>担当：ChatGPT・Muse・霞ヶ関京</span></strong><p>指摘が解消したかを再確認し、必要なら修正を繰り返します。用語や文体の扱いなど、判断を要する事項は制作者が決定します。</p></li>
+<h2 id="translation-title">翻訳方法と品質管理</h2>
+<p>本サイトは、翻訳作業を担当する Muse、訳文のレビューを担当する ChatGPT、翻訳方針と最終判断を担当する制作者の3者で制作しました。AIが出力した訳文をそのまま公開するのではなく、英語原典と照合し、日本語として不自然な箇所を修正しています。</p>
+<p>翻訳対象は、各コースの英語原典を特定の Git コミット（更新履歴上の特定の時点）に固定しています。原典が更新されても、どの版を翻訳したのか確認できるようにするためです。</p>
+<ol class="process" aria-label="翻訳とレビューの工程">
+<li><strong>原典の取得と翻訳 <span>担当：Muse</span></strong><p>章や節ごとに英語本文を翻訳します。プログラムのコード、数式、リンク先、見出しの識別子など、変更すべきでない部分はそのまま残します。</p></li>
+<li><strong>訳文のレビュー <span>担当：ChatGPT</span></strong><p>英語原典と同じ意味になっているか、日本語として自然か、専門用語の表記が統一されているか、改行や記号の位置が適切かを確認します。指摘にはファイル名、行番号、現在の文、問題点、修正案を添えます。</p></li>
+<li><strong>指摘の確認と修正 <span>担当：Muse</span></strong><p>指摘された文章が実際のファイルにあるかを調べ、英語原典と照合してから修正します。誤った指摘や、原文の意味を変えてしまう修正案は採用しません。</p></li>
+<li><strong>ファイルの機械検証 <span>担当：Muse</span></strong><p>修正によってコード、数式、リンク、画像、見出しの識別子などが意図せず変更されていないかを、プログラムで確認します。</p></li>
+<li><strong>再レビュー <span>担当：ChatGPT</span></strong><p>修正後の訳文を再び確認します。問題が残っていれば前の工程に戻り、修正と確認を繰り返します。</p></li>
+<li><strong>最終判断と公開 <span>担当：霞ヶ関京</span></strong><p>文体や用語の扱いなど、方針に関わる判断を行い、確認が済んだ翻訳をサイトに反映します。</p></li>
 </ol>
-<p class="process-loop">問題が残っている場合は「指摘の照合と修正」に戻り、再検証します。</p>
-<p>文章は『とほほのWWW入門』のような平明な技術解説を参考にしています。英語の語順をそのまま日本語に移さず、文を分けたり語順を組み替えたりして読みやすくします。一方、ライブラリ名や一般的な技術用語は、実際の開発でも使われている表記を優先しています。</p>
-<p>原典の内容を勝手に省略・変更しないことも翻訳方針の一つです。原典に由来する誤りや重複は、必要に応じてその事実を記録し、翻訳とは区別して扱います。翻訳に使用した原典のコミットと作業記録は、<a href="https://github.com/yanikasumin/HuggingFace-courses-ja/blob/main/README.md">README</a>と<a href="https://github.com/yanikasumin/HuggingFace-courses-ja/blob/main/PROGRESS.md">進捗記録</a>で公開しています。</p>
+<div class="process-loop"><strong>再確認の流れ</strong><span>翻訳 → レビュー → 原典との照合・修正 → 機械検証 → 再レビュー</span><span>問題が残っている場合は「照合・修正」に戻ります。</span></div>
+<p>文章の参考にしているのは、『とほほのWWW入門』のような、初学者でも読みやすい日本語の技術解説です。英文の語順に引きずられず、意味が伝わるように文章を組み立てます。ただし、ライブラリ名や一般的な専門用語は、ほかの技術資料でも使われている表記を尊重しています。</p>
+<p>原典自体に誤りや重複がある場合も、翻訳者の判断で黙って内容を変更することは避けています。翻訳に使用した原典の版は<a href="https://github.com/yanikasumin/HuggingFace-courses-ja/blob/main/README.md">README</a>で、確認・修正の記録は<a href="https://github.com/yanikasumin/HuggingFace-courses-ja/blob/main/PROGRESS.md">進捗記録</a>で確認できます。</p>
 </section>
 
 <section id="site-info" aria-labelledby="site-info-title">
-<h2 id="site-info-title">本サイトについて</h2>
-<p>本サイトは、Hugging Face 公式学習コースの非公式日本語訳です。翻訳元の教材は更新されるため、日本語版と最新版の英語原典で内容が異なる場合があります。API やライブラリの使い方が変わっている場合は、公式ドキュメントも確認してください。</p>
-<p>今後は、各セクションに関連する参考書・無料教材、重要な論文や新しいリリース、実際に技術を使っているサービスの例などを追加する予定です。書籍にアフィリエイトリンクを使用する場合は、その旨を明示します。</p>
-<p>翻訳の誤りや読みづらい箇所を見つけた場合は、<a href="https://github.com/yanikasumin/HuggingFace-courses-ja/issues">GitHub Issues</a>で報告できます。</p>
-<p class="author">翻訳・公開：霞ヶ関京 ／ <a href="https://github.com/yanikasumin/HuggingFace-courses-ja">GitHub リポジトリ</a> ／ <a href="https://huggingface.co/learn">Hugging Face の学習コース（英語）</a></p>
+<h2 id="site-info-title">本サイトの課題と今後の予定</h2>
+<p>このサイトは Hugging Face の公式日本語版ではなく、個人による非公式翻訳です。英語原典の更新が直ちに反映されるわけではありません。実際にプログラムを開発する際は、<a href="https://huggingface.co/docs" target="_blank" rel="noopener noreferrer">公式ドキュメント</a>で最新の使い方を確認してください。</p>
+<p>また、翻訳の見直しは続けていますが、誤訳や読みにくい文章が残る可能性があります。気付いた箇所があれば、<a href="https://github.com/yanikasumin/HuggingFace-courses-ja/issues">GitHub Issues</a>で報告できます。</p>
+<p>今後は、学習内容に合った日本語の参考書・無料教材、重要な論文やモデルの更新情報、実際のサービスでの利用例などを各セクションに追加する予定です。書籍の紹介にアフィリエイトリンクを使用する場合は、その旨を明記します。</p>
+<p class="author">翻訳・公開：霞ヶ関京 ／ <a href="https://github.com/yanikasumin/HuggingFace-courses-ja">GitHub リポジトリ</a> ／ <a href="https://huggingface.co/learn">Hugging Face 公式学習コース（英語）</a></p>
 </section>
 </main>
 </div>
