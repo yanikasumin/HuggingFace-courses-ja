@@ -1,10 +1,8 @@
 # LlamaIndex でエージェントを使う
 
-先ほど登場した、頼れる執事エージェントの Alfred を覚えていますか？ 彼はこれからアップグレードされます！
-LlamaIndex で使えるツールを理解したので、Alfred に新しい能力を与え、さらに役立つエージェントにできます。
+先ほど登場した、頼れる執事エージェントの Alfred を覚えていますか？ 彼はこれからアップグレードされます！LlamaIndex で使えるツールを理解したので、Alfred に新しい能力を与え、更に役立つエージェントにできます。
 
-その前に、Alfred のようなエージェントがどう成り立っているかを思い出しておきましょう。
-Unit 1 では、次のことを学びました。
+その前に、Alfred のようなエージェントがどう成り立っているかを思い出しておきましょう。Unit 1 では、次のことを学びました。
 
 > エージェントとは、AI モデルを活用して環境と対話し、ユーザーが定義した目標を達成するシステムです。推論、計画、アクションの実行（多くの場合は外部ツールを介します）を組み合わせて、タスクを遂行します。
 
@@ -13,7 +11,7 @@ LlamaIndex は、**推論を行うエージェントを主に次の 3 種類**�
 ![エージェント](https://huggingface.co/datasets/agents-course/course-images/resolve/main/en/unit2/llama-index/agents.png)
 
 1. `Function Calling Agents`：特定の関数を呼び出すことができる AI モデルと連携して動作します。
-2. `ReAct Agents`：チャットまたはテキスト生成用のエンドポイントを備えたあらゆる AI と連携でき、複雑な推論タスクを扱えます。
+2. `ReAct Agents`：チャット又はテキスト生成用のエンドポイントを備えたあらゆる AI と連携でき、複雑な推論タスクを扱えます。
 3. `Advanced Custom Agents`：より複雑なタスクやワークフローを扱うために、より高度な手法を使います。
 
 > [!TIP]
@@ -24,8 +22,7 @@ LlamaIndex は、**推論を行うエージェントを主に次の 3 種類**�
 > [!TIP]
 > コードは Google Colab で実行できる <a href="https://huggingface.co/agents-course/notebooks/blob/main/unit2/llama-index/agents.ipynb" target="_blank">このノートブック</a> で確認できます。
 
-エージェントを作成するには、まず**その能力を定義する関数やツールのセット**を与えます。
-基本的なツールを使ったエージェントの作成方法を見ていきましょう。この記事の執筆時点では、エージェントは function calling API を利用できる場合には自動的に使い、利用できない場合には標準的な ReAct エージェントのループを使います。
+エージェントを作成するには、まず**その能力を定義する関数やツールのセット**を与えます。基本的なツールを使ったエージェントの作成方法を見ていきましょう。この記事の執筆時点では、エージェントは function calling API を利用できる場合には自動的に使い、利用できない場合には標準的な ReAct エージェントのループを使います。
 
 ツールや関数を呼び出す API に対応した LLM は、比較的新しいものです。しかし、ツール呼び出しのために特別なプロンプトを用意する必要がなく、与えられたスキーマに基づいて LLM にツール呼び出しを生成させられるため、強力なツール実行の仕組みとなっています。
 
@@ -51,8 +48,7 @@ agent = AgentWorkflow.from_tools_or_functions(
 )
 ```
 
-**エージェントはデフォルトではステートレス**ですが、`Context` オブジェクトを使うことで過去のやり取りを記憶できます。
-これは、過去のやり取りを記憶する必要があるエージェントを使う場合に役立ちます。たとえば、複数のメッセージにわたって文脈を保持するチャットボットや、長期間の進捗を追跡するタスクマネージャーなどです。
+**エージェントはデフォルトではステートレス**ですが、`Context` オブジェクトを使うことで過去のやり取りを記憶できます。これは、過去のやり取りを記憶する必要があるエージェントを使う場合に役立ちます。たとえば、複数のメッセージにわたって文脈を保持するチャットボットや、長期間の進捗を追跡するタスクマネージャーなどです。
 
 ```python
 # ステートレス
@@ -73,13 +69,11 @@ LlamaIndex のエージェントが非同期で動作することにお気づき
 
 ## QueryEngineTools を使って RAG エージェントを作成する
 
-**Agentic RAG は、エージェントを使って自分のデータに関する質問に答える強力な方法です。** Alfred にさまざまなツールを渡せば、質問に答える際にそれらを活用してもらえます。
-ただし、ドキュメントに基づいて自動的に質問に答えるのではなく、Alfred は質問に答えるために他のツールやフローを使うかどうかを判断できます。
+**Agentic RAG は、エージェントを使って自分のデータに関する質問に答える強力な方法です。** Alfred に様々なツールを渡せば、質問に答える際にそれらを活用してもらえます。但し、ドキュメントに基づいて自動的に質問に答えるのではなく、Alfred は質問に答えるために他のツールやフローを使うかどうかを判断できます。
 
 ![Agentic RAG](https://huggingface.co/datasets/agents-course/course-images/resolve/main/en/unit2/llama-index/agentic-rag.png)
 
-**`QueryEngine` をエージェントのツールとしてラップする**のは簡単です。
-その際には、**名前と説明を定義する**必要があります。LLM はこの情報を使って、ツールを正しく使います。
+**`QueryEngine` をエージェントのツールとしてラップする**のは簡単です。その際には、**名前と説明を定義する**必要があります。LLM はこの情報を使って、ツールを正しく使います。
 [コンポーネントのセクション](components)で作成した `QueryEngine` を使って、`QueryEngineTool` を作成する方法を見ていきましょう。
 
 ```python
@@ -156,6 +150,6 @@ response = await agent.run(user_msg="Can you add 5 and 3?")
 ```
 
 > [!TIP]
-> エージェントやツールについて、さらに学びたいですか？<a href="https://docs.llamaindex.ai/en/stable/examples/agent/agent_workflow_basic/">AgentWorkflow Basic Introduction</a> や <a href="https://docs.llamaindex.ai/en/stable/understanding/agent/">Agent Learning Guide</a> では、ストリーミング、コンテキストのシリアライズ、human-in-the-loop などについて、さらに詳しく学べます！
+> エージェントやツールについて、更に学びたいですか？<a href="https://docs.llamaindex.ai/en/stable/examples/agent/agent_workflow_basic/">AgentWorkflow Basic Introduction</a> や <a href="https://docs.llamaindex.ai/en/stable/understanding/agent/">Agent Learning Guide</a> では、ストリーミング、コンテキストのシリアライズ、human-in-the-loop などについて、更に詳しく学べます！
 
 LlamaIndex におけるエージェントとツールの基本を理解しました。次は、LlamaIndex を使って**設定可能で管理しやすいワークフローを作成する方法**を見ていきましょう！

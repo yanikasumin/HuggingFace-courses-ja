@@ -2,8 +2,7 @@
 
 LlamaIndex のワークフローを使うと、コードを順序のある複数のステップに分けて、整理・管理しやすくできます。
 
-ワークフローは、`Events` によってトリガーされる `Steps` を定義することで作成します。各ステップは、さらに次のステップをトリガーする `Events` を自ら発行します。
-Alfred を使った RAG タスクの例で、LlamaIndex のワークフローを見てみましょう。
+ワークフローは、`Events` によってトリガーされる `Steps` を定義することで作成します。各ステップは、更に次のステップをトリガーする `Events` を自ら発行します。Alfred を使った RAG タスクの例で、LlamaIndex のワークフローを見てみましょう。
 
 ![ワークフローの模式図](https://huggingface.co/datasets/agents-course/course-images/resolve/main/en/unit2/llama-index/workflows.png)
 
@@ -35,8 +34,7 @@ pip install llama-index-utils-workflow
 ```
 </details>
 
-`Workflow` を継承したクラスを定義し、関数に `@step` デコレータを付けることで、1 ステップのワークフローを作成できます。
-あわせて、ワークフローの開始と終了を示すための特殊なイベントである `StartEvent` と `StopEvent` も必要です。
+`Workflow` を継承したクラスを定義し、関数に `@step` デコレータを付けることで、1 ステップのワークフローを作成できます。あわせて、ワークフローの開始と終了を示すための特殊なイベントである `StartEvent` と `StopEvent` も必要です。
 
 ```python
 from llama_index.core.workflow import StartEvent, StopEvent, Workflow, step
@@ -88,8 +86,7 @@ result
 
 型ヒントは、ワークフローで最も強力な仕組みです。型ヒントによって分岐、ループ、合流を作成でき、より複雑なワークフローを実現できます。
 
-ユニオン型を表す演算子 `|` を使って**ループを作成する**例を示します。
-以下の例では、ステップが `LoopEvent` を入力として受け取り、出力として同じイベント型を返すこともできる様子が分かります。
+ユニオン型を表す演算子 `|` を使って**ループを作成する**例を示します。以下の例では、ステップが `LoopEvent` を入力として受け取り、出力として同じイベント型を返すこともできる様子が分かります。
 
 ```python
 from llama_index.core.workflow import Event
@@ -143,8 +140,7 @@ draw_all_possible_flows(w, "flow.html")
 
 ### 状態管理
 
-状態管理は、ワークフローの状態を追跡し、すべてのステップが同じ状態にアクセスできるようにしたい場合に役立ちます。
-ステップ関数のパラメータに `Context` の型ヒントを追加することで実現できます。
+状態管理は、ワークフローの状態を追跡し、すべてのステップが同じ状態にアクセスできるようにしたい場合に役立ちます。ステップ関数のパラメータに `Context` の型ヒントを追加することで実現できます。
 
 ```python
 from llama_index.core.workflow import Context, StartEvent, StopEvent
@@ -167,18 +163,15 @@ async def query(self, ctx: Context, ev: StartEvent) -> StopEvent:
 これで、LlamaIndex で基本的なワークフローを作成する方法が分かりました。
 
 > [!TIP]
-> ワークフローには、ここで扱わなかったさらに複雑な仕組みや細かな特徴もあります。詳しくは <a href="https://docs.llamaindex.ai/en/stable/understanding/workflows/">LlamaIndex のドキュメント</a> を参照してください。
+> ワークフローには、ここで扱わなかった更に複雑な仕組みや細かな特徴もあります。詳しくは <a href="https://docs.llamaindex.ai/en/stable/understanding/workflows/">LlamaIndex のドキュメント</a> を参照してください。
 
-ただし、ワークフローを作成する別の方法もあります。`AgentWorkflow` クラスを使う方法です。このクラスを使ってマルチエージェントワークフローを作成する方法を見てみましょう。
+但し、ワークフローを作成する別の方法もあります。`AgentWorkflow` クラスを使う方法です。このクラスを使ってマルチエージェントワークフローを作成する方法を見てみましょう。
 
 ## AgentWorkflow でワークフローを自動化する
 
 手動でワークフローを作成する代わりに、**`AgentWorkflow` クラスを使ってマルチエージェントワークフローを作成できます**。
-`AgentWorkflow` は Workflow Agents を使って、1 つ以上のエージェントからなるシステムを構築できるようにします。各エージェントは、それぞれの専門能力に応じて連携したり、別のエージェントにタスクを引き継いだりできます。
-これにより、異なるエージェントがタスクの異なる側面を担当する、複雑なエージェントシステムを構築できます。
-エージェントのクラスは、`llama_index.core.agent` からではなく、`llama_index.core.agent.workflow` からインポートします。
-`AgentWorkflow` のコンストラクタでは、1 つのエージェントをルートエージェントとして指定しなければなりません。
-ユーザーメッセージが届くと、まずルートエージェントへ振り分けられます。
+`AgentWorkflow` は Workflow Agents を使って、1 つ以上のエージェントからなるシステムを構築できるようにします。各エージェントは、それぞれの専門能力に応じて連携したり、別のエージェントにタスクを引き継いだりできます。これにより、異なるエージェントがタスクの異なる側面を担当する、複雑なエージェントシステムを構築できます。エージェントのクラスは、`llama_index.core.agent` からではなく、`llama_index.core.agent.workflow` からインポートします。
+`AgentWorkflow` のコンストラクタでは、1 つのエージェントをルートエージェントとして指定しなければなりません。ユーザーメッセージが届くと、まずルートエージェントへ振り分けられます。
 
 各エージェントは、次のいずれかを行えます。
 
@@ -230,8 +223,7 @@ workflow = AgentWorkflow(
 response = await workflow.run(user_msg="Can you add 5 and 3?")
 ```
 
-エージェントツールは、先ほど触れたワークフローの状態を変更することもできます。ワークフローを開始する前に、すべてのエージェントが利用できる初期状態の dict を渡せます。
-状態は、ワークフローコンテキストの `state` キーに保存されます。この状態は `state_prompt` に挿入され、`state_prompt` は新しいユーザーメッセージごとに付加されます。
+エージェントツールは、先ほど触れたワークフローの状態を変更することもできます。ワークフローを開始する前に、すべてのエージェントが利用できる初期状態の dict を渡せます。状態は、ワークフローコンテキストの `state` キーに保存されます。この状態は `state_prompt` に挿入され、`state_prompt` は新しいユーザーメッセージごとに付加されます。
 
 前の例を変更して、関数呼び出しの回数を数えるカウンタを注入してみましょう。
 

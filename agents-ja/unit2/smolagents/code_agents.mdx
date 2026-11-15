@@ -29,7 +29,7 @@ Code Agent は `smolagents` のデフォルトのエージェントタイプで�
 * **合成可能性（Composability）**: アクションを簡単に組み合わせ、再利用できる
 * **オブジェクト管理**: 画像のような複雑な構造を直接扱える
 * **汎用性**: 計算可能なあらゆるタスクを表現できる
-* **LLM にとって自然**: 高品質なコードは、すでに LLM の訓練データに含まれている
+* **LLM にとって自然**: 高品質なコードは、既に LLM の訓練データに含まれている
 
 ## Code Agent の仕組み
 
@@ -158,8 +158,7 @@ agent.run("Prepare a formal menu for the party.")
 
 `smolagents` は、Python コードスニペットを書いて実行するエージェントに特化しており、セキュリティのためにサンドボックス実行を提供します。
 
-**コード実行には厳格なセキュリティ対策があります**。事前に定義された安全なリストにないインポートは、デフォルトでブロックされます。ただし、`additional_authorized_imports` に文字列として渡すことで、追加のインポートを許可できます。
-安全なコード実行の詳細については、公式の[ガイド](https://huggingface.co/docs/smolagents/tutorials/secure_code_execution)をご覧ください。
+**コード実行には厳格なセキュリティ対策があります**。事前に定義された安全なリストにないインポートは、デフォルトでブロックされます。但し、`additional_authorized_imports` に文字列として渡すことで、追加のインポートを許可できます。安全なコード実行の詳細については、公式の[ガイド](https://huggingface.co/docs/smolagents/tutorials/secure_code_execution)をご覧ください。
 
 エージェントを作成するとき、`additional_authorized_imports` を使って `datetime` モジュールのインポートを許可します。
 
@@ -185,10 +184,9 @@ agent.run(
 ```
 
 
-これらの例は、コードエージェントでできることのほんの始まりにすぎませんが、パーティーの準備における有用性はすでに見え始めています。
-コードエージェントの作り方についてさらに学ぶには、[smolagents のドキュメント](https://huggingface.co/docs/smolagents)をご覧ください。
+これらの例は、コードエージェントでできることのほんの始まりにすぎませんが、パーティーの準備における有用性は既に見え始めています。コードエージェントの作り方について更に学ぶには、[smolagents のドキュメント](https://huggingface.co/docs/smolagents)をご覧ください。
 
-まとめると、`smolagents` は Python コードスニペットを書いて実行するエージェントに特化し、セキュリティのためのサンドボックス実行を提供します。ローカルモデルと API ベースの言語モデルの両方をサポートしており、さまざまな開発環境に適応できます。
+まとめると、`smolagents` は Python コードスニペットを書いて実行するエージェントに特化し、セキュリティのためのサンドボックス実行を提供します。ローカルモデルと API ベースの言語モデルの両方をサポートしており、様々な開発環境に適応できます。
 
 ### カスタムのパーティー準備エージェントを Hub に共有する
 
@@ -210,7 +208,7 @@ alfred_agent = agent.from_hub('sergiopaniego/AlfredAgent', trust_remote_code=Tru
 alfred_agent.run("Give me the best playlist for a party at Wayne's mansion. The party idea is a 'villain masquerade' theme")  
 ```
 
-さらに素晴らしいことに、共有されたエージェントは Hugging Face Spaces として直接利用でき、リアルタイムにやり取りできます。他のエージェントは[こちら](https://huggingface.co/spaces/davidberenstein1957/smolagents-and-tools)で探索できます。
+更に素晴らしいことに、共有されたエージェントは Hugging Face Spaces として直接利用でき、リアルタイムにやり取りできます。他のエージェントは[こちら](https://huggingface.co/spaces/davidberenstein1957/smolagents-and-tools)で探索できます。
 
 たとえば、_AlfredAgent_ は[こちら](https://huggingface.co/spaces/sergiopaniego/AlfredAgent)で利用できます。以下で直接試すことができます。
 
@@ -326,7 +324,7 @@ agent.run("Give me the best playlist for a party at the Wayne's mansion. The par
 pip install opentelemetry-sdk opentelemetry-exporter-otlp openinference-instrumentation-smolagents langfuse
 ```
 
-次に、アルフレッドはすでに Langfuse のアカウントを作成し、API キーの準備ができています。まだの場合は、Langfuse Cloud に[こちら](https://cloud.langfuse.com/)からサインアップするか、[代替手段](https://huggingface.co/docs/smolagents/tutorials/inspect_runs)を探ってください。
+次に、アルフレッドは既に Langfuse のアカウントを作成し、API キーの準備ができています。まだの場合は、Langfuse Cloud に[こちら](https://cloud.langfuse.com/)からサインアップするか、[代替手段](https://huggingface.co/docs/smolagents/tutorials/inspect_runs)を探ってください。
 
 API キーを取得したら、次のように適切に設定する必要があります。
 
@@ -362,7 +360,7 @@ from openinference.instrumentation.smolagents import SmolagentsInstrumentor
 SmolagentsInstrumentor().instrument()
 ```
 
-アルフレッドが接続できました 🔌！ `smolagents` の実行が Langfuse に記録され、エージェントの振る舞いを完全に把握できます。このセットアップにより、過去の実行を振り返って Party Preparator Agent をさらに改良する準備が整いました。
+アルフレッドが接続できました 🔌！ `smolagents` の実行が Langfuse に記録され、エージェントの振る舞いを完全に把握できます。このセットアップにより、過去の実行を振り返って Party Preparator Agent を更に改良する準備が整いました。
 
 > [!TIP]
 > エージェントのトレース方法や、収集したデータでパフォーマンスを評価する方法については、<a href="https://huggingface.co/learn/agents-course/bonus-unit2/introduction">Bonus Unit 2</a> をご覧ください。
@@ -378,7 +376,7 @@ alfred_agent.run("Give me the best playlist for a party at Wayne's mansion. The 
 アルフレッドは[こちら](https://cloud.langfuse.com/project/cm7bq0abj025rad078ak3luwi/traces/995fc019255528e4f48cf6770b0ce27b?timestamp=2025-02-19T10%3A28%3A36.929Z)のログにアクセスして、確認と分析を行えます。
 
 > [!TIP]
-> 実は、実行中に小さなエラーが発生しました。ログの中で見つけられますか？ エージェントがそれをどのように処理し、それでも有効な答えを返すかを追ってみてください。答え合わせをしたい場合は、エラーへの直接リンクが<a href="https://cloud.langfuse.com/project/cm7bq0abj025rad078ak3luwi/traces/995fc019255528e4f48cf6770b0ce27b?timestamp=2025-02-19T10%3A28%3A36.929Z&observation=80ca57ace4f69b52">こちら</a>です。もちろん、そのエラーはすでに修正されています。詳細はこちらの <a href="https://github.com/huggingface/smolagents/issues/838">issue</a> をご覧ください。
+> 実は、実行中に小さなエラーが発生しました。ログの中で見つけられますか？ エージェントがそれをどのように処理し、それでも有効な答えを返すかを追ってみてください。答え合わせをしたい場合は、エラーへの直接リンクが<a href="https://cloud.langfuse.com/project/cm7bq0abj025rad078ak3luwi/traces/995fc019255528e4f48cf6770b0ce27b?timestamp=2025-02-19T10%3A28%3A36.929Z&observation=80ca57ace4f69b52">こちら</a>です。もちろん、そのエラーは既に修正されています。詳細はこちらの <a href="https://github.com/huggingface/smolagents/issues/838">issue</a> をご覧ください。
 
 一方、[おすすめのプレイリスト](https://open.spotify.com/playlist/0gZMMHjuxMrrybQ7wTMTpw)が、パーティーの準備にぴったりの雰囲気を作ってくれます。素敵ですよね？ 🎶  
 

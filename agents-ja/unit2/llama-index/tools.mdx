@@ -1,7 +1,6 @@
 # LlamaIndex でツールを使う
 
-**明確なツールのセットを定義することは、性能を左右する重要な要素です。** [ユニット 1](../../unit1/tools) で述べたように、ツールのインターフェースが分かりやすければ、LLM にとっても使いやすくなります。
-人間のエンジニア向けのソフトウェア API と同じように、LLM も仕組みが分かりやすいツールほど、その機能を効果的に活用できます。
+**明確なツールのセットを定義することは、性能を左右する重要な要素です。** [ユニット 1](../../unit1/tools) で述べたように、ツールのインターフェースが分かりやすければ、LLM にとっても使いやすくなります。人間のエンジニア向けのソフトウェア API と同じように、LLM も仕組みが分かりやすいツールほど、その機能を効果的に活用できます。
 
 **LlamaIndex のツールには、主に次の 4 種類があります。**
 
@@ -19,10 +18,7 @@
 > [!TIP]
 > コードは、Google Colab で実行できる <a href="https://huggingface.co/agents-course/notebooks/blob/main/unit2/llama-index/tools.ipynb" target="_blank">このノートブック</a> で確認できます。
 
-FunctionTool を使えば、任意の Python 関数を簡単にラップして、エージェントから利用できるようにできます。
-ツールには同期関数・非同期関数のどちらでも渡せます。任意で `name` パラメータと `description` パラメータも指定できます。
-名前と説明は特に重要です。エージェントが、ツールをいつ、どのように使えばよいかを理解する手がかりになるからです。
-以下で FunctionTool の作成方法を見てから、実際に呼び出してみましょう。
+FunctionTool を使えば、任意の Python 関数を簡単にラップして、エージェントから利用できるようにできます。ツールには同期関数・非同期関数のどちらでも渡せます。任意で `name` パラメータと `description` パラメータも指定できます。名前と説明は特に重要です。エージェントが、ツールをいつ、どのように使えばよいかを理解する手がかりになるからです。以下で FunctionTool の作成方法を見てから、実際に呼び出してみましょう。
 
 ```python
 from llama_index.core.tools import FunctionTool
@@ -45,8 +41,7 @@ tool.call("New York")
 
 ## QueryEngineTool を作成する
 
-前のユニットで定義した `QueryEngine` は、`QueryEngineTool` クラスを使えば簡単にツールへ変換できます。
-以下の例で、`QueryEngine` から `QueryEngineTool` を作成する方法を見てみましょう。
+前のユニットで定義した `QueryEngine` は、`QueryEngineTool` クラスを使えば簡単にツールへ変換できます。以下の例で、`QueryEngine` から `QueryEngineTool` を作成する方法を見てみましょう。
 
 ```python
 from llama_index.core import VectorStoreIndex
@@ -70,9 +65,7 @@ tool = QueryEngineTool.from_defaults(query_engine, name="some useful name", desc
 
 ## Toolspecs を作成する
 
-`ToolSpecs` は、複数のツールをうまく連携させた集合だと考えてください。専門家が使う、よく整理された道具箱のようなものです。
-整備士の道具箱に、車の修理で互いの役割を補い合う道具がそろっているように、`ToolSpec` は特定の目的に合わせて関連するツールを組み合わせます。
-たとえば、経理エージェントの `ToolSpec` であれば、表計算の機能、メールの機能、計算ツールをうまく統合し、財務タスクを正確かつ効率的に処理できるでしょう。
+`ToolSpecs` は、複数のツールをうまく連携させた集合だと考えてください。専門家が使う、よく整理された道具箱のようなものです。整備士の道具箱に、車の修理で互いの役割を補い合う道具がそろっているように、`ToolSpec` は特定の目的に合わせて関連するツールを組み合わせます。たとえば、経理エージェントの `ToolSpec` であれば、表計算の機能、メールの機能、計算ツールをうまく統合し、財務タスクを正確かつ効率的に処理できるでしょう。
 
 <details>
 <summary>Google Toolspec をインストールする</summary>
@@ -100,10 +93,9 @@ tool_spec_list = tool_spec.to_tool_list()
 
 ### LlamaIndex における Model Context Protocol（MCP）
 
-LlamaIndex では、[LlamaHub 上の ToolSpec](https://llamahub.ai/l/tools/llama-index-tools-mcp?from=) を通じて MCP ツールも使えます。
-MCP サーバーを起動すれば、以下のコードを使ってそのまま利用を開始できます。
+LlamaIndex では、[LlamaHub 上の ToolSpec](https://llamahub.ai/l/tools/llama-index-tools-mcp?from=) を通じて MCP ツールも使えます。MCP サーバーを起動すれば、以下のコードを使ってそのまま利用を開始できます。
 
-MCP についてさらに深く知りたい場合は、[無料の MCP コース](https://huggingface.co/learn/mcp-course/) を確認してください。
+MCP について更に深く知りたい場合は、[無料の MCP コース](https://huggingface.co/learn/mcp-course/) を確認してください。
 
 <details>
 <summary>MCP Toolspec をインストールする</summary>
@@ -130,8 +122,7 @@ agent_context = Context(agent)
 
 ## ユーティリティツール
 
-API に直接クエリを実行すると、**必要以上に大量のデータが返ってくる**ことがよくあります。その中には無関係な情報が含まれることもあれば、データ量が LLM のコンテキストウィンドウを超えてしまうこともあります。また、使用するトークン数が不必要に増える場合もあります。
-以下では、主要な 2 つのユーティリティツールを確認します。
+API に直接クエリを実行すると、**必要以上に大量のデータが返ってくる**ことがよくあります。その中には無関係な情報が含まれることもあれば、データ量が LLM のコンテキストウィンドウを超えてしまうこともあります。また、使用するトークン数が不必要に増える場合もあります。以下では、主要な 2 つのユーティリティツールを確認します。
 
 1. `OnDemandToolLoader`：既存の任意の LlamaIndex データローダー（BaseReader クラス）を、エージェントが使えるツールに変換するツールです。このツールは、データローダーの `load_data` を実行するために必要なパラメータすべてと、自然言語のクエリ文字列を使って呼び出せます。実行時には、まずデータローダーからデータを読み込み、インデックス化し（たとえばベクトルストアを使って）、そのうえで「オンデマンド」にクエリします。これら 3 つのステップはすべて、1 回のツール呼び出しの中で行われます。
 2. `LoadAndSearchToolSpec`：LoadAndSearchToolSpec は、既存の任意のツールを入力として受け取ります。ツールスペックとして `to_tool_list` を実装しており、この関数を呼び出すと、読み込み用ツールと検索用ツールの 2 つが返されます。読み込み用ツールを実行すると、内部のツールが呼び出され、その出力がインデックス化されます（デフォルトではベクトルインデックスを使います）。検索用ツールを実行すると、クエリ文字列を入力として受け取り、内部のインデックスを呼び出します。
