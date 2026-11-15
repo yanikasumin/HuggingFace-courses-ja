@@ -71,6 +71,15 @@
 .guide-home .site-notes p{margin-bottom:12px}
 .guide-home .author{border-top:1px solid var(--border);padding-top:25px;margin-top:25px;font-size:.91rem;color:var(--muted)}
 @media(max-width:620px){.layout.no-sidebar .guide-home{padding:26px 18px 60px}.guide-home{font-size:15.5px}.guide-home section{padding:30px 0 15px}.guide-home h2{font-size:1.25rem}.guide-home .course-item{padding:16px 0}}
+
+/* Preserve the original detailed course cards while keeping other home sections compact. */
+.guide-home #courses{position:relative;left:50%;transform:translateX(-50%);width:min(900px,calc(100vw - 44px))}
+.guide-home #courses .course-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:1.1rem}
+.guide-home #courses .course-card{padding:1.15rem 1.25rem 1.25rem}
+.guide-home #courses .course-card h3{font-size:1.28rem}
+.guide-home #courses .course-card p{margin-bottom:1em}
+.guide-home #courses .course-card .card-actions{margin-top:auto;margin-bottom:0}
+@media(max-width:700px){.guide-home #courses{width:100%;left:auto;transform:none}.guide-home #courses .course-grid{grid-template-columns:1fr}}
 </style>
 <script>
 window.MathJax = { tex: { inlineMath: [['$', '$'], ['\\(', '\\)']], displayMath: [['$$', '$$'], ['\\[', '\\]']] }, options: { skipHtmlTags: ['script','noscript','style','textarea','pre','code'] } };
@@ -104,14 +113,50 @@ window.MathJax = { tex: { inlineMath: [['$', '$'], ['\\(', '\\)']], displayMath:
 </section>
 
 <section id="courses" aria-labelledby="courses-title">
-<h2 id="courses-title">収録コース</h2>
-<p>興味のあるコースから読み始められます。Python や機械学習を初めて学ぶ場合は、基礎から説明している LLM コースがおすすめです。</p>
-<div class="course-index">
-<article class="course-item"><h3><a href="llm/index.html">LLM コース</a><small>104セクション</small></h3><p>Transformer の仕組み、トークナイザ、データセットの扱い方、学習済みモデルの利用、ファインチューニングなどを学びます。</p><p class="example">実装例：文章の分類、質問応答、既存モデルの追加学習</p></article>
-<article class="course-item"><h3><a href="agents/index.html">Agents コース</a><small>74セクション</small></h3><p>言語モデルに外部ツールを使わせ、情報を検索・処理する AI エージェントを開発します。smolagents、LlamaIndex、LangGraph などを扱います。</p><p class="example">実装例：検索や作業を支援する AI エージェント</p></article>
-<article class="course-item"><h3><a href="mcp/index.html">MCP コース</a><small>36セクション</small></h3><p>AI と外部のデータやツールを接続する共通規格、Model Context Protocol（MCP）の仕組みを学び、クライアントやサーバーを実装します。</p><p class="example">実装例：独自の MCP サーバー、ツール連携機能</p></article>
-<article class="course-item"><h3><a href="cv/index.html">Community CV コース</a><small>91セクション</small></h3><p>画像処理、畳み込みニューラルネットワーク（CNN）、Vision Transformer、物体検出、画像生成などを学びます。</p><p class="example">実装例：画像分類、物体検出、画像生成</p></article>
-<article class="course-item"><h3><a href="robotics/index.html">Robotics コース</a><small>11セクション</small></h3><p>ロボットの運動や制御の基礎を学び、LeRobot を使ってロボット学習用のデータセットやモデルを扱います。</p><p class="example">実装例：ロボットの動作データを使った学習実験</p></article>
+<h2 id="courses-title">学べるコース</h2>
+<p>コースは5つあります。いずれも無料で、登録なしで読めます。多くのセクションには理解度を確認するクイズと、実際に動かせるコード例が含まれています。</p>
+<div class="course-grid">
+<section class="course-card">
+  <h3><a href="llm/index.html">LLM コース</a></h3>
+  <p class="course-en">LLM Course</p>
+  <p class="course-desc">大規模言語モデル（LLM）の仕組みを基礎から学ぶコースです。Transformer の動作原理から、Hugging Face Transformers の使い方、ファインチューニング、データセットやトークナイザの扱い、音声処理、独自モデルの構築まで学べます。</p>
+  <ul class="points"><li>Transformer の仕組みと、モデルができること</li><li>Transformers ライブラリの実践的な使い方</li><li>事前学習モデルのファインチューニングと共有</li><li>データセットとトークナイザの扱い</li><li>LLM のファインチューニングと思考モデルの構築</li></ul>
+  <p class="course-meta">全 104 セクション（無料）</p>
+  <p class="card-actions"><a class="btn" href="llm/index.html">目次を開く</a>
+  <a class="btn btn-ghost" href="https://huggingface.co/learn/llm-course" target="_blank" rel="noopener">公式コース（英語）</a></p>
+</section><section class="course-card">
+  <h3><a href="robotics/index.html">Robotics コース</a></h3>
+  <p class="course-en">Robotics Course</p>
+  <p class="course-desc">ロボット学習の入門コース。古典的なロボティクスの基礎（運動学・制御）から、オープンソースライブラリ LeRobot を使ったロボット学習とデータセットの扱いまでを学びます。</p>
+  <ul class="points"><li>古典ロボティクスの基礎（運動の種類・運動学・制御）</li><li>従来のロボティクスから機械学習を使う手法への移行</li><li>LeRobot と LeRobotDataset の使い方</li></ul>
+  <p class="course-meta">全 11 セクション（無料）</p>
+  <p class="card-actions"><a class="btn" href="robotics/index.html">目次を開く</a>
+  <a class="btn btn-ghost" href="https://huggingface.co/learn/robotics-course" target="_blank" rel="noopener">公式コース（英語）</a></p>
+</section><section class="course-card">
+  <h3><a href="agents/index.html">Agents コース</a></h3>
+  <p class="course-en">Agents Course</p>
+  <p class="course-desc">AI エージェントの仕組みと作り方を学ぶコース。LLM とツールの連携、思考・行動・観察のサイクルを理解し、smolagents や LangGraph を使って実際にエージェントを構築し、評価する方法までを扱います。</p>
+  <ul class="points"><li>エージェントの基礎（LLM・ツール・思考と行動のサイクル）</li><li>smolagents、LlamaIndex、LangGraph の3つのフレームワークを使った開発</li><li>Agentic RAG のユースケース</li><li>最終課題でのエージェント構築と認定</li></ul>
+  <p class="course-meta">全 74 セクション（無料）</p>
+  <p class="card-actions"><a class="btn" href="agents/index.html">目次を開く</a>
+  <a class="btn btn-ghost" href="https://huggingface.co/learn/agents-course" target="_blank" rel="noopener">公式コース（英語）</a></p>
+</section><section class="course-card">
+  <h3><a href="mcp/index.html">MCP コース</a></h3>
+  <p class="course-en">MCP Course（Model Context Protocol）</p>
+  <p class="course-desc">Model Context Protocol（MCP）の入門コース。MCP の概念・アーキテクチャ・通信の仕組みを学び、Gradio などと連携する MCP アプリケーションを実際に構築します。</p>
+  <ul class="points"><li>MCP の概念・アーキテクチャ・通信プロトコル</li><li>MCP SDK とクライアントの実装</li><li>Gradio と連携する MCP アプリケーションの構築</li><li>カスタムワークフローサーバーの構築とプルリクエストエージェントの開発</li></ul>
+  <p class="course-meta">全 36 セクション（無料）</p>
+  <p class="card-actions"><a class="btn" href="mcp/index.html">目次を開く</a>
+  <a class="btn btn-ghost" href="https://huggingface.co/learn/mcp-course" target="_blank" rel="noopener">公式コース（英語）</a></p>
+</section><section class="course-card">
+  <h3><a href="cv/index.html">Community CV コース</a></h3>
+  <p class="course-en">Community Computer Vision Course</p>
+  <p class="course-desc">コンピュータビジョンを基礎から学ぶコース。画像処理と CNN の基礎から、物体検出・セグメンテーション・Vision Transformer、拡散モデルやマルチモーダルモデルまでを扱います。</p>
+  <ul class="points"><li>画像処理と特徴抽出の基礎</li><li>CNN と Vision Transformer</li><li>マルチモーダルモデルと生成モデル</li><li>物体検出などの基本タスク、動画・3D ビジョン、モデル最適化</li></ul>
+  <p class="course-meta">全 91 セクション（無料）</p>
+  <p class="card-actions"><a class="btn" href="cv/index.html">目次を開く</a>
+  <a class="btn btn-ghost" href="https://huggingface.co/learn/computer-vision-course" target="_blank" rel="noopener">公式コース（英語）</a></p>
+</section>
 </div>
 </section>
 
