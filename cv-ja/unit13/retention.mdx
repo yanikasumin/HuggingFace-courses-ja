@@ -4,8 +4,7 @@
 リテンションネットワーク（Retentive Network、RetNet）は、論文 [Retentive Network：大規模言語モデル向けの Transformer の後継アーキテクチャ（A Successor to Transformer for Large Language Models）](https://arxiv.org/abs/2307.08621) で提案された、大規模言語モデル向けの基盤アーキテクチャです。学習処理の並列化、低コストな推論、優れた性能という、大規模言語モデルの主要な課題に対応するために設計されました。
 
 ![大規模言語モデルが直面する課題](https://huggingface.co/datasets/hf-vision/course-assets/resolve/main/LLM%20Challenges.png)
-RetNet は、Transformer モデルで一般的に使われるマルチヘッドアテンション機構の代替であるマルチスケールリテンション（Multi-Scale Retention、MSR）機構を導入することで、これらの課題に取り組むことができます。
-MSR は並列処理と再帰的な処理の両方に対応しているため、モデルの学習は並列に行い、推論は再帰的に実行できます。RetNet の詳細は後の章で説明します。
+RetNet は、Transformer モデルで一般的に使われるマルチヘッドアテンション機構の代替であるマルチスケールリテンション（Multi-Scale Retention、MSR）機構を導入することで、これらの課題に取り組むことができます。MSR は並列処理と再帰的な処理の両方に対応しているため、モデルの学習は並列に行い、推論は再帰的に実行できます。RetNet の詳細は後の章で説明します。
 
 マルチスケールリテンション機構は、3つの計算パラダイムのもとで動作します。
 
@@ -15,13 +14,11 @@ MSR は並列処理と再帰的な処理の両方に対応しているため、�
 
 - **チャンク単位の再帰表現（Chunkwise Recurrent Representation）**：長い系列を効率よく処理するための方式です。局所的なブロックは並列にエンコードして計算を高速化し、大域的なブロックは再帰的にエンコードすることで、GPU メモリの使用量を最適化します。
 
-学習時には、並列表現とチャンク単位の再帰表現を組み合わせ、GPU を効率よく利用して計算を高速化します。この方式は、特に長い系列を扱う場合に、計算効率とメモリ使用量の両面で優れています。
-推論時には再帰表現を使い、自己回帰デコードを効率よく行えるようにします。この方式では、同等の性能を維持しながら、メモリ使用量とレイテンシを削減できます。
+学習時には、並列表現とチャンク単位の再帰表現を組み合わせ、GPU を効率よく利用して計算を高速化します。この方式は、特に長い系列を扱う場合に、計算効率とメモリ使用量の両面で優れています。推論時には再帰表現を使い、自己回帰デコードを効率よく行えるようにします。この方式では、同等の性能を維持しながら、メモリ使用量とレイテンシを削減できます。
 
 ## 言語から画像へ
 ### RMT
-論文 [RMT：リテンションネットワークと Vision Transformer の融合（Retentive Networks Meet Vision Transformers）](https://arxiv.org/abs/2309.11523) では、RetNet に着想を得た新しい視覚バックボーン「RMT」が提案されています。RMT は、RetNet の並列表現を参考に、明示的な空間事前情報を導入して計算量を減らすことで、Vision Transformer（ViT）の性能を高めるアーキテクチャです。
-具体的には、RetNet で使われる時間方向の減衰を空間方向に応用し、[マンハッタン距離に基づく](https://en.wikipedia.org/wiki/Taxicab_geometry)空間減衰行列とアテンションの分解方式を組み合わせます。これにより、視覚タスクでの計算効率とスケーラビリティを改善します。
+論文 [RMT：リテンションネットワークと Vision Transformer の融合（Retentive Networks Meet Vision Transformers）](https://arxiv.org/abs/2309.11523) では、RetNet に着想を得た新しい視覚バックボーン「RMT」が提案されています。RMT は、RetNet の並列表現を参考に、明示的な空間事前情報を導入して計算量を減らすことで、Vision Transformer（ViT）の性能を高めるアーキテクチャです。具体的には、RetNet で使われる時間方向の減衰を空間方向に応用し、[マンハッタン距離に基づく](https://en.wikipedia.org/wiki/Taxicab_geometry)空間減衰行列とアテンションの分解方式を組み合わせます。これにより、視覚タスクでの計算効率とスケーラビリティを改善します。
 
 - **マンハッタン・セルフアテンション（Manhattan Self-Attention、MaSA）**
 ![アテンション機構の比較](https://huggingface.co/datasets/hf-vision/course-assets/resolve/main/Attention%20Comparison.png)
@@ -41,7 +38,7 @@ RetNet に着想を得たもうひとつのアーキテクチャが、論文 [Vi
 
 ViR の全体アーキテクチャは ViT とかなり似ていますが、マルチヘッドアテンション（MHA）をマルチヘッドリテンション（Multi-Head Retention、MHR）に置き換えている点が異なります。この MHR 機構はゲーティング関数を一切持たず、並列、再帰、チャンク単位（並列と再帰のハイブリッド）のモードを切り替えることができます。ViR のもうひとつの違いは、位置埋め込みがまずパッチ埋め込みに加えられ、その後で [class] トークンが追加される点です。
 
-## さらに読む
+## 更に読む
 
 - [RetNet の公式リポジトリ](https://github.com/microsoft/torchscale/blob/main/torchscale/architecture/retnet.py)
 - [RetNet のマルチスケールリテンションの公式リポジトリ](https://github.com/microsoft/torchscale/blob/main/torchscale/component/multiscale_retention.py)

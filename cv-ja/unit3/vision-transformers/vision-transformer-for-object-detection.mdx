@@ -31,11 +31,11 @@
 
 新しいモデルを作るべきか、それとも既存のモデルを改変すべきか。これはとても良い問いです。物体検出モデルをゼロから学習させるということは、次のようなことを意味します。
 
-- すでに終わっている研究を、何度もやり直すことになります。
+- 既に終わっている研究を、何度もやり直すことになります。
 - モデルのコードを繰り返し書いて学習させ、ユースケースごとに別々のリポジトリを維持することになります。
 - 多くの実験が必要になり、リソースも無駄になります。
 
-こうした作業をする代わりに、性能の良い事前学習済みモデル（一般的な特徴の認識が得意なモデル）を用意し、その重み（または重みの一部）を調整して、自分のユースケースに適応させます。事前学習済みモデルは、画像の中から物体の位置特定と分類に役立つ重要な特徴を抽出する方法を、すでに十分に学習していると考えられます。そのため、新しい物体が加わっても、すでに学習した特徴と新しい特徴を使って、短時間の学習と少ない計算でその物体を検出できるようになります。
+こうした作業をする代わりに、性能の良い事前学習済みモデル（一般的な特徴の認識が得意なモデル）を用意し、その重み（又は重みの一部）を調整して、自分のユースケースに適応させます。事前学習済みモデルは、画像の中から物体の位置特定と分類に役立つ重要な特徴を抽出する方法を、既に十分に学習していると考えられます。そのため、新しい物体が加わっても、既に学習した特徴と新しい特徴を使って、短時間の学習と少ない計算でその物体を検出できるようになります。
 
 このチュートリアルが終わる頃には、物体検出のユースケースについて、データセットの読み込みからモデルのファインチューニング、推論までを行う一連の pipeline を作れるようになります。
 
@@ -81,8 +81,7 @@ DatasetDict({
 })
 ```
 
-上記は [DatasetDict](https://huggingface.co/docs/datasets/v2.17.1/en/package_reference/main_classes#datasets.DatasetDict) です。辞書のように扱える構造で、データセット全体を train スプリットと test スプリットに分けて保持します。各スプリットには `features` と `num_rows` が含まれています。`features` には、[Pillow](https://realpython.com/image-processing-with-the-python-pillow-library/) の画像オブジェクトである `image`、画像IDの `image_id`、画像の幅と高さを示す `width` と `height`、物体の情報を持つ `objects` が定義されています。
-次に、（train/test セット内の）各データ点がどのようなものかを見てみましょう。そのためには、次の行を実行します。
+上記は [DatasetDict](https://huggingface.co/docs/datasets/v2.17.1/en/package_reference/main_classes#datasets.DatasetDict) です。辞書のように扱える構造で、データセット全体を train スプリットと test スプリットに分けて保持します。各スプリットには `features` と `num_rows` が含まれています。`features` には、[Pillow](https://realpython.com/image-processing-with-the-python-pillow-library/) の画像オブジェクトである `image`、画像IDの `image_id`、画像の幅と高さを示す `width` と `height`、物体の情報を持つ `objects` が定義されています。次に、（train/test セット内の）各データ点がどのようなものかを見てみましょう。そのためには、次の行を実行します。
 
 ```python
 dataset["train"][0]
@@ -219,9 +218,9 @@ image_processor = AutoImageProcessor.from_pretrained(checkpoint)
 
 ## データセットの前処理
 
-画像を `image_processor` に渡す前に、画像とそれに対応するバウンディングボックスに対して、さまざまな種類のデータ拡張も適用しましょう。
+画像を `image_processor` に渡す前に、画像とそれに対応するバウンディングボックスに対して、様々な種類のデータ拡張も適用しましょう。
 
-簡単に言うと、データ拡張とは、回転やリサイズなどのランダムな変換の集合です。これらを適用することでサンプル数を増やし、ビジョンモデルを画像のさまざまな条件に対して頑健にします。これには [albumentations](https://github.com/albumentations-team/albumentations) ライブラリを使います。画像にランダムな変換を作成できるため、学習用のサンプルサイズを増やせます。
+簡単に言うと、データ拡張とは、回転やリサイズなどのランダムな変換の集合です。これらを適用することでサンプル数を増やし、ビジョンモデルを画像の様々な条件に対して頑健にします。これには [albumentations](https://github.com/albumentations-team/albumentations) ライブラリを使います。画像にランダムな変換を作成できるため、学習用のサンプルサイズを増やせます。
 
 ```python
 import albumentations
@@ -372,7 +371,7 @@ def collate_fn(batch):
 
 4. `train()` メソッドを呼び出して、モデルをファインチューニングします。
 
-> 前処理で使ったのと同じチェックポイントからモデルを読み込む際は、データセットのメタデータから先に作成した `label2id` と `id2label` のマップを渡すのを忘れないでください。さらに、`ignore_mismatched_sizes=True` を指定して、既存の分類ヘッドを新しいものに置き換えます。
+> 前処理で使ったのと同じチェックポイントからモデルを読み込む際は、データセットのメタデータから先に作成した `label2id` と `id2label` のマップを渡すのを忘れないでください。更に、`ignore_mismatched_sizes=True` を指定して、既存の分類ヘッドを新しいものに置き換えます。
 
 ```python
 from transformers import AutoModelForObjectDetection
@@ -434,7 +433,7 @@ trainer = Trainer(
 trainer.train()
 ```
 
-学習が終わったら、チェックポイントはすでに Hugging Face Hub にアップロードされているため、モデルを削除できます。
+学習が終わったら、チェックポイントは既に Hugging Face Hub にアップロードされているため、モデルを削除できます。
 
 ```python
 del model
@@ -516,7 +515,7 @@ img = test_dataset[0]["image"]
 predict(img, obj_detector)
 ```
 
-さらに、小さなテストサンプルに対して、推論関数を使って複数の画像も描画してみましょう。
+更に、小さなテストサンプルに対して、推論関数を使って複数の画像も描画してみましょう。
 
 ```python 
 from tqdm.auto import tqdm
@@ -551,4 +550,4 @@ plot_images(test_dataset, range(6))
 
 ![テストデータの複数画像に対する物体検出結果](https://huggingface.co/datasets/hf-vision/course-assets/resolve/main/sample_od_test_set_inference_output.png)
 
-悪くない結果です。さらにファインチューニングすれば、結果を改善できます。ファインチューニング済みのこのチェックポイントは[こちら](hf-vision/detr-resnet-50-dc5-harhat-finetuned)で確認できます。
+悪くない結果です。更にファインチューニングすれば、結果を改善できます。ファインチューニング済みのこのチェックポイントは[こちら](hf-vision/detr-resnet-50-dc5-harhat-finetuned)で確認できます。

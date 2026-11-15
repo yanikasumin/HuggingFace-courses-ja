@@ -8,7 +8,7 @@ CvT に入る前に、前セクションで扱った ViT のアーキテクチ�
 
 ## 概要
 
-Convolutional Vision Transformer (CvT) は、論文 CvT: Introducing Convolutions to Vision Transformers [[2]](#cvt) で提案されたモデルです。著者は Haiping Wu、Bin Xiao、Noel Codella、Mengchen Liu、Xiyang Dai、Lu Yuan、Lei Zhang です。CvT は CNN の利点である _local receptive fields_（局所受容野）、_shared weights_（重みの共有）、_spatial subsampling_（空間サブサンプリング）と、_shift_、_scale_、_distortion invariance_（平行移動・スケール・歪みに対する不変性）を取り入れつつ、Transformer の利点である _dynamic attention_、_global context fusion_、_better generalization_（動的アテンション、大域的な文脈の融合、より良い汎化）も保っています。CvT は ViT と比べて計算効率を維持しながら、より高い性能を達成します。さらに、畳み込みによって組み込まれた局所的な文脈構造のおかげで、CvT は位置埋め込みを必要としません。そのため、可変の入力解像度を必要とする幅広いビジョンタスクへの適応で有利になる可能性があります。
+Convolutional Vision Transformer (CvT) は、論文 CvT: Introducing Convolutions to Vision Transformers [[2]](#cvt) で提案されたモデルです。著者は Haiping Wu、Bin Xiao、Noel Codella、Mengchen Liu、Xiyang Dai、Lu Yuan、Lei Zhang です。CvT は CNN の利点である _local receptive fields_（局所受容野）、_shared weights_（重みの共有）、_spatial subsampling_（空間サブサンプリング）と、_shift_、_scale_、_distortion invariance_（平行移動・スケール・歪みに対する不変性）を取り入れつつ、Transformer の利点である _dynamic attention_、_global context fusion_、_better generalization_（動的アテンション、大域的な文脈の融合、より良い汎化）も保っています。CvT は ViT と比べて計算効率を維持しながら、より高い性能を達成します。更に、畳み込みによって組み込まれた局所的な文脈構造のおかげで、CvT は位置埋め込みを必要としません。そのため、可変の入力解像度を必要とする幅広いビジョンタスクへの適応で有利になる可能性があります。
 
 ## アーキテクチャ
 
@@ -263,7 +263,7 @@ class VisionTransformer(nn.Module):
 
 このコードは Vision Transformer モジュールを定義しています。概要は次のとおりです。
 
-- **初期化**：`VisionTransformer` クラスは、パッチサイズ、埋め込み次元、層の数、アテンションのヘッド数、ドロップアウト率など、モデルのアーキテクチャを決めるさまざまなパラメータで初期化されます。
+- **初期化**：`VisionTransformer` クラスは、パッチサイズ、埋め込み次元、層の数、アテンションのヘッド数、ドロップアウト率など、モデルのアーキテクチャを決める様々なパラメータで初期化されます。
 
 - **Patch Embedding**：モデルにはパッチ埋め込み層 (`patch_embed) が含まれます。これは入力画像を重ならないパッチに分割し、畳み込みを使って埋め込みます。
 
@@ -273,7 +273,7 @@ class VisionTransformer(nn.Module):
 
 - **Stochastic Depth**：Transformer ブロックには stochastic depth が適用され、訓練時にブロックのランダムな部分集合をスキップすることで正則化を改善します。これは `drop_path_rate` パラメータで制御されます。
 
-- **重みの初期化**：モデルの重みは、切断正規分布（`trunc_norm`）または Xavier 初期化（`xavier`）のいずれかで初期化されます。
+- **重みの初期化**：モデルの重みは、切断正規分布（`trunc_norm`）又は Xavier 初期化（`xavier`）のいずれかで初期化されます。
 
 - **Forward メソッド**：forward メソッドは、入力をパッチ埋め込みで処理し、次元を並び替え、classification token があれば加え、ドロップアウトを適用した後、Transformer ブロックのスタックにデータを通します。最後に、出力を元の形に並び替え、classification token があれば残りの列から分離して、出力を返します。
 
