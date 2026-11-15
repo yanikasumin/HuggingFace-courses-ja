@@ -9,6 +9,7 @@
 <link rel="canonical" href="https://yanikasumin.github.io/HuggingFace-courses-ja/llm/chapter2/3.html">
 <meta property="og:title" content="モデル | Hugging Face 学習コース日本語版">
 <meta property="og:description" content="モデル｜LLM コース（大規模言語モデルと Transformers を学ぶコース）の日本語訳ページ。Hugging Face 公式コースの内容を日本語で学べます。">
+<meta name="google-site-verification" content="A8PVY1lQPEN4macCCmGuTad7GqnBmMgMo1SRR3C320c">
 <meta property="og:type" content="article">
 <meta property="og:url" content="https://yanikasumin.github.io/HuggingFace-courses-ja/llm/chapter2/3.html">
 <meta property="og:site_name" content="Hugging Face 学習コース日本語版">
@@ -242,7 +243,7 @@ config.json model.safetensors
 <div class="codehilite"><pre><span></span><code><span class="n">model</span><span class="o">.</span><span class="n">push_to_hub</span><span class="p">(</span><span class="s2">"my-awesome-model"</span><span class="p">)</span>
 </code></pre></div>
 
-<p>これにより、モデルファイルが Hub にアップロードされ、あなたの名前空間の下に <em>my-awesome-model</em> という名前のリポジトリが作られます。あとは誰でも、<code>from_pretrained()</code> メソッドであなたのモデルを読み込めます！</p>
+<p>これにより、モデルファイルが Hub にアップロードされ、あなたのユーザー名に対応する名前空間に <em>my-awesome-model</em> というリポジトリが作られます。あとは誰でも、<code>from_pretrained()</code> メソッドであなたのモデルを読み込めます！</p>
 <div class="codehilite"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">transformers</span><span class="w"> </span><span class="kn">import</span> <span class="n">AutoModel</span>
 
 <span class="n">model</span> <span class="o">=</span> <span class="n">AutoModel</span><span class="o">.</span><span class="n">from_pretrained</span><span class="p">(</span><span class="s2">"your-username/my-awesome-model"</span><span class="p">)</span>
@@ -283,7 +284,7 @@ tokenizer.decode(encoded_input["input_ids"])
 
 <p>```python out
 "[CLS] Hello, I'm a single sentence! [SEP]"</p>
-<div class="codehilite"><pre><span></span><code>トークナイザが、モデルに必要な特殊トークン `[CLS]` と `[SEP]` を追加していることに気づくでしょう。すべてのモデルが特殊トークンを必要とするわけではありません。特殊トークンは、モデルがそれらを使って事前学習された場合に利用されます。その場合、モデルがそれらのトークンを想定しているため、トークナイザが追加する必要があります。
+<div class="codehilite"><pre><span></span><code>トークナイザが、モデルに必要な特殊トークン `[CLS]` と `[SEP]` を追加していることがわかります。但し、すべてのモデルに特殊トークンが必要なわけではありません。事前学習時に特殊トークンを使ったモデルでは、入力にも同じトークンが必要になるため、トークナイザが自動的に追加します。
 
 複数の文を一度にエンコードすることもできます。バッチとしてまとめる（間もなく説明します）か、リストとして渡します。
 
@@ -379,7 +380,7 @@ tokenizer.decode(encoded_input["input_ids"])
 <p>```python out
 [101, 1731, 1132, 1128, 136, 102]
 '[CLS] How are you? [SEP]'</p>
-<div class="codehilite"><pre><span></span><code>これらの特殊トークンは、トークナイザが自動的に追加します。すべてのモデルが特殊トークンを必要とするわけではありません。主に、モデルがそれらを使って事前学習された場合に使われます。その場合、モデルが想定しているため、トークナイザが特殊トークンを追加します。
+<div class="codehilite"><pre><span></span><code>これらの特殊トークンは、トークナイザが自動的に追加します。但し、すべてのモデルに必要なわけではありません。主に、事前学習時に特殊トークンを使ったモデルで必要になります。こうしたモデルでは、トークナイザが必要なトークンを自動的に追加します。
 
 ### なぜこれらすべてが必要なのか？
 

@@ -9,6 +9,7 @@
 <link rel="canonical" href="https://yanikasumin.github.io/HuggingFace-courses-ja/llm/chapter2/6.html">
 <meta property="og:title" content="すべてを組み合わせる | Hugging Face 学習コース日本語版">
 <meta property="og:description" content="すべてを組み合わせる｜LLM コース（大規模言語モデルと Transformers を学ぶコース）の日本語訳ページ。Hugging Face 公式コースの内容を日本語で学べます。">
+<meta name="google-site-verification" content="A8PVY1lQPEN4macCCmGuTad7GqnBmMgMo1SRR3C320c">
 <meta property="og:type" content="article">
 <meta property="og:url" content="https://yanikasumin.github.io/HuggingFace-courses-ja/llm/chapter2/6.html">
 <meta property="og:site_name" content="Hugging Face 学習コース日本語版">
@@ -276,11 +277,11 @@ print(tokenizer.decode(ids))
 <p>```python out
 "[CLS] i've been waiting for a huggingface course my whole life. [SEP]"
 "i've been waiting for a huggingface course my whole life."</p>
-<div class="codehilite"><pre><span></span><code>トークナイザは、先頭に特殊な単語 `[CLS]` を、末尾に特殊な単語 `[SEP]` を追加しました。これらの特殊トークンは事前学習時にも使われているため、推論時にも同じように追加する必要があります。モデルによっては特殊な単語を追加しないものもあれば、異なるものを追加するものもあります。また、先頭だけ、あるいは末尾だけに追加するモデルもあります。いずれにしても、トークナイザはどれが想定されているかを知っており、これらを処理してくれます。
+<div class="codehilite"><pre><span></span><code>トークナイザは、先頭に特殊トークン `[CLS]` を、末尾に特殊トークン `[SEP]` を追加しました。これらの特殊トークンは事前学習時にも使われているため、推論時にも同じように追加する必要があります。モデルによっては特殊トークンを追加しないものもあれば、異なる特殊トークンを追加するものもあります。また、先頭だけ、あるいは末尾だけに追加するモデルもあります。いずれにしても、トークナイザはモデルがどの特殊トークンを必要とするかを知っており、自動的に処理してくれます。
 
 ## まとめ: トークナイザからモデルへ
 
-ここまで、`tokenizer` オブジェクトがテキストに適用されたときに使う個別のステップをすべて見てきました。最後に、その主要な API で、複数のシーケンス（パディング！）、非常に長いシーケンス（切り捨て！）、複数の種類のテンソルをまとめて処理する方法をもう一度確認しましょう。
+ここまで、`tokenizer` オブジェクトがテキストを処理する各ステップを見てきました。最後に、高レベルな API の使い方をまとめて確認しましょう。この API では、複数のシーケンスへのパディング、非常に長いシーケンスの切り捨て、様々な種類のテンソルへの変換を一度に処理できます。
 
 ```py
 import torch

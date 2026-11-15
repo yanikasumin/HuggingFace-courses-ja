@@ -9,6 +9,7 @@
 <link rel="canonical" href="https://yanikasumin.github.io/HuggingFace-courses-ja/llm/chapter2/4.html">
 <meta property="og:title" content="トークナイザ | Hugging Face 学習コース日本語版">
 <meta property="og:description" content="トークナイザ｜LLM コース（大規模言語モデルと Transformers を学ぶコース）の日本語訳ページ。Hugging Face 公式コースの内容を日本語で学べます。">
+<meta name="google-site-verification" content="A8PVY1lQPEN4macCCmGuTad7GqnBmMgMo1SRR3C320c">
 <meta property="og:type" content="article">
 <meta property="og:url" content="https://yanikasumin.github.io/HuggingFace-courses-ja/llm/chapter2/4.html">
 <meta property="og:site_name" content="Hugging Face 学習コース日本語版">
@@ -194,16 +195,16 @@ window.MathJax = { tex: { inlineMath: [['$', '$'], ['\\(', '\\)']], displayMath:
 <article class="content">
 <h1>トークナイザ</h1>
 <div class="youtube-embed"><iframe src="https://www.youtube-nocookie.com/embed/VFp38yj8h3A" title="YouTube video" loading="lazy" allowfullscreen referrerpolicy="strict-origin-when-cross-origin"></iframe></div>
-<p>トークナイザは、NLP パイプラインの中核をなすコンポーネントの1つです。役割はただ1つ、テキストをモデルが処理できるデータに変換することです。モデルが扱えるのは数値だけなので、トークナイザはテキストの入力を数値データに変換しなければなりません。このセクションでは、トークン化のパイプラインで実際に何が起きているのかを詳しく見ていきます。</p>
+<p>トークナイザは、NLP パイプラインの中核となるコンポーネントの1つです。役割は、テキストをモデルが処理できる数値データに変換することです。モデルはテキストをそのまま扱えないため、トークナイザによる変換が欠かせません。このセクションでは、トークン化の仕組みを詳しく見ていきます。</p>
 <p>NLP タスクで一般に処理されるデータは、生のテキストです。たとえば次のようなテキストです。</p>
 <div class="codehilite"><pre><span></span><code>Jim Henson was a puppeteer
 </code></pre></div>
 
 <p>但し、モデルが処理できるのは数値だけです。生のテキストを数値に変換する方法が必要になります。それを行うのがトークナイザで、方法はたくさんあります。目標は、モデルにとって最も意味のある表現を見つけるとともに、可能な限り小さい表現にすることです。</p>
-<p>トークン化のアルゴリズムの例をいくつか見て、トークン化について浮かぶ疑問に答えていきましょう。</p>
+<p>いくつかのトークン化アルゴリズムを例に、仕組みやよくある疑問について見ていきましょう。</p>
 <h2>単語ベース</h2>
 <div class="youtube-embed"><iframe src="https://www.youtube-nocookie.com/embed/nhJxYji1aho" title="YouTube video" loading="lazy" allowfullscreen referrerpolicy="strict-origin-when-cross-origin"></iframe></div>
-<p>トークン化の手法として最初に思い浮かぶのは、<em>単語ベース</em> のものです。数少ないルールだけで構築でき、使いやすく、そこそこ良い結果が得られることが多い手法です。たとえば下の図では、生のテキストを単語に分割し、それぞれに数値表現を割り当てることを目指しています。</p>
+<p>トークン化の手法として最初に思い浮かぶのは、<em>単語ベース</em> のものです。数少ないルールだけで構築でき、使いやすく、そこそこ良い結果が得られることが多い手法です。下の図は、生のテキストを単語に分割し、それぞれに数値を割り当てる方法を示しています。</p>
 <div class="flex justify-center">
   <img class="block dark:hidden" src="https://huggingface.co/datasets/huggingface-course/documentation-images/resolve/main/en/chapter2/word_based_tokenization.svg" alt="単語ベースのトークン化の例。"/>
   <img class="hidden dark:block" src="https://huggingface.co/datasets/huggingface-course/documentation-images/resolve/main/en/chapter2/word_based_tokenization-dark.svg" alt="単語ベースのトークン化の例。"/>
@@ -224,7 +225,7 @@ window.MathJax = { tex: { inlineMath: [['$', '$'], ['\\(', '\\)']], displayMath:
 
 最後に、語彙に含まれていない単語を表すための専用トークンが必要です。これは「未知」トークンと呼ばれ、"[UNK]" や "&amp;lt;unk&amp;gt;" と表されることが多いものです。トークナイザがこのトークンを大量に生成しているのは、一般に良くない兆候です。単語の妥当な表現を取り出せず、情報が失われていることを意味するからです。語彙を構築する際には、未知トークンに置き換えられる単語をできるだけ減らすことが目標です。
 
-未知トークンの量を減らす方法の1つは、もう1段階深く進んで、_文字ベース_ のトークナイザを使うことです。
+未知トークンを減らす方法の1つは、単語を更に細かく分割する _文字ベース_ のトークナイザを使うことです。
 
 ## 文字ベース
 
@@ -246,9 +247,9 @@ window.MathJax = { tex: { inlineMath: [['$', '$'], ['\\(', '\\)']], displayMath:
   &lt;img class="hidden dark:block" src="https://huggingface.co/datasets/huggingface-course/documentation-images/resolve/main/en/chapter2/character_based_tokenization-dark.svg" alt="文字ベースのトークン化の例。"/&gt;
 &lt;/div&gt;
 
-このアプローチも完璧ではありません。表現が単語ではなく文字に基づくようになるため、直感的には意味が薄くなるとも言えます。各文字は単独ではあまり意味を持ちませんが、単語はそうではありません。但し、これも言語によって異なります。たとえば中国語では、各文字がラテン系言語の文字よりも多くの情報を持っています。
+但し、この方法にも欠点があります。単語を文字単位に分割すると、各トークンが持つ意味の情報が少なくなる場合があります。一般に、単語には意味がありますが、個々の文字にはそれほど多くの意味がありません。但し、この違いは言語によって異なります。たとえば中国語の文字は、ラテン系言語で使われる文字よりも多くの情報を持っています。
 
-もう1つ考慮すべき点は、モデルが処理するトークンの量が非常に多くなることです。単語ベースのトークナイザでは1単語が1トークンで済みますが、文字に変換すると簡単に10トークン以上になってしまいます。
+もう1つ考慮すべき点は、モデルが処理するトークンの量が非常に多くなることです。単語ベースのトークナイザなら1単語は1トークンで済みますが、文字単位に分割すると、同じ単語でも簡単に10トークン以上になります。
 
 両方の良いところを取るために、2つのアプローチを組み合わせた3つ目の手法、*サブワードトークン化* を使うことができます。
 
@@ -317,13 +318,13 @@ tokenizer = BertTokenizer.from_pretrained("bert-base-cased")
 tokenizer.save_pretrained("directory_on_my_computer")
 </code></pre></div>
 
-<p><code>token_type_ids</code> については<a href="../chapter3/1.html">第3章</a>で詳しく取り上げ、<code>attention_mask</code> キーについてはこの後すぐ説明します。まず、<code>input_ids</code> がどのように生成されるのかを見ていきましょう。そのために、トークナイザの中間的なメソッドを確認します。</p>
+<p><code>token_type_ids</code> については<a href="../chapter3/1.html">第3章</a>で詳しく取り上げ、<code>attention_mask</code> キーについてはこの後すぐ説明します。まず、<code>input_ids</code> がどのように生成されるのかを見ていきましょう。そのために、トークナイザの処理を途中の段階ごとに確認できるメソッドを見ていきます。</p>
 <h2>エンコーディング</h2>
 <div class="youtube-embed"><iframe src="https://www.youtube-nocookie.com/embed/Yffk5aydLzg" title="YouTube video" loading="lazy" allowfullscreen referrerpolicy="strict-origin-when-cross-origin"></iframe></div>
 <p>テキストを数値に変換することは、<em>エンコーディング</em> と呼ばれます。エンコーディングは2段階のプロセスで行われます。まずトークン化し、次に入力 ID へ変換します。</p>
-<p>見てきたように、最初のステップは、テキストを単語（又は単語の一部、句読点記号など）に分割することです。これらは通常 <em>トークン</em> と呼ばれます。このプロセスを決めるルールは複数あるため、モデルの事前学習時に使われたのと同じルールを使うよう、モデル名を使ってトークナイザをインスタンス化する必要があります。</p>
-<p>2つ目のステップは、それらのトークンを数値に変換することです。そうすることでテンソルを構築し、モデルに入力できます。そのためにトークナイザは <em>語彙</em> を持っています。語彙は、<code>from_pretrained()</code> メソッドでインスタンス化するときにダウンロードされる部分です。ここでも、モデルが事前学習されたときに使われたのと同じ語彙を使う必要があります。</p>
-<p>この2つのステップをよりよく理解するために、それぞれを分けて見ていきます。ここでは、ステップの中間結果を示すため、トークン化パイプラインの一部を個別に実行するメソッドを使いますが、実際には、入力に対してトークナイザを直接呼び出すべきです（セクション2で示したとおりです）。</p>
+<p>最初のステップでは、テキストを単語や単語の一部、句読点などに分割します。分割して得られる単位を <em>トークン</em> と呼びます。トークン化には様々な方法がありますが、モデルの事前学習時と同じ方法を使う必要があります。そのため、モデル名を指定してトークナイザをインスタンス化します。</p>
+<p>2つ目のステップでは、トークンを数値に変換します。こうして得られた数値からテンソルを作り、モデルに入力します。この変換に使うのが、トークナイザの持つ <em>語彙</em> です。語彙のデータは、<code>from_pretrained()</code> メソッドでトークナイザをインスタンス化するときにダウンロードされます。ここでも、モデルの事前学習時と同じ語彙を使う必要があります。</p>
+<p>この2つのステップを理解するために、それぞれの処理を分けて見ていきます。ここでは途中の結果を確認できるよう、トークン化パイプラインの各処理を個別のメソッドで実行します。但し、実際に使うときは、セクション2で紹介したようにトークナイザを直接呼び出してください。</p>
 <h3>トークン化</h3>
 <p>トークン化のプロセスは、トークナイザの <code>tokenize()</code> メソッドで行われます。</p>
 <div class="codehilite"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">transformers</span><span class="w"> </span><span class="kn">import</span> <span class="n">AutoTokenizer</span>
@@ -336,7 +337,7 @@ tokenizer.save_pretrained("directory_on_my_computer")
 <span class="nb">print</span><span class="p">(</span><span class="n">tokens</span><span class="p">)</span>
 </code></pre></div>
 
-<p>このメソッドの出力は、文字列、つまりトークンのリストです。</p>
+<p>このメソッドは、トークンを表す文字列のリストを返します。</p>
 <p>```python out
 ['Using', 'a', 'transform', '##er', 'network', 'is', 'simple']</p>
 <div class="codehilite"><pre><span></span><code>このトークナイザはサブワードトークナイザです。語彙で表現できるトークンが得られるまで、単語を分割します。この例では、`transformer` という単語が、語彙で表現できる `transform` と `##er` の2つのトークンに分割されています。
@@ -372,7 +373,7 @@ print(decoded_string)
 
 <p><code>python out
 'Using a Transformer network is simple'</code></p>
-<p><code>decode</code> メソッドは、インデックスをトークンに戻すだけでなく、同じ単語の一部だったトークン同士をまとめ直して、読みやすい文を生成することに注意してください。この振る舞いは、新しいテキストを予測するモデル（プロンプトから生成されるテキストや、翻訳・要約のようなシーケンス・ツー・シーケンスの問題）を使うときに非常に役立ちます。</p>
+<p><code>decode</code> メソッドは、インデックスをトークンに戻すだけでなく、同じ単語を構成していたトークンをまとめ直し、読みやすい文に復元します。この機能は、新しいテキストを予測・生成するモデルで特に役立ちます。たとえば、プロンプトに続くテキストの生成や、翻訳・要約のようなシーケンス・ツー・シーケンスのタスクで利用します。</p>
 <p>ここまでで、トークナイザが扱える基本的な操作、つまりトークン化、ID への変換、ID から文字列への変換が理解できたはずです。但し、これはまだ氷山の一角にすぎません。次のセクションでは、ここまで紹介した方法の限界と、それを克服する方法を見ていきます。</p>
 </article>
 

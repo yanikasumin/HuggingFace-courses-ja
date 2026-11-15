@@ -9,6 +9,7 @@
 <link rel="canonical" href="https://yanikasumin.github.io/HuggingFace-courses-ja/llm/chapter2/2.html">
 <meta property="og:title" content="パイプラインの裏側 | Hugging Face 学習コース日本語版">
 <meta property="og:description" content="パイプラインの裏側｜LLM コース（大規模言語モデルと Transformers を学ぶコース）の日本語訳ページ。Hugging Face 公式コースの内容を日本語で学べます。">
+<meta name="google-site-verification" content="A8PVY1lQPEN4macCCmGuTad7GqnBmMgMo1SRR3C320c">
 <meta property="og:type" content="article">
 <meta property="og:url" content="https://yanikasumin.github.io/HuggingFace-courses-ja/llm/chapter2/2.html">
 <meta property="og:site_name" content="Hugging Face 学習コース日本語版">
@@ -227,7 +228,7 @@ window.MathJax = { tex: { inlineMath: [['$', '$'], ['\\(', '\\)']], displayMath:
 - 各トークンを整数に対応づける
 - モデルに役立つ追加の入力を加える
 
-この前処理はすべて、モデルの事前学習時とまったく同じ方法で行う必要があります。そのため、まずその情報を [Model Hub](https://huggingface.co/models) からダウンロードします。ここで使うのが `AutoTokenizer` クラスとその `from_pretrained()` メソッドです。モデルのチェックポイント名を指定すると、そのモデルのトークナイザに関連するデータが自動的に取得され、キャッシュされます（そのため、ダウンロードが行われるのは、以下のコードを最初に実行するときだけです）。
+この前処理はすべて、モデルの事前学習時とまったく同じ方法で行う必要があります。そこで、まず必要な情報を [Model Hub](https://huggingface.co/models) からダウンロードします。これには `AutoTokenizer` クラスの `from_pretrained()` メソッドを使います。モデルのチェックポイント名を指定すると、対応するトークナイザのデータが自動的にダウンロードされ、キャッシュに保存されます。以降はキャッシュから読み込まれるため、通常、ダウンロードが必要なのは最初の実行時だけです。
 
 `sentiment-analysis` パイプラインのデフォルトのチェックポイントは `distilbert-base-uncased-finetuned-sst-2-english` です。モデルカードは[このページ](https://huggingface.co/distilbert-base-uncased-finetuned-sst-2-english)で確認できます。これを使って、次のコードを実行します。
 
@@ -239,7 +240,7 @@ tokenizer = AutoTokenizer.from_pretrained(checkpoint)
 </code></pre></div>
 
 <p>トークナイザが用意できたら、文を直接渡すだけで、モデルにそのまま入力できる辞書が返ってきます！あとは、入力 ID のリストをテンソルに変換するだけです。</p>
-<p>🤗 Transformers を使うとき、バックエンドとしてどの ML フレームワークが使われているかは気にしなくて構いません。モデルによっては PyTorch のことも Flax のこともあります。但し、Transformer モデルが入力として受け付けるのは <em>テンソル</em> だけです。テンソルという言葉を初めて聞いた場合は、NumPy の配列だと思ってください。NumPy の配列には、スカラー（0次元）、ベクトル（1次元）、行列（2次元）、それ以上の次元のものがあります。実質的にはテンソルであり、他の ML フレームワークのテンソルも同じように振る舞い、通常は NumPy の配列と同じくらい簡単に作成できます。</p>
+<p>🤗 Transformers を使う際は、バックエンドで使われる ML フレームワークをあまり意識する必要はありません。モデルによって PyTorch や Flax などが使われますが、Transformer モデルに入力するデータはいずれも <em>テンソル</em> です。テンソルを初めて学ぶ場合は、NumPy の配列を思い浮かべてください。NumPy の配列には、0次元のスカラー、1次元のベクトル、2次元の行列、更に高次元の配列があります。これらは実質的にテンソルと同じように扱えます。他の ML フレームワークのテンソルも同様に振る舞い、通常は NumPy の配列と同じくらい簡単に作成できます。</p>
 <p>出力形式として PyTorch のテンソルと NumPy の配列のどちらを使うかは、<code>return_tensors</code> 引数で指定します。</p>
 <div class="codehilite"><pre><span></span><code><span class="n">raw_inputs</span> <span class="o">=</span> <span class="p">[</span>
     <span class="s2">"I've been waiting for a HuggingFace course my whole life."</span><span class="p">,</span>
@@ -294,7 +295,7 @@ model = AutoModel.from_pretrained(checkpoint)
 
 <p>```python out
 torch.Size([2, 16, 768])</p>
-<div class="codehilite"><pre><span></span><code>🤗 Transformers モデルの出力は、`namedtuple` や辞書のように振る舞う点に注意してください。要素には、先ほど行ったように属性でアクセスすることも、キーでアクセスすることも（`outputs["last_hidden_state"]`）、探しているものが正確にどこにあるかわかっている場合はインデックスでも（`outputs[0]`）アクセスできます。
+<div class="codehilite"><pre><span></span><code>🤗 Transformers のモデル出力は、`namedtuple` や辞書のように扱えます。値を取り出す方法は3つあります。先ほどのように属性でアクセスする方法、`outputs["last_hidden_state"]` のようにキーを指定する方法、そして値の位置がわかっている場合に `outputs[0]` のようにインデックスを指定する方法です。
 
 ### モデルヘッド：数値に意味を持たせる
 
@@ -349,7 +350,7 @@ print(outputs.logits)
 <p>```python out
 tensor([[-1.5607,  1.6123],
         [ 4.1692, -3.3464]], grad_fn=<AddmmBackward>)</p>
-<div class="codehilite"><pre><span></span><code>モデルは、1つ目の文に対して `[-1.5607, 1.6123]` を、2つ目の文に対して `[ 4.1692, -3.3464]` を予測しました。これらは確率ではなく *ロジット*、つまりモデルの最終層が出力する、正規化されていない生のスコアです。確率に変換するには、[SoftMax](https://en.wikipedia.org/wiki/Softmax_function) 層を通す必要があります（すべての 🤗 Transformers モデルはロジットを出力します。学習用の損失関数は通常、SoftMax のような最後の活性化関数と、交差エントロピーのような実際の損失関数を組み合わせるためです）。
+<div class="codehilite"><pre><span></span><code>モデルは、1つ目の文に対して `[-1.5607, 1.6123]` を、2つ目の文に対して `[ 4.1692, -3.3464]` を予測しました。これらは確率ではなく *ロジット*、つまりモデルの最終層が出力する、正規化されていない生のスコアです。確率に変換するには、[SoftMax](https://en.wikipedia.org/wiki/Softmax_function) 層を通す必要があります。すべての 🤗 Transformers モデルはロジットを出力します。これは、学習時に使う損失関数が、通常、SoftMax のような最終段階の活性化関数と、交差エントロピーのような損失の計算を組み合わせているためです。
 
 ```py
 import torch
