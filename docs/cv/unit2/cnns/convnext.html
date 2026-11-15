@@ -3,19 +3,19 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>ConvNeXt - 2020年代のための ConvNet（2022） | Hugging Face 学習コース日本語版</title>
-<meta name="description" content="ConvNeXt - 2020年代のための ConvNet（2022）｜Community CV コース（コンピュータビジョンを基礎から学ぶコース）の日本語訳ページ。Hugging Face 公式コースの内容を日本語で学べます。">
+<title>ConvNeXt - 2020年代に向けた ConvNet（2022） | Hugging Face 学習コース日本語版</title>
+<meta name="description" content="ConvNeXt - 2020年代に向けた ConvNet（2022）｜Community CV コース（コンピュータビジョンを基礎から学ぶコース）の日本語訳ページ。Hugging Face 公式コースの内容を日本語で学べます。">
 <meta name="robots" content="index, follow">
 <link rel="canonical" href="https://yanikasumin.github.io/HuggingFace-courses-ja/cv/unit2/cnns/convnext.html">
-<meta property="og:title" content="ConvNeXt - 2020年代のための ConvNet（2022） | Hugging Face 学習コース日本語版">
-<meta property="og:description" content="ConvNeXt - 2020年代のための ConvNet（2022）｜Community CV コース（コンピュータビジョンを基礎から学ぶコース）の日本語訳ページ。Hugging Face 公式コースの内容を日本語で学べます。">
+<meta property="og:title" content="ConvNeXt - 2020年代に向けた ConvNet（2022） | Hugging Face 学習コース日本語版">
+<meta property="og:description" content="ConvNeXt - 2020年代に向けた ConvNet（2022）｜Community CV コース（コンピュータビジョンを基礎から学ぶコース）の日本語訳ページ。Hugging Face 公式コースの内容を日本語で学べます。">
 <meta property="og:type" content="article">
 <meta property="og:url" content="https://yanikasumin.github.io/HuggingFace-courses-ja/cv/unit2/cnns/convnext.html">
 <meta property="og:site_name" content="Hugging Face 学習コース日本語版">
 <meta property="og:locale" content="ja_JP">
 <meta name="twitter:card" content="summary">
-<meta name="twitter:title" content="ConvNeXt - 2020年代のための ConvNet（2022） | Hugging Face 学習コース日本語版">
-<meta name="twitter:description" content="ConvNeXt - 2020年代のための ConvNet（2022）｜Community CV コース（コンピュータビジョンを基礎から学ぶコース）の日本語訳ページ。Hugging Face 公式コースの内容を日本語で学べます。">
+<meta name="twitter:title" content="ConvNeXt - 2020年代に向けた ConvNet（2022） | Hugging Face 学習コース日本語版">
+<meta name="twitter:description" content="ConvNeXt - 2020年代に向けた ConvNet（2022）｜Community CV コース（コンピュータビジョンを基礎から学ぶコース）の日本語訳ページ。Hugging Face 公式コースの内容を日本語で学べます。">
 <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-1676481412757711" crossorigin="anonymous"></script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -64,7 +64,7 @@ window.MathJax = { tex: { inlineMath: [['$', '$'], ['\\(', '\\)']], displayMath:
 <li><a class="side-link" href="vgg.html">大規模画像認識のための非常に深い畳み込みネットワーク（2014）</a></li>
 <li><a class="side-link" href="googlenet.html">GoogLeNet</a></li>
 <li><a class="side-link" href="mobilenet.html">MobileNet</a></li>
-<li><a class="side-link active" href="convnext.html">ConvNeXt - 2020年代のための ConvNet（2022）</a></li>
+<li><a class="side-link active" href="convnext.html">ConvNeXt - 2020年代に向けた ConvNet（2022）</a></li>
 <li><a class="side-link" href="intro-transfer-learning.html">転移学習</a></li>
 <li><a class="side-link" href="mobilenetextra.html">事前学習済みの MobileNet モデルを読み込む</a></li>
 <li><a class="side-link" href="resnet.html">ResNet（残差ネットワーク）</a></li>
@@ -179,50 +179,54 @@ window.MathJax = { tex: { inlineMath: [['$', '$'], ['\\(', '\\)']], displayMath:
 <p class="official-link"><a class="btn btn-official" href="https://huggingface.co/learn/computer-vision-course/unit2/cnns/convnext" target="_blank" rel="noopener">🤗 Hugging Face 公式ページでこの節を読む（英語）</a></p>
 <nav class="page-nav"><a class="nav-link prev" href="mobilenet.html">← 前へ: MobileNet</a><a class="nav-link toc-link" href="../../index.html">目次へ</a><a class="nav-link next" href="intro-transfer-learning.html">次へ →: 転移学習</a></nav>
 <article class="content">
-<h1>ConvNeXt - 2020年代のための ConvNet（2022）</h1>
+<h1>ConvNeXt - 2020年代に向けた ConvNet（2022）</h1>
 <h2>はじめに</h2>
-<p>近年、Vision Transformer（ViT）の登場によって、画像認識の最先端を担うモデルは、従来の純粋な CNN モデルから Vision Transformer へと急速に移り変わりました。興味深いことに、CNN にも Vision Transformer の設計上の工夫を数多く取り入れられることが、研究によって明らかになっています。ConvNeXt は、ViT から着想を得た手法を取り入れることで純粋な畳み込みモデルを大幅に改善したものであり、精度とスケーラビリティの面で ViT に匹敵する結果を達成しています。</p>
+<p>近年、Vision Transformer（ViT）の登場によって、画像認識の最先端で使われるモデルは、従来の CNN を中心としたものから ViT を採用したものへと急速に移り変わりました。一方、研究によって、CNN にも ViT の設計上の工夫を数多く取り入れられることが分かってきました。ConvNeXt は、こうした工夫を取り入れて従来の畳み込みモデルを大幅に改善したモデルです。精度とスケーラビリティの両面で、ViT に匹敵する結果を達成しています。</p>
 <h2>主な改良点</h2>
-<p>ConvNeXt 論文の著者は、通常の ResNet（ResNet-50）からモデルの構築を始め、Vision Transformer の階層構造を模倣するようにアーキテクチャを段階的に近代化し、改良していきます。主な改良点は次のとおりです。
+<p>ConvNeXt 論文の著者らは、標準的な ResNet（ResNet-50）を出発点として、Vision Transformer の階層構造を参考にしながら、モデルの構造を段階的に改良しました。主な改良点は次のとおりです。
 - 訓練手法
 - マクロ設計
 - ResNeXt 化
 - 逆ボトルネック（Inverted Bottleneck）
 - 大きなカーネルサイズ
 - ミクロ設計</p>
-<p>それぞれの改良点を順に見ていきます。これらの設計は、それ自体は目新しいものではありません。しかし、これらを順に見ていくことで、研究者が既存モデルの設計をどのように体系的に取り入れ、変更して性能を改善しているのかを学べます。各改良の効果を示すために、ImageNet-1K における変更前後のモデルの精度を比較します。</p>
+<p>それぞれの改良点を順に見ていきます。一つ一つの工夫は、必ずしも新しいものではありません。しかし、既存の設計を体系的に取り入れ、変更を加えることで、モデルの性能をどのように改善できるかが分かります。各改良の効果を確かめるため、ImageNet-1K における変更前後のモデルの精度を比較します。</p>
 <p><img alt="ブロックの比較" src="https://huggingface.co/datasets/hf-vision/course-assets/resolve/main/block_comparison.png" /></p>
 <h2>訓練手法</h2>
-<p>研究者たちはまず、アーキテクチャの設計上の選択が重要である一方で、訓練手順の質も性能に大きな役割を果たすことを見抜きました。DeiT や Swin Transformer に着想を得て、ConvNeXt はそれらの訓練手法を密接に取り入れています。注目すべき変更点は次のとおりです。
+<p>研究者たちはまず、モデルの構造だけでなく、訓練方法も性能に大きく影響することに着目しました。そこで、DeiT や Swin Transformer で使われている訓練手法を ConvNeXt に取り入れました。主な変更点は次のとおりです。
 - エポック数：元の90エポックから300エポックに延長しました。
 - 最適化手法：Adam とは重み減衰の扱いが異なる AdamW オプティマイザを使います。
-- Mixup（ランダムな画像ペアの重み付き組み合わせを生成）、Cutmix（画像の一部を切り取り、別の画像のパッチで置き換える）、RandAugment（回転、平行移動、シアーなどのランダムな拡張の列を適用する）、Random Erasing（画像内の矩形領域をランダムに選択し、そのピクセルをランダムな値で消去する）を使って訓練データを増やします。
+- データ拡張：次の手法を使って訓練データに様々な変化を加えます。
+  - Mixup：画像をランダムに2枚選び、重みを付けて組み合わせます。
+  - Cutmix：画像の一部を切り取り、別の画像のパッチに置き換えます。
+  - RandAugment：回転、平行移動、シアーなどの変換をランダムに適用します。
+  - Random Erasing：画像内の矩形領域をランダムに選び、その画素をランダムな値に置き換えます。
 - 正則化：Stochastic Depth と Label Smoothing を使います。</p>
 <p>これらの訓練手順の変更により、ResNet-50 の精度は 76.1% から 78.8% に向上しました。</p>
 <h2>マクロ設計</h2>
-<p>マクロ設計とは、層の配置、異なるステージ間での計算負荷の配分、全体構造など、システムやモデルにおける高レベルの構造的な決定や考慮事項を指します。著者たちは Swin Transformer のネットワーク全体の構造を調べ、ConvNeXt の性能向上に役立つ2つの重要な設計上の工夫を見つけました。</p>
+<p>マクロ設計とは、層の配置、各ステージへの計算負荷の配分、モデル全体の構造など、ネットワークの大まかな構成を決める設計のことです。著者らは Swin Transformer のネットワーク構造を調べ、ConvNeXt の性能向上に役立つ重要な設計上の工夫を2つ見つけました。</p>
 <h3>ステージの計算比率</h3>
 <p>ステージの計算比率とは、ニューラルネットワークモデルの各ステージ間での計算負荷の配分を指します。ResNet-50 には (3, 4, 6, 3) 個のブロックを持つ4つの主要なステージがあり、計算比率は 3:4:6:3 です。Swin Transformer の計算比率 1:1:3:1 に倣い、研究者たちは ResNet の各ステージのブロック数を (3, 4, 6, 3) から (3, 3, 9, 3) に調整しました。ステージの計算比率の変更により、モデルの精度は 78.8% から 79.4% に向上しました。</p>
 <h3>ステムを Patchify に変更</h3>
-<p>通常、ResNet のアーキテクチャの冒頭では、入力はストライド2の 7×7 畳み込み層に送られ、続いて最大プーリングが行われ、画像を4分の1にダウンサンプリングするために使われます。しかし著者たちは、ステムをカーネルサイズ4×4、ストライド4の畳み込み層に置き換える方が効果的だと分かりました。これは、画像を重なりのない4×4のパッチに分け、それぞれに畳み込みを適用することに相当します。Patchify は層の数を減らしながら、画像を4分の1にダウンサンプリングするという同じ目的を果たします。この Patchify のステップにより、モデルの精度は 79.4% から 79.5% にわずかに向上しました。</p>
+<p>通常、ResNet の冒頭では、入力画像にストライド2の 7×7 畳み込みを適用し、続いて最大プーリングを行います。これによって、画像の縦横のサイズを4分の1に縮小します。しかし著者たちは、ステムをカーネルサイズ4×4、ストライド4の畳み込み層に置き換える方が効果的だと分かりました。これは、画像を重なりのない4×4のパッチに分け、それぞれに畳み込みを適用することに相当します。Patchify は層の数を減らしながら、画像を4分の1にダウンサンプリングするという同じ目的を果たします。この Patchify のステップにより、モデルの精度は 79.4% から 79.5% にわずかに向上しました。</p>
 <h2>ResNeXt 化</h2>
-<p>ConvNeXt は、前のセクションで説明した ResNeXt のアイデアも取り入れています。ResNeXt は標準的な ResNet よりも、浮動小数点演算回数（FLOPs）と精度のトレードオフに優れています。深さ方向畳み込み（depthwise convolution）と 1 × 1 畳み込みを使うことで、空間方向とチャンネル方向の混合を分離できます。これは Vision Transformer にも見られる特性です。深さ方向畳み込みを使うと FLOPs の数と精度が下がります。しかし、チャンネル数を64から96に増やすことで、同程度の FLOPs を維持しながら、元の ResNet-50 より高い精度が得られました。この変更により、モデルの精度は 79.5% から 80.5% に向上しました。</p>
+<p>ConvNeXt は、前のセクションで説明した ResNeXt のアイデアも取り入れています。ResNeXt は標準的な ResNet よりも、浮動小数点演算回数（FLOPs）と精度のトレードオフに優れています。深さ方向畳み込み（depthwise convolution）と 1 × 1 畳み込みを使うことで、空間方向とチャンネル方向の混合を分離できます。これは Vision Transformer にも見られる特性です。深さ方向畳み込みを使うと、演算量（FLOPs）と精度の両方が下がります。しかし、チャンネル数を64から96に増やすことで、同程度の FLOPs を維持しながら、元の ResNet-50 より高い精度が得られました。この変更により、モデルの精度は 79.5% から 80.5% に向上しました。</p>
 <h2>逆ボトルネック</h2>
-<p>すべての Transformer ブロックに共通するアイデアの1つが逆ボトルネックの使用です。ここでは隠れ層が入力次元よりもはるかに大きくなります。このアイデアは MobileNetV2 によってコンピュータビジョンでも使われ、広まりました。ConvNeXt はこのアイデアを取り入れ、入力層は96チャンネル、隠れ層は384チャンネルまで増やします。この手法により、モデルの精度は 80.5% から 80.6% に向上しました。</p>
+<p>逆ボトルネックは、すべての Transformer ブロックに共通する設計上の考え方の一つです。逆ボトルネックでは、隠れ層の次元数を入力の次元数よりも大幅に大きくします。このアイデアは MobileNetV2 によってコンピュータビジョンでも使われ、広まりました。ConvNeXt はこのアイデアを取り入れ、入力層は96チャンネル、隠れ層は384チャンネルまで増やします。この手法により、モデルの精度は 80.5% から 80.6% に向上しました。</p>
 <p><img alt="逆ボトルネックの比較" src="https://huggingface.co/datasets/hf-vision/course-assets/resolve/main/inverted_bottleneck.png" /></p>
 <h2>大きなカーネルサイズ</h2>
-<p>Vision Transformer の卓越した性能に寄与する重要な要因の1つは、非局所的な自己注意（self-attention）であり、画像特徴のより広い受容野を可能にします。Swin Transformer では、注意ブロックのウィンドウサイズは少なくとも 7×7 に設定されており、ResNeXt のカーネルサイズ 3×3 を上回ります。但し、カーネルサイズを調整する前に、以下の画像に示すように深さ方向畳み込み層の位置を変更する必要があります。深さ方向畳み込み層の位置を変更すると、1×1の畳み込み層で計算を効率よく処理しながら、深さ方向畳み込み層でより広い範囲の特徴を捉えられるようになります。これにより、ネットワークはより大きなカーネルサイズの畳み込みを取り入れる利点を活用できます。7×7 のカーネルサイズを実装すると精度は 80.6% に維持されますが、モデル全体の FLOPs 効率は下がります。</p>
+<p>Vision Transformer の高い性能を支える要因の一つが、非局所的な自己注意（self-attention）です。これにより、画像のより広い範囲の特徴を捉えられるようになります。Swin Transformer では、注意ブロックのウィンドウサイズは少なくとも 7×7 に設定されており、ResNeXt のカーネルサイズ 3×3 を上回ります。但し、カーネルサイズを調整する前に、以下の画像に示すように深さ方向畳み込み層の位置を変更する必要があります。深さ方向畳み込み層の位置を変更すると、1×1の畳み込み層で計算を効率よく処理しながら、深さ方向畳み込み層でより広い範囲の特徴を捉えられるようになります。これにより、カーネルサイズを大きくする利点を生かせるようになります。7×7 のカーネルサイズを実装すると精度は 80.6% に維持されますが、モデル全体の FLOPs 効率は下がります。</p>
 <p><img alt="深さ方向畳み込み層を上に移動" src="https://huggingface.co/datasets/hf-vision/course-assets/resolve/main/depthwise_moveup.png" /></p>
 <h2>ミクロ設計</h2>
-<p>上述の変更に加えて、著者はモデルにいくつかのミクロ設計の変更を加えています。ミクロ設計とは、活性化関数の選択や層の詳細など、低レベルの構造的な決定を指します。注目すべきミクロな変更点は次のとおりです。
-- 活性化：ReLU 活性化を GELU（Gaussian Error Linear Unit）に置き換え、2つの1×1層の間にある1つを除いて、残差ブロックからすべての GELU 層を取り除きます。
+<p>ここまでの変更に加えて、著者らはモデルの細かな設計も見直しました。ミクロ設計とは、活性化関数の選択や各層の構成など、モデル内部の細部に関する設計のことです。主な変更点は次のとおりです。
+- 活性化：ReLU 活性化を GELU（Gaussian Error Linear Unit）に置き換えます。そのうえで、2つの1×1畳み込み層の間にある GELU 層を1つだけ残し、残差ブロック内のほかの GELU 層は取り除きます。
 - 正規化：BatchNorm 層を2つ取り除き、BatchNorm を LayerNorm に置き換えることで正規化層を減らし、1×1畳み込み層の前に LayerNorm 層を1つだけ残します。
 - ダウンサンプリング層：ResNet のステージの間に個別のダウンサンプリング層を追加します。
 これらの最終的な変更により、ConvNeXt の精度は 80.6% から 82.0% に向上しました。最終的な ConvNeXt モデルは、Swin Transformer の精度 81.3% を上回ります。</p>
 <h2>モデルのコード</h2>
-<p>ConvNeXt パイプラインをコードに統合する方法については、<a href="https://huggingface.co/docs/transformers/model_doc/convnext">こちらの Hugging Face ドキュメント</a>を確認してください。</p>
+<p>ConvNeXt をプログラムで利用する方法については、<a href="https://huggingface.co/docs/transformers/model_doc/convnext">Hugging Face の公式ドキュメント</a>を参照してください。</p>
 <h2>参考文献</h2>
-<p>ConvNeXt アーキテクチャは、2022年に発表された論文「A ConvNet for the 2020s」で提案されました。著者は、Zhuang Liu、Hanzi Mao、Chao-Yuan Wu、Christoph Feichtenhofer、Trevor Darrell、Saining Xie ら、Facebook AI Research の研究者チームです。論文は<a href="https://arxiv.org/abs/2201.03545">こちら</a>、GitHub リポジトリは<a href="https://github.com/facebookresearch/ConvNeXt">こちら</a>にあります。</p>
+<p>ConvNeXt アーキテクチャは、2022年に発表された論文「A ConvNet for the 2020s」で提案されました。著者は、Facebook AI Research の Zhuang Liu、Hanzi Mao、Chao-Yuan Wu、Christoph Feichtenhofer、Trevor Darrell、Saining Xie らの研究者です。論文は<a href="https://arxiv.org/abs/2201.03545">こちら</a>、GitHub リポジトリは<a href="https://github.com/facebookresearch/ConvNeXt">こちら</a>にあります。</p>
 </article>
 
 <nav class="page-nav"><a class="nav-link prev" href="mobilenet.html">← 前へ: MobileNet</a><a class="nav-link toc-link" href="../../index.html">目次へ</a><a class="nav-link next" href="intro-transfer-learning.html">次へ →: 転移学習</a></nav>
