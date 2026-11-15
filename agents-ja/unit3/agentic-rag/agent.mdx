@@ -1,0 +1,500 @@
+# ガラ用エージェントの作成
+
+Alfredに必要なコンポーネントをすべて構築しました。ここでは、それらをすべてまとめ、豪華なガラの開催を手伝う完全なエージェントに仕上げます。
+
+このセクションでは、ゲスト情報の検索、Web検索、天気情報、Hub統計のツールを、1つの強力なエージェントに統合します。
+
+## Alfredの組み立て：完成形のエージェント
+
+前のセクションで作成したツールを、もう一度実装する必要はありません。`tools.py` と `retriever.py` に保存してあるので、それぞれのファイルからインポートして使います。
+
+> [!TIP]
+> まだツールを実装していない場合は、<a href="./tools">ツール</a> と <a href="./invitees">リトリーバー</a> のセクションに戻って実装し、<code>tools.py</code> と <code>retriever.py</code> ファイルに追加してください。
+
+前のセクションから、必要なライブラリとツールをインポートしましょう。
+
+<hfoptions id="agents-frameworks">
+<hfoption id="smolagents">
+
+```python
+# 必要なライブラリをインポートする
+import random
+from smolagents import CodeAgent, InferenceClientModel
+
+# モジュールからカスタムツールをインポートする
+from tools import DuckDuckGoSearchTool, WeatherInfoTool, HubStatsTool
+from retriever import load_guest_dataset
+```
+
+では、すべてのツールを1つのエージェントにまとめましょう。
+
+```python
+# Hugging Faceモデルを初期化する
+model = InferenceClientModel()
+
+# Web検索ツールを初期化する
+search_tool = DuckDuckGoSearchTool()
+
+# 天気ツールを初期化する
+weather_info_tool = WeatherInfoTool()
+
+# Hub統計ツールを初期化する
+hub_stats_tool = HubStatsTool()
+
+# ゲストのデータセットを読み込み、ゲスト情報ツールを初期化する
+guest_info_tool = load_guest_dataset()
+
+# すべてのツールを持ったAlfredを作成する
+alfred = CodeAgent(
+    tools=[guest_info_tool, weather_info_tool, hub_stats_tool, search_tool],
+    model=model,
+    add_base_tools=True,  # 追加の基本ツールがあれば加える
+    planning_interval=3   # 3ステップごとに計画を有効化する
+)
+```
+
+</hfoption>
+<hfoption id="llama-index">
+
+```python
+# 必要なライブラリをインポートする
+from llama_index.core.agent.workflow import AgentWorkflow
+from llama_index.llms.huggingface_api import HuggingFaceInferenceAPI
+
+from tools import search_tool, weather_info_tool, hub_stats_tool
+from retriever import guest_info_tool
+```
+
+では、すべてのツールを1つのエージェントにまとめましょう。
+
+```python
+# Hugging Faceモデルを初期化する
+llm = HuggingFaceInferenceAPI(model_name="Qwen/Qwen2.5-Coder-32B-Instruct")
+
+# すべてのツールを持ったAlfredを作成する
+alfred = AgentWorkflow.from_tools_or_functions(
+    [guest_info_tool, search_tool, weather_info_tool, hub_stats_tool],
+    llm=llm,
+)
+```
+
+</hfoption>
+<hfoption id="langgraph">
+
+```python
+from typing import TypedDict, Annotated
+from langgraph.graph.message import add_messages
+from langchain_core.messages import AnyMessage, HumanMessage, AIMessage
+from langgraph.prebuilt import ToolNode
+from langgraph.graph import START, StateGraph
+from langgraph.prebuilt import tools_condition
+from langchain_huggingface import HuggingFaceEndpoint, ChatHuggingFace
+
+from tools import DuckDuckGoSearchRun, weather_info_tool, hub_stats_tool
+from retriever import guest_info_tool
+```
+
+では、すべてのツールを1つのエージェントにまとめましょう。
+
+```python
+# Web検索ツールを初期化する
+search_tool = DuckDuckGoSearchRun()
+
+# ツールを含むチャットインターフェースを生成する
+llm = HuggingFaceEndpoint(
+    repo_id="Qwen/Qwen2.5-Coder-32B-Instruct",
+    huggingfacehub_api_token=HUGGINGFACEHUB_API_TOKEN,
+)
+
+chat = ChatHuggingFace(llm=llm, verbose=True)
+tools = [guest_info_tool, search_tool, weather_info_tool, hub_stats_tool]
+chat_with_tools = chat.bind_tools(tools)
+
+# AgentStateとエージェントのグラフを生成する
+class AgentState(TypedDict):
+    messages: Annotated[list[AnyMessage], add_messages]
+
+def assistant(state: AgentState):
+    return {
+        "messages": [chat_with_tools.invoke(state["messages"])],
+    }
+
+## グラフ
+builder = StateGraph(AgentState)
+
+# ノードを定義する: 実際の処理を行う
+builder.add_node("assistant", assistant)
+builder.add_node("tools", ToolNode(tools))
+
+# エッジを定義する: 制御フローの動きを決める
+builder.add_edge(START, "assistant")
+builder.add_conditional_edges(
+    "assistant",
+    # 最新のメッセージがツールを必要とする場合は、ツールへルーティングする
+    # それ以外の場合は、直接応答する
+    tools_condition,
+)
+builder.add_edge("tools", "assistant")
+alfred = builder.compile()
+```
+</hfoption>
+</hfoptions>
+
+これでエージェントが使えるようになりました！
+
+## Alfredの使用：エンドツーエンドの例
+
+Alfredに必要なツールがすべてそろいました。ガラの最中にどのような仕事を任せられるか、具体例を見ていきましょう。
+
+### 例1：ゲスト情報の検索
+
+まず、Alfredにゲストの情報を調べてもらいましょう。
+
+<hfoptions id="agents-frameworks">
+<hfoption id="smolagents">
+
+```python
+query = "Tell me about 'Lady Ada Lovelace'"
+response = alfred.run(query)
+
+print("🎩 Alfredの応答：")
+print(response)
+```
+
+期待される出力：
+
+```
+🎩 Alfredの応答：
+Based on the information I retrieved, Lady Ada Lovelace is an esteemed mathematician and friend. She is renowned for her pioneering work in mathematics and computing, often celebrated as the first computer programmer due to her work on Charles Babbage's Analytical Engine. Her email address is ada.lovelace@example.com.
+```
+
+</hfoption>
+<hfoption id="llama-index">
+
+```python
+query = "Tell me about Lady Ada Lovelace. What's her background?"
+response = await alfred.run(query)
+
+print("🎩 Alfredの応答：")
+print(response.response.blocks[0].text)
+```
+
+期待される出力：
+
+```
+🎩 Alfredの応答：
+Lady Ada Lovelace was an English mathematician and writer, best known for her work on Charles Babbage's Analytical Engine. She was the first to recognize that the machine had applications beyond pure calculation.
+```
+
+</hfoption>
+<hfoption id="langgraph">
+
+```python
+response = alfred.invoke({"messages": "Tell me about 'Lady Ada Lovelace'"})
+
+print("🎩 Alfredの応答：")
+print(response['messages'][-1].content)
+```
+
+期待される出力：
+
+```
+🎩 Alfredの応答：
+Ada Lovelace, also known as Augusta Ada King, Countess of Lovelace, was an English mathematician and writer. Born on December 10, 1815, and passing away on November 27, 1852, she is renowned for her work on Charles Babbage's Analytical Engine, a proposed mechanical general-purpose computer. Ada Lovelace is celebrated as one of the first computer programmers because she created a program for the Analytical Engine in 1843. She recognized that the machine could be used for more than mere calculation, envisioning its potential in a way that few did at the time. Her contributions to the field of computer science laid the groundwork for future developments. A day in October, designated as Ada Lovelace Day, honors women's contributions to science and technology, inspired by Lovelace's pioneering work.
+```
+
+</hfoption>
+</hfoptions>
+
+
+### 例2：花火のための天気の確認
+
+次に、Alfredに天気を確認してもらいましょう。
+
+<hfoptions id="agents-frameworks">
+<hfoption id="smolagents">
+
+```python
+query = "What's the weather like in Paris tonight? Will it be suitable for our fireworks display?"
+response = alfred.run(query)
+
+print("🎩 Alfredの応答：")
+print(response)
+```
+
+期待される出力（ランダム性のため変動します）：
+```
+🎩 Alfredの応答：
+I've checked the weather in Paris for you. Currently, it's clear with a temperature of 25°C. These conditions are perfect for the fireworks display tonight. The clear skies will provide excellent visibility for the spectacular show, and the comfortable temperature will ensure the guests can enjoy the outdoor event without discomfort.
+```
+
+</hfoption>
+<hfoption id="llama-index">
+
+```python
+query = "What's the weather like in Paris tonight? Will it be suitable for our fireworks display?"
+response = await alfred.run(query)
+
+print("🎩 Alfredの応答：")
+print(response)
+```
+
+期待される出力：
+
+```
+🎩 Alfredの応答：
+The weather in Paris tonight is rainy with a temperature of 15°C. Given the rain, it may not be suitable for a fireworks display.
+```
+
+</hfoption>
+<hfoption id="langgraph">
+
+```python
+response = alfred.invoke({"messages": "What's the weather like in Paris tonight? Will it be suitable for our fireworks display?"})
+
+print("🎩 Alfredの応答：")
+print(response['messages'][-1].content)
+```
+
+期待される出力：
+
+```
+🎩 Alfredの応答：
+The weather in Paris tonight is rainy with a temperature of 15°C, which may not be suitable for your fireworks display.
+```
+</hfoption>
+</hfoptions>
+
+### 例3：AI研究者を感心させる
+
+Alfredを使ってAI研究者を感心させる方法を見ていきましょう。
+
+<hfoptions id="agents-frameworks">
+<hfoption id="smolagents">
+
+```python
+query = "One of our guests is from Qwen. What can you tell me about their most popular model?"
+response = alfred.run(query)
+
+print("🎩 Alfredの応答：")
+print(response)
+```
+
+期待される出力：
+
+```
+🎩 Alfredの応答：
+The most popular Qwen model is Qwen/Qwen2.5-VL-7B-Instruct with 3,313,345 downloads.
+```
+</hfoption>
+<hfoption id="llama-index">
+
+```python
+query = "One of our guests is from Google. What can you tell me about their most popular model?"
+response = await alfred.run(query)
+
+print("🎩 Alfredの応答：")
+print(response)
+```
+
+期待される出力：
+
+```
+🎩 Alfredの応答：
+The most popular model by Google on the Hugging Face Hub is google/electra-base-discriminator, with 28,546,752 downloads.
+```
+
+</hfoption>
+<hfoption id="langgraph">
+
+```python
+response = alfred.invoke({"messages": "One of our guests is from Qwen. What can you tell me about their most popular model?"})
+
+print("🎩 Alfredの応答：")
+print(response['messages'][-1].content)
+```
+
+期待される出力：
+
+```
+🎩 Alfredの応答：
+The most downloaded model by Qwen is Qwen/Qwen2.5-VL-7B-Instruct with 3,313,345 downloads.
+```
+</hfoption>
+</hfoptions>
+
+### 例4：複数のツールの組み合わせ
+
+Dr. Nikola Teslaとの会話に備えて、Alfredに準備を手伝ってもらいましょう。
+
+<hfoptions id="agents-frameworks">
+<hfoption id="smolagents">
+
+```python
+query = "I need to speak with Dr. Nikola Tesla about recent advancements in wireless energy. Can you help me prepare for this conversation?"
+response = alfred.run(query)
+
+print("🎩 Alfredの応答：")
+print(response)
+```
+
+期待される出力：
+
+```
+🎩 Alfredの応答：
+I've gathered information to help you prepare for your conversation with Dr. Nikola Tesla.
+
+Guest Information:
+Name: Dr. Nikola Tesla
+Relation: old friend from university days
+Description: Dr. Nikola Tesla is an old friend from your university days. He's recently patented a new wireless energy transmission system and would be delighted to discuss it with you. Just remember he's passionate about pigeons, so that might make for good small talk.
+Email: nikola.tesla@gmail.com
+
+Recent Advancements in Wireless Energy:
+Based on my web search, here are some recent developments in wireless energy transmission:
+1. Researchers have made progress in long-range wireless power transmission using focused electromagnetic waves
+2. Several companies are developing resonant inductive coupling technologies for consumer electronics
+3. There are new applications in electric vehicle charging without physical connections
+
+Conversation Starters:
+1. "I'd love to hear about your new patent on wireless energy transmission. How does it compare to your original concepts from our university days?"
+2. "Have you seen the recent developments in resonant inductive coupling for consumer electronics? What do you think of their approach?"
+3. "How are your pigeons doing? I remember your fascination with them."
+
+This should give you plenty to discuss with Dr. Tesla while demonstrating your knowledge of his interests and recent developments in his field.
+```
+
+</hfoption>
+<hfoption id="llama-index">
+
+```python
+query = "I need to speak with Dr. Nikola Tesla about recent advancements in wireless energy. Can you help me prepare for this conversation?"
+response = await alfred.run(query)
+
+print("🎩 Alfredの応答：")
+print(response)
+```
+
+期待される出力：
+
+```
+🎩 Alfredの応答：
+Here are some recent advancements in wireless energy that you might find useful for your conversation with Dr. Nikola Tesla:
+
+1. **Advancements and Challenges in Wireless Power Transfer**: This article discusses the evolution of wireless power transfer (WPT) from conventional wired methods to modern applications, including solar space power stations. It highlights the initial focus on microwave technology and the current demand for WPT due to the rise of electric devices.
+
+2. **Recent Advances in Wireless Energy Transfer Technologies for Body-Interfaced Electronics**: This article explores wireless energy transfer (WET) as a solution for powering body-interfaced electronics without the need for batteries or lead wires. It discusses the advantages and potential applications of WET in this context.
+
+3. **Wireless Power Transfer and Energy Harvesting: Current Status and Future Trends**: This article provides an overview of recent advances in wireless power supply methods, including energy harvesting and wireless power transfer. It presents several promising applications and discusses future trends in the field.
+
+4. **Wireless Power Transfer: Applications, Challenges, Barriers, and the
+```
+
+</hfoption>
+<hfoption id="langgraph">
+
+```python
+response = alfred.invoke({"messages":"I need to speak with 'Dr. Nikola Tesla' about recent advancements in wireless energy. Can you help me prepare for this conversation?"})
+
+print("🎩 Alfredの応答：")
+print(response['messages'][-1].content)
+```
+
+期待される出力：
+
+```
+Based on the provided information, here are key points to prepare for the conversation with 'Dr. Nikola Tesla' about recent advancements in wireless energy:\n1. **Wireless Power Transmission (WPT):** Discuss how WPT revolutionizes energy transfer by eliminating the need for cords and leveraging mechanisms like inductive and resonant coupling.\n2. **Advancements in Wireless Charging:** Highlight improvements in efficiency, faster charging speeds, and the rise of Qi/Qi2 certified wireless charging solutions.\n3. **5G-Advanced Innovations and NearLink Wireless Protocol:** Mention these as developments that enhance speed, security, and efficiency in wireless networks, which can support advanced wireless energy technologies.\n4. **AI and ML at the Edge:** Talk about how AI and machine learning will rely on wireless networks to bring intelligence to the edge, enhancing automation and intelligence in smart homes and buildings.\n5. **Matter, Thread, and Security Advancements:** Discuss these as key innovations that drive connectivity, efficiency, and security in IoT devices and systems.\n6. **Breakthroughs in Wireless Charging Technology:** Include any recent breakthroughs or studies, such as the one from Incheon National University, to substantiate the advancements in wireless charging.
+```
+</hfoption>
+</hfoptions>
+
+## 高度な機能：会話メモリ
+
+ガラの最中にAlfredをさらに役立つ存在にするため、会話メモリを有効にして、以前のやり取りを覚えさせられます。
+
+<hfoptions id="agents-frameworks">
+<hfoption id="smolagents">
+
+```python
+# 会話メモリを持つAlfredを作成する
+alfred_with_memory = CodeAgent(
+    tools=[guest_info_tool, weather_info_tool, hub_stats_tool, search_tool],
+    model=model,
+    add_base_tools=True,
+    planning_interval=3
+)
+
+# 1回目のやり取り
+response1 = alfred_with_memory.run("Tell me about Lady Ada Lovelace.")
+print("🎩 Alfredの最初の応答：")
+print(response1)
+
+# 2回目のやり取り（1回目を参照）
+response2 = alfred_with_memory.run("What projects is she currently working on?", reset=False)
+print("🎩 Alfredの2番目の応答：")
+print(response2)
+```
+
+</hfoption>
+<hfoption id="llama-index">
+
+```python
+from llama_index.core.workflow import Context
+
+alfred = AgentWorkflow.from_tools_or_functions(
+    [guest_info_tool, search_tool, weather_info_tool, hub_stats_tool],
+    llm=llm
+)
+
+# 状態を記憶する
+ctx = Context(alfred)
+
+# 1回目のやり取り
+response1 = await alfred.run("Tell me about Lady Ada Lovelace.", ctx=ctx)
+print("🎩 Alfredの最初の応答：")
+print(response1)
+
+# 2回目のやり取り（1回目を参照）
+response2 = await alfred.run("What projects is she currently working on?", ctx=ctx)
+print("🎩 Alfredの2番目の応答：")
+print(response2)
+```
+
+</hfoption>
+<hfoption id="langgraph">
+
+```python
+# 1回目のやり取り
+response = alfred.invoke({"messages": [HumanMessage(content="Tell me about 'Lady Ada Lovelace'. What's her background and how is she related to me?")]})
+
+
+print("🎩 Alfredの応答：")
+print(response['messages'][-1].content)
+print()
+
+# 2回目のやり取り（1回目を参照）
+response = alfred.invoke({"messages": response["messages"] + [HumanMessage(content="What projects is she currently working on?")]})
+
+print("🎩 Alfredの応答：")
+print(response['messages'][-1].content)
+```
+
+</hfoption>
+</hfoptions>
+
+3つの実装とも、エージェントに会話メモリを直接組み込んでいないことに注目してください。なぜこのような設計になっているのでしょうか？ 🧐
+* smolagents：通常は実行ごとに履歴がリセットされます。前の実行の履歴を引き継ぐには、`reset=False` を指定します。
+* LlamaIndex：実行内でのメモリ管理には、コンテキストオブジェクトを明示的に追加する必要があります。
+* LangGraph：以前のメッセージを取得する選択肢や、専用の [MemorySaver](https://langchain-ai.github.io/langgraph/tutorials/introduction/#part-3-adding-memory-to-the-chatbot) コンポーネントを利用する選択肢があります。
+
+## まとめ
+
+おめでとうございます！ 複数のツールを備えた、高度なエージェントAlfredが完成しました。これで、今世紀で最も豪華なガラの開催を手伝えるようになりました。Alfredには次の機能があります。
+
+1. ゲストに関する詳細情報を取得する
+2. 屋外アクティビティの計画のために天気を確認する
+3. 影響力のあるAIビルダーとそのモデルに関する知見を提供する
+4. 最新情報を求めてWebを検索する
+5. メモリで会話のコンテキストを維持する
+
+これらの機能を備えたAlfredは、ゲスト一人ひとりに合わせた気配りと最新の情報でゲストを感心させ、あなたのガラを大成功に導く準備が整いました。

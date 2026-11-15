@@ -1,0 +1,457 @@
+# ゲストのエピソードを検索するRAGツールの作成
+
+
+頼れるエージェントAlfredは、今世紀で最も豪華なガラの準備をしています。イベントを円滑に進めるには、Alfredが各ゲストの最新情報をすぐに調べられるようにしておく必要があります。そこで、独自のデータセットを使った検索拡張生成（RAG）ツールを作り、Alfredを手助けしましょう。
+
+## なぜガラにRAGなのか？
+
+Alfredがゲストたちの間を歩きながら、一人ひとりの詳しい情報をその場ですぐに思い出さなければならない場面を想像してください。従来のLLMでは、こうした仕事が難しい場合があります。その理由は次のとおりです。
+
+1. ゲストリストはあなたのイベント固有のもので、モデルの学習データには含まれていない
+2. ゲスト情報は頻繁に変わったり更新されたりする可能性がある
+3. Alfredはメールアドレスのような正確な詳細を取得する必要がある
+
+ここで検索拡張生成（RAG）が真価を発揮します！ 検索システムとLLMを組み合わせることで、Alfredはゲストに関する正確で最新の情報に、必要なときにアクセスできます。
+
+> [!TIP]
+> このユースケースには、コースで扱ったどのフレームワークを使っても構いません。コードタブから好みの選択肢を選んでください。
+
+## アプリケーションのセットアップ
+
+このユニットでは、HF Space上にPythonプロジェクトを構成してエージェントを開発します。機能ごとにファイルを分けることで、コードを整理し、部品ごとに管理しやすくなります。また、実際にアプリケーションを一般公開する場合に近い開発手順を体験できます。
+
+### プロジェクト構成
+
+- **`tools.py`**：エージェントのための補助ツールを提供します。
+- **`retriever.py`**：知識へのアクセスを支える検索機能を実装します。
+- **`app.py`**：すべてのコンポーネントを統合し、完全に機能するエージェントにします。このユニットの最後のパートで仕上げます。
+
+実際に動く例を見るには、[このHF Space](https://huggingface.co/spaces/agents-course/Unit_3_Agentic_RAG)をご覧ください。このユニットで開発するAgentic RAGが公開されています。自由にクローンして試してみてください！
+
+エージェントは以下で直接試せます。
+
+<iframe
+	src="https://agents-course-unit-3-agentic-rag.hf.space"
+	frameborder="0"
+	width="850"
+	height="450"
+></iframe>
+
+## データセットの概要
+
+データセット [`agents-course/unit3-invitees`](https://huggingface.co/datasets/agents-course/unit3-invitees/) には、各ゲストについて次のフィールドが含まれています。
+
+- **Name**：ゲストのフルネーム
+- **Relation**：ゲストとホストとの関係
+- **Description**：ゲストの簡単な経歴や興味深い事実
+- **Email Address**：招待状の送付やフォローアップのための連絡先情報
+
+以下はデータセットのプレビューです。
+<iframe
+  src="https://huggingface.co/datasets/agents-course/unit3-invitees/embed/viewer/default/train"
+  frameborder="0"
+  width="100%"
+  height="560px"
+></iframe>
+
+> [!TIP]
+> 実際の場面では、このデータセットを拡張して、食事や贈り物の好み、避けるべき会話の話題など、ホストに役立つ情報を追加することもできます。
+
+## ゲストブックツールの構築
+
+ガラの最中にAlfredがゲスト情報を素早く取得できるカスタムツールを作成します。扱いやすい3つのステップに分けましょう。
+
+1. データセットの読み込みと準備
+2. リトリーバーツールの作成
+3. ツールとAlfredの統合
+
+まずはデータセットの読み込みと準備から始めましょう！
+
+### ステップ1：データセットの読み込みと準備
+
+まず、生のゲストデータを、検索に最適化された形式に変換する必要があります。
+
+<hfoptions id="agents-frameworks">
+<hfoption id="smolagents">
+
+Hugging Faceの `datasets` ライブラリを使ってデータセットを読み込み、`langchain.docstore.document` モジュールの `Document` オブジェクトのリストに変換します。
+
+```python
+import datasets
+from langchain_core.documents import Document
+
+# データセットを読み込む
+guest_dataset = datasets.load_dataset("agents-course/unit3-invitees", split="train")
+
+# データセットのエントリをDocumentオブジェクトに変換する
+docs = [
+    Document(
+        page_content="\n".join([
+            f"Name: {guest['name']}",
+            f"Relation: {guest['relation']}",
+            f"Description: {guest['description']}",
+            f"Email: {guest['email']}"
+        ]),
+        metadata={"name": guest["name"]}
+    )
+    for guest in guest_dataset
+]
+
+```
+
+</hfoption>
+<hfoption id="llama-index">
+
+Hugging Faceの `datasets` ライブラリを使ってデータセットを読み込み、`llama_index.core.schema` モジュールの `Document` オブジェクトのリストに変換します。
+
+```python
+import datasets
+from llama_index.core.schema import Document
+
+# データセットを読み込む
+guest_dataset = datasets.load_dataset("agents-course/unit3-invitees", split="train")
+
+# データセットのエントリをDocumentオブジェクトに変換する
+docs = [
+    Document(
+        text="\n".join([
+            f"Name: {guest_dataset['name'][i]}",
+            f"Relation: {guest_dataset['relation'][i]}",
+            f"Description: {guest_dataset['description'][i]}",
+            f"Email: {guest_dataset['email'][i]}"
+        ]),
+        metadata={"name": guest_dataset['name'][i]}
+    )
+    for i in range(len(guest_dataset))
+]
+```
+
+</hfoption>
+<hfoption id="langgraph">
+
+Hugging Faceの `datasets` ライブラリを使ってデータセットを読み込み、`langchain.docstore.document` モジュールの `Document` オブジェクトのリストに変換します。
+
+```python
+import datasets
+from langchain_core.documents import Document
+
+# データセットを読み込む
+guest_dataset = datasets.load_dataset("agents-course/unit3-invitees", split="train")
+
+# データセットのエントリをDocumentオブジェクトに変換する
+docs = [
+    Document(
+        page_content="\n".join([
+            f"Name: {guest['name']}",
+            f"Relation: {guest['relation']}",
+            f"Description: {guest['description']}",
+            f"Email: {guest['email']}"
+        ]),
+        metadata={"name": guest["name"]}
+    )
+    for guest in guest_dataset
+]
+```
+
+</hfoption>
+</hfoptions>
+
+上のコードでは、次のことをしています。
+- データセットを読み込む
+- 各ゲストのエントリを、整形された内容を持つ `Document` オブジェクトに変換する
+- `Document` オブジェクトをリストに格納する
+
+これで、すべてのデータを利用しやすい形に整理できました。次は検索機能を設定しましょう。
+
+### ステップ2：リトリーバーツールの作成
+
+では、Alfredがゲスト情報を検索できるカスタムツールを作成しましょう。
+
+<hfoptions id="agents-frameworks">
+<hfoption id="smolagents">
+
+`langchain_community.retrievers` モジュールの `BM25Retriever` を使ってリトリーバーツールを作成します。
+
+> [!TIP]
+> <code>BM25Retriever</code> は検索の良い出発点ですが、より高度なセマンティック検索には、<a href="https://www.sbert.net/">sentence-transformers</a> のような埋め込みベースのリトリーバーの利用も検討できます。
+
+```python
+from smolagents import Tool
+from langchain_community.retrievers import BM25Retriever
+
+class GuestInfoRetrieverTool(Tool):
+    name = "guest_info_retriever"
+    description = "Retrieves detailed information about gala guests based on their name or relation."
+    inputs = {
+        "query": {
+            "type": "string",
+            "description": "The name or relation of the guest you want information about."
+        }
+    }
+    output_type = "string"
+
+    def __init__(self, docs):
+        self.is_initialized = False
+        self.retriever = BM25Retriever.from_documents(docs)
+
+    def forward(self, query: str):
+        results = self.retriever.invoke(query)
+        if results:
+            return "\n\n".join([doc.page_content for doc in results[:3]])
+        else:
+            return "No matching guest information found."
+
+# ツールを初期化する
+guest_info_tool = GuestInfoRetrieverTool(docs)
+```
+
+このツールをステップごとに見ていきましょう。
+- `name` と `description` は、エージェントがこのツールをいつ、どう使うかを理解する助けになります
+- `inputs` はツールが期待するパラメータを定義します（この場合は検索クエリ）
+- 埋め込みを必要としない強力なテキスト検索アルゴリズムである `BM25Retriever` を使っています
+- `forward` メソッドはクエリを処理し、最も関連性の高いゲスト情報を返します
+
+</hfoption>
+<hfoption id="llama-index">
+
+`llama_index.retrievers.bm25` モジュールの `BM25Retriever` を使ってリトリーバーツールを作成します。
+
+> [!TIP]
+> <code>BM25Retriever</code> は検索の良い出発点ですが、より高度なセマンティック検索には、<a href="https://www.sbert.net/">sentence-transformers</a> のような埋め込みベースのリトリーバーの利用も検討できます。
+
+```python
+from llama_index.core.tools import FunctionTool
+from llama_index.retrievers.bm25 import BM25Retriever
+
+bm25_retriever = BM25Retriever.from_defaults(nodes=docs)
+
+def get_guest_info_retriever(query: str) -> str:
+    """Retrieves detailed information about gala guests based on their name or relation."""
+    results = bm25_retriever.retrieve(query)
+    if results:
+        return "\n\n".join([doc.text for doc in results[:3]])
+    else:
+        return "No matching guest information found."
+
+# ツールを初期化する
+guest_info_tool = FunctionTool.from_defaults(get_guest_info_retriever)
+```
+
+このツールをステップごとに見ていきましょう。
+- `docstring`（ドキュメント文字列）は、エージェントがこのツールをいつ、どう使うかを理解する助けになります
+- 型デコレータはツールが期待するパラメータを定義します（この場合は検索クエリ）
+- 埋め込みを必要としない強力なテキスト検索アルゴリズムである `BM25Retriever` を使っています
+- メソッドはクエリを処理し、最も関連性の高いゲスト情報を返します
+
+</hfoption>
+<hfoption id="langgraph">
+
+`langchain_community.retrievers` モジュールの `BM25Retriever` を使ってリトリーバーツールを作成します。
+
+> [!TIP]
+> <code>BM25Retriever</code> は検索の良い出発点ですが、より高度なセマンティック検索には、<a href="https://www.sbert.net/">sentence-transformers</a> のような埋め込みベースのリトリーバーの利用も検討できます。
+
+```python
+from langchain_community.retrievers import BM25Retriever
+from langchain_core.tools import Tool
+
+bm25_retriever = BM25Retriever.from_documents(docs)
+
+def extract_text(query: str) -> str:
+    """Retrieves detailed information about gala guests based on their name or relation."""
+    results = bm25_retriever.invoke(query)
+    if results:
+        return "\n\n".join([doc.page_content for doc in results[:3]])
+    else:
+        return "No matching guest information found."
+
+guest_info_tool = Tool(
+    name="guest_info_retriever",
+    func=extract_text,
+    description="Retrieves detailed information about gala guests based on their name or relation."
+)
+```
+
+このツールをステップごとに見ていきましょう。
+- `name` と `description` は、エージェントがこのツールをいつ、どう使うかを理解する助けになります
+- 型デコレータはツールが期待するパラメータを定義します（この場合は検索クエリ）
+- 埋め込みを必要としない強力なテキスト検索アルゴリズムである `BM25Retriever` を使っています
+- メソッドはクエリを処理し、最も関連性の高いゲスト情報を返します
+
+
+</hfoption>
+</hfoptions>
+
+### ステップ3：ツールとAlfredの統合
+
+最後に、エージェントを作成してカスタムツールを組み込み、これまでの作業をひとつにまとめましょう。
+
+<hfoptions id="agents-frameworks">
+<hfoption id="smolagents">
+
+```python
+from smolagents import CodeAgent, InferenceClientModel
+
+# Hugging Faceモデルを初期化する
+model = InferenceClientModel()
+
+# ゲスト情報ツールを持った、ガラ用エージェントのAlfredを作成する
+alfred = CodeAgent(tools=[guest_info_tool], model=model)
+
+# ガラの最中にAlfredが受け取りそうなクエリの例
+response = alfred.run("Tell me about our guest named 'Lady Ada Lovelace'.")
+
+print("🎩 Alfredの応答：")
+print(response)
+```
+
+期待される出力：
+
+```
+🎩 Alfredの応答：
+Based on the information I retrieved, Lady Ada Lovelace is an esteemed mathematician and friend. She is renowned for her pioneering work in mathematics and computing, often celebrated as the first computer programmer due to her work on Charles Babbage's Analytical Engine. Her email address is ada.lovelace@example.com.
+```
+
+この最後のステップでは、次の処理を行っています。
+- `InferenceClientModel` クラスを使ってHugging Faceモデルを初期化します
+- エージェント（Alfred）を、問題解決のためにPythonコードを実行できる `CodeAgent` として作成します
+- 「Lady Ada Lovelace」という名前のゲストに関する情報を取得するようAlfredに頼みます
+
+</hfoption>
+<hfoption id="llama-index">
+
+```python
+from llama_index.core.agent.workflow import AgentWorkflow
+from llama_index.llms.huggingface_api import HuggingFaceInferenceAPI
+
+# Hugging Faceモデルを初期化する
+llm = HuggingFaceInferenceAPI(model_name="Qwen/Qwen2.5-Coder-32B-Instruct")
+
+# ゲスト情報ツールを持った、ガラ用エージェントのAlfredを作成する
+alfred = AgentWorkflow.from_tools_or_functions(
+    [guest_info_tool],
+    llm=llm,
+)
+
+# ガラの最中にAlfredが受け取りそうなクエリの例
+response = await alfred.run("Tell me about our guest named 'Lady Ada Lovelace'.")
+
+print("🎩 Alfredの応答：")
+print(response)
+```
+
+期待される出力：
+
+```
+🎩 Alfredの応答：
+Lady Ada Lovelace is an esteemed mathematician and friend, renowned for her pioneering work in mathematics and computing. She is celebrated as the first computer programmer due to her work on Charles Babbage's Analytical Engine. Her email is ada.lovelace@example.com.
+```
+
+この最後のステップでは、次の処理を行っています。
+- `HuggingFaceInferenceAPI` クラスを使ってHugging Faceモデルを初期化します
+- 作成したばかりのツールを含め、エージェント（Alfred）を `AgentWorkflow` として作成します
+- 「Lady Ada Lovelace」という名前のゲストに関する情報を取得するようAlfredに頼みます
+
+</hfoption>
+<hfoption id="langgraph">
+
+```python
+from typing import TypedDict, Annotated
+from langgraph.graph.message import add_messages
+from langchain_core.messages import AnyMessage, HumanMessage, AIMessage
+from langgraph.prebuilt import ToolNode
+from langgraph.graph import START, StateGraph
+from langgraph.prebuilt import tools_condition
+from langchain_huggingface import HuggingFaceEndpoint, ChatHuggingFace
+
+# ツールを含むチャットインターフェースを生成する
+llm = HuggingFaceEndpoint(
+    repo_id="Qwen/Qwen2.5-Coder-32B-Instruct",
+    huggingfacehub_api_token=HUGGINGFACEHUB_API_TOKEN,
+)
+
+chat = ChatHuggingFace(llm=llm, verbose=True)
+tools = [guest_info_tool]
+chat_with_tools = chat.bind_tools(tools)
+
+# AgentStateとエージェントのグラフを生成する
+class AgentState(TypedDict):
+    messages: Annotated[list[AnyMessage], add_messages]
+
+def assistant(state: AgentState):
+    return {
+        "messages": [chat_with_tools.invoke(state["messages"])],
+    }
+
+## グラフ
+builder = StateGraph(AgentState)
+
+# ノードを定義する: 実際の処理を行う
+builder.add_node("assistant", assistant)
+builder.add_node("tools", ToolNode(tools))
+
+# エッジを定義する: 制御フローの動きを決める
+builder.add_edge(START, "assistant")
+builder.add_conditional_edges(
+    "assistant",
+    # 最新のメッセージがツールを必要とする場合は、ツールへルーティングする
+    # それ以外の場合は、直接応答する
+    tools_condition,
+)
+builder.add_edge("tools", "assistant")
+alfred = builder.compile()
+
+messages = [HumanMessage(content="Tell me about our guest named 'Lady Ada Lovelace'.")]
+response = alfred.invoke({"messages": messages})
+
+print("🎩 Alfredの応答：")
+print(response['messages'][-1].content)
+```
+
+期待される出力：
+
+```
+🎩 Alfredの応答：
+Lady Ada Lovelace is an esteemed mathematician and pioneer in computing, often celebrated as the first computer programmer due to her work on Charles Babbage's Analytical Engine.
+```
+
+この最後のステップでは、次の処理を行っています。
+- `HuggingFaceEndpoint` クラスを使ってHugging Faceモデルを初期化します。あわせてチャットインターフェースを生成し、ツールを追加します
+- エージェント（Alfred）を、2つのノード（`assistant`、`tools`）をエッジで結んだ `StateGraph` として作成します
+- 「Lady Ada Lovelace」という名前のゲストに関する情報を取得するようAlfredに頼みます
+
+</hfoption>
+</hfoptions>
+
+## やり取りの例
+
+ガラの最中、会話は次のように進むかもしれません。
+
+**あなた：** 「Alfred、大使と話しているあの紳士は誰ですか？」
+
+**Alfred：** *ゲストのデータベースを素早く検索して* 「旦那様、あの方はDr. Nikola Teslaです。大学時代からの古い友人ですね。最近、新しい無線エネルギー伝送システムの特許を取得しました。その件についてあなたと話せれば、きっと喜ぶでしょう。彼はハトが大好きなので、世間話のきっかけにもなりそうです」
+
+```json
+{
+    "name": "Dr. Nikola Tesla",
+    "relation": "old friend from university days",  
+    "description": "Dr. Nikola Tesla is an old friend from your university days. He's recently patented a new wireless energy transmission system and would be delighted to discuss it with you. Just remember he's passionate about pigeons, so that might make for good small talk.",
+    "email": "nikola.tesla@gmail.com"
+}
+```
+
+## さらに発展させる
+
+Alfredがゲスト情報を取得できるようになったので、このシステムをどう強化できるか考えてみましょう。
+
+1. **リトリーバーを改良**して、[sentence-transformers](https://www.sbert.net/)のような、より高度なアルゴリズムを使う
+2. **会話メモリを実装**して、Alfredが以前のやり取りを覚えられるようにする
+3. **Web検索と組み合わせ**て、面識のないゲストの最新情報を取得する
+4. **複数のインデックスを統合**して、検証済みの情報源からより完全な情報を得る
+
+これでAlfredは、ゲストからの問い合わせに難なく対応できるようになりました。あなたのガラが、今世紀で最も洗練され、楽しいイベントとして記憶に残ることは間違いありません！
+
+> [!TIP]
+> リトリーバーツールを拡張して、各ゲストの興味や背景に基づく会話のきっかけも返すようにしてみましょう。ツールをどう変更すれば実現できますか？
+>
+> できあがったら、ゲストリトリーバーツールを <code>retriever.py</code> ファイルに実装してください。
