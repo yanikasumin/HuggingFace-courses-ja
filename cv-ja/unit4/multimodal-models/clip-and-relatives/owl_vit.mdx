@@ -1,0 +1,77 @@
+# マルチモーダル物体検出（OWL-ViT）
+### はじめに
+
+物体検出はコンピュータービジョンの重要なタスクであり、YOLO のようなモデル（[原論文](https://arxiv.org/abs/1506.02640)、[最新のコード版](https://github.com/ultralytics/ultralytics)）によって大きな進歩を遂げてきました。しかし、YOLO のような従来のモデルには、学習データセットの外にある物体を検出するうえで限界があります。この課題に対処するため、AI の研究者たちは、より幅広い種類の物体を検出できるモデルの開発を進めてきました。その結果、CLIP に似た仕組みを物体検出に応用したモデルが登場しました。
+
+### OWL-ViT：強化点と能力
+OWL-ViT は、オープンボキャブラリ物体検出における飛躍的な進歩を表しています。CLIP と同様の学習段階から始まり、対照損失を使った視覚エンコーダと言語エンコーダに焦点を当てます。この基礎段階により、モデルは視覚データとテキストデータの共有表現空間を学習できます。
+
+#### 物体検出のためのファインチューニング
+OWL-ViT の革新は、物体検出のためのファインチューニング段階で現れます。ここでは、CLIP で使われるトークンのプーリングと最終投影層の代わりに、OWL-ViT は各出力トークンの線形投影を用いて、物体ごとの画像埋め込みを取得します。これらの埋め込みは分類に使われ、ボックス座標はトークン表現から小さな MLP を通じて導かれます。このアプローチにより、OWL-ViT は画像内の物体とその空間位置を検出でき、従来の物体検出モデルに対する大きな進歩となっています。
+
+以下は、OWL-ViT の事前学習とファインチューニングの段階の図です：
+
+![OWL-ViT の事前学習とファインチューニング](https://huggingface.co/datasets/huggingface/documentation-images/resolve/main/transformers/model_doc/owlvit_architecture.jpg)
+
+#### オープンボキャブラリ検出
+ファインチューニング後、OWL-ViT はオープンボキャブラリ物体検出に優れた性能を示します。視覚エンコーダとテキストエンコーダの共有埋め込み空間のおかげで、学習データセットに明示的に存在しない物体も特定できます。この能力により、物体検出に画像とテキストクエリの両方を使うことが可能になり、多用途性が高まります。
+
+#### 使用例
+実際の応用では、通常、テキストをクエリとして使い、画像を文脈として使います。次の Python の例は、OWL-ViT で推論を実行するために transformers ライブラリを使う方法を示しています。
+
+```python
+import requests
+from PIL import Image, ImageDraw
+import torch
+from transformers import OwlViTProcessor, OwlViTForObjectDetection
+
+processor = OwlViTProcessor.from_pretrained("google/owlvit-base-patch32")
+model = OwlViTForObjectDetection.from_pretrained("google/owlvit-base-patch32")
+
+url = "http://images.cocodataset.org/val2017/000000039769.jpg"
+image = Image.open(requests.get(url, stream=True).raw)
+texts = [["a photo of a cat", "a photo of a dog", "remote control", "cat tail"]]
+inputs = processor(text=texts, images=image, return_tensors="pt")
+outputs = model(**inputs)
+
+target_sizes = torch.Tensor([image.size[::-1]])
+results = processor.post_process_object_detection(
+    outputs=outputs, target_sizes=target_sizes, threshold=0.1
+)
+i = 0  # 対応するテキストクエリについて、最初の画像の予測を取得する
+text = texts[i]
+boxes, scores, labels = results[i]["boxes"], results[i]["scores"], results[i]["labels"]
+
+# 描画オブジェクトを作成する
+draw = ImageDraw.Draw(image)
+
+# 各バウンディングボックスを描画する
+for box, score, label in zip(boxes, scores, labels):
+    box = [round(i, 2) for i in box.tolist()]
+    print(
+        f"検出した物体：{text[label]}、信頼度：{round(score.item(), 3)}、位置：{box}"
+    )
+    # 画像にバウンディングボックスを描画する
+    draw.rectangle(box, outline="red")
+
+# 画像を表示する
+image
+```
+画像は次のようになるはずです：
+![OWL-ViT の例](https://huggingface.co/datasets/hf-vision/course-assets/resolve/main/OWL_ViT_example.jpg)
+この例は OWL-ViT の単純なユースケースを示しています。データセットにありそうな猫のような物体と、どの物体検出データセットにもおそらく存在しない猫のしっぽのような、より抽象的な物体を指定しています。これは、オープンボキャブラリ物体検出における OWL-ViT の強力さを示しています。
+
+自由にコードを使ってより複雑な例を試したり、この Gradio アプリを使ったりしてみてください：
+
+<iframe
+	src="https://johko-OWL-ViT.hf.space"
+	frameborder="0"
+	width="850"
+	height="450">
+</iframe>
+
+### まとめ
+
+OWL-ViT は、AI モデルが視覚情報を理解し、利用する方法に新たな可能性をもたらしました。言語の理解と視覚情報の認識を組み合わせることで、従来よりも幅広い種類の物体を、正確かつ柔軟に検出できるようにします。こうしたモデルの進歩は、変化の多い実世界の環境など、画像に写っている状況を細かく理解する必要がある場面で特に重要です。
+
+より詳しい情報と技術的な詳細は、[OWL-ViT 論文](https://arxiv.org/abs/2205.06230) を参照してください。[OWL-ViT 2 モデル](https://huggingface.co/docs/transformers/model_doc/owlv2) についての情報も Hugging Face ドキュメントで確認できます。

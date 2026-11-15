@@ -1,0 +1,153 @@
+# 3D レンダラーを使った合成データの生成
+
+訓練用の合成データとしてコンピュータで画像を生成する場合は、できるだけ実物に近い画像を作るのが理想的です。
+[Blender Cycles](https://www.blender.org) や [Unity](https://unity.com) のような物理ベースレンダラー（PBR）を使うと、見た目や質感が現実世界のものとほとんど変わらない、非常にリアルな画像を生成できます。
+
+つやのあるリンゴの画像を作っていると想像してみてください。そのリンゴに色を付けるとき、リアルに見せたいですよね？
+そこで登場するのが PBR と呼ばれるものです。
+
+![リンゴ](https://huggingface.co/datasets/hf-vision/course-assets/resolve/main/apple.jpg)
+
+では、分解して説明しましょう。
+
+_色と光（Colors and Light）_
+
+- 光が物体に当たると、その物体の性質によってさまざまな反応が起こります。PBR は、こうした光と物体の相互作用を理解し、コンピュータ上で再現しようとするものです。
+- 光がリンゴにどう当たるか考えてみてください。光が直接当たる部分は明るくなり、光が遮られたり届きにくかったりする部分は暗くなります。
+
+_素材（Materials）_
+
+- 素材によって光への反応は異なります。たとえば、つやのある金属の表面は、柔らかくマットな布よりも光を強く反射します。
+- PBR は物体の素材を考慮します。そのため、金属の花瓶をレンダリングすると、ふわふわのテディベアとは異なる光の反射が再現されます。
+
+_テクスチャ（Textures）_
+
+- PBR はテクスチャを使って、物体表面の凹凸、傷、小さな溝などの細部を加えます。現実世界では完全に滑らかなものはほとんどないため、これによって物がよりリアルに見えます。
+
+_リアリズム（Realism）_
+
+- PBR は、物を可能な限り現実に近づけることを目指します。そのために、現実における光の振る舞い、素材ごとに異なる光との相互作用の仕方、表面の小さな不完全さを考慮します。
+
+_光の層（Layers of Light）_
+
+- コップの水を見ていると想像してみてください。PBR は、光が水をどのように通過し、見えるものをどのように歪めるかをシミュレーションしようとします。
+- 光が物体のさまざまな部分と、複数の層を通じてどのように相互作用するかを考慮することで、レンダリングした画像をよりリアルにします。
+
+PBR はワークフローも簡単にします。望む見た目にするために多くのパラメータを手作業で調整する代わりに、標準化された素材とライティングモデルを使えます。
+これにより、作業がより直感的で分かりやすくなります。
+
+では、コンピュータビジョンで使われるような AI モデルの訓練について考えてみましょう。
+コンピュータに画像内の物体を認識させるには、実世界のさまざまな状況を忠実に再現した画像があると役立ちます。
+PBR を使えば、コンピュータビジョンモデルの訓練に効果的に利用できるほどリアルな合成データを生成できます。
+
+PBR に利用できる 3D レンダリングエンジンには、[Blender Cycles](https://www.blender.org) や [Unity](https://unity.com) などがあります。
+ここでは、オープンソースで参考資料も豊富な Blender を取り上げます。
+
+## Blender
+
+Blender は、アニメーション映画、視覚効果、アート、3D ゲームなどの制作に使われる、強力なオープンソースの 3D コンピュータグラフィックスソフトウェアです。
+幅広い機能を備えており、アーティスト、アニメーター、開発者にとって多用途なツールとなっています。
+まずは、象の合成画像をレンダリングする基本的な例を見ていきましょう。
+
+必須の手順は次のとおりです。
+
+- 象のモデルを作成します。下に示したものは、フォトグラメトリを用いて [Metascan](https://metascan.ai) アプリで作成されました。
+  フォトグラメトリは、通常の写真から 3D モデルを作る方法です。たとえば、おもちゃをさまざまな角度から何枚も撮影し、
+  その写真を使ってコンピュータ上におもちゃの 3D モデルを再現するようなものです。
+- 背景を作成します。背景の作成には複数の手順が必要でした。詳しくは[こちら](https://github.com/kfahn22/Synthetic-Data-Creation-in-Blender/tree/main/BACKGROUND)を参照してください。
+- ライティングとカメラの位置を調整します。
+- 象がフレーム（つまりカメラの視界）に収まるよう、象の位置と回転を修正します。
+
+Blender で生成された象の画像がこちらです。
+
+![象の画像](https://huggingface.co/datasets/hf-vision/course-assets/resolve/main/synthetic-data-creation-PBR/rendered_elephant.png)
+
+完全に実写のような画像ではありませんが、象の個体数を監視するモデルの訓練には十分なリアルさがあるでしょう。もちろん、そのためには
+象の合成画像を大量に集めたデータセットが必要です！Blender の Python 環境である
+[bpy](https://docs.blender.org/api/current/info_advanced_blender_as_bpy.html) を使えば、
+象の位置や回転をランダムに変えながら、大量の画像をレンダリングできます。
+セグメンテーション、深度、法線、姿勢推定に役立つスクリプトを使うこともできます。
+
+素晴らしい！では、どうやって始めればよいでしょうか？
+
+残念ながら、Blender を使いこなせるようになるには、かなりの学習が必要です。個々の手順はそれほど難しくありませんが、
+すべての手順を自分で調べなくてもデータセットをレンダリングできたら便利ですよね？
+幸い、BlenderProc というライブラリがあります。Blender を基盤としており、リアルな合成データとアノテーションを生成するために
+必要なスクリプトがすべて揃っています。
+
+## BlenderProc
+
+BlenderProc のパイプラインは、Denninger らによる [BlenderProc](https://arxiv.org/abs/1911.01911) で紹介されたもので、[Blender](https://www.blender.org/) の上に構築されたモジュール式パイプラインです。
+セグメンテーション、深度、法線、姿勢推定など、さまざまなユースケースの画像生成に使えます。
+
+畳み込みニューラルネットワークの訓練に使うリアルな画像を生成できるよう、専用に開発されています。  
+合成データ生成に適した特長は次のとおりです。
+
+- 手続き型生成：手続き型の手法を使い、バリエーションのある複雑な 3D シーンを自動生成できます。
+- シミュレーション：物理シミュレーションなどを組み込むことで、よりリアルな画像を生成できます。
+- 大規模生成：大規模なシーン生成を効率的に処理できる設計で、さまざまな用途に適しています。
+- 自動化と拡張性：
+  - スクリプト：Python スクリプトで生成処理を自動化し、用途に合わせて BlenderProc の動作やパラメータを調整できます。
+  - 並列処理：並列処理によって処理能力を拡張できるため、大量のシーンを効率よく生成できます。
+
+BlenderProc は pip でインストールできます。
+
+```bash
+pip install blenderProc
+```
+
+あるいは、公式の [BlenderProc リポジトリ](https://github.com/DLR-RM/BlenderProc) を Git でクローンすることもできます。
+
+```bash
+git clone https://github.com/DLR-RM/BlenderProc
+```
+
+BlenderProc は Blender の Python 環境（bpy）の中で実行しなければなりません。Blender API にアクセスする唯一の方法だからです。
+
+```bash
+blenderproc run <your_python_script>
+```
+
+Google Colab で実行するノートブックを使えば、[こちら](https://github.com/DLR-RM/BlenderProc/tree/main/examples/basics)にある基本的なサンプルを試しながら BlenderProc を体験できます。
+基本例でレンダリングされた画像がこちらです。
+
+![色](https://huggingface.co/datasets/hf-vision/course-assets/resolve/main/synthetic-data-creation-PBR/colors.png)
+![法線](https://huggingface.co/datasets/hf-vision/course-assets/resolve/main/synthetic-data-creation-PBR/normals.png)
+![深度](https://huggingface.co/datasets/hf-vision/course-assets/resolve/main/synthetic-data-creation-PBR/depth.png)
+
+## Blender の参考資料
+
+- [ユーザーマニュアル（User Manual）](https://docs.blender.org/manual/en/latest/0)
+- [Awesome-blender：Blender の参考資料を幅広く集めたリスト](https://awesome-blender.netlify.app)
+- [Blender の YouTube チャンネル](https://www.youtube.com/@BlenderOfficial)
+
+### 次の動画では、Blender で 3D 合成データセットをレンダリングする方法を説明します。
+
+<Youtube id="E1Pqpfg5kSo" />
+
+### 次の動画では、フォトグラメトリを使って 3D オブジェクトを作成する方法を説明します。
+
+<Youtube id="Pcqokf3PG_4" />
+
+## 論文・ブログ
+
+- [Blender を用いた複数カメラ計測システムのデジタルツイン開発](https://iopscience.iop.org/article/10.1088/1361-6501/acc59e/pdf_)
+- [Blender で深度マップと法線マップを生成する](https://www.saifkhichi.com/blog/blender-depth-map-surface-normals)
+- [合成訓練データを使った物体検出](https://medium.com/rowden/object-detection-with-synthetic-training-data-f6735a5a34bc)
+
+## BlenderProc の参考資料
+
+- [BlenderProc の GitHub リポジトリ](https://github.com/DLR-RM/BlenderProc)
+- [BlenderProc：フォトリアリスティックなレンダリングによる現実とのギャップの縮小](https://elib.dlr.de/139317/1/denninger.pdf)
+- [ドキュメント（Documentation）](https://dlr-rm.github.io/BlenderProc/)
+
+### 次の動画では、BlenderProc パイプラインの概要を説明します。
+
+<Youtube id="1AvY_iS6xQA" />
+
+## 論文
+
+- [3D 動物図鑑：動物の 3D 形状と姿勢のモデリング]()
+- [合成データだけを使った実環境での顔解析]()
+- [密集した物体のピッキングに向けた物体検出とオートエンコーダによる 6D 姿勢推定](https://arxiv.org/pdf/2106.08045.pdf)
+- [合成動物画像からの学習](https://arxiv.org/abs/1912.08265)

@@ -1,0 +1,170 @@
+# MobileViT v2 
+
+これまで取り上げてきた Vision Transformer のアーキテクチャは計算量が多く、モバイルデバイスで動かすのは困難です。従来、モバイル向けの視覚タスクで最先端だったアーキテクチャは CNN を使っていました。しかし CNN はグローバルな表現を学習できないため、Transformer 系のモデルより性能が劣ります。
+
+MobileViT は、モバイル向けの画像認識に求められる、処理の遅延が少なく軽量なモデルの実現を目指したアーキテクチャです。同時に、Transformer と CNN の両方の利点を活かしています。Apple が開発した MobileViT は、Google の研究チームによる MobileNet を基盤としています。従来の MobileNet アーキテクチャに MobileViT Block と separable self-attention を追加した構成です。この2つの要素によって、処理の遅延を抑え、パラメータ数と計算量を削減できます。そのため、計算資源に制約のあるデバイスでも画像認識モデルを動かせます。
+
+## MobileViT アーキテクチャ
+
+論文「MobileViT: Light-weight, General-purpose, and Mobile-friendly Vision Transformer」（Sachin Mehta と Mohammad Rastegari による）で提示された MobileViT のアーキテクチャは次のとおりです。
+![MobileViT アーキテクチャ](https://huggingface.co/datasets/hf-vision/course-assets/resolve/main/MobileViT-Architecture.png)
+
+一部は前の章で見たものと似ているはずです。MobileNet ブロック、nxn 畳み込み、ダウンサンプリング、グローバルプーリング、そして最後の線形層です。
+
+グローバルプーリング層と線形層から分かるように、ここで示しているモデルは分類用です。ただし、この論文で導入されたブロック自体は、さまざまな視覚アプリケーションに使えます。
+
+## MobileViT Block
+
+MobileViT ブロックは、CNN の局所的な処理と、Transformer に見られるグローバルな処理を組み合わせています。畳み込みと Transformer 層を組み合わせて使うことで、空間的に局所的な情報と、データ中のグローバルな依存関係の両方を捉えられます。
+
+MobileViT Block の図を次に示します。
+![MobileViT Block](https://huggingface.co/datasets/hf-vision/course-assets/resolve/main/MobileViT-MobileViTBlock.png)
+
+情報量が多い図です。順に分解して見ていきます。
+
+- ブロックは、複数のチャンネルを持つ画像を入力として受け取ります。たとえば RGB 画像なら 3 チャンネルなので、ブロックは 3 チャンネルの画像を受け取ります。 
+- 次に、チャンネルに対して N × N の畳み込みを行い、既存のチャンネルに追加します。
+- 続いて、これらのチャンネルの線形結合を作り、既存のチャンネルのスタックに追加します。
+- 各チャンネルについて、画像を平坦化したパッチへ展開（unfold）します。
+- 平坦化したパッチを Transformer に通し、新しいパッチへ射影します。 
+- パッチを折り畳んで（fold）元に戻し、d 次元の画像を作ります。 
+- その後、つなぎ合わせた画像の上に pointwise 畳み込みを重ねます。 
+- 最後に、つなぎ合わせた画像を元の RGB 画像と再結合します。
+
+この方法では、パッチの位置情報を保持することで非局所的な依存関係と局所的な依存関係をモデル化しながら、H × W（入力全体のサイズ）の受容野が得られます。パッチの展開と折り畳みにその仕組みが見て取れます。
+
+<Tip>
+受容野とは、入力空間の中で、特定の層の特徴に影響を与える領域の大きさのことです。
+</Tip>
+
+この複合的なアプローチにより、MobileViT は従来の CNN よりパラメータ数が少なく、しかも精度も向上します。
+![MobileViT と CNN の性能比較](https://huggingface.co/datasets/hf-vision/course-assets/resolve/main/MobileViT-CNNPreformance.png)  
+
+元の MobileViT アーキテクチャで主な効率のボトルネックになっているのは、Transformer の multi-head self-attention です。入力トークンに対して O(k^2) の時間計算量が必要です。
+
+Multi-head self-attention には、バッチ単位の行列積のようなコストの高い演算も必要で、リソースに制約のあるデバイスではレイテンシに影響します。
+
+同じ著者らは、attention をいかに高速化するかを扱った別の論文も書いています。その手法は separable self-attention と呼ばれています。
+
+# Separable Self-attention
+
+従来の multi-head attention では、入力トークンに対する計算量は二次（O(k^2)）です。この論文で導入された separable self-attention の計算量は、入力トークンに対して O(k) です。
+
+さらに、この attention 手法はバッチ単位の行列積を一切使わないため、携帯電話のようなリソースに制約のあるデバイスでのレイテンシ削減に役立ちます。
+
+これは大きな改善です。
+
+<Tip>
+Attention には他にも多くの形式があり、計算量は O(k)、O(k*sqrt(k))、O(k*log(k)) などさまざまです。
+
+Separable self-attention は、計算量 O(k) を初めて実現した手法ではありません。これより前に、[Linformer](https://arxiv.org/abs/2006.04768) でもアテンションの計算量 O(k) が達成されていました。
+
+ただし、Linformer ではバッチ単位の行列積のようなコストの高い演算が依然として使われていました。
+</Tip>
+
+Transformer、Linformer、MobileViT の attention の仕組みの比較を次に示します。
+![Attention の比較](https://huggingface.co/datasets/hf-vision/course-assets/resolve/main/MobileViT-Attention.png)  
+
+上の画像は、Transformer、Linformer、MobileViT v2 の各アーキテクチャにおける attention の種類ごとの比較です。
+
+たとえば、Transformer と Linformer のどちらのアーキテクチャでも、アテンションの計算ではバッチ単位の行列積を2回行います。  
+
+一方、separable self-attention では、この2回のバッチ単位の行列積を、それぞれ別の線形演算に置き換えます。これにより、推論速度がさらに向上します。 
+
+# まとめ
+
+MobileViT ブロックは、空間的に局所的な情報を保持しながらグローバルな表現を構築し、Transformer と CNN の強みを組み合わせています。画像全体をカバーする受容野を提供します。
+
+この既存のアーキテクチャに separable self-attention を導入したことで、精度と推論速度の両方がさらに向上しました。
+![推論テスト](https://huggingface.co/datasets/hf-vision/course-assets/resolve/main/MobileViT-Inference.png)
+
+iPhone 12 でさまざまなアーキテクチャを使って行ったテストでは、上に示すように、separable attention の導入により性能が大きく向上しました。
+
+全体として、MobileViT アーキテクチャは、リソースに制約のある視覚タスク向けの非常に強力なアーキテクチャであり、高速な推論と高い精度を提供します。
+
+# Transformers ライブラリ
+
+MobileViT v2 をローカルで試したい場合は、Hugging Face の `transformers` ライブラリを使えます。方法は次のとおりです。
+
+```bash
+pip install transformers
+```
+次に、MobileViT モデルで画像を分類する短いコード例を示します。
+
+```python
+from transformers import AutoImageProcessor, MobileViTV2ForImageClassification
+from datasets import load_dataset
+from PIL import Image
+
+url = "http://images.cocodataset.org/val2017/000000039769.jpg"
+image = Image.open(requests.get(url, stream=True).raw)
+
+image_processor = AutoImageProcessor.from_pretrained(
+    "apple/mobilevitv2-1.0-imagenet1k-256"
+)
+model = MobileViTV2ForImageClassification.from_pretrained(
+    "apple/mobilevitv2-1.0-imagenet1k-256"
+)
+
+inputs = image_processor(image, return_tensors="pt")
+
+logits = model(**inputs).logits
+
+# モデルは ImageNet の 1000 クラスのいずれかを予測します
+predicted_label = logits.argmax(-1).item()
+print(model.config.id2label[predicted_label])
+```
+
+# Inference API
+
+さらに軽量なコンピュータビジョン環境として、MobileViT v2 で Hugging Face Inference API を使うこともできます。
+Inference API は、Hugging Face Hub で公開されている多くのモデルとやり取りするための API です。
+Inference API には、Python から次のように問い合わせできます。
+
+```py
+import json
+import requests
+
+headers = {"Authorization": f"Bearer {API_TOKEN}"}
+API_URL = (
+    "https://api-inference.huggingface.co/models/apple/mobilevitv2-1.0-imagenet1k-256"
+)
+
+
+def query(filename):
+    with open(filename, "rb") as f:
+        data = f.read()
+    response = requests.request("POST", API_URL, headers=headers, data=data)
+    return json.loads(response.content.decode("utf-8"))
+
+
+data = query("cats.jpg")
+```
+JavaScript でも同じことができます。
+```js
+import fetch from "node-fetch";
+import fs from "fs";
+async function query(filename) {
+    const data = fs.readFileSync(filename);
+    const response = await fetch(
+        "https://api-inference.huggingface.co/models/apple/mobilevitv2-1.0-imagenet1k-256",
+        {
+            headers: { Authorization: `Bearer ${API_TOKEN}` },
+            method: "POST",
+            body: data,
+        }
+    );
+    const result = await response.json();
+    return result;
+}
+query("cats.jpg").then((response) => {
+    console.log(JSON.stringify(response));
+});
+```
+最後に、curl 経由で Inference API に問い合わせることもできます。
+```bash
+curl https://api-inference.huggingface.co/models/apple/mobilevitv2-1.0-imagenet1k-256 \
+        -X POST \
+        --data-binary '@cats.jpg' \
+        -H "Authorization: Bearer ${HF_API_TOKEN}"
+```

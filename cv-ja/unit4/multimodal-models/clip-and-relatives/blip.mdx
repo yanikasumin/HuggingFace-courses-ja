@@ -1,0 +1,57 @@
+# マルチモーダルテキスト生成（BLIP）
+## はじめに
+
+CLIP の公開後、AI コミュニティは、より大規模なデータセットと対照学習がディープラーニングにもたらす計り知れない可能性を認識しました。この領域での大きな発展の1つが [BLIP（Bootstrapping Language-Image Pre-training）](https://arxiv.org/abs/2201.12086) で、マルチモーダルモデルの能力をテキスト生成にまで拡張しました。
+
+## CapFilt：キャプション生成とフィルタリング
+マルチモーダルモデルの学習には大規模なデータセットが必要なため、インターネットから画像とその代替テキスト（alt テキスト）のペアを収集することがよくあります。しかし、alt テキストは画像の視覚的内容を正確に説明していないことが多く、視覚言語の整合を学習するには最適とは言えないノイズの多いシグナルとなります。そこで BLIP の論文は、キャプション生成とフィルタリングの仕組み（CapFilt）を導入しました。これは、ノイズの多いペアを除去するディープラーニングモデルと、画像のキャプションを作成するもう1つのモデルから構成されます。どちらのモデルも、まず人間が注釈を付けたデータセットでファインチューニングされます。CapFilt を使ってデータセットを洗浄すると、ウェブデータセットをそのまま使うよりも優れた性能が得られることが分かりました。このプロセスの詳細は [BLIP 論文](https://arxiv.org/abs/2201.12086) で確認できます。
+
+## BLIP のアーキテクチャと学習
+BLIP のアーキテクチャは、視覚エンコーダと Multimodal Mixture of Encoder-Decoder（MED）を組み合わせ、視覚データとテキストデータの両方を多用途に処理できるようにします。その構造は下図のとおりで（同じ色のブロックはパラメータを共有します）、次の要素を備えています：
+
+- **Vision Transformer（ViT）：**セルフアテンション、フィードフォワードブロック、埋め込み表現に使う `[CLS]` トークンを備えた、基本的な構成の視覚 Transformer です。
+- **ユニモーダルテキストエンコーダ：**BERT のアーキテクチャに似ており、埋め込みに `[CLS]` トークンを使い、CLIP のように対照損失を用いて画像とテキストの表現を整合させます。
+- **画像に基づくテキストエンコーダ（Image-Grounded Text Encoder）：**`[CLS]` トークンを `[Encode]` トークンに置き換えたものです。クロスアテンション層により画像とテキストの埋め込みを統合し、マルチモーダルな表現を作成します。線形層を使って画像・テキストペアの整合性を評価します。
+- **画像に基づくテキストデコーダ（Image-Grounded Text Decoder）：**双方向セルフアテンションを因果的（causal）セルフアテンションに置き換えたデコーダです。キャプション生成や視覚的質問応答などのタスクに向けて、クロスエントロピー損失を用い、テキストを自己回帰的に生成するよう学習します。
+
+BLIP は、視覚エンコーダと、エンコーダとデコーダの機能を組み合わせたマルチモーダルな構成要素を統合することで、画像とテキストを高度に処理できます。この設計により、画像・テキストペアの整合から、キャプションの生成、視覚的質問への回答まで、多様なタスクに巧みに対応できます。
+
+## 使用例：BLIP-2
+BLIP の成功を受け、その開発元である Salesforce は、改良された BLIP-2 を発表しました。BLIP-2 の進歩と能力は [BLIP-2 論文](https://arxiv.org/abs/2301.12597) と [Hugging Face ドキュメント](https://huggingface.co/docs/transformers/model_doc/blip-2) で詳しく説明されています。ここでは、BLIP-2 を視覚的質問応答に利用します。
+
+```python
+from PIL import Image
+import requests
+from transformers import Blip2Processor, Blip2ForConditionalGeneration
+import torch
+
+device = "cuda" if torch.cuda.is_available() else "cpu"
+
+processor = Blip2Processor.from_pretrained("Salesforce/blip2-opt-2.7b")
+model = Blip2ForConditionalGeneration.from_pretrained(
+    "Salesforce/blip2-opt-2.7b", torch_dtype=torch.float16
+)
+model.to(device)
+url = "http://images.cocodataset.org/val2017/000000039769.jpg"
+image = Image.open(requests.get(url, stream=True).raw)
+
+prompt = "Question: How many remotes are there? Answer:"
+inputs = processor(images=image, text=prompt, return_tensors="pt").to(
+    device, torch.float16
+)
+outputs = model.generate(**inputs)
+text = processor.tokenizer.batch_decode(outputs, skip_special_tokens=True)
+print(text)
+```
+このコードスニペットは、視覚的質問応答への BLIP-2 の応用を示しています。より複雑なクエリを試したり、提供されている Gradio アプリでこの機能をさらに探ったりしてみてください：
+
+<iframe
+	src="https://merve-BLIP2-with-transformers.hf.space"
+	frameborder="0"
+	width="850"
+	height="450">
+</iframe>
+
+## まとめ
+
+BLIP は、CLIP の強みを活かして堅牢なモデルを作り、マルチモーダルテキスト生成における重要な節目となりました。データセットの量より質の重要性を強調し、マルチモーダル学習の進歩に貢献しています。詳細は [BLIP 論文](https://arxiv.org/abs/2201.12086)、[BLIP-2 論文](https://arxiv.org/abs/2301.12597)、そして Hugging Face ドキュメントの [BLIP](https://huggingface.co/docs/transformers/model_doc/blip) と [BLIP-2](https://huggingface.co/docs/transformers/model_doc/blip-2) を参照してください。

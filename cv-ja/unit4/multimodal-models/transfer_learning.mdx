@@ -1,0 +1,49 @@
+# マルチモーダルモデルの転移学習
+
+前セクションでは、CLIP やそれに関連するモデルといったマルチモーダルモデルの基本概念を掘り下げてきました。この章では、さまざまな種類のマルチモーダルモデルを自分のタスクにどう使えるかを見ていきます。
+
+マルチモーダルモデルを自分のユースケースに適応させるアプローチはいくつかあります：
+
+1. **ゼロショット／フューショット学習（Zero\few-shot learning）**。ゼロショット／フューショット学習は、学習データに存在しない問題を解ける大規模な事前学習済みモデルを活用するものです。これらのアプローチは、タスクのためのラベル付きデータが少ししかない（5〜10件の例）場合や、まったくない場合に役立ちます。[ユニット11](https://huggingface.co/learn/computer-vision-course/unit11/1) では、このトピックをさらに詳しく学びます。
+
+2. **モデルをゼロから学習する**。事前学習済みのモデルの重みが利用できない場合や、モデルのデータセットが自分のものと大きく異なる場合に、この方法が必要になります。ここでは、モデルの重みをランダムに初期化し（あるいは [He 初期化](https://arxiv.org/abs/1502.01852) のような、より洗練された方法で）、通常の学習を進めます。ただし、このアプローチには大量の学習データが必要です。
+
+3. **転移学習（Transfer learning）**。転移学習は、ゼロから学習する場合とは異なり、事前学習済みモデルの重みを初期の重みとして使います。
+
+この章は主に、マルチモーダルモデルにおける転移学習の側面に焦点を当てます。転移学習とは何かを復習し、その利点を明らかにして、自分のタスクに転移学習をどう適用できるかを示す実践例を紹介します！
+
+## 転移学習
+
+より形式的に言えば、転移学習とは、1つの問題を解くことで得られた知識、表現、パターンを、別の似た問題を解くために再利用する機械学習手法の集合です。
+
+ディープラーニングの文脈では、転移学習において、あるタスクのためにモデルを学習するとき、別のモデルの重みを初期の重みとして使います。事前学習済みモデルは通常、膨大な量のデータで学習されており、そのデータの性質や関係について有用な知識を持っています。この知識はモデルの重みに埋め込まれているため、それらを初期の重みとして使うことで、事前学習済みモデルに埋め込まれた知識を、学習中のモデルへ転移させることができます。
+
+<div class="flex justify-center">
+    <img src="https://huggingface.co/datasets/hf-vision/course-assets/resolve/main/multimodal_trasnsfer_learning_images/transfer_learning_light.png" alt="転移学習">
+</div>
+
+このアプローチにはいくつかの利点があります：
+
+- **リソース効率：**事前学習済みモデルは膨大なデータを使って長時間学習されているため、転移学習ではモデルを収束させるのに必要な計算リソースを大幅に減らせます。
+
+- **ラベル付きデータの量を減らせる：**同じ理由から、テストデータに対して一定の性能を得るために必要な学習データの量も減らせます。
+
+- **知識の転移：** 新しいタスクへファインチューニングするとき、モデルは事前学習済みモデルの重みにエンコードされた既存の知識を活用します。こうした事前知識の統合は、多くの場合、新しいタスクでの性能向上につながります。
+
+ただし、利点がある一方で、転移学習には考慮すべき課題もあります：
+
+- **ドメインシフト（Domain Shift）：** ソースドメインからターゲットドメインへ知識を適応させることは、データ分布が大きく異なる場合に困難になり得ます。
+
+- **壊滅的忘却（Catastrophic forgetting）：** ファインチューニングの過程で、モデルは新しいタスクに適応するためにパラメータを調整しますが、その際、元のタスクに関連する、以前学習した知識や表現を失ってしまうことがよくあります。
+
+## 転移学習の応用
+
+さまざまなタスクにおける転移学習の実践的な応用を調べます。下の表は、マルチモーダルモデルを使って解けるタスクの説明と、自分のデータでそれらをファインチューニングする方法の例を示しています。
+
+| タスク | 説明 | モデル |
+| --- | --- | --- |
+| [CLIP のファインチューニング](https://colab.research.google.com/github/fariddinar/computer-vision-course/blob/main/notebooks/Unit%204%20-%20Multimodal%20Models/Clip_finetune.ipynb) | カスタムデータセットで CLIP をファインチューニングする | [openai/clip-vit-base-patch32](https://huggingface.co/openai/clip-vit-base-patch32) |
+| [視覚的質問応答（VQA）](https://huggingface.co/docs/transformers/main/en/tasks/visual_question_answering#train-the-model) | 画像に基づいて自然言語で質問に答える | [dandelin/vilt-b32-mlm](https://huggingface.co/dandelin/vilt-b32-mlm) |
+| [画像からテキストへの変換（Image-to-Text）](https://huggingface.co/docs/transformers/main/en/tasks/image_captioning) | 画像を自然言語で説明する | [microsoft/git-base](https://huggingface.co/microsoft/git-base) |
+| [オープンセット物体検出](https://docs.ultralytics.com/models/yolo-world/) | 自然言語の入力で物体を検出する | [YOLO-World](https://huggingface.co/papers/2401.17270) |
+| [アシスタント（GPT-4V 相当）](https://github.com/haotian-liu/LLaVA?tab=readme-ov-file#train) | マルチモーダル分野での指示チューニング（instruction tuning） | [LLaVA](https://huggingface.co/docs/transformers/model_doc/llava) |

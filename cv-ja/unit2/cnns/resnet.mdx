@@ -1,0 +1,123 @@
+# ResNet（残差ネットワーク）
+
+
+
+
+層の多いニューラルネットワークは、層を増やすことでモデルの性能が向上するため、より効果的だと考えられていました。
+
+ネットワークが深くなるにつれて、抽出される特徴はさらに豊かになりました。VGG16 や VGG19 で見られたとおりです。
+
+そこで、「単に層を増やすだけで、ネットワークの学習は本当に簡単になるのか」という疑問が生じました。その障害の1つだった勾配消失問題には、適切な重みの初期化や中間層での正規化によって対処できるようになりました。
+
+しかし、新たな課題として劣化問題（degradation problem）が現れました。ニューラルネットワークが深くなるにつれて、精度は飽和し、急速に劣化しました。浅いプレーンネットワークと深いプレーンネットワークを比較する実験では、深いモデルほど訓練誤差とテスト誤差が高いことが示され、深いアーキテクチャを効果的に訓練することの根本的な難しさが浮かび上がりました。この劣化は過学習によるものではなく、ネットワークが深くなることで訓練誤差が増えたために起きました。追加された層は恒等関数を近似していませんでした。
+
+<img src="https://i.sstatic.net/xDLez.jpg" alt="劣化による誤差" width="512" height="512">
+
+
+ResNet の残差接続は、極端な深さの可能性を解き放ち、従来のアーキテクチャと比べて精度を押し上げました。
+
+
+
+## ResNet のアーキテクチャ
+
+- 残差ブロック。出典： ResNet 論文
+![残差ブロック](https://huggingface.co/datasets/hf-vision/course-assets/blob/main/ResnetBlock.png)
+
+ResNet は残差学習（residual learning）と呼ばれる概念を導入します。これにより、ネットワークは入力から出力への直接の写像を学習しようとする代わりに、残差（学習した表現と入力との差）を学習できます。これはスキップ接続（ショートカット接続とも呼ばれます）によって実現されます。
+
+
+詳しく見ていきましょう。
+
+#### 1. 基本的な構成ブロック：残差ブロック
+
+通常のニューラルネットワークの層では、入力を x、ネットワークが適用する変換を F として、写像 F(x) の学習を目指します。残差学習がない場合、ある層での変換は y = F(x) です。ResNet では、F(x) を直接学習する代わりに、残差 R(x) を学習するようネットワークを設計します。ここで R(x) = F(x) − x です。したがって、残差ブロックでの変換は y = F(x) + x と書かれます。
+
+ここで、x は残差ブロックへの入力、F(x) はブロックに積み重なった層（通常は畳み込み、バッチ正規化、ReLU）の出力です。恒等写像である x が、（スキップ接続を通じて）F(x) の出力にそのまま加えられます。つまりブロックは残差 R(x) = F(x) を学習しており、最終的な出力は F(x) + x となります。この残差関数は、元の写像と比べて最適化が容易です。最適な変換が恒等写像に近い場合（つまり変換が不要な場合）、ネットワークは F(x) ≈ 0 とすることで入力をそのまま通すことが簡単にできます。
+
+
+
+* ResNet の構成ブロックは図のとおりです。出典は ResNet 論文です。
+
+![ResNet の構成ブロック](https://huggingface.co/datasets/hf-vision/course-assets/resolve/main/ResnetBlock.png)
+
+
+#### 2. 残差の学習と勾配の流れ
+
+ResNet が非常に深いネットワークでうまく機能する主な理由は、バックプロパゲーションにおける勾配の流れが改善されるためです。逆伝播を数学的に分析してみましょう。残差ブロック y = F(x) + x があるとします。連鎖律で勾配を計算するとき、入力 x に対する損失 𝐿 の微分を計算します。標準的なブロック（残差なし）の場合、勾配は次のようになります。
+
+`∂x/∂L = ∂F(x)/∂L * ∂F(x)/∂x`
+
+しかし、残差ブロック y = F(x) + x の場合、勾配は次のようになります。
+
+`∂L/∂x = ∂L/∂F(x) * ∂F(x)/∂x + ∂L/∂F(x) ⋅1`
+
+勾配の計算に 1 という項が追加されていることに注目してください。これは、各層の勾配がより前の層へ戻る直接の経路を持つことを意味し、勾配の流れが改善され、勾配が消失する可能性が下がります。勾配がネットワーク内をより容易に流れるため、深いネットワークでも劣化することなく訓練できます。
+
+#### 3. なぜより深いネットワークが可能になったのか
+
+ResNet により、数百層、さらには数千層のネットワークの訓練が可能になりました。深いネットワークが恩恵を受ける理由は次のとおりです。
+
+* 恒等ショートカット接続：ショートカット接続は恒等写像を行い、その出力は積み重なった層の出力に加えられます。恒等ショートカット接続は追加のパラメータも計算の複雑さも加えません。これらの接続は層を迂回して情報の流れに直接の経路を作り、ニューラルネットワークが残差関数（F）を学習できるようにします。
+* 勾配の流れの改善：前に説明したとおり、残差はバックプロパゲーション中の勾配の伝播を助け、非常に深いネットワークにおける勾配消失問題に対処します。
+* 最適化の容易さ：残差を学習することで、ネットワークは本質的に学習プロセスをより簡単な増分ステップに分解しています。特に非常に深いネットワークでは、F(x) を直接学習するよりも、残差 R(x) = F(x) − x を学習する方が簡単です。
+
+
+### まとめ
+
+つまり、ResNet は通常のネットワークにショートカット接続を加えた構造だと考えられます。
+
+演算 \(F(x) + x\) において、\(F(x)\) と \(x\) は同じ次元でなければなりません。
+ResNet はこれを達成するために2つの手法を使います。
+
+- 次元を維持しながら、学習すべき追加パラメータを導入することなく、ゼロ値のチャンネルを追加するゼロパディングショートカット。
+- 必要な場合に 1×1 畳み込みを使って次元を調整する射影ショートカット（projection shortcut）。こちらはいくつかの学習可能なパラメータが追加されます。
+
+ResNet-50、ResNet-101、ResNet-152 のような深い ResNet では、パラメータ数や計算量を抑えながら、より深いネットワークを効率よく学習できるように、「ボトルネックブロック」という特殊な構成ブロックを使います。
+
+## ResNet のコード
+
+
+
+### ImageNet で事前学習済みの深層残差ネットワーク
+以下では、transformers ライブラリを使って、画像分類ヘッド付きの事前学習済み ResNet を読み込む方法を示します。
+```python
+from transformers import ResNetForImageClassification
+
+model = ResNetForImageClassification.from_pretrained("microsoft/resnet-50")
+
+model.eval()
+```
+すべての事前学習済みモデルは、同様に正規化された入力画像を想定しています。すなわち、形状 (3 x H x W) の3チャンネル RGB 画像のミニバッチで、H と W は少なくとも 224 であることが想定されます。画像は [0, 1] の範囲に読み込んだうえで、mean = [0.485, 0.456, 0.406]、std = [0.229, 0.224, 0.225] を使って正規化する必要があります。
+
+
+実行例を次に示します。この例は [Hugging Face のドキュメント](https://huggingface.co/docs/transformers/v4.18.0/en/model_doc/resnet)で利用できます。
+
+```python
+from transformers import AutoFeatureExtractor, ResNetForImageClassification
+import torch
+from datasets import load_dataset
+
+dataset = load_dataset("huggingface/cats-image")
+image = dataset["test"]["image"][0]
+
+feature_extractor = AutoFeatureExtractor.from_pretrained("microsoft/resnet-50")
+model = ResNetForImageClassification.from_pretrained("microsoft/resnet-50")
+
+inputs = feature_extractor(image, return_tensors="pt")
+
+with torch.no_grad():
+    logits = model(**inputs).logits
+
+# モデルは 1000 個の ImageNet クラスのいずれかを予測します
+predicted_label = logits.argmax(-1).item()
+print(model.config.id2label[predicted_label])
+```
+
+
+## 参考文献
+
+- [PyTorch ドキュメント](https://pytorch.org/hub/pytorch_vision_resnet/)
+- [ResNet：画像認識のための深層残差学習（Deep Residual Learning for Image Recognition）](https://arxiv.org/abs/1512.03385)
+
+- [ResNet アーキテクチャの出典：ResNet 論文](https://arxiv.org/abs/1512.03385)
+- [Hugging Face の ResNet ドキュメント](https://huggingface.co/docs/transformers/en/model_doc/resnet)

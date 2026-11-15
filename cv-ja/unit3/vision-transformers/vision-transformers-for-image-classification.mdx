@@ -1,0 +1,105 @@
+# 画像分類のための Vision Transformer の転移学習とファインチューニング
+
+## はじめに
+
+Transformer アーキテクチャは、自然言語処理の分野で大規模化しても良好な性能を示しました。そこで、同じアーキテクチャを画像にも適用する試みが生まれました。画像を小さなパッチに分割し、それぞれをトークンとして扱う方法です。こうして生まれたのが Vision Transformer（ViT）です。転移学習とファインチューニングについて学ぶ前に、畳み込みニューラルネットワーク（CNN）と Vision Transformer を比較してみましょう。
+
+## Vision Transformer（VT）の概要
+
+Vision Transformer では、画像を小さなパッチに分割し、それらを2次元の格子状に並んだ要素として扱います。モデルは、こうして分割したパッチから特徴を学習します。
+
+中心となる考え方は、次の図で示されています。
+![Vision Transformer](https://huggingface.co/datasets/hf-vision/course-assets/resolve/main/Screenshot%20from%202024-12-27%2014-25-49.png)
+
+ただし、落とし穴があります。CNN は、VT にはない前提をもとに設計されています。その前提は、人間が画像の中の物体をどのように知覚するかに関わるものです。次のセクションで説明します。
+
+## CNN と Vision Transformer の違いは何ですか？
+
+### 帰納バイアス
+
+帰納バイアスは機械学習の用語です。学習アルゴリズムが予測を行うために使う前提の集合を指します。簡単に言えば、帰納バイアスは近道のようなものです。これまでに見た情報をもとに、機械学習モデルが根拠のある推測を行う助けになります。
+
+CNN で見られる帰納バイアスには、次のようなものがあります。
+
+- 並進同変性：物体は画像のどこに現れてもよく、CNN はその特徴を検出できます。
+- 局所性：画像のピクセルは、主に周辺のピクセルと相互作用して特徴を形成します。
+
+CNN は、この2つの帰納バイアスを構造として備えています。一方、ViT には同じ前提がありません。そのため、学習データが一定の規模に達するまでは、CNN の方が ViT より高い性能を示します。しかし、ViT には別の強みがあります。
+Transformer アーキテクチャは（主に）異なる種類の線形関数で構成されています。そのため、ViT は拡張性が非常に高くなります。そしてその拡張性によって、膨大な量のデータを使えば、上記の2つの帰納バイアスを持たないという問題を克服できます。
+
+### では、誰もが大規模なデータセットを利用できるのでしょうか？
+
+優れた性能を得るために何百万枚もの画像で Vision Transformer を学習させることは、誰にでもできることではありません。代わりに、[Hugging Face Hub](https://huggingface.co/models?sort=trending) のような場所で公開されているモデルの重みを利用できます。
+
+事前学習済みモデルをどう使うのでしょうか。転移学習を適用してファインチューニングします。
+
+## 画像分類のための転移学習とファインチューニング
+
+転移学習の考え方はシンプルです。非常に大規模なデータセットで学習した Vision Transformer が獲得した特徴を活用し、その特徴を自分のデータセットに適用します。これにより、モデルの性能が大きく向上することがあります。特に、学習に使えるデータが限られているデータセットでは効果的です。
+
+学習済みの特徴を活用するため、モデル全体を更新する必要もありません。重みの大部分を凍結し、一部の層だけを学習すれば、学習時間や GPU の使用量を抑えながら、優れた性能を得られます。
+
+### マルチクラス画像分類
+
+Vision Transformer を使った画像分類の転移学習チュートリアルは、次のノートブックで進められます。
+
+<a
+  target="_blank"
+  href="https://colab.research.google.com/github/huggingface/computer-vision-course/blob/main/notebooks/Unit%203%20-%20Vision%20Transformers/transfer-learning-image-classification.ipynb"
+>
+  <img
+    src="https://colab.research.google.com/assets/colab-badge.svg"
+    alt="Google Colab で開く"
+  />
+</a>
+
+ここでは、犬と猫の品種を見分ける画像分類器を作ります。
+
+<iframe
+  src="https://shreydan-oxford-iiit-pets-classifier.hf.space"
+  frameborder="0"
+  width="850"
+  height="450"
+></iframe>
+
+---
+
+データセットのドメインが、事前学習済みモデルのデータセットとあまり似ていない場合もあります。それでも、Vision Transformer をゼロから学習するのではなく、事前学習済みモデル全体の重みを、より低い学習率で更新するという選択肢があります。これにより、自分のデータでうまく動作するようモデルを「ファインチューニング」できます。
+
+<Tip>
+  ただし、ほとんどの場面では、Vision Transformers の場合、転移学習を適用するだけで十分です。
+</Tip>
+
+### マルチラベル画像分類
+
+上記のチュートリアルでは、各画像にクラスが1つだけ割り当てられるマルチクラス画像分類を扱いました。では、マルチクラスのデータセットで、各画像に複数のラベルが付く場合はどうでしょうか。
+
+次のノートブックでは、Vision Transformer を使ったマルチラベル画像分類のファインチューニングチュートリアルを進めます。
+
+<a
+  target="_blank"
+  href="https://colab.research.google.com/github/huggingface/computer-vision-course/blob/main/notebooks/Unit%203%20-%20Vision%20Transformers/fine-tuning-multilabel-image-classification.ipynb"
+>
+  <img
+    src="https://colab.research.google.com/assets/colab-badge.svg"
+    alt="Google Colab で開く"
+  />
+</a>
+
+カスタム学習ループの書き方として、[Hugging Face Accelerate](https://huggingface.co/docs/accelerate/index) の使い方も学びます。
+マルチラベル分類チュートリアルの成果として、次のようなものが得られます。
+
+<iframe
+  src="https://shreydan-pascal-multilabel-classifier.hf.space"
+  frameborder="0"
+  width="850"
+  height="450"
+></iframe>
+
+---
+
+### 参考資料
+
+- 元の Vision Transformers 論文：_An Image is Worth 16x16 Words: Transformers for Image Recognition at Scale [論文](https://huggingface.co/papers/2010.11929)_
+- Swin Transformers 論文：_Swin Transformer: Hierarchical Vision Transformer using Shifted Windows [論文](https://huggingface.co/papers/2103.14030)_
+- Vision Transformers における学習データ量、正則化、データ拡張、モデルサイズ、計算予算の相互作用をよりよく理解するための体系的な実証研究：_How to train your Vision Transformers? Data, Augmentation, and Regularization in Vision Transformers [論文](https://huggingface.co/papers/2106.10270)_

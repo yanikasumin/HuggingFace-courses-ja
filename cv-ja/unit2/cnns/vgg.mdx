@@ -1,0 +1,107 @@
+
+# 大規模画像認識のための非常に深い畳み込みネットワーク（2014）
+
+
+## はじめに
+
+VGG アーキテクチャは、2014年にオックスフォード大学の Visual Geometry Group の Karen Simonyan と Andrew Zisserman によって開発されました（そのため VGG と名付けられました）。このモデルは従来のモデルから大幅な性能向上を実現しました。その成果が示されたのが、2014年の ImageNet 画像認識コンテスト（ILSVRC）です。
+
+
+
+## VGG ネットワークのアーキテクチャ
+  
+- 入力は 224×224 の画像です。
+- 畳み込みカーネルの形状は (3,3)、最大プーリングウィンドウの形状は (2,2) です。
+- 各畳み込み層のチャンネル数は 64 → 128 → 256 → 512 → 512 です。
+- VGG16 には16個の隠れ層があります（畳み込み層13個と全結合層3個）。
+- VGG19 には19個の隠れ層があります（畳み込み層16個と全結合層3個）。
+
+## 主な比較
+
+- VGG（16層または19層）は、当時の他の最先端ネットワークと比べて比較的深いものでした。ILSVRC 2012 の優勝モデルである AlexNet は8層しかありません。
+- 1つの大きな（7×7 や 11×11）フィルタの代わりに、ReLU 活性化を備えた複数の小さな（3×3）受容野フィルタを使うことで、複雑な特徴をより良く学習できます。フィルタが小さいほど層あたりのパラメータも少なくなり、その間に追加の非線形性も導入されます。
+- マルチスケールな訓練と推論。各画像は、異なる大きさでも似た特性が捉えられるよう、スケールを変えながら複数回訓練されました。
+- VGG ネットワークの一貫性とシンプルさにより、将来の改良に向けて拡張や修正がしやすくなっています。
+
+
+## PyTorch の例
+
+以下は VGG19 の PyTorch 実装です。
+
+```python
+import torch.nn as nn
+
+
+class VGG19(nn.Module):
+    def __init__(self, num_classes=1000):
+        super(VGG19, self).__init__()
+
+        # 特徴抽出層： 畳み込み層とプーリング層
+        self.feature_extractor = nn.Sequential(
+            nn.Conv2d(
+                3, 64, kernel_size=3, padding=1
+            ),  # 入力チャンネル3、出力チャンネル64、3x3 カーネル、パディング1
+            nn.ReLU(),
+            nn.Conv2d(64, 64, kernel_size=3, padding=1),
+            nn.ReLU(),
+            nn.MaxPool2d(
+                kernel_size=2, stride=2
+            ),  # 2x2 カーネル、ストライド2の最大プーリング
+            nn.Conv2d(64, 128, kernel_size=3, padding=1),
+            nn.ReLU(),
+            nn.Conv2d(128, 128, kernel_size=3, padding=1),
+            nn.ReLU(),
+            nn.MaxPool2d(kernel_size=2, stride=2),
+            nn.Conv2d(128, 256, kernel_size=3, padding=1),
+            nn.ReLU(),
+            nn.Conv2d(256, 256, kernel_size=3, padding=1),
+            nn.ReLU(),
+            nn.Conv2d(256, 256, kernel_size=3, padding=1),
+            nn.ReLU(),
+            nn.Conv2d(256, 256, kernel_size=3, padding=1),
+            nn.ReLU(),
+            nn.MaxPool2d(kernel_size=2, stride=2),
+            nn.Conv2d(256, 512, kernel_size=3, padding=1),
+            nn.ReLU(),
+            nn.Conv2d(512, 512, kernel_size=3, padding=1),
+            nn.ReLU(),
+            nn.Conv2d(512, 512, kernel_size=3, padding=1),
+            nn.ReLU(),
+            nn.Conv2d(512, 512, kernel_size=3, padding=1),
+            nn.ReLU(),
+            nn.MaxPool2d(kernel_size=2, stride=2),
+            nn.Conv2d(512, 512, kernel_size=3, padding=1),
+            nn.ReLU(),
+            nn.Conv2d(512, 512, kernel_size=3, padding=1),
+            nn.ReLU(),
+            nn.Conv2d(512, 512, kernel_size=3, padding=1),
+            nn.ReLU(),
+            nn.Conv2d(512, 512, kernel_size=3, padding=1),
+            nn.ReLU(),
+            nn.MaxPool2d(kernel_size=2, stride=2),
+        )
+
+        # プーリング層
+        self.avgpool = nn.AdaptiveAvgPool2d(output_size=(7, 7))
+
+        # 分類のための全結合層
+        self.classifier = nn.Sequential(
+            nn.Linear(
+                512 * 7 * 7, 4096
+            ),  # チャンネル512、最大プーリング後の空間次元は 7x7
+            nn.ReLU(),
+            nn.Dropout(0.5),  # ドロップアウト確率0.5のドロップアウト層
+            nn.Linear(4096, 4096),
+            nn.ReLU(),
+            nn.Dropout(0.5),
+            nn.Linear(4096, num_classes),  # 'num_classes' 個の出力ユニットを持つ出力層
+        )
+
+    def forward(self, x):
+        x = self.feature_extractor(x)  # 入力を特徴抽出層に通す
+        x = self.avgpool(x)  # データをプーリング層に通す
+        x = x.view(x.size(0), -1)  # 全結合層のために出力を平坦化する
+        x = self.classifier(x)  # 平坦化した出力を分類層に通す
+        return x
+```
+

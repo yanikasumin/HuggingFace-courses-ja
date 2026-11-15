@@ -1,0 +1,97 @@
+# Transformer ベースの画像セグメンテーション
+
+このセクションでは、画像セグメンテーションにおいて Vision Transformer と畳み込みニューラルネットワーク（CNN）がどう違うかを探ります。あわせて、Vision Transformer ベースのセグメンテーションモデルを例に、そのアーキテクチャを詳しく説明します。
+
+<Tip warning={true}>
+  このセクションでは、画像セグメンテーション、畳み込みニューラルネットワーク（CNN）、Vision Transformer の基礎を理解していることを前提としています。これらの概念にまだ慣れていない場合は、先にコース内の関連資料を確認することをおすすめします。
+</Tip>
+
+## セグメンテーションにおける CNN と Transformer の比較
+
+Vision Transformer が登場する前は、CNN（畳み込みニューラルネットワーク）が画像セグメンテーションの定番でした。[U-Net](https://arxiv.org/abs/1505.04597) や [Mask R-CNN](https://arxiv.org/abs/1703.06870) のようなモデルは、画像内の異なる物体を区別するために必要な詳細を捉え、セグメンテーションタスクで最先端の性能を達成しました。
+
+過去10年間で優れた成果を上げてきた一方で、CNN ベースのモデルにはいくつかの限界があります。Transformer はその解決を目指しています。
+
+- **空間的な制約**：CNN は、小さな受容野を使って局所的なパターンを学習します。しかし、近くの情報を中心に処理するため、画像内で遠く離れていても関連している特徴同士を結びつけることが難しくなります。その結果、複雑な場面や物体の領域を正確に分割しにくくなります。一方、ViT はアテンション機構を使って、画像全体にわたる依存関係を捉えるように設計されています。画像全体を一度に考慮できるため、離れた部分同士の複雑な関係も学習できます。セグメンテーションでは、こうした画像全体の情報を利用することで、物体の領域をより正確に切り分けられるようになります。
+- **タスク固有のコンポーネント**：Mask R-CNN のような手法は、セグメンテーションタスクに関する事前知識を符号化するために、手作業で設計されたコンポーネント（非最大値抑制や空間アンカーなど）を取り入れています。これらのコンポーネントは複雑さを増し、手作業での調整も必要になります。これに対して、ViT ベースのセグメンテーション手法は、手作業で設計されたコンポーネントを不要にすることでセグメンテーションのプロセスを簡素化し、最適化をより容易にします。
+- **セグメンテーションタスクへの特化**：CNN ベースのセグメンテーションモデルは、セマンティックセグメンテーション、インスタンスセグメンテーション、パノプティックセグメンテーションの各タスクに個別に取り組んできました。そのため、タスクごとに特化したアーキテクチャが生まれ、研究の取り組みも分かれていました。最近の ViT ベースのモデル、たとえば [MaskFormer](https://arxiv.org/abs/2107.06278)、[SegFormer](https://arxiv.org/abs/2105.15203)、[SAM](https://arxiv.org/abs/2304.02643) は、単一のフレームワークの中でセマンティック、インスタンス、パノプティックの各セグメンテーションタスクに取り組む統一的なアプローチを提供します。
+
+## MaskFormer に注目：画像セグメンテーションにおける ViT の例
+
+MaskFormer（[論文](https://arxiv.org/abs/2107.06278)、[Hugging Face Transformers ドキュメント](https://huggingface.co/docs/transformers/en/model_doc/maskformer)）は、論文「MaskFormer: Per-Pixel Classification is Not All You Need for Semantic Segmentation」で発表されたモデルです。画像内に存在する各クラスについてセグメンテーションマスクを予測し、セマンティックセグメンテーションとインスタンスセグメンテーションを1つのアーキテクチャに統合します。
+
+### MaskFormer のアーキテクチャ
+
+次の図は、論文から引用したアーキテクチャ図です。
+
+<img
+  width="600"
+  src="https://huggingface.co/datasets/huggingface/documentation-images/resolve/main/maskformer_architecture.png"
+/>
+
+このアーキテクチャは、3つのコンポーネントで構成されています。
+
+**ピクセルレベルモジュール**：バックボーンを使って画像の特徴を抽出し、ピクセルデコーダでピクセルごとの埋め込みを生成します。
+
+**Transformer モジュール**：標準的な Transformer デコーダを使い、画像の特徴と学習可能な位置埋め込み（クエリ）からセグメントごとの埋め込みを計算します。各セグメントに関するグローバルな情報を符号化します。
+
+**セグメンテーションモジュール**：線形分類器と多層パーセプトロン（MLP）をそれぞれ使い、各セグメントについてクラスの確率予測とマスク埋め込みを生成します。マスク埋め込みは、ピクセルごとの埋め込みと組み合わせて使われ、各セグメントのバイナリマスクを予測します。
+
+このモデルは、[DETR](https://huggingface.co/learn/computer-vision-course/unit3/vision-transformers/detr) と同じバイナリマスク損失と、予測されたセグメントごとの交差エントロピー分類損失で学習します。
+
+### Hugging Face Transformers を使ったパノプティックセグメンテーションの推論例
+
+パノプティックセグメンテーションは、画像のすべてのピクセルにカテゴリのラベルを付け、それらのカテゴリの中で異なる物体を識別するタスクです。セマンティックセグメンテーションとインスタンスセグメンテーションを組み合わせたものです。
+
+```python
+from transformers import pipeline
+from PIL import Image
+import requests
+
+segmentation = pipeline("image-segmentation", "facebook/maskformer-swin-base-coco")
+
+url = "http://images.cocodataset.org/val2017/000000039769.jpg"
+image = Image.open(requests.get(url, stream=True).raw)
+
+results = segmentation(inputs=image, subtask="panoptic")
+results
+```
+
+下記のように、結果には同じクラスの複数のインスタンスが含まれ、それぞれ異なるマスクを持ちます。
+
+```bash
+[
+  {
+    "score": 0.993197,
+    "label": "remote",
+    "mask": <PIL.Image.Image image mode=L size=640x480 at 0x109363910>
+  },
+  {
+    "score": 0.997852,
+    "label": "cat",
+    "mask": <PIL.Image.Image image mode=L size=640x480 at 0x1093635B0>
+  },
+  {
+    "score": 0.998006,
+    "label": "remote",
+    "mask": <PIL.Image.Image image mode=L size=640x480 at 0x17EE84670>
+  },
+  {
+    "score": 0.997469,
+    "label": "cat",
+    "mask": <PIL.Image.Image image mode=L size=640x480 at 0x17EE87100>
+  }
+]
+```
+
+## Vision Transformer ベースのセグメンテーションモデルのファインチューニング
+
+事前学習済みのセグメンテーションモデルは数多く公開されています。そのため、特定のユースケースにこれらのモデルを適応させるために、転移学習とファインチューニングがよく使われます。特に、MaskFormer のような Transformer ベースのセグメンテーションモデルは大量のデータを必要とし、ゼロから学習するのは難しいためです。
+これらの手法は、事前学習で得られた表現を活用し、新しいデータへ効率的にモデルを適応させます。通常、MaskFormer では、学習済みの汎用的な特徴を活用するために、バックボーン、ピクセルデコーダ、Transformer デコーダを凍結したままにします。一方で、Transformer モジュールはファインチューニングし、クラス予測とマスク生成の能力を新しいセグメンテーションタスクに適応させます。
+
+[このノートブック](https://colab.research.google.com/github/huggingface/computer-vision-course/blob/main/notebooks/Unit%203%20-%20Vision%20Transformers/transfer-learning-segmentation.ipynb) では、MaskFormer を使った画像セグメンテーションの転移学習チュートリアルを進めます。
+
+## 参考文献
+
+- [MaskFormer の Hugging Face ドキュメント](https://huggingface.co/docs/transformers/en/model_doc/maskformer)
+- [画像セグメンテーションの Hugging Face タスクガイド](https://huggingface.co/docs/transformers/en/tasks/semantic_segmentation)
