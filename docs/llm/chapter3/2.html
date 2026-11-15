@@ -4,18 +4,29 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>データを処理する | Hugging Face 学習コース日本語版</title>
-<meta name="description" content="データを処理する｜LLM コース（大規模言語モデルと Transformers を学ぶコース）の日本語訳ページ。Hugging Face 公式コースの内容を日本語で学べます。">
+<meta name="description" content="データを処理する｜LLM コース（大規模言語モデルと Transformers を学ぶコース）の日本語訳。前の章 の例の続きとして、シーケンス分類モデルを1バッチ分だけ学習させるコードは次のようになります。">
 <meta name="robots" content="index, follow">
 <link rel="canonical" href="https://yanikasumin.github.io/HuggingFace-courses-ja/llm/chapter3/2.html">
 <meta property="og:title" content="データを処理する | Hugging Face 学習コース日本語版">
-<meta property="og:description" content="データを処理する｜LLM コース（大規模言語モデルと Transformers を学ぶコース）の日本語訳ページ。Hugging Face 公式コースの内容を日本語で学べます。">
+<meta property="og:description" content="データを処理する｜LLM コース（大規模言語モデルと Transformers を学ぶコース）の日本語訳。前の章 の例の続きとして、シーケンス分類モデルを1バッチ分だけ学習させるコードは次のようになります。">
+<meta property="og:image" content="https://yanikasumin.github.io/HuggingFace-courses-ja/og-llm.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="データを処理する | Hugging Face 学習コース日本語版">
+<meta name="google-site-verification" content="A8PVY1lQPEN4macCCmGuTad7GqnBmMgMo1SRR3C320c">
 <meta property="og:type" content="article">
 <meta property="og:url" content="https://yanikasumin.github.io/HuggingFace-courses-ja/llm/chapter3/2.html">
 <meta property="og:site_name" content="Hugging Face 学習コース日本語版">
 <meta property="og:locale" content="ja_JP">
-<meta name="twitter:card" content="summary">
+<meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:title" content="データを処理する | Hugging Face 学習コース日本語版">
-<meta name="twitter:description" content="データを処理する｜LLM コース（大規模言語モデルと Transformers を学ぶコース）の日本語訳ページ。Hugging Face 公式コースの内容を日本語で学べます。">
+<meta name="twitter:description" content="データを処理する｜LLM コース（大規模言語モデルと Transformers を学ぶコース）の日本語訳。前の章 の例の続きとして、シーケンス分類モデルを1バッチ分だけ学習させるコードは次のようになります。">
+<meta name="twitter:image" content="https://yanikasumin.github.io/HuggingFace-courses-ja/og-llm.png">
+<link rel="icon" type="image/svg+xml" href="https://yanikasumin.github.io/HuggingFace-courses-ja/favicon.svg">
+<link rel="icon" type="image/png" sizes="32x32" href="https://yanikasumin.github.io/HuggingFace-courses-ja/favicon-32.png">
+<link rel="apple-touch-icon" sizes="180x180" href="https://yanikasumin.github.io/HuggingFace-courses-ja/apple-touch-icon.png">
+<link rel="manifest" href="https://yanikasumin.github.io/HuggingFace-courses-ja/site.webmanifest">
+<meta name="theme-color" content="#0B0F19">
 <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-1676481412757711" crossorigin="anonymous"></script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -455,61 +466,61 @@ batch = data_collator(samples)
 <div class="quiz">
 <div class="quiz-choices">
 <button type="button" class="quiz-choice" data-correct="false" data-quiz-idx="0">メモリ使用量が少なくなります。</button>
-<div class="quiz-explain-src" id="qe-123594585996096-0" hidden>メモリ効率が向上する場合もありますが、それが主な利点ではありません。</div>
+<div class="quiz-explain-src" id="qe-128814915334656-0" hidden>メモリ効率が向上する場合もありますが、それが主な利点ではありません。</div>
 <button type="button" class="quiz-choice" data-correct="true" data-quiz-idx="1">複数のサンプルを一度に処理するため、トークン化がはるかに高速になります。</button>
-<div class="quiz-explain-src" id="qe-123594585996096-1" hidden>正解です！バッチ処理により、高速なトークナイザが複数のサンプルを同時に処理できるため、速度が大幅に向上します。</div>
+<div class="quiz-explain-src" id="qe-128814915334656-1" hidden>正解です！バッチ処理により、高速なトークナイザが複数のサンプルを同時に処理できるため、速度が大幅に向上します。</div>
 <button type="button" class="quiz-choice" data-correct="false" data-quiz-idx="2">パディングを自動的に処理してくれます。</button>
-<div class="quiz-explain-src" id="qe-123594585996096-2" hidden>バッチ処理によってパディングが自動的に処理されるわけではありません。パディングはデータコレータが行います。</div>
+<div class="quiz-explain-src" id="qe-128814915334656-2" hidden>バッチ処理によってパディングが自動的に処理されるわけではありません。パディングはデータコレータが行います。</div>
 <button type="button" class="quiz-choice" data-correct="false" data-quiz-idx="3">データを PyTorch テンソルに変換します。</button>
-<div class="quiz-explain-src" id="qe-123594585996096-3" hidden>テンソルへの変換は、フォーマットを設定する際に行われるものであり、バッチマッピング中に行われるものではありません。</div>
+<div class="quiz-explain-src" id="qe-128814915334656-3" hidden>テンソルへの変換は、フォーマットを設定する際に行われるものであり、バッチマッピング中に行われるものではありません。</div>
 </div><div class="quiz-feedback" hidden></div></div>
 <h3>2. データセット内の最大長まですべてのシーケンスをパディングするのではなく、動的パディングを使用するのはなぜですか？</h3>
 <div class="quiz">
 <div class="quiz-choices">
 <button type="button" class="quiz-choice" data-correct="false" data-quiz-idx="0">モデルのアーキテクチャで動的パディングが必要とされるからです。</button>
-<div class="quiz-explain-src" id="qe-123594585972864-0" hidden>いいえ、モデルは固定パディングと動的パディングの両方に対応できます。</div>
+<div class="quiz-explain-src" id="qe-128814915007104-0" hidden>いいえ、モデルは固定パディングと動的パディングの両方に対応できます。</div>
 <button type="button" class="quiz-choice" data-correct="true" data-quiz-idx="1">各バッチ内の最長シーケンスに合わせてパディングするため、余分な計算を減らせます。</button>
-<div class="quiz-explain-src" id="qe-123594585972864-1" hidden>正解です！動的パディングは、データセット全体ではなく各バッチ内の最長シーケンスに合わせてパディングすることで、パディングトークンに対する不要な計算を回避します。</div>
+<div class="quiz-explain-src" id="qe-128814915007104-1" hidden>正解です！動的パディングは、データセット全体ではなく各バッチ内の最長シーケンスに合わせてパディングすることで、パディングトークンに対する不要な計算を回避します。</div>
 <button type="button" class="quiz-choice" data-correct="false" data-quiz-idx="2">モデルの正解率が向上します。</button>
-<div class="quiz-explain-src" id="qe-123594585972864-2" hidden>パディングの戦略はモデルの精度に直接影響しません。</div>
+<div class="quiz-explain-src" id="qe-128814915007104-2" hidden>パディングの戦略はモデルの精度に直接影響しません。</div>
 <button type="button" class="quiz-choice" data-correct="false" data-quiz-idx="3">DataCollatorWithPadding を使用する際に必要だからです。</button>
-<div class="quiz-explain-src" id="qe-123594585972864-3" hidden>DataCollatorWithPadding により動的パディングが可能になりますが、希望すれば固定パディングを使用することもできます。</div>
+<div class="quiz-explain-src" id="qe-128814915007104-3" hidden>DataCollatorWithPadding により動的パディングが可能になりますが、希望すれば固定パディングを使用することもできます。</div>
 </div><div class="quiz-feedback" hidden></div></div>
 <h3>3. BERT のトークン化において、<code>token_type_ids</code> フィールドは何を表しますか？</h3>
 <div class="quiz">
 <div class="quiz-choices">
 <button type="button" class="quiz-choice" data-correct="false" data-quiz-idx="0">シーケンスにおける各トークンの位置です。</button>
-<div class="quiz-explain-src" id="qe-123594585996096-0" hidden>それは位置埋め込みであり、token_type_ids ではありません。</div>
+<div class="quiz-explain-src" id="qe-128814915334656-0" hidden>それは位置埋め込みであり、token_type_ids ではありません。</div>
 <button type="button" class="quiz-choice" data-correct="true" data-quiz-idx="1">文ペアを処理する際、各トークンがどちらの文に属しているかです。</button>
-<div class="quiz-explain-src" id="qe-123594585996096-1" hidden>正解です！token_type_ids は、文ペアタスクにおける最初の文（0）と2番目の文（1）を区別します。</div>
+<div class="quiz-explain-src" id="qe-128814915334656-1" hidden>正解です！token_type_ids は、文ペアタスクにおける最初の文（0）と2番目の文（1）を区別します。</div>
 <button type="button" class="quiz-choice" data-correct="false" data-quiz-idx="2">各トークンのアテンションマスクです。</button>
-<div class="quiz-explain-src" id="qe-123594585996096-2" hidden>アテンションマスクは、どのトークンに注意を払うべきかを示す別のフィールドです。</div>
+<div class="quiz-explain-src" id="qe-128814915334656-2" hidden>アテンションマスクは、どのトークンに注意を払うべきかを示す別のフィールドです。</div>
 <button type="button" class="quiz-choice" data-correct="false" data-quiz-idx="3">各トークンの語彙 ID です。</button>
-<div class="quiz-explain-src" id="qe-123594585996096-3" hidden>それは input_ids フィールドであり、token_type_ids ではありません。</div>
+<div class="quiz-explain-src" id="qe-128814915334656-3" hidden>それは input_ids フィールドであり、token_type_ids ではありません。</div>
 </div><div class="quiz-feedback" hidden></div></div>
 <h3>4. <code>load_dataset('glue', 'mrpc')</code> でデータセットを読み込む際、第2引数は何を指定しますか？</h3>
 <div class="quiz">
 <div class="quiz-choices">
 <button type="button" class="quiz-choice" data-correct="false" data-quiz-idx="0">読み込むデータセットのバージョンです。</button>
-<div class="quiz-explain-src" id="qe-123594585972864-0" hidden>バージョンの指定には異なるパラメータを使用します。</div>
+<div class="quiz-explain-src" id="qe-128814915007104-0" hidden>バージョンの指定には異なるパラメータを使用します。</div>
 <button type="button" class="quiz-choice" data-correct="true" data-quiz-idx="1">GLUE ベンチマーク内の特定のタスク又はサブセットです。</button>
-<div class="quiz-explain-src" id="qe-123594585972864-1" hidden>正解です！MRPC は、より大規模な GLUE ベンチマークコレクションの中の特定のタスクの1つです。</div>
+<div class="quiz-explain-src" id="qe-128814915007104-1" hidden>正解です！MRPC は、より大規模な GLUE ベンチマークコレクションの中の特定のタスクの1つです。</div>
 <button type="button" class="quiz-choice" data-correct="false" data-quiz-idx="2">データセットの分割（train/validation/test）です。</button>
-<div class="quiz-explain-src" id="qe-123594585972864-2" hidden>分割は読み込み後にアクセスするものであり、load_dataset の呼び出しでは指定しません。</div>
+<div class="quiz-explain-src" id="qe-128814915007104-2" hidden>分割は読み込み後にアクセスするものであり、load_dataset の呼び出しでは指定しません。</div>
 <button type="button" class="quiz-choice" data-correct="false" data-quiz-idx="3">データを返すフォーマットです。</button>
-<div class="quiz-explain-src" id="qe-123594585972864-3" hidden>フォーマットは、読み込み後に set_format() メソッドを使用して設定します。</div>
+<div class="quiz-explain-src" id="qe-128814915007104-3" hidden>フォーマットは、読み込み後に set_format() メソッドを使用して設定します。</div>
 </div><div class="quiz-feedback" hidden></div></div>
 <h3>5. 学習前に 'sentence1' や 'sentence2' のような列を削除する目的は何ですか？</h3>
 <div class="quiz">
 <div class="quiz-choices">
 <button type="button" class="quiz-choice" data-correct="false" data-quiz-idx="0">学習中にメモリを節約するためです。</button>
-<div class="quiz-explain-src" id="qe-123594585996096-0" hidden>メモリの節約にはなりますが、それが主な理由ではありません。</div>
+<div class="quiz-explain-src" id="qe-128814915334656-0" hidden>メモリの節約にはなりますが、それが主な理由ではありません。</div>
 <button type="button" class="quiz-choice" data-correct="true" data-quiz-idx="1">モデルはこれらの生テキスト列を受け付けないため、エラーが発生します。</button>
-<div class="quiz-explain-src" id="qe-123594585996096-1" hidden>正解です！モデルは数値テンソルを想定しており、生のテキスト文字列は想定していません。テキスト列を保持するとエラーが発生します。</div>
+<div class="quiz-explain-src" id="qe-128814915334656-1" hidden>正解です！モデルは数値テンソルを想定しており、生のテキスト文字列は想定していません。テキスト列を保持するとエラーが発生します。</div>
 <button type="button" class="quiz-choice" data-correct="false" data-quiz-idx="2">これらの列は評価には必要ありません。</button>
-<div class="quiz-explain-src" id="qe-123594585996096-2" hidden>それは事実ですが、主な理由はモデルが生のテキストを処理できないことです。</div>
+<div class="quiz-explain-src" id="qe-128814915334656-2" hidden>それは事実ですが、主な理由はモデルが生のテキストを処理できないことです。</div>
 <button type="button" class="quiz-choice" data-correct="false" data-quiz-idx="3">学習速度が大幅に向上します。</button>
-<div class="quiz-explain-src" id="qe-123594585996096-3" hidden>互換性のないデータ型によるエラーを回避することに比べれば、速度の向上はわずかです。</div>
+<div class="quiz-explain-src" id="qe-128814915334656-3" hidden>互換性のないデータ型によるエラーを回避することに比べれば、速度の向上はわずかです。</div>
 </div><div class="quiz-feedback" hidden></div></div>
 <div class="callout callout-tip">
 <p class="callout-title">💡 ヒント</p>

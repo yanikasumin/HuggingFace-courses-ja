@@ -4,18 +4,29 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>DeepSeek R1 論文を理解する | Hugging Face 学習コース日本語版</title>
-<meta name="description" content="DeepSeek R1 論文を理解する｜LLM コース（大規模言語モデルと Transformers を学ぶコース）の日本語訳ページ。Hugging Face 公式コースの内容を日本語で学べます。">
+<meta name="description" content="DeepSeek R1 論文を理解する｜LLM コース（大規模言語モデルと Transformers を学ぶコース）の日本語訳。このセクションでは、DeepSeek R1 の論文を短時間で読み解きます。">
 <meta name="robots" content="index, follow">
 <link rel="canonical" href="https://yanikasumin.github.io/HuggingFace-courses-ja/llm/chapter12/3.html">
 <meta property="og:title" content="DeepSeek R1 論文を理解する | Hugging Face 学習コース日本語版">
-<meta property="og:description" content="DeepSeek R1 論文を理解する｜LLM コース（大規模言語モデルと Transformers を学ぶコース）の日本語訳ページ。Hugging Face 公式コースの内容を日本語で学べます。">
+<meta property="og:description" content="DeepSeek R1 論文を理解する｜LLM コース（大規模言語モデルと Transformers を学ぶコース）の日本語訳。このセクションでは、DeepSeek R1 の論文を短時間で読み解きます。">
+<meta property="og:image" content="https://yanikasumin.github.io/HuggingFace-courses-ja/og-llm.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="DeepSeek R1 論文を理解する | Hugging Face 学習コース日本語版">
+<meta name="google-site-verification" content="A8PVY1lQPEN4macCCmGuTad7GqnBmMgMo1SRR3C320c">
 <meta property="og:type" content="article">
 <meta property="og:url" content="https://yanikasumin.github.io/HuggingFace-courses-ja/llm/chapter12/3.html">
 <meta property="og:site_name" content="Hugging Face 学習コース日本語版">
 <meta property="og:locale" content="ja_JP">
-<meta name="twitter:card" content="summary">
+<meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:title" content="DeepSeek R1 論文を理解する | Hugging Face 学習コース日本語版">
-<meta name="twitter:description" content="DeepSeek R1 論文を理解する｜LLM コース（大規模言語モデルと Transformers を学ぶコース）の日本語訳ページ。Hugging Face 公式コースの内容を日本語で学べます。">
+<meta name="twitter:description" content="DeepSeek R1 論文を理解する｜LLM コース（大規模言語モデルと Transformers を学ぶコース）の日本語訳。このセクションでは、DeepSeek R1 の論文を短時間で読み解きます。">
+<meta name="twitter:image" content="https://yanikasumin.github.io/HuggingFace-courses-ja/og-llm.png">
+<link rel="icon" type="image/svg+xml" href="https://yanikasumin.github.io/HuggingFace-courses-ja/favicon.svg">
+<link rel="icon" type="image/png" sizes="32x32" href="https://yanikasumin.github.io/HuggingFace-courses-ja/favicon-32.png">
+<link rel="apple-touch-icon" sizes="180x180" href="https://yanikasumin.github.io/HuggingFace-courses-ja/apple-touch-icon.png">
+<link rel="manifest" href="https://yanikasumin.github.io/HuggingFace-courses-ja/site.webmanifest">
+<meta name="theme-color" content="#0B0F19">
 <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-1676481412757711" crossorigin="anonymous"></script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -408,51 +419,51 @@ window.MathJax = { tex: { inlineMath: [['$', '$'], ['\\(', '\\)']], displayMath:
 <div class="quiz">
 <div class="quiz-choices">
 <button type="button" class="quiz-choice" data-correct="true" data-quiz-idx="0">報酬モデルの有無にかかわらず、選好から学習できる GRPO アルゴリズム</button>
-<div class="quiz-explain-src" id="qe-123594587561600-0" hidden>正解です！GRPO の主要な革新は、選好の修正を目的として方策を直接最適化できる点であり、従来の RL 手法より効率的です。</div>
+<div class="quiz-explain-src" id="qe-128814916810944-0" hidden>正解です！GRPO の主要な革新は、選好の修正を目的として方策を直接最適化できる点であり、従来の RL 手法より効率的です。</div>
 <button type="button" class="quiz-choice" data-correct="false" data-quiz-idx="1">従来のどのモデルよりも多くの GPU を学習に使うこと</button>
-<div class="quiz-explain-src" id="qe-123594587561600-1" hidden>この論文の革新は、使われた計算リソースではなく、アルゴリズムのアプローチ（GRPO）にあります。</div>
+<div class="quiz-explain-src" id="qe-128814916810944-1" hidden>この論文の革新は、使われた計算リソースではなく、アルゴリズムのアプローチ（GRPO）にあります。</div>
 <button type="button" class="quiz-choice" data-correct="false" data-quiz-idx="2">既存のものより大きな言語モデルを作ること</button>
-<div class="quiz-explain-src" id="qe-123594587561600-2" hidden>革新はモデルの大きさではなく、学習方法と GRPO アルゴリズムにあります。</div>
+<div class="quiz-explain-src" id="qe-128814916810944-2" hidden>革新はモデルの大きさではなく、学習方法と GRPO アルゴリズムにあります。</div>
 </div><div class="quiz-feedback" hidden></div></div>
 <h3>2. DeepSeek R1 の学習プロセスの4つのフェーズは何ですか？</h3>
 <div class="quiz">
 <div class="quiz-choices">
 <button type="button" class="quiz-choice" data-correct="true" data-quiz-idx="0">Cold Start、Reasoning RL、Rejection Sampling、Diverse RL</button>
-<div class="quiz-explain-src" id="qe-123594587557440-0" hidden>正解です！これらは論文で説明された正確な4つのフェーズであり、それぞれが学習パイプラインで特定の目的を果たします。</div>
+<div class="quiz-explain-src" id="qe-128814916800320-0" hidden>正解です！これらは論文で説明された正確な4つのフェーズであり、それぞれが学習パイプラインで特定の目的を果たします。</div>
 <button type="button" class="quiz-choice" data-correct="false" data-quiz-idx="1">事前学習、ファインチューニング、テスト、デプロイ</button>
-<div class="quiz-explain-src" id="qe-123594587557440-1" hidden>この論文では、異なる4つのフェーズを具体的に述べています。Cold Start（品質の基盤）、Reasoning RL（能力の構築）、Rejection Sampling（品質管理）、Diverse RL（幅広いアライメント）です。</div>
+<div class="quiz-explain-src" id="qe-128814916800320-1" hidden>この論文では、異なる4つのフェーズを具体的に述べています。Cold Start（品質の基盤）、Reasoning RL（能力の構築）、Rejection Sampling（品質管理）、Diverse RL（幅広いアライメント）です。</div>
 <button type="button" class="quiz-choice" data-correct="false" data-quiz-idx="2">データ収集、モデル学習、評価、最適化</button>
-<div class="quiz-explain-src" id="qe-123594587557440-2" hidden>この論文では、Cold Start、Reasoning RL、Rejection Sampling、Diverse RL のフェーズを含む、特定の4フェーズのプロセスを説明しています。</div>
+<div class="quiz-explain-src" id="qe-128814916800320-2" hidden>この論文では、Cold Start、Reasoning RL、Rejection Sampling、Diverse RL のフェーズを含む、特定の4フェーズのプロセスを説明しています。</div>
 </div><div class="quiz-feedback" hidden></div></div>
 <h3>3. R1-Zero の学習における「Aha モーメント」現象とは何ですか？</h3>
 <div class="quiz">
 <div class="quiz-choices">
 <button type="button" class="quiz-choice" data-correct="true" data-quiz-idx="0">モデルが誤りに気づき、自己修正し、その修正を説明するプロセス</button>
-<div class="quiz-explain-src" id="qe-123594587561600-0" hidden>正解です！論文では、これを4ステップのプロセスとして説明しています。初期の試行、誤りの認識、自己修正、改善の説明です。</div>
+<div class="quiz-explain-src" id="qe-128814916810944-0" hidden>正解です！論文では、これを4ステップのプロセスとして説明しています。初期の試行、誤りの認識、自己修正、改善の説明です。</div>
 <button type="button" class="quiz-choice" data-correct="false" data-quiz-idx="1">モデルが人間に匹敵する性能に達する時点</button>
-<div class="quiz-explain-src" id="qe-123594587561600-1" hidden>「Aha モーメント」は、人間の問題解決におけるひらめきと同様に、モデルが自らの誤りに気づき、正す能力を指します。</div>
+<div class="quiz-explain-src" id="qe-128814916810944-1" hidden>「Aha モーメント」は、人間の問題解決におけるひらめきと同様に、モデルが自らの誤りに気づき、正す能力を指します。</div>
 <button type="button" class="quiz-choice" data-correct="false" data-quiz-idx="2">モデルが学習プロセスを完了するとき</button>
-<div class="quiz-explain-src" id="qe-123594587561600-2" hidden>「Aha モーメント」は学習の完了ではなく、問題解決の最中にモデルが誤りに気づき、自己修正する創発的な能力に関するものです。</div>
+<div class="quiz-explain-src" id="qe-128814916810944-2" hidden>「Aha モーメント」は学習の完了ではなく、問題解決の最中にモデルが誤りに気づき、自己修正する創発的な能力に関するものです。</div>
 </div><div class="quiz-feedback" hidden></div></div>
 <h3>4. GRPO のグループ形成はどのように機能しますか？</h3>
 <div class="quiz">
 <div class="quiz-choices">
 <button type="button" class="quiz-choice" data-correct="true" data-quiz-idx="0">同じ問題に対する複数の解（4〜16件）を生成し、それらをまとめて評価する</button>
-<div class="quiz-explain-src" id="qe-123594587557440-0" hidden>正解です！GRPO は同じ問題を解く複数の試行（通常は4、8、又は16通り）を生成し、それらをグループとして評価します。</div>
+<div class="quiz-explain-src" id="qe-128814916800320-0" hidden>正解です！GRPO は同じ問題を解く複数の試行（通常は4、8、又は16通り）を生成し、それらをグループとして評価します。</div>
 <button type="button" class="quiz-choice" data-correct="false" data-quiz-idx="1">複数のモデルを1つのアンサンブルに結合する</button>
-<div class="quiz-explain-src" id="qe-123594587557440-1" hidden>GRPO は複数の異なるモデルのアンサンブルではなく、1つのモデルを使って複数の解の試行を生成します。</div>
+<div class="quiz-explain-src" id="qe-128814916800320-1" hidden>GRPO は複数の異なるモデルのアンサンブルではなく、1つのモデルを使って複数の解の試行を生成します。</div>
 <button type="button" class="quiz-choice" data-correct="false" data-quiz-idx="2">学習データを異なるグループに分割する</button>
-<div class="quiz-explain-src" id="qe-123594587557440-2" hidden>GRPO のグループ形成は、学習データを分割することではなく、同じ問題に対する複数の解を生成することです。</div>
+<div class="quiz-explain-src" id="qe-128814916800320-2" hidden>GRPO のグループ形成は、学習データを分割することではなく、同じ問題に対する複数の解を生成することです。</div>
 </div><div class="quiz-feedback" hidden></div></div>
 <h3>5. DeepSeek-R1-Zero と DeepSeek-R1 の主な違いは何ですか？</h3>
 <div class="quiz">
 <div class="quiz-choices">
 <button type="button" class="quiz-choice" data-correct="true" data-quiz-idx="0">R1-Zero は純粋な RL を使うのに対し、R1 は RL と教師ありファインチューニングを組み合わせる</button>
-<div class="quiz-explain-src" id="qe-123594587561600-0" hidden>正解です！比較表のとおり、R1-Zero は純粋な RL 学習を使い、R1 は教師ありファインチューニングと RL を組み合わせた複数フェーズのアプローチを使い、その結果、言語の一貫性が向上しています。</div>
+<div class="quiz-explain-src" id="qe-128814916810944-0" hidden>正解です！比較表のとおり、R1-Zero は純粋な RL 学習を使い、R1 は教師ありファインチューニングと RL を組み合わせた複数フェーズのアプローチを使い、その結果、言語の一貫性が向上しています。</div>
 <button type="button" class="quiz-choice" data-correct="false" data-quiz-idx="1">R1-Zero は R1 より小さい</button>
-<div class="quiz-explain-src" id="qe-123594587561600-1" hidden>違いはモデルの大きさではなく、学習アプローチ（純粋な RL 対 複数フェーズ）にあります。</div>
+<div class="quiz-explain-src" id="qe-128814916810944-1" hidden>違いはモデルの大きさではなく、学習アプローチ（純粋な RL 対 複数フェーズ）にあります。</div>
 <button type="button" class="quiz-choice" data-correct="false" data-quiz-idx="2">R1-Zero はより少ないデータで学習された</button>
-<div class="quiz-explain-src" id="qe-123594587561600-2" hidden>主な違いは学習方法です。R1-Zero は純粋な RL、R1 は SFT と RL を組み合わせたアプローチです。</div>
+<div class="quiz-explain-src" id="qe-128814916810944-2" hidden>主な違いは学習方法です。R1-Zero は純粋な RL、R1 は SFT と RL を組み合わせたアプローチです。</div>
 </div><div class="quiz-feedback" hidden></div></div>
 </article>
 

@@ -4,18 +4,29 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>完全な学習ループ | Hugging Face 学習コース日本語版</title>
-<meta name="description" content="完全な学習ループ｜LLM コース（大規模言語モデルと Transformers を学ぶコース）の日本語訳ページ。Hugging Face 公式コースの内容を日本語で学べます。">
+<meta name="description" content="完全な学習ループ｜LLM コース（大規模言語モデルと Transformers を学ぶコース）の日本語訳。ここでは、 Trainer クラスを使わずに、PyTorch の現代的なベストプラクティスに沿って学習ループをゼロから実装し、前のセクションと同じ結果を得る方法を見ていきます。">
 <meta name="robots" content="index, follow">
 <link rel="canonical" href="https://yanikasumin.github.io/HuggingFace-courses-ja/llm/chapter3/4.html">
 <meta property="og:title" content="完全な学習ループ | Hugging Face 学習コース日本語版">
-<meta property="og:description" content="完全な学習ループ｜LLM コース（大規模言語モデルと Transformers を学ぶコース）の日本語訳ページ。Hugging Face 公式コースの内容を日本語で学べます。">
+<meta property="og:description" content="完全な学習ループ｜LLM コース（大規模言語モデルと Transformers を学ぶコース）の日本語訳。ここでは、 Trainer クラスを使わずに、PyTorch の現代的なベストプラクティスに沿って学習ループをゼロから実装し、前のセクションと同じ結果を得る方法を見ていきます。">
+<meta property="og:image" content="https://yanikasumin.github.io/HuggingFace-courses-ja/og-llm.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="完全な学習ループ | Hugging Face 学習コース日本語版">
+<meta name="google-site-verification" content="A8PVY1lQPEN4macCCmGuTad7GqnBmMgMo1SRR3C320c">
 <meta property="og:type" content="article">
 <meta property="og:url" content="https://yanikasumin.github.io/HuggingFace-courses-ja/llm/chapter3/4.html">
 <meta property="og:site_name" content="Hugging Face 学習コース日本語版">
 <meta property="og:locale" content="ja_JP">
-<meta name="twitter:card" content="summary">
+<meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:title" content="完全な学習ループ | Hugging Face 学習コース日本語版">
-<meta name="twitter:description" content="完全な学習ループ｜LLM コース（大規模言語モデルと Transformers を学ぶコース）の日本語訳ページ。Hugging Face 公式コースの内容を日本語で学べます。">
+<meta name="twitter:description" content="完全な学習ループ｜LLM コース（大規模言語モデルと Transformers を学ぶコース）の日本語訳。ここでは、 Trainer クラスを使わずに、PyTorch の現代的なベストプラクティスに沿って学習ループをゼロから実装し、前のセクションと同じ結果を得る方法を見ていきます。">
+<meta name="twitter:image" content="https://yanikasumin.github.io/HuggingFace-courses-ja/og-llm.png">
+<link rel="icon" type="image/svg+xml" href="https://yanikasumin.github.io/HuggingFace-courses-ja/favicon.svg">
+<link rel="icon" type="image/png" sizes="32x32" href="https://yanikasumin.github.io/HuggingFace-courses-ja/favicon-32.png">
+<link rel="apple-touch-icon" sizes="180x180" href="https://yanikasumin.github.io/HuggingFace-courses-ja/apple-touch-icon.png">
+<link rel="manifest" href="https://yanikasumin.github.io/HuggingFace-courses-ja/site.webmanifest">
+<meta name="theme-color" content="#0B0F19">
 <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-1676481412757711" crossorigin="anonymous"></script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -516,85 +527,85 @@ for epoch in range(num_epochs):
 <div class="quiz">
 <div class="quiz-choices">
 <button type="button" class="quiz-choice" data-correct="false" data-quiz-idx="0">AdamW は異なる学習率スケジュールを使います。</button>
-<div class="quiz-explain-src" id="qe-123594585878464-0" hidden>学習率のスケジューリングは、オプティマイザの選択とは別物です。</div>
+<div class="quiz-explain-src" id="qe-128814915332032-0" hidden>学習率のスケジューリングは、オプティマイザの選択とは別物です。</div>
 <button type="button" class="quiz-choice" data-correct="true" data-quiz-idx="1">AdamW には、分離された重み減衰による正則化が含まれています。</button>
-<div class="quiz-explain-src" id="qe-123594585878464-1" hidden>正解です！AdamW は重み減衰を勾配ベースのパラメータ更新から分離しており、よりよい正則化につながります。</div>
+<div class="quiz-explain-src" id="qe-128814915332032-1" hidden>正解です！AdamW は重み減衰を勾配ベースのパラメータ更新から分離しており、よりよい正則化につながります。</div>
 <button type="button" class="quiz-choice" data-correct="false" data-quiz-idx="2">AdamW は Transformer モデルでしか動作しません。</button>
-<div class="quiz-explain-src" id="qe-123594585878464-2" hidden>AdamW は Transformer に限らず、あらゆるモデルアーキテクチャで使えます。</div>
+<div class="quiz-explain-src" id="qe-128814915332032-2" hidden>AdamW は Transformer に限らず、あらゆるモデルアーキテクチャで使えます。</div>
 <button type="button" class="quiz-choice" data-correct="false" data-quiz-idx="3">AdamW は Adam よりメモリ使用量が少ないです。</button>
-<div class="quiz-explain-src" id="qe-123594585878464-3" hidden>どちらのオプティマイザもメモリ要件は同程度です。</div>
+<div class="quiz-explain-src" id="qe-128814915332032-3" hidden>どちらのオプティマイザもメモリ要件は同程度です。</div>
 </div><div class="quiz-feedback" hidden></div></div>
 <h3>2. 学習ループにおける操作の正しい順序はどれですか？</h3>
 <div class="quiz">
 <div class="quiz-choices">
 <button type="button" class="quiz-choice" data-correct="false" data-quiz-idx="0">フォワードパス → バックワードパス → オプティマイザステップ → 勾配をゼロにする</button>
-<div class="quiz-explain-src" id="qe-123594585882304-0" hidden>惜しいですが、古い勾配が蓄積しないよう、次のフォワードパスの前に勾配をゼロにすべきです。</div>
+<div class="quiz-explain-src" id="qe-128814915331968-0" hidden>惜しいですが、古い勾配が蓄積しないよう、次のフォワードパスの前に勾配をゼロにすべきです。</div>
 <button type="button" class="quiz-choice" data-correct="true" data-quiz-idx="1">フォワードパス → バックワードパス → オプティマイザステップ → スケジューラステップ → 勾配をゼロにする</button>
-<div class="quiz-explain-src" id="qe-123594585882304-1" hidden>正解です！正しい順序は、損失の計算、勾配の計算、パラメータの更新、学習率の更新、そして勾配のクリアです。</div>
+<div class="quiz-explain-src" id="qe-128814915331968-1" hidden>正解です！正しい順序は、損失の計算、勾配の計算、パラメータの更新、学習率の更新、そして勾配のクリアです。</div>
 <button type="button" class="quiz-choice" data-correct="false" data-quiz-idx="2">勾配をゼロにする → フォワードパス → オプティマイザステップ → バックワードパス</button>
-<div class="quiz-explain-src" id="qe-123594585882304-2" hidden>損失から勾配を計算するには、バックワードパスはフォワードパスの後でなければなりません。</div>
+<div class="quiz-explain-src" id="qe-128814915331968-2" hidden>損失から勾配を計算するには、バックワードパスはフォワードパスの後でなければなりません。</div>
 <button type="button" class="quiz-choice" data-correct="false" data-quiz-idx="3">フォワードパス → 勾配をゼロにする → バックワードパス → オプティマイザステップ</button>
-<div class="quiz-explain-src" id="qe-123594585882304-3" hidden>バックワードパスの前に勾配をゼロにすると、計算したばかりの勾配が消えてしまいます。</div>
+<div class="quiz-explain-src" id="qe-128814915331968-3" hidden>バックワードパスの前に勾配をゼロにすると、計算したばかりの勾配が消えてしまいます。</div>
 </div><div class="quiz-feedback" hidden></div></div>
 <h3>3. 🤗 Accelerate ライブラリは主に何を支援しますか？</h3>
 <div class="quiz">
 <div class="quiz-choices">
 <button type="button" class="quiz-choice" data-correct="false" data-quiz-idx="0">フォワードパスを最適化して、モデルの学習を高速化すること</button>
-<div class="quiz-explain-src" id="qe-123594585878464-0" hidden>Accelerate はモデルアーキテクチャ自体を最適化するものではありません。</div>
+<div class="quiz-explain-src" id="qe-128814915332032-0" hidden>Accelerate はモデルアーキテクチャ自体を最適化するものではありません。</div>
 <button type="button" class="quiz-choice" data-correct="false" data-quiz-idx="1">最適なハイパーパラメータを自動で選択すること</button>
-<div class="quiz-explain-src" id="qe-123594585878464-1" hidden>Accelerate はハイパーパラメータ最適化を行いません。</div>
+<div class="quiz-explain-src" id="qe-128814915332032-1" hidden>Accelerate はハイパーパラメータ最適化を行いません。</div>
 <button type="button" class="quiz-choice" data-correct="true" data-quiz-idx="2">最小限のコード変更で、複数の GPU/TPU での分散学習を可能にすること</button>
-<div class="quiz-explain-src" id="qe-123594585878464-2" hidden>正解です！Accelerate は分散学習の複雑さを引き受け、コードを単一デバイスでも複数デバイスでもシームレスに動作させます。</div>
+<div class="quiz-explain-src" id="qe-128814915332032-2" hidden>正解です！Accelerate は分散学習の複雑さを引き受け、コードを単一デバイスでも複数デバイスでもシームレスに動作させます。</div>
 <button type="button" class="quiz-choice" data-correct="false" data-quiz-idx="3">モデルを TensorFlow のような別のフレームワークに変換すること</button>
-<div class="quiz-explain-src" id="qe-123594585878464-3" hidden>Accelerate は PyTorch の中で動作し、フレームワーク間の変換は行いません。</div>
+<div class="quiz-explain-src" id="qe-128814915332032-3" hidden>Accelerate は PyTorch の中で動作し、フレームワーク間の変換は行いません。</div>
 </div><div class="quiz-feedback" hidden></div></div>
 <h3>4. 学習ループでバッチをデバイスに移動するのはなぜですか？</h3>
 <div class="quiz">
 <div class="quiz-choices">
 <button type="button" class="quiz-choice" data-correct="false" data-quiz-idx="0">学習を高速化するため</button>
-<div class="quiz-explain-src" id="qe-123594585882304-0" hidden>速度に影響することはありますが、主な理由は互換性です。</div>
+<div class="quiz-explain-src" id="qe-128814915331968-0" hidden>速度に影響することはありますが、主な理由は互換性です。</div>
 <button type="button" class="quiz-choice" data-correct="true" data-quiz-idx="1">計算するには、モデルとデータが同じデバイス（CPU/GPU）上になければならないため</button>
-<div class="quiz-explain-src" id="qe-123594585882304-1" hidden>正解です！PyTorch では、演算を行うテンソル同士が同じデバイス上にある必要があります。</div>
+<div class="quiz-explain-src" id="qe-128814915331968-1" hidden>正解です！PyTorch では、演算を行うテンソル同士が同じデバイス上にある必要があります。</div>
 <button type="button" class="quiz-choice" data-correct="false" data-quiz-idx="2">メモリを節約するため</button>
-<div class="quiz-explain-src" id="qe-123594585882304-2" hidden>デバイスへの移動自体がメモリを節約するわけではありません。</div>
+<div class="quiz-explain-src" id="qe-128814915331968-2" hidden>デバイスへの移動自体がメモリを節約するわけではありません。</div>
 <button type="button" class="quiz-choice" data-correct="false" data-quiz-idx="3">DataLoader に要求されるため</button>
-<div class="quiz-explain-src" id="qe-123594585882304-3" hidden>DataLoader は特定のデバイス配置を要求しません。</div>
+<div class="quiz-explain-src" id="qe-128814915331968-3" hidden>DataLoader は特定のデバイス配置を要求しません。</div>
 </div><div class="quiz-feedback" hidden></div></div>
 <h3>5. 評価前に <code>model.eval()</code> は何をしますか？</h3>
 <div class="quiz">
 <div class="quiz-choices">
 <button type="button" class="quiz-choice" data-correct="false" data-quiz-idx="0">モデルのパラメータを凍結し、更新できなくします。</button>
-<div class="quiz-explain-src" id="qe-123594585878464-0" hidden>model.eval() はパラメータを凍結しません。凍結するには requires_grad=False を設定します。</div>
+<div class="quiz-explain-src" id="qe-128814915332032-0" hidden>model.eval() はパラメータを凍結しません。凍結するには requires_grad=False を設定します。</div>
 <button type="button" class="quiz-choice" data-correct="true" data-quiz-idx="1">ドロップアウトやバッチ正規化のような層の動作を、推論用に切り替えます。</button>
-<div class="quiz-explain-src" id="qe-123594585878464-1" hidden>正解です！eval() モードではドロップアウトが無効になり、バッチ正規化では現在のバッチから統計量を計算するのではなく、学習中に蓄積された統計量を使います。</div>
+<div class="quiz-explain-src" id="qe-128814915332032-1" hidden>正解です！eval() モードではドロップアウトが無効になり、バッチ正規化では現在のバッチから統計量を計算するのではなく、学習中に蓄積された統計量を使います。</div>
 <button type="button" class="quiz-choice" data-correct="false" data-quiz-idx="2">評価指標のための勾配計算を有効にします。</button>
-<div class="quiz-explain-src" id="qe-123594585878464-2" hidden>実際には、評価中は通常 torch.no_grad() を使って勾配計算を無効にします。</div>
+<div class="quiz-explain-src" id="qe-128814915332032-2" hidden>実際には、評価中は通常 torch.no_grad() を使って勾配計算を無効にします。</div>
 <button type="button" class="quiz-choice" data-correct="false" data-quiz-idx="3">評価指標を自動で計算します。</button>
-<div class="quiz-explain-src" id="qe-123594585878464-3" hidden>model.eval() は層の動作を変えるだけです。指標の計算は別途実装する必要があります。</div>
+<div class="quiz-explain-src" id="qe-128814915332032-3" hidden>model.eval() は層の動作を変えるだけです。指標の計算は別途実装する必要があります。</div>
 </div><div class="quiz-feedback" hidden></div></div>
 <h3>6. 評価中の <code>torch.no_grad()</code> の目的は何ですか？</h3>
 <div class="quiz">
 <div class="quiz-choices">
 <button type="button" class="quiz-choice" data-correct="false" data-quiz-idx="0">モデルが予測を行わないようにすること</button>
-<div class="quiz-explain-src" id="qe-123594585882304-0" hidden>torch.no_grad() は予測を妨げるものではなく、勾配計算を止めるだけです。</div>
+<div class="quiz-explain-src" id="qe-128814915331968-0" hidden>torch.no_grad() は予測を妨げるものではなく、勾配計算を止めるだけです。</div>
 <button type="button" class="quiz-choice" data-correct="true" data-quiz-idx="1">勾配の追跡を無効にして、メモリを節約し計算を高速化すること</button>
-<div class="quiz-explain-src" id="qe-123594585882304-1" hidden>正解です！評価には勾配が不要なので、無効にするとメモリと計算量を節約できます。</div>
+<div class="quiz-explain-src" id="qe-128814915331968-1" hidden>正解です！評価には勾配が不要なので、無効にするとメモリと計算量を節約できます。</div>
 <button type="button" class="quiz-choice" data-correct="false" data-quiz-idx="2">モデルを評価モードにすること</button>
-<div class="quiz-explain-src" id="qe-123594585882304-2" hidden>評価モードを有効にするのは torch.no_grad() ではなく model.eval() です。</div>
+<div class="quiz-explain-src" id="qe-128814915331968-2" hidden>評価モードを有効にするのは torch.no_grad() ではなく model.eval() です。</div>
 <button type="button" class="quiz-choice" data-correct="false" data-quiz-idx="3">実行ごとに一貫した結果を保証すること</button>
-<div class="quiz-explain-src" id="qe-123594585882304-3" hidden>再現性は乱数シードの設定で担保するもので、torch.no_grad() の役割ではありません。</div>
+<div class="quiz-explain-src" id="qe-128814915331968-3" hidden>再現性は乱数シードの設定で担保するもので、torch.no_grad() の役割ではありません。</div>
 </div><div class="quiz-feedback" hidden></div></div>
 <h3>7. 学習ループで 🤗 Accelerate を使うと何が変わりますか？</h3>
 <div class="quiz">
 <div class="quiz-choices">
 <button type="button" class="quiz-choice" data-correct="false" data-quiz-idx="0">学習ループ全体をゼロから書き直す必要があります。</button>
-<div class="quiz-explain-src" id="qe-123594585878464-0" hidden>Accelerate では、既存の PyTorch コードへの変更は最小限で済みます。</div>
+<div class="quiz-explain-src" id="qe-128814915332032-0" hidden>Accelerate では、既存の PyTorch コードへの変更は最小限で済みます。</div>
 <button type="button" class="quiz-choice" data-correct="true" data-quiz-idx="1">主要なオブジェクトを accelerator.prepare() でラップし、loss.backward() の代わりに accelerator.backward() を使います。</button>
-<div class="quiz-explain-src" id="qe-123594585878464-1" hidden>正解です！主な変更はこの2点で、オブジェクトを accelerator.prepare() でラップし、分散学習を適切に行うために accelerator.backward() を使います。</div>
+<div class="quiz-explain-src" id="qe-128814915332032-1" hidden>正解です！主な変更はこの2点で、オブジェクトを accelerator.prepare() でラップし、分散学習を適切に行うために accelerator.backward() を使います。</div>
 <button type="button" class="quiz-choice" data-correct="false" data-quiz-idx="2">コード内で GPU の数を指定する必要があります。</button>
-<div class="quiz-explain-src" id="qe-123594585878464-2" hidden>Accelerate は利用可能なハードウェアを自動で検出します。</div>
+<div class="quiz-explain-src" id="qe-128814915332032-2" hidden>Accelerate は利用可能なハードウェアを自動で検出します。</div>
 <button type="button" class="quiz-choice" data-correct="false" data-quiz-idx="3">別のオプティマイザとスケジューラを使わなければなりません。</button>
-<div class="quiz-explain-src" id="qe-123594585878464-3" hidden>Accelerate でも同じオプティマイザとスケジューラが使えます。</div>
+<div class="quiz-explain-src" id="qe-128814915332032-3" hidden>Accelerate でも同じオプティマイザとスケジューラが使えます。</div>
 </div><div class="quiz-feedback" hidden></div></div>
 <div class="callout callout-tip">
 <p class="callout-title">💡 ヒント</p>
