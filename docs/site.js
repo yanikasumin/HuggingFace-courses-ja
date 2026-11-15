@@ -1,4 +1,4 @@
-// Hugging Face コース日本語版（デモ版）— クイズ / コードコピー / サイト内検索
+// Hugging Face コース日本語版— クイズ / コードコピー / サイト内検索
 (function () {
   var scriptSrc = document.currentScript ? document.currentScript.src : "";
   var siteRoot = scriptSrc.replace(/site\.js(\?.*)?$/, "");
