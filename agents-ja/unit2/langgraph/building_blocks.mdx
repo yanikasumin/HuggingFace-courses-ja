@@ -1,0 +1,127 @@
+# LangGraph の構成要素
+
+LangGraph でアプリケーションを構築するには、その中核となるコンポーネントを理解する必要があります。LangGraph アプリケーションを構成する基本的な要素を見ていきましょう。
+
+<img src="https://huggingface.co/datasets/agents-course/course-images/resolve/main/en/unit2/LangGraph/Building_blocks.png" alt="構成要素" width="70%"/>
+
+LangGraph のアプリケーションは **エントリーポイント** から始まります。実行内容に応じて次に進む関数が変わり、最終的に END に到達します。
+
+<img src="https://huggingface.co/datasets/agents-course/course-images/resolve/main/en/unit2/LangGraph/application.png" alt="アプリケーション"/>
+
+## 1. 状態（State）
+
+**状態（State）** は LangGraph の中心的な概念です。アプリケーション内を流れるすべての情報を表します。
+
+```python
+from typing_extensions import TypedDict
+
+class State(TypedDict):
+    graph_state: str
+```
+
+状態は **ユーザーが定義する** ものです。そのため、意思決定プロセスに必要なすべてのデータを含むよう、フィールドを慎重に設計する必要があります！
+
+> 💡 **ヒント：** アプリケーションがステップ間で追跡する必要がある情報について、よく考えてください。
+
+## 2. ノード
+
+**ノード** は Python の関数です。各ノードは次のことを行います。
+- 状態を入力として受け取る
+- 何らかの処理を実行する
+- 状態への更新を返す
+
+```python
+def node_1(state):
+    print("---ノード 1---")
+    return {"graph_state": state['graph_state'] +" I am"}
+
+def node_2(state):
+    print("---ノード 2---")
+    return {"graph_state": state['graph_state'] +" happy!"}
+
+def node_3(state):
+    print("---ノード 3---")
+    return {"graph_state": state['graph_state'] +" sad!"}
+```
+
+たとえば、ノードには次のような処理を含められます。
+- **LLM の呼び出し**：テキストを生成したり、意思決定を行ったりします
+- **ツールの呼び出し**：外部システムとやり取りします
+- **条件分岐ロジック**：次のステップを決定します
+- **人間の介入**：ユーザーから入力を受け取ります
+
+> 💡 **情報：** START や END のように、ワークフロー全体に必要な一部のノードは LangGraph から直接提供されます。
+
+
+## 3. エッジ
+
+**エッジ** はノード同士を結び、グラフの中でどのノードからどのノードへ進めるかを定めます。
+
+```python
+import random
+from typing import Literal
+
+def decide_mood(state) -> Literal["node_2", "node_3"]:
+    
+    # 多くの場合、状態を使って次に訪れるノードを決定します
+    user_input = state['graph_state'] 
+    
+    # ここでは、ノード 2 とノード 3 の間で単純に 50 / 50 に分けます
+    if random.random() < 0.5:
+
+        # 50% の確率で、ノード 2 を返します
+        return "node_2"
+    
+    # 50% の確率で、ノード 3 を返します
+    return "node_3"
+```
+
+エッジには次の種類があります。
+- **直接エッジ**：常にノード A からノード B へ進みます
+- **条件付きエッジ**：現在の状態に基づいて次のノードを選択します
+
+## 4. StateGraph
+
+**StateGraph** は、エージェントのワークフロー全体を保持するコンテナです。
+
+```python
+from IPython.display import Image, display
+from langgraph.graph import StateGraph, START, END
+
+# グラフを構築
+builder = StateGraph(State)
+builder.add_node("node_1", node_1)
+builder.add_node("node_2", node_2)
+builder.add_node("node_3", node_3)
+
+# ロジック
+builder.add_edge(START, "node_1")
+builder.add_conditional_edges("node_1", decide_mood)
+builder.add_edge("node_2", END)
+builder.add_edge("node_3", END)
+
+# 追加
+graph = builder.compile()
+```
+
+そして、可視化できます！
+```python
+# 表示
+display(Image(graph.get_graph().draw_mermaid_png()))
+```
+<img src="https://huggingface.co/datasets/agents-course/course-images/resolve/main/en/unit2/LangGraph/basic_graph.jpeg" alt="グラフの可視化"/>
+
+そして何より、このグラフを呼び出して実行できます。
+```python
+graph.invoke({"graph_state" : "Hi, this is Lance."})
+```
+出力：
+```
+---ノード 1---
+---ノード 3---
+{'graph_state': 'Hi, this is Lance. I am sad!'}
+```
+
+## 次のステップ
+
+次のセクションでは、これらの概念を実践に移し、最初のグラフを構築します。このグラフでは、Alfred がメールを受け取り、分類し、正規のメールであれば返信の下書きを作成します。

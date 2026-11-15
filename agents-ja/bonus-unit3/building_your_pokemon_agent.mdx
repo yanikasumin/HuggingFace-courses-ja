@@ -1,0 +1,260 @@
+# 自分だけの Pokémon バトルエージェントを作ろう
+
+ゲームにおけるエージェンティック AI の可能性と限界を探ってきたので、次は実践です。このセクションでは、コースを通じて学んだすべてを使い、**ポケモン風のターン制バトルで戦う、あなた自身の AI エージェントを構築します**。
+
+システムを、4 つの重要な構成要素に分けます。
+
+- **Poke-env：** ルールベースまたは強化学習の Pokémon ボットを訓練するために設計された Python ライブラリ。
+
+- **Pokémon Showdown：** エージェントが戦う、オンラインバトルシミュレータ。
+
+- **LLMAgentBase：** LLM と Poke-env のバトル環境を接続するために用意した、カスタムの Python クラス。
+
+- **TemplateAgent：** 独自のバトルエージェントを作るためのひな型。必要な部分を自分で実装して完成させます。
+
+それぞれのコンポーネントを、詳しく見ていきましょう。
+
+## 🧠 Poke-env
+
+![バトルの GIF](https://github.com/hsahovic/poke-env/raw/master/rl-gif.gif)
+
+[Poke-env](https://github.com/hsahovic/poke-env) は、もともと [Haris Sahovic](https://huggingface.co/hsahovic) が強化学習ボットの訓練用に構築した Python インターフェースですが、ここではエージェンティック AI 用に転用します。  
+シンプルな API を通じて、エージェントが Pokémon Showdown とやり取りできるようにします。
+
+グラフィカルインターフェースとの通信に必要なすべてを備えた `Player` クラスを提供しており、エージェントはこれを継承します。
+
+**ドキュメント**：[poke-env.readthedocs.io](https://poke-env.readthedocs.io/en/stable/)  
+**リポジトリ**：[github.com/hsahovic/poke-env](https://github.com/hsahovic/poke-env)
+
+## ⚔️ Pokémon Showdown
+
+[Pokémon Showdown](https://pokemonshowdown.com/) は、エージェントがオンラインで Pokémon の対戦を行える[オープンソース](https://github.com/smogon/Pokemon-Showdown)のバトルシミュレータです。  
+バトルをリアルタイムにシミュレーションし、表示するための完全なインターフェースを提供します。このチャレンジでは、ボットは人間のプレイヤーとまったく同じように、ターンごとに技を選んで行動します。
+
+参加者全員がバトルに使うサーバーを用意しました。最高の AI バトルエージェントを作るのは誰か、競い合いましょう。
+
+**リポジトリ**：[github.com/smogon/Pokemon-Showdown](https://github.com/smogon/Pokemon-Showdown)  
+**ウェブサイト**：[pokemonshowdown.com](https://pokemonshowdown.com/)
+
+## 🔌 LLMAgentBase
+
+`LLMAgentBase` は、**Poke-env** の `Player` クラスを拡張した Python クラスです。  
+**LLM** と **Pokémon バトルシミュレータ**の橋渡し役を務め、入出力の整形とバトルのコンテキストの保持を担当します。
+
+このベースエージェントは、環境とやり取りするためのツール群（`STANDARD_TOOL_SCHEMA` で定義）を提供します。
+
+- `choose_move`：バトル中の技の選択用  
+- `choose_switch`：ポケモンの交代用  
+
+LLM は、対戦中の意思決定にこれらのツールを使う必要があります。
+
+### 🧠 コアロジック
+
+- `choose_move(battle: Battle)`：毎ターン呼び出されるメインメソッドです。`Battle` オブジェクトを受け取り、LLM の出力に基づいた行動文字列を返します。
+
+### 🔧 主要な内部メソッド
+
+- `_format_battle_state(battle)`：現在のバトルの状態を文字列に変換し、LLM に送れる形にします。
+
+- `_find_move_by_name(battle, move_name)`：名前を使って技を探します。LLM が `choose_move` を呼び出したときに、その応答から指定された技を特定するために使います。
+
+- `_find_pokemon_by_name(battle, pokemon_name)`：LLM の交代コマンドに基づき、交代先のポケモンを特定します。
+
+- `_get_llm_decision(battle_state)`：ベースクラスでは抽象メソッドです。次のセクションで説明するように、自分のエージェントで実装する必要があります。そこでは、LLM への問い合わせ方法と、その応答の解析方法を定義します。
+
+その意思決定の仕組みを示す抜粋がこちらです。
+
+
+```python
+STANDARD_TOOL_SCHEMA = {
+    "choose_move": {
+        ...
+    },
+    "choose_switch": {
+        ...
+    },
+}
+
+class LLMAgentBase(Player):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.standard_tools = STANDARD_TOOL_SCHEMA
+        self.battle_history = []
+
+    def _format_battle_state(self, battle: Battle) -> str:
+        active_pkmn = battle.active_pokemon
+        active_pkmn_info = f"Your active Pokemon: {active_pkmn.species} " \
+                           f"(Type: {'/'.join(map(str, active_pkmn.types))}) " \
+                           f"HP: {active_pkmn.current_hp_fraction * 100:.1f}% " \
+                           f"Status: {active_pkmn.status.name if active_pkmn.status else 'None'} " \
+                           f"Boosts: {active_pkmn.boosts}"
+
+        opponent_pkmn = battle.opponent_active_pokemon
+        opp_info_str = "Unknown"
+        if opponent_pkmn:
+            opp_info_str = f"{opponent_pkmn.species} " \
+                           f"(Type: {'/'.join(map(str, opponent_pkmn.types))}) " \
+                           f"HP: {opponent_pkmn.current_hp_fraction * 100:.1f}% " \
+                           f"Status: {opponent_pkmn.status.name if opponent_pkmn.status else 'None'} " \
+                           f"Boosts: {opponent_pkmn.boosts}"
+        opponent_pkmn_info = f"Opponent's active Pokemon: {opp_info_str}"
+
+        available_moves_info = "Available moves:\n"
+        if battle.available_moves:
+            available_moves_info += "\n".join(
+                [f"- {move.id} (Type: {move.type}, BP: {move.base_power}, Acc: {move.accuracy}, PP: {move.current_pp}/{move.max_pp}, Cat: {move.category.name})"
+                 for move in battle.available_moves]
+            )
+        else:
+             available_moves_info += "- None (Must switch or Struggle)"
+
+        available_switches_info = "Available switches:\n"
+        if battle.available_switches:
+              available_switches_info += "\n".join(
+                  [f"- {pkmn.species} (HP: {pkmn.current_hp_fraction * 100:.1f}%, Status: {pkmn.status.name if pkmn.status else 'None'})"
+                   for pkmn in battle.available_switches]
+              )
+        else:
+            available_switches_info += "- None"
+
+        state_str = f"{active_pkmn_info}\n" \
+                    f"{opponent_pkmn_info}\n\n" \
+                    f"{available_moves_info}\n\n" \
+                    f"{available_switches_info}\n\n" \
+                    f"Weather: {battle.weather}\n" \
+                    f"Terrains: {battle.fields}\n" \
+                    f"Your Side Conditions: {battle.side_conditions}\n" \
+                    f"Opponent Side Conditions: {battle.opponent_side_conditions}"
+        return state_str.strip()
+
+    def _find_move_by_name(self, battle: Battle, move_name: str) -> Optional[Move]:
+        normalized_name = normalize_name(move_name)
+        # 完全な ID 一致を優先する
+        for move in battle.available_moves:
+            if move.id == normalized_name:
+                return move
+        # フォールバック: 表示名で確認する（信頼性は低め）
+        for move in battle.available_moves:
+            if move.name.lower() == move_name.lower():
+                print(f"警告：ID '{move.id}' ではなく、表示名 '{move.name}' で技を特定しました。入力値：'{move_name}'。")
+                return move
+        return None
+
+    def _find_pokemon_by_name(self, battle: Battle, pokemon_name: str) -> Optional[Pokemon]:
+        normalized_name = normalize_name(pokemon_name)
+        for pkmn in battle.available_switches:
+            # 比較のために種族名を正規化する
+            if normalize_name(pkmn.species) == normalized_name:
+                return pkmn
+        return None
+
+    async def choose_move(self, battle: Battle) -> str:
+        battle_state_str = self._format_battle_state(battle)
+        decision_result = await self._get_llm_decision(battle_state_str)
+        print(decision_result)
+        decision = decision_result.get("decision")
+        error_message = decision_result.get("error")
+        action_taken = False
+        fallback_reason = ""
+
+        if decision:
+            function_name = decision.get("name")
+            args = decision.get("arguments", {})
+            if function_name == "choose_move":
+                move_name = args.get("move_name")
+                if move_name:
+                    chosen_move = self._find_move_by_name(battle, move_name)
+                    if chosen_move and chosen_move in battle.available_moves:
+                        action_taken = True
+                        chat_msg = f"AI の判断：技 '{chosen_move.id}' を使用します。"
+                        print(chat_msg)
+                        return self.create_order(chosen_move)
+                    else:
+                        fallback_reason = f"LLM が選択した技 '{move_name}' は使用できないか、無効です。"
+                else:
+                     fallback_reason = "LLM が 'move_name' を指定せずに 'choose_move' を呼び出しました。"
+            elif function_name == "choose_switch":
+                pokemon_name = args.get("pokemon_name")
+                if pokemon_name:
+                    chosen_switch = self._find_pokemon_by_name(battle, pokemon_name)
+                    if chosen_switch and chosen_switch in battle.available_switches:
+                        action_taken = True
+                        chat_msg = f"AI の判断：'{chosen_switch.species}' に交代します。"
+                        print(chat_msg)
+                        return self.create_order(chosen_switch)
+                    else:
+                        fallback_reason = f"LLM が指定した交代先 '{pokemon_name}' は選択できないか、無効です。"
+                else:
+                    fallback_reason = "LLM が 'pokemon_name' を指定せずに 'choose_switch' を呼び出しました。"
+            else:
+                fallback_reason = f"LLM が不明な関数 '{function_name}' を呼び出しました。"
+
+        if not action_taken:
+            if not fallback_reason:
+                 if error_message:
+                     fallback_reason = f"API エラー：{error_message}"
+                 elif decision is None:
+                      fallback_reason = "LLM から有効な関数呼び出しが返されませんでした。"
+                 else:
+                      fallback_reason = "LLM の判断を処理中に不明なエラーが発生しました。"
+
+            print(f"警告：{fallback_reason} ランダムな行動を選択します。")
+
+            if battle.available_moves or battle.available_switches:
+                 return self.choose_random_move(battle)
+            else:
+                 print("AI の代替行動：選択できる技も交代先もありません。Struggle またはデフォルト行動を使用します。")
+                 return self.choose_default_move(battle)
+
+    async def _get_llm_decision(self, battle_state: str) -> Dict[str, Any]:
+        raise NotImplementedError("Subclasses must implement _get_llm_decision")
+```
+
+**完全なソースコード**：[agents.py](https://huggingface.co/spaces/Jofthomas/twitch_streaming/blob/main/agents.py)
+
+## 🧪 TemplateAgent
+
+ここからが面白いところです。LLMAgentBase を土台に、独自の戦略を持つエージェントを実装しましょう。目指すはリーダーボードの上位です。
+
+このテンプレートを出発点に、独自のロジックを構築します。手引きとして、**OpenAI**、**Mistral**、**Gemini** のモデルを使った [3 つの完全な例](https://huggingface.co/spaces/Jofthomas/twitch_streaming/blob/main/agents.py)も用意しています。
+
+テンプレートの簡略版がこちらです。
+
+```python
+class TemplateAgent(LLMAgentBase):
+    """意思決定に Template AI API を使う。"""
+    def __init__(self, api_key: str = None, model: str = "model-name", *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.model = model
+        self.template_client = TemplateModelProvider(api_key=...)
+        self.template_tools = list(self.standard_tools.values())
+
+    async def _get_llm_decision(self, battle_state: str) -> Dict[str, Any]:
+        """状態を LLM に送り、関数呼び出しの意思決定結果を受け取る。"""
+        system_prompt = (
+            "You are a ..."
+        )
+        user_prompt = f"..."
+
+        try:
+            response = await self.template_client.chat.completions.create(
+                model=self.model,
+                messages=[
+                    {"role": "system", "content": system_prompt},
+                    {"role": "user", "content": user_prompt},
+                ],
+            )
+            message = response.choices[0].message
+            
+            return {"decision": {"name": function_name, "arguments": arguments}}
+
+        except Exception as e:
+            print(f"呼び出し中に予期しないエラーが発生しました：{e}")
+            return {"error": f"予期しないエラー：{e}"}
+```
+
+このコードはそのままでは動きません。独自の処理を実装するためのひな型です。
+
+すべての部品がそろったので、競争力のあるエージェントを作る番です。次のセクションでは、エージェントを私たちのサーバーにデプロイし、リアルタイムで他のエージェントと対戦させる方法を紹介します。
+
+バトル開始です！🔥

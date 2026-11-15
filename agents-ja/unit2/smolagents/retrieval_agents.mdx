@@ -1,0 +1,167 @@
+<CourseFloatingBanner 
+  classNames="absolute z-10 right-0 top-0"
+  notebooks={[
+    {label: "Google Colab", value: "https://colab.research.google.com/#fileId=https://huggingface.co/agents-course/notebooks/blob/main/unit2/smolagents/retrieval_agents.ipynb"},
+]}
+askForHelpUrl="http://hf.co/join/discord" />
+
+# Agentic RAG システムを作る
+
+> [!TIP]
+> コードは、Google Colab で実行できる<a href="https://huggingface.co/agents-course/notebooks/blob/main/unit2/smolagents/retrieval_agents.ipynb" target="_blank">このノートブック</a>で追うことができます。
+
+検索拡張生成（Retrieval Augmented Generation：RAG）システムは、データ検索と生成モデルの能力を組み合わせ、コンテキストを意識した応答を提供します。たとえば、ユーザーのクエリが検索エンジンに渡され、取得された結果がクエリとともにモデルに与えられます。モデルはそのクエリと取得した情報にもとづいて応答を生成します。
+
+Agentic RAG (Retrieval-Augmented Generation) は、**自律的なエージェントと動的な知識検索を組み合わせる**ことで、従来の RAG システムを拡張したものです。
+
+従来の RAG システムが、取得したデータをもとに LLM でクエリに答えるのに対し、Agentic RAG は**検索と生成の両方のプロセスをインテリジェントに制御**でき、効率と精度が向上します。
+
+従来の RAG システムには、**単一の検索ステップに依存する点**や、ユーザーのクエリとの直接的な意味の類似性を重視するあまり、関連する情報を見落とすことがある点など、重要な限界があります。
+
+Agentic RAG は、エージェントが自律的に検索クエリを作成し、取得した結果を批判的に検討し、複数の検索ステップを実行できるようにすることでこれらの問題に対処し、より的確で包括的な出力を実現します。
+
+## DuckDuckGo による基本的な検索
+
+DuckDuckGo を使って Web を検索できるシンプルなエージェントを作りましょう。このエージェントは情報を取得し、応答を統合してクエリに答えます。Agentic RAG を使えば、アルフレッドのエージェントは次のことができます。
+
+* 最新のスーパーヒーローパーティーのトレンドを検索する
+* 豪華なパーティーにふさわしい要素が含まれるよう、検索結果を絞り込む
+* 情報を完全な計画に統合する
+
+アルフレッドのエージェントがこれを実現する方法は次のとおりです。
+
+```python
+from smolagents import CodeAgent, DuckDuckGoSearchTool, InferenceClientModel
+
+# 検索ツールを初期化する
+search_tool = DuckDuckGoSearchTool()
+
+# モデルを初期化する
+model = InferenceClientModel()
+
+agent = CodeAgent(
+    model=model,
+    tools=[search_tool],
+)
+
+# 使用例
+response = agent.run(
+    "Search for luxury superhero-themed party ideas, including decorations, entertainment, and catering."
+)
+print(response)
+```
+
+エージェントは次のプロセスに従います。
+
+1. **リクエストを分析する：** アルフレッドのエージェントは、リクエストの主要な要素を特定します。ここでは、スーパーヒーローをテーマにした豪華なパーティーを計画するため、装飾、エンターテイメント、ケータリングに注目します。
+2. **検索を実行する：** エージェントは DuckDuckGo を活用して、最も関連性が高く最新の情報を検索し、豪華なイベントを求めるアルフレッドの洗練された好みに沿うようにします。
+3. **情報を統合する：** 結果を集めたあと、エージェントはそれらを、パーティーのあらゆる側面をカバーする一貫した実行可能な計画に加工します。
+4. **後で参照できるように保存する：** エージェントは取得した情報を保存し、今後のイベント企画でも簡単に参照できるようにします。これにより、その後の作業を効率化できます。
+
+## カスタムナレッジベースのツール
+
+専門的なタスクでは、カスタムのナレッジベースが非常に貴重です。技術文書や専門知識を格納したベクトルデータベースを検索するツールを作ってみましょう。セマンティック検索を使うことで、エージェントはアルフレッドのニーズに最も関連する情報を見つけられます。
+
+ベクトルデータベースは、機械学習モデルによって作成された、テキストやその他のデータの数値表現（埋め込み）を格納します。高次元空間で似た意味を特定することで、セマンティック検索を可能にします。
+
+このアプローチは、事前定義された知識とセマンティック検索を組み合わせ、イベント計画のためのコンテキストを意識したソリューションを提供します。専門知識へのアクセスにより、アルフレッドはパーティーのあらゆる細部を完璧に仕上げられます。
+
+この例では、カスタムのナレッジベースからパーティー計画のアイデアを取得するツールを作ります。BM25 リトリーバーを使ってナレッジベースを検索して上位の結果を返し、`RecursiveCharacterTextSplitter` でドキュメントをより小さいチャンクに分割して、検索を効率化します。
+
+```python
+from langchain_community.docstore.document import Document
+from langchain_text_splitters import RecursiveCharacterTextSplitter
+from smolagents import Tool
+from langchain_community.retrievers import BM25Retriever
+from smolagents import CodeAgent, InferenceClientModel
+
+class PartyPlanningRetrieverTool(Tool):
+    name = "party_planning_retriever"
+    description = "Uses semantic search to retrieve relevant party planning ideas for Alfred’s superhero-themed party at Wayne Manor."
+    inputs = {
+        "query": {
+            "type": "string",
+            "description": "The query to perform. This should be a query related to party planning or superhero themes.",
+        }
+    }
+    output_type = "string"
+
+    def __init__(self, docs, **kwargs):
+        super().__init__(**kwargs)
+        self.retriever = BM25Retriever.from_documents(
+            docs, k=5  # 上位5件のドキュメントを取得する
+        )
+
+    def forward(self, query: str) -> str:
+        assert isinstance(query, str), "Your search query must be a string"
+
+        docs = self.retriever.invoke(
+            query,
+        )
+        return "\nRetrieved ideas:\n" + "".join(
+            [
+                f"\n\n===== Idea {str(i)} =====\n" + doc.page_content
+                for i, doc in enumerate(docs)
+            ]
+        )
+
+# パーティー計画に関するナレッジベースをシミュレーションする
+party_ideas = [
+    {"text": "A superhero-themed masquerade ball with luxury decor, including gold accents and velvet curtains.", "source": "Party Ideas 1"},
+    {"text": "Hire a professional DJ who can play themed music for superheroes like Batman and Wonder Woman.", "source": "Entertainment Ideas"},
+    {"text": "For catering, serve dishes named after superheroes, like 'The Hulk's Green Smoothie' and 'Iron Man's Power Steak.'", "source": "Catering Ideas"},
+    {"text": "Decorate with iconic superhero logos and projections of Gotham and other superhero cities around the venue.", "source": "Decoration Ideas"},
+    {"text": "Interactive experiences with VR where guests can engage in superhero simulations or compete in themed games.", "source": "Entertainment Ideas"}
+]
+
+source_docs = [
+    Document(page_content=doc["text"], metadata={"source": doc["source"]})
+    for doc in party_ideas
+]
+
+# より効率的な検索のために、ドキュメントを小さいチャンクに分割する
+text_splitter = RecursiveCharacterTextSplitter(
+    chunk_size=500,
+    chunk_overlap=50,
+    add_start_index=True,
+    strip_whitespace=True,
+    separators=["\n\n", "\n", ".", " ", ""],
+)
+docs_processed = text_splitter.split_documents(source_docs)
+
+# リトリーバーツールを作成する
+party_planning_retriever = PartyPlanningRetrieverTool(docs_processed)
+
+# エージェントを初期化する
+agent = CodeAgent(tools=[party_planning_retriever], model=InferenceClientModel())
+
+# 使用例
+response = agent.run(
+    "Find ideas for a luxury superhero-themed party, including entertainment, catering, and decoration options."
+)
+
+print(response)
+```
+
+この強化されたエージェントは次のことが可能です。
+1. まずドキュメントで関連情報を確認する
+2. ナレッジベースからの洞察を組み合わせる
+3. 会話のコンテキストをメモリに保持する
+
+## 強化された検索能力
+
+Agentic RAG システムを構築する際、エージェントは次のような高度な戦略を採用できます。
+
+1. **クエリの再定式化（Query Reformulation）：** ユーザーが入力したクエリをそのまま使うのではなく、検索対象の文書により適した検索語句を作る
+2. **クエリの分解（Query Decomposition）：** ユーザークエリをそのまま使う代わりに、問い合わせるべき情報が複数含まれていれば、それを複数のクエリに分解する
+3. **クエリの拡張（Query Expansion）：** クエリの再定式化と似た方法で、元のクエリを複数の言い回しに変え、それぞれを使って検索を行う
+4. **リランキング（Reranking）：** Cross-Encoder を使って、取得した文書と検索クエリの意味上の関連度をより多面的に評価し、その結果をスコアとして割り当てる
+5. **マルチステップ検索（Multi-Step Retrieval）：** 初期の結果をその後のクエリに活かしながら、複数の検索を実行する
+6. **ソースの統合（Source Integration）：** Web 検索やローカルのドキュメントなど、複数のソースから情報を組み合わせる
+7. **結果の検証（Result Validation）：** 取得したコンテンツについて、応答に含める前に、関連性と正確さを分析する
+
+効果的な Agentic RAG システムには、いくつかの重要な観点への慎重な配慮が必要です。エージェントは、**クエリの種類とコンテキストに基づいて、利用可能なツールの中から選択すべき**です。メモリシステムは、会話履歴の保持や、重複した検索の回避に役立ちます。フォールバック戦略を用意しておけば、主要な検索方法が失敗しても、システムは引き続き有用な結果を提供できます。さらに、検証ステップを実装することで、取得した情報の正確さと関連性を確保できます。
+
+## リソース
+
+- [Agentic RAG: turbocharge your RAG with query reformulation and self-query! 🚀](https://huggingface.co/learn/cookbook/agent_rag) - smolagents を使った Agentic RAG システム開発のレシピ。

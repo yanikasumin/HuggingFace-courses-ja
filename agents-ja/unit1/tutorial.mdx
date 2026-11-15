@@ -1,0 +1,243 @@
+# smolagents を使って初めてのエージェントを作成しましょう
+
+前回のセクションでは、Python コードを使ってゼロからエージェントを作成する方法を学び、**そのプロセスがいかに面倒かも分かりました**。幸いなことに、多くのエージェントライブラリは、**大変な作業の多くを代わりに処理して** この作業を簡素化してくれます。
+
+このチュートリアルでは、画像生成、Web 検索、タイムゾーンの確認など、さまざまなアクションを実行できる **初めてのエージェントを作成します**！
+
+さらに、作成したエージェントを **Hugging Face Space に公開して、友人や同僚と共有する方法** も学びます。
+
+さあ、始めましょう！
+
+
+## smolagents とは何か？
+
+<img src="https://huggingface.co/datasets/agents-course/course-images/resolve/main/en/unit1/smolagents.png" alt="smolagents"/>
+
+このエージェントを作るために、`smolagents` を使います。これは、**エージェントを簡単に開発するためのフレームワークを提供する** ライブラリです。
+
+この軽量ライブラリは、シンプルで使いやすい設計が特徴です。エージェントの構築に伴う複雑な処理の多くを内部で処理してくれるため、エージェントの振る舞いを設計することに集中できます。
+
+smolagents については、次のユニットでさらに深く掘り下げます。その間、こちらの <a href="https://huggingface.co/blog/smolagents" target="_blank">ブログ記事</a> や、ライブラリの <a href="https://github.com/huggingface/smolagents" target="_blank">GitHub リポジトリ</a> もご覧ください。
+
+要するに、`smolagents` は **CodeAgent** を中心とするライブラリです。CodeAgent は、コードブロックを使って **「アクション（Actions）」** を実行し、その実行結果を **「観察（Observation）」** するタイプのエージェントです。
+
+これから構築するものの例がこちらです！
+
+エージェントに **画像生成ツール** を提供し、猫の画像を生成するよう頼みました。
+
+`smolagents` のエージェントは、**以前に作成したカスタムエージェントと同じように動作します**。最終回答にたどり着くまで、**思考・アクション・観察のサイクルを繰り返します**。
+
+<iframe width="560" height="315" src="https://www.youtube.com/embed/PQDKcWiuln4?si=ysSTDZoi8y55FVvA" title="YouTube 動画プレーヤー" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe>
+
+ワクワクしますね？
+
+## エージェントを構築しましょう！
+
+まず、この Space を複製してください: <a href="https://huggingface.co/spaces/agents-course/First_agent_template" target="_blank">https://huggingface.co/spaces/agents-course/First_agent_template</a>
+> このテンプレートを提供してくれた <a href="https://huggingface.co/m-ric" target="_blank">Aymeric</a> に感謝します！ 🙌
+
+
+この Space を複製することは、**自分のプロフィール上にローカルコピーを作成する** ことを意味します。
+<img src="https://huggingface.co/datasets/agents-course/course-images/resolve/main/en/unit1/duplicate-space.gif" alt="複製"/>
+
+Space を複製したあとは、エージェントがモデル API にアクセスできるよう、Hugging Face API トークンを追加する必要があります。
+
+1. まず、まだ持っていない場合は、[https://hf.co/settings/tokens](https://hf.co/settings/tokens) から推論の権限を持つ Hugging Face トークンを取得します
+2. 複製した Space に移動し、**Settings** タブをクリックします
+3. **Variables and Secrets** セクションまでスクロールし、**New Secret** をクリックします
+4. `HF_TOKEN` という名前のシークレットを作成し、その値としてトークンを貼り付けます
+5. **Save** をクリックして、トークンを安全に保存します
+
+このレッスンを通じて、変更する必要があるファイルは（現在は不完全な）**"app.py"** だけです。テンプレート内の [元のファイル](https://huggingface.co/spaces/agents-course/First_agent_template/blob/main/app.py) がこちらで確認できます。自分のファイルを見つけるには、Space のコピーに移動し、`Files` タブをクリックして、ディレクトリ一覧の `app.py` をクリックします。
+
+コードを一緒に分解していきましょう。
+
+- ファイルは、シンプルですが必要なライブラリのインポートから始まります
+
+```python
+from smolagents import CodeAgent, DuckDuckGoSearchTool, FinalAnswerTool, InferenceClientModel, load_tool, tool
+import datetime
+import requests
+import pytz
+import yaml
+```
+
+先に概説したように、**smolagents** の **CodeAgent** クラスを直接使います。
+
+
+### ツール
+
+では、ツールに入りましょう！ツールについて復習したい場合は、遠慮なくコースの [ツール](tools) セクションに戻ってください。
+
+```python
+@tool
+def my_custom_tool(arg1:str, arg2:int)-> str: # 戻り値の型を指定することが重要です
+    # ツールの説明/引数の説明にはこの形式を保ちつつ、ツール自体は自由に変更してください
+    """A tool that does nothing yet 
+    Args:
+        arg1: the first argument
+        arg2: the second argument
+    """
+    return "What magic will you build ?"
+
+@tool
+def get_current_time_in_timezone(timezone: str) -> str:
+    """A tool that fetches the current local time in a specified timezone.
+    Args:
+        timezone: A string representing a valid timezone (e.g., 'America/New_York').
+    """
+    try:
+        # タイムゾーンオブジェクトを作成する
+        tz = pytz.timezone(timezone)
+        # そのタイムゾーンの現在時刻を取得する
+        local_time = datetime.datetime.now(tz).strftime("%Y-%m-%d %H:%M:%S")
+        return f"The current local time in {timezone} is: {local_time}"
+    except Exception as e:
+        return f"Error fetching time for timezone '{timezone}': {str(e)}"
+```
+
+
+このセクションでは、皆さんにも実際にツールを作成してもらいます！まずは2つの例を示します。
+
+1. 変更して有用なものにできる、**動作しないダミーツール**。
+2. 世界のどこかの現在時刻を取得する、**実際に動作するツール**。
+
+ツールを定義する際は、次が重要です。
+
+1. `get_current_time_in_timezone(timezone: str) -> str:` のように、関数の入力と出力の型を提供すること
+2. **適切に整形された docstring**。`smolagents` は、すべての引数が **docstring 内にテキストによる説明** を持つことを期待しています。
+
+### エージェント
+
+LLM エンジンとして [`Qwen/Qwen2.5-Coder-32B-Instruct`](https://huggingface.co/Qwen/Qwen2.5-Coder-32B-Instruct) を使います。これは非常に有能なモデルで、サーバーレス API 経由でアクセスします。
+
+```python
+final_answer = FinalAnswerTool()
+model = InferenceClientModel(
+    max_tokens=2096,
+    temperature=0.5,
+    model_id='Qwen/Qwen2.5-Coder-32B-Instruct',
+    custom_role_conversions=None,
+)
+
+with open("prompts.yaml", 'r') as stream:
+    prompt_templates = yaml.safe_load(stream)
+    
+# CodeAgent を作成します
+agent = CodeAgent(
+    model=model,
+    tools=[final_answer], # ここにツールを追加してください（final_answer は削除しないでください）
+    max_steps=6,
+    verbosity_level=1,
+    grammar=None,
+    planning_interval=None,
+    name=None,
+    description=None,
+    prompt_templates=prompt_templates
+)
+
+GradioUI(agent).launch()
+```
+
+このエージェントでも、前のセクションで紹介した `InferenceClient` が、**InferenceClientModel** クラスの内部で使われています！
+
+フレームワークを紹介するユニット2では、より詳細な例を示します。今のところは、エージェントの `tools` パラメータを使って **ツールのリストに新しいツールを追加する** ことに集中してください。
+
+たとえば、コードの1行目でインポートされた `DuckDuckGoSearchTool` を使ったり、コードの後半で Hub から読み込まれる `image_generation_tool` を調べたりできます。
+
+**ツールを追加することで、エージェントに新しい能力を持たせられます**。ぜひ自由に工夫してみてください！
+
+### システムプロンプト
+
+エージェントのシステムプロンプトは、別の `prompts.yaml` ファイルに保存されています。このファイルには、エージェントの振る舞いを導く事前定義された指示が含まれています。
+
+プロンプトを YAML ファイルに保存すると、異なるエージェントやユースケース間で簡単にカスタマイズや再利用ができます。
+
+[Space のファイル構造](https://huggingface.co/spaces/agents-course/First_agent_template/tree/main) を確認すると、`prompts.yaml` ファイルの場所と、プロジェクト内での構成が分かります。
+
+完全な "app.py" は次のとおりです。
+
+```python
+from smolagents import CodeAgent, DuckDuckGoSearchTool, InferenceClientModel, load_tool, tool
+import datetime
+import requests
+import pytz
+import yaml
+from tools.final_answer import FinalAnswerTool
+
+from Gradio_UI import GradioUI
+
+# 以下は、何もしないツールの例です。あなたの創造性で私たちを驚かせてください！
+@tool
+def my_custom_tool(arg1:str, arg2:int)-> str: # 戻り値の型を指定することが重要です
+    # ツールの説明/引数の説明にはこの形式を保ちつつ、ツール自体は自由に変更してください
+    """A tool that does nothing yet 
+    Args:
+        arg1: the first argument
+        arg2: the second argument
+    """
+    return "What magic will you build ?"
+
+@tool
+def get_current_time_in_timezone(timezone: str) -> str:
+    """A tool that fetches the current local time in a specified timezone.
+    Args:
+        timezone: A string representing a valid timezone (e.g., 'America/New_York').
+    """
+    try:
+        # タイムゾーンオブジェクトを作成する
+        tz = pytz.timezone(timezone)
+        # そのタイムゾーンの現在時刻を取得する
+        local_time = datetime.datetime.now(tz).strftime("%Y-%m-%d %H:%M:%S")
+        return f"The current local time in {timezone} is: {local_time}"
+    except Exception as e:
+        return f"Error fetching time for timezone '{timezone}': {str(e)}"
+
+
+final_answer = FinalAnswerTool()
+model = InferenceClientModel(
+    max_tokens=2096,
+    temperature=0.5,
+    model_id='Qwen/Qwen2.5-Coder-32B-Instruct',
+    custom_role_conversions=None,
+)
+
+
+# Hub からツールをインポートする
+image_generation_tool = load_tool("agents-course/text-to-image", trust_remote_code=True)
+
+# prompt.yaml ファイルからシステムプロンプトを読み込む
+with open("prompts.yaml", 'r') as stream:
+    prompt_templates = yaml.safe_load(stream)
+    
+agent = CodeAgent(
+    model=model,
+    tools=[final_answer], # ここにツールを追加してください（final_answer は削除しないでください）
+    max_steps=6,
+    verbosity_level=1,
+    grammar=None,
+    planning_interval=None,
+    name=None,
+    description=None,
+    prompt_templates=prompt_templates # システムプロンプトを CodeAgent に渡す
+)
+
+
+GradioUI(agent).launch()
+```
+
+あなたの **目標** は、Space とエージェントに慣れることです。
+
+現在のテンプレートでは、エージェントはまだ **ツールを使っていません。用意されているツールをいくつか追加したり、自分で新しいツールを作成したりしてみてください！**
+
+Discord チャンネル **#agents-course-showcase** で、皆さんの素晴らしいエージェントの出力を心待ちにしています！
+
+
+---
+おめでとうございます。初めてのエージェントを構築しました！遠慮なく友人や同僚と共有してください。
+
+初めて作ったエージェントですから、多少バグがあったり動作が遅かったりしても珍しくありません。今後のユニットでは、さらに高性能なエージェントを構築する方法を学びます。
+
+学ぶ最良の方法は試すことです。遠慮なく更新したり、ツールを追加したり、別のモデルで試したりしてください。
+
+次のセクションでは、最終クイズに答えて認定証を取得します！

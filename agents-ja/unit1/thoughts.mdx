@@ -1,0 +1,88 @@
+
+# 思考（Thought）：内部推論と ReAct アプローチ
+
+> [!TIP]
+> このセクションでは、AI エージェントの内部の働き、つまり推論と計画の能力に踏み込みます。エージェントが内部対話を活用して情報を分析し、複雑な問題を扱いやすいステップに分解し、次に取るべきアクションを決める方法を探ります。
+>
+> さらに、モデルに行動する前に「ステップバイステップで考える」よう促すプロンプト手法である ReAct アプローチも紹介します。
+
+思考（Thought）は、タスクを解決するための **エージェントの内部推論と計画のプロセス** を表します。
+
+このプロセスでは、エージェントを構成する大規模言語モデル（LLM）が、**プロンプトに与えられた情報を分析する** 能力を活用します。問題を解こうとする際の、いわば内部での独り言です。
+
+エージェントは思考を通じて、現在の観察結果を評価し、次にどのアクションを取るべきかを判断できます。また、**複雑な問題をより小さく扱いやすい手順に分解し**、過去の経験を振り返りながら、新しい情報に応じて計画を調整します。
+
+
+## 🧠 よくある思考タイプの例
+
+| 思考のタイプ    | 例                                                                 |
+|--------------------|-------------------------------------------------------------------------|
+| 計画（Planning）           | "I need to break this task into three steps: 1) gather data, 2) analyze trends, 3) generate report"（このタスクを3つのステップに分解する必要がある。1) データを集める、2) 傾向を分析する、3) レポートを生成する） |
+| 分析（Analysis）           | "Based on the error message, the issue appears to be with the database connection parameters"（エラーメッセージから判断すると、問題はデータベース接続パラメータにあるようだ） |
+| 意思決定（Decision Making）    | "Given the user's budget constraints, I should recommend the mid-tier option"（ユーザーの予算制約を考えると、中位の選択肢を勧めるべきだ） |
+| 問題解決（Problem Solving）    | "To optimize this code, I should first profile it to identify bottlenecks"（このコードを最適化するには、まずプロファイリングしてボトルネックを特定すべきだ） |
+| 記憶の統合（Memory Integration） | "The user mentioned their preference for Python earlier, so I'll provide examples in Python"（ユーザーは先ほど Python が好みだと言っていたので、例は Python で示そう） |
+| 自己省察（Self-Reflection）    | "My last approach didn't work well, I should try a different strategy"（前回のアプローチはうまくいかなかった。別の戦略を試すべきだ） |
+| 目標設定（Goal Setting）       | "To complete this task, I need to first establish the acceptance criteria"（このタスクを完了するには、まず受け入れ基準を定める必要がある） |
+| 優先順位付け（Prioritization）     | "The security vulnerability should be addressed before adding new features"（新機能を追加する前に、セキュリティ脆弱性に対処すべきだ） |
+
+> **注意:** function calling 向けにファインチューニングされた LLM の場合、思考プロセスは任意です。詳細はアクションのセクションで扱います。
+
+
+## 🔗 Chain-of-Thought (CoT)
+
+**Chain-of-Thought (CoT)** は、モデルに **最終回答を出す前に、問題をステップバイステップで考える** よう導くプロンプト手法です。
+
+通常は次の一文から始まります。  
+> *"Let's think step by step."*
+
+このアプローチは、モデルが **内部で推論する** のを助けます。特に論理的・数学的なタスクで、**外部ツールとやり取りすることなく** 推論できます。
+
+### ✅ 例（CoT）
+```
+Question: What is 15% of 200?
+Thought: Let's think step by step. 10% of 200 is 20, and 5% of 200 is 10, so 15% is 30.
+Answer: 30
+```
+
+
+## ⚙️ ReAct: Reasoning + Acting
+
+重要な手法が **ReAct アプローチ** です。これは「Reasoning（推論）」と「Acting（行動）」を組み合わせたものです。
+
+ReAct は、モデルにステップバイステップで考えるよう促し、推論ステップの間にアクション（ツールの使用など）を挟み込むプロンプト手法です。
+
+これにより、エージェントは次を交互に繰り返して、複雑なマルチステップタスクを解決できます。
+- Thought: 内部推論
+- Action: ツールの使用
+- Observation: ツールの出力を受け取る
+
+### 🔄 例（ReAct）
+```
+Thought: I need to find the latest weather in Paris.
+Action: Search["weather in Paris"]
+Observation: It's 18°C and cloudy.
+Thought: Now that I know the weather...
+Action: Finish["It's 18°C and cloudy in Paris."]
+```
+
+<figure>
+  <img src="https://huggingface.co/datasets/agents-course/course-images/resolve/main/en/unit1/ReAct.png" alt="ReAct"/>
+  <figcaption>
+    (d) は ReAct アプローチの例です。モデルに "Let's think step by step" と指示し、推論の各ステップの間にアクションを実行させています。
+  </figcaption>
+</figure>
+
+
+## 🔁 比較: ReAct vs. CoT
+
+| 機能              | Chain-of-Thought (CoT)      | ReAct                               |
+|----------------------|-----------------------------|-------------------------------------|
+| ステップバイステップの論理   | ✅ はい                      | ✅ はい                              |
+| 外部ツール       | ❌ いいえ                       | ✅ はい（アクション＋観察）     |
+| 適した用途       | 論理、数学、内部タスク | 情報探索、動的なマルチステップタスク |
+
+> [!TIP]
+> **Deepseek R1** や **OpenAI の o1** のような最近のモデルは、*答える前に考える* ようファインチューニングされています。`<think>` と `</think>` のような構造化トークンを使い、推論フェーズと最終回答を明示的に分離します。
+>
+> プロンプト戦略である ReAct や CoT とは異なり、これは **訓練レベルの手法** であり、モデルが例を通じて考え方を学びます。

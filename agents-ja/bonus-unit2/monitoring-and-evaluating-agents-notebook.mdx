@@ -1,0 +1,442 @@
+<CourseFloatingBanner chapter={2}
+  classNames="absolute z-10 right-0 top-0"
+  notebooks={[
+    {label: "Google Colab", value: "https://colab.research.google.com/#fileId=https%3A//huggingface.co/agents-course/notebooks/blob/main/bonus-unit2/monitoring-and-evaluating-agents.ipynb"},
+]} />
+
+# Bonus Unit 2：エージェントのオブザーバビリティと評価
+
+> [!TIP]
+> コードは、Google Colab で実行できる[このノートブック](https://colab.research.google.com/#fileId=https%3A//huggingface.co/agents-course/notebooks/blob/main/bonus-unit2/monitoring-and-evaluating-agents.ipynb)で確認できます。
+
+このノートブックでは、オープンソースのオブザーバビリティツールを使って、**AI エージェントの内部ステップ（トレース）を監視し**、**パフォーマンスを評価する**方法を学びます。
+
+エージェントの振る舞いを観測し、評価できることは、次のために不可欠です。
+- タスクが失敗したり、最適でない結果を出したりしたときの問題のデバッグ
+- コストとパフォーマンスのリアルタイム監視
+- 継続的なフィードバックによる信頼性と安全性の向上
+
+## 演習の前提条件 🏗️
+
+このノートブックを実行する前に、次を確認してください。
+
+🔲 📚  **[エージェント入門](https://huggingface.co/learn/agents-course/unit1/introduction) を学習済みであること**
+
+🔲 📚  **[smolagents フレームワーク](https://huggingface.co/learn/agents-course/unit2/smolagents/introduction) を学習済みであること**
+
+## Step 0：必要なライブラリをインストールする
+
+エージェントの実行、監視、評価に必要なライブラリがいくつかあります。
+
+
+```python
+%pip install langfuse 'smolagents[telemetry]' openinference-instrumentation-smolagents datasets 'smolagents[gradio]' gradio --upgrade
+```
+
+## Step 1：エージェントを計装する
+
+このノートブックでは、オブザーバビリティツールとして [Langfuse](https://langfuse.com/) を使いますが、**OpenTelemetry 互換の他のサービス**でも構いません。以下のコードでは、Langfuse（または任意の OTel エンドポイント）に接続するための環境変数の設定方法と、smolagents のエージェントを計装する方法を示します。
+
+**注：** LlamaIndex や LangGraph を使っている場合は、それぞれの計装方法について、[LlamaIndex のドキュメント](https://langfuse.com/docs/integrations/llama-index/workflows)と[LangGraph のドキュメント](https://langfuse.com/docs/integrations/langchain/example-python-langgraph)を参照してください。
+
+まず、Langfuse の認証情報を環境変数に設定します。Langfuse API キーは、[Langfuse Cloud](https://cloud.langfuse.com) にサインアップするか、[Langfuse をセルフホスティング](https://langfuse.com/self-hosting)して取得してください。
+
+```python
+import os
+# プロジェクト設定ページからプロジェクトのキーを取得する: https://cloud.langfuse.com
+os.environ["LANGFUSE_PUBLIC_KEY"] = "pk-lf-..." 
+os.environ["LANGFUSE_SECRET_KEY"] = "sk-lf-..." 
+os.environ["LANGFUSE_HOST"] = "https://cloud.langfuse.com" # 🇪🇺 EU リージョン
+# os.environ["LANGFUSE_HOST"] = "https://us.cloud.langfuse.com" # 🇺🇸 US リージョン
+```
+推論呼び出しに使う Hugging Face トークンも設定する必要があります。
+
+```python
+# Hugging Face やその他のトークン/シークレットを環境変数に設定する
+os.environ["HF_TOKEN"] = "hf_..." 
+```
+
+環境変数を設定したら、Langfuse クライアントを初期化できます。`get_client()` は、環境変数で指定された認証情報を使って Langfuse クライアントを初期化します。
+
+```python
+from langfuse import get_client
+ 
+langfuse = get_client()
+ 
+# 接続を確認する
+if langfuse.auth_check():
+    print("Langfuse クライアントの認証に成功しました。利用できます。")
+else:
+    print("認証に失敗しました。認証情報と接続先ホストを確認してください。")
+```
+
+次に、`SmolagentsInstrumentor()` を使って smolagents のエージェントを計装し、トレースを Langfuse に送信できるようにします。
+
+```python
+from openinference.instrumentation.smolagents import SmolagentsInstrumentor
+ 
+SmolagentsInstrumentor().instrument()
+```
+
+## Step 2：計装をテストする
+
+以下は、`1+1` を計算する、smolagents のシンプルな CodeAgent の例です。このエージェントを実行して、計装が正しく動作しているか確認します。設定が正しければ、オブザーバビリティツールのダッシュボードにログやスパンが表示されます。
+
+
+```python
+from smolagents import InferenceClientModel, CodeAgent
+
+# 計装をテストするためのシンプルなエージェントを作成する
+agent = CodeAgent(
+    tools=[],
+    model=InferenceClientModel()
+)
+
+agent.run("1+1=")
+```
+
+[Langfuse のトレースダッシュボード](https://cloud.langfuse.com)（または選択したオブザーバビリティツール）を確認し、スパンとログが記録されていることを確かめてください。
+
+Langfuse の表示例：
+
+![Langfuse のトレースの例](https://huggingface.co/datasets/agents-course/course-images/resolve/main/en/bonus-unit2/first-example-trace.png)
+
+_[トレースへのリンク](https://cloud.langfuse.com/project/cloramnkj0002jz088vzn1ja4/traces/1b94d6888258e0998329cdb72a371155?timestamp=2025-03-10T11%3A59%3A41.743Z)_
+
+## Step 3：より複雑なエージェントを観測し、評価する
+
+計装が動作することを確認できたので、次はより複雑なクエリを試し、高度なメトリクス（トークン使用量、レイテンシ、コストなど）がどう追跡されるか見てみましょう。
+
+
+```python
+from smolagents import (CodeAgent, DuckDuckGoSearchTool, InferenceClientModel)
+
+search_tool = DuckDuckGoSearchTool()
+agent = CodeAgent(tools=[search_tool], model=InferenceClientModel())
+
+agent.run("How many Rubik's Cubes could you fit inside the Notre Dame Cathedral?")
+```
+
+### トレースの構造
+
+多くのオブザーバビリティツールは、各ステップを表す**スパン**を含む**トレース**を記録します。ここでのトレースには、エージェントの実行全体と、次のサブスパンが含まれます。
+- ツール呼び出し（DuckDuckGoSearchTool）
+- LLM 呼び出し（InferenceClientModel）
+
+これらを調べることで、どこに時間がかかっているか、トークンが何個使われているかなどが正確に分かります。
+
+![Langfuse のトレースツリー](https://huggingface.co/datasets/agents-course/course-images/resolve/main/en/bonus-unit2/trace-tree.png)
+
+_[トレースへのリンク](https://cloud.langfuse.com/project/cloramnkj0002jz088vzn1ja4/traces/1ac33b89ffd5e75d4265b62900c348ed?timestamp=2025-03-07T13%3A45%3A09.149Z&display=preview)_
+
+## オンライン評価
+
+前のセクションでは、オンライン評価とオフライン評価の違いを学びました。ここでは、本番環境でエージェントを監視し、ライブで評価する方法を見ていきます。
+
+### 本番環境で追跡すべき代表的なメトリクス
+
+1. **コスト：** smolagents の計装はトークン使用量を取得します。トークンあたりの価格を設定することで、おおよそのコストに変換できます。
+2. **レイテンシ：** 各ステップ、または実行全体にかかる時間を観測します。
+3. **ユーザーフィードバック：** ユーザーは直接フィードバック（いいね／よくない）を提供でき、エージェントの改善や修正に役立ちます。
+4. **LLM-as-a-Judge：** 別の LLM を使って、エージェントの出力をほぼリアルタイムに評価します（毒性や正確さのチェックなど）。
+
+以下で、これらのメトリクスの例を示します。
+
+#### 1. コスト
+
+以下は、`Qwen2.5-Coder-32B-Instruct` の呼び出しにおける使用量を示すスクリーンショットです。コストのかかるステップを確認し、エージェントを最適化するのに役立ちます。 
+
+![コスト](https://huggingface.co/datasets/agents-course/course-images/resolve/main/en/bonus-unit2/smolagents-costs.png)
+
+_[トレースへのリンク](https://cloud.langfuse.com/project/cloramnkj0002jz088vzn1ja4/traces/1ac33b89ffd5e75d4265b62900c348ed?timestamp=2025-03-07T13%3A45%3A09.149Z&display=preview)_
+
+#### 2. レイテンシ
+
+各ステップの完了にかかった時間も確認できます。下の例では、会話全体で 32 秒かかっており、ステップごとに分解できます。ボトルネックの特定と、エージェントの最適化に役立ちます。
+
+![レイテンシ](https://huggingface.co/datasets/agents-course/course-images/resolve/main/en/bonus-unit2/smolagents-latency.png)
+
+_[トレースへのリンク](https://cloud.langfuse.com/project/cloramnkj0002jz088vzn1ja4/traces/1ac33b89ffd5e75d4265b62900c348ed?timestamp=2025-03-07T13%3A45%3A09.149Z&display=preview)_
+
+#### 3. 追加の属性
+
+スパンには、`user_id`、`tags`、`session_id`、カスタムメタデータなどの属性を追加できます。こうした情報をトレースに付け加えることで、ユーザーやセッションごとのアプリケーションの動作を分析したり、問題を調査したり、稼働状況を監視したりしやすくなります。
+
+```python
+from smolagents import (CodeAgent, DuckDuckGoSearchTool, InferenceClientModel)
+
+search_tool = DuckDuckGoSearchTool()
+agent = CodeAgent(
+    tools=[search_tool],
+    model=InferenceClientModel()
+)
+
+with langfuse.start_as_current_span(
+    name="Smolagent-Trace",
+    ) as span:
+    
+    # ここでアプリケーションを実行する
+    response = agent.run("What is the capital of Germany?")
+ 
+    # スパンに追加の属性を渡す
+    span.update_trace(
+        input="What is the capital of Germany?",
+        output=response,
+        user_id="smolagent-user-123",
+        session_id="smolagent-session-123456789",
+        tags=["city-question", "testing-agents"],
+        metadata={"email": "user@langfuse.com"},
+        )
+ 
+# 短命なアプリケーションではイベントをフラッシュする
+langfuse.flush()
+```
+
+![追加メトリクスによるエージェント実行の強化](https://huggingface.co/datasets/agents-course/course-images/resolve/main/en/bonus-unit2/smolagents-attributes.png)
+
+#### 4. ユーザーフィードバック
+
+エージェントがユーザーインターフェースに組み込まれている場合、チャット画面の「いいね」「よくない」といった、ユーザーからの直接的なフィードバックを記録できます。以下は、[Gradio](https://gradio.app/) を使って、簡単なフィードバック機能付きのチャットを画面に組み込む例です。
+
+以下のコードでは、ユーザーがチャットメッセージを送信すると、トレースを Langfuse に記録します。ユーザーが最後の回答にいいね／よくないを付けると、そのスコアをトレースに紐付けます。
+
+```python
+import gradio as gr
+from smolagents import (CodeAgent, InferenceClientModel)
+from langfuse import get_client
+
+langfuse = get_client()
+
+model = InferenceClientModel()
+agent = CodeAgent(tools=[], model=model, add_base_tools=True)
+
+trace_id = None
+
+def respond(prompt, history):
+    with langfuse.start_as_current_span(
+        name="Smolagent-Trace"):
+        
+        # ここでアプリケーションを実行する
+        output = agent.run(prompt)
+
+        global trace_id
+        trace_id = langfuse.get_current_trace_id()
+
+    history.append({"role": "assistant", "content": str(output)})
+    return history
+
+def handle_like(data: gr.LikeData):
+    # デモ用に、ユーザーフィードバックを 1（いいね）または 0（よくない）にマッピングする
+    if data.liked:
+        langfuse.create_score(
+            value=1,
+            name="user-feedback",
+            trace_id=trace_id
+        )
+    else:
+        langfuse.create_score(
+            value=0,
+            name="user-feedback",
+            trace_id=trace_id
+        )
+
+with gr.Blocks() as demo:
+    chatbot = gr.Chatbot(label="チャット", type="messages")
+    prompt_box = gr.Textbox(placeholder="メッセージを入力してください...", label="メッセージ")
+
+    # ユーザーがプロンプトで Enter を押したら 'respond' を実行する
+    prompt_box.submit(
+        fn=respond,
+        inputs=[prompt_box, chatbot],
+        outputs=chatbot
+    )
+
+    # ユーザーがメッセージの「いいね」ボタンをクリックしたら 'handle_like' を実行する
+    chatbot.like(handle_like, None, None)
+
+demo.launch()
+```
+
+ユーザーフィードバックは、オブザーバビリティツールに次のように記録されます。
+
+![Langfuse に記録されるユーザーフィードバック](https://huggingface.co/datasets/agents-course/course-images/resolve/main/en/bonus-unit2/user-feedback-gradio.png)
+
+#### 5. LLM-as-a-Judge
+
+LLM-as-a-Judge は、エージェントの出力を自動的に評価するもう一つの方法です。別の LLM 呼び出しを設定し、出力の正確さ、毒性、スタイルなど、気になる任意の基準で評価させることができます。
+
+**ワークフロー：**
+1. **評価テンプレート**を定義します。たとえば「テキストに毒性があるかチェックする」などです。
+2. エージェントが出力を生成するたびに、その出力とテンプレートを「ジャッジ」LLM に渡します。
+3. ジャッジ LLM が評価やラベルを返し、それをオブザーバビリティツールに記録します。
+
+Langfuse の例：
+
+![LLM-as-a-Judge の評価テンプレート](https://huggingface.co/datasets/agents-course/course-images/resolve/main/en/bonus-unit2/evaluator-template.png)
+![LLM-as-a-Judge の評価器](https://huggingface.co/datasets/agents-course/course-images/resolve/main/en/bonus-unit2/evaluator.png)
+
+
+```python
+# 例: エージェントの出力に毒性があるかどうかをチェックする
+from smolagents import (CodeAgent, DuckDuckGoSearchTool, InferenceClientModel)
+
+search_tool = DuckDuckGoSearchTool()
+agent = CodeAgent(tools=[search_tool], model=InferenceClientModel())
+
+agent.run("Can eating carrots improve your vision?")
+```
+
+この例の回答は「not toxic（有害でない）」と判定されていることが分かります。
+
+![LLM-as-a-Judge の評価スコア](https://huggingface.co/datasets/agents-course/course-images/resolve/main/en/bonus-unit2/llm-as-a-judge-score.png)
+
+#### 6. オブザーバビリティメトリクスの概要
+
+これらのメトリクスはすべて、ダッシュボードでまとめて可視化できます。これにより、多くのセッションにわたってエージェントのパフォーマンスを素早く把握し、品質メトリクスの経時変化を追跡できます。
+
+![オブザーバビリティメトリクスの概要](https://huggingface.co/datasets/agents-course/course-images/resolve/main/en/bonus-unit2/langfuse-dashboard.png)
+
+## オフライン評価
+
+オンライン評価はライブフィードバックに不可欠ですが、**オフライン評価**、つまり開発前や開発中の体系的なチェックも必要です。これにより、変更を本番環境へ投入する前に、品質と信頼性を保つことができます。
+
+### データセットによる評価
+
+オフライン評価では、通常は次の手順を行います。
+1. ベンチマークデータセット（プロンプトと期待される出力のペア）を用意する
+2. そのデータセットでエージェントを実行する
+3. 出力を期待される結果と比較するか、追加の採点方法を使う
+
+以下では、数学の質問と解答を含む [GSM8K データセット](https://huggingface.co/datasets/openai/gsm8k) でこのアプローチを示します。
+
+
+```python
+import pandas as pd
+from datasets import load_dataset
+
+# Hugging Face から GSM8K を取得する
+dataset = load_dataset("openai/gsm8k", 'main', split='train')
+df = pd.DataFrame(dataset)
+print("GSM8K データセットの最初の数行：")
+print(df.head())
+```
+
+次に、実行を追跡するために Langfuse にデータセットエンティティを作成し、データセットの各アイテムを追加します。Langfuse を使わない場合は、分析用に自分のデータベースやローカルファイルに保存しても構いません。
+
+
+```python
+from langfuse import get_client
+langfuse = get_client()
+
+langfuse_dataset_name = "gsm8k_dataset_huggingface"
+
+# Langfuse にデータセットを作成する
+langfuse.create_dataset(
+    name=langfuse_dataset_name,
+    description="GSM8K benchmark dataset uploaded from Huggingface",
+    metadata={
+        "date": "2025-03-10", 
+        "type": "benchmark"
+    }
+)
+```
+
+
+```python
+for idx, row in df.iterrows():
+    langfuse.create_dataset_item(
+        dataset_name=langfuse_dataset_name,
+        input={"text": row["question"]},
+        expected_output={"text": row["answer"]},
+        metadata={"source_index": idx}
+    )
+    if idx >= 9: # デモ用に最初の 10 件だけをアップロードする
+        break
+```
+
+![Langfuse のデータセットアイテム](https://huggingface.co/datasets/agents-course/course-images/resolve/main/en/bonus-unit2/example-dataset.png)
+
+#### データセットでエージェントを実行する
+
+ヘルパー関数 `run_smolagent()` を定義します。この関数は次の処理を行います。
+1. Langfuse のスパンを開始する
+2. プロンプトでエージェントを実行する
+3. Langfuse にトレース ID を記録する
+
+その後、データセットの各アイテムをループしてエージェントを実行し、トレースをデータセットアイテムに紐付けます。必要に応じて、簡易な評価スコアを付けることもできます。
+
+
+```python
+from opentelemetry.trace import format_trace_id
+from smolagents import (CodeAgent, InferenceClientModel, LiteLLMModel)
+from langfuse import get_client
+ 
+langfuse = get_client()
+
+
+# 例: InferenceClientModel や LiteLLMModel を使うと、OpenAI、Anthropic、Gemini などのモデルにアクセスできる
+model = InferenceClientModel()
+
+agent = CodeAgent(
+    tools=[],
+    model=model,
+    add_base_tools=True
+)
+
+dataset_name = "gsm8k_dataset_huggingface"
+current_run_name = "smolagent-notebook-run-01" # この評価実行を識別する名前
+ 
+# 'run_smolagent' を、計装済みのアプリケーション関数とする
+def run_smolagent(question):
+    with langfuse.start_as_current_generation(name="qna-llm-call") as generation:
+        # LLM 呼び出しをシミュレートする
+        result = agent.run(question)
+ 
+        # トレースに入力と出力を記録する
+        generation.update_trace(
+            input= question,
+            output=result,
+        )
+ 
+        return result
+ 
+dataset = langfuse.get_dataset(name=dataset_name) # 用意済みのデータセットを取得する
+ 
+for item in dataset.items:
+ 
+    # item.run() コンテキストマネージャを使う
+    with item.run(
+        run_name=current_run_name,
+        run_metadata={"model_provider": "Hugging Face", "temperature_setting": 0.7},
+        run_description="Evaluation run for GSM8K dataset"
+    ) as root_span: # root_span は、このアイテムと実行に対する新しいトレースのルートスパン
+        # このブロック内の後続の langfuse 操作はすべてこのトレースに属する
+ 
+        # アプリケーションのロジックを呼び出す
+        generated_answer = run_smolagent(question=item.input["text"])
+ 
+        print(item.input)
+```
+
+次の要素を変えて、同じ手順を繰り返すことができます。
+- モデル（OpenAI GPT、ローカル LLM など）
+- ツール（検索ツールあり／なし）
+- プロンプト（異なるシステムメッセージ）
+
+その後、オブザーバビリティツールで並べて比較できます。
+
+![データセット実行の概要](https://huggingface.co/datasets/agents-course/course-images/resolve/main/en/bonus-unit2/dataset_runs.png)
+![データセット実行の比較](https://huggingface.co/datasets/agents-course/course-images/resolve/main/en/bonus-unit2/dataset-run-comparison.png)
+
+
+## まとめ
+
+このノートブックでは、次を扱いました。
+1. smolagents と OpenTelemetry のエクスポータを使って **オブザーバビリティを設定する**
+2. シンプルなエージェントを実行して **計装を確認する**
+3. オブザーバビリティツールを通して **詳細なメトリクス**（コスト、レイテンシなど）**を取得する**
+4. Gradio インターフェースで **ユーザーフィードバックを収集する**
+5. **LLM-as-a-Judge を使う** ことで出力を自動評価する
+6. ベンチマークデータセットで **オフライン評価を行う**
+
+🤗 ハッピーコーディング！

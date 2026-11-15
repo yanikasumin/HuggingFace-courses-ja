@@ -1,0 +1,47 @@
+# Function-calling のためにモデルをファインチューニングしよう
+
+Function-calling 用に最初のモデルをファインチューニングする準備が整いました！ 🔥
+
+## Function-calling 用にモデルをどう訓練するのか？
+
+> 答え：**データ**が必要です
+
+モデルの訓練プロセスは、3つのステップに分けられます。
+
+1. **モデルは大量のデータで事前訓練されます**。この段階でできあがるのが**事前訓練済みモデル**です。たとえば [google/gemma-2-2b](https://huggingface.co/google/gemma-2-2b) があります。これはベースモデルで、**次のトークンを予測することはできますが、指示に従う能力は十分ではありません**。
+
+2. チャットで使えるモデルにするには、指示に従えるよう**ファインチューニング**する必要があります。この段階では、モデルの開発者やオープンソースコミュニティ、読者自身など、誰でもモデルを訓練できます。たとえば [google/gemma-2-2b-it](https://huggingface.co/google/gemma-2-2b-it) は、Gemma プロジェクトを開発する Google のチームが指示チューニングを行ったモデルです。
+
+3. その後、モデルの振る舞いを開発者の求める方針に合わせて**調整（アラインメント）**できます。たとえば、カスタマーサービス向けのチャットモデルが顧客に失礼な応答をしないようにする場合などです。
+
+通常、Gemini や Mistral のような完成品は**3ステップすべてを経ます**が、Hugging Face で見つかるモデルは、この訓練の1つ以上のステップを終えたものです。
+
+このチュートリアルでは、[google/gemma-2-2b-it](https://huggingface.co/google/gemma-2-2b-it) をもとに Function-calling モデルを構築します。ベースモデルの [google/gemma-2-2b](https://huggingface.co/google/gemma-2-2b) ではなく、ファインチューニング済みモデルの [google/gemma-2-2b-it](https://huggingface.co/google/gemma-2-2b-it) を選ぶのは、ファインチューニング済みモデルのほうが私たちのユースケース向けに改善されているからです。
+
+事前訓練済みモデルから始めると、**指示追従、チャット、そして Function-calling を学ぶためにより多くの訓練が必要**になります。
+
+指示チューニング済みモデルから始めることで、**モデルが学ぶ必要のある情報量を最小限に抑えられます**。
+
+## LoRA（Low-Rank Adaptation of Large Language Models）
+
+LoRA は人気のある軽量な訓練手法で、**訓練可能なパラメータ数を大幅に削減**します。
+
+LoRA では、**少数の新しい重みをアダプタとしてモデルに追加し、その重みを訓練します**。これにより、訓練が大幅に速くなり、必要なメモリも減ります。また、保存する重みのデータも小さく（数百 MB 程度）なるため、保存や共有が容易になります。
+
+<img src="https://huggingface.co/datasets/agents-course/course-images/resolve/main/en/unit1/blog_multi-lora-serving_LoRA.gif" alt="LoRA の推論" width="50%"/>
+
+LoRA は、Transformer の層に低ランクの行列を2つ1組で追加する仕組みで、主に線形層が対象となります。訓練中は、モデルのそれ以外の部分を「凍結」し、新しく追加したアダプタの重みだけを更新します。
+
+こうすることで、更新が必要なのはアダプタの重みだけになるため、訓練が必要な**パラメータ**の数が大幅に減ります。
+
+推論時には、入力をアダプタとベースモデルの両方で処理します。また、アダプタの重みをベースモデルに統合する方法もあり、その場合は追加の処理時間が発生しません。
+
+LoRA は、必要な計算資源を抑えながら、**大規模**な言語モデルを特定のタスクや分野に適応させるのに特に役立ちます。これにより、モデルの訓練に**必要な**メモリを削減できます。
+
+LoRA の仕組みについてさらに学びたい場合は、[このチュートリアル](https://huggingface.co/learn/nlp-course/chapter11/4?fw=pt)をチェックしてください。
+
+## Function-calling 用にモデルをファインチューニングする
+
+チュートリアルのノートブックは[こちら](https://huggingface.co/agents-course/notebooks/blob/main/bonus-unit1/bonus-unit1.ipynb)から開けます。
+
+次に、[![Colab で開く](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/#fileId=https://huggingface.co/agents-course/notebooks/blob/main/bonus-unit1/bonus-unit1.ipynb) をクリックすると、Colab ノートブックで実行できます。

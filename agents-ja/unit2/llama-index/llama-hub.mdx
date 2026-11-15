@@ -1,0 +1,56 @@
+# LlamaHub 入門
+
+**LlamaHub は、LlamaIndex の中で使える数百ものインテグレーション、エージェント、ツールを集めたレジストリです。**
+
+![LlamaHub](https://huggingface.co/datasets/agents-course/course-images/resolve/main/en/unit2/llama-index/llama-hub.png)
+
+このコースではさまざまなインテグレーションを使っていくので、まず LlamaHub と、それがどのように役立つのかを見ていきましょう。
+
+必要なコンポーネントの依存関係を見つけてインストールする方法を確認します。
+
+## インストール
+
+LlamaIndex のインストール方法は、**[LlamaHub](https://llamahub.ai/)** に分かりやすくまとめられています。
+最初は情報量の多さに戸惑うかもしれませんが、ほとんどの**インストールコマンドは、覚えやすい形式**に従っています。
+
+```bash
+pip install llama-index-{component-type}-{framework-name}
+```
+
+[Hugging Face Inference API の連携機能](https://llamahub.ai/l/llms/llama-index-llms-huggingface-api?from=llms) を使って、LLM コンポーネントと埋め込みコンポーネントの依存関係をインストールしてみましょう。
+
+```bash
+pip install llama-index-llms-huggingface-api llama-index-embeddings-huggingface
+```
+
+## 使い方
+
+インストールが終わったら、基本的な使い方を見てみましょう。インポートするモジュールのパスが、インストールコマンドに対応していることが分かります。
+以下では、**LLM コンポーネントで Hugging Face Inference API を使う方法**を例で見ていきます。
+
+```python
+from llama_index.llms.huggingface_api import HuggingFaceInferenceAPI
+import os
+from dotenv import load_dotenv
+
+# .env ファイルを読み込む
+load_dotenv()
+
+# 環境変数から HF_TOKEN を取得する
+hf_token = os.getenv("HF_TOKEN")
+
+llm = HuggingFaceInferenceAPI(
+    model_name="Qwen/Qwen2.5-Coder-32B-Instruct",
+    temperature=0.7,
+    max_tokens=100,
+    token=hf_token,
+    provider="auto"
+)
+
+response = llm.complete("Hello, how are you?")
+print(response)
+# I am good, how can I help you today?
+```
+
+これで、必要なコンポーネントのインテグレーションを見つけ、インストールし、使う方法が分かりました。
+**コンポーネントについてさらに深く掘り下げ**、それらを使って独自のエージェントを構築する方法を見ていきましょう。

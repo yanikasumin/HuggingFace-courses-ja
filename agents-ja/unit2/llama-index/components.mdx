@@ -1,0 +1,247 @@
+# LlamaIndex のコンポーネントとは
+
+Unit 1 に登場した、頼れる執事エージェントの Alfred を覚えていますか？
+Alfred が私たちを効果的にサポートするには、私たちのリクエストを理解し、**タスクの完了に役立つ関連情報を準備し、見つけ、活用する**必要があります。
+ここで LlamaIndex のコンポーネントが役立ちます。
+
+LlamaIndex には多くのコンポーネントがありますが、**ここでは特に `QueryEngine` コンポーネントに焦点を当てます。**
+なぜでしょうか。`QueryEngine` は、エージェント向けの検索拡張生成（Retrieval-Augmented Generation、RAG）ツールとして使えるからです。
+
+では、RAG とは何でしょうか。LLM は膨大なデータで学習し、一般的な知識を身につけています。
+しかし、関連性が高く最新のデータで学習しているとは限りません。
+RAG は、自分のデータから関連情報を検索して取得し、それを LLM に渡すことで、この問題を解決します。
+
+![RAG](https://huggingface.co/datasets/agents-course/course-images/resolve/main/en/unit2/llama-index/rag.png)
+
+ここで、Alfred の働き方を考えてみましょう。
+
+1. ディナーパーティーの計画を Alfred に依頼します
+2. Alfred はカレンダーや食事の好み、過去に好評だったメニューを確認する必要があります
+3. `QueryEngine` が Alfred の情報検索を助け、その情報をもとにディナーパーティーを計画できるようにします
+
+このため、`QueryEngine` は **LlamaIndex でエージェンティックな RAG ワークフローを構築するための重要なコンポーネント**です。
+Alfred が役に立つためには家庭の情報を検索する必要があるように、どのエージェントにも関連データを見つけて理解する方法が必要です。
+`QueryEngine` はまさにその機能を提供します。
+
+それでは、コンポーネントについてもう少し深く見ていき、**コンポーネントを組み合わせて RAG パイプラインを作成する方法**を確認しましょう。
+
+## コンポーネントを使って RAG パイプラインを作成する
+
+> [!TIP]
+> コードは Google Colab で実行できる <a href="https://huggingface.co/agents-course/notebooks/blob/main/unit2/llama-index/components.ipynb" target="_blank">このノートブック</a> で確認できます。
+
+RAG には 5 つの重要な段階があります。これらの段階は、皆さんが今後構築する大規模なアプリケーションのほとんどにも含まれます。具体的には次のとおりです。
+
+1. **読み込み（Loading）**：テキストファイルや PDF、別の Web サイト、データベース、API など、データが存在する場所からワークフローへデータを取り込みます。LlamaHub には、数百もの連携機能が用意されており、その中から選べます。
+2. **インデックス化（Indexing）**：データに対してクエリを実行できるよう、データ構造を作成します。LLM の場合、ほとんどはベクトル埋め込みの作成を指します。ベクトル埋め込みとは、データの意味を数値で表したものです。また、データの属性に基づいて、文脈上関連する情報を正確に見つけやすくするための、さまざまなメタデータの活用方法もインデックス化に含まれます。
+3. **保存（Storing）**：データをインデックス化したら、再びインデックスを作成しなくても済むように、インデックスやその他のメタデータを保存しておく必要があります。
+4. **クエリの実行（Querying）**：インデックス化の方法に応じて、LLM と LlamaIndex のデータ構造を使った、さまざまなクエリの実行方法があります。サブクエリ、マルチステップクエリ、複数の手法を組み合わせるハイブリッドな戦略などが含まれます。
+5. **評価（Evaluation）**：どの処理でも、他の手法と比較したり、変更を加えた前後で比較したりして、どれだけ効果的かを確認することが重要です。評価では、クエリへの応答の正確さ、忠実さ、速さを客観的に測る指標が得られます。
+
+次に、コンポーネントを使ってこれらのステージを再現する方法を見ていきましょう。
+
+### ドキュメントの読み込みと埋め込み
+
+先ほど述べたように、LlamaIndex は自分のデータを活用できます。**ただし、データを利用するには、まず LlamaIndex に読み込ませる必要があります。**
+LlamaIndex にデータを読み込む主な方法は、次の 3 つです。
+
+1. `SimpleDirectoryReader`：ローカルディレクトリからさまざまなファイル形式を読み込むための、組み込みのローダーです。
+2. `LlamaParse`：PDF の解析に使う LlamaIndex 公式ツールで、マネージド API として提供されています。
+3. `LlamaHub`：あらゆるソースからデータを取り込むための、数百ものデータ読み込みライブラリを集めたレジストリです。
+
+> [!TIP]
+> より複雑なデータソースについては、<a href="https://docs.llamaindex.ai/en/stable/module_guides/loading/connector/">LlamaHub</a> のローダーと <a href="https://github.com/run-llama/llama_cloud_services/blob/main/parse.md">LlamaParse</a> のパーサーに慣れておきましょう。
+
+**データを読み込む最も簡単な方法は `SimpleDirectoryReader` を使うことです。**
+この汎用的なコンポーネントは、フォルダからさまざまなファイル形式を読み込み、LlamaIndex が扱える `Document` オブジェクトに変換できます。
+フォルダからデータを読み込むために `SimpleDirectoryReader` をどう使うか見ていきましょう。
+
+```python
+from llama_index.core import SimpleDirectoryReader
+
+reader = SimpleDirectoryReader(input_dir="path/to/directory")
+documents = reader.load_data()
+```
+
+ドキュメントを読み込んだら、`Node` オブジェクトと呼ばれる小さな断片に分割する必要があります。
+`Node` は、元のドキュメントから切り出したテキストの断片です。AI が扱いやすい大きさになっていますが、元の `Document` オブジェクトへの参照は保持されています。
+
+`IngestionPipeline` は、2 つの重要な変換処理を通じて、これらのノードの作成を支援します。
+1. `SentenceSplitter` は、自然な文の区切りで分割し、ドキュメントを扱いやすい塊に分けます。
+2. `HuggingFaceEmbedding` は、各塊を数値埋め込みに変換します。これは、AI が効率的に処理できる形で意味的な内容を捉えたベクトル表現です。
+
+このプロセスにより、検索や分析に使いやすい形でドキュメントを整理できます。
+
+```python
+from llama_index.core import Document
+from llama_index.embeddings.huggingface import HuggingFaceEmbedding
+from llama_index.core.node_parser import SentenceSplitter
+from llama_index.core.ingestion import IngestionPipeline
+
+# 変換処理を指定してパイプラインを作成します
+pipeline = IngestionPipeline(
+    transformations=[
+        SentenceSplitter(chunk_overlap=0),
+        HuggingFaceEmbedding(model_name="BAAI/bge-small-en-v1.5"),
+    ]
+)
+
+nodes = await pipeline.arun(documents=[Document.example()])
+```
+
+
+### ドキュメントの保存とインデックス化
+
+`Node` オブジェクトを作成したら、検索できるようにインデックス化する必要がありますが、その前にデータを保存する場所が必要です。
+
+取り込みパイプラインを使っているので、ベクトルストアをパイプラインに直接接続して、データを格納できます。
+ここでは、ドキュメントの保存に `Chroma` を使います。
+
+<details>
+<summary>ChromaDB をインストールする</summary>
+
+<a href="./llama-hub">LlamaHub に関するセクション</a>で紹介したように、ChromaDB のベクトルストアは次のコマンドでインストールできます。
+
+```bash
+pip install llama-index-vector-stores-chroma
+```
+</details>
+
+```python
+import chromadb
+from llama_index.vector_stores.chroma import ChromaVectorStore
+
+db = chromadb.PersistentClient(path="./alfred_chroma_db")
+chroma_collection = db.get_or_create_collection("alfred")
+vector_store = ChromaVectorStore(chroma_collection=chroma_collection)
+
+pipeline = IngestionPipeline(
+    transformations=[
+        SentenceSplitter(chunk_size=25, chunk_overlap=0),
+        HuggingFaceEmbedding(model_name="BAAI/bge-small-en-v1.5"),
+    ],
+    vector_store=vector_store,
+)
+```
+
+> [!TIP]
+> さまざまなベクトルストアの概要は、<a href="https://docs.llamaindex.ai/en/stable/module_guides/storing/vector_stores/">LlamaIndex のドキュメント</a>で確認できます。
+
+
+ここでベクトル埋め込みが活躍します。クエリとノードの両方を同じベクトル空間に埋め込むことで、関連性の高いデータを見つけられるようになります。
+`VectorStoreIndex` がこの処理を担い、一貫性を保つために、取り込み時に使ったのと同じ埋め込みモデルを使います。
+
+ベクトルストアと埋め込みからこのインデックスを作成する方法を見ていきましょう。
+
+```python
+from llama_index.core import VectorStoreIndex
+from llama_index.embeddings.huggingface import HuggingFaceEmbedding
+
+embed_model = HuggingFaceEmbedding(model_name="BAAI/bge-small-en-v1.5")
+index = VectorStoreIndex.from_vector_store(vector_store, embed_model=embed_model)
+```
+
+すべての情報は、`ChromaVectorStore` オブジェクトと、渡したディレクトリパスの中に自動的に永続化されます。
+
+インデックスを簡単に保存したり読み込んだりできるようになりました。次は、さまざまなクエリの実行方法を見ていきましょう。
+
+### プロンプトと LLM を使って VectorStoreIndex にクエリを実行する
+
+インデックスにクエリを実行する前に、クエリ用のインターフェースに変換する必要があります。最も一般的な変換オプションは次のとおりです。
+
+- `as_retriever`：基本的なドキュメント検索用です。類似度スコア付きの `NodeWithScore` オブジェクトのリストを返します
+- `as_query_engine`：1 回の質問応答のやり取り用です。文章による応答を返します
+- `as_chat_engine`：複数のメッセージにわたって記憶を保持する会話形式のやり取り用です。チャット履歴とインデックス化された文脈を使って、文章による応答を返します
+
+ここでは、エージェント的なやり取りでより一般的なクエリエンジンに焦点を当てます。
+また、応答に使う LLM もクエリエンジンに渡します。
+
+```python
+from llama_index.llms.huggingface_api import HuggingFaceInferenceAPI
+
+llm = HuggingFaceInferenceAPI(model_name="Qwen/Qwen2.5-Coder-32B-Instruct")
+query_engine = index.as_query_engine(
+    llm=llm,
+    response_mode="tree_summarize",
+)
+query_engine.query("What is the meaning of life?")
+# The meaning of life is 42
+```
+
+### 応答の処理
+
+内部では、クエリエンジンは質問に答えるために LLM を使うだけでなく、応答を処理する戦略として `ResponseSynthesizer` も使っています。
+こちらも完全にカスタマイズできますが、そのまま使ってうまく機能する主な戦略が 3 つあります。
+
+- `refine`：取得した各テキストチャンクを順番にたどりながら、回答を作成し、洗練させます。ノード（取得したチャンク）ごとに個別に LLM を呼び出します。
+- `compact`（デフォルト）：refine と似ていますが、事前にチャンクを連結するため、LLM の呼び出し回数が少なくなります。
+- `tree_summarize`：取得した各テキストチャンクをたどり、回答のツリー構造を作成することで、詳細な回答を作ります。
+
+> [!TIP]
+> <a href="https://docs.llamaindex.ai/en/stable/module_guides/deploying/query_engine/usage_pattern/#low-level-composition-api">low-level composition API</a> を使うと、クエリのワークフローをきめ細かく制御できます。クエリ処理のすべてのステップを、求める動作に正確に合うようにカスタマイズ・微調整できます。また、<a href="https://docs.llamaindex.ai/en/stable/module_guides/workflow/">Workflows</a> と組み合わせて使うのにも適しています。
+
+言語モデルは常に予測可能な動きをするとは限らないため、得られた回答が常に正しいとは限りません。この問題には、**回答の品質を評価する**ことで対処できます。
+
+### 評価と可観測性
+
+LlamaIndex には、**応答の品質を評価するための組み込みの評価ツール**が用意されています。
+これらの評価器は LLM を活用し、さまざまな観点から応答を分析します。
+利用できる主な 3 つの評価器を見ていきましょう。
+
+- `FaithfulnessEvaluator`：回答が文脈に裏付けられているかを確認し、回答の忠実さを評価します。
+- `AnswerRelevancyEvaluator`：回答が質問に関連しているかを確認し、回答の関連性を評価します。
+- `CorrectnessEvaluator`：回答が正しいかを確認し、回答の正確さを評価します。
+
+> [!TIP]
+> エージェントの可観測性と評価についてもっと学びたい場合は、<a href="https://huggingface.co/learn/agents-course/bonus-unit2/introduction">Bonus Unit 2</a> で学習を続けてください。
+
+```python
+from llama_index.core.evaluation import FaithfulnessEvaluator
+
+query_engine = # 前のセクションで作成したもの
+llm = # 前のセクションで作成したもの
+
+# インデックスにクエリを実行します
+evaluator = FaithfulnessEvaluator(llm=llm)
+response = query_engine.query(
+    "What battles took place in New York City in the American Revolution?"
+)
+eval_result = evaluator.evaluate_response(response=response)
+eval_result.passing
+```
+
+直接評価しなくても、**可観測性を活用することで、システムの動作状況についての知見**が得られます。
+これは、より複雑なワークフローを構築し、各コンポーネントがどのように動作しているかを理解したい場合に特に役立ちます。
+
+<details>
+<summary>LlamaTrace をインストールする</summary>
+
+<a href="./llama-hub">LlamaHub に関するセクション</a>で紹介したように、Arize Phoenix の LlamaTrace コールバックは次のコマンドでインストールできます。
+
+```bash
+pip install -U llama-index-callbacks-arize-phoenix
+```
+
+さらに、`PHOENIX_API_KEY` 環境変数に LlamaTrace の API キーを設定する必要があります。取得方法は次のとおりです。
+- [LlamaTrace](https://llamatrace.com/login) でアカウントを作成します
+- アカウント設定で API キーを生成します
+- 以下のコードでその API キーを使ってトレーシングを有効化します
+
+</details>
+
+```python
+import llama_index
+import os
+
+PHOENIX_API_KEY = "<PHOENIX_API_KEY>"
+os.environ["OTEL_EXPORTER_OTLP_HEADERS"] = f"api_key={PHOENIX_API_KEY}"
+llama_index.core.set_global_handler(
+    "arize_phoenix",
+    endpoint="https://llamatrace.com/v1/traces"
+)
+```
+
+> [!TIP]
+> コンポーネントとその使い方についてもっと学びたい場合は、<a href="https://docs.llamaindex.ai/en/stable/module_guides/">Components Guides</a> や <a href="https://docs.llamaindex.ai/en/stable/understanding/rag/">Guide on RAG</a> で学習を続けてください。
+
+コンポーネントを使って `QueryEngine` を作成する方法を見てきました。次は、**`QueryEngine` をエージェントのツールとして使う方法**を見ていきましょう！

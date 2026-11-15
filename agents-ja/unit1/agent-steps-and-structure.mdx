@@ -1,0 +1,150 @@
+# 思考・アクション・観察のサイクルを通して AI エージェントを理解する
+
+<img src="https://huggingface.co/datasets/agents-course/course-images/resolve/main/en/unit1/whiteboard-check-3.jpg" alt="ユニット1の計画"/>
+
+前のセクションでは次を学びました。
+
+- **ツールがシステムプロンプトでエージェントにどう提供されるか**。
+- **AI エージェントが「推論」し、計画し、環境とやり取りできるシステムであること**。
+
+このセクションでは、**完全な AI エージェントのワークフローを探ります**。これは思考・アクション・観察として定義したサイクルです。
+
+そのあと、これらの各ステップにさらに深く踏み込みます。
+
+
+## 中核コンポーネント
+
+エージェントの仕事は、**思考（Thought）→ 行動（Act）→ 観察（Observe）** の連続したサイクルです。
+
+これらの3つの要素を、一つずつ見ていきましょう。
+
+1. **思考（Thought）**: エージェントを構成する LLM が、次に何をすべきかを判断する。
+2. **アクション（Action）:** エージェントが適切な引数を渡してツールを呼び出し、処理を実行する。
+3. **観察（Observation）:** モデルがツールから返された結果を確認し、その内容を評価する。
+
+## 思考・アクション・観察のサイクル
+
+3つのコンポーネントは、連続したループで一緒に動作します。プログラミングの例えを使うと、エージェントは **while ループ** を使います。ループは、エージェントの目的が果たされるまで続きます。
+
+視覚的には、次のようになります。
+
+<img src="https://huggingface.co/datasets/agents-course/course-images/resolve/main/en/unit1/AgentCycle.gif" alt="思考、行動、観察のサイクル"/>
+
+多くのエージェントフレームワークでは、**ルールとガイドラインがシステムプロンプトに直接埋め込まれており**、すべてのサイクルが定義された論理に従うことが保証されます。
+
+簡略化したバージョンでは、システムプロンプトは次のようになるでしょう。
+
+<img src="https://huggingface.co/datasets/agents-course/course-images/resolve/main/en/unit1/system_prompt_cycle.png" alt="思考、行動、観察のサイクル"/>
+
+ここでは、システムメッセージで次を定義したことが分かります。
+
+- *エージェントの振る舞い*。
+- 前のセクションで説明した、*エージェントがアクセスできるツール*。
+- LLM の指示に組み込む、*思考・アクション・観察のサイクル*。
+
+各ステップを詳しく説明する前に、簡単な例を使って全体の流れを確認しましょう。
+
+## Alfred、天気エージェント
+
+天気エージェントの Alfred を作成しました。
+
+ユーザーが Alfred に「ニューヨークの現在の天気は？」と尋ねます。
+
+<img src="https://huggingface.co/datasets/agents-course/course-images/resolve/main/en/unit1/alfred-agent.jpg" alt="Alfred エージェント"/>
+
+Alfred の仕事は、天気 API ツールを使ってこのクエリに答えることです。
+
+サイクルは次のように展開します。
+
+### 思考（Thought）
+
+**内部推論:**
+
+クエリを受け取ると、Alfred の内部対話は次のようになるかもしれません。
+
+*「ユーザーはニューヨークの現在の天気情報を必要としています。天気データを取得するツールにアクセスできます。まず、最新の詳細を得るために天気 API を呼び出す必要があります。」*
+
+この例では、エージェントが問題を複数の手順に分け、最初の手順として必要なデータを収集しようとしていることが分かります。
+
+<img src="https://huggingface.co/datasets/agents-course/course-images/resolve/main/en/unit1/alfred-agent-1.jpg" alt="Alfred エージェント"/>
+
+### アクション（Action）
+
+**ツールの使用:**
+
+Alfred は、自分の推論結果と `get_weather` ツールを利用できるという情報を基に、天気 API を呼び出すための JSON 形式のコマンドを用意します。最初のアクションは、たとえば次のようになります。
+
+Thought: I need to check the current weather for New York.
+
+ ```
+    {
+      "action": "get_weather",
+      "action_input": {
+        "location": "New York"
+      }
+    }
+ ```
+
+ここで、アクションは呼び出すツール（例: get_weather）と渡すパラメータ（"location": "New York"）を明確に指定しています。
+
+<img src="https://huggingface.co/datasets/agents-course/course-images/resolve/main/en/unit1/alfred-agent-2.jpg" alt="Alfred エージェント"/>
+
+### 観察（Observation）
+
+**環境からのフィードバック:**
+
+ツール呼び出しのあと、Alfred は観察を受け取ります。これは API からの生の天気データかもしれません。たとえば次のようなものです。
+
+*"Current weather in New York: partly cloudy, 15°C, 60% humidity."*（ニューヨークの現在の天気: ところどころ曇り、15°C、湿度60%）
+
+<img src="https://huggingface.co/datasets/agents-course/course-images/resolve/main/en/unit1/alfred-agent-3.jpg" alt="Alfred エージェント"/>
+
+この観察は、追加のコンテキストとしてプロンプトに追加されます。現実世界のフィードバックとして機能し、アクションが成功したかどうかを確認し、必要な詳細を提供します。
+
+
+### 更新された思考
+
+**振り返り:**
+
+観察結果を受け取った Alfred は、その情報を踏まえて推論を更新します。
+
+*「ニューヨークの天気データが得られたので、ユーザー向けの回答をまとめられます。」*
+
+<img src="https://huggingface.co/datasets/agents-course/course-images/resolve/main/en/unit1/alfred-agent-4.jpg" alt="Alfred エージェント"/>
+
+
+### 最終アクション
+
+Alfred は、私たちが指示したとおりの形式で最終応答を生成します。
+
+Thought: I have the weather data now. The current weather in New York is partly cloudy with a temperature of 15°C and 60% humidity."
+
+Final answer : The current weather in New York is partly cloudy with a temperature of 15°C and 60% humidity.
+
+この最終アクションは、回答をユーザーに送り返し、ループを閉じます。
+
+
+<img src="https://huggingface.co/datasets/agents-course/course-images/resolve/main/en/unit1/alfred-agent-5.jpg" alt="Alfred エージェント"/>
+
+
+この例で分かることは次のとおりです。
+
+- **エージェントは目的が果たされるまでループを繰り返します:**
+    
+**Alfred の処理は循環的に進みます**。思考から始まり、ツールを呼び出して行動し、その結果を観察します。観察結果がエラーやデータの不足を示していたなら、Alfred はもう一度このサイクルを繰り返し、アプローチを修正できます。
+    
+- **ツールの統合:**
+
+天気 API などのツールを呼び出すことで、Alfred は **学習済みの知識だけに頼らず、リアルタイムのデータを取得できます**。これは、多くの AI エージェントに欠かせない能力です。
+
+- **動的な適応:**
+
+各サイクルにより、エージェントは新しい情報（観察）を推論（思考）に取り込むことができ、最終回答が十分な情報に基づいて正確であることが保証されます。
+    
+この例は、次のセクションで詳しく説明する *ReAct サイクル* の基本的な考え方を示しています。**思考、アクション、観察を組み合わせることで、AI エージェントは複雑なタスクにも繰り返し取り組み、解決できます**。
+
+これらの原則を理解して応用すれば、タスクについて推論するだけでなく、**外部ツールを効果的に利用してタスクを完了できる** エージェントを設計できます。さらに、環境からのフィードバックを取り入れながら、出力を継続的に改善できます。
+
+---
+
+では次に、プロセスの個別のステップとして、思考、アクション、観察にさらに深く踏み込みましょう。

@@ -1,0 +1,321 @@
+# ツールとは何か？
+
+<img src="https://huggingface.co/datasets/agents-course/course-images/resolve/main/en/unit1/whiteboard-check-2.jpg" alt="ユニット1の計画"/>
+
+AI エージェントを特徴づける重要な能力の1つが、**アクション** を実行できることです。これまで見てきたように、エージェントは **ツール** を使ってアクションを実行します。
+
+このセクションでは、ツールとは何か、ツールを効果的に設計する方法、そしてシステムメッセージ経由でエージェントに統合する方法を学びます。
+
+エージェントに適切なツールを与え、それらのツールの仕組みを明確に記述することで、AI が達成できることを劇的に増やすことができます。さあ、始めましょう！
+
+
+## AI ツールとは何か？
+
+**ツールとは、LLM に与えられる関数** です。この関数は **明確な目的** を果たすべきです。
+
+AI エージェントでよく使われるツールをいくつか挙げます。
+
+| ツール            | 説明                                                   |
+|----------------|---------------------------------------------------------------|
+| Web 検索（Web Search）     | エージェントがインターネットから最新情報を取得できる。 |
+| 画像生成（Image Generation） | テキストの説明に基づいて画像を作成する。                  |
+| 検索・取得（Retrieval）      | 外部の情報源から情報を取得する。                |
+| API インターフェース（API Interface）  | 外部 API（GitHub、YouTube、Spotify など）とやり取りする。 |
+
+これらは単なる例であり、実際にはあらゆるユースケース向けにツールを作成できます！
+
+良いツールは、**LLM の力を補完する** ものであるべきです。
+
+たとえば、算術演算を行う必要がある場合、モデルのネイティブな能力に頼るよりも、LLM に **計算機ツール** を与える方が良い結果が得られます。
+
+さらに、**LLM は訓練データで学んだ内容を基に、プロンプトに続くテキストを予測して生成します**。そのため、LLM が内部に持つ知識は、訓練時点より前の出来事に限られます。エージェントが最新の情報を必要とする場合、ツールを使う必要があります。
+
+たとえば、（検索ツールなしで）LLM に今日の天気を直接尋ねると、LLM はランダムな天気をハルシネーションする可能性があります。
+
+<img src="https://huggingface.co/datasets/agents-course/course-images/resolve/main/en/unit1/weather.jpg" alt="天気"/>
+
+- ツールには次が含まれるべきです。
+
+  - **関数が何をするかのテキストによる説明**。
+  - *Callable*（アクションを実行するもの）。
+  - 型付けされた *引数（Arguments）*。
+  - （任意）型付けされた出力（Outputs）。
+
+## ツールはどう動作するのか？
+
+見てきたように、LLM はテキスト入力を受け取り、テキスト出力を生成することしかできません。自分でツールを呼び出す方法はありません。エージェントにツールを提供すると言うとき、それは LLM にこれらのツールの存在を教え、必要なときにテキストベースの呼び出しを生成するよう指示することを意味します。
+
+たとえば、インターネットからある場所の天気を確認するツールを提供し、LLM にパリの天気を尋ねると、LLM はこれが「天気」ツールを使う好機であることを認識します。LLM は天気データを自分で取得する代わりに、call weather_tool('Paris') のようなツール呼び出しを表すテキストを生成します。
+
+すると **エージェント** がこの応答を読み取り、ツール呼び出しが必要であることを特定し、LLM に代わってツールを実行して、実際の天気データを取得します。
+
+ツール呼び出しのステップは通常、ユーザーには表示されません。エージェントはそれらを新しいメッセージとして追加してから、更新された会話を再び LLM に渡します。LLM はこの追加のコンテキストを処理し、ユーザー向けに自然に聞こえる応答を生成します。ユーザーの視点からは、LLM がツールと直接やり取りしたように見えますが、実際にはエージェントがバックグラウンドで実行プロセス全体を処理していました。
+
+このプロセスについては、今後のセッションでたくさん話します。
+
+## LLM にツールをどうやって与えるのか？
+
+詳しく説明すると複雑に感じるかもしれませんが、基本的な仕組みはシンプルです。システムプロンプトを使って、利用可能なツールの説明をテキストでモデルに伝えます。
+
+<img src="https://huggingface.co/datasets/agents-course/course-images/resolve/main/en/unit1/Agent_system_prompt.png" alt="ツール用のシステムプロンプト"/>
+
+この仕組みを正しく動かすには、次の2点を正確に記述する必要があります。
+
+1. **ツールが何をするか**
+2. **正確にどんな入力を期待するか**
+
+そのため、ツールの説明には通常、プログラミング言語や JSON のように、表現力と厳密さを兼ね備えた形式が使われます。ただし、こうした形式を使うことが必須というわけではありません。正確で一貫性のある形式であれば問題ありません。
+
+これがあまりにも理論的に思える場合は、具体的な例を通して理解しましょう。
+
+2つの整数を乗算するだけの、簡略化された **計算機** ツールを実装します。Python による実装は次のようになります。
+
+```python
+def calculator(a: int, b: int) -> int:
+    """Multiply two integers."""
+    return a * b
+```
+
+私たちのツールは `calculator` と呼ばれ、**2つの整数を乗算し**、次の入力を必要とします。
+
+- **`a`** (*int*): 整数。
+- **`b`** (*int*): 整数。
+
+ツールの出力は別の整数で、次のように記述できます。
+- (*int*): `a` と `b` の積。
+
+これらの詳細はすべて重要です。LLM が理解できるよう、ツールを説明するテキスト文字列にまとめましょう。
+
+```text
+Tool Name: calculator, Description: Multiply two integers., Arguments: a: int, b: int, Outputs: int
+```
+
+> **リマインダー:** このテキストによる説明は、*ツールについて LLM に知ってほしいこと* です。
+
+上記の文字列を LLM への入力の一部として渡すと、モデルはそれをツールとして認識し、入力として何を渡す必要があり、出力から何を期待できるかを知ります。
+
+追加のツールを提供したい場合は、一貫性を保ち、常に同じ形式を使わなければなりません。このプロセスは壊れやすく、うっかり詳細を見落とすことがあります。
+
+もっと良い方法はあるでしょうか？
+
+### ツールセクションの自動整形
+
+私たちのツールは Python で書かれており、実装には必要なものがすべてすでに揃っています。
+
+- 何をする関数かが分かる名前: `calculator`
+- 関数の docstring コメントで提供される、より長い説明: `Multiply two integers.`
+- 入力とその型: 関数は2つの `int` を明確に期待しています。
+- 出力の型。
+
+人々がプログラミング言語を使うのには理由があります。表現力があり、簡潔で、正確だからです。
+
+LLM 向けのツールの _仕様_ として Python のソースコードを提供することもできますが、ツールの実装方法は問題ではありません。重要なのは、その名前、何をするか、期待する入力、そして提供する出力だけです。
+
+Python のイントロスペクション機能を使ってソースコードを解析し、ツールの説明を自動生成します。そのために必要なのは、ツールを実装する際に型ヒント、docstring、適切な関数名を使うことだけです。ソースコードから関連部分を抽出するコードを書きます。
+
+完了したら、Python のデコレータを使って `calculator` 関数がツールであることを示すだけで済みます。
+
+```python
+@tool
+def calculator(a: int, b: int) -> int:
+    """Multiply two integers."""
+    return a * b
+
+print(calculator.to_string())
+```
+
+関数定義の前にある `@tool` デコレータに注目してください。
+
+次に見る実装により、デコレータが提供する `to_string()` 関数経由で、ソースコードから次のテキストを自動的に取得できるようになります。
+
+```text
+Tool Name: calculator, Description: Multiply two integers., Arguments: a: int, b: int, Outputs: int
+```
+
+見てのとおり、前に手動で書いたものと同じです！
+
+### 汎用的なツール実装
+
+必要に応じてツールを再利用できる、汎用的な `Tool` クラスを作成します。
+
+> **免責事項:** この実装例は架空のものですが、ほとんどのライブラリの実際の実装によく似ています。
+
+```python
+from typing import Callable
+
+
+class Tool:
+    """
+    A class representing a reusable piece of code (Tool).
+
+    Attributes:
+        name (str): Name of the tool.
+        description (str): A textual description of what the tool does.
+        func (callable): The function this tool wraps.
+        arguments (list): A list of arguments.
+        outputs (str or list): The return type(s) of the wrapped function.
+    """
+    def __init__(self,
+                 name: str,
+                 description: str,
+                 func: Callable,
+                 arguments: list,
+                 outputs: str):
+        self.name = name
+        self.description = description
+        self.func = func
+        self.arguments = arguments
+        self.outputs = outputs
+
+    def to_string(self) -> str:
+        """
+        Return a string representation of the tool,
+        including its name, description, arguments, and outputs.
+        """
+        args_str = ", ".join([
+            f"{arg_name}: {arg_type}" for arg_name, arg_type in self.arguments
+        ])
+
+        return (
+            f"Tool Name: {self.name},"
+            f" Description: {self.description},"
+            f" Arguments: {args_str},"
+            f" Outputs: {self.outputs}"
+        )
+
+    def __call__(self, *args, **kwargs):
+        """
+        Invoke the underlying function (callable) with provided arguments.
+        """
+        return self.func(*args, **kwargs)
+```
+
+複雑に見えるかもしれませんが、ゆっくり見ていけば何をしているかが分かります。次を含む **`Tool`** クラスを定義します。
+
+- **`name`** (*str*): ツールの名前。
+- **`description`** (*str*): ツールが何をするかの簡単な説明。
+- **`function`** (*callable*): ツールが実行する関数。
+- **`arguments`** (*list*): 期待される入力パラメータ。
+- **`outputs`** (*str* or *list*): ツールの期待される出力。
+- **`__call__()`**: ツールインスタンスが呼び出されたときに関数を呼び出す。
+- **`to_string()`**: ツールの属性をテキスト表現に変換する。
+
+このクラスを使って、次のようなコードでツールを作成できます。
+
+```python
+calculator_tool = Tool(
+    "calculator",                   # 名前
+    "Multiply two integers.",       # 説明
+    calculator,                     # 呼び出す関数
+    [("a", "int"), ("b", "int")],   # 入力（名前と型）
+    "int",                          # 出力
+)
+```
+
+しかし、Python の `inspect` モジュールを使って、すべての情報を自動的に取得することもできます！これが `@tool` デコレータの役割です。
+
+> 興味がある場合は、次のセクションを開いてデコレータの実装を確認できます。
+
+<details>
+<summary> デコレータのコード</summary>
+
+```python
+import inspect
+
+def tool(func):
+    """
+    A decorator that creates a Tool instance from the given function.
+    """
+    # 関数のシグネチャを取得する
+    signature = inspect.signature(func)
+
+    # 入力用に (param_name, param_annotation) のペアを抽出する
+    arguments = []
+    for param in signature.parameters.values():
+        annotation_name = (
+            param.annotation.__name__
+            if hasattr(param.annotation, '__name__')
+            else str(param.annotation)
+        )
+        arguments.append((param.name, annotation_name))
+
+    # 戻り値のアノテーションを決定する
+    return_annotation = signature.return_annotation
+    if return_annotation is inspect._empty:
+        outputs = "No return annotation"
+    else:
+        outputs = (
+            return_annotation.__name__
+            if hasattr(return_annotation, '__name__')
+            else str(return_annotation)
+        )
+
+    # 関数の docstring を説明として使う（None の場合はデフォルト）
+    description = func.__doc__ or "No description provided."
+
+    # 関数名がツール名になる
+    name = func.__name__
+
+    # 新しい Tool インスタンスを返す
+    return Tool(
+        name=name,
+        description=description,
+        func=func,
+        arguments=arguments,
+        outputs=outputs
+    )
+```
+
+</details>
+
+繰り返しになりますが、このデコレータがあれば、ツールは次のように実装できます。
+
+```python
+@tool
+def calculator(a: int, b: int) -> int:
+    """Multiply two integers."""
+    return a * b
+
+print(calculator.to_string())
+```
+
+そして、`Tool` の `to_string` メソッドを使って、LLM 向けのツール説明として使うのに適したテキストを自動的に取得できます。
+
+```text
+Tool Name: calculator, Description: Multiply two integers., Arguments: a: int, b: int, Outputs: int
+```
+
+生成した説明はシステムプロンプトに **挿入（injected）** されます。セクション冒頭の例を使い、`tools_description` を実際のツール説明に置き換えると、システムプロンプトがどのようになるかを示します。
+
+<img src="https://huggingface.co/datasets/agents-course/course-images/resolve/main/en/unit1/Agent_system_prompt_tools.png" alt="ツール用のシステムプロンプト"/>
+
+[アクション](actions) のセクションでは、エージェントが今作成したこのツールをどう **呼び出す（Call）** かについてさらに学びます。
+
+### Model Context Protocol (MCP): 統一されたツールインターフェース
+
+Model Context Protocol (MCP) は、アプリケーションが **LLM にツールを提供する** 方法を標準化する **オープンプロトコル** です。
+MCP は次を提供します。
+
+- LLM が直接接続できる、既製の連携機能の一覧（継続的に拡充される）
+- LLM プロバイダーやベンダーを切り替える柔軟性
+- インフラストラクチャ内でデータを保護するためのベストプラクティス
+
+つまり、**MCP を実装するフレームワークはすべて、プロトコル内で定義されたツールを活用でき**、フレームワークごとに同じツールインターフェースを再実装する必要がなくなります。
+
+MCP についてさらに深く知りたい場合は、[無料の MCP コース](https://huggingface.co/learn/mcp-course/) をご覧ください。
+
+---
+
+ツールは、AI エージェントの能力を高める上で重要な役割を果たします。
+
+まとめとして、次を学びました。
+
+- *ツールとは何か*: 計算の実行や外部データへのアクセスなど、LLM に追加の能力を与える関数。
+
+- *ツールをどう定義するか*: 明確なテキストによる説明、入力、出力、そして呼び出し可能な関数を提供することで。
+
+- *なぜツールが不可欠なのか*: 静的なモデル訓練の限界をエージェントが克服し、リアルタイムのタスクを処理し、専門的なアクションを実行できるようにするから。
+
+では、[エージェントのワークフロー](agent-steps-and-structure) に進みましょう。そこでは、エージェントが観察し、考え、行動する様子を見ます。これは **これまで扱ってきたすべてを結びつけ**、完全に機能する独自の AI エージェントを作成するための舞台を整えます。
+
+しかしその前に、もう1つ短いクイズの時間です！

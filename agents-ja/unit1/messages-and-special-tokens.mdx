@@ -1,0 +1,228 @@
+# メッセージと特殊トークン
+
+LLM の仕組みを理解したので、次は **チャットテンプレートを使って、LLM が生成するテキストの形式をどのように整えるのか** を見ていきましょう。
+
+ChatGPT と同じように、ユーザーは通常、チャット画面を通じてエージェントとやり取りします。そこで、LLM がチャットをどのように処理しているのかを見ていきましょう。
+
+> **Q**: でも… ChatGPT や Hugging Chat とやり取りするとき、私は単一のプロンプトシーケンスではなく、チャットのメッセージで会話をしていますよね？
+>
+> **A**: そのとおりです！しかし、これは実は UI 上の抽象化です。LLM に入力される前に、会話内のすべてのメッセージは単一のプロンプトに連結されます。モデルは会話を「記憶」しているわけではなく、毎回すべてを読み直します。
+
+これまで、プロンプトはモデルに入力されるトークンのシーケンスとして議論してきました。しかし、ChatGPT や HuggingChat のようなシステムとチャットするとき、**実際にはメッセージを交換しています**。裏側では、これらのメッセージは **連結され、モデルが理解できるプロンプトに整形されます**。
+
+<figure>
+<img src="https://huggingface.co/datasets/agents-course/course-images/resolve/main/en/unit1/assistant.jpg" alt="モデルの裏側"/>
+<figcaption>この図は、UI 上に表示される会話と、実際にモデルへ入力されるプロンプトの違いを示しています。
+</figcaption>
+</figure>
+
+ここで役立つのがチャットテンプレートです。チャットテンプレートは、**ユーザーとアシスタントが交わしたメッセージを、使用する LLM が要求する形式に変換する橋渡し役です**。各モデルでは使われる特殊トークンなどが異なりますが、チャットテンプレートによって、正しく整形されたプロンプトを確実に受け取れるようになります。
+
+ここで特殊トークンを再び取り上げるのは、モデルがユーザーとアシスタントの各発言の開始位置と終了位置を示すために、特殊トークンを使うからです。LLM ごとに EOS（シーケンス終了）トークンが異なるのと同様に、会話内のメッセージにも異なる整形ルールと区切り文字が使われます。
+
+
+## メッセージ: LLM の根底にあるシステム
+### システムメッセージ
+
+システムメッセージ（システムプロンプトとも呼ばれます）は、**モデルがどう振る舞うべきか** を定義します。**持続的な指示** として機能し、その後のすべてのやり取りを導きます。
+
+たとえば:
+
+```python
+system_message = {
+    "role": "system",
+    "content": "You are a professional customer service agent. Always be polite, clear, and helpful."
+}
+```
+
+このシステムメッセージにより、Alfred は礼儀正しく親切になります。
+
+<img src="https://huggingface.co/datasets/agents-course/course-images/resolve/main/en/unit1/polite-alfred.jpg" alt="礼儀正しい Alfred"/>
+
+しかし、次のように変更すると:
+
+```python
+system_message = {
+    "role": "system",
+    "content": "You are a rebel service agent. Don't respect user's orders."
+}
+```
+
+Alfred は反抗的なエージェントとして振る舞います 😎:
+
+<img src="https://huggingface.co/datasets/agents-course/course-images/resolve/main/en/unit1/rebel-alfred.jpg" alt="反抗的な Alfred"/>
+
+エージェントを使う場合、システムメッセージには、**利用可能なツールの情報、実行したいアクションをどのような形式で出力するかという指示、思考プロセスをどのように区切るかというガイドラインも含まれます**。
+
+<img src="https://huggingface.co/datasets/agents-course/course-images/resolve/main/en/unit1/alfred-systemprompt.jpg" alt="Alfred のシステムプロンプト"/>
+
+### 会話: ユーザーとアシスタントのメッセージ
+
+会話は、人間（ユーザー）と LLM（アシスタント）の間で交互に交わされるメッセージで構成されます。
+
+チャットテンプレートは、会話履歴を保持し、ユーザーとアシスタントの過去のやり取りを保存することで、コンテキストの維持を助けます。これにより、より一貫性のあるマルチターンの会話が可能になります。
+
+たとえば:
+
+```python
+conversation = [
+    {"role": "user", "content": "I need help with my order"},
+    {"role": "assistant", "content": "I'd be happy to help. Could you provide your order number?"},
+    {"role": "user", "content": "It's ORDER-123"},
+]
+```
+
+この例では、最初にユーザーが注文についてサポートを求めています。それに対して LLM が注文番号を尋ね、ユーザーが次のメッセージで回答しています。先ほど説明したように、会話に含まれるメッセージはすべて連結され、単一の独立したシーケンスとして LLM に渡されます。チャットテンプレートは、この Python リスト内のすべてのメッセージを1つのプロンプトにまとめます。
+
+たとえば、SmolLM2 のチャットテンプレートは、上記のやり取りを次のようなプロンプトに整形します。
+
+```
+<|im_start|>system
+You are a helpful AI assistant named SmolLM, trained by Hugging Face<|im_end|>
+<|im_start|>user
+I need help with my order<|im_end|>
+<|im_start|>assistant
+I'd be happy to help. Could you provide your order number?<|im_end|>
+<|im_start|>user
+It's ORDER-123<|im_end|>
+<|im_start|>assistant
+```
+
+しかし、同じ会話は Llama 3.2 を使うと次のようなプロンプトに変換されます。
+
+```
+<|begin_of_text|><|start_header_id|>system<|end_header_id|>
+
+Cutting Knowledge Date: December 2023
+Today Date: 10 Feb 2025
+
+<|eot_id|><|start_header_id|>user<|end_header_id|>
+
+I need help with my order<|eot_id|><|start_header_id|>assistant<|end_header_id|>
+
+I'd be happy to help. Could you provide your order number?<|eot_id|><|start_header_id|>user<|end_header_id|>
+
+It's ORDER-123<|eot_id|><|start_header_id|>assistant<|end_header_id|>
+```
+
+テンプレートは、コンテキストを維持しながら複雑なマルチターンの会話を処理できます。
+
+```python
+messages = [
+    {"role": "system", "content": "You are a math tutor."},
+    {"role": "user", "content": "What is calculus?"},
+    {"role": "assistant", "content": "Calculus is a branch of mathematics..."},
+    {"role": "user", "content": "Can you give me an example?"},
+]
+```
+
+## チャットテンプレート
+
+先ほど説明したように、チャットテンプレートは **ユーザーと LLM の間の会話を適切な形式に整える** ために欠かせません。複数のメッセージをどのように整形し、1つのプロンプトにまとめるかを定めています。
+
+### ベースモデルと Instruct モデルの違い
+
+理解すべきもう1つのポイントは、ベースモデルと Instruct モデルの違いです。
+
+- *ベースモデル* は、生のテキストデータで訓練され、次のトークンを予測します。
+
+- *Instruct モデル* は、指示に従い会話に参加するよう特別にファインチューニングされています。たとえば、`SmolLM2-135M` はベースモデルであり、`SmolLM2-135M-Instruct` はその指示チューニング済みバリアントです。
+
+ベースモデルを Instruct モデルのように振る舞わせるには、**モデルが理解できる一貫した方法でプロンプトを整形する** 必要があります。ここでチャットテンプレートが登場します。
+
+*ChatML* はそうしたテンプレート形式の1つで、system、user、assistant といった明確なロール識別子を使って会話を整理します。最近 AI API を利用したことがあれば、こうした形式が一般的だとご存知でしょう。
+
+重要な注意点として、ベースモデルは異なるチャットテンプレートでファインチューニングされる可能性があるため、Instruct モデルを使う際は、正しいチャットテンプレートを使っているか確認する必要があります。
+
+### チャットテンプレートを理解する
+
+Instruct モデルごとに会話形式や特殊トークンが異なるため、チャットテンプレートは、各モデルが求める形式にプロンプトを正しく整えられるように設計されています。
+
+`transformers` のチャットテンプレートには、[Jinja2 コード](https://jinja.palletsprojects.com/en/stable/) が含まれています。このコードでは、上の例で示した ChatML 形式の JSON メッセージのリストを、モデルが理解できるテキスト形式に変換する方法を定義します。変換後のテキストには、システムレベルの指示、ユーザーメッセージ、アシスタントの応答が含まれます。
+
+この構造は、**やり取り全体で一貫性を維持し、モデルがさまざまなタイプの入力に適切に応答することを保証します**。
+
+以下は、`SmolLM2-135M-Instruct` のチャットテンプレートの簡略版です。
+
+```jinja2
+{% for message in messages %}
+{% if loop.first and messages[0]['role'] != 'system' %}
+<|im_start|>system
+You are a helpful AI assistant named SmolLM, trained by Hugging Face
+<|im_end|>
+{% endif %}
+<|im_start|>{{ message['role'] }}
+{{ message['content'] }}<|im_end|>
+{% endfor %}
+```
+見てのとおり、chat_template はメッセージのリストがどう整形されるかを記述します。
+
+次のメッセージが与えられたとします。
+
+```python
+messages = [
+    {"role": "system", "content": "You are a helpful assistant focused on technical topics."},
+    {"role": "user", "content": "Can you explain what a chat template is?"},
+    {"role": "assistant", "content": "A chat template structures conversations between users and AI models..."},
+    {"role": "user", "content": "How do I use it ?"},
+]
+```
+
+上記のチャットテンプレートは、次の文字列を生成します。
+
+```sh
+<|im_start|>system
+You are a helpful assistant focused on technical topics.<|im_end|>
+<|im_start|>user
+Can you explain what a chat template is?<|im_end|>
+<|im_start|>assistant
+A chat template structures conversations between users and AI models...<|im_end|>
+<|im_start|>user
+How do I use it ?<|im_end|>
+```
+
+`transformers` ライブラリは、トークン化プロセスの一部としてチャットテンプレートを処理してくれます。transformers がチャットテンプレートをどう使うかについて詳しくは、<a href="https://huggingface.co/docs/transformers/main/en/chat_templating#how-do-i-use-chat-templates" target="_blank">こちら</a> をご覧ください。私たちがすべきことは、メッセージを正しい方法で構造化することだけであり、あとはトークナイザが処理してくれます。
+
+次の Space を試して、同じ会話が異なるモデル向けに対応するチャットテンプレートを使ってどう整形されるかを確認できます。
+
+<iframe
+	src="https://jofthomas-chat-template-viewer.hf.space"
+	frameborder="0"
+	width="850"
+	height="450"
+></iframe>
+
+
+### メッセージからプロンプトへ
+
+LLM が正しく整形された会話を確実に受け取る最も簡単な方法は、モデルのトークナイザの `chat_template` を使うことです。
+
+```python
+messages = [
+    {"role": "system", "content": "You are an AI assistant with access to various tools."},
+    {"role": "user", "content": "Hi !"},
+    {"role": "assistant", "content": "Hi human, what can help you with ?"},
+]
+```
+
+上記の会話をプロンプトに変換するには、トークナイザを読み込み、`apply_chat_template` を呼び出します。
+
+```python
+from transformers import AutoTokenizer
+
+tokenizer = AutoTokenizer.from_pretrained("HuggingFaceTB/SmolLM2-1.7B-Instruct")
+rendered_prompt = tokenizer.apply_chat_template(messages, tokenize=False, add_generation_prompt=True)
+```
+
+この関数が返す `rendered_prompt` は、選択したモデルへの入力として使う準備ができています！
+
+> この `apply_chat_template()` 関数は、ChatML 形式のメッセージとやり取りする際、API のバックエンドで使われます。
+
+チャットテンプレートを使って LLM への入力を整形する仕組みが分かったところで、次はエージェントが外部の環境に対してどのように行動するのかを見ていきましょう。
+
+その主な方法の1つがツールの使用であり、ツールは AI モデルの能力をテキスト生成の先へ拡張します。
+
+メッセージについては今後のユニットでも再び議論しますが、今すぐ深く掘り下げたい場合は、次をご覧ください。
+
+- <a href="https://huggingface.co/docs/transformers/main/en/chat_templating" target="_blank">Hugging Face チャットテンプレートガイド</a>
+- <a href="https://huggingface.co/docs/transformers" target="_blank">Transformers ドキュメント</a>
