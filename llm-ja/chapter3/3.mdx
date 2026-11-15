@@ -11,12 +11,12 @@
 
 <Youtube id="nvBXf7s7vTI"/>
 
-🤗 Transformers には `Trainer` クラスが用意されており、提供されている事前学習済みモデルを、現代的なベストプラクティスで自分のデータセットに対してファインチューニングできます。前のセクションのデータ前処理がすべて終われば、`Trainer` を定義するために残されたステップはわずかです。最も大変なのはおそらく、`Trainer.train()` を実行する環境の準備です。CPU では非常に低速になるためです。GPU が用意できない場合は、[Google Colab](https://colab.research.google.com/) で無料の GPU や TPU を利用できます。
+🤗 Transformers には `Trainer` クラスが用意されており、🤗 Transformers が提供するどの事前学習済みモデルでも、推奨される手法に沿って自分のデータセットでファインチューニングできます。前のセクションのデータ前処理がすべて終われば、`Trainer` を定義するために残されたステップはわずかです。最も大変なのはおそらく、`Trainer.train()` を実行する環境の準備です。CPU では非常に低速になるためです。GPU が用意できない場合は、[Google Colab](https://colab.research.google.com/) で無料の GPU や TPU を利用できます。
 
 > [!TIP]
 > 📚 **学習リソース**: 学習に入る前に、包括的な [🤗 Transformers 学習ガイド](https://huggingface.co/docs/transformers/main/en/training) に目を通し、[ファインチューニングのクックブック](https://huggingface.co/learn/cookbook/en/fine_tuning_code_llm_on_single_gpu) の実践的な例も確認しておきましょう。
 
-以下のコード例は、前のセクションの例を既に実行していることを前提としています。必要なものの簡単なまとめは次のとおりです。
+以下のコード例は、前のセクションの例を既に実行していることを前提としています。必要な準備を簡単に振り返っておきましょう。
 
 ```py
 from datasets import load_dataset
@@ -37,7 +37,7 @@ data_collator = DataCollatorWithPadding(tokenizer=tokenizer)
 
 ### 学習[[training]]
 
-`Trainer` を定義する前に、最初のステップとして `TrainingArguments` クラスを定義します。これには、`Trainer` が学習と評価に使用するすべてのハイパーパラメータが含まれます。指定が必須な引数は、学習したモデルが保存されるディレクトリ1つだけです。途中で作成されるチェックポイントもここに保存されます。その他はすべてデフォルトのままにできます。基本的なファインチューニングには十分なはずです。
+`Trainer` を定義する前に、最初のステップとして `TrainingArguments` クラスを定義します。これには、`Trainer` が学習と評価に使用するすべてのハイパーパラメータが含まれます。必須の引数は、学習済みモデルの保存先ディレクトリを指定するものだけです。途中で作成されるチェックポイントもここに保存されます。その他はすべてデフォルトのままにできます。基本的なファインチューニングには十分なはずです。
 
 ```py
 from transformers import TrainingArguments
@@ -58,9 +58,9 @@ from transformers import AutoModelForSequenceClassification
 model = AutoModelForSequenceClassification.from_pretrained(checkpoint, num_labels=2)
 ```
 
-[第2章](/course/chapter2) とは異なり、この事前学習済みモデルをインスタンス化すると警告が表示されることに気づくでしょう。これは、BERT が文ペアの分類で事前学習されていないためです。事前学習済みモデルのヘッドは破棄され、代わりにシーケンス分類に適した新しいヘッドが追加されています。警告は、一部の重みが使用されなかったこと（破棄された事前学習ヘッドに対応するもの）と、その他の重みがランダムに初期化されたこと（新しいヘッド用のもの）を示しています。最後に、モデルの学習を促す内容で締めくくられています。まさにこれからそれを行います。
+[第2章](/course/chapter2) とは異なり、この事前学習済みモデルをインスタンス化すると警告が表示されることに気づくでしょう。これは、BERT が文ペアの分類で事前学習されていないためです。事前学習済みモデルのヘッドは破棄され、代わりにシーケンス分類に適した新しいヘッドが追加されています。警告は、一部の重みが使用されなかったこと（破棄された事前学習ヘッドに対応するもの）と、その他の重みがランダムに初期化されたこと（新しいヘッド用のもの）を示しています。警告の最後には、モデルを学習させるよう促すメッセージが表示されます。まさにこれからそれを行います。
 
-モデルが用意できたら、これまでに構築したすべてのオブジェクト、すなわち `model`、`training_args`、学習データセットと検証データセット、`data_collator`、`processing_class` を渡して `Trainer` を定義できます。`processing_class` パラメータは比較的新しく追加されたもので、処理に使用するトークナイザを Trainer に伝えます。
+モデルが用意できたら、これまでに構築したすべてのオブジェクト、すなわち `model`、`training_args`、学習データセットと検証データセット、`data_collator`、`processing_class` を渡して `Trainer` を定義できます。`processing_class` パラメータは比較的新しく追加されたもので、処理に使用するトークナイザを `Trainer` に伝えます。
 
 ```py
 from transformers import Trainer
@@ -78,7 +78,7 @@ trainer = Trainer(
 トークナイザを `processing_class` として渡すと、`Trainer` が使用するデフォルトの `data_collator` は `DataCollatorWithPadding` になります。この場合、`data_collator=data_collator` の行は省略できますが、ここでは処理パイプラインの重要な部分を示すために含めています。
 
 > [!TIP]
-> 📖 **更に学ぶ**: Trainer クラスとそのパラメータの包括的な詳細については、[Trainer API ドキュメント](https://huggingface.co/docs/transformers/main/en/main_classes/trainer) を参照し、[学習クックブックのレシピ](https://huggingface.co/learn/cookbook/en/fine_tuning_code_llm_on_single_gpu) で高度な使用パターンも確認してください。
+> 📖 **更に学ぶ**: `Trainer` クラスとそのパラメータについて詳しくは、[Trainer API ドキュメント](https://huggingface.co/docs/transformers/main/en/main_classes/trainer) を参照してください。より高度な使い方は、[学習クックブックのレシピ](https://huggingface.co/learn/cookbook/en/fine_tuning_code_llm_on_single_gpu) でも紹介されています。
 
 データセットでモデルをファインチューニングするには、`Trainer` の `train()` メソッドを呼び出すだけです。
 
@@ -89,12 +89,12 @@ trainer.train()
 これによりファインチューニングが開始され（GPU では数分かかります）、500ステップごとに学習損失が報告されます。しかし、モデルの性能がどの程度良いか（又は悪いか）はわかりません。その理由は次のとおりです。
 
 1. `TrainingArguments` の `eval_strategy` を `"steps"`（`eval_steps` ごとに評価）又は `"epoch"`（各エポックの末尾に評価）に設定して、学習中に評価を行うよう `Trainer` に指示しなかったためです。
-2. 評価時にメトリクスを計算するための `compute_metrics()` 関数を `Trainer` に提供しなかったためです（提供しなければ、評価では損失が出力されるだけであり、あまり直感的な数値ではありません）。
+2. 評価時にメトリクスを計算するための `compute_metrics()` 関数を `Trainer` に渡していなかったためです（この関数がない場合、評価では損失しか出力されず、モデルの性能を直感的に把握できません）。
 
 
 ### 評価[[evaluation]]
 
-便利な `compute_metrics()` 関数の構築方法と、次回の学習での使用方法を見ていきましょう。この関数は `EvalPrediction` オブジェクト（`predictions` フィールドと `label_ids` フィールドを持つ名前付きタプル）を受け取り、文字列をキー、浮動小数点数を値とする辞書を返さなければなりません（文字列は返されるメトリクスの名前、浮動小数点数はその値です）。モデルから予測を得るには、`Trainer.predict()` コマンドを使用できます。
+便利な `compute_metrics()` 関数を作り、次の学習で使う方法を見ていきましょう。この関数は、`predictions` フィールドと `label_ids` フィールドを持つ名前付きタプルである `EvalPrediction` オブジェクトを受け取ります。戻り値は、メトリクス名を文字列のキー、その値を浮動小数点数とする辞書でなければなりません。モデルの予測結果を取得するには、`Trainer.predict()` メソッドを使います。
 
 ```py
 predictions = trainer.predict(tokenized_datasets["validation"])
@@ -115,7 +115,7 @@ import numpy as np
 preds = np.argmax(predictions.predictions, axis=-1)
 ```
 
-これで、`preds` をラベルと比較できます。`compute_metric()` 関数を構築するには、🤗 [Evaluate](https://github.com/huggingface/evaluate/) ライブラリのメトリクスを利用します。MRPC データセットに関連付けられたメトリクスは、データセットを読み込んだときと同じくらい簡単に、`evaluate.load()` 関数で読み込めます。返されるオブジェクトには、メトリクスの計算に使用できる `compute()` メソッドがあります。
+これで、`preds` をラベルと比較できます。`compute_metric()` 関数を構築するには、🤗 [Evaluate](https://github.com/huggingface/evaluate/) ライブラリのメトリクスを利用します。`evaluate.load()` 関数を使えば、MRPC データセット用のメトリクスも、データセットを読み込むときと同じように簡単に読み込めます。返されるオブジェクトには、メトリクスの計算に使用できる `compute()` メソッドがあります。
 
 ```py
 import evaluate
@@ -131,7 +131,7 @@ metric.compute(predictions=preds, references=predictions.label_ids)
 > [!TIP]
 > 様々な評価メトリクスと戦略については、[🤗 Evaluate ドキュメント](https://huggingface.co/docs/evaluate/) を参照してください。
 
-得られる正確な結果は異なる場合があります。モデルヘッドのランダムな初期化により、達成されるメトリクスが変わる可能性があるためです。ここでは、モデルの検証セットに対する正解率が85.78%、F1 スコアが89.97であることがわかります。これらは、GLUE ベンチマークの MRPC データセットで結果を評価するために使用される2つのメトリクスです。[BERT 論文](https://arxiv.org/pdf/1810.04805.pdf) の表では、ベースモデルの F1 スコアが88.9と報告されていました。これは `uncased` モデルの結果であり、現在使用しているのは `cased` モデルであるため、より良い結果が得られたことが説明できます。
+実行結果は毎回同じとは限りません。モデルのヘッドがランダムに初期化されるため、メトリクスの値が変わることがあるからです。ここでは、モデルの検証データセットに対する正解率が85.78%、F1 スコアが89.97であることがわかります。これらは、GLUE ベンチマークの MRPC データセットで結果を評価するために使用される2つのメトリクスです。[BERT 論文](https://arxiv.org/pdf/1810.04805.pdf) の表では、ベースモデルの F1 スコアが88.9と報告されていました。これは `uncased` モデルの結果であり、現在使用しているのは `cased` モデルであるため、より良い結果が得られたことが説明できます。
 
 すべてをまとめると、`compute_metrics()` 関数は次のようになります。
 
@@ -143,7 +143,7 @@ def compute_metrics(eval_preds):
     return metric.compute(predictions=predictions, references=labels)
 ```
 
-この `compute_metrics()` 関数を使って、各エポックの末尾にメトリクスを報告する新しい `Trainer` の定義は次のとおりです。
+この `compute_metrics()` 関数を使えば、各エポックの終了時にメトリクスを報告できます。新しい `Trainer` を次のように定義します。
 
 ```py
 training_args = TrainingArguments("test-trainer", eval_strategy="epoch")
@@ -166,11 +166,11 @@ trainer = Trainer(
 trainer.train()
 ```
 
-今度は、学習損失に加えて、各エポックの末尾に検証損失とメトリクスが報告されます。なお、得られる正解率と F1 スコアの具体的な値は、モデルのヘッドのランダムな初期化のため、得られた結果と多少異なる場合がありますが、おおよそ同じ範囲になるはずです。
+今度は、学習損失に加えて、各エポックの末尾に検証損失とメトリクスが報告されます。なお、モデルのヘッドはランダムに初期化されるため、正解率や F1 スコアは先ほどの結果と多少異なることがありますが、おおよそ同じ範囲になるはずです。
 
 ### 高度な学習機能[[advanced-training-features]]
 
-`Trainer` には、現代の深層学習のベストプラクティスを手軽に利用できる、多くの組み込み機能が備わっています。
+`Trainer` には、現在の深層学習で推奨される手法を簡単に取り入れられる機能が数多く備わっています。
 
 **混合精度学習**: 学習引数で `fp16=True` を使用すると、学習が高速化し、メモリ使用量が削減されます。
 
@@ -182,7 +182,7 @@ training_args = TrainingArguments(
 )
 ```
 
-**勾配累積**: GPU メモリが限られている場合に、実効的により大きなバッチサイズを実現します。
+**勾配累積**: GPU メモリが限られている場合でも、実効バッチサイズを大きくできます。
 
 ```py
 training_args = TrainingArguments(
@@ -193,7 +193,7 @@ training_args = TrainingArguments(
 )
 ```
 
-**学習率スケジューリング**: Trainer はデフォルトで線形減衰を使用しますが、カスタマイズも可能です。
+**学習率スケジューリング**: `Trainer` はデフォルトで線形減衰を使用しますが、カスタマイズも可能です。
 
 ```py
 training_args = TrainingArguments(
@@ -209,10 +209,10 @@ training_args = TrainingArguments(
 
 `Trainer` は、複数の GPU や TPU でもそのまま動作し、分散学習のための多くのオプションを提供します。対応している機能については、第10章で詳しく説明します。
 
-これで、`Trainer` API を使用したファインチューニングの入門は終わりです。代表的な NLP タスクにファインチューニングを適用する例は[第7章](/course/chapter7)で紹介しますが、今は、純粋な PyTorch の学習ループで同じことを行う方法を見ていきましょう。
+これで、`Trainer` API を使用したファインチューニングの入門は終わりです。代表的な NLP タスクにファインチューニングを適用する例は [第7章](/course/chapter7) で紹介しますが、今は、純粋な PyTorch の学習ループで同じことを行う方法を見ていきましょう。
 
 > [!TIP]
-> 📝 **その他の例**: [🤗 Transformers のノートブック](https://huggingface.co/docs/transformers/main/en/notebooks) の包括的なコレクションを確認してください。
+> 📝 **その他の例**: さまざまな実行例をまとめた [🤗 Transformers のノートブック](https://huggingface.co/docs/transformers/main/en/notebooks) もご覧ください。
 
 ## セクションクイズ[[section-quiz]]
 
@@ -228,7 +228,7 @@ Trainer API とファインチューニングの概念に関する理解度を�
 		},
 		{
 			text: "データの処理に使用するトークナイザを Trainer に伝えます。",
-			explain: "比較的最近追加された processing_class パラメータは、Trainer に使用するトークナイザを指定するためのものです。",
+			explain: "比較的最近追加された processing_class パラメータは、Trainer がデータ処理に使用するトークナイザを指定するためのものです。",
             correct: true
 		},
 		{
@@ -296,7 +296,7 @@ Trainer API とファインチューニングの概念に関する理解度を�
 	choices={[
 		{
 			text: "学習中の損失を計算します。",
-			explain: "損失の計算はモデルが自動的に処理するものであり、compute_metrics が行うものではありません。"
+			explain: "損失はモデルが自動的に計算するため、compute_metrics では計算しません。"
 		},
 		{
 			text: "ロジットを予測に変換し、正解率や F1 などの評価指標を計算します。",
@@ -305,11 +305,11 @@ Trainer API とファインチューニングの概念に関する理解度を�
 		},
 		{
 			text: "使用するオプティマイザを決定します。",
-			explain: "オプティマイザの選択は compute_metrics が処理するものではありません。"
+			explain: "オプティマイザを選ぶのは compute_metrics の役割ではありません。"
 		},
         {
 			text: "学習データを前処理します。",
-			explain: "データの前処理は学習前に行われるものであり、評価中に compute_metrics が行うものではありません。"
+			explain: "データの前処理は学習前に行うため、評価中に compute_metrics が前処理を行うことはありません。"
 		}
 	]}
 />
@@ -320,14 +320,14 @@ Trainer API とファインチューニングの概念に関する理解度を�
 	choices={[
 		{
 			text: "学習がエラーで失敗します。",
-			explain: "eval_dataset がなくても学習は進行できますが、評価メトリクスは得られません。"
+			explain: "eval_dataset がなくても学習は実行できますが、評価メトリクスは得られません。"
 		},
 		{
 			text: "Trainer が学習データを自動的に分割して評価に使用します。",
 			explain: "Trainer は検証用の分割を自動的には作成しません。"
 		},
 		{
-			text: "学習中に評価メトリクスは得られませんが、学習自体は機能します。",
+			text: "学習中に評価メトリクスは得られませんが、学習自体は実行できます。",
 			explain: "評価は任意です。評価なしで学習することもできますが、検証メトリクスは表示されません。",
             correct: true
 		},
@@ -364,9 +364,9 @@ Trainer API とファインチューニングの概念に関する理解度を�
 
 > [!TIP]
 > 💡 **重要なポイント:**
-> - `Trainer` API は、学習の複雑さの大部分を処理する高レベルインターフェースを提供します
+> - `Trainer` API は、学習に必要な複雑な処理の多くを引き受ける高レベルのインターフェースを提供します
 > - 適切なデータ処理のために、`processing_class` でトークナイザを指定します
 > - `TrainingArguments` は、学習率、バッチサイズ、評価戦略、最適化など、学習のすべての側面を制御します
-> - `compute_metrics` により、学習損失だけでなくカスタムの評価メトリクスも使用できます
-> - 混合精度（`fp16=True`）や勾配累積などの現代的な機能により、学習効率が大幅に向上します
+> - `compute_metrics` を使うと、学習損失に加えて独自の評価メトリクスも計算できます
+> - 混合精度（`fp16=True`）や勾配累積などの機能を使うと、学習効率が大幅に向上する場合があります
 

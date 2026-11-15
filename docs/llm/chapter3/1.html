@@ -4,11 +4,11 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>はじめに | Hugging Face 学習コース日本語版</title>
-<meta name="description" content="はじめに｜LLM コース（大規模言語モデルと Transformers を学ぶコース）の日本語訳。第2章 では、トークナイザと事前学習済みモデルを使って予測を行う方法を見てきました。">
+<meta name="description" content="はじめに｜LLM コース（大規模言語モデルと Transformers を学ぶコース）の日本語訳。第2章 では、トークナイザと事前学習済みモデルを使って予測する方法を見てきました。">
 <meta name="robots" content="index, follow">
 <link rel="canonical" href="https://yanikasumin.github.io/HuggingFace-courses-ja/llm/chapter3/1.html">
 <meta property="og:title" content="はじめに | Hugging Face 学習コース日本語版">
-<meta property="og:description" content="はじめに｜LLM コース（大規模言語モデルと Transformers を学ぶコース）の日本語訳。第2章 では、トークナイザと事前学習済みモデルを使って予測を行う方法を見てきました。">
+<meta property="og:description" content="はじめに｜LLM コース（大規模言語モデルと Transformers を学ぶコース）の日本語訳。第2章 では、トークナイザと事前学習済みモデルを使って予測する方法を見てきました。">
 <meta property="og:image" content="https://yanikasumin.github.io/HuggingFace-courses-ja/og-llm.png">
 <meta property="og:image:width" content="1200">
 <meta property="og:image:height" content="630">
@@ -20,7 +20,7 @@
 <meta property="og:locale" content="ja_JP">
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:title" content="はじめに | Hugging Face 学習コース日本語版">
-<meta name="twitter:description" content="はじめに｜LLM コース（大規模言語モデルと Transformers を学ぶコース）の日本語訳。第2章 では、トークナイザと事前学習済みモデルを使って予測を行う方法を見てきました。">
+<meta name="twitter:description" content="はじめに｜LLM コース（大規模言語モデルと Transformers を学ぶコース）の日本語訳。第2章 では、トークナイザと事前学習済みモデルを使って予測する方法を見てきました。">
 <meta name="twitter:image" content="https://yanikasumin.github.io/HuggingFace-courses-ja/og-llm.png">
 <link rel="icon" type="image/svg+xml" href="https://yanikasumin.github.io/HuggingFace-courses-ja/favicon.svg">
 <link rel="icon" type="image/png" sizes="32x32" href="https://yanikasumin.github.io/HuggingFace-courses-ja/favicon-32.png">
@@ -204,29 +204,29 @@ window.MathJax = { tex: { inlineMath: [['$', '$'], ['\\(', '\\)']], displayMath:
 <nav class="page-nav"><a class="nav-link prev" href="../chapter2/9.html">← 前へ: 章末クイズ</a><a class="nav-link toc-link" href="../index.html">目次へ</a><a class="nav-link next" href="2.html">次へ →: データを処理する</a></nav>
 <article class="content">
 <h1>はじめに</h1>
-<p><a href="../chapter2/1.html">第2章</a> では、トークナイザと事前学習済みモデルを使って予測を行う方法を見てきました。では、特定のタスクを解くために事前学習済みモデルをファインチューニングしたい場合はどうすればよいでしょうか。それがこの章のテーマです。この章で学ぶのは次の内容です。</p>
+<p><a href="../chapter2/1.html">第2章</a> では、トークナイザと事前学習済みモデルを使って予測する方法を見てきました。では、事前学習済みモデルを特定のタスク向けにファインチューニングするには、どうすればよいのでしょうか。この章では、その方法を学びます。主な内容は次のとおりです。</p>
 <ul>
-<li>最新の 🤗 Datasets の機能を使って、Hub から大規模なデータセットを用意する方法</li>
-<li>高レベルの <code>Trainer</code> API を使い、現代的なベストプラクティスでモデルをファインチューニングする方法</li>
-<li>最適化のテクニックを取り入れた、カスタム学習ループの実装方法</li>
+<li>🤗 Datasets の最新機能を使って、Hub から大規模なデータセットを用意する方法</li>
+<li>高レベルの <code>Trainer</code> API を使い、現在推奨されている手法に沿ってモデルをファインチューニングする方法</li>
+<li>最適化手法を取り入れたカスタム学習ループの実装方法</li>
 <li>🤗 Accelerate ライブラリを使って、あらゆる環境で分散学習を簡単に実行する方法</li>
-<li>性能を最大限に引き出すための、ファインチューニングのベストプラクティスの適用方法</li>
+<li>モデルの性能を最大限に引き出すために、現在推奨されているファインチューニング手法を活用する方法</li>
 </ul>
 <div class="callout callout-tip">
 <p class="callout-title">💡 ヒント</p>
-<p>📚 <strong>おすすめ資料</strong>: 始める前に、データ処理について <a href="https://huggingface.co/docs/datasets/">🤗 Datasets ドキュメント</a> を確認しておくとよいでしょう。</p>
+<p>📚 <strong>おすすめ資料</strong>: この章を始める前に、<a href="https://huggingface.co/docs/datasets/">🤗 Datasets のドキュメント</a> でデータ処理について復習しておくとよいでしょう。</p>
 </div>
-<p>この章は、🤗 Transformers ライブラリ以外の Hugging Face ライブラリへの入門にもなります。🤗 Datasets、🤗 Tokenizers、🤗 Accelerate、🤗 Evaluate といったライブラリが、モデルの学習をより効率的かつ効果的に進めるうえで、どのように役立つかを見ていきます。</p>
+<p>この章では、🤗 Transformers 以外の Hugging Face ライブラリにも入門します。🤗 Datasets、🤗 Tokenizers、🤗 Accelerate、🤗 Evaluate が、モデルをより効率よく、効果的に学習させるためにどう役立つのかを見ていきます。</p>
 <p>この章の主なセクションでは、次の内容を扱います。
-- <strong>セクション2</strong>: 最新のデータ前処理テクニックと効率的なデータセットの扱い方
-- <strong>セクション3</strong>: 強力な Trainer API とその最新機能の使いこなし方
-- <strong>セクション4</strong>: 学習ループのゼロからの実装と、Accelerate による分散学習の理解</p>
-<p>この章を終えるころには、高レベル API とカスタム学習ループの両方を使って、自分のデータセットでモデルをファインチューニングできるようになります。この分野の最新のベストプラクティスも適用できます。</p>
+- <strong>セクション2</strong>: 現在使われているデータ前処理の手法と、データセットを効率よく扱う方法
+- <strong>セクション3</strong>: 強力な <code>Trainer</code> API を使いこなし、最新機能を活用する方法
+- <strong>セクション4</strong>: 学習ループを一から実装する方法と、Accelerate を使った分散学習の仕組み</p>
+<p>この章を終えるころには、高レベル API を使う方法とカスタム学習ループを使う方法のどちらでも、自分のデータセットでモデルをファインチューニングできるようになります。また、この分野で現在推奨されている手法も実践できるようになります。</p>
 <div class="callout callout-tip">
 <p class="callout-title">💡 ヒント</p>
-<p>🎯 <strong>この章で作るもの</strong>: この章を終えるころには、テキスト分類用に BERT モデルをファインチューニングし、そのテクニックを自分のデータセットやタスクに応用する方法を理解しているはずです。</p>
+<p>🎯 <strong>この章で作るもの</strong>: この章を終えるころには、BERT モデルをテキスト分類向けにファインチューニングし、その手法を自分のデータセットやタスクに応用する方法を理解しているはずです。</p>
 </div>
-<p>この章では <strong>PyTorch</strong> のみに焦点を当てます。PyTorch は、現代の深層学習の研究と実務における標準フレームワークになっているためです。Hugging Face エコシステムの最新の API とベストプラクティスを使用します。</p>
+<p>この章では <strong>PyTorch</strong> のみに焦点を当てます。PyTorch が深層学習の研究や本番環境での運用において、標準的なフレームワークになっているためです。また、Hugging Face エコシステムの最新の API と、現在推奨されている手法を使用します。</p>
 <p>学習したモデルを Hugging Face Hub にアップロードするには、Hugging Face のアカウントが必要です。<a href="https://huggingface.co/join">アカウントを作成</a></p>
 </article>
 
