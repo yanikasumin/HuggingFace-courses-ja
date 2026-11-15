@@ -4,18 +4,29 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>クイズ2：プルリクエストエージェントの統合 | Hugging Face 学習コース日本語版</title>
-<meta name="description" content="クイズ2：プルリクエストエージェントの統合｜MCP コース（Model Context Protocol を学ぶコース）の日本語訳ページ。Hugging Face 公式コースの内容を日本語で学べます。">
+<meta name="description" content="クイズ2：プルリクエストエージェントの統合｜MCP コース（Model Context Protocol を学ぶコース）の日本語訳。MCP クライアントの統合や Webhook の処理をはじめ、プルリクエストエージェントのシステム全体について理解度を確認しましょう。">
 <meta name="robots" content="index, follow">
 <link rel="canonical" href="https://yanikasumin.github.io/HuggingFace-courses-ja/mcp/unit3_1/quiz2.html">
 <meta property="og:title" content="クイズ2：プルリクエストエージェントの統合 | Hugging Face 学習コース日本語版">
-<meta property="og:description" content="クイズ2：プルリクエストエージェントの統合｜MCP コース（Model Context Protocol を学ぶコース）の日本語訳ページ。Hugging Face 公式コースの内容を日本語で学べます。">
+<meta property="og:description" content="クイズ2：プルリクエストエージェントの統合｜MCP コース（Model Context Protocol を学ぶコース）の日本語訳。MCP クライアントの統合や Webhook の処理をはじめ、プルリクエストエージェントのシステム全体について理解度を確認しましょう。">
+<meta property="og:image" content="https://yanikasumin.github.io/HuggingFace-courses-ja/og-mcp.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="クイズ2：プルリクエストエージェントの統合 | Hugging Face 学習コース日本語版">
+<meta name="google-site-verification" content="A8PVY1lQPEN4macCCmGuTad7GqnBmMgMo1SRR3C320c">
 <meta property="og:type" content="article">
 <meta property="og:url" content="https://yanikasumin.github.io/HuggingFace-courses-ja/mcp/unit3_1/quiz2.html">
 <meta property="og:site_name" content="Hugging Face 学習コース日本語版">
 <meta property="og:locale" content="ja_JP">
-<meta name="twitter:card" content="summary">
+<meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:title" content="クイズ2：プルリクエストエージェントの統合 | Hugging Face 学習コース日本語版">
-<meta name="twitter:description" content="クイズ2：プルリクエストエージェントの統合｜MCP コース（Model Context Protocol を学ぶコース）の日本語訳ページ。Hugging Face 公式コースの内容を日本語で学べます。">
+<meta name="twitter:description" content="クイズ2：プルリクエストエージェントの統合｜MCP コース（Model Context Protocol を学ぶコース）の日本語訳。MCP クライアントの統合や Webhook の処理をはじめ、プルリクエストエージェントのシステム全体について理解度を確認しましょう。">
+<meta name="twitter:image" content="https://yanikasumin.github.io/HuggingFace-courses-ja/og-mcp.png">
+<link rel="icon" type="image/svg+xml" href="https://yanikasumin.github.io/HuggingFace-courses-ja/favicon.svg">
+<link rel="icon" type="image/png" sizes="32x32" href="https://yanikasumin.github.io/HuggingFace-courses-ja/favicon-32.png">
+<link rel="apple-touch-icon" sizes="180x180" href="https://yanikasumin.github.io/HuggingFace-courses-ja/apple-touch-icon.png">
+<link rel="manifest" href="https://yanikasumin.github.io/HuggingFace-courses-ja/site.webmanifest">
+<meta name="theme-color" content="#0B0F19">
 <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-1676481412757711" crossorigin="anonymous"></script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -103,85 +114,85 @@ window.MathJax = { tex: { inlineMath: [['$', '$'], ['\\(', '\\)']], displayMath:
 <div class="quiz">
 <div class="quiz-choices">
 <button type="button" class="quiz-choice" data-correct="false" data-quiz-idx="0">プルリクエストを管理するためのユーザーインターフェースを提供すること</button>
-<div class="quiz-explain-src" id="qe-123146990487040-0" hidden>Webhook リスナーが扱うのは GitHub のイベントであり、ユーザーインターフェースではありません。</div>
+<div class="quiz-explain-src" id="qe-128814915015424-0" hidden>Webhook リスナーが扱うのは GitHub のイベントであり、ユーザーインターフェースではありません。</div>
 <button type="button" class="quiz-choice" data-correct="true" data-quiz-idx="1">Hugging Face Hub のディスカッションコメントイベントをリアルタイムで受信し処理すること</button>
-<div class="quiz-explain-src" id="qe-123146990487040-1" hidden>正解です！ Webhook リスナーは Hub のディスカッションイベントに応答して、エージェントのアクションを起動します。</div>
+<div class="quiz-explain-src" id="qe-128814915015424-1" hidden>正解です！ Webhook リスナーは Hub のディスカッションイベントに応答して、エージェントのアクションを起動します。</div>
 <button type="button" class="quiz-choice" data-correct="false" data-quiz-idx="2">プルリクエストのデータをデータベースに永続的に保存すること</button>
-<div class="quiz-explain-src" id="qe-123146990487040-2" hidden>PR データを処理することはあっても、主な役割はイベント処理であり、保存ではありません。</div>
+<div class="quiz-explain-src" id="qe-128814915015424-2" hidden>PR データを処理することはあっても、主な役割はイベント処理であり、保存ではありません。</div>
 <button type="button" class="quiz-choice" data-correct="false" data-quiz-idx="3">Hugging Face Hub でユーザーを認証すること</button>
-<div class="quiz-explain-src" id="qe-123146990487040-3" hidden>Webhook リスナーが扱うのはイベントであり、ユーザー認証ではありません。</div>
+<div class="quiz-explain-src" id="qe-128814915015424-3" hidden>Webhook リスナーが扱うのはイベントであり、ユーザー認証ではありません。</div>
 </div><div class="quiz-feedback" hidden></div></div>
 <h3>Q2：エージェントベースの MCP クライアントの実装では、クライアントはどのように MCP サーバーに接続しますか？</h3>
 <div class="quiz">
 <div class="quiz-choices">
 <button type="button" class="quiz-choice" data-correct="false" data-quiz-idx="0">同じプロセス内での直接の関数呼び出しで</button>
-<div class="quiz-explain-src" id="qe-123146990301696-0" hidden>Agent が使うのはサブプロセス通信であり、直接の関数呼び出しではありません。</div>
+<div class="quiz-explain-src" id="qe-128814916616128-0" hidden>Agent が使うのはサブプロセス通信であり、直接の関数呼び出しではありません。</div>
 <button type="button" class="quiz-choice" data-correct="true" data-quiz-idx="1">MCP サーバーをサブプロセスとして起動し、stdio 接続で通信する</button>
-<div class="quiz-explain-src" id="qe-123146990301696-1" hidden>正解です！ Agent は 'python mcp_server.py' で MCP サーバーを起動し、stdin/stdout を通じて通信します。</div>
+<div class="quiz-explain-src" id="qe-128814916616128-1" hidden>正解です！ Agent は 'python mcp_server.py' で MCP サーバーを起動し、stdin/stdout を通じて通信します。</div>
 <button type="button" class="quiz-choice" data-correct="false" data-quiz-idx="2">共有ディレクトリにファイルを書き込むことで</button>
-<div class="quiz-explain-src" id="qe-123146990301696-2" hidden>MCP はリアルタイム通信を使い、ファイルベースの通信は使いません。</div>
+<div class="quiz-explain-src" id="qe-128814916616128-2" hidden>MCP はリアルタイム通信を使い、ファイルベースの通信は使いません。</div>
 <button type="button" class="quiz-choice" data-correct="false" data-quiz-idx="3">HTTP REST API 呼び出しを通じて</button>
-<div class="quiz-explain-src" id="qe-123146990301696-3" hidden>stdio 接続タイプは HTTP を使わず、標準入出力ストリームを使います。</div>
+<div class="quiz-explain-src" id="qe-128814916616128-3" hidden>stdio 接続タイプは HTTP を使わず、標準入出力ストリームを使います。</div>
 </div><div class="quiz-feedback" hidden></div></div>
 <h3>Q3：Webhook ハンドラーは、なぜリクエストを同期的に処理せず FastAPI の <code>background_tasks.add_task()</code> を使うのですか？</h3>
 <div class="quiz">
 <div class="quiz-choices">
 <button type="button" class="quiz-choice" data-correct="false" data-quiz-idx="0">サーバーのメモリ使用量を減らすため</button>
-<div class="quiz-explain-src" id="qe-123146990487040-0" hidden>バックグラウンドタスクがメモリ使用量を減らすとは限りません。</div>
+<div class="quiz-explain-src" id="qe-128814915015424-0" hidden>バックグラウンドタスクがメモリ使用量を減らすとは限りません。</div>
 <button type="button" class="quiz-choice" data-correct="false" data-quiz-idx="1">Hugging Face Hub の要件に従うため</button>
-<div class="quiz-explain-src" id="qe-123146990487040-1" hidden>Hub は迅速な応答を期待しますが、これは Hub 固有の要件ではありません。</div>
+<div class="quiz-explain-src" id="qe-128814915015424-1" hidden>Hub は迅速な応答を期待しますが、これは Hub 固有の要件ではありません。</div>
 <button type="button" class="quiz-choice" data-correct="true" data-quiz-idx="2">複雑なタグ処理をバックグラウンドで行いながら、応答を素早く（10秒以内に）返すため</button>
-<div class="quiz-explain-src" id="qe-123146990487040-2" hidden>正解です！ Webhook エンドポイントは素早く応答しなければ、送信側プラットフォームに失敗とみなされます。</div>
+<div class="quiz-explain-src" id="qe-128814915015424-2" hidden>正解です！ Webhook エンドポイントは素早く応答しなければ、送信側プラットフォームに失敗とみなされます。</div>
 <button type="button" class="quiz-choice" data-correct="false" data-quiz-idx="3">複数の Webhook リクエストを並行に処理できるようにするため</button>
-<div class="quiz-explain-src" id="qe-123146990487040-3" hidden>並行処理も可能になりますが、主な理由は応答時間の要件です。</div>
+<div class="quiz-explain-src" id="qe-128814915015424-3" hidden>並行処理も可能になりますが、主な理由は応答時間の要件です。</div>
 </div><div class="quiz-feedback" hidden></div></div>
 <h3>Q4：Webhook ハンドラーで <code>X-Webhook-Secret</code> ヘッダーを検証する目的は何ですか？</h3>
 <div class="quiz">
 <div class="quiz-choices">
 <button type="button" class="quiz-choice" data-correct="false" data-quiz-idx="0">どのリポジトリが Webhook を送ったかを特定すること</button>
-<div class="quiz-explain-src" id="qe-123146990301696-0" hidden>リポジトリの情報は Webhook のペイロードから得られるもので、シークレットヘッダーからではありません。</div>
+<div class="quiz-explain-src" id="qe-128814916616128-0" hidden>リポジトリの情報は Webhook のペイロードから得られるもので、シークレットヘッダーからではありません。</div>
 <button type="button" class="quiz-choice" data-correct="true" data-quiz-idx="1">不正なリクエストを防ぎ、Webhook が Hugging Face からの正当なものであることを保証すること</button>
-<div class="quiz-explain-src" id="qe-123146990301696-1" hidden>正解です！ 共有シークレットは、Hugging Face とアプリケーションの間の認証として機能します。</div>
+<div class="quiz-explain-src" id="qe-128814916616128-1" hidden>正解です！ 共有シークレットは、Hugging Face とアプリケーションの間の認証として機能します。</div>
 <button type="button" class="quiz-choice" data-correct="false" data-quiz-idx="2">Webhook のペイロードデータをデコードすること</button>
-<div class="quiz-explain-src" id="qe-123146990301696-2" hidden>シークレットは認証のためのもので、ペイロードデータのデコードのためではありません。</div>
+<div class="quiz-explain-src" id="qe-128814916616128-2" hidden>シークレットは認証のためのもので、ペイロードデータのデコードのためではありません。</div>
 <button type="button" class="quiz-choice" data-correct="false" data-quiz-idx="3">どの MCP ツールを使うかを決めること</button>
-<div class="quiz-explain-src" id="qe-123146990301696-3" hidden>ツールの選択は Webhook の内容に基づくもので、シークレットヘッダーに基づくものではありません。</div>
+<div class="quiz-explain-src" id="qe-128814916616128-3" hidden>ツールの選択は Webhook の内容に基づくもので、シークレットヘッダーに基づくものではありません。</div>
 </div><div class="quiz-feedback" hidden></div></div>
 <h3>Q5：Agent の実装では、<code>await agent_instance.load_tools()</code> が呼ばれると何が起きますか？</h3>
 <div class="quiz">
 <div class="quiz-choices">
 <button type="button" class="quiz-choice" data-correct="false" data-quiz-idx="0">Hugging Face Hub からツールをダウンロードする</button>
-<div class="quiz-explain-src" id="qe-123146990487040-0" hidden>ツールはローカルの MCP サーバーのものであり、Hub からダウンロードされるものではありません。</div>
+<div class="quiz-explain-src" id="qe-128814915015424-0" hidden>ツールはローカルの MCP サーバーのものであり、Hub からダウンロードされるものではありません。</div>
 <button type="button" class="quiz-choice" data-correct="true" data-quiz-idx="1">接続したサーバーの MCP ツール（get_current_tags と add_new_tag）を発見し、利用可能にする</button>
-<div class="quiz-explain-src" id="qe-123146990487040-1" hidden>正解です！ MCP サーバーが提供するツールを発見し、エージェントの推論エンジンから使えるようにします。</div>
+<div class="quiz-explain-src" id="qe-128814915015424-1" hidden>正解です！ MCP サーバーが提供するツールを発見し、エージェントの推論エンジンから使えるようにします。</div>
 <button type="button" class="quiz-choice" data-correct="false" data-quiz-idx="2">FastAPI の Webhook サーバーを起動する</button>
-<div class="quiz-explain-src" id="qe-123146990487040-2" hidden>load_tools() は MCP ツールの発見専用のもので、Web サーバーの起動とは関係ありません。</div>
+<div class="quiz-explain-src" id="qe-128814915015424-2" hidden>load_tools() は MCP ツールの発見専用のもので、Web サーバーの起動とは関係ありません。</div>
 <button type="button" class="quiz-choice" data-correct="false" data-quiz-idx="3">Hugging Face API で認証を行う</button>
-<div class="quiz-explain-src" id="qe-123146990487040-3" hidden>認証はエージェントの作成時に行われるもので、ツールの読み込み時ではありません。</div>
+<div class="quiz-explain-src" id="qe-128814915015424-3" hidden>認証はエージェントの作成時に行われるもので、ツールの読み込み時ではありません。</div>
 </div><div class="quiz-feedback" hidden></div></div>
 <h3>Q6：自然言語の指示を処理するとき、Agent はどのように MCP ツールを賢く使いますか？</h3>
 <div class="quiz">
 <div class="quiz-choices">
 <button type="button" class="quiz-choice" data-correct="false" data-quiz-idx="0">うまくいくまで、利用可能なツールをランダムに呼び出す</button>
-<div class="quiz-explain-src" id="qe-123146990301696-0" hidden>Agent は推論を使って、どのツールをどの順序で呼ぶかを判断します。</div>
+<div class="quiz-explain-src" id="qe-128814916616128-0" hidden>Agent は推論を使って、どのツールをどの順序で呼ぶかを判断します。</div>
 <button type="button" class="quiz-choice" data-correct="false" data-quiz-idx="1">常に最初に get_current_tags を呼び、次に add_new_tag を呼び出す</button>
-<div class="quiz-explain-src" id="qe-123146990301696-1" hidden>よくあるパターンではありますが、Agent は指示に基づいて使うツールを推論します。</div>
+<div class="quiz-explain-src" id="qe-128814916616128-1" hidden>よくあるパターンではありますが、Agent は指示に基づいて使うツールを推論します。</div>
 <button type="button" class="quiz-choice" data-correct="true" data-quiz-idx="2">指示について推論し、どのツールをどの順序で呼ぶかを判断する</button>
-<div class="quiz-explain-src" id="qe-123146990301696-2" hidden>正解です！ Agent は複雑な指示を理解し、ツールの実行計画を自動で立てられます。</div>
+<div class="quiz-explain-src" id="qe-128814916616128-2" hidden>正解です！ Agent は複雑な指示を理解し、ツールの実行計画を自動で立てられます。</div>
 <button type="button" class="quiz-choice" data-correct="false" data-quiz-idx="3">指示の中で明示的な関数呼び出しが指定されている必要がある</button>
-<div class="quiz-explain-src" id="qe-123146990301696-3" hidden>Agent は、明示的な関数の指定がない自然言語の指示でも動作します。</div>
+<div class="quiz-explain-src" id="qe-128814916616128-3" hidden>Agent は、明示的な関数の指定がない自然言語の指示でも動作します。</div>
 </div><div class="quiz-feedback" hidden></div></div>
 <h3>Q7：Webhook イベントがタグ処理を起動すべきかどうかは、どんなフィルタリングロジックで決まりますか？</h3>
 <div class="quiz">
 <div class="quiz-choices">
 <button type="button" class="quiz-choice" data-correct="false" data-quiz-idx="0">すべての Webhook イベントが種類を問わず処理される</button>
-<div class="quiz-explain-src" id="qe-123146990487040-0" hidden>ハンドラーはイベントをフィルタリングし、関連するものだけを処理します。</div>
+<div class="quiz-explain-src" id="qe-128814915015424-0" hidden>ハンドラーはイベントをフィルタリングし、関連するものだけを処理します。</div>
 <button type="button" class="quiz-choice" data-correct="true" data-quiz-idx="1">action='create' かつ scope='discussion.comment' のイベントのみ</button>
-<div class="quiz-explain-src" id="qe-123146990487040-1" hidden>正解です！ これにより、新しいディスカッションコメントだけを処理し、他の Hub イベントは無視できます。</div>
+<div class="quiz-explain-src" id="qe-128814915015424-1" hidden>正解です！ これにより、新しいディスカッションコメントだけを処理し、他の Hub イベントは無視できます。</div>
 <button type="button" class="quiz-choice" data-correct="false" data-quiz-idx="2">検証済みのリポジトリオーナーからのイベントのみ</button>
-<div class="quiz-explain-src" id="qe-123146990487040-2" hidden>フィルタリングはイベントの種類に基づくもので、ユーザーの検証ステータスに基づくものではありません。</div>
+<div class="quiz-explain-src" id="qe-128814915015424-2" hidden>フィルタリングはイベントの種類に基づくもので、ユーザーの検証ステータスに基づくものではありません。</div>
 <button type="button" class="quiz-choice" data-correct="false" data-quiz-idx="3">コメントに 'tag' という単語を含むイベントのみ</button>
-<div class="quiz-explain-src" id="qe-123146990487040-3" hidden>イベントのフィルタリングは内容の分析より前に行われます。まずイベントの種類で絞り込みます。</div>
+<div class="quiz-explain-src" id="qe-128814915015424-3" hidden>イベントのフィルタリングは内容の分析より前に行われます。まずイベントの種類で絞り込みます。</div>
 </div><div class="quiz-feedback" hidden></div></div>
 <p>クイズはこれで終了です。お疲れさまでした！ 🥳 復習したい項目があれば、この章に戻って理解を深めましょう。 </p>
 </article>
