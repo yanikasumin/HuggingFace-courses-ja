@@ -9,6 +9,7 @@
 <link rel="canonical" href="https://yanikasumin.github.io/HuggingFace-courses-ja/llm/chapter1/9.html">
 <meta property="og:title" content="バイアスと限界 | Hugging Face 学習コース日本語版">
 <meta property="og:description" content="バイアスと限界｜LLM コース（大規模言語モデルと Transformers を学ぶコース）の日本語訳ページ。Hugging Face 公式コースの内容を日本語で学べます。">
+<meta name="google-site-verification" content="A8PVY1lQPEN4macCCmGuTad7GqnBmMgMo1SRR3C320c">
 <meta property="og:type" content="article">
 <meta property="og:url" content="https://yanikasumin.github.io/HuggingFace-courses-ja/llm/chapter1/9.html">
 <meta property="og:site_name" content="Hugging Face 学習コース日本語版">
@@ -193,7 +194,7 @@ window.MathJax = { tex: { inlineMath: [['$', '$'], ['\\(', '\\)']], displayMath:
 <nav class="page-nav"><a class="nav-link prev" href="8.html">← 前へ: LLM のテキスト生成と推論を深く掘り下げる</a><a class="nav-link toc-link" href="../index.html">目次へ</a><a class="nav-link next" href="10.html">次へ →: まとめ</a></nav>
 <article class="content">
 <h1>バイアスと限界</h1>
-<p>事前学習済みモデルやそのファインチューニング版を本番環境で使おうと考えているなら、これらのモデルは強力なツールである一方で、限界も伴うことを意識しておいてください。最大の限界は、事前学習の進め方にあります。大量のデータで事前学習できるようにするため、研究者は見つけられるコンテンツをすべてかき集めることが多く、インターネット上にある最良のものも最悪のものも取り込んでしまうのです。</p>
+<p>事前学習済みモデルやファインチューニング済みモデルを本番環境で使う場合は、その限界にも注意が必要です。とりわけ問題になるのが、事前学習に使うデータの集め方です。大量のデータを確保するため、研究者はインターネット上で見つかる情報をできるだけ幅広く収集します。その結果、質の高い情報だけでなく、不適切な内容も学習データに混ざることがあります。</p>
 <p>簡単な例として、BERT モデルを使った <code>fill-mask</code> パイプラインの例に戻りましょう。</p>
 <div class="codehilite"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">transformers</span><span class="w"> </span><span class="kn">import</span> <span class="n">pipeline</span>
 
@@ -209,7 +210,7 @@ window.MathJax = { tex: { inlineMath: [['$', '$'], ['\\(', '\\)']], displayMath:
 ['lawyer', 'carpenter', 'doctor', 'waiter', 'mechanic']
 ['nurse', 'waitress', 'teacher', 'maid', 'prostitute']</code></p>
 <p>これら2つの文の空欄を埋めるよう求められたとき、モデルが返す答えのうちジェンダーフリーなものは1つだけです（waiter/waitress）。それ以外は、通常はどちらか一方のジェンダーと結びつけられる職業です。実際に、"woman"（女性）と "work"（仕事）に対する上位5候補の中に、prostitute（売春婦）が入ってしまいました。BERT は、インターネット中からデータをかき集めて作られたわけではない、数少ない Transformer モデルの1つです。一見中立的なデータ（<a href="https://huggingface.co/datasets/wikipedia">英語版 Wikipedia</a>と <a href="https://huggingface.co/datasets/bookcorpus">BookCorpus</a> データセット）で学習されているにもかかわらず、こうした結果になってしまうのです。</p>
-<p>従って、これらのツールを使うときは、使っている元のモデルが、性差別的、人種差別的、あるいは同性愛嫌悪的なコンテンツを非常にたやすく生成しうるということを、念頭に置いておく必要があります。自分のデータでモデルをファインチューニングしても、この本質的なバイアスが消えることはありません。</p>
+<p>従って、これらのツールを使う際は、元のモデルが性差別的・人種差別的・同性愛嫌悪的な内容を容易に生成してしまう可能性があることを忘れないでください。自分のデータでモデルをファインチューニングしても、この本質的なバイアスが消えることはありません。</p>
 </article>
 
 <nav class="page-nav"><a class="nav-link prev" href="8.html">← 前へ: LLM のテキスト生成と推論を深く掘り下げる</a><a class="nav-link toc-link" href="../index.html">目次へ</a><a class="nav-link next" href="10.html">次へ →: まとめ</a></nav>
