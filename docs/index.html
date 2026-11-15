@@ -109,15 +109,99 @@ window.MathJax = { tex: { inlineMath: [['$', '$'], ['\\(', '\\)']], displayMath:
 <li><strong>分からない言葉は用語集で</strong>：コースごとに、日本語版独自の用語集を用意しています。本文の検索も、ページ上部の検索窓からできます。</li>
 </ol>
 <h2>翻訳方法</h2>
-<p>翻訳は、次の方法で行いました。</p>
+<p>この翻訳は、翻訳エージェント（Muse）、審査役（ChatGPT）、翻訳者（霞ヶ関京）の3者で工程を分担し、単元ごとに「翻訳 → レビュー → 照合と修正 → 再チェック」を繰り返して作りました。機械翻訳の出力をそのまま載せるのではなく、指摘と照合の往復で一文ずつ確定していく方法です。</p>
+<div class="process-diagram"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 760 668" role="img" aria-label="翻訳プロセスの図">
+  <style>
+    .box { fill: #161d2e; stroke: #2c3a52; stroke-width: 1.2; rx: 10; }
+    .t { fill: #e6ebf2; font-size: 15px; font-weight: 700; font-family: "Hiragino Kaku Gothic ProN", "Noto Sans JP", sans-serif; }
+    .d { fill: #9fb0c3; font-size: 11.5px; font-family: "Hiragino Kaku Gothic ProN", "Noto Sans JP", sans-serif; }
+    .chip { font-size: 11px; font-weight: 700; font-family: "Hiragino Kaku Gothic ProN", "Noto Sans JP", sans-serif; }
+    .arrow { stroke: #5b6b84; stroke-width: 1.6; fill: none; marker-end: url(#ah); }
+    .loop { stroke: #ffd21e; stroke-width: 1.6; fill: none; stroke-dasharray: 5 4; marker-end: url(#ahy); }
+    .loopt { fill: #ffd21e; font-size: 11px; font-family: "Hiragino Kaku Gothic ProN", "Noto Sans JP", sans-serif; }
+  </style>
+  <defs>
+    <marker id="ah" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto"><path d="M0,0 L7,3 L0,6 Z" fill="#5b6b84"/></marker>
+    <marker id="ahy" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto"><path d="M0,0 L7,3 L0,6 Z" fill="#ffd21e"/></marker>
+  </defs>
+
+  <!-- 1 -->
+  <rect class="box" x="90" y="10" width="560" height="66" rx="10"/>
+  <text class="t" x="112" y="38">1. 原典の固定</text>
+  <text class="d" x="112" y="60">英語版リポジトリを特定のコミットに固定し、翻訳対象の版を確定する</text>
+  <rect x="556" y="24" width="76" height="20" rx="10" fill="#1d2f4d"/><text class="chip" x="594" y="38" text-anchor="middle" fill="#7fb2f0">Muse</text>
+
+  <line class="arrow" x1="370" y1="76" x2="370" y2="102"/>
+
+  <!-- 2 -->
+  <rect class="box" x="90" y="104" width="560" height="66" rx="10"/>
+  <text class="t" x="112" y="132">2. 翻訳</text>
+  <text class="d" x="112" y="154">全セクションを翻訳する。コード・数式・数値・URL は原文のまま保持する</text>
+  <rect x="556" y="118" width="76" height="20" rx="10" fill="#1d2f4d"/><text class="chip" x="594" y="132" text-anchor="middle" fill="#7fb2f0">Muse</text>
+
+  <line class="arrow" x1="370" y1="170" x2="370" y2="196"/>
+
+  <!-- 3 -->
+  <rect class="box" x="90" y="198" width="560" height="66" rx="10"/>
+  <text class="t" x="112" y="226">3. レビュー</text>
+  <text class="d" x="112" y="248">単元ごとに審査する。基準は自然さ、意味の誤り、用語と表記、日本語向けの組版</text>
+  <rect x="544" y="212" width="88" height="20" rx="10" fill="#173a2e"/><text class="chip" x="588" y="226" text-anchor="middle" fill="#7fd1ae">ChatGPT</text>
+
+  <line class="arrow" x1="370" y1="264" x2="370" y2="290"/>
+
+  <!-- 4 -->
+  <rect class="box" x="90" y="292" width="560" height="66" rx="10"/>
+  <text class="t" x="112" y="320">4. 照合と修正</text>
+  <text class="d" x="112" y="342">指摘を実ファイルと原典で1件ずつ照合してから直す。裏付けのない指摘は適用しない</text>
+  <rect x="556" y="306" width="76" height="20" rx="10" fill="#1d2f4d"/><text class="chip" x="594" y="320" text-anchor="middle" fill="#7fb2f0">Muse</text>
+
+  <line class="arrow" x1="370" y1="358" x2="370" y2="384"/>
+
+  <!-- 5 -->
+  <rect class="box" x="90" y="386" width="560" height="66" rx="10"/>
+  <text class="t" x="112" y="414">5. 機械検証</text>
+  <text class="d" x="112" y="436">コード・リンク・アンカー・画像が原典と一致しているかを自動で照合する</text>
+  <rect x="556" y="400" width="76" height="20" rx="10" fill="#1d2f4d"/><text class="chip" x="594" y="414" text-anchor="middle" fill="#7fb2f0">Muse</text>
+
+  <line class="arrow" x1="370" y1="452" x2="370" y2="478"/>
+
+  <!-- 6 -->
+  <rect class="box" x="90" y="480" width="560" height="66" rx="10"/>
+  <text class="t" x="112" y="508">6. 再チェック</text>
+  <text class="d" x="112" y="530">修正後の文を再び審査し、合格かどうかを判定する</text>
+  <rect x="544" y="494" width="88" height="20" rx="10" fill="#173a2e"/><text class="chip" x="588" y="508" text-anchor="middle" fill="#7fd1ae">ChatGPT</text>
+
+  <!-- loop: 6 -> 4 -->
+  <path class="loop" d="M650,513 L688,513 L688,325 L658,325"/>
+  <text class="loopt" x="694" y="404">不合格なら</text>
+  <text class="loopt" x="694" y="420">修正へ戻る</text>
+
+  <line class="arrow" x1="370" y1="546" x2="370" y2="572"/>
+
+  <!-- 7 -->
+  <rect class="box" x="90" y="574" width="560" height="66" rx="10"/>
+  <text class="t" x="112" y="602">7. 公開</text>
+  <text class="d" x="112" y="624">合格した文をサイトに反映して公開する。文体や用語の最終判断は翻訳者が行う</text>
+  <rect x="544" y="588" width="88" height="20" rx="10" fill="#4d3d05"/><text class="chip" x="588" y="602" text-anchor="middle" fill="#ffd21e">霞ヶ関京</text>
+</svg>
+</div>
+<h3>工程の詳細</h3>
+<ol class="howto">
+<li><strong>原典の固定（Muse）</strong>：各コースの英語版リポジトリを特定のコミットに固定し、翻訳対象の版を確定しました。固定したコミットは、コースごとにリポジトリの README に記載しています。原典が後から更新されても、翻訳の基準がぶれないようにするためです。</li>
+<li><strong>翻訳（Muse）</strong>：全316セクションを翻訳しました。見出しのアンカー、コード、数式、数値、URL、データは原文のまま保持し、本文と画面表示のラベルを訳します。モデルへの入力文のように「データ」として扱うべき英文は訳しません。</li>
+<li><strong>レビュー（ChatGPT）</strong>：翻訳文を単元ごとにまとめ、ChatGPT の思考モードで審査しました。審査基準は、(1) 日本語の自然さ（『とほほのWWW入門』のような平易な解説文が手本）、(2) 意味の誤り、(3) 用語と表記、(4) 改行や記号の配置など日本語読者向けの組版、の4点です。指摘は、対象ファイルと行番号、現在の文の正確な引用、問題点、修正案の全文をセットで出させました。</li>
+<li><strong>照合と修正（Muse）</strong>：レビューの指摘は、そのままでは適用しません。1件ずつ実ファイルで引用が実在するかを確認し、原典と突き合わせてから修正しました。引用が実在しない指摘や、原典の内容と合わない修正案は、根拠がないものとして適用せず、審査側に再提示を求めました。</li>
+<li><strong>機械検証（Muse）</strong>：修正のたびに、コード・リンク・アンカー・画像が原典と一致しているかを自動で照合し、翻訳の過程で文書の構造が壊れていないことを確認しました。</li>
+<li><strong>再チェック（ChatGPT）</strong>：修正後の文を再び審査し、指摘が解消したかを判定しました。合格にならない場合は「照合と修正」に戻り、解消するまで繰り返しました。意図的に原文どおり残した箇所（原典由来の表現など）は、その理由を添えて再チェックにかけています。</li>
+<li><strong>公開（霞ヶ関京）</strong>：合格した文をサイトに反映して公開しました。文体の方針、用語の採否、原典自体に誤りがある場合の扱い（勝手に直さず原文に忠実に訳す）など、判断が要る点は翻訳者が決めています。</li>
+</ol>
+<h3>役割分担</h3>
 <ul class="howto">
-<li><strong>原典の固定</strong>：各コースの原典（英語）リポジトリの版を特定のコミットに固定し、その版の全セクションを翻訳しました。固定したコミットは、コースごとにリポジトリの README に記載しています。</li>
-<li><strong>文体</strong>：原典の内容と情報量を損なわない範囲で、平易で分かりやすい解説文に整えました。手本にしたのは『とほほのWWW入門』のような、初学者に向けた平易な解説の文体です。英語の語順をそのまま移した文章ではなく、日本語として自然に読める語順と表現に直しています。</li>
-<li><strong>用語と表記</strong>：専門用語は、英語の資料や実務でもそのまま通用する表記に統一し、必要に応じて原語を併記しています。漢字で書くのが標準の語は漢字で書くなど、表記も日本語の慣例にそろえています。</li>
-<li><strong>変えないもの</strong>：コード、数式、数値、URL、データは原文のままにしています。画面に表示されるラベルや実行結果の例は、本文と対になるよう翻訳しています。一方、モデルへの入力文のように「データ」として扱うべき英文は、原文のまま残しています。</li>
-<li><strong>原典の誤り</strong>：原典自体に誤りがある箇所は、勝手に直さず原文に忠実に訳し、必要に応じてその旨を添えています。</li>
-<li><strong>照合</strong>：全ページについて、翻訳後に原典と照合し、内容の欠落や誤りがないかを確認しました。</li>
+<li><strong>Muse</strong>：翻訳の実務。翻訳、指摘の照合と修正、構造の機械検証、サイトの構築と公開作業を担当しました。</li>
+<li><strong>ChatGPT</strong>：第三者としての審査。翻訳者とは別の立場から、自然さと正確さを単元ごとにチェックしました。</li>
+<li><strong>霞ヶ関京</strong>：翻訳者。文体の方針（平易な解説文）、用語の採否、原典の誤りの扱いなど、工程全体の方針と最終判断を担当しました。</li>
 </ul>
+<p>公開後も、漢字と仮名の使い分けや改行の位置といった表記の整備を続けています。</p>
 <h2>このサイトについて</h2>
 <p>このサイトは、Hugging Face 公式コースの<strong>非公式の日本語訳</strong>です。原典は Hugging Face の各コースリポジトリ（Apache-2.0 ライセンス）で、翻訳は原典の内容に基づいて作成し、全ページを原典と照合して確認しています。原典がその後更新されている場合、最新の英語版と内容が異なることがあります。最新の内容は公式ページで確認してください。</p>
 
