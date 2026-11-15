@@ -98,7 +98,7 @@ window.MathJax = { tex: { inlineMath: [['$', '$'], ['\\(', '\\)']], displayMath:
 <nav class="page-nav"><a class="nav-link prev" href="tiny-agents.html">← 前へ: Hugging Face Hub と MCP で Tiny Agents を構築する</a><a class="nav-link toc-link" href="../index.html">目次へ</a><a class="nav-link next" href="../unit3/introduction.html">次へ →: MCP 開発応用編：Claude Code 向けカスタムワークフローサーバーの構築</a></nav>
 <article class="content">
 <h1>AMD NPU と iGPU アクセラレーションによるローカル Tiny Agents</h1>
-<p>このセクションでは、AMD のニューラルプロセッシングユニット（NPU）と統合 GPU（iGPU）を使い、エンドツーエンドの Tiny Agents アプリケーションを高速化する方法を紹介します。さらに、ローカルファイルを操作し、機密情報をデバイス内で処理できるアシスタントを作成します。これにより、アプリケーションの機能を広げながら、プライバシーを最大限に保護します。</p>
+<p>このセクションでは、AMD のニューラルプロセッシングユニット（NPU）と統合 GPU（iGPU）を使い、エンドツーエンドの Tiny Agents アプリケーションを高速化する方法を紹介します。更に、ローカルファイルを操作し、機密情報をデバイス内で処理できるアシスタントを作成します。これにより、アプリケーションの機能を広げながら、プライバシーを最大限に保護します。</p>
 <p>そのために、NPU と iGPU による高速化に対応し、モデルをローカルで実行できる Lemonade Server を使います。</p>
 <h2>セットアップ</h2>
 <h3>Lemonade Server のセットアップ</h3>
@@ -170,7 +170,7 @@ Lemonade Server は、Windows x86/x64 上のすべてのプラットフォーム
 </div>
 
 <h3>Tiny Agents と npx のセットアップ</h3>
-<p>このセクションでは、<code>npx</code> と Tiny Agents がすでにインストールされていることを前提とします。まだインストールしていない場合は、このコースの <a href="https://huggingface.co/learn/mcp-course/en/unit2/tiny-agents">Tiny Agents</a> のセクションを参照してください。また、<code>huggingface_hub[mcp]==0.33.2</code> を使用してください。</p>
+<p>このセクションでは、<code>npx</code> と Tiny Agents が既にインストールされていることを前提とします。まだインストールしていない場合は、このコースの <a href="https://huggingface.co/learn/mcp-course/en/unit2/tiny-agents">Tiny Agents</a> のセクションを参照してください。また、<code>huggingface_hub[mcp]==0.33.2</code> を使用してください。</p>
 <h2>AMD NPU と iGPU で Tiny Agents アプリケーションを実行する</h2>
 <p>AMD NPU と iGPU で Tiny Agents アプリケーションを実行するには、<a href="https://huggingface.co/learn/mcp-course/en/unit2/tiny-agents">前のセクション</a> で作成した MCP サーバーを、次に示すように Lemonade Server に向けるだけです。</p>
 <div class="hfoptions">
@@ -224,7 +224,7 @@ Lemonade Server は、Windows x86/x64 上のすべてのプラットフォーム
 </section>
 </div>
 
-<p>続いて、ローカルで実行するモデルを選びます。利用できるモデルにはさまざまな種類がありますが、ここでは Vulkan を使って AMD GPU 上で効率よく動作する <a href="https://huggingface.co/Qwen/Qwen3-8B-GGUF"><code>Qwen3-8B-GGUF</code></a> を使用しました。対応モデルの一覧を確認したり、自分のモデルを追加したりするには、http://localhost:8000/#model-management にアクセスしてください。</p>
+<p>続いて、ローカルで実行するモデルを選びます。利用できるモデルには様々な種類がありますが、ここでは Vulkan を使って AMD GPU 上で効率よく動作する <a href="https://huggingface.co/Qwen/Qwen3-8B-GGUF"><code>Qwen3-8B-GGUF</code></a> を使用しました。対応モデルの一覧を確認したり、自分のモデルを追加したりするには、http://localhost:8000/#model-management にアクセスしてください。</p>
 <h2>機密情報をローカルで処理するアシスタントを作成する</h2>
 <p><img alt="Lemonade Server のインターフェース" src="https://raw.githubusercontent.com/lemonade-sdk/assets/refs/heads/main/huggingface_course/hf_lemonade.png" /></p>
 <p>次は、ローカルファイルにアクセスでき、機密情報をすべてデバイス内で処理するアシスタントを追加して、アプリケーションの機能を広げましょう。このアシスタントは、採用候補者の履歴書を評価し、採用時の意思決定を支援します。データを外部に送らず、プライバシーと安全性を保ちながら処理することを目指します。</p>
@@ -469,7 +469,7 @@ Best regards,
 <p>比較的短いコンテキストで動作し、NPU と iGPU による高速化を活用できる Windows アプリケーションには、Lemonade Server の Hybrid モデルを試せます。これらのモデルは AMD Ryzen AI 300 シリーズの PC 向けに最適化されています。たとえば、<code>Llama-xLAM-2-8b-fc-r-Hybrid</code> はツール呼び出し用に特別にファインチューニングされており、高速で応答性のよい動作が期待できます。</p>
 <h2>まとめ</h2>
 <p>このユニットでは、AMD NPU と iGPU を使ってエンドツーエンドの Tiny Agents アプリケーションを高速化する方法を紹介しました。また、機密情報をローカルで処理するアシスタントを作成する方法も紹介しました。</p>
-<p>Lemonade Server をローカルモデルの高速化やプライバシー重視のアプリケーションに活用する方法を学んだので、<a href="https://github.com/lemonade-sdk/lemonade">Lemonade の GitHub リポジトリ</a> でさらに多くの例や機能を探ることができます。このリポジトリには追加のドキュメントや実装例が含まれており、コミュニティによって活発にメンテナンスされています。</p>
+<p>Lemonade Server をローカルモデルの高速化やプライバシー重視のアプリケーションに活用する方法を学んだので、<a href="https://github.com/lemonade-sdk/lemonade">Lemonade の GitHub リポジトリ</a> で更に多くの例や機能を探ることができます。このリポジトリには追加のドキュメントや実装例が含まれており、コミュニティによって活発にメンテナンスされています。</p>
 </article>
 
 <nav class="page-nav"><a class="nav-link prev" href="tiny-agents.html">← 前へ: Hugging Face Hub と MCP で Tiny Agents を構築する</a><a class="nav-link toc-link" href="../index.html">目次へ</a><a class="nav-link next" href="../unit3/introduction.html">次へ →: MCP 開発応用編：Claude Code 向けカスタムワークフローサーバーの構築</a></nav>

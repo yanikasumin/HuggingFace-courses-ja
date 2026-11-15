@@ -196,7 +196,7 @@ window.MathJax = { tex: { inlineMath: [['$', '$'], ['\\(', '\\)']], displayMath:
 <p>{#if fw === 'pt'}</p>
 <p>{:else}</p>
 <p>{/if}</p>
-<p>質問応答を見ていきましょう！このタスクにはさまざまな種類がありますが、このセクションで焦点を当てるのは <em>抽出型</em> の質問応答と呼ばれるものです。ドキュメントについて質問を投げかけ、その答えをドキュメント自体の中の <em>テキストの範囲（スパン）</em> として特定します。</p>
+<p>質問応答を見ていきましょう！このタスクには様々な種類がありますが、このセクションで焦点を当てるのは <em>抽出型</em> の質問応答と呼ばれるものです。ドキュメントについて質問を投げかけ、その答えをドキュメント自体の中の <em>テキストの範囲（スパン）</em> として特定します。</p>
 <div class="youtube-embed"><iframe src="https://www.youtube-nocookie.com/embed/ajPx5LwJD-I" title="YouTube video" loading="lazy" allowfullscreen referrerpolicy="strict-origin-when-cross-origin"></iframe></div>
 <p>クラウドワーカーが Wikipedia の記事の集合に対して作成した質問からなる <a href="https://rajpurkar.github.io/SQuAD-explorer/">SQuAD データセット</a> を使って、BERT モデルをファインチューニングします。これにより、次のような予測を計算できるモデルが得られます。</p>
 <iframe src="https://course-demos-bert-finetuned-squad.hf.space" frameBorder="0" height="450" title="Gradio アプリ" class="block dark:hidden container p-0 flex-grow space-iframe" allow="accelerometer; ambient-light-sensor; autoplay; battery; camera; document-domain; encrypted-media; fullscreen; geolocation; gyroscope; layout-animations; legacy-image-formats; magnetometer; microphone; midi; oversized-images; payment; picture-in-picture; publickey-credentials-get; sync-xhr; usb; vr ; wake-lock; xr-spatial-tracking" sandbox="allow-forms allow-modals allow-popups allow-popups-to-escape-sandbox allow-same-origin allow-scripts allow-downloads"></iframe>
@@ -359,7 +359,7 @@ for ids in inputs["input_ids"]:
 '[CLS] To whom did the Virgin Mary allegedly appear in 1858 in Lourdes France? [SEP] the Main Building and facing it, is a copper statue of Christ with arms upraised with the legend " Venite Ad Me Omnes ". Next to the Main Building is the Basilica of the Sacred Heart. Immediately behind the basilica is the Grotto, a Marian place of prayer and reflection. It is a replica of the grotto at Lourdes, France where the Virgin [SEP]'
 '[CLS] To whom did the Virgin Mary allegedly appear in 1858 in Lourdes France? [SEP] Next to the Main Building is the Basilica of the Sacred Heart. Immediately behind the basilica is the Grotto, a Marian place of prayer and reflection. It is a replica of the grotto at Lourdes, France where the Virgin Mary reputedly appeared to Saint Bernadette Soubirous in 1858. At the end of the main drive ( and in a direct line that connects through 3 [SEP]'
 '[CLS] To whom did the Virgin Mary allegedly appear in 1858 in Lourdes France? [SEP]. It is a replica of the grotto at Lourdes, France where the Virgin Mary reputedly appeared to Saint Bernadette Soubirous in 1858. At the end of the main drive ( and in a direct line that connects through 3 statues and the Gold Dome ), is a simple, modern stone statue of Mary. [SEP]'</p>
-<div class="codehilite"><pre><span></span><code>見てのとおり、この例は4つの入力に分割され、それぞれに質問とコンテキストの一部が含まれています。質問への答え（"Bernadette Soubirous"）は3番目と最後の入力にしか現れない点に注意してください。長いコンテキストをこの方法で扱うと、答えがコンテキストに含まれていない学習サンプルも生成されます。そうしたサンプルでは、ラベルは `start_position = end_position = 0` となります（つまり `[CLS]` トークンを予測します）。答えが切り捨てられて開始部分（または終了部分）しか残っていないという不運な場合も、これらのラベルを設定します。答えが完全にコンテキスト内に含まれるサンプルでは、ラベルは答えが始まるトークンのインデックスと、答えが終わるトークンのインデックスになります。
+<div class="codehilite"><pre><span></span><code>見てのとおり、この例は4つの入力に分割され、それぞれに質問とコンテキストの一部が含まれています。質問への答え（"Bernadette Soubirous"）は3番目と最後の入力にしか現れない点に注意してください。長いコンテキストをこの方法で扱うと、答えがコンテキストに含まれていない学習サンプルも生成されます。そうしたサンプルでは、ラベルは `start_position = end_position = 0` となります（つまり `[CLS]` トークンを予測します）。答えが切り捨てられて開始部分（又は終了部分）しか残っていないという不運な場合も、これらのラベルを設定します。答えが完全にコンテキスト内に含まれるサンプルでは、ラベルは答えが始まるトークンのインデックスと、答えが終わるトークンのインデックスになります。
 
 データセットは、コンテキスト内での答えの開始文字を提供してくれます。答えの長さを加えると、コンテキスト内での終了文字がわかります。これらをトークンのインデックスに対応付けるには、[Chapter 6](/course/chapter6/4) で学んだオフセットマッピングを使う必要があります。`return_offsets_mapping=True` を渡すことで、トークナイザにこれらを返させることができます。
 
@@ -1129,7 +1129,7 @@ eval_dataloader = DataLoader(
 
 <p>```python out
 'sgugger/bert-finetuned-squad-accelerate'</p>
-<div class="codehilite"><pre><span></span><code>次に、そのリポジトリをローカルフォルダにクローンできます。すでに存在する場合は、そのローカルフォルダは作業対象リポジトリのクローンである必要があります。
+<div class="codehilite"><pre><span></span><code>次に、そのリポジトリをローカルフォルダにクローンできます。既に存在する場合は、そのローカルフォルダは作業対象リポジトリのクローンである必要があります。
 
 ```py
 output_dir = "bert-finetuned-squad-accelerate"
@@ -1206,7 +1206,7 @@ repo = Repository(output_dir, clone_from=repo_name)
 <p>これが終わると、<code>Trainer</code> で学習したモデルとかなり似た結果を出すモデルが得られるはずです。このコードで学習したモデルは <a href="https://huggingface.co/huggingface-course/bert-finetuned-squad-accelerate"><em>huggingface-course/bert-finetuned-squad-accelerate</em></a> で確認できます。学習ループへの調整を試したい場合は、上のコードを編集して直接実装できます！</p>
 <p>{/if}</p>
 <h2>ファインチューニングしたモデルを使う</h2>
-<p>Model Hub 上でファインチューニングしたモデルを推論ウィジェットで使う方法はすでに示しました。ローカルで <code>pipeline</code> を使って推論するには、モデル識別子を指定するだけです。</p>
+<p>Model Hub 上でファインチューニングしたモデルを推論ウィジェットで使う方法は既に示しました。ローカルで <code>pipeline</code> を使って推論するには、モデル識別子を指定するだけです。</p>
 <div class="codehilite"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">transformers</span><span class="w"> </span><span class="kn">import</span> <span class="n">pipeline</span>
 
 <span class="c1"># これは自分のチェックポイントに置き換えてください</span>

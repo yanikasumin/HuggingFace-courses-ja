@@ -207,11 +207,10 @@ window.MathJax = { tex: { inlineMath: [['$', '$'], ['\\(', '\\)']], displayMath:
 <p>たとえば、<a href="2.html">前のセクション</a> で見たように、<code>inputs</code> パラメータに <code>"textbox"</code> を渡す代わりに、<code>Textbox(lines=7, label="Prompt")</code> コンポーネントを渡せば、7行のテキストボックスにラベルを付けられます。</p>
 <p>別の例として、今度は <code>Audio</code> コンポーネントを使った例を見てみましょう。</p>
 <h2>音声を使ったシンプルな例</h2>
-<p>前述のとおり、Gradio にはさまざまな入出力が用意されています。
-音声を扱う <code>Interface</code> を作ってみましょう。</p>
+<p>前述のとおり、Gradio には様々な入出力が用意されています。音声を扱う <code>Interface</code> を作ってみましょう。</p>
 <p>この例では、音声ファイルを受け取って単に逆再生する、音声入力・音声出力の関数を作ります。</p>
 <p>入力には <code>Audio</code> コンポーネントを使います。<code>Audio</code> コンポーネントでは、音声の <code>source</code> として、ユーザーがアップロードするファイルか、ユーザーが声を録音するマイクかを指定できます。ここでは <code>"microphone"</code> に設定しましょう。ついでに、<code>Audio</code> に "Speak here..." というラベルも付けてみます。</p>
-<p>さらに、音声を簡単に「逆再生」できるよう、numpy 配列として受け取りたいので、<code>"type"</code> を <code>"numpy"</code> に設定します。これにより、入力データは (<code>sample_rate</code>, <code>data</code>) のタプルとして関数に渡されます。</p>
+<p>更に、音声を簡単に「逆再生」できるよう、numpy 配列として受け取りたいので、<code>"type"</code> を <code>"numpy"</code> に設定します。これにより、入力データは (<code>sample_rate</code>, <code>data</code>) のタプルとして関数に渡されます。</p>
 <p>出力にも <code>Audio</code> コンポーネントを使います。これは、サンプルレートと numpy 配列のタプルを、再生可能な音声ファイルとして自動的にレンダリングしてくれます。今回はカスタマイズは不要なので、文字列ショートカットの <code>"audio"</code> を使います。</p>
 <div class="codehilite"><pre><span></span><code><span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">gradio</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">gr</span>
@@ -270,7 +269,7 @@ window.MathJax = { tex: { inlineMath: [['$', '$'], ['\\(', '\\)']], displayMath:
 <h3><code>launch()</code> メソッド</h3>
 <p>これまで <code>launch()</code> メソッドを使ってインターフェースを起動してきましたが、それが何をするのかはまだ説明していませんでした。</p>
 <p>デフォルトでは、<code>launch()</code> メソッドはローカルで動作する Web サーバー上でデモを起動します。Jupyter や Colab のノートブックでコードを実行している場合は、Gradio がデモの GUI をノートブック内に埋め込むので、簡単に使えます。</p>
-<p><code>launch()</code> の動作は、さまざまなパラメータでカスタマイズできます:</p>
+<p><code>launch()</code> の動作は、様々なパラメータでカスタマイズできます:</p>
 <ul>
 <li><code>inline</code> - Python ノートブック上にインターフェースをインライン表示するかどうか。</li>
 <li><code>inbrowser</code> - デフォルトブラウザの新しいタブでインターフェースを自動的に開くかどうか。</li>
@@ -278,8 +277,7 @@ window.MathJax = { tex: { inlineMath: [['$', '$'], ['\\(', '\\)']], displayMath:
 </ul>
 <p><code>share</code> パラメータについては、次のセクションで詳しく扱います！</p>
 <h2>✏️ 試してみましょう！</h2>
-<p><strong>音声認識</strong> モデルのデモができるインターフェースを作りましょう。
-面白くするために、マイク入力とアップロードされたファイルの <em>どちらでも</em> 受け付けられるようにします。</p>
+<p><strong>音声認識</strong> モデルのデモができるインターフェースを作りましょう。面白くするために、マイク入力とアップロードされたファイルの <em>どちらでも</em> 受け付けられるようにします。</p>
 <p>いつものように、音声認識モデルは 🤗 Transformers の <code>pipeline()</code> 関数で読み込みます。手早く復習したい場合は、<a href="../chapter1/3.html">Chapter 1 の該当セクション</a> に戻ってください。次に、音声を処理して文字起こしを返す <code>transcribe_audio()</code> 関数を実装します。最後に、この関数を、入力に <code>Audio</code> コンポーネント、出力にテキストだけを使った <code>Interface</code> でラップします。このアプリケーションのコード全体は次のとおりです:</p>
 <div class="codehilite"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">transformers</span><span class="w"> </span><span class="kn">import</span> <span class="n">pipeline</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">gradio</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">gr</span>
