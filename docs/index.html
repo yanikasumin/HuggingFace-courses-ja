@@ -99,6 +99,58 @@
 .guide-home .process-loop strong{color:var(--text);font-size:.94rem}
 .guide-home .process-loop span{font-size:.86rem;line-height:1.7;margin-top:5px}
 @media(max-width:560px){.guide-home .route-choices>div{grid-template-columns:1fr}.guide-home .home-example,.guide-home .route-choices{padding:15px}}
+
+/* Quiet editorial treatment at the top; no slogan, decorative counters or large imagery. */
+.guide-home .home-intro{
+  position:relative;
+  margin:0 0 10px;
+  padding:31px 30px 20px;
+  border:1px solid var(--border);
+  border-radius:10px;
+  background:
+    radial-gradient(circle at 100% 0%,rgba(255,210,30,.075),transparent 48%),
+    linear-gradient(155deg,rgba(26,34,53,.72),rgba(13,19,32,.5));
+  overflow:hidden;
+}
+.guide-home .home-intro::before{
+  content:"";
+  position:absolute;
+  inset:0 auto 0 0;
+  width:3px;
+  background:linear-gradient(180deg,#ffda43 0%,rgba(255,210,30,.2) 88%);
+}
+.guide-home .home-intro h1{
+  margin:0 0 19px;
+  font-size:clamp(1.65rem,3.1vw,2.05rem);
+  letter-spacing:.015em;
+  line-height:1.55;
+}
+.guide-home .home-intro p{max-width:64ch}
+.guide-home .home-intro p:last-child{margin-bottom:0}
+.guide-home .learning-resources{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:0 24px;margin:22px 0 32px}
+.guide-home .learning-resource{border-top:1px solid var(--border);padding:17px 0 12px;min-width:0}
+.guide-home .learning-resource .learning-stage{font-size:.82rem;font-weight:600;color:var(--yellow);margin:0 0 5px}
+.guide-home .learning-resource h4,.guide-home .reference-book h4{color:var(--text);font-size:1rem;font-weight:700;margin:0 0 10px;line-height:1.55}
+.guide-home .learning-resource h4 a,.guide-home .reference-book h4 a{color:var(--text);text-decoration:none}
+.guide-home .learning-resource h4 a:hover,.guide-home .reference-book h4 a:hover{color:var(--yellow);text-decoration:underline}
+.guide-home .learning-resource p:not(.learning-stage),.guide-home .reference-book p:not(.book-meta){font-size:.91rem;line-height:1.82;margin:0 0 9px}
+.guide-home .books-title{margin:28px 0 12px}
+.guide-home .reference-book{border-top:1px solid var(--border);padding:18px 0 9px}
+.guide-home .reference-book .book-meta{color:var(--muted);font-size:.84rem;margin:0 0 9px}
+.guide-home .reference-note{margin:16px 0 0;font-size:.84rem;color:var(--muted)}
+.guide-home .author-profile{padding:20px 24px;border:1px solid var(--border);border-radius:8px;background:rgba(19,26,42,.58)}
+.guide-home .author-head{display:flex;align-items:center;gap:15px;margin-bottom:18px}
+.guide-home .author-monogram{display:grid;place-items:center;flex:0 0 43px;width:43px;height:43px;border-radius:7px;background:#24252b;color:var(--yellow);border:1px solid #635a2c;font-weight:700;font-size:1.1rem}
+.guide-home .author-head h3{margin:0 0 2px}
+.guide-home .author-head h3 small{font-size:.84rem;font-weight:400;color:var(--muted)}
+.guide-home .author-head p{margin:0;font-size:.85rem;color:var(--muted)}
+.guide-home .author-links{display:flex;flex-wrap:wrap;gap:9px 22px;margin-top:19px!important;font-size:.9rem}
+@media(max-width:620px){
+  .guide-home .home-intro{padding:24px 18px 18px;margin:0 -3px 4px}
+  .guide-home .home-intro h1{font-size:1.62rem}
+  .guide-home .learning-resources{grid-template-columns:1fr}
+  .guide-home .author-profile{padding:18px}
+}
 </style>
 <script>
 window.MathJax = { tex: { inlineMath: [['$', '$'], ['\\(', '\\)']], displayMath: [['$$', '$$'], ['\\[', '\\]']] }, options: { skipHtmlTags: ['script','noscript','style','textarea','pre','code'] } };
@@ -120,10 +172,13 @@ window.MathJax = { tex: { inlineMath: [['$', '$'], ['\\(', '\\)']], displayMath:
 
 
 <main class="container guide-home">
+<div class="home-intro">
 <h1>Hugging Face 学習コース日本語版</h1>
 <p class="home-summary">このサイトでは、Hugging Face が無料で公開しているAI・機械学習の学習コースを、日本語で読むことができます。文章を扱うAIや画像を認識するAIなどについて、仕組みを学び、実際にプログラムを動かしながら理解を深めるための教材です。</p>
 <p>大規模言語モデル（LLM）、AI エージェント、MCP、コンピュータビジョン、ロボット工学の5コース、全316セクションを収録しています。教材は登録せずに読めます。原文を確認したい場合は、各ページから英語の公式サイトを開けます。</p>
 <p>機械学習を初めて学ぶ方は、<a href="#about">Hugging Face の説明</a>を読んでから、<a href="#start">学習の始め方</a>へ進んでください。すでに学びたい分野が決まっている方は、<a href="#courses">収録コース</a>から選べます。</p>
+
+</div>
 
 <section id="about" aria-labelledby="about-title">
 <h2 id="about-title">Hugging Face とは</h2>
@@ -251,13 +306,83 @@ print(transformers.__version__)</code></pre>
 <p>原典自体に誤りや重複がある場合も、翻訳者の判断で黙って内容を変更することは避けています。翻訳に使用した原典の版は<a href="https://github.com/yanikasumin/HuggingFace-courses-ja/blob/main/README.md">README</a>で、確認・修正の記録は<a href="https://github.com/yanikasumin/HuggingFace-courses-ja/blob/main/PROGRESS.md">進捗記録</a>で確認できます。</p>
 </section>
 
+
+<section id="resources" aria-labelledby="resources-title">
+<h2 id="resources-title">参考になる学習サイト・参考書</h2>
+<p>このサイトではAIの仕組みと使い方を学べますが、プログラミングや数学の基礎まで、すべてを説明しているわけではありません。分からない部分が出てきたら、次の教材を併用してください。</p>
+<h3>無料で学べるサイト・サービス</h3>
+<div class="learning-resources" aria-label="学習段階別の無料教材">
+<article class="learning-resource">
+<p class="learning-stage">Pythonの入門</p>
+<h4><a href="https://www.python.jp/train/index.html" target="_blank" rel="noopener noreferrer">ゼロからのPython入門講座（Python Japan）</a></h4>
+<p>初めてプログラミングを学ぶ方向け。Google Colabの操作方法から、変数、関数、繰り返し処理まで日本語で学べます。</p>
+</article>
+<article class="learning-resource">
+<p class="learning-stage">Pythonの基礎固め</p>
+<h4><a href="https://utokyo-ipp.github.io/" target="_blank" rel="noopener noreferrer">Pythonプログラミング入門（東京大学）</a></h4>
+<p>Pythonの文法やプログラムの考え方を、大学の教材で順を追って学べます。LLMコースへ進む前の復習にも向いています。</p>
+</article>
+<article class="learning-resource">
+<p class="learning-stage">機械学習の基礎</p>
+<h4><a href="https://developers.google.com/machine-learning/crash-course?hl=ja" target="_blank" rel="noopener noreferrer">機械学習集中講座（Google）</a></h4>
+<p>AIにデータから規則を学ばせる仕組みや、学習結果を評価する方法を学べる無料講座です。日本語の説明と演習があります。</p>
+</article>
+<article class="learning-resource">
+<p class="learning-stage">実際にコードを動かす</p>
+<h4><a href="https://colab.research.google.com/" target="_blank" rel="noopener noreferrer">Google Colab</a></h4>
+<p>ブラウザ上でPythonを実行できるサービスです。本サイトのプログラムを試す際に使います。無料枠には利用制限があります。</p>
+</article>
+<article class="learning-resource">
+<p class="learning-stage">演習・応用</p>
+<h4><a href="https://www.kaggle.com/learn" target="_blank" rel="noopener noreferrer">Kaggle Learn</a></h4>
+<p>データ分析や機械学習の短い演習を無料で受けられます。英語の教材ですが、Pythonと基本的な機械学習を学んだ後の練習に役立ちます。</p>
+</article>
+<article class="learning-resource">
+<p class="learning-stage">実装を詳しく学ぶ</p>
+<h4><a href="https://pytorch.org/tutorials/" target="_blank" rel="noopener noreferrer">PyTorch公式チュートリアル</a></h4>
+<p>モデルを学習させる処理など、深層学習のプログラムを詳しく確認できます。英語の教材で、やや発展的な内容です。</p>
+</article>
+</div>
+<h3 class="books-title">日本語の参考書</h3>
+<p>本の購入は必須ではありません。プログラムを動かしてみて、仕組みをさらに詳しく知りたくなった段階で選ぶとよいでしょう。</p>
+<div class="reference-books">
+<article class="reference-book">
+<h4><a href="https://www.oreilly.co.jp/books/9784873117584/" target="_blank" rel="noopener noreferrer">『ゼロから作るDeep Learning』</a></h4>
+<p class="book-meta">斎藤康毅 著 ／ オライリー・ジャパン</p>
+<p>ニューラルネットワークがどのように計算し、学習するのかを、Pythonで実装しながら学べます。LLMコースやCVコースで仕組みの説明が難しく感じられたときに役立ちます。</p>
+</article>
+<article class="reference-book">
+<h4><a href="https://www.oreilly.co.jp/books/9784814401611/" target="_blank" rel="noopener noreferrer">『ゼロから作るDeep Learning ❻ ―LLM編』</a></h4>
+<p class="book-meta">斎藤康毅 著 ／ オライリー・ジャパン</p>
+<p>文章を細かく分けるトークナイザから、Transformer、言語モデルの学習までを自分で実装する本です。LLMコースで学んだ仕組みを掘り下げたい方向けです。</p>
+</article>
+<article class="reference-book">
+<h4><a href="https://www.oreilly.co.jp/books/9784814400591/" target="_blank" rel="noopener noreferrer">『ゼロから作るDeep Learning ❺ ―生成モデル編』</a></h4>
+<p class="book-meta">斎藤康毅 著 ／ オライリー・ジャパン</p>
+<p>画像生成AIで使われる拡散モデルなどを扱います。Community CVコースで画像生成に興味を持った後に読むと、生成の仕組みを理解しやすくなります。</p>
+</article>
+</div>
+<p class="reference-note">参考書のリンク先は出版社の書籍紹介ページです。Amazon等のアフィリエイトリンクは使用していません。</p>
+</section>
+
 <section id="site-info" aria-labelledby="site-info-title">
 <h2 id="site-info-title">本サイトの課題と今後の予定</h2>
 <p>このサイトは Hugging Face の公式日本語版ではなく、個人による非公式翻訳です。英語原典の更新が直ちに反映されるわけではありません。実際にプログラムを開発する際は、<a href="https://huggingface.co/docs" target="_blank" rel="noopener noreferrer">公式ドキュメント</a>で最新の使い方を確認してください。</p>
 <p>また、翻訳の見直しは続けていますが、誤訳や読みにくい文章が残る可能性があります。気付いた箇所があれば、<a href="https://github.com/yanikasumin/HuggingFace-courses-ja/issues">GitHub Issues</a>で報告できます。</p>
 <p>今後は、学習内容に合った日本語の参考書・無料教材、重要な論文やモデルの更新情報、実際のサービスでの利用例などを各セクションに追加する予定です。書籍の紹介にアフィリエイトリンクを使用する場合は、その旨を明記します。</p>
-<p class="author">翻訳・公開：霞ヶ関京 ／ <a href="https://github.com/yanikasumin/HuggingFace-courses-ja">GitHub リポジトリ</a> ／ <a href="https://huggingface.co/learn">Hugging Face 公式学習コース（英語）</a></p>
+
 </section>
+
+<section id="author" aria-labelledby="author-title">
+<h2 id="author-title">制作者について</h2>
+<div class="author-profile">
+<div class="author-head"><span class="author-monogram" aria-hidden="true">霞</span><div><h3>霞ヶ関京 <small>（かすみがせき・きょう）</small></h3><p>翻訳・公開者</p></div></div>
+<p>大学で政治・経済や公共政策を学びながら、プログラミングと機械学習を独学しています。</p>
+<p>Hugging Face の公式コースを学ぼうとした際、日本語でまとまって読める教材が欲しいと考え、この翻訳サイトを制作しました。英語原典と照合しながら、技術的な意味を変えずに読みやすい日本語へ訳すことを重視しています。</p>
+<p class="author-links"><a href="https://github.com/yanikasumin" target="_blank" rel="noopener noreferrer">GitHub</a><a href="https://www.youtube.com/@KASUMI_MOF" target="_blank" rel="noopener noreferrer">YouTube</a><a href="https://github.com/yanikasumin/HuggingFace-courses-ja" target="_blank" rel="noopener noreferrer">本サイトのリポジトリ</a></p>
+</div>
+</section>
+
 </main>
 </div>
 <footer class="site-footer">
