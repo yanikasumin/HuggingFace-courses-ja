@@ -196,9 +196,9 @@ window.MathJax = { tex: { inlineMath: [['$', '$'], ['\\(', '\\)']], displayMath:
 <p>{#if fw === 'pt'}</p>
 <p>{:else}</p>
 <p>{/if}</p>
-<p>このセクションでは、Transformer モデルを使って、長い文書の要点を短い文章にまとめる方法、すなわち<em>テキスト要約</em>と呼ばれるタスクを見ていきます。これは最も難しい NLP タスクの1つです。長い文章を理解し、文書の主要な話題を捉えた一貫性のあるテキストを生成するなど、幅広い能力が求められるためです。しかし、うまくできればテキスト要約は強力なツールになります。ドメインの専門家が長い文書を細部まで読む負担を軽減し、さまざまな業務プロセスを高速化できます。</p>
+<p>このセクションでは、Transformer モデルを使って、長い文書の要点を短い文章にまとめる方法、すなわち<em>テキスト要約</em>と呼ばれるタスクを見ていきます。これは最も難しい NLP タスクの1つです。長い文章を理解し、文書の主要な話題を捉えた一貫性のあるテキストを生成するなど、幅広い能力が求められるためです。しかし、うまくできればテキスト要約は強力なツールになります。ドメインの専門家が長い文書を細部まで読む負担を軽減し、様々な業務プロセスを高速化できます。</p>
 <div class="youtube-embed"><iframe src="https://www.youtube-nocookie.com/embed/yHnr5Dk2zCI" title="YouTube video" loading="lazy" allowfullscreen referrerpolicy="strict-origin-when-cross-origin"></iframe></div>
-<p><a href="https://huggingface.co/models?pipeline_tag=summarization&amp;sort=downloads">Hugging Face Hub</a> には要約用にファインチューニングされたモデルがすでに各種存在しますが、そのほとんどすべてが英語の文書にしか適していません。そこで、このセクションではひねりを加えて、英語とスペイン語のバイリンガルモデルを学習します。このセクションの終わりには、ここに示すような顧客レビューを要約できる<a href="https://huggingface.co/huggingface-course/mt5-small-finetuned-amazon-en-es">モデル</a>が得られます。</p>
+<p><a href="https://huggingface.co/models?pipeline_tag=summarization&amp;sort=downloads">Hugging Face Hub</a> には要約用にファインチューニングされたモデルが既に各種存在しますが、そのほとんどすべてが英語の文書にしか適していません。そこで、このセクションではひねりを加えて、英語とスペイン語のバイリンガルモデルを学習します。このセクションの終わりには、ここに示すような顧客レビューを要約できる<a href="https://huggingface.co/huggingface-course/mt5-small-finetuned-amazon-en-es">モデル</a>が得られます。</p>
 <iframe src="https://course-demos-mt5-small-finetuned-amazon-en-es.hf.space" frameBorder="0" height="400" title="Gradio アプリ" class="block dark:hidden container p-0 flex-grow space-iframe" allow="accelerometer; ambient-light-sensor; autoplay; battery; camera; document-domain; encrypted-media; fullscreen; geolocation; gyroscope; layout-animations; legacy-image-formats; magnetometer; microphone; midi; oversized-images; payment; picture-in-picture; publickey-credentials-get; sync-xhr; usb; vr ; wake-lock; xr-spatial-tracking" sandbox="allow-forms allow-modals allow-popups allow-popups-to-escape-sandbox allow-same-origin allow-scripts allow-downloads"></iframe>
 
 <p>見ていくように、これらの要約が簡潔なのは、顧客が製品レビューに付けるタイトルから学習しているためです。まず、このタスクに適したバイリンガルコーパスを組み立てるところから始めましょう。</p>
@@ -252,7 +252,7 @@ show_samples(english_dataset)
 &lt;/div&gt;
 
 
-このサンプルは、オンラインでよく見られるレビューの多様性を示しています。肯定的なものから否定的なものまで（そしてその間のすべて）さまざまです。"meh" というタイトルの例はあまり情報がありませんが、他のタイトルはレビュー自体の妥当な要約のように見えます。400,000件すべてのレビューで要約モデルを学習すると、GPU 1つでは時間がかかりすぎます。そのため代わりに、単一ドメインの製品について要約を生成することに集中します。選択できるドメインの感触をつかむため、`english_dataset` を `pandas.DataFrame` に変換し、製品カテゴリごとのレビュー数を計算しましょう。
+このサンプルは、オンラインでよく見られるレビューの多様性を示しています。肯定的なものから否定的なものまで（そしてその間のすべて）様々です。"meh" というタイトルの例はあまり情報がありませんが、他のタイトルはレビュー自体の妥当な要約のように見えます。400,000件すべてのレビューで要約モデルを学習すると、GPU 1つでは時間がかかりすぎます。そのため代わりに、単一ドメインの製品について要約を生成することに集中します。選択できるドメインの感触をつかむため、`english_dataset` を `pandas.DataFrame` に変換し、製品カテゴリごとのレビュー数を計算しましょう。
 
 ```python
 english_dataset.set_format("pandas")
@@ -310,7 +310,7 @@ def filter_books(example):
 '&gt;&gt; レビュー: I had gotten the DC Vintage calendar the past two years, but it was on backorder forever this year and I saw they had shrunk the dimensions for no good reason. This one has good art choices but the design has the fold going through the picture, so it\'s less aesthetically pleasing, especially if you want to keep a picture to hang. For the price, a good calendar'</p>
 <p>'&gt;&gt; タイトル: Helpful'
 '&gt;&gt; レビュー: Nearly all the tips useful and. I consider myself an intermediate to advanced user of OneNote. I would highly recommend.'</p>
-<div class="codehilite"><pre><span></span><code>レビューは厳密には本に関するものではなく、カレンダーや OneNote のような電子アプリケーションを指している場合もあることが分かります。それでも、このドメインは要約モデルを学習するのにだいたい適切なようです。このタスクに適したさまざまなモデルを見る前に、データ準備の最後の1つを行います。英語とスペイン語のレビューを単一の `DatasetDict` オブジェクトに結合することです。🤗 Datasets は便利な `concatenate_datasets()` 関数を提供しており、（名前のとおり）2つの `Dataset` オブジェクトを積み重ねることができます。そこで、バイリンガルデータセットを作るため、各スプリットについてループし、そのスプリットのデータセットを連結し、結果をシャッフルして、モデルが単一言語に過学習しないようにします。
+<div class="codehilite"><pre><span></span><code>レビューは厳密には本に関するものではなく、カレンダーや OneNote のような電子アプリケーションを指している場合もあることが分かります。それでも、このドメインは要約モデルを学習するのにだいたい適切なようです。このタスクに適した様々なモデルを見る前に、データ準備の最後の1つを行います。英語とスペイン語のレビューを単一の `DatasetDict` オブジェクトに結合することです。🤗 Datasets は便利な `concatenate_datasets()` 関数を提供しており、（名前のとおり）2つの `Dataset` オブジェクトを積み重ねることができます。そこで、バイリンガルデータセットを作るため、各スプリットについてループし、そのスプリットのデータセットを連結し、結果をシャッフルして、モデルが単一言語に過学習しないようにします。
 
 ```python
 from datasets import concatenate_datasets, DatasetDict
@@ -349,7 +349,7 @@ books_dataset = books_dataset.filter(lambda x: len(x["review_title"].split()) &g
 
 <p>コーパスの準備ができたので、このコーパスでファインチューニングできそうな Transformer モデルをいくつか見ていきましょう！</p>
 <h2>テキスト要約のためのモデル</h2>
-<p>考えてみると、テキスト要約は機械翻訳と似た種類のタスクです。レビューのようなテキストがあり、それを入力の顕著な特徴を捉えた短い版に「翻訳」したいわけです。そのため、要約のための Transformer モデルのほとんどは、<a href="../chapter1/1.html">Chapter 1</a> で最初に出会ったエンコーダ・デコーダアーキテクチャを採用しています。ただし、few-shot 設定でも要約に使える GPT ファミリーのモデルのような例外もあります。次の表は、要約用にファインチューニングできる人気の事前学習済みモデルの一部です。</p>
+<p>考えてみると、テキスト要約は機械翻訳と似た種類のタスクです。レビューのようなテキストがあり、それを入力の顕著な特徴を捉えた短い版に「翻訳」したいわけです。そのため、要約のための Transformer モデルのほとんどは、<a href="../chapter1/1.html">Chapter 1</a> で最初に出会ったエンコーダ・デコーダアーキテクチャを採用しています。但し、few-shot 設定でも要約に使える GPT ファミリーのモデルのような例外もあります。次の表は、要約用にファインチューニングできる人気の事前学習済みモデルの一部です。</p>
 <table>
 <thead>
 <tr>
@@ -394,8 +394,8 @@ books_dataset = books_dataset.filter(lambda x: len(x["review_title"].split()) &g
 <p>この表から分かるように、要約のための Transformer モデル（そして実際、ほとんどの NLP タスク）の大部分は単一言語用です。タスクが英語やドイツ語のような「高リソース」言語であれば便利ですが、世界中で使われている何千もの他の言語にはあまり向いていません。幸い、mT5 や mBART のような多言語 Transformer モデルが、この問題を解決してくれます。これらのモデルは言語モデリングを使って事前学習されていますが、ひねりがあります。1つの言語のコーパスで学習するのではなく、50を超える言語のテキストで共同で学習されているのです！</p>
 <p>ここでは mT5 に焦点を当てます。これは T5 をベースにした興味深いアーキテクチャで、text-to-text フレームワークで事前学習されています。T5 では、すべての NLP タスクが <code>summarize:</code> のようなプロンプト接頭辞で定式化され、これによりモデルは生成するテキストをプロンプトに適応させます。下の図に示すように、これにより T5 は非常に汎用的になり、単一のモデルで多くのタスクを解決できます！</p>
 <div class="flex justify-center">
-<img class="block dark:hidden" src="https://huggingface.co/datasets/huggingface-course/documentation-images/resolve/main/en/chapter7/t5.svg" alt="T5 アーキテクチャで実行されるさまざまなタスク。"/>
-<img class="hidden dark:block" src="https://huggingface.co/datasets/huggingface-course/documentation-images/resolve/main/en/chapter7/t5-dark.svg" alt="T5 アーキテクチャで実行されるさまざまなタスク。"/>
+<img class="block dark:hidden" src="https://huggingface.co/datasets/huggingface-course/documentation-images/resolve/main/en/chapter7/t5.svg" alt="T5 アーキテクチャで実行される様々なタスク。"/>
+<img class="hidden dark:block" src="https://huggingface.co/datasets/huggingface-course/documentation-images/resolve/main/en/chapter7/t5-dark.svg" alt="T5 アーキテクチャで実行される様々なタスク。"/>
 </div>
 
 <p>mT5 は接頭辞を使いませんが、T5 の汎用性の多くを共有し、多言語であるという利点があります。モデルを選んだので、学習用にデータを準備する方法を見ていきましょう。</p>
@@ -430,7 +430,7 @@ tokenizer.convert_ids_to_tokens(inputs.input_ids)
 
 <p>```python out
 ['▁I', '▁', 'loved', '▁reading', '▁the', '▁Hung', 'er', '▁Games', '</s>']</p>
-<div class="codehilite"><pre><span></span><code>特殊な Unicode 文字 `▁` とシーケンス終端トークン `&lt;/s&gt;` は、SentencePiece トークナイザを扱っていることを示しています。これは、[Chapter 6](/course/chapter6) で議論した Unigram セグメンテーションアルゴリズムに基づいています。Unigram は、SentencePiece がアクセントや句読点、さらには日本語のように空白文字を持たない言語が多いという点に左右されないため、多言語コーパスで特に有用です。
+<div class="codehilite"><pre><span></span><code>特殊な Unicode 文字 `▁` とシーケンス終端トークン `&lt;/s&gt;` は、SentencePiece トークナイザを扱っていることを示しています。これは、[Chapter 6](/course/chapter6) で議論した Unigram セグメンテーションアルゴリズムに基づいています。Unigram は、SentencePiece がアクセントや句読点、更には日本語のように空白文字を持たない言語が多いという点に左右されないため、多言語コーパスで特に有用です。
 
 コーパスをトークン化するには、要約に関連する微妙な点に対処しなければなりません。ラベルもテキストであるため、モデルの最大コンテキストサイズを超える可能性があります。そのため、レビューとタイトルの両方に切り捨てを適用し、モデルに過度に長い入力を渡さないようにする必要があります。🤗 Transformers のトークナイザは便利な `text_target` 引数を提供しており、入力と並行してラベルをトークン化できます。mT5 で入力とターゲットがどのように処理されるかの例は次のとおりです。
 
@@ -501,7 +501,7 @@ def preprocess_function(examples):
  'rouge2': AggregateScore(low=Score(precision=0.67, recall=0.8, fmeasure=0.73), mid=Score(precision=0.67, recall=0.8, fmeasure=0.73), high=Score(precision=0.67, recall=0.8, fmeasure=0.73)),
  'rougeL': AggregateScore(low=Score(precision=0.86, recall=1.0, fmeasure=0.92), mid=Score(precision=0.86, recall=1.0, fmeasure=0.92), high=Score(precision=0.86, recall=1.0, fmeasure=0.92)),
  'rougeLsum': AggregateScore(low=Score(precision=0.86, recall=1.0, fmeasure=0.92), mid=Score(precision=0.86, recall=1.0, fmeasure=0.92), high=Score(precision=0.86, recall=1.0, fmeasure=0.92))}</p>
-<div class="codehilite"><pre><span></span><code>うわ、その出力にはたくさんの情報があります！これはすべて何を意味するのでしょうか？まず、🤗 Datasets は実際には適合率、再現率、F1 スコアの信頼区間を計算します。これらが、ここで見られる `low`、`mid`、`high` 属性です。さらに、🤗 Datasets はさまざまな ROUGE スコアを計算します。これらは、生成された要約と参照要約を比較する際のテキストの粒度の種類に基づいています。`rouge1` バリアントはユニグラムの重複、つまり生成された要約と参照要約で共通する単語の割合を表す指標で、上で議論した指標そのものです。これを検証するため、スコアの `mid` 値を取り出してみましょう。
+<div class="codehilite"><pre><span></span><code>うわ、その出力にはたくさんの情報があります！これはすべて何を意味するのでしょうか？まず、🤗 Datasets は実際には適合率、再現率、F1 スコアの信頼区間を計算します。これらが、ここで見られる `low`、`mid`、`high` 属性です。更に、🤗 Datasets は様々な ROUGE スコアを計算します。これらは、生成された要約と参照要約を比較する際のテキストの粒度の種類に基づいています。`rouge1` バリアントはユニグラムの重複、つまり生成された要約と参照要約で共通する単語の割合を表す指標で、上で議論した指標そのものです。これを検証するため、スコアの `mid` 値を取り出してみましょう。
 
 ```python
 scores["rouge1"].mid
@@ -795,7 +795,7 @@ trainer = Seq2SeqTrainer(
 <span class="p">)</span>
 </code></pre></div>
 
-<p>学習中に損失値はいくつか得られましたが、本来見たいのは先ほど計算した ROUGE 指標です。その指標を得るには、モデルから出力を生成し、文字列に変換する必要があります。ROUGE 指標が比較するためのラベルと予測のリストを構築しましょう（このセクションでインポートエラーが出る場合は、<code>!pip install tqdm</code> が必要になるかもしれません）。さらに、劇的にパフォーマンスを高める工夫も使います。生成コードを TensorFlow の高速化線形代数コンパイラである <a href="https://www.tensorflow.org/xla">XLA</a> でコンパイルします。XLA はモデルの計算グラフにさまざまな最適化を適用し、速度とメモリ使用量を大きく改善します。Hugging Face の<a href="https://huggingface.co/blog/tf-xla-generate">ブログ</a>で説明されているように、XLA は入力の形状があまり変化しないときに最も効果を発揮します。これに対応するため、入力を128の倍数までパディングし、パディング用コレータで新しいデータセットを作り、生成関数に <code>@tf.function(jit_compile=True)</code> デコレータを適用して、関数全体を XLA でコンパイルするようマークします。</p>
+<p>学習中に損失値はいくつか得られましたが、本来見たいのは先ほど計算した ROUGE 指標です。その指標を得るには、モデルから出力を生成し、文字列に変換する必要があります。ROUGE 指標が比較するためのラベルと予測のリストを構築しましょう（このセクションでインポートエラーが出る場合は、<code>!pip install tqdm</code> が必要になるかもしれません）。更に、劇的にパフォーマンスを高める工夫も使います。生成コードを TensorFlow の高速化線形代数コンパイラである <a href="https://www.tensorflow.org/xla">XLA</a> でコンパイルします。XLA はモデルの計算グラフに様々な最適化を適用し、速度とメモリ使用量を大きく改善します。Hugging Face の<a href="https://huggingface.co/blog/tf-xla-generate">ブログ</a>で説明されているように、XLA は入力の形状があまり変化しないときに最も効果を発揮します。これに対応するため、入力を128の倍数までパディングし、パディング用コレータで新しいデータセットを作り、生成関数に <code>@tf.function(jit_compile=True)</code> デコレータを適用して、関数全体を XLA でコンパイルするようマークします。</p>
 <div class="codehilite"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">tqdm</span><span class="w"> </span><span class="kn">import</span> <span class="n">tqdm</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
 
@@ -951,7 +951,7 @@ repo = Repository(output_dir, clone_from=repo_name)
 <p>要約の学習ループは、これまでに出会った他の 🤗 Accelerate の例とかなり似ており、大まかに4つの主要なステップに分かれています。</p>
 <ol>
 <li>各エポックで <code>train_dataloader</code> のすべての例を反復してモデルを学習する。</li>
-<li>各エポックの終わりにモデルの要約を生成する。まずトークンを生成し、その後それら（および参照要約）をテキストにデコードする。</li>
+<li>各エポックの終わりにモデルの要約を生成する。まずトークンを生成し、その後それら（及び参照要約）をテキストにデコードする。</li>
 <li>先ほど見たのと同じ手法で ROUGE スコアを計算する。</li>
 <li>チェックポイントを保存し、すべてを Hub にプッシュする。ここでは <code>Repository</code> オブジェクトの便利な <code>blocking=False</code> 引数に依存し、エポックごとのチェックポイントを<em>非同期</em>にプッシュします。これにより、GB サイズのモデルに関連するやや遅いアップロードを待つことなく、学習を続けることができます！</li>
 </ol>

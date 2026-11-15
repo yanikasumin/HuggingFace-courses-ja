@@ -221,11 +221,11 @@ window.MathJax = { tex: { inlineMath: [['$', '$'], ['\\(', '\\)']], displayMath:
 <p>このセクションでは、例として MRPC（Microsoft Research Paraphrase Corpus）データセットを使います。William B. Dolan と Chris Brockett の<a href="https://www.aclweb.org/anthology/I05-5002.pdf">論文</a>で紹介されたデータセットです。このデータセットは5,801組の文ペアからなり、各ペアには、2つの文がパラフレーズかどうか（つまり、両方の文が同じ意味かどうか）を示すラベルが付いています。このデータセットを選んだのは、規模が小さく、学習の実験に適しているためです。</p>
 <h3>Hub からデータセットを読み込む</h3>
 <div class="youtube-embed"><iframe src="https://www.youtube-nocookie.com/embed/_BZearw7f0w" title="YouTube video" loading="lazy" allowfullscreen referrerpolicy="strict-origin-when-cross-origin"></iframe></div>
-<p>Hub にあるのはモデルだけではありません。さまざまな言語のデータセットも多数そろっています。データセットは<a href="https://huggingface.co/datasets">Hub の一覧</a>から探せます。このセクションを終えたら、別のデータセットも読み込んで処理してみてください。基本的な使い方は<a href="https://huggingface.co/docs/datasets/loading">データセットの読み込みに関するドキュメント</a>を参照してください。ただし今は、MRPC データセットに集中しましょう！MRPC は <a href="https://gluebenchmark.com/">GLUE ベンチマーク</a> を構成する10個のデータセットの1つです。このベンチマークは、10種類の異なるテキスト分類タスクにわたって ML モデルの性能を測定するために使用される学術ベンチマークです。</p>
+<p>Hub にあるのはモデルだけではありません。様々な言語のデータセットも多数そろっています。データセットは<a href="https://huggingface.co/datasets">Hub の一覧</a>から探せます。このセクションを終えたら、別のデータセットも読み込んで処理してみてください。基本的な使い方は<a href="https://huggingface.co/docs/datasets/loading">データセットの読み込みに関するドキュメント</a>を参照してください。但し今は、MRPC データセットに集中しましょう！MRPC は <a href="https://gluebenchmark.com/">GLUE ベンチマーク</a> を構成する10個のデータセットの1つです。このベンチマークは、10種類の異なるテキスト分類タスクにわたって ML モデルの性能を測定するために使用される学術ベンチマークです。</p>
 <p>🤗 Datasets ライブラリには、Hub 上のデータセットをダウンロードしてキャッシュするための、とてもシンプルなコマンドが用意されています。MRPC データセットは次のようにダウンロードできます。</p>
 <div class="callout callout-tip">
 <p class="callout-title">💡 ヒント</p>
-<p>💡 <strong>追加資料</strong>: データセットの読み込みに関するテクニックや例をさらに知りたい場合は、<a href="https://huggingface.co/docs/datasets/">🤗 Datasets ドキュメント</a> を確認してください。</p>
+<p>💡 <strong>追加資料</strong>: データセットの読み込みに関するテクニックや例を更に知りたい場合は、<a href="https://huggingface.co/docs/datasets/">🤗 Datasets ドキュメント</a> を確認してください。</p>
 </div>
 <div class="codehilite"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">datasets</span><span class="w"> </span><span class="kn">import</span> <span class="n">load_dataset</span>
 
@@ -268,7 +268,7 @@ raw_train_dataset[0]
  'label': 1,
  'sentence1': 'Amrozi accused his brother , whom he called " the witness " , of deliberately distorting his evidence .',
  'sentence2': 'Referring to him as only " the witness " , Amrozi accused his brother of deliberately distorting his evidence .'}</p>
-<div class="codehilite"><pre><span></span><code>ラベルはすでに整数になっているので、その点に前処理は必要ないことがわかります。どの整数がどのラベルに対応するかは、`raw_train_dataset` の `features` を調べればわかります。各列の型もわかります。
+<div class="codehilite"><pre><span></span><code>ラベルは既に整数になっているので、その点に前処理は必要ないことがわかります。どの整数がどのラベルに対応するかは、`raw_train_dataset` の `features` を調べればわかります。各列の型もわかります。
 
 ```py
 raw_train_dataset.features
@@ -308,9 +308,9 @@ tokenized_sentences_2 = tokenizer(raw_datasets["train"]["sentence2"])
 
 <div class="callout callout-tip">
 <p class="callout-title">💡 ヒント</p>
-<p>💡 <strong>深掘り</strong>: より高度なトークン化のテクニックや、さまざまなトークナイザの動作の理解には、<a href="https://huggingface.co/docs/transformers/main/en/tokenizer_summary">🤗 Tokenizers ドキュメント</a> と <a href="https://huggingface.co/learn/cookbook/en/advanced_rag#tokenization-strategies">クックブックのトークン化ガイド</a> を参照してください。</p>
+<p>💡 <strong>深掘り</strong>: より高度なトークン化のテクニックや、様々なトークナイザの動作の理解には、<a href="https://huggingface.co/docs/transformers/main/en/tokenizer_summary">🤗 Tokenizers ドキュメント</a> と <a href="https://huggingface.co/learn/cookbook/en/advanced_rag#tokenization-strategies">クックブックのトークン化ガイド</a> を参照してください。</p>
 </div>
-<p>ただし、2つのシーケンスをモデルにそのまま渡しても、2つの文がパラフレーズかどうかという予測は得られません。2つのシーケンスをペアとして扱い、適切な前処理を適用する必要があります。幸い、トークナイザはシーケンスのペアを受け取り、BERT モデルが想定する形に整えることもできます。</p>
+<p>但し、2つのシーケンスをモデルにそのまま渡しても、2つの文がパラフレーズかどうかという予測は得られません。2つのシーケンスをペアとして扱い、適切な前処理を適用する必要があります。幸い、トークナイザはシーケンスのペアを受け取り、BERT モデルが想定する形に整えることもできます。</p>
 <div class="codehilite"><pre><span></span><code><span class="n">inputs</span> <span class="o">=</span> <span class="n">tokenizer</span><span class="p">(</span><span class="s2">"This is the first sentence."</span><span class="p">,</span> <span class="s2">"This is the second one."</span><span class="p">)</span>
 <span class="n">inputs</span>
 </code></pre></div>
@@ -392,7 +392,7 @@ DatasetDict({
         num_rows: 1725
     })
 })</p>
-<div class="codehilite"><pre><span></span><code>`map()` で前処理関数を適用する際に、`num_proc` 引数を渡すことでマルチプロセッシングを使うこともできます。ここでは使用しませんでした。これは、🤗 Tokenizers ライブラリがすでに複数のスレッドを使用してサンプルをより高速にトークン化しているためです。ただし、このライブラリによる高速なトークナイザを使用していない場合は、これにより前処理を高速化できるでしょう。
+<div class="codehilite"><pre><span></span><code>`map()` で前処理関数を適用する際に、`num_proc` 引数を渡すことでマルチプロセッシングを使うこともできます。ここでは使用しませんでした。これは、🤗 Tokenizers ライブラリが既に複数のスレッドを使用してサンプルをより高速にトークン化しているためです。但し、このライブラリによる高速なトークナイザを使用していない場合は、これにより前処理を高速化できるでしょう。
 
 `tokenize_function` は `input_ids`、`attention_mask`、`token_type_ids` をキーとする辞書を返すため、これら3つのフィールドがデータセットのすべての分割に追加されます。なお、`map()` を適用したデータセットの既存のキーに対して、前処理関数が新しい値を返すようにすれば、既存のフィールドを変更することも可能でした。
 
@@ -430,7 +430,7 @@ data_collator = DataCollatorWithPadding(tokenizer=tokenizer)
 
 <p>```python out
 [50, 59, 47, 67, 59, 50, 62, 32]</p>
-<div class="codehilite"><pre><span></span><code>驚くことではありませんが、長さが32から67までばらばらのサンプルが得られました。動的パディングとは、このバッチ内のサンプルがすべて、バッチ内の最大長である67までパディングされることを意味します。動的パディングがなければ、すべてのサンプルはデータセット全体の最大長、またはモデルが受け入れ可能な最大長までパディングしなければなりません。`data_collator` がバッチを適切に動的パディングしているかを再確認しましょう。
+<div class="codehilite"><pre><span></span><code>驚くことではありませんが、長さが32から67までばらばらのサンプルが得られました。動的パディングとは、このバッチ内のサンプルがすべて、バッチ内の最大長である67までパディングされることを意味します。動的パディングがなければ、すべてのサンプルはデータセット全体の最大長、又はモデルが受け入れ可能な最大長までパディングしなければなりません。`data_collator` がバッチを適切に動的パディングしているかを再確認しましょう。
 
 ```py
 batch = data_collator(samples)
@@ -455,61 +455,61 @@ batch = data_collator(samples)
 <div class="quiz">
 <div class="quiz-choices">
 <button type="button" class="quiz-choice" data-correct="false" data-quiz-idx="0">メモリ使用量が少なくなります。</button>
-<div class="quiz-explain-src" id="qe-123146990403264-0" hidden>メモリ効率が向上する場合もありますが、それが主な利点ではありません。</div>
+<div class="quiz-explain-src" id="qe-123594585996096-0" hidden>メモリ効率が向上する場合もありますが、それが主な利点ではありません。</div>
 <button type="button" class="quiz-choice" data-correct="true" data-quiz-idx="1">複数のサンプルを一度に処理するため、トークン化がはるかに高速になります。</button>
-<div class="quiz-explain-src" id="qe-123146990403264-1" hidden>正解です！バッチ処理により、高速なトークナイザが複数のサンプルを同時に処理できるため、速度が大幅に向上します。</div>
+<div class="quiz-explain-src" id="qe-123594585996096-1" hidden>正解です！バッチ処理により、高速なトークナイザが複数のサンプルを同時に処理できるため、速度が大幅に向上します。</div>
 <button type="button" class="quiz-choice" data-correct="false" data-quiz-idx="2">パディングを自動的に処理してくれます。</button>
-<div class="quiz-explain-src" id="qe-123146990403264-2" hidden>バッチ処理によってパディングが自動的に処理されるわけではありません。パディングはデータコレータが行います。</div>
+<div class="quiz-explain-src" id="qe-123594585996096-2" hidden>バッチ処理によってパディングが自動的に処理されるわけではありません。パディングはデータコレータが行います。</div>
 <button type="button" class="quiz-choice" data-correct="false" data-quiz-idx="3">データを PyTorch テンソルに変換します。</button>
-<div class="quiz-explain-src" id="qe-123146990403264-3" hidden>テンソルへの変換は、フォーマットを設定する際に行われるものであり、バッチマッピング中に行われるものではありません。</div>
+<div class="quiz-explain-src" id="qe-123594585996096-3" hidden>テンソルへの変換は、フォーマットを設定する際に行われるものであり、バッチマッピング中に行われるものではありません。</div>
 </div><div class="quiz-feedback" hidden></div></div>
 <h3>2. データセット内の最大長まですべてのシーケンスをパディングするのではなく、動的パディングを使用するのはなぜですか？</h3>
 <div class="quiz">
 <div class="quiz-choices">
 <button type="button" class="quiz-choice" data-correct="false" data-quiz-idx="0">モデルのアーキテクチャで動的パディングが必要とされるからです。</button>
-<div class="quiz-explain-src" id="qe-123146990368000-0" hidden>いいえ、モデルは固定パディングと動的パディングの両方に対応できます。</div>
+<div class="quiz-explain-src" id="qe-123594585972864-0" hidden>いいえ、モデルは固定パディングと動的パディングの両方に対応できます。</div>
 <button type="button" class="quiz-choice" data-correct="true" data-quiz-idx="1">各バッチ内の最長シーケンスに合わせてパディングするため、余分な計算を減らせます。</button>
-<div class="quiz-explain-src" id="qe-123146990368000-1" hidden>正解です！動的パディングは、データセット全体ではなく各バッチ内の最長シーケンスに合わせてパディングすることで、パディングトークンに対する不要な計算を回避します。</div>
+<div class="quiz-explain-src" id="qe-123594585972864-1" hidden>正解です！動的パディングは、データセット全体ではなく各バッチ内の最長シーケンスに合わせてパディングすることで、パディングトークンに対する不要な計算を回避します。</div>
 <button type="button" class="quiz-choice" data-correct="false" data-quiz-idx="2">モデルの正解率が向上します。</button>
-<div class="quiz-explain-src" id="qe-123146990368000-2" hidden>パディングの戦略はモデルの精度に直接影響しません。</div>
+<div class="quiz-explain-src" id="qe-123594585972864-2" hidden>パディングの戦略はモデルの精度に直接影響しません。</div>
 <button type="button" class="quiz-choice" data-correct="false" data-quiz-idx="3">DataCollatorWithPadding を使用する際に必要だからです。</button>
-<div class="quiz-explain-src" id="qe-123146990368000-3" hidden>DataCollatorWithPadding により動的パディングが可能になりますが、希望すれば固定パディングを使用することもできます。</div>
+<div class="quiz-explain-src" id="qe-123594585972864-3" hidden>DataCollatorWithPadding により動的パディングが可能になりますが、希望すれば固定パディングを使用することもできます。</div>
 </div><div class="quiz-feedback" hidden></div></div>
 <h3>3. BERT のトークン化において、<code>token_type_ids</code> フィールドは何を表しますか？</h3>
 <div class="quiz">
 <div class="quiz-choices">
 <button type="button" class="quiz-choice" data-correct="false" data-quiz-idx="0">シーケンスにおける各トークンの位置です。</button>
-<div class="quiz-explain-src" id="qe-123146990403264-0" hidden>それは位置埋め込みであり、token_type_ids ではありません。</div>
+<div class="quiz-explain-src" id="qe-123594585996096-0" hidden>それは位置埋め込みであり、token_type_ids ではありません。</div>
 <button type="button" class="quiz-choice" data-correct="true" data-quiz-idx="1">文ペアを処理する際、各トークンがどちらの文に属しているかです。</button>
-<div class="quiz-explain-src" id="qe-123146990403264-1" hidden>正解です！token_type_ids は、文ペアタスクにおける最初の文（0）と2番目の文（1）を区別します。</div>
+<div class="quiz-explain-src" id="qe-123594585996096-1" hidden>正解です！token_type_ids は、文ペアタスクにおける最初の文（0）と2番目の文（1）を区別します。</div>
 <button type="button" class="quiz-choice" data-correct="false" data-quiz-idx="2">各トークンのアテンションマスクです。</button>
-<div class="quiz-explain-src" id="qe-123146990403264-2" hidden>アテンションマスクは、どのトークンに注意を払うべきかを示す別のフィールドです。</div>
+<div class="quiz-explain-src" id="qe-123594585996096-2" hidden>アテンションマスクは、どのトークンに注意を払うべきかを示す別のフィールドです。</div>
 <button type="button" class="quiz-choice" data-correct="false" data-quiz-idx="3">各トークンの語彙 ID です。</button>
-<div class="quiz-explain-src" id="qe-123146990403264-3" hidden>それは input_ids フィールドであり、token_type_ids ではありません。</div>
+<div class="quiz-explain-src" id="qe-123594585996096-3" hidden>それは input_ids フィールドであり、token_type_ids ではありません。</div>
 </div><div class="quiz-feedback" hidden></div></div>
 <h3>4. <code>load_dataset('glue', 'mrpc')</code> でデータセットを読み込む際、第2引数は何を指定しますか？</h3>
 <div class="quiz">
 <div class="quiz-choices">
 <button type="button" class="quiz-choice" data-correct="false" data-quiz-idx="0">読み込むデータセットのバージョンです。</button>
-<div class="quiz-explain-src" id="qe-123146990368000-0" hidden>バージョンの指定には異なるパラメータを使用します。</div>
-<button type="button" class="quiz-choice" data-correct="true" data-quiz-idx="1">GLUE ベンチマーク内の特定のタスクまたはサブセットです。</button>
-<div class="quiz-explain-src" id="qe-123146990368000-1" hidden>正解です！MRPC は、より大規模な GLUE ベンチマークコレクションの中の特定のタスクの1つです。</div>
+<div class="quiz-explain-src" id="qe-123594585972864-0" hidden>バージョンの指定には異なるパラメータを使用します。</div>
+<button type="button" class="quiz-choice" data-correct="true" data-quiz-idx="1">GLUE ベンチマーク内の特定のタスク又はサブセットです。</button>
+<div class="quiz-explain-src" id="qe-123594585972864-1" hidden>正解です！MRPC は、より大規模な GLUE ベンチマークコレクションの中の特定のタスクの1つです。</div>
 <button type="button" class="quiz-choice" data-correct="false" data-quiz-idx="2">データセットの分割（train/validation/test）です。</button>
-<div class="quiz-explain-src" id="qe-123146990368000-2" hidden>分割は読み込み後にアクセスするものであり、load_dataset の呼び出しでは指定しません。</div>
+<div class="quiz-explain-src" id="qe-123594585972864-2" hidden>分割は読み込み後にアクセスするものであり、load_dataset の呼び出しでは指定しません。</div>
 <button type="button" class="quiz-choice" data-correct="false" data-quiz-idx="3">データを返すフォーマットです。</button>
-<div class="quiz-explain-src" id="qe-123146990368000-3" hidden>フォーマットは、読み込み後に set_format() メソッドを使用して設定します。</div>
+<div class="quiz-explain-src" id="qe-123594585972864-3" hidden>フォーマットは、読み込み後に set_format() メソッドを使用して設定します。</div>
 </div><div class="quiz-feedback" hidden></div></div>
 <h3>5. 学習前に 'sentence1' や 'sentence2' のような列を削除する目的は何ですか？</h3>
 <div class="quiz">
 <div class="quiz-choices">
 <button type="button" class="quiz-choice" data-correct="false" data-quiz-idx="0">学習中にメモリを節約するためです。</button>
-<div class="quiz-explain-src" id="qe-123146990403264-0" hidden>メモリの節約にはなりますが、それが主な理由ではありません。</div>
+<div class="quiz-explain-src" id="qe-123594585996096-0" hidden>メモリの節約にはなりますが、それが主な理由ではありません。</div>
 <button type="button" class="quiz-choice" data-correct="true" data-quiz-idx="1">モデルはこれらの生テキスト列を受け付けないため、エラーが発生します。</button>
-<div class="quiz-explain-src" id="qe-123146990403264-1" hidden>正解です！モデルは数値テンソルを想定しており、生のテキスト文字列は想定していません。テキスト列を保持するとエラーが発生します。</div>
+<div class="quiz-explain-src" id="qe-123594585996096-1" hidden>正解です！モデルは数値テンソルを想定しており、生のテキスト文字列は想定していません。テキスト列を保持するとエラーが発生します。</div>
 <button type="button" class="quiz-choice" data-correct="false" data-quiz-idx="2">これらの列は評価には必要ありません。</button>
-<div class="quiz-explain-src" id="qe-123146990403264-2" hidden>それは事実ですが、主な理由はモデルが生のテキストを処理できないことです。</div>
+<div class="quiz-explain-src" id="qe-123594585996096-2" hidden>それは事実ですが、主な理由はモデルが生のテキストを処理できないことです。</div>
 <button type="button" class="quiz-choice" data-correct="false" data-quiz-idx="3">学習速度が大幅に向上します。</button>
-<div class="quiz-explain-src" id="qe-123146990403264-3" hidden>互換性のないデータ型によるエラーを回避することに比べれば、速度の向上はわずかです。</div>
+<div class="quiz-explain-src" id="qe-123594585996096-3" hidden>互換性のないデータ型によるエラーを回避することに比べれば、速度の向上はわずかです。</div>
 </div><div class="quiz-feedback" hidden></div></div>
 <div class="callout callout-tip">
 <p class="callout-title">💡 ヒント</p>

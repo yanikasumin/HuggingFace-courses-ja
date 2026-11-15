@@ -246,7 +246,7 @@ tokenizer.backend_tokenizer.pre_tokenizer.pre_tokenize_str("Hello, how are  you?
 
 <p>```python out
 [('Hello', (0, 5)), (',', (5, 6)), ('how', (7, 10)), ('are', (11, 14)), ('you', (16, 19)), ('?', (19, 20))]</p>
-<div class="codehilite"><pre><span></span><code>トークナイザがすでにオフセットを追跡していることに注目してください。これにより、前のセクションで使ったオフセットマッピングが得られます。ここでは、トークナイザは2つの空白を無視して1つに置き換えていますが、それを反映して `are` と `you` の間でオフセットがジャンプしています。
+<div class="codehilite"><pre><span></span><code>トークナイザが既にオフセットを追跡していることに注目してください。これにより、前のセクションで使ったオフセットマッピングが得られます。ここでは、トークナイザは2つの空白を無視して1つに置き換えていますが、それを反映して `are` と `you` の間でオフセットがジャンプしています。
 
 BERT トークナイザを使っているため、事前トークン化では空白と句読点で分割します。他のトークナイザでは、このステップのルールが異なる場合があります。たとえば、GPT-2 トークナイザを使うと次のようになります。
 
@@ -291,25 +291,7 @@ tokenizer.backend_tokenizer.pre_tokenizer.pre_tokenize_str("Hello, how are  you?
 <td style="text-align: center;">学習</td>
 <td style="text-align: center;">小さな語彙から始めて、トークンをマージするルールを学習する</td>
 <td style="text-align: center;">小さな語彙から始めて、トークンをマージするルールを学習する</td>
-<td style="text-align: center;">大きな語彙から始めて、トークンを除去するルールを学習する</td>
-</tr>
-<tr>
-<td style="text-align: center;">学習ステップ</td>
-<td style="text-align: center;">最も一般的なペアに対応するトークンをマージする</td>
-<td style="text-align: center;">ペアの頻度に基づく最良のスコアを持つペアに対応するトークンをマージし、個々のトークンの頻度が低いペアを優先する</td>
-<td style="text-align: center;">コーパス全体で計算した損失を最小化するようなトークンを語彙からすべて除去する</td>
-</tr>
-<tr>
-<td style="text-align: center;">学習するもの</td>
-<td style="text-align: center;">マージルールと語彙</td>
-<td style="text-align: center;">語彙のみ</td>
-<td style="text-align: center;">各トークンのスコアを伴う語彙</td>
-</tr>
-<tr>
-<td style="text-align: center;">エンコーディング</td>
-<td style="text-align: center;">単語を文字に分割し、学習で得たマージを適用する</td>
-<td style="text-align: center;">先頭から始まる、語彙に含まれる最長のサブワードを見つけ、単語の残りについても同様に行う</td>
-<td style="text-align: center;">学習で得たスコアを使い、最も可能性の高いトークンへの分割を見つける</td>
+<td style="text-align: center;">大きな語彙から始めて、トークンを除去するルールを学習する学習ステップ</td>
 </tr>
 </tbody>
 </table>

@@ -193,11 +193,11 @@ window.MathJax = { tex: { inlineMath: [['$', '$'], ['\\(', '\\)']], displayMath:
 <nav class="page-nav"><a class="nav-link prev" href="2.html">← 前へ: データセットが Hub にない場合は？</a><a class="nav-link toc-link" href="../index.html">目次へ</a><a class="nav-link next" href="4.html">次へ →: ビッグデータ？🤗 Datasets にお任せ！</a></nav>
 <article class="content">
 <h1>切り分けて、加工して</h1>
-<p>多くの場合、手元のデータはモデルの訓練にそのまま使える形には整っていません。このセクションでは、データセットをきれいに整えるために 🤗 Datasets が提供するさまざまな機能を探っていきます。</p>
+<p>多くの場合、手元のデータはモデルの訓練にそのまま使える形には整っていません。このセクションでは、データセットをきれいに整えるために 🤗 Datasets が提供する様々な機能を探っていきます。</p>
 <div class="youtube-embed"><iframe src="https://www.youtube-nocookie.com/embed/tqfSFcPMgOI" title="YouTube video" loading="lazy" allowfullscreen referrerpolicy="strict-origin-when-cross-origin"></iframe></div>
 <h2>データを切り分けて加工する</h2>
-<p>Pandas と同様に、🤗 Datasets には <code>Dataset</code> オブジェクトや <code>DatasetDict</code> オブジェクトの内容を操作する関数がいくつも用意されています。<code>Dataset.map()</code> メソッドは <a href="../chapter3/1.html">Chapter 3</a> ですでに紹介しました。このセクションでは、それ以外に使える関数を見ていきます。</p>
-<p>この例では、<a href="https://archive.ics.uci.edu/ml/index.php">UC Irvine Machine Learning Repository</a> で公開されている <a href="https://archive.ics.uci.edu/ml/datasets/Drug+Review+Dataset+%28Drugs.com%29">Drug Review Dataset</a> を使います。これは、さまざまな薬に対する患者のレビューを、治療対象の症状と、患者の満足度を示す10段階の星評価とともに収めたものです。</p>
+<p>Pandas と同様に、🤗 Datasets には <code>Dataset</code> オブジェクトや <code>DatasetDict</code> オブジェクトの内容を操作する関数がいくつも用意されています。<code>Dataset.map()</code> メソッドは <a href="../chapter3/1.html">Chapter 3</a> で既に紹介しました。このセクションでは、それ以外に使える関数を見ていきます。</p>
+<p>この例では、<a href="https://archive.ics.uci.edu/ml/index.php">UC Irvine Machine Learning Repository</a> で公開されている <a href="https://archive.ics.uci.edu/ml/datasets/Drug+Review+Dataset+%28Drugs.com%29">Drug Review Dataset</a> を使います。これは、様々な薬に対する患者のレビューを、治療対象の症状と、患者の満足度を示す10段階の星評価とともに収めたものです。</p>
 <p>まず、<code>wget</code> コマンドと <code>unzip</code> コマンドでデータをダウンロードして展開する必要があります。</p>
 <div class="codehilite"><pre><span></span><code><span class="err">!</span><span class="n">wget</span> <span class="s2">"https://archive.ics.uci.edu/ml/machine-learning-databases/00462/drugsCom_raw.zip"</span>
 <span class="err">!</span><span class="n">unzip</span> <span class="n">drugsCom_raw</span><span class="o">.</span><span class="n">zip</span>
@@ -406,7 +406,7 @@ drug_dataset = drug_dataset.map(lambda x: {"review": html.unescape(x["review"])}
 <p>見てのとおり、<code>Dataset.map()</code> メソッドはデータ処理にかなり役立ちます。しかも、その能力のほんの一部に触れただけです！</p>
 <h2><code>map()</code> メソッドのスーパーパワー</h2>
 <p><code>Dataset.map()</code> メソッドには <code>batched</code> 引数があり、<code>True</code> に設定すると、サンプルのバッチが一度に map 関数へ送られます（バッチサイズは設定可能で、デフォルトは1,000です）。たとえば、先ほどのすべての HTML をアンエスケープする map 関数は、実行に少し時間がかかりました（所要時間はプログレスバーで確認できます）。リスト内包表記を使って複数の要素を同時に処理すれば、これを高速化できます。</p>
-<p><code>batched=True</code> を指定すると、関数はデータセットのフィールドを持つ辞書を受け取りますが、各値は単一の値ではなく値のリストになります。<code>Dataset.map()</code> の戻り値も同様に、更新または追加したいフィールドを持つ辞書と、値のリストであるべきです。たとえば、すべての HTML 文字をアンエスケープする別の方法として、<code>batched=True</code> を使うと次のようになります。</p>
+<p><code>batched=True</code> を指定すると、関数はデータセットのフィールドを持つ辞書を受け取りますが、各値は単一の値ではなく値のリストになります。<code>Dataset.map()</code> の戻り値も同様に、更新又は追加したいフィールドを持つ辞書と、値のリストであるべきです。たとえば、すべての HTML 文字をアンエスケープする別の方法として、<code>batched=True</code> を使うと次のようになります。</p>
 <div class="codehilite"><pre><span></span><code><span class="n">new_drug_dataset</span> <span class="o">=</span> <span class="n">drug_dataset</span><span class="o">.</span><span class="n">map</span><span class="p">(</span>
     <span class="k">lambda</span> <span class="n">x</span><span class="p">:</span> <span class="p">{</span><span class="s2">"review"</span><span class="p">:</span> <span class="p">[</span><span class="n">html</span><span class="o">.</span><span class="n">unescape</span><span class="p">(</span><span class="n">o</span><span class="p">)</span> <span class="k">for</span> <span class="n">o</span> <span class="ow">in</span> <span class="n">x</span><span class="p">[</span><span class="s2">"review"</span><span class="p">]]},</span> <span class="n">batched</span><span class="o">=</span><span class="kc">True</span>
 <span class="p">)</span>
@@ -423,14 +423,14 @@ drug_dataset = drug_dataset.map(lambda x: {"review": html.unescape(x["review"])}
     <span class="k">return</span> <span class="n">tokenizer</span><span class="p">(</span><span class="n">examples</span><span class="p">[</span><span class="s2">"review"</span><span class="p">],</span> <span class="n">truncation</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
 </code></pre></div>
 
-<p><a href="../chapter3/1.html">Chapter 3</a> で見たとおり、トークナイザには1つまたは複数のサンプルを渡せるため、この関数は <code>batched=True</code> の有無にかかわらず使えます。この機会に、さまざまな選択肢の性能を比較してみましょう。ノートブックでは、計測したいコード行の前に <code>%time</code> を付ければ、1行の命令の時間を測れます。</p>
+<p><a href="../chapter3/1.html">Chapter 3</a> で見たとおり、トークナイザには1つ又は複数のサンプルを渡せるため、この関数は <code>batched=True</code> の有無にかかわらず使えます。この機会に、様々な選択肢の性能を比較してみましょう。ノートブックでは、計測したいコード行の前に <code>%time</code> を付ければ、1行の命令の時間を測れます。</p>
 <p>```python no-format
 %time tokenized_dataset = drug_dataset.map(tokenize_function, batched=True)</p>
 <div class="codehilite"><pre><span></span><code>セル全体の時間を測るには、セルの先頭に `%%time` を置くこともできます。この命令を実行したハードウェアでは10.8秒と表示されました（「Wall time」の後に書かれた数値です）。
 
 &lt;div class="callout callout-tip" markdown="block"&gt;
 &lt;p class="callout-title"&gt;💡 ヒント&lt;/p&gt;
-✏️ **やってみよう！** 同じ命令を `batched=True` の有無で実行し、さらに低速トークナイザ（`AutoTokenizer.from_pretrained()` メソッドに `use_fast=False` を追加）でも試して、自分のハードウェアでどのような数値が得られるか確認してみましょう。
+✏️ **やってみよう！** 同じ命令を `batched=True` の有無で実行し、更に低速トークナイザ（`AutoTokenizer.from_pretrained()` メソッドに `use_fast=False` を追加）でも試して、自分のハードウェアでどのような数値が得られるか確認してみましょう。
 &lt;/div&gt;
 
 
@@ -490,10 +490,10 @@ tokenized_dataset = drug_dataset.map(slow_tokenize_function, batched=True, num_p
 </tr>
 </tbody>
 </table>
-<p>低速トークナイザでも、実行時間が大幅に短縮され、より実用的な水準になりましたが、高速トークナイザの性能も大幅に向上しました。ただし、常にそうなるとは限りません。8以外の <code>num_proc</code> の値では、そのオプションなしで <code>batched=True</code> を使うほうが速いという結果がテストで示されました。一般に、<code>batched=True</code> と高速トークナイザの組み合わせに Python のマルチプロセッシングを使うことはおすすめしません。</p>
+<p>低速トークナイザでも、実行時間が大幅に短縮され、より実用的な水準になりましたが、高速トークナイザの性能も大幅に向上しました。但し、常にそうなるとは限りません。8以外の <code>num_proc</code> の値では、そのオプションなしで <code>batched=True</code> を使うほうが速いという結果がテストで示されました。一般に、<code>batched=True</code> と高速トークナイザの組み合わせに Python のマルチプロセッシングを使うことはおすすめしません。</p>
 <div class="callout callout-tip">
 <p class="callout-title">💡 ヒント</p>
-<p><code>num_proc</code> を使って処理を高速化するのは、通常は良い考えです。ただし、使用している関数自体が既に何らかのマルチプロセッシングを行っていない場合に限ります。</p>
+<p><code>num_proc</code> を使って処理を高速化するのは、通常は良い考えです。但し、使用している関数自体が既に何らかのマルチプロセッシングを行っていない場合に限ります。</p>
 </div>
 <p>これだけの機能が1つのメソッドに凝縮されているだけでもかなり素晴らしいのですが、まだあります！<code>Dataset.map()</code> と <code>batched=True</code> を使えば、データセット内の要素数を変更することもできます。これは、1つのサンプルから複数の訓練特徴量を作りたい場面など、多くの状況で非常に便利です。<a href="../chapter7/1.html">Chapter 7</a> で取り組むいくつかの NLP タスクの前処理でも必要になります。</p>
 <div class="callout callout-tip">
@@ -576,7 +576,7 @@ DatasetDict({
 })</p>
 <div class="codehilite"><pre><span></span><code>訓練特徴量の数は以前と同じですが、ここでは古いフィールドをすべて保持しています。モデルを適用した後の後処理でそれらが必要な場合には、このアプローチを使うとよいでしょう。
 
-これで、🤗 Datasets を使ってデータセットをさまざまな方法で前処理できることを見てきました。🤗 Datasets の処理関数は、モデルの訓練に必要なことの大半をカバーしますが、`DataFrame.groupby()` や可視化用の高レベル API など、より強力な機能を利用するために Pandas へ切り替える必要がある場面もあるでしょう。幸い、🤗 Datasets は Pandas、NumPy、PyTorch、TensorFlow、JAX といったライブラリと相互運用できるよう設計されています。その仕組みを見ていきましょう。
+これで、🤗 Datasets を使ってデータセットを様々な方法で前処理できることを見てきました。🤗 Datasets の処理関数は、モデルの訓練に必要なことの大半をカバーしますが、`DataFrame.groupby()` や可視化用の高レベル API など、より強力な機能を利用するために Pandas へ切り替える必要がある場面もあるでしょう。幸い、🤗 Datasets は Pandas、NumPy、PyTorch、TensorFlow、JAX といったライブラリと相互運用できるよう設計されています。その仕組みを見ていきましょう。
 
 ## `Dataset` から `DataFrame` へ、そして戻す
 
@@ -586,7 +586,7 @@ DatasetDict({
 
 
 
-さまざまなサードパーティライブラリ間の変換を可能にするため、🤗 Datasets には `Dataset.set_format()` 関数があります。この関数はデータセットの出力形式だけを変更するため、基盤となるデータ形式（Apache Arrow）に影響を与えることなく、別の形式へ簡単に切り替えられます。形式の変更はインプレース（その場）で行われます。実例として、データセットを Pandas に変換してみましょう。
+様々なサードパーティライブラリ間の変換を可能にするため、🤗 Datasets には `Dataset.set_format()` 関数があります。この関数はデータセットの出力形式だけを変更するため、基盤となるデータ形式（Apache Arrow）に影響を与えることなく、別の形式へ簡単に切り替えられます。形式の変更はインプレース（その場）で行われます。実例として、データセットを Pandas に変換してみましょう。
 
 ```py
 drug_dataset.set_format("pandas")
@@ -721,7 +721,7 @@ Dataset({
 &lt;/div&gt;
 
 
-以上で、🤗 Datasets のさまざまな前処理機能を一通り紹介しました。このセクションの締めくくりとして、分類器の訓練に備えてデータセットの検証セットを作成しましょう。その前に、`drug_dataset` の出力形式を `"pandas"` から `"arrow"` に戻しておきます。
+以上で、🤗 Datasets の様々な前処理機能を一通り紹介しました。このセクションの締めくくりとして、分類器の訓練に備えてデータセットの検証セットを作成しましょう。その前に、`drug_dataset` の出力形式を `"pandas"` から `"arrow"` に戻しておきます。
 
 ```python
 drug_dataset.reset_format()

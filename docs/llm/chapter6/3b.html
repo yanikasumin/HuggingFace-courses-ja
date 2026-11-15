@@ -321,7 +321,7 @@ torch.Size([1, 66]) torch.Size([1, 66])</p>
 </code></pre></div>
 
 <p>{/if}</p>
-<p>これらのロジットを確率に変換するために softmax 関数を適用しますが、その前に、文脈の一部ではないインデックスを確実にマスクする必要があります。入力は <code>[CLS] question [SEP] context [SEP]</code> なので、質問のトークンと <code>[SEP]</code> トークンをマスクする必要があります。ただし <code>[CLS]</code> トークンは保持します。一部のモデルは、回答が文脈に含まれていないことを示すためにそれを使うためです。</p>
+<p>これらのロジットを確率に変換するために softmax 関数を適用しますが、その前に、文脈の一部ではないインデックスを確実にマスクする必要があります。入力は <code>[CLS] question [SEP] context [SEP]</code> なので、質問のトークンと <code>[SEP]</code> トークンをマスクする必要があります。但し <code>[CLS]</code> トークンは保持します。一部のモデルは、回答が文脈に含まれていないことを示すためにそれを使うためです。</p>
 <p>後で softmax を適用するため、マスクしたいロジットを大きな負の数に置き換えるだけで済みます。ここでは <code>-10000</code> を使います。</p>
 <p>{#if fw === 'pt'}</p>
 <div class="codehilite"><pre><span></span><code><span class="kn">import</span><span class="w"> </span><span class="nn">torch</span>
@@ -367,7 +367,7 @@ torch.Size([1, 66]) torch.Size([1, 66])</p>
 <p>この段階で、開始確率と終了確率の argmax を取ることもできますが、終了インデックスより大きい開始インデックスになってしまう可能性があるため、もう少し注意が必要です。<code>start_index &lt;= end_index</code> を満たす各 <code>start_index</code> と <code>end_index</code> の組み合わせの確率を計算し、確率が最も高いタプル <code>(start_index, end_index)</code> を取ります。</p>
 <p>事象「回答が <code>start_index</code> から始まる」と「回答が <code>end_index</code> で終わる」が独立であると仮定すると、回答が <code>start_index</code> から始まって <code>end_index</code> で終わる確率は次のとおりです。</p>
 <p>$$\mathrm{start_probabilities}[\mathrm{start_index}] \times \mathrm{end_probabilities}[\mathrm{end_index}]$$ </p>
-<p>したがって、すべてのスコアを計算するには、<code>start_index &lt;= end_index</code> の範囲で積 (\mathrm{start_probabilities}[\mathrm{start_index}] \times \mathrm{end_probabilities}[\mathrm{end_index}]) をすべて計算するだけです。</p>
+<p>従って、すべてのスコアを計算するには、<code>start_index &lt;= end_index</code> の範囲で積 (\mathrm{start_probabilities}[\mathrm{start_index}] \times \mathrm{end_probabilities}[\mathrm{end_index}]) をすべて計算するだけです。</p>
 <p>まず、可能な積をすべて計算しましょう。</p>
 <div class="codehilite"><pre><span></span><code><span class="n">scores</span> <span class="o">=</span> <span class="n">start_probabilities</span><span class="p">[:,</span> <span class="kc">None</span><span class="p">]</span> <span class="o">*</span> <span class="n">end_probabilities</span><span class="p">[</span><span class="kc">None</span><span class="p">,</span> <span class="p">:]</span>
 </code></pre></div>
@@ -392,7 +392,7 @@ torch.Size([1, 66]) torch.Size([1, 66])</p>
 <span class="nb">print</span><span class="p">(</span><span class="n">scores</span><span class="p">[</span><span class="n">start_index</span><span class="p">,</span> <span class="n">end_index</span><span class="p">])</span>
 </code></pre></div>
 
-<p>まだ完全には終わっていませんが、少なくとも回答の正しいスコアはすでに得られています（前のセクションの最初の結果と比較すれば確認できます）。</p>
+<p>まだ完全には終わっていませんが、少なくとも回答の正しいスコアは既に得られています（前のセクションの最初の結果と比較すれば確認できます）。</p>
 <p>```python out
 0.97773</p>
 <div class="codehilite"><pre><span></span><code>&lt;div class="callout callout-tip" markdown="block"&gt;
@@ -549,7 +549,7 @@ print(inputs["overflow_to_sample_mapping"])
 [0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1]</p>
 <div class="codehilite"><pre><span></span><code>つまり、最初の文は前と同様に7つのチャンクに分割され、次の4つのチャンクは2番目の文に由来します。
 
-さて、長い文脈に戻りましょう。デフォルトでは、`question-answering` パイプラインは前述のとおり最大長384とストライド128を使います。これらはモデルがファインチューニングされた方法に対応しています（パイプラインの呼び出し時に `max_seq_len` と `stride` 引数を渡せば、これらのパラメータを調整できます）。したがって、トークン化の際にもこれらのパラメータを使います。パディング（サンプルを同じ長さにしてテンソルを構築できるようにするため）も追加し、オフセットも要求します。
+さて、長い文脈に戻りましょう。デフォルトでは、`question-answering` パイプラインは前述のとおり最大長384とストライド128を使います。これらはモデルがファインチューニングされた方法に対応しています（パイプラインの呼び出し時に `max_seq_len` と `stride` 引数を渡せば、これらのパラメータを調整できます）。従って、トークン化の際にもこれらのパラメータを使います。パディング（サンプルを同じ長さにしてテンソルを構築できるようにするため）も追加し、オフセットも要求します。
 
 ```py
 inputs = tokenizer(

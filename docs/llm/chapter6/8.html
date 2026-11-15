@@ -212,10 +212,10 @@ window.MathJax = { tex: { inlineMath: [['$', '$'], ['\\(', '\\)']], displayMath:
 <ul>
 <li><code>normalizers</code> には、使用できるあらゆる種類の <code>Normalizer</code> が含まれています（完全なリストは<a href="https://huggingface.co/docs/tokenizers/api/normalizers">こちら</a>）。</li>
 <li><code>pre_tokenizers</code> には、使用できるあらゆる種類の <code>PreTokenizer</code> が含まれています（完全なリストは<a href="https://huggingface.co/docs/tokenizers/api/pre-tokenizers">こちら</a>）。</li>
-<li><code>models</code> には、<code>BPE</code>、<code>WordPiece</code>、<code>Unigram</code> など、使用できるさまざまな種類の <code>Model</code> が含まれています（完全なリストは<a href="https://huggingface.co/docs/tokenizers/api/models">こちら</a>）。</li>
-<li><code>trainers</code> には、コーパスでモデルを学習するために使用できるさまざまな種類の <code>Trainer</code> が含まれています（モデルの種類ごとに1つ。完全なリストは<a href="https://huggingface.co/docs/tokenizers/api/trainers">こちら</a>）。</li>
-<li><code>post_processors</code> には、使用できるさまざまな種類の <code>PostProcessor</code> が含まれています（完全なリストは<a href="https://huggingface.co/docs/tokenizers/api/post-processors">こちら</a>）。</li>
-<li><code>decoders</code> には、トークン化の出力をデコードするために使用できるさまざまな種類の <code>Decoder</code> が含まれています（完全なリストは<a href="https://huggingface.co/docs/tokenizers/components#decoders">こちら</a>）。</li>
+<li><code>models</code> には、<code>BPE</code>、<code>WordPiece</code>、<code>Unigram</code> など、使用できる様々な種類の <code>Model</code> が含まれています（完全なリストは<a href="https://huggingface.co/docs/tokenizers/api/models">こちら</a>）。</li>
+<li><code>trainers</code> には、コーパスでモデルを学習するために使用できる様々な種類の <code>Trainer</code> が含まれています（モデルの種類ごとに1つ。完全なリストは<a href="https://huggingface.co/docs/tokenizers/api/trainers">こちら</a>）。</li>
+<li><code>post_processors</code> には、使用できる様々な種類の <code>PostProcessor</code> が含まれています（完全なリストは<a href="https://huggingface.co/docs/tokenizers/api/post-processors">こちら</a>）。</li>
+<li><code>decoders</code> には、トークン化の出力をデコードするために使用できる様々な種類の <code>Decoder</code> が含まれています（完全なリストは<a href="https://huggingface.co/docs/tokenizers/components#decoders">こちら</a>）。</li>
 </ul>
 <p>構成要素の全体のリストは<a href="https://huggingface.co/docs/tokenizers/components">こちら</a>で確認できます。</p>
 <h2>コーパスの取得</h2>
@@ -259,13 +259,13 @@ window.MathJax = { tex: { inlineMath: [['$', '$'], ['\\(', '\\)']], displayMath:
 <div class="codehilite"><pre><span></span><code><span class="n">tokenizer</span><span class="o">.</span><span class="n">normalizer</span> <span class="o">=</span> <span class="n">normalizers</span><span class="o">.</span><span class="n">BertNormalizer</span><span class="p">(</span><span class="n">lowercase</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
 </code></pre></div>
 
-<p>ただし一般論として、新しいトークナイザを構築する際には、🤗 Tokenizers ライブラリに実装済みのこのような便利なノーマライザが使えるとは限りません。そこで、BERT ノーマライザを手作業で作る方法を見てみましょう。このライブラリには <code>Lowercase</code> ノーマライザと <code>StripAccents</code> ノーマライザがあり、<code>Sequence</code> を使って複数のノーマライザを組み合わせることができます。</p>
+<p>但し一般論として、新しいトークナイザを構築する際には、🤗 Tokenizers ライブラリに実装済みのこのような便利なノーマライザが使えるとは限りません。そこで、BERT ノーマライザを手作業で作る方法を見てみましょう。このライブラリには <code>Lowercase</code> ノーマライザと <code>StripAccents</code> ノーマライザがあり、<code>Sequence</code> を使って複数のノーマライザを組み合わせることができます。</p>
 <div class="codehilite"><pre><span></span><code><span class="n">tokenizer</span><span class="o">.</span><span class="n">normalizer</span> <span class="o">=</span> <span class="n">normalizers</span><span class="o">.</span><span class="n">Sequence</span><span class="p">(</span>
     <span class="p">[</span><span class="n">normalizers</span><span class="o">.</span><span class="n">NFD</span><span class="p">(),</span> <span class="n">normalizers</span><span class="o">.</span><span class="n">Lowercase</span><span class="p">(),</span> <span class="n">normalizers</span><span class="o">.</span><span class="n">StripAccents</span><span class="p">()]</span>
 <span class="p">)</span>
 </code></pre></div>
 
-<p>さらに Unicode ノーマライザの <code>NFD</code> も使っています。そうしないと <code>StripAccents</code> ノーマライザがアクセント付き文字を正しく認識できず、取り除けないためです。</p>
+<p>更に Unicode ノーマライザの <code>NFD</code> も使っています。そうしないと <code>StripAccents</code> ノーマライザがアクセント付き文字を正しく認識できず、取り除けないためです。</p>
 <p>前に見たとおり、<code>normalizer</code> の <code>normalize_str()</code> メソッドを使って、与えられたテキストにどんな効果があるかを確認できます。</p>
 <div class="codehilite"><pre><span></span><code><span class="nb">print</span><span class="p">(</span><span class="n">tokenizer</span><span class="o">.</span><span class="n">normalizer</span><span class="o">.</span><span class="n">normalize_str</span><span class="p">(</span><span class="s2">"Héllò hôw are ü?"</span><span class="p">))</span>
 </code></pre></div>
@@ -274,8 +274,8 @@ window.MathJax = { tex: { inlineMath: [['$', '$'], ['\\(', '\\)']], displayMath:
 hello how are u?</p>
 <div class="codehilite"><pre><span></span><code>&lt;div class="callout callout-tip" markdown="block"&gt;
 &lt;p class="callout-title"&gt;💡 ヒント&lt;/p&gt;
-**さらに深く知るには** Unicode 文字 `u"\u0085"` を含む文字列で、先ほどの2つのバージョンのノーマライザを試すと、両者が完全には等価でないことに気づくでしょう。
-`normalizers.Sequence` を使ったバージョンを過度に複雑にしないため、`clean_text` 引数が `True`（デフォルトの動作）のときに `BertNormalizer` が必要とする正規表現による置換は含めていません。ただし心配はいりません。便利な `BertNormalizer` を使わなくても、ノーマライザの列に `normalizers.Replace` を2つ追加すれば、まったく同じ正規化が可能です。
+**更に深く知るには** Unicode 文字 `u"\u0085"` を含む文字列で、先ほどの2つのバージョンのノーマライザを試すと、両者が完全には等価でないことに気づくでしょう。
+`normalizers.Sequence` を使ったバージョンを過度に複雑にしないため、`clean_text` 引数が `True`（デフォルトの動作）のときに `BertNormalizer` が必要とする正規表現による置換は含めていません。但し心配はいりません。便利な `BertNormalizer` を使わなくても、ノーマライザの列に `normalizers.Replace` を2つ追加すれば、まったく同じ正規化が可能です。
 &lt;/div&gt;
 
 
@@ -317,7 +317,7 @@ pre_tokenizer.pre_tokenize_str("Let's test my pre-tokenizer.")
 <p>```python out
 [('Let', (0, 3)), ("'", (3, 4)), ('s', (4, 5)), ('test', (6, 10)), ('my', (11, 13)), ('pre', (14, 17)),
  ('-', (17, 18)), ('tokenizer', (18, 27)), ('.', (27, 28))]</p>
-<div class="codehilite"><pre><span></span><code>トークン化パイプラインの次のステップは、入力をモデルに通すことです。モデルの初期化はすでに済んでいますが、まだ学習が必要です。そのためには `WordPieceTrainer` が必要です。🤗 Tokenizers でトレーナーをインスタンス化する際に覚えておくべき主なポイントは、使用する予定の特殊トークンをすべて渡す必要があることです。そうしないと、学習コーパスに含まれていないため、語彙に追加されません。
+<div class="codehilite"><pre><span></span><code>トークン化パイプラインの次のステップは、入力をモデルに通すことです。モデルの初期化は既に済んでいますが、まだ学習が必要です。そのためには `WordPieceTrainer` が必要です。🤗 Tokenizers でトレーナーをインスタンス化する際に覚えておくべき主なポイントは、使用する予定の特殊トークンをすべて渡す必要があることです。そうしないと、学習コーパスに含まれていないため、語彙に追加されません。
 
 ```python
 special_tokens = ["[UNK]", "[PAD]", "[CLS]", "[SEP]", "[MASK]"]
@@ -341,7 +341,7 @@ trainer = trainers.WordPieceTrainer(vocab_size=25000, special_tokens=special_tok
 
 <p>```python out
 ['let', "'", 's', 'test', 'this', 'tok', '##eni', '##zer', '.']</p>
-<div class="codehilite"><pre><span></span><code>得られた `encoding` は `Encoding` で、そのさまざまな属性にトークナイザの必要な出力がすべて含まれています。`ids`、`type_ids`、`tokens`、`offsets`、`attention_mask`、`special_tokens_mask`、`overflowing` です。
+<div class="codehilite"><pre><span></span><code>得られた `encoding` は `Encoding` で、その様々な属性にトークナイザの必要な出力がすべて含まれています。`ids`、`type_ids`、`tokens`、`offsets`、`attention_mask`、`special_tokens_mask`、`overflowing` です。
 
 トークン化パイプラインの最後のステップは後処理です。先頭に `[CLS]` トークンを、末尾（文のペアの場合は各文の後）に `[SEP]` トークンを追加する必要があります。そのために `TemplateProcessor` を使いますが、まず語彙における `[CLS]` と `[SEP]` トークンの ID を知る必要があります。
 
@@ -353,7 +353,7 @@ print(cls_token_id, sep_token_id)
 
 <p>```python out
 (2, 3)</p>
-<div class="codehilite"><pre><span></span><code>`TemplateProcessor` のテンプレートを書くには、単一の文と文のペアをどう扱うかを指定する必要があります。どちらについても、使用したい特殊トークンを書きます。最初の（または単一の）文は `$A` で表され、2番目の文（ペアをエンコードする場合）は `$B` で表されます。これら（特殊トークンと文）のそれぞれについて、コロンの後に続けて対応するトークンタイプ ID も指定します。
+<div class="codehilite"><pre><span></span><code>`TemplateProcessor` のテンプレートを書くには、単一の文と文のペアをどう扱うかを指定する必要があります。どちらについても、使用したい特殊トークンを書きます。最初の（又は単一の）文は `$A` で表され、2番目の文（ペアをエンコードする場合）は `$B` で表されます。これら（特殊トークンと文）のそれぞれについて、コロンの後に続けて対応するトークンタイプ ID も指定します。
 
 定番の BERT テンプレートは次のように定義されます。
 
@@ -493,7 +493,7 @@ tokenizer.decoder = decoders.ByteLevel()
 
 <p>```python out
 "Let's test this tokenizer."</p>
-<div class="codehilite"><pre><span></span><code>素晴らしい！これで完成したので、前のようにトークナイザを保存できます。🤗 Transformers で使いたい場合は、`PreTrainedTokenizerFast` または `GPT2TokenizerFast` でラップします。
+<div class="codehilite"><pre><span></span><code>素晴らしい！これで完成したので、前のようにトークナイザを保存できます。🤗 Transformers で使いたい場合は、`PreTrainedTokenizerFast` 又は `GPT2TokenizerFast` でラップします。
 
 ```python
 from transformers import PreTrainedTokenizerFast
@@ -505,7 +505,7 @@ wrapped_tokenizer = PreTrainedTokenizerFast(
 )
 </code></pre></div>
 
-<p>または次のとおりです。</p>
+<p>又は次のとおりです。</p>
 <div class="codehilite"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">transformers</span><span class="w"> </span><span class="kn">import</span> <span class="n">GPT2TokenizerFast</span>
 
 <span class="n">wrapped_tokenizer</span> <span class="o">=</span> <span class="n">GPT2TokenizerFast</span><span class="p">(</span><span class="n">tokenizer_object</span><span class="o">=</span><span class="n">tokenizer</span><span class="p">)</span>
@@ -532,7 +532,7 @@ wrapped_tokenizer = PreTrainedTokenizerFast(
 <span class="p">)</span>
 </code></pre></div>
 
-<p>これは <code>``</code> と <code>''</code> を <code>"</code> に置き換え、2つ以上連続するスペースの並びを1つのスペースに置き換えます。さらに、トークン化するテキストのアクセントを取り除きます。</p>
+<p>これは <code>``</code> と <code>''</code> を <code>"</code> に置き換え、2つ以上連続するスペースの並びを1つのスペースに置き換えます。更に、トークン化するテキストのアクセントを取り除きます。</p>
 <p>SentencePiece トークナイザで使う事前トークナイザは <code>Metaspace</code> です。</p>
 <div class="codehilite"><pre><span></span><code><span class="n">tokenizer</span><span class="o">.</span><span class="n">pre_tokenizer</span> <span class="o">=</span> <span class="n">pre_tokenizers</span><span class="o">.</span><span class="n">Metaspace</span><span class="p">()</span>
 </code></pre></div>
@@ -602,7 +602,7 @@ tokenizer.post_processor = processors.TemplateProcessing(
 tokenizer.decoder = decoders.Metaspace()
 </code></pre></div>
 
-<p>これでこのトークナイザは完成です！前のようにトークナイザを保存でき、🤗 Transformers で使いたい場合は <code>PreTrainedTokenizerFast</code> または <code>XLNetTokenizerFast</code> でラップします。<code>PreTrainedTokenizerFast</code> を使う際に注意すべき点として、特殊トークンに加えて、左側にパディングするよう 🤗 Transformers ライブラリに指示する必要があります。</p>
+<p>これでこのトークナイザは完成です！前のようにトークナイザを保存でき、🤗 Transformers で使いたい場合は <code>PreTrainedTokenizerFast</code> 又は <code>XLNetTokenizerFast</code> でラップします。<code>PreTrainedTokenizerFast</code> を使う際に注意すべき点として、特殊トークンに加えて、左側にパディングするよう 🤗 Transformers ライブラリに指示する必要があります。</p>
 <div class="codehilite"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">transformers</span><span class="w"> </span><span class="kn">import</span> <span class="n">PreTrainedTokenizerFast</span>
 
 <span class="n">wrapped_tokenizer</span> <span class="o">=</span> <span class="n">PreTrainedTokenizerFast</span><span class="p">(</span>
@@ -624,7 +624,7 @@ tokenizer.decoder = decoders.Metaspace()
 <span class="n">wrapped_tokenizer</span> <span class="o">=</span> <span class="n">XLNetTokenizerFast</span><span class="p">(</span><span class="n">tokenizer_object</span><span class="o">=</span><span class="n">tokenizer</span><span class="p">)</span>
 </code></pre></div>
 
-<p>さまざまな構成要素を使って既存のトークナイザを構築する方法を見てきたので、🤗 Tokenizers ライブラリで好きなトークナイザを書けるようになり、🤗 Transformers で使えるようになっているはずです。</p>
+<p>様々な構成要素を使って既存のトークナイザを構築する方法を見てきたので、🤗 Tokenizers ライブラリで好きなトークナイザを書けるようになり、🤗 Transformers で使えるようになっているはずです。</p>
 </article>
 
 <nav class="page-nav"><a class="nav-link prev" href="7.html">← 前へ: Unigram によるトークン化</a><a class="nav-link toc-link" href="../index.html">目次へ</a><a class="nav-link next" href="9.html">次へ →: トークナイザ、チェック！</a></nav>

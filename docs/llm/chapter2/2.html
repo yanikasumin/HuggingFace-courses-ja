@@ -239,7 +239,7 @@ tokenizer = AutoTokenizer.from_pretrained(checkpoint)
 </code></pre></div>
 
 <p>トークナイザが用意できたら、文を直接渡すだけで、モデルにそのまま入力できる辞書が返ってきます！あとは、入力 ID のリストをテンソルに変換するだけです。</p>
-<p>🤗 Transformers を使うとき、バックエンドとしてどの ML フレームワークが使われているかは気にしなくて構いません。モデルによっては PyTorch のことも Flax のこともあります。ただし、Transformer モデルが入力として受け付けるのは <em>テンソル</em> だけです。テンソルという言葉を初めて聞いた場合は、NumPy の配列だと思ってください。NumPy の配列には、スカラー（0次元）、ベクトル（1次元）、行列（2次元）、それ以上の次元のものがあります。実質的にはテンソルであり、他の ML フレームワークのテンソルも同じように振る舞い、通常は NumPy の配列と同じくらい簡単に作成できます。</p>
+<p>🤗 Transformers を使うとき、バックエンドとしてどの ML フレームワークが使われているかは気にしなくて構いません。モデルによっては PyTorch のことも Flax のこともあります。但し、Transformer モデルが入力として受け付けるのは <em>テンソル</em> だけです。テンソルという言葉を初めて聞いた場合は、NumPy の配列だと思ってください。NumPy の配列には、スカラー（0次元）、ベクトル（1次元）、行列（2次元）、それ以上の次元のものがあります。実質的にはテンソルであり、他の ML フレームワークのテンソルも同じように振る舞い、通常は NumPy の配列と同じくらい簡単に作成できます。</p>
 <p>出力形式として PyTorch のテンソルと NumPy の配列のどちらを使うかは、<code>return_tensors</code> 引数で指定します。</p>
 <div class="codehilite"><pre><span></span><code><span class="n">raw_inputs</span> <span class="o">=</span> <span class="p">[</span>
     <span class="s2">"I've been waiting for a HuggingFace course my whole life."</span><span class="p">,</span>
@@ -278,7 +278,7 @@ model = AutoModel.from_pretrained(checkpoint)
 <p>このコードスニペットでは、先ほどパイプラインで使ったのと同じチェックポイントをダウンロードし（実際には既にキャッシュされているはずです）、モデルをインスタンス化しています。</p>
 <p>このアーキテクチャに含まれるのは、基本となる Transformer モジュールだけです。入力を与えると、<em>隠れ状態</em>（<em>特徴</em> とも呼ばれます）を出力します。各入力に対して、<strong>Transformer モデルが前後の文脈を考慮して得た表現</strong>を、高次元ベクトルとして取り出せます。</p>
 <p>これが何を意味するのかわからなくても、心配はいりません。後ほどすべて説明します。</p>
-<p>隠れ状態はそれ自体でも有用ですが、通常はモデルの別の部分である <em>ヘッド</em> への入力となります。<a href="../chapter1/1.html">第1章</a> では、さまざまなタスクを同じアーキテクチャで実行できましたが、タスクごとに異なるヘッドが関連づけられます。</p>
+<p>隠れ状態はそれ自体でも有用ですが、通常はモデルの別の部分である <em>ヘッド</em> への入力となります。<a href="../chapter1/1.html">第1章</a> では、様々なタスクを同じアーキテクチャで実行できましたが、タスクごとに異なるヘッドが関連づけられます。</p>
 <h3>高次元のベクトル？</h3>
 <p>Transformer モジュールが出力するベクトルは、通常大きなものです。一般に、次の3つの次元を持ちます。</p>
 <ul>
@@ -298,7 +298,7 @@ torch.Size([2, 16, 768])</p>
 
 ### モデルヘッド：数値に意味を持たせる
 
-モデルヘッドは、隠れ状態の高次元ベクトルを入力として受け取り、別の次元へ射影します。通常は、1つまたは数個の線形層で構成されます。
+モデルヘッドは、隠れ状態の高次元ベクトルを入力として受け取り、別の次元へ射影します。通常は、1つ又は数個の線形層で構成されます。
 
 &lt;div class="flex justify-center"&gt;
 &lt;img class="block dark:hidden" src="https://huggingface.co/datasets/huggingface-course/documentation-images/resolve/main/en/chapter2/transformer_and_head.svg" alt="Transformer ネットワークとそのヘッド"/&gt;

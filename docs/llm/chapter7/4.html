@@ -202,8 +202,8 @@ window.MathJax = { tex: { inlineMath: [['$', '$'], ['\\(', '\\)']], displayMath:
 <li><strong>生成型質問応答（Generative question answering）</strong>: 文脈を与えて、質問への回答を生成するモデルを作る</li>
 </ul>
 <div class="youtube-embed"><iframe src="https://www.youtube-nocookie.com/embed/1JvfrvZgi6c" title="YouTube video" loading="lazy" allowfullscreen referrerpolicy="strict-origin-when-cross-origin"></iframe></div>
-<p>2つ（またはそれ以上）の言語のテキストからなる十分大きなコーパスがあれば、<a href="6.html">因果言語モデリング</a>のセクションで行うように、新しい翻訳モデルをゼロから学習できます。ただし、既存の翻訳モデルをファインチューニングする方が速く済みます。多言語モデルの mT5 や mBART を特定の言語ペア向けにファインチューニングする場合でも、ある言語から別の言語への翻訳に特化したモデルを自分のコーパス向けにファインチューニングする場合でも構いません。</p>
-<p>このセクションでは、英語からフランス語への翻訳で事前学習された Marian モデルを、<a href="https://huggingface.co/datasets/kde4">KDE4 データセット</a>でファインチューニングします（Hugging Face の社員の多くがこの2言語を話すためです）。KDE4 は <a href="https://apps.kde.org/">KDE アプリ</a>のローカライズ用ファイルのデータセットです。使うモデルは、<a href="https://opus.nlpl.eu/">Opus データセット</a>から取得したフランス語と英語の大規模コーパスで事前学習されています。Opus には KDE4 データセット自体も含まれています。ただし、使う事前学習モデルが事前学習の段階でそのデータを見ていたとしても、ファインチューニング後にはより良いモデルが得られることが分かるはずです。</p>
+<p>2つ（又はそれ以上）の言語のテキストからなる十分大きなコーパスがあれば、<a href="6.html">因果言語モデリング</a>のセクションで行うように、新しい翻訳モデルをゼロから学習できます。但し、既存の翻訳モデルをファインチューニングする方が速く済みます。多言語モデルの mT5 や mBART を特定の言語ペア向けにファインチューニングする場合でも、ある言語から別の言語への翻訳に特化したモデルを自分のコーパス向けにファインチューニングする場合でも構いません。</p>
+<p>このセクションでは、英語からフランス語への翻訳で事前学習された Marian モデルを、<a href="https://huggingface.co/datasets/kde4">KDE4 データセット</a>でファインチューニングします（Hugging Face の社員の多くがこの2言語を話すためです）。KDE4 は <a href="https://apps.kde.org/">KDE アプリ</a>のローカライズ用ファイルのデータセットです。使うモデルは、<a href="https://opus.nlpl.eu/">Opus データセット</a>から取得したフランス語と英語の大規模コーパスで事前学習されています。Opus には KDE4 データセット自体も含まれています。但し、使う事前学習モデルが事前学習の段階でそのデータを見ていたとしても、ファインチューニング後にはより良いモデルが得られることが分かるはずです。</p>
 <p>完成すると、次のような予測ができるモデルが得られます。</p>
 <iframe src="https://course-demos-marian-finetuned-kde4-en-to-fr.hf.space" frameBorder="0" height="350" title="Gradio アプリ" class="block dark:hidden container p-0 flex-grow space-iframe" allow="accelerometer; ambient-light-sensor; autoplay; battery; camera; document-domain; encrypted-media; fullscreen; geolocation; gyroscope; layout-animations; legacy-image-formats; magnetometer; microphone; midi; oversized-images; payment; picture-in-picture; publickey-credentials-get; sync-xhr; usb; vr ; wake-lock; xr-spatial-tracking" sandbox="allow-forms allow-modals allow-popups allow-popups-to-escape-sandbox allow-same-origin allow-scripts allow-downloads"></iframe>
 
@@ -277,8 +277,7 @@ translator("Default to expanded threads")
 
 <p>```python out
 [{'translation_text': 'Par défaut pour les threads élargis'}]</p>
-<div class="codehilite"><pre><span></span><code>この振る舞いのもう1つの例が "plugin" という単語です。これは正式なフランス語の単語ではありませんが、ほとんどのネイティブスピーカーは理解でき、わざわざ翻訳しません。
-KDE4 データセットでは、この単語はより公式な "module d'extension" に翻訳されています。
+<div class="codehilite"><pre><span></span><code>この振る舞いのもう1つの例が "plugin" という単語です。これは正式なフランス語の単語ではありませんが、ほとんどのネイティブスピーカーは理解でき、わざわざ翻訳しません。KDE4 データセットでは、この単語はより公式な "module d'extension" に翻訳されています。
 
 ```py
 split_datasets["train"][172]["translation"]
@@ -378,7 +377,7 @@ def preprocess_function(examples):
 </div>
 <div class="callout callout-warning">
 <p class="callout-title">⚠️ 注意</p>
-<p>⚠️ ターゲットのアテンションマスクには注意を払いません。モデルはそれを想定していないためです。その代わり、パディングトークンに対応するラベルは、損失の計算で無視されるよう <code>-100</code> に設定すべきです。ここでは動的パディングを適用するので、この処理は後でデータコレータが行います。ただし、ここでパディングを行う場合は、パディングトークンに対応するラベルをすべて <code>-100</code> に設定するよう前処理関数を適応させてください。</p>
+<p>⚠️ ターゲットのアテンションマスクには注意を払いません。モデルはそれを想定していないためです。その代わり、パディングトークンに対応するラベルは、損失の計算で無視されるよう <code>-100</code> に設定すべきです。ここでは動的パディングを適用するので、この処理は後でデータコレータが行います。但し、ここでパディングを行う場合は、パディングトークンに対応するラベルをすべて <code>-100</code> に設定するよう前処理関数を適応させてください。</p>
 </div>
 <p>これで、データセットのすべてのスプリットに前処理を一括で適用できます。</p>
 <div class="codehilite"><pre><span></span><code><span class="n">tokenized_datasets</span> <span class="o">=</span> <span class="n">split_datasets</span><span class="o">.</span><span class="n">map</span><span class="p">(</span>
@@ -408,13 +407,10 @@ def preprocess_function(examples):
 
 <div class="callout callout-tip">
 <p>💡 <code>Helsinki-NLP/opus-mt-en-fr</code> チェックポイントには PyTorch の重みしかないため、
-<code>from_pretrained()</code> メソッドで <code>from_pt=True</code> 引数を使わずにモデルを読み込もうとすると
-エラーになります。<code>from_pt=True</code> を指定すると、ライブラリが PyTorch の重みを
-自動的にダウンロードして変換してくれます。見てのとおり、🤗 Transformers では
-フレームワーク間の切り替えがとても簡単です！</p>
+<code>from_pretrained()</code> メソッドで <code>from_pt=True</code> 引数を使わずにモデルを読み込もうとするとエラーになります。<code>from_pt=True</code> を指定すると、ライブラリが PyTorch の重みを自動的にダウンロードして変換してくれます。見てのとおり、🤗 Transformers ではフレームワーク間の切り替えがとても簡単です！</p>
 </div>
 <p>{/if}</p>
-<p>今回は、翻訳タスクで学習され、すでにそのまま使えるモデルを使っていることに注意してください。そのため、重みが不足していたり新しく初期化されたりする警告は出ません。</p>
+<p>今回は、翻訳タスクで学習され、既にそのまま使えるモデルを使っていることに注意してください。そのため、重みが不足していたり新しく初期化されたりする警告は出ません。</p>
 <h3>データコレータ</h3>
 <p>動的バッチ処理のパディングを扱うには、データコレータが必要です。このケースでは、<a href="../chapter3/1.html">Chapter 3</a> のような <code>DataCollatorWithPadding</code> をそのまま使うことはできません。これは入力（入力 ID、アテンションマスク、トークンタイプ ID）しかパディングしないためです。ラベルも、ラベル内で遭遇する最大長までパディングしなければなりません。また、前述のとおり、ラベルのパディングに使う値はトークナイザのパディングトークンではなく <code>-100</code> にすべきです。そうすれば、パディングされた値が損失の計算で確実に無視されます。</p>
 <p>これらをすべて行うのが <a href="https://huggingface.co/transformers/main_classes/data_collator.html#datacollatorforseq2seq"><code>DataCollatorForSeq2Seq</code></a> です。<code>DataCollatorWithPadding</code> と同様に、入力の前処理に使った <code>tokenizer</code> を受け取りますが、<code>model</code> も受け取ります。これは、このデータコレータがデコーダ入力 ID の準備も担当するためです。デコーダ入力 ID は、ラベルをシフトし、先頭に特殊トークンを置いたものです。このシフトの方法はアーキテクチャによって少し異なるため、<code>DataCollatorForSeq2Seq</code> は <code>model</code> オブジェクトを知る必要があります。</p>
@@ -500,8 +496,8 @@ tf_eval_dataset = model.prepare_tf_dataset(
 <p><code>Seq2SeqTrainer</code> がスーパークラスの <code>Trainer</code> に追加する機能は、評価や予測の際に <code>generate()</code> メソッドを使えることです。学習中、モデルは <code>decoder_input_ids</code> と、予測しようとしているトークンより後のトークンを使わないようにするアテンションマスクを使って学習を高速化します。推論時にはラベルがないため、それらを使うことはできません。そのため、モデルを同じ設定で評価するのは良い考えです。</p>
 <p><a href="../chapter1/6.html">Chapter 1</a> で見たように、デコーダはトークンを1つずつ予測して推論を行います。これは 🤗 Transformers では <code>generate()</code> メソッドによって裏側で実装されています。<code>predict_with_generate=True</code> と設定すれば、<code>Seq2SeqTrainer</code> でそのメソッドを評価に使うことができます。</p>
 <p>{/if}</p>
-<p>翻訳で伝統的に使われる指標は、Kishore Papineni らによる <a href="https://aclanthology.org/P02-1040.pdf">2002年の論文</a> で導入された <a href="https://en.wikipedia.org/wiki/BLEU">BLEU スコア</a> です。BLEU スコアは、翻訳がラベルにどれだけ近いかを評価します。モデルが生成した出力の分かりやすさや文法的な正しさは測りません。その代わり、統計的な規則を用いて、生成された出力に含まれる単語がすべてターゲットにも現れることを保証します。さらに、ターゲットでも繰り返されていないのに同じ単語が繰り返される場合（モデルが <code>"the the the the the"</code> のような文を出力するのを避けるため）と、ターゲットより短い文を出力する場合（モデルが <code>"the"</code> のような文を出力するのを避けるため）にペナルティを与える規則もあります。</p>
-<p>BLEU の弱点の1つは、テキストがすでにトークン化されていることを前提とする点です。そのため、異なるトークナイザを使うモデル同士でスコアを比較するのが難しくなります。そこで、今日の翻訳モデルのベンチマークで最もよく使われる指標は <a href="https://github.com/mjpost/sacrebleu">SacreBLEU</a> です。これは、トークン化のステップを標準化することで、この弱点（や他の弱点）に対処しています。この指標を使うには、まず SacreBLEU ライブラリをインストールする必要があります。</p>
+<p>翻訳で伝統的に使われる指標は、Kishore Papineni らによる <a href="https://aclanthology.org/P02-1040.pdf">2002年の論文</a> で導入された <a href="https://en.wikipedia.org/wiki/BLEU">BLEU スコア</a> です。BLEU スコアは、翻訳がラベルにどれだけ近いかを評価します。モデルが生成した出力の分かりやすさや文法的な正しさは測りません。その代わり、統計的な規則を用いて、生成された出力に含まれる単語がすべてターゲットにも現れることを保証します。更に、ターゲットでも繰り返されていないのに同じ単語が繰り返される場合（モデルが <code>"the the the the the"</code> のような文を出力するのを避けるため）と、ターゲットより短い文を出力する場合（モデルが <code>"the"</code> のような文を出力するのを避けるため）にペナルティを与える規則もあります。</p>
+<p>BLEU の弱点の1つは、テキストが既にトークン化されていることを前提とする点です。そのため、異なるトークナイザを使うモデル同士でスコアを比較するのが難しくなります。そこで、今日の翻訳モデルのベンチマークで最もよく使われる指標は <a href="https://github.com/mjpost/sacrebleu">SacreBLEU</a> です。これは、トークン化のステップを標準化することで、この弱点（や他の弱点）に対処しています。この指標を使うには、まず SacreBLEU ライブラリをインストールする必要があります。</p>
 <div class="codehilite"><pre><span></span><code><span class="err">!</span><span class="n">pip</span> <span class="n">install</span> <span class="n">sacrebleu</span>
 </code></pre></div>
 
@@ -532,7 +528,7 @@ tf_eval_dataset = model.prepare_tf_dataset(
  'bp': 0.9200444146293233,
  'sys_len': 12,
  'ref_len': 13}</p>
-<div class="codehilite"><pre><span></span><code>これは BLEU スコア 46.75 で、かなり良い結果です。参考までに、["Attention Is All You Need" 論文](https://arxiv.org/pdf/1706.03762.pdf) のオリジナルの Transformer モデルは、英語とフランス語の間の同様の翻訳タスクで BLEU スコア 41.8 を達成しました！（`counts` や `bp` のような個別の指標の詳細は、[SacreBLEU リポジトリ](https://github.com/mjpost/sacrebleu/blob/078c440168c6adc89ba75fe6d63f0d922d42bcfe/sacrebleu/metrics/bleu.py#L74) を参照してください。）一方、翻訳モデルからよく出てくる2つの悪いタイプの予測（繰り返しが多い、または短すぎる）を試すと、かなり悪い BLEU スコアになります。
+<div class="codehilite"><pre><span></span><code>これは BLEU スコア 46.75 で、かなり良い結果です。参考までに、["Attention Is All You Need" 論文](https://arxiv.org/pdf/1706.03762.pdf) のオリジナルの Transformer モデルは、英語とフランス語の間の同様の翻訳タスクで BLEU スコア 41.8 を達成しました！（`counts` や `bp` のような個別の指標の詳細は、[SacreBLEU リポジトリ](https://github.com/mjpost/sacrebleu/blob/078c440168c6adc89ba75fe6d63f0d922d42bcfe/sacrebleu/metrics/bleu.py#L74) を参照してください。）一方、翻訳モデルからよく出てくる2つの悪いタイプの予測（繰り返しが多い、又は短すぎる）を試すと、かなり悪い BLEU スコアになります。
 
 ```py
 predictions = ["This This This This"]
@@ -574,7 +570,7 @@ metric.compute(predictions=predictions, references=references)
 
 {#if fw === 'tf'}
 
-モデルの出力から指標が使えるテキストに変換するには、`tokenizer.batch_decode()` メソッドを使います。ラベル内の `-100` をすべて除去するだけです。トークナイザはパディングトークンについても自動的に同じことを行います。モデルとデータセットを受け取り、その指標を計算する関数を定義しましょう。さらに、劇的にパフォーマンスを高める工夫も使います。生成コードを TensorFlow の高速化線形代数コンパイラである [XLA](https://www.tensorflow.org/xla) でコンパイルします。XLA はモデルの計算グラフにさまざまな最適化を適用し、速度とメモリ使用量を大きく改善します。Hugging Face の[ブログ](https://huggingface.co/blog/tf-xla-generate)で説明されているように、XLA は入力の形状があまり変化しないときに最も効果を発揮します。これに対応するため、入力を128の倍数までパディングし、パディング用コレータで新しいデータセットを作り、生成関数に `@tf.function(jit_compile=True)` デコレータを適用して、関数全体を XLA でコンパイルするようマークします。
+モデルの出力から指標が使えるテキストに変換するには、`tokenizer.batch_decode()` メソッドを使います。ラベル内の `-100` をすべて除去するだけです。トークナイザはパディングトークンについても自動的に同じことを行います。モデルとデータセットを受け取り、その指標を計算する関数を定義しましょう。更に、劇的にパフォーマンスを高める工夫も使います。生成コードを TensorFlow の高速化線形代数コンパイラである [XLA](https://www.tensorflow.org/xla) でコンパイルします。XLA はモデルの計算グラフに様々な最適化を適用し、速度とメモリ使用量を大きく改善します。Hugging Face の[ブログ](https://huggingface.co/blog/tf-xla-generate)で説明されているように、XLA は入力の形状があまり変化しないときに最も効果を発揮します。これに対応するため、入力を128の倍数までパディングし、パディング用コレータで新しいデータセットを作り、生成関数に `@tf.function(jit_compile=True)` デコレータを適用して、関数全体を XLA でコンパイルするようマークします。
 
 ```py
 import numpy as np
@@ -709,7 +705,7 @@ def compute_metrics():
 <p>プッシュ先のリポジトリ名は <code>hub_model_id</code> 引数で指定できることに注意してください（特に、組織にプッシュする場合はこの引数を使う必要があります）。たとえば、モデルを <a href="https://huggingface.co/huggingface-course"><code>huggingface-course</code> 組織</a> にプッシュした際には、<code>Seq2SeqTrainingArguments</code> に <code>hub_model_id="huggingface-course/marian-finetuned-kde4-en-to-fr"</code> を追加しました。デフォルトでは、使用されるリポジトリは自分の名前空間内にあり、設定した出力ディレクトリにちなんだ名前になるため、ここでは <code>"sgugger/marian-finetuned-kde4-en-to-fr"</code> になります（これは、このセクションの冒頭でリンクしたモデルです）。</p>
 <div class="callout callout-tip">
 <p class="callout-title">💡 ヒント</p>
-<p>💡 使っている出力ディレクトリがすでに存在する場合、それはプッシュ先リポジトリのローカルクローンでなければなりません。そうでない場合は、<code>model.fit()</code> を呼び出すときにエラーになり、新しい名前を設定する必要があります。</p>
+<p>💡 使っている出力ディレクトリが既に存在する場合、それはプッシュ先リポジトリのローカルクローンでなければなりません。そうでない場合は、<code>model.fit()</code> を呼び出すときにエラーになり、新しい名前を設定する必要があります。</p>
 </div>
 <p>最後に、学習が終わった今、指標がどうなったか見てみましょう。</p>
 <div class="codehilite"><pre><span></span><code><span class="nb">print</span><span class="p">(</span><span class="n">compute_metrics</span><span class="p">())</span>
@@ -749,7 +745,7 @@ def compute_metrics():
 <p>プッシュ先リポジトリの完全な名前は <code>hub_model_id</code> 引数で指定できることに注意してください（特に、組織にプッシュする場合はこの引数を使う必要があります）。たとえば、モデルを <a href="https://huggingface.co/huggingface-course"><code>huggingface-course</code> 組織</a> にプッシュした際には、<code>Seq2SeqTrainingArguments</code> に <code>hub_model_id="huggingface-course/marian-finetuned-kde4-en-to-fr"</code> を追加しました。デフォルトでは、使用されるリポジトリは自分の名前空間内にあり、設定した出力ディレクトリにちなんだ名前になるため、私たちの場合 <code>"sgugger/marian-finetuned-kde4-en-to-fr"</code> になります（これは、このセクションの冒頭でリンクしたモデルです）。</p>
 <div class="callout callout-tip">
 <p class="callout-title">💡 ヒント</p>
-<p>💡 使っている出力ディレクトリがすでに存在する場合、それはプッシュ先リポジトリのローカルクローンでなければなりません。そうでない場合は、<code>Seq2SeqTrainer</code> を定義するときにエラーになり、新しい名前を設定する必要があります。</p>
+<p>💡 使っている出力ディレクトリが既に存在する場合、それはプッシュ先リポジトリのローカルクローンでなければなりません。そうでない場合は、<code>Seq2SeqTrainer</code> を定義するときにエラーになり、新しい名前を設定する必要があります。</p>
 </div>
 <p>最後に、すべてを <code>Seq2SeqTrainer</code> に渡すだけです。</p>
 <div class="codehilite"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">transformers</span><span class="w"> </span><span class="kn">import</span> <span class="n">Seq2SeqTrainer</span>
@@ -775,7 +771,7 @@ def compute_metrics():
  'eval_runtime': 965.8884,
  'eval_samples_per_second': 21.76,
  'eval_steps_per_second': 0.341}</p>
-<div class="codehilite"><pre><span></span><code>BLEU スコア39は悪くなく、私たちのモデルがすでに英語の文をフランス語に翻訳するのが得意であることを反映しています。
+<div class="codehilite"><pre><span></span><code>BLEU スコア39は悪くなく、私たちのモデルが既に英語の文をフランス語に翻訳するのが得意であることを反映しています。
 
 次は学習です。これにも少し時間がかかります。
 
@@ -881,7 +877,7 @@ eval_dataloader = DataLoader(
 
 <p>```python out
 'sgugger/marian-finetuned-kde4-en-to-fr-accelerate'</p>
-<div class="codehilite"><pre><span></span><code>その後、そのリポジトリをローカルフォルダにクローンできます。すでに存在する場合は、このローカルフォルダは作業中のリポジトリのクローンであるべきです。
+<div class="codehilite"><pre><span></span><code>その後、そのリポジトリをローカルフォルダにクローンできます。既に存在する場合は、このローカルフォルダは作業中のリポジトリのクローンであるべきです。
 
 ```py
 output_dir = "marian-finetuned-kde4-en-to-fr-accelerate"
@@ -975,7 +971,7 @@ repo = Repository(output_dir, clone_from=repo_name)
 
 ## ファインチューニングしたモデルを使う
 
-Model Hub でファインチューニングしたモデルを推論ウィジェットで使う方法はすでに示しました。ローカルで `pipeline` を使って実行するには、適切なモデル識別子を指定するだけです。
+Model Hub でファインチューニングしたモデルを推論ウィジェットで使う方法は既に示しました。ローカルで `pipeline` を使って実行するには、適切なモデル識別子を指定するだけです。
 
 ```py
 from transformers import pipeline

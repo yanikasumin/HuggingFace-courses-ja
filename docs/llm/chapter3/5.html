@@ -261,13 +261,13 @@ window.MathJax = { tex: { inlineMath: [['$', '$'], ['\\(', '\\)']], displayMath:
 <p><img alt="収束" src="https://huggingface.co/datasets/huggingface-course/documentation-images/resolve/main/en/chapter3/4.png" /></p>
 <p>モデルが収束したら、新しいデータで予測を行い、評価指標を参照してモデルの性能がどの程度か把握できます。</p>
 <h2>学習曲線のパターンを解釈する</h2>
-<p>曲線の形の違いからは、モデルの学習におけるさまざまな側面がわかります。最も一般的なパターンとその意味を見ていきましょう。</p>
+<p>曲線の形の違いからは、モデルの学習における様々な側面がわかります。最も一般的なパターンとその意味を見ていきましょう。</p>
 <h3>健全な学習曲線</h3>
 <p>うまくいった学習では、通常、下のような形の曲線が見られます。</p>
 <p><img alt="健全な損失曲線" src="https://huggingface.co/datasets/huggingface-course/documentation-images/resolve/main/en/chapter3/5.png" /></p>
 <p>上の図を見てみましょう。損失曲線（左）とそれに対応する正解率曲線（右）の両方が描かれています。これらの曲線にはそれぞれ異なる特徴があります。</p>
 <p>損失曲線は、時間の経過に伴うモデルの損失の値を示します。最初は損失が高く、その後徐々に減少していきます。これはモデルが改善していることを示します。損失は予測出力と真の出力の間の誤差を表すため、損失の値の減少は、モデルがよりよい予測を行っていることを示唆します。</p>
-<p>次に正解率曲線に目を向けましょう。これは時間の経過に伴うモデルの正解率を表します。正解率曲線は低い値から始まり、学習が進むにつれて上昇します。正解率は、正しく分類された事例の割合を測るものです。したがって、正解率曲線の上昇は、モデルがより多くの正しい予測を行っていることを意味します。</p>
+<p>次に正解率曲線に目を向けましょう。これは時間の経過に伴うモデルの正解率を表します。正解率曲線は低い値から始まり、学習が進むにつれて上昇します。正解率は、正しく分類された事例の割合を測るものです。従って、正解率曲線の上昇は、モデルがより多くの正しい予測を行っていることを意味します。</p>
 <p>曲線同士の顕著な違いの1つは、滑らかさと、正解率曲線に現れる「プラトー」の存在です。損失は滑らかに減少しますが、正解率曲線のプラトーは、正解率が連続的に増えるのではなく離散的にジャンプすることを示しています。この振る舞いは、正解率の測り方によるものです。損失は、最終的な予測がまだ間違っていても、モデルの出力がターゲットに近づけば改善します。一方、正解率は、予測が正解となるしきい値を超えたときにのみ改善します。</p>
 <p>たとえば、猫（0）と犬（1）を区別する二値分類器で、モデルが犬の画像（真の値は1）に対して 0.3 と予測した場合、これは 0 に丸められ、不正解の分類となります。次のステップで 0.4 と予測しても、まだ不正解です。0.4 は 0.3 よりも 1 に近いため損失は減少していますが、正解率は変わらず、プラトーが生まれます。正解率がジャンプするのは、モデルが 0.5 より大きな値を予測し、それが 1 に丸められるときだけです。</p>
 <div class="callout callout-tip">
@@ -278,7 +278,7 @@ window.MathJax = { tex: { inlineMath: [['$', '$'], ['\\(', '\\)']], displayMath:
 - <strong>収束</strong>: 曲線が横ばいになり、モデルがパターンを学習したことを示す</p>
 </div>
 <h3>実践例</h3>
-<p>学習曲線の実践例をいくつか見ていきましょう。まず、学習中に学習曲線を監視するアプローチを紹介します。その後、学習曲線に現れるさまざまなパターンを詳しく見ていきます。</p>
+<p>学習曲線の実践例をいくつか見ていきましょう。まず、学習中に学習曲線を監視するアプローチを紹介します。その後、学習曲線に現れる様々なパターンを詳しく見ていきます。</p>
 <h4>学習中</h4>
 <p>学習プロセスの間（<code>trainer.train()</code> を実行している間）は、次の主要な指標を監視できます。</p>
 <ol>
@@ -386,7 +386,7 @@ window.MathJax = { tex: { inlineMath: [['$', '$'], ['\\(', '\\)']], displayMath:
 <p><img alt="乱れた学習曲線" src="https://huggingface.co/datasets/huggingface-course/documentation-images/resolve/main/en/chapter3/3.png" /></p>
 <p><strong>症状:</strong>
 - 損失や正解率の頻繁な変動
-- 曲線のばらつきが大きい、または不安定
+- 曲線のばらつきが大きい、又は不安定
 - 明確な傾向なく性能が振動する</p>
 <p>学習データと検証データの両方の曲線に、不安定な変動が見られます。</p>
 <p><img alt="乱れた学習曲線" src="https://huggingface.co/datasets/huggingface-course/documentation-images/resolve/main/en/chapter3/9.png" /></p>
@@ -413,7 +413,7 @@ window.MathJax = { tex: { inlineMath: [['$', '$'], ['\\(', '\\)']], displayMath:
 <p class="callout-title">💡 ヒント</p>
 <p>💡 <strong>要点:</strong>
 - 学習曲線は、モデルの学習進捗を理解するための不可欠なツールです
-- 損失曲線と正解率曲線の両方を監視してください。ただし、両者には異なる特徴があることを忘れないでください
+- 損失曲線と正解率曲線の両方を監視してください。但し、両者には異なる特徴があることを忘れないでください
 - 過学習は、学習性能と検証性能が乖離していく形で現れます
 - 過小適合は、学習データと検証データの両方で性能が悪い形で現れます
 - Weights &amp; Biases のようなツールを使えば、学習曲線の追跡と分析が簡単になります
@@ -426,61 +426,61 @@ window.MathJax = { tex: { inlineMath: [['$', '$'], ['\\(', '\\)']], displayMath:
 <div class="quiz">
 <div class="quiz-choices">
 <button type="button" class="quiz-choice" data-correct="false" data-quiz-idx="0">モデルは順調に学習しており、改善し続けます。</button>
-<div class="quiz-explain-src" id="qe-123146991907264-0" hidden>学習損失が減少する一方で検証損失が増加している場合、これは成功ではなく、問題が起きていることを示しています。</div>
+<div class="quiz-explain-src" id="qe-123594587520512-0" hidden>学習損失が減少する一方で検証損失が増加している場合、これは成功ではなく、問題が起きていることを示しています。</div>
 <button type="button" class="quiz-choice" data-correct="true" data-quiz-idx="1">モデルが学習データに過度に適合しています。</button>
-<div class="quiz-explain-src" id="qe-123146991907264-1" hidden>正解です！これは過学習の典型的な兆候です。モデルは学習データではよい性能を示しますが、未知の検証データでは性能が悪くなります。</div>
+<div class="quiz-explain-src" id="qe-123594587520512-1" hidden>正解です！これは過学習の典型的な兆候です。モデルは学習データではよい性能を示しますが、未知の検証データでは性能が悪くなります。</div>
 <button type="button" class="quiz-choice" data-correct="false" data-quiz-idx="2">学習率が低すぎます。</button>
-<div class="quiz-explain-src" id="qe-123146991907264-2" hidden>学習率が低いと学習が遅くなりますが、学習性能と検証性能の乖離は生じません。</div>
+<div class="quiz-explain-src" id="qe-123594587520512-2" hidden>学習率が低いと学習が遅くなりますが、学習性能と検証性能の乖離は生じません。</div>
 <button type="button" class="quiz-choice" data-correct="false" data-quiz-idx="3">データセットが小さすぎます。</button>
-<div class="quiz-explain-src" id="qe-123146991907264-3" hidden>小さいデータセットが過学習の一因になることはありますが、この特定のパターン自体が、データセットのサイズによらず過学習の定義そのものです。</div>
+<div class="quiz-explain-src" id="qe-123594587520512-3" hidden>小さいデータセットが過学習の一因になることはありますが、この特定のパターン自体が、データセットのサイズによらず過学習の定義そのものです。</div>
 </div><div class="quiz-feedback" hidden></div></div>
 <h3>2. 正解率曲線が滑らかに上昇せず、「階段状」やプラトーのようなパターンを示すことが多いのはなぜですか？</h3>
 <div class="quiz">
 <div class="quiz-choices">
 <button type="button" class="quiz-choice" data-correct="false" data-quiz-idx="0">正解率の計算に誤りがあります。</button>
-<div class="quiz-explain-src" id="qe-123146990278656-0" hidden>階段状のパターンは正常で想定内のものであり、誤りではありません。</div>
+<div class="quiz-explain-src" id="qe-123594585877312-0" hidden>階段状のパターンは正常で想定内のものであり、誤りではありません。</div>
 <button type="button" class="quiz-choice" data-correct="true" data-quiz-idx="1">正解率は離散的な指標であり、予測が決定境界を越えたときにのみ変化するためです。</button>
-<div class="quiz-explain-src" id="qe-123146990278656-1" hidden>正解です！損失とは異なり、正解率は離散的な予測の決定に依存します。そのため、確信度の小さな改善では、しきい値を超えるまで最終的な正解率は変わらないことがあります。</div>
+<div class="quiz-explain-src" id="qe-123594585877312-1" hidden>正解です！損失とは異なり、正解率は離散的な予測の決定に依存します。そのため、確信度の小さな改善では、しきい値を超えるまで最終的な正解率は変わらないことがあります。</div>
 <button type="button" class="quiz-choice" data-correct="false" data-quiz-idx="2">モデルが効果的に学習できていません。</button>
-<div class="quiz-explain-src" id="qe-123146990278656-2" hidden>モデルが順調に学習しているときでも、階段状の正解率曲線は正常です。</div>
+<div class="quiz-explain-src" id="qe-123594585877312-2" hidden>モデルが順調に学習しているときでも、階段状の正解率曲線は正常です。</div>
 <button type="button" class="quiz-choice" data-correct="false" data-quiz-idx="3">バッチサイズが小さすぎます。</button>
-<div class="quiz-explain-src" id="qe-123146990278656-3" hidden>バッチサイズは学習の安定性に影響しますが、正解率という指標が本質的に離散的であることの説明にはなりません。</div>
+<div class="quiz-explain-src" id="qe-123594585877312-3" hidden>バッチサイズは学習の安定性に影響しますが、正解率という指標が本質的に離散的であることの説明にはなりません。</div>
 </div><div class="quiz-feedback" hidden></div></div>
 <h3>3. 乱れて大きく変動する学習曲線が観察された場合、最善のアプローチはどれですか？</h3>
 <div class="quiz">
 <div class="quiz-choices">
 <button type="button" class="quiz-choice" data-correct="false" data-quiz-idx="0">学習率を上げて収束を早めます。</button>
-<div class="quiz-explain-src" id="qe-123146991907264-0" hidden>学習率を上げると、変動はおそらくさらに悪化します。</div>
+<div class="quiz-explain-src" id="qe-123594587520512-0" hidden>学習率を上げると、変動はおそらく更に悪化します。</div>
 <button type="button" class="quiz-choice" data-correct="true" data-quiz-idx="1">学習率を下げ、場合によってはバッチサイズを増やします。</button>
-<div class="quiz-explain-src" id="qe-123146991907264-1" hidden>正解です！低い学習率と大きなバッチサイズは、通常、より安定した学習につながります。</div>
+<div class="quiz-explain-src" id="qe-123594587520512-1" hidden>正解です！低い学習率と大きなバッチサイズは、通常、より安定した学習につながります。</div>
 <button type="button" class="quiz-choice" data-correct="false" data-quiz-idx="2">モデルは改善しないので、直ちに学習を止めます。</button>
-<div class="quiz-explain-src" id="qe-123146991907264-2" hidden>乱れた曲線は、ハイパーパラメータの調整で直せることがよくあります。</div>
+<div class="quiz-explain-src" id="qe-123594587520512-2" hidden>乱れた曲線は、ハイパーパラメータの調整で直せることがよくあります。</div>
 <button type="button" class="quiz-choice" data-correct="false" data-quiz-idx="3">まったく別のモデルアーキテクチャに切り替えます。</button>
-<div class="quiz-explain-src" id="qe-123146991907264-3" hidden>それは時期尚早です。乱れた曲線は通常、ハイパーパラメータの調整で直せます。</div>
+<div class="quiz-explain-src" id="qe-123594587520512-3" hidden>それは時期尚早です。乱れた曲線は通常、ハイパーパラメータの調整で直せます。</div>
 </div><div class="quiz-feedback" hidden></div></div>
 <h3>4. 早期終了の使用を検討すべきなのはどのような場合ですか？</h3>
 <div class="quiz">
 <div class="quiz-choices">
 <button type="button" class="quiz-choice" data-correct="false" data-quiz-idx="0">常時。あらゆる形の過学習を防ぐためです。</button>
-<div class="quiz-explain-src" id="qe-123146990278656-0" hidden>早期終了は有用ですが、常に必要というわけではありません。特に他の正則化手法が効いている場合はそうです。</div>
+<div class="quiz-explain-src" id="qe-123594585877312-0" hidden>早期終了は有用ですが、常に必要というわけではありません。特に他の正則化手法が効いている場合はそうです。</div>
 <button type="button" class="quiz-choice" data-correct="true" data-quiz-idx="1">検証性能の改善が止まったか、悪化し始めたときです。</button>
-<div class="quiz-explain-src" id="qe-123146990278656-1" hidden>正解です！早期終了は、モデルの汎化がそれ以上よくならなくなった時点で学習を止めることで、過学習の防止に役立ちます。</div>
+<div class="quiz-explain-src" id="qe-123594585877312-1" hidden>正解です！早期終了は、モデルの汎化がそれ以上よくならなくなった時点で学習を止めることで、過学習の防止に役立ちます。</div>
 <button type="button" class="quiz-choice" data-correct="false" data-quiz-idx="2">学習損失がまだ急速に減少しているときのみです。</button>
-<div class="quiz-explain-src" id="qe-123146990278656-2" hidden>学習損失が急速に減少し、検証性能もよければ、学習を続けたほうがよい場合があります。</div>
+<div class="quiz-explain-src" id="qe-123594585877312-2" hidden>学習損失が急速に減少し、検証性能もよければ、学習を続けたほうがよい場合があります。</div>
 <button type="button" class="quiz-choice" data-correct="false" data-quiz-idx="3">決して使いません。モデルの潜在能力を最大限に発揮できなくなるためです。</button>
-<div class="quiz-explain-src" id="qe-123146990278656-3" hidden>早期終了は貴重なテクニックであり、過学習を防ぐことで最終的なモデルの性能を改善することがよくあります。</div>
+<div class="quiz-explain-src" id="qe-123594585877312-3" hidden>早期終了は貴重なテクニックであり、過学習を防ぐことで最終的なモデルの性能を改善することがよくあります。</div>
 </div><div class="quiz-feedback" hidden></div></div>
 <h3>5. モデルが過小適合している可能性を示すのはどれですか？</h3>
 <div class="quiz">
 <div class="quiz-choices">
 <button type="button" class="quiz-choice" data-correct="false" data-quiz-idx="0">学習正解率が検証正解率よりはるかに高いです。</button>
-<div class="quiz-explain-src" id="qe-123146991907264-0" hidden>これは過小適合ではなく、過学習を表しています。</div>
+<div class="quiz-explain-src" id="qe-123594587520512-0" hidden>これは過小適合ではなく、過学習を表しています。</div>
 <button type="button" class="quiz-choice" data-correct="true" data-quiz-idx="1">学習性能と検証性能の両方が悪く、早い段階で横ばいになります。</button>
-<div class="quiz-explain-src" id="qe-123146991907264-1" hidden>正解です！過小適合は、モデルにパターンを学習する能力が不足しているときに起こり、学習データと検証データの両方で性能が悪くなります。</div>
+<div class="quiz-explain-src" id="qe-123594587520512-1" hidden>正解です！過小適合は、モデルにパターンを学習する能力が不足しているときに起こり、学習データと検証データの両方で性能が悪くなります。</div>
 <button type="button" class="quiz-choice" data-correct="false" data-quiz-idx="2">学習曲線が非常に滑らかで、変動がありません。</button>
-<div class="quiz-explain-src" id="qe-123146991907264-2" hidden>滑らかな曲線は一般によいものであり、過小適合を示すものではありません。</div>
+<div class="quiz-explain-src" id="qe-123594587520512-2" hidden>滑らかな曲線は一般によいものであり、過小適合を示すものではありません。</div>
 <button type="button" class="quiz-choice" data-correct="false" data-quiz-idx="3">検証損失が学習損失より速く減少しています。</button>
-<div class="quiz-explain-src" id="qe-123146991907264-3" hidden>これは実際にはよい兆候であり、問題ではありません。</div>
+<div class="quiz-explain-src" id="qe-123594587520512-3" hidden>これは実際にはよい兆候であり、問題ではありません。</div>
 </div><div class="quiz-feedback" hidden></div></div>
 </article>
 

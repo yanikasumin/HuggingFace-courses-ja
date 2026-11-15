@@ -193,7 +193,7 @@ window.MathJax = { tex: { inlineMath: [['$', '$'], ['\\(', '\\)']], displayMath:
 <nav class="page-nav"><a class="nav-link prev" href="4.html">← 前へ: ビッグデータ？🤗 Datasets にお任せ！</a><a class="nav-link toc-link" href="../index.html">目次へ</a><a class="nav-link next" href="6.html">次へ →: FAISS によるセマンティック検索</a></nav>
 <article class="content">
 <h1>独自のデータセットを作成する</h1>
-<p>NLP アプリケーションを構築するのに必要なデータセットが存在しない場合もあり、その場合は自分で作成する必要があります。このセクションでは、GitHub リポジトリのバグや機能を追跡するためによく使われる <a href="https://github.com/features/issues/">GitHub issues</a> のコーパスの作り方を紹介します。このコーパスは、次のようなさまざまな用途に使えます。</p>
+<p>NLP アプリケーションを構築するのに必要なデータセットが存在しない場合もあり、その場合は自分で作成する必要があります。このセクションでは、GitHub リポジトリのバグや機能を追跡するためによく使われる <a href="https://github.com/features/issues/">GitHub issues</a> のコーパスの作り方を紹介します。このコーパスは、次のような様々な用途に使えます。</p>
 <ul>
 <li>オープンな issue やプルリクエストをクローズするのにかかる時間を調べる</li>
 <li>issue の説明文に基づいて、"bug"、"enhancement"、"question" などのラベルを複数予測し、自動的に付与するマルチラベル分類器を訓練する</li>
@@ -229,7 +229,7 @@ window.MathJax = { tex: { inlineMath: [['$', '$'], ['\\(', '\\)']], displayMath:
 
 <p>```python out
 200</p>
-<div class="codehilite"><pre><span></span><code>ステータス `200` はリクエストが成功したことを意味します（HTTP ステータスコードの一覧は[こちら](https://en.wikipedia.org/wiki/List_of_HTTP_status_codes)で確認できます）。ここで確認したいのは、レスポンスの本文に当たるペイロードで、バイト、文字列、JSON などさまざまな形式でアクセスできます。issue が JSON 形式であることが分かっているので、ペイロードを次のように確認しましょう。
+<div class="codehilite"><pre><span></span><code>ステータス `200` はリクエストが成功したことを意味します（HTTP ステータスコードの一覧は[こちら](https://en.wikipedia.org/wiki/List_of_HTTP_status_codes)で確認できます）。ここで確認したいのは、レスポンスの本文に当たるペイロードで、バイト、文字列、JSON など様々な形式でアクセスできます。issue が JSON 形式であることが分かっているので、ペイロードを次のように確認しましょう。
 
 ```py
 response.json()
@@ -299,7 +299,7 @@ headers = {"Authorization": f"token {GITHUB_TOKEN}"}
 
 <div class="callout callout-warning">
 <p class="callout-title">⚠️ 注意</p>
-<p>⚠️ <code>GITHUB_TOKEN</code> を貼り付けたノートブックを共有しないでください。誤ってこの情報を漏らさないよう、実行後は最後のセルを削除することをおすすめします。さらに良いのは、トークンを <em>.env</em> ファイルに保存し、<a href="https://github.com/theskumar/python-dotenv"><code>python-dotenv</code> ライブラリ</a>を使って環境変数として自動的に読み込む方法です。</p>
+<p>⚠️ <code>GITHUB_TOKEN</code> を貼り付けたノートブックを共有しないでください。誤ってこの情報を漏らさないよう、実行後は最後のセルを削除することをおすすめします。更に良いのは、トークンを <em>.env</em> ファイルに保存し、<a href="https://github.com/theskumar/python-dotenv"><code>python-dotenv</code> ライブラリ</a>を使って環境変数として自動的に読み込む方法です。</p>
 </div>
 <p>アクセストークンが用意できたので、GitHub リポジトリからすべての issue をダウンロードできる関数を作りましょう。</p>
 <div class="codehilite"><pre><span></span><code><span class="kn">import</span><span class="w"> </span><span class="nn">time</span>
@@ -368,7 +368,7 @@ issue とプルリクエストの内容はかなり異なるため、両者を�
 
 ## データのクリーニング
 
-GitHub ドキュメントの上記の抜粋によれば、`pull_request` 列を使って issue とプルリクエストを区別できます。ランダムサンプルを見て、違いを確認してみましょう。[セクション3](/course/chapter5/3) で行ったように、`Dataset.shuffle()` と `Dataset.select()` をつないでランダムサンプルを作り、`html_url` 列と `pull_request` 列を zip して、さまざまな URL を比較できるようにします。
+GitHub ドキュメントの上記の抜粋によれば、`pull_request` 列を使って issue とプルリクエストを区別できます。ランダムサンプルを見て、違いを確認してみましょう。[セクション3](/course/chapter5/3) で行ったように、`Dataset.shuffle()` と `Dataset.select()` をつないでランダムサンプルを作り、`html_url` 列と `pull_request` 列を zip して、様々な URL を比較できるようにします。
 
 ```py
 sample = issues_dataset.shuffle(seed=666).select(range(3))
@@ -390,7 +390,7 @@ for url, pr in zip(sample["html_url"], sample["pull_request"]):
 プルリクエスト: {'url': 'https://api.github.com/repos/huggingface/datasets/pulls/783', 'html_url': 'https://github.com/huggingface/datasets/pull/783', 'diff_url': 'https://github.com/huggingface/datasets/pull/783.diff', 'patch_url': 'https://github.com/huggingface/datasets/pull/783.patch'}</p>
 </blockquote>
 </blockquote>
-<div class="codehilite"><pre><span></span><code>ここでは、各プルリクエストにはさまざまな URL が関連付けられている一方、通常の issue は `None` のエントリを持っていることが分かります。この違いを使って、`pull_request` フィールドが `None` かどうかをチェックする新しい `is_pull_request` 列を作ることができます。
+<div class="codehilite"><pre><span></span><code>ここでは、各プルリクエストには様々な URL が関連付けられている一方、通常の issue は `None` のエントリを持っていることが分かります。この違いを使って、`pull_request` フィールドが `None` かどうかをチェックする新しい `is_pull_request` 列を作ることができます。
 
 ```py
 issues_dataset = issues_dataset.map(
@@ -402,7 +402,7 @@ issues_dataset = issues_dataset.map(
 <p class="callout-title">💡 ヒント</p>
 <p>✏️ <strong>やってみよう！</strong> 🤗 Datasets の issue がクローズされるまでの平均時間を計算してみましょう。プルリクエストとオープンな issue を除外するには <code>Dataset.filter()</code> 関数が役立ちます。また、<code>Dataset.set_format()</code> 関数を使ってデータセットを <code>DataFrame</code> に変換すれば、<code>created_at</code> と <code>closed_at</code> のタイムスタンプを簡単に操作できます。おまけとして、プルリクエストがクローズされるまでの平均時間も計算してみましょう。</p>
 </div>
-<p>一部の列を削除したり名前を変更したりしてデータセットをさらにクリーニングすることもできますが、この段階ではデータセットをできるだけ「生」の状態に保つのが一般に良い実践です。そうすれば、複数のアプリケーションで簡単に使えます。</p>
+<p>一部の列を削除したり名前を変更したりしてデータセットを更にクリーニングすることもできますが、この段階ではデータセットをできるだけ「生」の状態に保つのが一般に良い実践です。そうすれば、複数のアプリケーションで簡単に使えます。</p>
 <p>データセットを Hugging Face Hub にプッシュする前に、まだ取得していない情報を追加しましょう。それは、各 issue やプルリクエストに寄せられたコメントです。次に、お察しのとおり GitHub REST API を使って、それらを追加します！</p>
 <h2>データセットの拡張</h2>
 <p>次のスクリーンショットに示すように、issue やプルリクエストに関連するコメントは、特にライブラリに関するユーザーの質問に答える検索エンジンを構築したい場合に、豊富な情報源となります。</p>
@@ -506,7 +506,7 @@ Dataset({
 <p>説明や利用上の注意が十分に記載されたデータセットは、他の人（そして未来の自分！）にとって有用である可能性が高くなります。データセットが自分のタスクに関連するかどうかをユーザーが判断したり、データセットの使用に伴う潜在的なバイアスやリスクを評価したりするための文脈を提供してくれるからです。</p>
 <p>Hugging Face Hub では、この情報は各データセットリポジトリの <em>README.md</em> ファイルに保存されます。このファイルを作成する前に、主に次の2つのステップを行うべきです。</p>
 <ol>
-<li><a href="https://huggingface.co/datasets/tagging/"><code>datasets-tagging</code> アプリケーション</a>を使って、YAML 形式のメタデータタグを作成します。これらのタグは Hugging Face Hub のさまざまな検索機能に使われ、データセットがコミュニティのメンバーに簡単に見つけてもらえるようにします。ここではカスタムデータセットを作成したため、<code>datasets-tagging</code> リポジトリをクローンして、アプリケーションをローカルで実行する必要があります。インターフェースは次のようになっています。</li>
+<li><a href="https://huggingface.co/datasets/tagging/"><code>datasets-tagging</code> アプリケーション</a>を使って、YAML 形式のメタデータタグを作成します。これらのタグは Hugging Face Hub の様々な検索機能に使われ、データセットがコミュニティのメンバーに簡単に見つけてもらえるようにします。ここではカスタムデータセットを作成したため、<code>datasets-tagging</code> リポジトリをクローンして、アプリケーションをローカルで実行する必要があります。インターフェースは次のようになっています。</li>
 </ol>
 <div class="flex justify-center">
 <img src="https://huggingface.co/datasets/huggingface-course/documentation-images/resolve/main/en/chapter5/datasets-tagger.png" alt="`datasets-tagging` のインターフェース。" width="80%"/>

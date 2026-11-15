@@ -203,7 +203,7 @@ window.MathJax = { tex: { inlineMath: [['$', '$'], ['\\(', '\\)']], displayMath:
 </code></pre></div>
 
 <p>トークナイザと同様に、<code>from_pretrained()</code> メソッドはモデルのデータを Hugging Face Hub からダウンロードし、キャッシュします。前述のとおり、チェックポイント名は特定のモデルアーキテクチャと重みに対応しています。このチェックポイントは、12層、隠れサイズ768、アテンションヘッド12個という基本構成を持ち、大文字と小文字を区別する（cased）BERT モデルに対応しています。Hub には多数のチェックポイントがあり、<a href="https://huggingface.co/models">このページ</a>で探すことができます。</p>
-<p><code>AutoModel</code> をはじめとする Auto クラスは、指定したチェックポイントに対応するモデルアーキテクチャを選択するための、シンプルなラッパーです。「auto（自動）」クラスというのは、適切なモデルアーキテクチャを推測し、正しいモデルクラスをインスタンス化してくれるという意味です。ただし、使いたいモデルの種類がわかっている場合は、そのアーキテクチャを定義するクラスを直接使うこともできます。</p>
+<p><code>AutoModel</code> をはじめとする Auto クラスは、指定したチェックポイントに対応するモデルアーキテクチャを選択するための、シンプルなラッパーです。「auto（自動）」クラスというのは、適切なモデルアーキテクチャを推測し、正しいモデルクラスをインスタンス化してくれるという意味です。但し、使いたいモデルの種類がわかっている場合は、そのアーキテクチャを定義するクラスを直接使うこともできます。</p>
 <div class="codehilite"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">transformers</span><span class="w"> </span><span class="kn">import</span> <span class="n">BertModel</span>
 
 <span class="n">model</span> <span class="o">=</span> <span class="n">BertModel</span><span class="o">.</span><span class="n">from_pretrained</span><span class="p">(</span><span class="s2">"bert-base-cased"</span><span class="p">)</span>
@@ -248,7 +248,7 @@ config.json model.safetensors
 <span class="n">model</span> <span class="o">=</span> <span class="n">AutoModel</span><span class="o">.</span><span class="n">from_pretrained</span><span class="p">(</span><span class="s2">"your-username/my-awesome-model"</span><span class="p">)</span>
 </code></pre></div>
 
-<p>Hub API では、ほかにもさまざまなことができます。</p>
+<p>Hub API では、ほかにも様々なことができます。</p>
 <ul>
 <li>ローカルのリポジトリからモデルをプッシュする</li>
 <li>すべてを再アップロードすることなく、特定のファイルを更新する</li>
@@ -416,7 +416,7 @@ sequences = [
 <span class="p">]</span>
 </code></pre></div>
 
-<p>これは、エンコードされたシーケンスのリスト、つまりリストのリストです。テンソルが受け付けるのは長方形の形状（行列を思い浮かべてください）だけです。この「配列」はすでに長方形の形状になっているため、テンソルへの変換は簡単です。</p>
+<p>これは、エンコードされたシーケンスのリスト、つまりリストのリストです。テンソルが受け付けるのは長方形の形状（行列を思い浮かべてください）だけです。この「配列」は既に長方形の形状になっているため、テンソルへの変換は簡単です。</p>
 <div class="codehilite"><pre><span></span><code><span class="kn">import</span><span class="w"> </span><span class="nn">torch</span>
 
 <span class="n">model_inputs</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">tensor</span><span class="p">(</span><span class="n">encoded_sequences</span><span class="p">)</span>
@@ -427,7 +427,7 @@ sequences = [
 <div class="codehilite"><pre><span></span><code><span class="n">output</span> <span class="o">=</span> <span class="n">model</span><span class="p">(</span><span class="n">model_inputs</span><span class="p">)</span>
 </code></pre></div>
 
-<p>モデルはさまざまな引数を受け付けますが、必要なのは入力 ID だけです。他の引数が何をするもので、いつ必要になるのかは後ほど説明します。まずは、Transformer モデルが理解できる入力を構築するトークナイザを、詳しく見ていく必要があります。</p>
+<p>モデルは様々な引数を受け付けますが、必要なのは入力 ID だけです。他の引数が何をするもので、いつ必要になるのかは後ほど説明します。まずは、Transformer モデルが理解できる入力を構築するトークナイザを、詳しく見ていく必要があります。</p>
 </article>
 
 <nav class="page-nav"><a class="nav-link prev" href="2.html">← 前へ: パイプラインの裏側</a><a class="nav-link toc-link" href="../index.html">目次へ</a><a class="nav-link next" href="4.html">次へ →: トークナイザ</a></nav>

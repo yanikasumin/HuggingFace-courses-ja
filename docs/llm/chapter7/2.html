@@ -279,7 +279,7 @@ label_names
 
 <p>```python out
 ['O', 'B-PER', 'I-PER', 'B-ORG', 'I-ORG', 'B-LOC', 'I-LOC', 'B-MISC', 'I-MISC']</p>
-<div class="codehilite"><pre><span></span><code>これらのラベルは、[Chapter 6](/course/chapter6/3) で `token-classification` パイプラインを掘り下げたときにすでに見ていますが、簡単に復習しておきましょう。
+<div class="codehilite"><pre><span></span><code>これらのラベルは、[Chapter 6](/course/chapter6/3) で `token-classification` パイプラインを掘り下げたときに既に見ていますが、簡単に復習しておきましょう。
 
 - `O` は、その単語がどのエンティティにも対応しないことを意味します。
 - `B-PER`／`I-PER` は、その単語が*人物*エンティティの先頭である／内部にあることを意味します。
@@ -317,7 +317,7 @@ print(line2)
 <p>見てのとおり、「European Union」や「Werner Zwingmann」のように2つの単語にまたがるエンティティには、最初の単語に <code>B-</code> ラベル、2番目の単語に <code>I-</code> ラベルが割り当てられます。</p>
 <div class="callout callout-tip">
 <p class="callout-title">💡 ヒント</p>
-<p>✏️ <strong>試してみましょう！</strong> 同じ2つの文を、POS ラベルまたはチャンキングラベルと一緒に表示してください。</p>
+<p>✏️ <strong>試してみましょう！</strong> 同じ2つの文を、POS ラベル又はチャンキングラベルと一緒に表示してください。</p>
 </div>
 <h3>データの処理</h3>
 <div class="youtube-embed"><iframe src="https://www.youtube-nocookie.com/embed/iY2AZYdZAr0" title="YouTube video" loading="lazy" allowfullscreen referrerpolicy="strict-origin-when-cross-origin"></iframe></div>
@@ -344,7 +344,7 @@ inputs.tokens()
 
 <p>```python out
 ['[CLS]', 'EU', 'rejects', 'German', 'call', 'to', 'boycott', 'British', 'la', '##mb', '.', '[SEP]']</p>
-<div class="codehilite"><pre><span></span><code>見てのとおり、トークナイザはモデルが使う特殊トークン（先頭の `[CLS]` と末尾の `[SEP]`）を追加し、ほとんどの単語はそのままにしました。ただし、単語 `lamb` は2つのサブワード、`la` と `##mb` にトークン化されました。これにより、入力とラベルの間に不一致が生じます。ラベルのリストは9要素しかないのに、入力は12トークンになっています。特殊トークンへの対応は簡単です（先頭と末尾にあることが分かっているため）。しかし、すべてのラベルが適切な単語に対応するよう揃える必要もあります。
+<div class="codehilite"><pre><span></span><code>見てのとおり、トークナイザはモデルが使う特殊トークン（先頭の `[CLS]` と末尾の `[SEP]`）を追加し、ほとんどの単語はそのままにしました。但し、単語 `lamb` は2つのサブワード、`la` と `##mb` にトークン化されました。これにより、入力とラベルの間に不一致が生じます。ラベルのリストは9要素しかないのに、入力は12トークンになっています。特殊トークンへの対応は簡単です（先頭と末尾にあることが分かっているため）。しかし、すべてのラベルが適切な単語に対応するよう揃える必要もあります。
 
 幸い、高速トークナイザを使っているため、🤗 Tokenizers の強力な機能を利用できます。つまり、各トークンを対応する単語へ簡単にマッピングできます（[Chapter 6](/course/chapter6/3) で見たとおりです）。
 
@@ -526,7 +526,7 @@ tf_eval_dataset = tokenized_datasets["validation"].to_tf_dataset(
 
 ### モデルのファインチューニング
 
-これでモデルを学習する準備ができました！ただし、その前にもう少し準備作業があります。Hugging Face にログインし、学習のハイパーパラメータを定義しましょう。ノートブックで作業している場合は、これに役立つ便利な関数があります。
+これでモデルを学習する準備ができました！但し、その前にもう少し準備作業があります。Hugging Face にログインし、学習のハイパーパラメータを定義しましょう。ノートブックで作業している場合は、これに役立つ便利な関数があります。
 
 ```python
 from huggingface_hub import notebook_login
@@ -579,7 +579,7 @@ notebook_login()
 <p><code>hub_model_id</code> 引数で、push 先のリポジトリの完全な名前を指定できます（特に、組織に push する場合はこの引数を使う必要があります）。たとえば、モデルを <a href="https://huggingface.co/huggingface-course"><code>huggingface-course</code> 組織</a>に push した際には、<code>hub_model_id="huggingface-course/bert-finetuned-ner"</code> を追加しました。デフォルトでは、使用されるリポジトリは自分の名前空間にあり、設定した出力ディレクトリにちなんだ名前になります（例: <code>"cool_huggingface_user/bert-finetuned-ner"</code>）。</p>
 <div class="callout callout-tip">
 <p class="callout-title">💡 ヒント</p>
-<p>💡 使用している出力ディレクトリがすでに存在する場合、それは push 先リポジトリのローカルクローンである必要があります。そうでない場合、<code>model.fit()</code> を呼び出したときにエラーが発生し、新しい名前を設定する必要があります。</p>
+<p>💡 使用している出力ディレクトリが既に存在する場合、それは push 先リポジトリのローカルクローンである必要があります。そうでない場合、<code>model.fit()</code> を呼び出したときにエラーが発生し、新しい名前を設定する必要があります。</p>
 </div>
 <p>学習が行われている間、モデルが保存されるたびに（ここではエポックごと）、バックグラウンドで Hub にアップロードされることにも注意してください。これにより、必要に応じて別のマシンで学習を再開できます。</p>
 <p>この段階では、Model Hub の推論ウィジェットを使ってモデルをテストし、友人と共有できます。トークン分類タスクでのモデルのファインチューニングに成功しました。おめでとうございます！しかし、私たちのモデルは実際どれほど良いのでしょうか？それを確かめるために、いくつかの指標を評価する必要があります。</p>
@@ -758,7 +758,7 @@ notebook_login()
 <p>これらのほとんどは以前にも見たものです。いくつかのハイパーパラメータ（学習率、学習するエポック数、重み減衰など）を設定し、<code>push_to_hub=True</code> を指定して、モデルの保存と評価をエポックの終了ごとに行い、結果を Model Hub にアップロードしたいことを示します。<code>hub_model_id</code> 引数で、push 先のリポジトリの名前を指定できることにも注意してください（特に、組織に push する場合はこの引数を使う必要があります）。たとえば、モデルを <a href="https://huggingface.co/huggingface-course"><code>huggingface-course</code> 組織</a>に push した際には、<code>TrainingArguments</code> に <code>hub_model_id="huggingface-course/bert-finetuned-ner"</code> を追加しました。デフォルトでは、使用されるリポジトリは自分の名前空間にあり、設定した出力ディレクトリにちなんだ名前になるため、この場合は <code>"sgugger/bert-finetuned-ner"</code> になります。</p>
 <div class="callout callout-tip">
 <p class="callout-title">💡 ヒント</p>
-<p>💡 使用している出力ディレクトリがすでに存在する場合、それは push 先リポジトリのローカルクローンである必要があります。そうでない場合、<code>Trainer</code> を定義したときにエラーが発生し、新しい名前を設定する必要があります。</p>
+<p>💡 使用している出力ディレクトリが既に存在する場合、それは push 先リポジトリのローカルクローンである必要があります。そうでない場合、<code>Trainer</code> を定義したときにエラーが発生し、新しい名前を設定する必要があります。</p>
 </div>
 <p>最後に、すべてを <code>Trainer</code> に渡して学習を開始します。</p>
 <div class="codehilite"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">transformers</span><span class="w"> </span><span class="kn">import</span> <span class="n">Trainer</span>
@@ -861,7 +861,7 @@ eval_dataloader = DataLoader(
 
 <p>```python out
 'sgugger/bert-finetuned-ner-accelerate'</p>
-<div class="codehilite"><pre><span></span><code>次に、そのリポジトリをローカルフォルダにクローンできます。すでに存在する場合は、このローカルフォルダは作業中のリポジトリの既存のクローンである必要があります。
+<div class="codehilite"><pre><span></span><code>次に、そのリポジトリをローカルフォルダにクローンできます。既に存在する場合は、このローカルフォルダは作業中のリポジトリの既存のクローンである必要があります。
 
 ```py
 output_dir = "bert-finetuned-ner-accelerate"
@@ -958,7 +958,7 @@ repo = Repository(output_dir, clone_from=repo_name)
 <p>これが済めば、<code>Trainer</code> で学習したモデルとかなり似た結果を出すモデルが得られるはずです。このコードで学習したモデルは、<a href="https://huggingface.co/huggingface-course/bert-finetuned-ner-accelerate"><em>huggingface-course/bert-finetuned-ner-accelerate</em></a>で確認できます。学習ループへの調整を試したい場合は、上に示したコードを直接編集して実装できます！</p>
 <p>{/if}</p>
 <h2>ファインチューニング済みモデルの使用</h2>
-<p>Model Hub で推論ウィジェットを使って、私たちがファインチューニングしたモデルを使う方法はすでに紹介しました。ローカルで <code>pipeline</code> を使ってモデルを実行するには、適切なモデル識別子を指定するだけです。</p>
+<p>Model Hub で推論ウィジェットを使って、私たちがファインチューニングしたモデルを使う方法は既に紹介しました。ローカルで <code>pipeline</code> を使ってモデルを実行するには、適切なモデル識別子を指定するだけです。</p>
 <div class="codehilite"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">transformers</span><span class="w"> </span><span class="kn">import</span> <span class="n">pipeline</span>
 
 <span class="c1"># これは自分のチェックポイントに置き換える</span>

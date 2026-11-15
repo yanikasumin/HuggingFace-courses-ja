@@ -193,10 +193,10 @@ window.MathJax = { tex: { inlineMath: [['$', '$'], ['\\(', '\\)']], displayMath:
 <nav class="page-nav"><a class="nav-link prev" href="1.html">← 前へ: はじめに</a><a class="nav-link toc-link" href="../index.html">目次へ</a><a class="nav-link next" href="3.html">次へ →: 切り分けて、加工して</a></nav>
 <article class="content">
 <h1>データセットが Hub にない場合は？</h1>
-<p><a href="https://huggingface.co/datasets">Hugging Face Hub</a> からデータセットをダウンロードする方法はすでに知っていると思いますが、実際に扱うデータは、自分のノートパソコンやリモートサーバーに置かれていることも多いはずです。このセクションでは、Hugging Face Hub にないデータセットを 🤗 Datasets で読み込む方法を紹介します。</p>
+<p><a href="https://huggingface.co/datasets">Hugging Face Hub</a> からデータセットをダウンロードする方法は既に知っていると思いますが、実際に扱うデータは、自分のノートパソコンやリモートサーバーに置かれていることも多いはずです。このセクションでは、Hugging Face Hub にないデータセットを 🤗 Datasets で読み込む方法を紹介します。</p>
 <div class="youtube-embed"><iframe src="https://www.youtube-nocookie.com/embed/HyQgpJTkRdE" title="YouTube video" loading="lazy" allowfullscreen referrerpolicy="strict-origin-when-cross-origin"></iframe></div>
-<h2>ローカルおよびリモートのデータセットを扱う</h2>
-<p>🤗 Datasets には、ローカルおよびリモートのデータセットを読み込むためのローディングスクリプトが用意されています。次のような一般的なデータ形式に対応しています。</p>
+<h2>ローカル及びリモートのデータセットを扱う</h2>
+<p>🤗 Datasets には、ローカル及びリモートのデータセットを読み込むためのローディングスクリプトが用意されています。次のような一般的なデータ形式に対応しています。</p>
 <table>
 <thead>
 <tr>
@@ -290,7 +290,7 @@ squad_it_dataset["train"][0]
         ...
     ],
 }</p>
-<div class="codehilite"><pre><span></span><code>これで、初めてのローカルデータセットが読み込めました！ただし、訓練セットについてはうまくいきましたが、本当に欲しいのは `train` と `test` の両方の分割を1つの `DatasetDict` オブジェクトにまとめ、両方の分割に対してまとめて `Dataset.map()` 関数を適用できるようにすることです。そのためには、`data_files` 引数に、各分割名とその分割に対応するファイルを対応づける辞書を渡します。
+<div class="codehilite"><pre><span></span><code>これで、初めてのローカルデータセットが読み込めました！但し、訓練セットについてはうまくいきましたが、本当に欲しいのは `train` と `test` の両方の分割を1つの `DatasetDict` オブジェクトにまとめ、両方の分割に対してまとめて `Dataset.map()` 関数を適用できるようにすることです。そのためには、`data_files` 引数に、各分割名とその分割に対応するファイルを対応づける辞書を渡します。
 
 ```py
 data_files = {"train": "SQuAD_it-train.json", "test": "SQuAD_it-test.json"}
@@ -309,7 +309,7 @@ DatasetDict({
         num_rows: 48
     })
 })</p>
-<div class="codehilite"><pre><span></span><code>まさに望んでいた形になりました。これで、データのクリーニングやレビューのトークナイズなど、さまざまな前処理を適用できます。
+<div class="codehilite"><pre><span></span><code>まさに望んでいた形になりました。これで、データのクリーニングやレビューのトークナイズなど、様々な前処理を適用できます。
 
 &lt;div class="callout callout-tip" markdown="block"&gt;
 &lt;p class="callout-title"&gt;💡 ヒント&lt;/p&gt;
@@ -336,7 +336,7 @@ squad_it_dataset = load_dataset("json", data_files=data_files, field="data")
 <span class="n">squad_it_dataset</span> <span class="o">=</span> <span class="n">load_dataset</span><span class="p">(</span><span class="s2">"json"</span><span class="p">,</span> <span class="n">data_files</span><span class="o">=</span><span class="n">data_files</span><span class="p">,</span> <span class="n">field</span><span class="o">=</span><span class="s2">"data"</span><span class="p">)</span>
 </code></pre></div>
 
-<p>これにより、上で得たのと同じ <code>DatasetDict</code> オブジェクトが返ってきますが、<em>SQuAD_it-*.json.gz</em> ファイルを手作業でダウンロード・解凍する手間が省けます。以上で、Hugging Face Hub にホストされていないデータセットのさまざまな読み込み方法を見てきました。手元にデータセットが用意できたので、次は実際に手を動かしながら、さまざまなデータ加工の方法を試していきましょう！</p>
+<p>これにより、上で得たのと同じ <code>DatasetDict</code> オブジェクトが返ってきますが、<em>SQuAD_it-*.json.gz</em> ファイルを手作業でダウンロード・解凍する手間が省けます。以上で、Hugging Face Hub にホストされていないデータセットの様々な読み込み方法を見てきました。手元にデータセットが用意できたので、次は実際に手を動かしながら、様々なデータ加工の方法を試していきましょう！</p>
 <div class="callout callout-tip">
 <p class="callout-title">💡 ヒント</p>
 <p>✏️ <strong>やってみよう！</strong> GitHub や <a href="https://archive.ics.uci.edu/ml/index.php">UCI Machine Learning Repository</a> で公開されている別のデータセットを選んで、上で紹介したテクニックを使ってローカルとリモートの両方で読み込んでみましょう。おまけとして、CSV やテキスト形式で保存されたデータセットの読み込みにも挑戦してみてください（これらの形式の詳細は<a href="https://huggingface.co/docs/datasets/loading#local-and-remote-files">ドキュメント</a>を参照）。</p>
