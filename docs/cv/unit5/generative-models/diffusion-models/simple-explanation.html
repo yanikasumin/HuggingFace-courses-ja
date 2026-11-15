@@ -181,17 +181,15 @@ window.MathJax = { tex: { inlineMath: [['$', '$'], ['\\(', '\\)']], displayMath:
 <article class="content">
 <h1>拡散モデルの制御</h1>
 <h2>DreamBooth</h2>
-<p>拡散モデルや GAN は多様な画像を生成できますが、欲しい画像をいつでも正確に生成できるわけではありません。そのため、モデルをファインチューニングすることがあります。ただし、通常のファインチューニングには大量のデータと計算資源が必要です。一方、少数の画像だけでモデルを特定の用途に合わせられる技術もあります。</p>
+<p>拡散モデルや GAN は多様な画像を生成できますが、欲しい画像をいつでも正確に生成できるわけではありません。そのため、モデルをファインチューニングすることがあります。但し、通常のファインチューニングには大量のデータと計算資源が必要です。一方、少数の画像だけでモデルを特定の用途に合わせられる技術もあります。</p>
 <p>1つの例が Google Research の DreamBooth です。これは、被写体やスタイルの数枚の画像だけで学習して拡散モデル全体を更新する学習技術です。プロンプト中の特殊な単語を例の画像と関連付けることで動作します。DreamBooth の詳細は<a href="https://dreambooth.github.io/">論文</a>と <a href="https://huggingface.co/docs/diffusers/training/dreambooth">Hugging Face の DreamBooth 学習ドキュメント</a>にあります。</p>
 <p>以下では、犬の4枚の画像で学習した DreamBooth の結果と、推論の例を見ることができます。
 <img alt="DreamBooth の犬の例" src="https://huggingface.co/datasets/hf-vision/course-assets/resolve/main/teaser_static.jpg" />
 上の Hugging Face ドキュメントに従えば、この結果を再現できます。</p>
-<p>この例から、モデルが特定の犬の特徴を学習し、その犬をさまざまなポーズや背景で描いた新しい画像を生成できることが分かります。DreamBooth は計算量、必要なデータ量、学習時間の面で進歩をもたらしましたが、その後、さらに効率よくモデルをカスタマイズする方法も開発されました。</p>
+<p>この例から、モデルが特定の犬の特徴を学習し、その犬を様々なポーズや背景で描いた新しい画像を生成できることが分かります。DreamBooth は計算量、必要なデータ量、学習時間の面で進歩をもたらしましたが、その後、更に効率よくモデルをカスタマイズする方法も開発されました。</p>
 <p>そこで登場するのが、現在広く使われている Low Rank Adaptation（LoRA）です。LoRA はもともと、大規模言語モデルを効率よくファインチューニングするために Microsoft が開発し、<a href="https://arxiv.org/abs/2106.09685">この論文</a>で発表した手法です。モデルの重みを更新するための行列を2つの低ランク行列に分解し、元のモデルの重みは固定したまま、この2つの行列だけを学習します。詳しい仕組みは、<a href="https://huggingface.co/docs/peft/conceptual_guides/lora">Hugging Face の解説</a>で確認できます。</p>
 <p>DreamBooth と LoRA を組み合わせれば、少数の画像を使って拡散モデルを効率よくファインチューニングできます。具体的な手順は、<a href="https://colab.research.google.com/github/huggingface/notebooks/blob/main/diffusers/SDXL_DreamBooth_LoRA_.ipynb">こちら</a>の Google Colab ノートブックで紹介されています。</p>
-<p>この方法は生成画像の品質と学習効率に優れているため、多くの人が独自の LoRA パラメータを作成しています。公開されているパラメータの多くは、<a href="https://civitai.com/models">Civitai</a> や <a href="https://huggingface.co/collections/multimodalart/awesome-sdxl-loras-64f9af6d5cce4f4e8f351466">Hugging Face</a> で見つけることができます。
-Civitai では、通常 50〜500MB 程度の LoRA の重みファイルをダウンロードできます。一方、Hugging Face に公開されている場合は、モデルハブから直接読み込むことができます。
-以下は、両方のケースで LoRA の重みを読み込み、モデルと融合する例です。</p>
+<p>この方法は生成画像の品質と学習効率に優れているため、多くの人が独自の LoRA パラメータを作成しています。公開されているパラメータの多くは、<a href="https://civitai.com/models">Civitai</a> や <a href="https://huggingface.co/collections/multimodalart/awesome-sdxl-loras-64f9af6d5cce4f4e8f351466">Hugging Face</a> で見つけることができます。Civitai では、通常 50〜500MB 程度の LoRA の重みファイルをダウンロードできます。一方、Hugging Face に公開されている場合は、モデルハブから直接読み込むことができます。以下は、両方のケースで LoRA の重みを読み込み、モデルと融合する例です。</p>
 <p>まず、diffusers ライブラリをインストールします。</p>
 <div class="codehilite"><pre><span></span><code>pip<span class="w"> </span>install<span class="w"> </span>diffusers
 <span class="sb">````</span>
@@ -221,11 +219,10 @@ pipe.fuse_lora<span class="o">(</span><span class="nv">lora_scale</span><span cl
 </iframe>
 </p>
 <h2>ControlNet によるガイド付き拡散</h2>
-<p>拡散モデルで目的の画像を生成するには、プロンプト、ネガティブプロンプト、ガイダンススケール、インペインティングなど、さまざまな方法で生成結果を制御できます。ここでは、その中でも多くの種類があり、ほかの方法とも組み合わせられる ControlNet を取り上げます。ControlNet は、スタンフォード大学の研究者らが<a href="https://arxiv.org/abs/2302.05543">この論文</a>で提案した手法です。深度、ポーズ、輪郭などの具体的な情報を含む画像を使って、生成する画像を制御できます。これにより、拡散モデルで課題となることが多い、生成画像の一貫性を高められます。</p>
-<p>ControlNet は、テキストから画像を生成する場合にも、画像から別の画像を生成する場合にも使えます。以下は、エッジ（輪郭）情報を条件として学習した ControlNet を使う、テキストから画像への生成例です。左上の画像を入力として使っています。
-生成された画像すべてが非常に似た形をしていて、色だけが異なることが分かります。これは、ControlNet が入力画像と同じ形の画像を作るよう拡散モデルをガイドしているためです。
+<p>拡散モデルで目的の画像を生成するには、プロンプト、ネガティブプロンプト、ガイダンススケール、インペインティングなど、様々な方法で生成結果を制御できます。ここでは、その中でも多くの種類があり、ほかの方法とも組み合わせられる ControlNet を取り上げます。ControlNet は、スタンフォード大学の研究者らが<a href="https://arxiv.org/abs/2302.05543">この論文</a>で提案した手法です。深度、ポーズ、輪郭などの具体的な情報を含む画像を使って、生成する画像を制御できます。これにより、拡散モデルで課題となることが多い、生成画像の一貫性を高められます。</p>
+<p>ControlNet は、テキストから画像を生成する場合にも、画像から別の画像を生成する場合にも使えます。以下は、エッジ（輪郭）情報を条件として学習した ControlNet を使う、テキストから画像への生成例です。左上の画像を入力として使っています。生成された画像すべてが非常に似た形をしていて、色だけが異なることが分かります。これは、ControlNet が入力画像と同じ形の画像を作るよう拡散モデルをガイドしているためです。
  <img alt="鳥" src="https://github.com/lllyasviel/ControlNet/raw/main/github_page/p1.png" /></p>
-<p>Stable Diffusion XL で ControlNet を動かすコードは、<a href="https://huggingface.co/docs/diffusers/api/pipelines/controlnet_sdxl#diffusers.StableDiffusionXLControlNetPipeline">公式ドキュメント</a>を参照してください。まず動作を試したい場合は、さまざまな種類の ControlNet を実行できる、以下の Gradio デモが便利です。</p>
+<p>Stable Diffusion XL で ControlNet を動かすコードは、<a href="https://huggingface.co/docs/diffusers/api/pipelines/controlnet_sdxl#diffusers.StableDiffusionXLControlNetPipeline">公式ドキュメント</a>を参照してください。まず動作を試したい場合は、様々な種類の ControlNet を実行できる、以下の Gradio デモが便利です。</p>
 <p><iframe
     src="https://hysts-ControlNet-v1-1.hf.space"
     frameborder="0"

@@ -180,12 +180,9 @@ window.MathJax = { tex: { inlineMath: [['$', '$'], ['\\(', '\\)']], displayMath:
 <nav class="page-nav"><a class="nav-link prev" href="object_detection.html">← 前へ: 物体検出</a><a class="nav-link toc-link" href="../../index.html">目次へ</a><a class="nav-link next" href="../../unit7/video-processing/introduction-to-video.html">次へ →: はじめに</a></nav>
 <article class="content">
 <h1>画像セグメンテーション</h1>
-<p>画像セグメンテーションは、画像を意味のある領域に分割する処理です。画像内のそれぞれの物体を浮かび上がらせるようなマスクを作ることが基本です。
-このタスクは、<em>画像の各ピクセルを分類する問題</em>と考えると分かりやすいでしょう。
-セグメンテーションモデルは、農業や自動運転など、さまざまな分野で重要な役割を担っています。農業では、土地の区画を識別したり、作物の生育段階を評価したりするために使われます。自動運転では、車線や歩道、周囲の道路利用者を識別するために使われます。</p>
+<p>画像セグメンテーションは、画像を意味のある領域に分割する処理です。画像内のそれぞれの物体を浮かび上がらせるようなマスクを作ることが基本です。このタスクは、<em>画像の各ピクセルを分類する問題</em>と考えると分かりやすいでしょう。セグメンテーションモデルは、農業や自動運転など、様々な分野で重要な役割を担っています。農業では、土地の区画を識別したり、作物の生育段階を評価したりするために使われます。自動運転では、車線や歩道、周囲の道路利用者を識別するために使われます。</p>
 <p><img alt="画像セグメンテーション" src="https://huggingface.co/datasets/hf-vision/course-assets/resolve/main/segmentation-example.png" /></p>
-<p>用途や目的によって、適したセグメンテーションの種類は異なります。
-代表的なものは次のとおりです。
+<p>用途や目的によって、適したセグメンテーションの種類は異なります。代表的なものは次のとおりです。
 - <strong>セマンティックセグメンテーション（Semantic Segmentation）</strong>：各ピクセルに最も可能性の高いクラスを割り当てます。たとえば、画像に猫が2匹写っていても、それぞれを別の個体として区別しません。あくまで各ピクセルがどのクラスに属するかを判定します。
 - <strong>インスタンスセグメンテーション（Instance Segmentation）</strong>：物体の各インスタンスを固有のマスクで識別します。物体検出とセグメンテーションの要素を組み合わせ、同じクラスの個々の物体を区別します。
 - <strong>パノプティックセグメンテーション（Panoptic Segmentation）</strong>：セマンティックセグメンテーションとインスタンスセグメンテーションを組み合わせた手法です。各ピクセルにクラスとインスタンスの両方を割り当て、画像内に何があるか、そしてどこにあるかを一緒に扱います。</p>
@@ -193,10 +190,8 @@ window.MathJax = { tex: { inlineMath: [['$', '$'], ['\\(', '\\)']], displayMath:
 <p>用途や目的に応じて、適切なセグメンテーション手法は異なります。最近では、1つのモデルで3種類すべてのセグメンテーションに対応できるものもあります。たとえば、Meta が開発した新しいモデル Mask2Former は、パノプティックセグメンテーション用のデータセットだけを使って、3種類すべてに対応できます。詳しくはこちらの<a href="https://huggingface.co/blog/mask2former">記事</a>をご覧ください。</p>
 <h3>現代的なアプローチ：Vision Transformer を使ったセグメンテーション</h3>
 <p>画像セグメンテーションでよく使われる U-Net というネットワークを聞いたことがあるかもしれません。U-Net は複数の畳み込み層から構成され、主に2つの段階で処理を行います。まず、ダウンサンプリングによって画像を圧縮し、特徴を抽出します。次に、アップサンプリングによって画像を元のサイズに戻し、細かな領域まで分割します。</p>
-<p>コンピュータビジョンはかつて畳み込みモデルが主流でしたが、最近では Vision Transformer のアプローチへ移行しつつあります。
-たとえば、<em><a href="https://arxiv.org/abs/2304.02643">Segment Anything Model（SAM）</a></em> があります。これは、2023年4月に <em>Meta AI Research（FAIR）</em> が発表した、プロンプトを使ってセグメンテーションを行う人気のモデルです。Vision Transformer（ViT）を基盤としており、画像内で切り出したい対象を言葉で指定できるような、プロンプト対応のセグメンテーションモデルを目指して開発されました。新しい画像に対してもゼロショット転移が可能です。強みの1つは、1,100万枚の画像と10億を超えるマスクを含む、利用可能な中でも最大規模のデータセットで訓練されたことです。まずは、いくつかの画像を使って <a href="https://segment-anything.com/">Meta のデモ</a>を試してみてください。さらに、Transformers の<a href="https://huggingface.co/ybelkada/segment-anything">モデル</a>でも試せます。</p>
-<p>Transformers でこのモデルを使う例を紹介します。まず <code>mask-generation</code> パイプラインを初期化します。
-次に、画像をパイプラインに渡して推論します。</p>
+<p>コンピュータビジョンはかつて畳み込みモデルが主流でしたが、最近では Vision Transformer のアプローチへ移行しつつあります。たとえば、<em><a href="https://arxiv.org/abs/2304.02643">Segment Anything Model（SAM）</a></em> があります。これは、2023年4月に <em>Meta AI Research（FAIR）</em> が発表した、プロンプトを使ってセグメンテーションを行う人気のモデルです。Vision Transformer（ViT）を基盤としており、画像内で切り出したい対象を言葉で指定できるような、プロンプト対応のセグメンテーションモデルを目指して開発されました。新しい画像に対してもゼロショット転移が可能です。強みの1つは、1,100万枚の画像と10億を超えるマスクを含む、利用可能な中でも最大規模のデータセットで訓練されたことです。まずは、いくつかの画像を使って <a href="https://segment-anything.com/">Meta のデモ</a>を試してみてください。更に、Transformers の<a href="https://huggingface.co/ybelkada/segment-anything">モデル</a>でも試せます。</p>
+<p>Transformers でこのモデルを使う例を紹介します。まず <code>mask-generation</code> パイプラインを初期化します。次に、画像をパイプラインに渡して推論します。</p>
 <div class="codehilite"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">transformers</span><span class="w"> </span><span class="kn">import</span> <span class="n">pipeline</span>
 
 <span class="n">pipe</span> <span class="o">=</span> <span class="n">pipeline</span><span class="p">(</span><span class="s2">"mask-generation"</span><span class="p">,</span> <span class="n">model</span><span class="o">=</span><span class="s2">"facebook/sam-vit-base"</span><span class="p">,</span> <span class="n">device</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
@@ -230,7 +225,7 @@ Dice 係数は、予測マスクと正解マスクがどの程度重なってい
 <li><a href="https://huggingface.co/blog/fine-tune-segformer">SegFormer のファインチューニングに関するブログ記事</a></li>
 <li><a href="https://huggingface.co/blog/mask2former">Mask2Former のブログ記事</a></li>
 <li><a href="https://huggingface.co/docs/transformers/main/tasks/semantic_segmentation">Hugging Face のセグメンテーションタスクに関するドキュメント</a></li>
-<li>このトピックをさらに深く学びたい方には、スタンフォード大学の<a href="https://www.youtube.com/watch?v=nDPWywWRIRo">セグメンテーションに関する講義</a>をおすすめします。</li>
+<li>このトピックを更に深く学びたい方には、スタンフォード大学の<a href="https://www.youtube.com/watch?v=nDPWywWRIRo">セグメンテーションに関する講義</a>をおすすめします。</li>
 </ul>
 </article>
 

@@ -182,10 +182,7 @@ window.MathJax = { tex: { inlineMath: [['$', '$'], ['\\(', '\\)']], displayMath:
 <h1>モデル最適化のツールとフレームワーク</h1>
 <h2>TensorFlow Model Optimization Toolkit（TMO）</h2>
 <h3>概要</h3>
-<p>TensorFlow Model Optimization Toolkit は、機械学習モデルをデプロイ向けに最適化するためのツール群です。
-TensorFlow Lite の訓練後量子化ツールを使うと、重みを8ビット精度に変換でき、訓練済みモデルのサイズを約4分の1に削減できます。
-このツールキットには、訓練後の量子化だけでは十分な効果が得られない場合に備えて、訓練中にプルーニングや量子化を行うための API も用意されています。
-これらのツールを使うと、レイテンシや推論コストを削減し、リソースが限られたエッジデバイスにもモデルをデプロイしやすくなります。また、既存のハードウェアや新しい専用アクセラレータに合わせて、モデルの実行を最適化できます。</p>
+<p>TensorFlow Model Optimization Toolkit は、機械学習モデルをデプロイ向けに最適化するためのツール群です。TensorFlow Lite の訓練後量子化ツールを使うと、重みを8ビット精度に変換でき、訓練済みモデルのサイズを約4分の1に削減できます。このツールキットには、訓練後の量子化だけでは十分な効果が得られない場合に備えて、訓練中にプルーニングや量子化を行うための API も用意されています。これらのツールを使うと、レイテンシや推論コストを削減し、リソースが限られたエッジデバイスにもモデルをデプロイしやすくなります。また、既存のハードウェアや新しい専用アクセラレータに合わせて、モデルの実行を最適化できます。</p>
 <h3>セットアップガイド</h3>
 <p>TensorFlow Model Optimization Toolkit は pip パッケージ <code>tensorflow-model-optimization</code> として利用できます。パッケージをインストールするには、次のコマンドを実行します。</p>
 <div class="codehilite"><pre><span></span><code>pip install -U tensorflow-model-optimization
@@ -195,11 +192,10 @@ TensorFlow Lite の訓練後量子化ツールを使うと、重みを8ビット
 <p>TensorFlow Model Optimization Toolkit の実際の使い方は、<a href="https://github.com/huggingface/computer-vision-course/blob/main/notebooks/Unit%209%20-%20Model%20Optimization/tmo.ipynb">こちらのノートブック</a>を参照してください。</p>
 <h2>PyTorch の量子化</h2>
 <h3>概要</h3>
-<p>PyTorch はモデルを最適化するために、INT8 量子化をサポートしています。通常の FP32 モデルと比べて、モデルサイズと必要なメモリ帯域幅をそれぞれ約4分の1に削減できます。
-PyTorch は、深層学習モデルを量子化するための複数のアプローチをサポートしています。それらは次のとおりです。
+<p>PyTorch はモデルを最適化するために、INT8 量子化をサポートしています。通常の FP32 モデルと比べて、モデルサイズと必要なメモリ帯域幅をそれぞれ約4分の1に削減できます。PyTorch は、深層学習モデルを量子化するための複数のアプローチをサポートしています。それらは次のとおりです。
 1. モデルを FP32 で訓練し、その後モデルを INT8 に変換します。
 2. 量子化を考慮した訓練（quantization aware training）では、フェイク量子化（fake-quantization）モジュールを使い、順伝播と逆伝播の両方で量子化誤差を模擬しながらモデルを訓練します。
-3. 量子化されたテンソルを表現し、それを使った演算を実行する方法です。この方法を使うと、計算の全部または一部を低精度で行うモデルを直接構築できます。</p>
+3. 量子化されたテンソルを表現し、それを使った演算を実行する方法です。この方法を使うと、計算の全部又は一部を低精度で行うモデルを直接構築できます。</p>
 <p>PyTorch の量子化について詳しくは、<a href="https://pytorch.org/docs/stable/quantization.html">PyTorch の量子化に関する公式ドキュメント</a>をご覧ください。</p>
 <h3>セットアップガイド</h3>
 <p>PyTorch の量子化は、PyTorch パッケージ内の API として利用できます。使うには、PyTorch をインストールし、次のように量子化 API をインポートするだけです。</p>
@@ -211,18 +207,14 @@ import torch.quantization
 <p>PyTorch の量子化の実際の使い方は、<a href="https://github.com/huggingface/computer-vision-course/blob/main/notebooks/Unit%209%20-%20Model%20Optimization/torch.ipynb">こちらのノートブック</a>を参照してください。</p>
 <h2>ONNX Runtime</h2>
 <h3>概要</h3>
-<p>ONNX Runtime は、クロスプラットフォームの機械学習モデルアクセラレータで、ハードウェア固有のライブラリと統合するための柔軟なインターフェースを備えています。
-ONNX Runtime は、PyTorch、TensorFlow/Keras、TFLite、scikit-learn、その他のフレームワークのモデルで使うことができます。
-推論に ONNX Runtime を使う利点は次のとおりです。
-- さまざまな ML モデルの推論性能を改善します。
-- さまざまなハードウェアやオペレーティングシステムで実行できます。
+<p>ONNX Runtime は、クロスプラットフォームの機械学習モデルアクセラレータで、ハードウェア固有のライブラリと統合するための柔軟なインターフェースを備えています。ONNX Runtime は、PyTorch、TensorFlow/Keras、TFLite、scikit-learn、その他のフレームワークのモデルで使うことができます。推論に ONNX Runtime を使う利点は次のとおりです。
+- 様々な ML モデルの推論性能を改善します。
+- 様々なハードウェアやオペレーティングシステムで実行できます。
 - Python で訓練し、C#/C++/Java アプリにデプロイできます。
 - 異なるフレームワークで作成されたモデルを使って、訓練や推論を行えます。</p>
 <p>ONNX Runtime について詳しくは、<a href="https://onnxruntime.ai/docs/">ONNX Runtime の公式ドキュメント</a>をご覧ください。</p>
 <h3>セットアップガイド</h3>
-<p>ONNX Runtime には2つの Python パッケージがあり、1つの環境にはそのうち1つだけをインストールすべきです。
-GPU サポート付きで ONNX Runtime を使いたい場合は、GPU パッケージを使ってください。
-ONNX Runtime の Python パッケージは pip パッケージとして利用できます。パッケージをインストールするには、次のコマンドを実行します。</p>
+<p>ONNX Runtime には2つの Python パッケージがあり、1つの環境にはそのうち1つだけをインストールすべきです。GPU サポート付きで ONNX Runtime を使いたい場合は、GPU パッケージを使ってください。ONNX Runtime の Python パッケージは pip パッケージとして利用できます。パッケージをインストールするには、次のコマンドを実行します。</p>
 <div class="codehilite"><pre><span></span><code>pip install onnxruntime
 </code></pre></div>
 
@@ -234,9 +226,7 @@ ONNX Runtime の Python パッケージは pip パッケージとして利用で
 <p>ONNX Runtime の実際の使い方は、<a href="https://github.com/huggingface/computer-vision-course/blob/main/notebooks/Unit%209%20-%20Model%20Optimization/onnx.ipynb">こちらのノートブック</a>を参照してください。</p>
 <h2>TensorRT</h2>
 <h3>概要</h3>
-<p>NVIDIA® TensorRT™ は、訓練済みの深層学習モデルを最適化し、高性能な推論を実現するための SDK です。
-TensorRT には、訓練済みモデルの推論処理を最適化する機能と、最適化したモデルを実行するためのランタイムが含まれています。
-選択したフレームワークで深層学習モデルを訓練した後、TensorRT を使うと、より高いスループットと低いレイテンシで実行できます。</p>
+<p>NVIDIA® TensorRT™ は、訓練済みの深層学習モデルを最適化し、高性能な推論を実現するための SDK です。TensorRT には、訓練済みモデルの推論処理を最適化する機能と、最適化したモデルを実行するためのランタイムが含まれています。選択したフレームワークで深層学習モデルを訓練した後、TensorRT を使うと、より高いスループットと低いレイテンシで実行できます。</p>
 <h3>セットアップガイド</h3>
 <p>TensorRT は pip パッケージ <code>tensorrt</code> として利用できます。パッケージをインストールするには、次のコマンドを実行します。</p>
 <div class="codehilite"><pre><span></span><code>pip install tensorrt
@@ -247,8 +237,7 @@ TensorRT には、訓練済みモデルの推論処理を最適化する機能�
 <p>TensorRT の実際の使い方は、<a href="https://github.com/huggingface/computer-vision-course/blob/main/notebooks/Unit%209%20-%20Model%20Optimization/tensorrt.ipynb">こちらのノートブック</a>を参照してください。</p>
 <h2>OpenVINO</h2>
 <h3>概要</h3>
-<p>OpenVINO™ ツールキットを使うと、ほぼあらゆるフレームワークで作成した深層学習モデルを最適化し、さまざまな Intel® プロセッサやその他のハードウェア上で、最高水準の性能を引き出しながらデプロイできます。
-OpenVINO を使う利点には次のものがあります。
+<p>OpenVINO™ ツールキットを使うと、ほぼあらゆるフレームワークで作成した深層学習モデルを最適化し、様々な Intel® プロセッサやその他のハードウェア上で、最高水準の性能を引き出しながらデプロイできます。OpenVINO を使う利点には次のものがあります。
 - OpenVINO Runtime と直接連携してローカルで推論を実行したり、OpenVINO Model Server を使って別のサーバーや Kubernetes 環境から推論機能を提供したりできます。
 - アプリケーションを一度作成すれば、好みのデバイス、プログラミング言語、OS に対応した環境へデプロイできます。
 - 外部依存関係が最小限です。
@@ -263,9 +252,7 @@ OpenVINO を使う利点には次のものがあります。
 <p>OpenVINO の実際の使い方は、<a href="https://github.com/huggingface/computer-vision-course/blob/main/notebooks/Unit%209%20-%20Model%20Optimization/openvino.ipynb">こちらのノートブック</a>を参照してください。</p>
 <h2>Optimum</h2>
 <h3>概要</h3>
-<p>Optimum は <a href="https://huggingface.co/docs/transformers">Transformers</a> の拡張機能で、特定のハードウェア上でモデルを訓練・実行するときに、性能を最適化して最大限の効率を引き出すためのツールを提供します。AI 分野では技術が急速に進歩しており、専用ハードウェアや新しい最適化手法が次々と登場しています。
-Optimum を使えば、開発者は Transformers の使いやすさをそのまま活かしながら、こうしたさまざまなハードウェアプラットフォームを簡単に利用できます。
-現在 Optimum がサポートしているプラットフォームは次のとおりです。
+<p>Optimum は <a href="https://huggingface.co/docs/transformers">Transformers</a> の拡張機能で、特定のハードウェア上でモデルを訓練・実行するときに、性能を最適化して最大限の効率を引き出すためのツールを提供します。AI 分野では技術が急速に進歩しており、専用ハードウェアや新しい最適化手法が次々と登場しています。Optimum を使えば、開発者は Transformers の使いやすさをそのまま活かしながら、こうした様々なハードウェアプラットフォームを簡単に利用できます。現在 Optimum がサポートしているプラットフォームは次のとおりです。
 1. <a href="https://huggingface.co/docs/optimum/habana/index">Habana</a>
 2. <a href="https://huggingface.co/docs/optimum/intel/index">Intel</a>
 3. <a href="https://github.com/huggingface/optimum-nvidia">Nvidia</a>
@@ -284,8 +271,7 @@ Optimum を使えば、開発者は Transformers の使いやすさをそのま�
 <p>量子化に Optimum を使う方法は、<a href="https://github.com/huggingface/computer-vision-course/blob/main/notebooks/Unit%209%20-%20Model%20Optimization/optimum.ipynb">こちらのノートブック</a>を参照してください。</p>
 <h2>Edge TPU</h2>
 <h3>概要</h3>
-<p>Edge TPU は、エッジデバイス上で AI を実行するために Google が設計した専用 ASIC です。本体が小さく、消費電力も少ない一方で高い性能を発揮するため、エッジ環境でも高精度な AI モデルをデプロイできます。
-Edge TPU を使う利点には次のものがあります。
+<p>Edge TPU は、エッジデバイス上で AI を実行するために Google が設計した専用 ASIC です。本体が小さく、消費電力も少ない一方で高い性能を発揮するため、エッジ環境でも高精度な AI モデルをデプロイできます。Edge TPU を使う利点には次のものがあります。
 - Cloud TPU や Google Cloud サービスを補完し、AI を使ったソリューションをデプロイするための、クラウドからエッジまで一貫したハードウェアとソフトウェアの基盤を提供します。
 - 本体が小さく消費電力も少ないにもかかわらず、高い性能を発揮します。
 - カスタムハードウェア、オープンなソフトウェア、最先端の AI アルゴリズムを組み合わせ、エッジ向けの高品質でデプロイしやすい AI ソリューションを提供します。</p>

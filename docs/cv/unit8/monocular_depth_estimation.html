@@ -189,13 +189,13 @@ window.MathJax = { tex: { inlineMath: [['$', '$'], ['\\(', '\\)']], displayMath:
 <p>そして現在、最先端のモデルである Depth Anything V2 があります。</p>
 <p><img alt="image/png" src="https://huggingface.co/datasets/hf-vision/course-assets/resolve/main/Metric%20and%20Relative%20Monocular%20Depth%20Estimation%20An%20Overview.%20Fine-Tuning%20Depth%20Anything%20V2/depth_estimation_evolution3.png" /></p>
 <p>素晴らしいですね。</p>
-<p>この記事では、こうしたモデルがどのように動くのかを、難しい概念もかみ砕きながら説明します。さらに、独自のデータセットを使ってモデルをファインチューニングします。</p>
+<p>この記事では、こうしたモデルがどのように動くのかを、難しい概念もかみ砕きながら説明します。更に、独自のデータセットを使ってモデルをファインチューニングします。</p>
 <p>「<em>でも、最新のモデルはどんな環境でも高い性能を発揮するのに、わざわざ独自のデータセットでファインチューニングする必要があるの？</em>」と思うかもしれません。</p>
 <p>その理由を理解するには、モデルの特性や利用条件の細かな違いを考える必要があります。この記事では、まさにそうした点を詳しく説明します。単眼深度推定の仕組みをもっと深く知りたい方は、ぜひ読み進めてください。</p>
 <h2>基礎</h2>
 <p>「<em>そもそも、深度とは何でしょうか？</em>」</p>
 <p>深度とは、カメラやセンサーから、空間内のある点までの距離を指します。一般に、画像の各画素に対応する点の深度を記録したものを「深度マップ」と呼びます。深度マップは通常、1チャンネルの画像として表されます。</p>
-<p>ただし、深度の値には、実際の距離を表すものと、距離の相対的な関係だけを表すものがあります。
+<p>但し、深度の値には、実際の距離を表すものと、距離の相対的な関係だけを表すものがあります。
 - <strong>絶対深度（Absolute Depth）</strong>：各ピクセルの値が物理的な距離（メートルやセンチメートルなど）に直接対応します。
 - <strong>相対深度（Relative Depth）</strong>：ピクセルの値は、実世界の測定単位に言及することなく、どの点が近く、どの点が遠いかを示します。相対深度は逆転していることが多く、つまり数値が小さいほどその点は遠くにあります。</p>
 <p>これらの概念については、あとでもう少し詳しく探ります。</p>
@@ -203,12 +203,12 @@ window.MathJax = { tex: { inlineMath: [['$', '$'], ['\\(', '\\)']], displayMath:
 <p>簡単に言えば、1枚の画像だけを使って深度を推定することです。では、画像が1枚しかないと何が難しいのでしょうか。次の例を見てみましょう。</p>
 <p><img alt="image/gif" src="https://huggingface.co/datasets/hf-vision/course-assets/resolve/main/Metric%20and%20Relative%20Monocular%20Depth%20Estimation%20An%20Overview.%20Fine-Tuning%20Depth%20Anything%20V2/depth_ambiguity1.gif" /></p>
 <p><img alt="image/gif" src="https://huggingface.co/datasets/hf-vision/course-assets/resolve/main/Metric%20and%20Relative%20Monocular%20Depth%20Estimation%20An%20Overview.%20Fine-Tuning%20Depth%20Anything%20V2/depth_ambiguity2.gif" /></p>
-<p>ご覧のように、3D空間を2D平面に投影すると、遠近法のために曖昧さが生じることがあります。これに対処するために、ステレオビジョン、Structure from Motion、そしてより広い分野である写真測量（Photogrammetry）のような、複数の画像を使った深度推定の精密な数学的手法があります。さらに、レーザースキャナー（LiDAR など）のような技術も深度の測定に使えます。</p>
+<p>ご覧のように、3D空間を2D平面に投影すると、遠近法のために曖昧さが生じることがあります。これに対処するために、ステレオビジョン、Structure from Motion、そしてより広い分野である写真測量（Photogrammetry）のような、複数の画像を使った深度推定の精密な数学的手法があります。更に、レーザースキャナー（LiDAR など）のような技術も深度の測定に使えます。</p>
 <p><img alt="image/png" src="https://huggingface.co/datasets/hf-vision/course-assets/resolve/main/Metric%20and%20Relative%20Monocular%20Depth%20Estimation%20An%20Overview.%20Fine-Tuning%20Depth%20Anything%20V2/stereo_vision_sfm.png" /></p>
 <h2>相対深度と絶対（メトリック）深度の推定：その意義は？</h2>
 <p>相対深度推定がなぜ必要なのかを理解するために、まず深度推定が抱えるいくつかの課題を見ていきましょう。あわせて、関連する研究論文も参照します。</p>
 <blockquote>
-<p>メトリック深度を予測できると、コンピュータビジョンやロボティクスのさまざまな応用に役立ちます。たとえば、地図作成、経路計画、ナビゲーション、物体認識、3D再構成、画像編集などです。</p>
+<p>メトリック深度を予測できると、コンピュータビジョンやロボティクスの様々な応用に役立ちます。たとえば、地図作成、経路計画、ナビゲーション、物体認識、3D再構成、画像編集などです。</p>
 <p>しかし、複数のデータセットを組み合わせて1つのメトリック深度推定モデルを訓練すると、性能が低下することが少なくありません。特に、屋内と屋外の画像のように、深度のスケールが大きく異なるデータを混ぜた場合に顕著です。</p>
 <p>そのため、現在のメトリック深度推定（MDE）モデルは、特定のデータセットに過学習しやすく、ほかのデータセットでは十分な性能を発揮できない傾向があります。</p>
 </blockquote>
@@ -222,13 +222,13 @@ window.MathJax = { tex: { inlineMath: [['$', '$'], ['\\(', '\\)']], displayMath:
 <p>スケールの違いに加えて、カメラ自体の違いも大きな問題です。カメラやその設定によって、同じ世界でも写り方が大きく変わることがあります。</p>
 <p><img alt="image/png" src="https://huggingface.co/datasets/hf-vision/course-assets/resolve/main/Metric%20and%20Relative%20Monocular%20Depth%20Estimation%20An%20Overview.%20Fine-Tuning%20Depth%20Anything%20V2/focal_lenght.png" /></p>
 <p>焦点距離の変化が、背景の距離の知覚をいかに劇的に変えるか注目してください！</p>
-<p>最後に、多くのデータセットには絶対深度マップが全くなく、相対的なものしかありません（たとえば、カメラキャリブレーションの不足のため）。さらに、深度を得る方法ごとに、それぞれ利点、欠点、バイアス、問題があります。</p>
+<p>最後に、多くのデータセットには絶対深度マップが全くなく、相対的なものしかありません（たとえば、カメラキャリブレーションの不足のため）。更に、深度を得る方法ごとに、それぞれ利点、欠点、バイアス、問題があります。</p>
 <p><img alt="image/png" src="https://huggingface.co/datasets/hf-vision/course-assets/resolve/main/Metric%20and%20Relative%20Monocular%20Depth%20Estimation%20An%20Overview.%20Fine-Tuning%20Depth%20Anything%20V2/metrics1.png" /></p>
 <blockquote>
 <p>主な課題は次の3つです。1）深度の表現方法が本質的に異なること：深度を直接表す方式と、逆深度で表す方式があります。2）スケールの曖昧さ：一部のデータソースでは、深度の値に未知の倍率が掛かっている可能性があります。3）シフトの曖昧さ：一部のデータセットでは、視差の倍率だけでなく、視差全体のずれも未知です。このずれは、未知のベースラインと、後処理による主点の水平方向の移動に依存します。</p>
 </blockquote>
 <p><em>視差（Disparity）とは、2つの異なる視点から見たときの物体の見かけの位置の差を指し、ステレオビジョンで深度を推定するのによく使われます。</em></p>
-<p>つまり、インターネット上のさまざまな深度マップをただ集め、画素ごとの MSE（平均二乗誤差）だけを使ってモデルを訓練するわけにはいかない、ということです。</p>
+<p>つまり、インターネット上の様々な深度マップをただ集め、画素ごとの MSE（平均二乗誤差）だけを使ってモデルを訓練するわけにはいかない、ということです。</p>
 <p>では、こうしたデータセット間の違いをどうすれば吸収できるのでしょうか。個々の違いの影響をできるだけ取り除き、シーンの形状や構造、物体同士の比例関係、どの物体が近くどの物体が遠いかといった共通の情報を取り出すには、どうすればよいのでしょうか。</p>
 <h2>スケール・シフト不変損失 😎</h2>
 <p>簡単に言えば、訓練や評価に使うすべての深度マップを、何らかの方法で正規化する必要があります。そこで、シーンのスケールや値のシフトに左右されない損失関数を考えます。あとは、この考え方を数式で表せばよいのです。</p>
@@ -242,7 +242,7 @@ $$t(d) = \mathrm{median}(d), \quad s(d) = \frac{1}{HW} \sum</em> \left| d_i - t(
 </blockquote>
 <p>実際には、スケールやシフトの影響を取り除く方法は、ほかにも数多くあります。また、損失関数に別の項を加える方法もあります。たとえば勾配損失（gradient loss）は、画素の値そのものではなく、値が空間的にどれだけ急激に変化するかに着目する損失です。その名前も、この性質に由来しています。詳しくは <a href="https://arxiv.org/abs/1907.01341">MiDaS</a> の論文をご覧ください。参考文献は記事の末尾にもまとめています。次の絶対深度のファインチューニングに進む前に、まず評価指標について簡単に説明します。</p>
 <h2>指標</h2>
-<p>深度推定では、性能を評価するためにいくつかの標準的な指標が使われます。MAE（平均絶対誤差）、RMSE（二乗平均平方根誤差）、そして距離の大きな隔たりを滑らかにするためのそれらの対数バリエーションなどです。さらに、次も考慮してください。
+<p>深度推定では、性能を評価するためにいくつかの標準的な指標が使われます。MAE（平均絶対誤差）、RMSE（二乗平均平方根誤差）、そして距離の大きな隔たりを滑らかにするためのそれらの対数バリエーションなどです。更に、次も考慮してください。
 - <strong>絶対相対誤差（Absolute Relative Error、AbsRel）</strong>：この指標は MAE に似ていますが、パーセンテージで表され、予測した距離が真の距離から平均して何パーセント異なるかを測ります。<br> \(\text{AbsRel} = \frac{1}{N} \sum_{i=1}^{N} \frac{|d_i - \hat{d}_i|}{d_i}\)
 - <strong>閾値精度（Threshold Accuracy、\(\delta_1\)）</strong>：予測した深度と正解の深度の比が、定められた閾値の範囲内に収まる画素の割合を表します。ここでは、閾値を1.25として評価します。<br> \(\delta_1 = \text{ proportion of predicted depths where } \max\left(\frac{d_i}{\hat{d}_i}, \frac{\hat{d}_i}{d_i}\right) &lt; 1.25\)</p>
 <h3>重要な考慮事項</h3>
@@ -284,7 +284,7 @@ $$t(d) = \mathrm{median}(d), \quad s(d) = \frac{1}{HW} \sum</em> \left| d_i - t(
 <h3>Depth Anything V2 の背後にある重要なアイデア</h3>
 <p>Depth Anything V2 は、高い性能を持つ深度推定モデルです。いくつかの新しい技術的な工夫によって、優れた推定結果を実現しています。</p>
 <ul>
-<li><strong>異なる種類のデータを扱える汎用的な訓練手法</strong>：MiDaS の2020年の論文で導入されたこの手法により、さまざまな種類のデータセットを組み合わせても、安定してモデルを訓練できます。</li>
+<li><strong>異なる種類のデータを扱える汎用的な訓練手法</strong>：MiDaS の2020年の論文で導入されたこの手法により、様々な種類のデータセットを組み合わせても、安定してモデルを訓練できます。</li>
 <li><strong>DPT アーキテクチャ</strong>：「Vision Transformers for Dense Prediction」の論文が提示するこのアーキテクチャは、本質的には Vision Transformer（ViT）エンコーダを持つ U-Net に、いくつかの変更を加えたものです。</li>
 </ul>
 <p><img alt="image/png" src="https://huggingface.co/datasets/hf-vision/course-assets/resolve/main/Metric%20and%20Relative%20Monocular%20Depth%20Estimation%20An%20Overview.%20Fine-Tuning%20Depth%20Anything%20V2/dpt.png" /></p>

@@ -206,7 +206,7 @@ window.MathJax = { tex: { inlineMath: [['$', '$'], ['\\(', '\\)']], displayMath:
 <h2>モデルの種類とテンプレート</h2>
 <h3>ベースモデルとインストラクトモデル</h3>
 <p>ベースモデルは、生のテキストデータで学習され、次のトークンを予測します。一方、インストラクトモデルは、指示に従い会話を行うように特化してファインチューニングされたモデルです。たとえば、<a href="https://huggingface.co/HuggingFaceTB/SmolLM2-135M"><code>SmolLM2-135M</code></a> はベースモデルであり、<a href="https://huggingface.co/HuggingFaceTB/SmolLM2-135M-Instruct"><code>SmolLM2-135M-Instruct</code></a> はその指示チューニング済みの派生モデルです。  </p>
-<p>指示チューニング済みモデルは、特定の会話構造に従うよう学習されているため、チャットボットの用途により適しています。さらに、インストラクトモデルはツール使用、マルチモーダル入力、関数呼び出しを含む複雑なやり取りにも対応できます。</p>
+<p>指示チューニング済みモデルは、特定の会話構造に従うよう学習されているため、チャットボットの用途により適しています。更に、インストラクトモデルはツール使用、マルチモーダル入力、関数呼び出しを含む複雑なやり取りにも対応できます。</p>
 <p>ベースモデルにインストラクトモデルのような振る舞いをさせるには、モデルが理解できる一貫した形式でプロンプトを整形する必要があります。ここでチャットテンプレートの出番です。ChatML はそのようなテンプレート形式の1つで、ロール（system、user、assistant）を明確に示して会話を構造化します。ChatML については<a href="https://huggingface.co/HuggingFaceTB/SmolLM2-135M-Instruct/blob/e2c3f7557efbdec707ae3a336371d169783f1da1/tokenizer_config.json#L146">こちらのガイド</a>を参照してください。</p>
 <div class="callout callout-warning">
 <p class="callout-title">⚠️ 注意</p>
@@ -263,7 +263,7 @@ Hi!<span class="w"> </span>How<span class="w"> </span>can<span class="w"> </span
    - Qwen はロール固有の開始／終了トークンを使う</p>
 </li>
 </ol>
-<p>こうした違いを理解することが、さまざまなモデルを扱ううえでの鍵です。transformers ライブラリがこれらの違いを自動的に処理してくれる様子を見てみましょう。</p>
+<p>こうした違いを理解することが、様々なモデルを扱ううえでの鍵です。transformers ライブラリがこれらの違いを自動的に処理してくれる様子を見てみましょう。</p>
 <div class="codehilite"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">transformers</span><span class="w"> </span><span class="kn">import</span> <span class="n">AutoTokenizer</span>
 
 <span class="c1"># それぞれ異なるテンプレートが自動的に使われます</span>

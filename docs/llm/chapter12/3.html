@@ -297,7 +297,7 @@ window.MathJax = { tex: { inlineMath: [['$', '$'], ['\\(', '\\)']], displayMath:
 <p><img alt="GRPO のプロセス" src="https://huggingface.co/reasoning-course/images/resolve/main/grpo/10.png" /></p>
 <p>GRPO の新規性は、選好の修正を目的として、方策を直接最適化できる点にあります。これは、PPO のような従来の強化学習アルゴリズムと比べて、より直接的で効率的な、モデルを望ましい出力に合わせるための経路を意味します。GRPO の仕組みを、その3つの主要な構成要素に分解してみましょう。</p>
 <h3>グループの形成： 複数の解を作る</h3>
-<p>GRPO の最初のステップは驚くほど直感的です。難しい問題を解くときに、学生が複数のアプローチを試すのと似ています。プロンプトが与えられると、モデルは1つの応答だけを生成するのではありません。代わりに、同じ問題を解く複数の試行（通常は4、8、または16通りの異なる試行）を作成します。</p>
+<p>GRPO の最初のステップは驚くほど直感的です。難しい問題を解くときに、学生が複数のアプローチを試すのと似ています。プロンプトが与えられると、モデルは1つの応答だけを生成するのではありません。代わりに、同じ問題を解く複数の試行（通常は4、8、又は16通りの異なる試行）を作成します。</p>
 <p>モデルに数学の問題を解くことを教えていると想像してください。農場のニワトリを数える質問について、モデルは次のようないくつかの異なる解を生成するかもしれません。
 - ある解は、問題を段階的に分解するかもしれません。まずニワトリの総数を数え、次に雄鶏を引き、最後に産卵しない雌鶏を考慮する、といった具合です
 - 別の解は、異なるが同様に有効なアプローチを使うかもしれません
@@ -306,7 +306,7 @@ window.MathJax = { tex: { inlineMath: [['$', '$'], ['\\(', '\\)']], displayMath:
 <p><img alt="グループの形成" src="https://huggingface.co/reasoning-course/images/resolve/main/grpo/11.jpg" /></p>
 <h3>選好の学習： 良い解とは何かを理解する</h3>
 <p>ここが、GRPO がそのシンプルさで真価を発揮するところです。別の報酬モデルを常に必要として、解がどれだけ優れているかを予測する他の RLHF 手法とは異なり、GRPO は任意の関数やモデルを使って解の品質を評価できます。たとえば、長さの関数を使って短い応答に報酬を与えたり、数式ソルバーを使って正確な数学の解に報酬を与えたりできます。</p>
-<p>評価プロセスでは、各解のさまざまな側面を見ます。
+<p>評価プロセスでは、各解の様々な側面を見ます。
 - 最終的な答えは正しいか？
 - 解は適切な形式に従っているか（適切な XML タグを使うなど）？
 - 推論は提示された答えと一致しているか？</p>
@@ -325,7 +325,7 @@ window.MathJax = { tex: { inlineMath: [['$', '$'], ['\\(', '\\)']], displayMath:
 <p>このアプローチが従来の手法より安定しているのは、以下の理由によります。
 - 2つずつ比較するのではなく、複数の解を一緒に見る
 - グループベースの正規化により、報酬のスケーリングの問題を防ぎやすい
-- KL ペナルティが安全網として働き、モデルが新しいことを学ぶ間に、すでに知っていることを忘れないようにする</p>
+- KL ペナルティが安全網として働き、モデルが新しいことを学ぶ間に、既に知っていることを忘れないようにする</p>
 <div class="callout callout-tip">
 <p class="callout-title">💡 ヒント</p>
 <p>GRPO の主要な革新は次のとおりです。
@@ -388,7 +388,7 @@ window.MathJax = { tex: { inlineMath: [['$', '$'], ['\\(', '\\)']], displayMath:
 </tr>
 </tbody>
 </table>
-<p>このモデルの実用的なインパクトは、ベンチマークにとどまりません。費用対効果の高い API 価格設定（入力トークン100万個あたり0.14ドル）や、さまざまなサイズ（パラメータ数1.5B〜70B）にわたる蒸留の成功がそれを示しています。注目すべきは、7B モデルでも AIME 2024 で 55.5% を達成し、70B の蒸留版は MATH-500 で o1-mini の性能に近づいている（94.5%）ことで、異なるスケールでも能力が効果的に保持されることを示しています。</p>
+<p>このモデルの実用的なインパクトは、ベンチマークにとどまりません。費用対効果の高い API 価格設定（入力トークン100万個あたり0.14ドル）や、様々なサイズ（パラメータ数1.5B〜70B）にわたる蒸留の成功がそれを示しています。注目すべきは、7B モデルでも AIME 2024 で 55.5% を達成し、70B の蒸留版は MATH-500 で o1-mini の性能に近づいている（94.5%）ことで、異なるスケールでも能力が効果的に保持されることを示しています。</p>
 <h2>GRPO の限界と課題</h2>
 <p>GRPO は言語モデルのための強化学習における大きな進歩を表していますが、その限界と課題を理解することも重要です。</p>
 <ul>
@@ -408,51 +408,51 @@ window.MathJax = { tex: { inlineMath: [['$', '$'], ['\\(', '\\)']], displayMath:
 <div class="quiz">
 <div class="quiz-choices">
 <button type="button" class="quiz-choice" data-correct="true" data-quiz-idx="0">報酬モデルの有無にかかわらず、選好から学習できる GRPO アルゴリズム</button>
-<div class="quiz-explain-src" id="qe-123146993671680-0" hidden>正解です！GRPO の主要な革新は、選好の修正を目的として方策を直接最適化できる点であり、従来の RL 手法より効率的です。</div>
+<div class="quiz-explain-src" id="qe-123594587561600-0" hidden>正解です！GRPO の主要な革新は、選好の修正を目的として方策を直接最適化できる点であり、従来の RL 手法より効率的です。</div>
 <button type="button" class="quiz-choice" data-correct="false" data-quiz-idx="1">従来のどのモデルよりも多くの GPU を学習に使うこと</button>
-<div class="quiz-explain-src" id="qe-123146993671680-1" hidden>この論文の革新は、使われた計算リソースではなく、アルゴリズムのアプローチ（GRPO）にあります。</div>
+<div class="quiz-explain-src" id="qe-123594587561600-1" hidden>この論文の革新は、使われた計算リソースではなく、アルゴリズムのアプローチ（GRPO）にあります。</div>
 <button type="button" class="quiz-choice" data-correct="false" data-quiz-idx="2">既存のものより大きな言語モデルを作ること</button>
-<div class="quiz-explain-src" id="qe-123146993671680-2" hidden>革新はモデルの大きさではなく、学習方法と GRPO アルゴリズムにあります。</div>
+<div class="quiz-explain-src" id="qe-123594587561600-2" hidden>革新はモデルの大きさではなく、学習方法と GRPO アルゴリズムにあります。</div>
 </div><div class="quiz-feedback" hidden></div></div>
 <h3>2. DeepSeek R1 の学習プロセスの4つのフェーズは何ですか？</h3>
 <div class="quiz">
 <div class="quiz-choices">
 <button type="button" class="quiz-choice" data-correct="true" data-quiz-idx="0">Cold Start、Reasoning RL、Rejection Sampling、Diverse RL</button>
-<div class="quiz-explain-src" id="qe-123146993677248-0" hidden>正解です！これらは論文で説明された正確な4つのフェーズであり、それぞれが学習パイプラインで特定の目的を果たします。</div>
+<div class="quiz-explain-src" id="qe-123594587557440-0" hidden>正解です！これらは論文で説明された正確な4つのフェーズであり、それぞれが学習パイプラインで特定の目的を果たします。</div>
 <button type="button" class="quiz-choice" data-correct="false" data-quiz-idx="1">事前学習、ファインチューニング、テスト、デプロイ</button>
-<div class="quiz-explain-src" id="qe-123146993677248-1" hidden>この論文では、異なる4つのフェーズを具体的に述べています。Cold Start（品質の基盤）、Reasoning RL（能力の構築）、Rejection Sampling（品質管理）、Diverse RL（幅広いアライメント）です。</div>
+<div class="quiz-explain-src" id="qe-123594587557440-1" hidden>この論文では、異なる4つのフェーズを具体的に述べています。Cold Start（品質の基盤）、Reasoning RL（能力の構築）、Rejection Sampling（品質管理）、Diverse RL（幅広いアライメント）です。</div>
 <button type="button" class="quiz-choice" data-correct="false" data-quiz-idx="2">データ収集、モデル学習、評価、最適化</button>
-<div class="quiz-explain-src" id="qe-123146993677248-2" hidden>この論文では、Cold Start、Reasoning RL、Rejection Sampling、Diverse RL のフェーズを含む、特定の4フェーズのプロセスを説明しています。</div>
+<div class="quiz-explain-src" id="qe-123594587557440-2" hidden>この論文では、Cold Start、Reasoning RL、Rejection Sampling、Diverse RL のフェーズを含む、特定の4フェーズのプロセスを説明しています。</div>
 </div><div class="quiz-feedback" hidden></div></div>
 <h3>3. R1-Zero の学習における「Aha モーメント」現象とは何ですか？</h3>
 <div class="quiz">
 <div class="quiz-choices">
 <button type="button" class="quiz-choice" data-correct="true" data-quiz-idx="0">モデルが誤りに気づき、自己修正し、その修正を説明するプロセス</button>
-<div class="quiz-explain-src" id="qe-123146993671680-0" hidden>正解です！論文では、これを4ステップのプロセスとして説明しています。初期の試行、誤りの認識、自己修正、改善の説明です。</div>
+<div class="quiz-explain-src" id="qe-123594587561600-0" hidden>正解です！論文では、これを4ステップのプロセスとして説明しています。初期の試行、誤りの認識、自己修正、改善の説明です。</div>
 <button type="button" class="quiz-choice" data-correct="false" data-quiz-idx="1">モデルが人間に匹敵する性能に達する時点</button>
-<div class="quiz-explain-src" id="qe-123146993671680-1" hidden>「Aha モーメント」は、人間の問題解決におけるひらめきと同様に、モデルが自らの誤りに気づき、正す能力を指します。</div>
+<div class="quiz-explain-src" id="qe-123594587561600-1" hidden>「Aha モーメント」は、人間の問題解決におけるひらめきと同様に、モデルが自らの誤りに気づき、正す能力を指します。</div>
 <button type="button" class="quiz-choice" data-correct="false" data-quiz-idx="2">モデルが学習プロセスを完了するとき</button>
-<div class="quiz-explain-src" id="qe-123146993671680-2" hidden>「Aha モーメント」は学習の完了ではなく、問題解決の最中にモデルが誤りに気づき、自己修正する創発的な能力に関するものです。</div>
+<div class="quiz-explain-src" id="qe-123594587561600-2" hidden>「Aha モーメント」は学習の完了ではなく、問題解決の最中にモデルが誤りに気づき、自己修正する創発的な能力に関するものです。</div>
 </div><div class="quiz-feedback" hidden></div></div>
 <h3>4. GRPO のグループ形成はどのように機能しますか？</h3>
 <div class="quiz">
 <div class="quiz-choices">
 <button type="button" class="quiz-choice" data-correct="true" data-quiz-idx="0">同じ問題に対する複数の解（4〜16件）を生成し、それらをまとめて評価する</button>
-<div class="quiz-explain-src" id="qe-123146993677248-0" hidden>正解です！GRPO は同じ問題を解く複数の試行（通常は4、8、または16通り）を生成し、それらをグループとして評価します。</div>
+<div class="quiz-explain-src" id="qe-123594587557440-0" hidden>正解です！GRPO は同じ問題を解く複数の試行（通常は4、8、又は16通り）を生成し、それらをグループとして評価します。</div>
 <button type="button" class="quiz-choice" data-correct="false" data-quiz-idx="1">複数のモデルを1つのアンサンブルに結合する</button>
-<div class="quiz-explain-src" id="qe-123146993677248-1" hidden>GRPO は複数の異なるモデルのアンサンブルではなく、1つのモデルを使って複数の解の試行を生成します。</div>
+<div class="quiz-explain-src" id="qe-123594587557440-1" hidden>GRPO は複数の異なるモデルのアンサンブルではなく、1つのモデルを使って複数の解の試行を生成します。</div>
 <button type="button" class="quiz-choice" data-correct="false" data-quiz-idx="2">学習データを異なるグループに分割する</button>
-<div class="quiz-explain-src" id="qe-123146993677248-2" hidden>GRPO のグループ形成は、学習データを分割することではなく、同じ問題に対する複数の解を生成することです。</div>
+<div class="quiz-explain-src" id="qe-123594587557440-2" hidden>GRPO のグループ形成は、学習データを分割することではなく、同じ問題に対する複数の解を生成することです。</div>
 </div><div class="quiz-feedback" hidden></div></div>
 <h3>5. DeepSeek-R1-Zero と DeepSeek-R1 の主な違いは何ですか？</h3>
 <div class="quiz">
 <div class="quiz-choices">
 <button type="button" class="quiz-choice" data-correct="true" data-quiz-idx="0">R1-Zero は純粋な RL を使うのに対し、R1 は RL と教師ありファインチューニングを組み合わせる</button>
-<div class="quiz-explain-src" id="qe-123146993671680-0" hidden>正解です！比較表のとおり、R1-Zero は純粋な RL 学習を使い、R1 は教師ありファインチューニングと RL を組み合わせた複数フェーズのアプローチを使い、その結果、言語の一貫性が向上しています。</div>
+<div class="quiz-explain-src" id="qe-123594587561600-0" hidden>正解です！比較表のとおり、R1-Zero は純粋な RL 学習を使い、R1 は教師ありファインチューニングと RL を組み合わせた複数フェーズのアプローチを使い、その結果、言語の一貫性が向上しています。</div>
 <button type="button" class="quiz-choice" data-correct="false" data-quiz-idx="1">R1-Zero は R1 より小さい</button>
-<div class="quiz-explain-src" id="qe-123146993671680-1" hidden>違いはモデルの大きさではなく、学習アプローチ（純粋な RL 対 複数フェーズ）にあります。</div>
+<div class="quiz-explain-src" id="qe-123594587561600-1" hidden>違いはモデルの大きさではなく、学習アプローチ（純粋な RL 対 複数フェーズ）にあります。</div>
 <button type="button" class="quiz-choice" data-correct="false" data-quiz-idx="2">R1-Zero はより少ないデータで学習された</button>
-<div class="quiz-explain-src" id="qe-123146993671680-2" hidden>主な違いは学習方法です。R1-Zero は純粋な RL、R1 は SFT と RL を組み合わせたアプローチです。</div>
+<div class="quiz-explain-src" id="qe-123594587561600-2" hidden>主な違いは学習方法です。R1-Zero は純粋な RL、R1 は SFT と RL を組み合わせたアプローチです。</div>
 </div><div class="quiz-feedback" hidden></div></div>
 </article>
 

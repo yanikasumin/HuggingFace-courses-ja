@@ -192,7 +192,7 @@ window.MathJax = { tex: { inlineMath: [['$', '$'], ['\\(', '\\)']], displayMath:
 <p>この研究で提案された Two-Stream Network は、ニューラルネットワーク内に2つの独立した処理経路を持つアーキテクチャです。</p>
 <ul>
 <li><strong>空間ストリーム（Spatial Stream）：</strong> 標準的な 2D CNN で個々のフレームを処理し、見た目の情報を捉えます。</li>
-<li><strong>時間ストリーム（Temporal Stream）：</strong> 2D CNN または別のネットワークで、複数のフレーム列（オプティカルフロー）を処理し、動きの情報を捉えます。</li>
+<li><strong>時間ストリーム（Temporal Stream）：</strong> 2D CNN 又は別のネットワークで、複数のフレーム列（オプティカルフロー）を処理し、動きの情報を捉えます。</li>
 <li><strong>融合（Fusion）：</strong> 両ストリームの出力を組み合わせ、見た目と動きの両方の手がかりを、行動認識のようなタスクに活かします。</li>
 </ul>
 <h2>3D ResNets（2017）</h2>
@@ -200,8 +200,8 @@ window.MathJax = { tex: { inlineMath: [['$', '$'], ['\\(', '\\)']], displayMath:
 <img src="https://huggingface.co/datasets/hf-vision/course-assets/resolve/main/previous sota models/SOTA Models Residual block. Shortcut connections bypass a signal from the top of the block to the tail. Signals are summed at the tail..png" alt="残差ブロック。ショートカット接続によって信号がブロック内部の層を迂回し、ブロックの末尾で元の経路からの信号と加算されます。">
 </div>
 
-<p>標準的な 3D CNN は、2D の空間方向に時間方向を加えた 3D カーネルを使い、空間情報と時間情報を同時に捉えるモデルです。ただし、パラメータ数が多いため、訓練時の計算負荷が高く、2D CNN よりも処理に時間がかかります。そのため、3D ConvNet は、深い 2D CNN と比べて層数を少なくするのが一般的です。</p>
-<p>この論文では、ResNet のアーキテクチャを 3D CNN に応用しています。これにより、3D CNN の層をさらに深くできるようになり、認識精度も向上しました。</p>
+<p>標準的な 3D CNN は、2D の空間方向に時間方向を加えた 3D カーネルを使い、空間情報と時間情報を同時に捉えるモデルです。但し、パラメータ数が多いため、訓練時の計算負荷が高く、2D CNN よりも処理に時間がかかります。そのため、3D ConvNet は、深い 2D CNN と比べて層数を少なくするのが一般的です。</p>
+<p>この論文では、ResNet のアーキテクチャを 3D CNN に応用しています。これにより、3D CNN の層を更に深くできるようになり、認識精度も向上しました。</p>
 <p>実験では、3D ResNets（特に ResNet-34 のような深いもの）が、特に大規模データセットにおいて、<a href="https://arxiv.org/abs/1412.0767">C3D</a> のようなモデルを上回ることが示されました。Sports-1M C3D のような事前学習済みモデルは、小規模データセットでの過学習を緩和するのに役立ちます。全体として、3D ResNets はより深いアーキテクチャを効果的に活かし、ビデオデータの複雑な時空間パターンを捉えます。</p>
 <table>
 <thead>
@@ -268,7 +268,7 @@ window.MathJax = { tex: { inlineMath: [['$', '$'], ['\\(', '\\)']], displayMath:
 <img src="https://huggingface.co/datasets/hf-vision/course-assets/resolve/main/previous sota models/SOTA Models 3D vs (2+1)D convolution..png" alt="3D 畳み込みと (2+1)D 畳み込みの比較">
 </div>
 
-<p>(2+1)D ResNets は3D ResNets に着想を得たものです。ただし、主な違いは層の構成方法にあります。このアーキテクチャは、2D畳み込みと1D畳み込みの組み合わせを導入します。</p>
+<p>(2+1)D ResNets は3D ResNets に着想を得たものです。但し、主な違いは層の構成方法にあります。このアーキテクチャは、2D畳み込みと1D畳み込みの組み合わせを導入します。</p>
 <ul>
 <li>2D畳み込みは、フレーム内の空間的特徴を捉えます。</li>
 <li>1D畳み込みは、連続するフレーム間の動きの情報を捉えます。</li>
@@ -366,8 +366,7 @@ window.MathJax = { tex: { inlineMath: [['$', '$'], ['\\(', '\\)']], displayMath:
 </tbody>
 </table>
 <h1>現在の研究</h1>
-<p>現在、研究者たちはより深い3D CNN アーキテクチャを探求しています。もう1つの有望なアプローチは、3D CNN を注意機構のような他の技術と組み合わせることです。それと並行して、<a href="https://github.com/google-deepmind/kinetics-i3d">Kinetics</a> のような、より大規模なビデオデータセットの開発も進められています。
-Kinetics データセットは、人間の行動認識の研究でよく使われる、大規模で高品質なビデオデータセットです。幅広い人間の活動をカバーする数十万本のビデオクリップを含んでいます。</p>
+<p>現在、研究者たちはより深い3D CNN アーキテクチャを探求しています。もう1つの有望なアプローチは、3D CNN を注意機構のような他の技術と組み合わせることです。それと並行して、<a href="https://github.com/google-deepmind/kinetics-i3d">Kinetics</a> のような、より大規模なビデオデータセットの開発も進められています。Kinetics データセットは、人間の行動認識の研究でよく使われる、大規模で高品質なビデオデータセットです。幅広い人間の活動をカバーする数十万本のビデオクリップを含んでいます。</p>
 <h1>現在の研究</h1>
 <h3>自己教師あり学習：<strong>MoCo（Momentum Contrast）</strong></h3>
 <div class="flex justify-center">
@@ -410,7 +409,7 @@ Kinetics データセットは、人間の行動認識の研究でよく使わ�
 <li><strong>リアルタイム性能（Real-Time Performance）：</strong> 高速な計算に最適化されており、リアルタイムのアプリケーションに適しています。</li>
 </ul>
 <h1>まとめ</h1>
-<p>ビデオ分析モデルの進化は目を見張るものがあります。これらのモデルは、他の SOTA モデルの影響を強く受けています。たとえば、Two-Stream Nets は ConvNets に触発され、(2+1)D ResNets は3D ResNets に着想を得ました。研究が進むにつれて、今後さらに高度なアーキテクチャや技術が登場することが期待されます。</p>
+<p>ビデオ分析モデルの進化は目を見張るものがあります。これらのモデルは、他の SOTA モデルの影響を強く受けています。たとえば、Two-Stream Nets は ConvNets に触発され、(2+1)D ResNets は3D ResNets に着想を得ました。研究が進むにつれて、今後更に高度なアーキテクチャや技術が登場することが期待されます。</p>
 </article>
 
 <nav class="page-nav"><a class="nav-link prev" href="multimodal-based-video-models.html">← 前へ: マルチモーダルベースのビデオモデル</a><a class="nav-link toc-link" href="../../index.html">目次へ</a><a class="nav-link next" href="rnn-based-video-models.html">次へ →: はじめに</a></nav>

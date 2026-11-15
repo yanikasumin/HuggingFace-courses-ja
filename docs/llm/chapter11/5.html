@@ -193,29 +193,29 @@ window.MathJax = { tex: { inlineMath: [['$', '$'], ['\\(', '\\)']], displayMath:
 <nav class="page-nav"><a class="nav-link prev" href="4.html">← 前へ: LoRA（低ランク適応）</a><a class="nav-link toc-link" href="../index.html">目次へ</a><a class="nav-link next" href="6.html">次へ →: まとめ</a></nav>
 <article class="content">
 <h1>評価</h1>
-<p>SFT または LoRA を使った SFT でファインチューニングしたモデルは、標準的なベンチマークで評価すべきです。機械学習エンジニアとしては、対象分野に適した評価項目やベンチマークを体系的に整備し、継続的に管理することが重要です。このページでは、代表的なベンチマークと、それらを使ってモデルを評価する方法を見ていきます。特定のユースケースに合わせたカスタムベンチマークの作り方も扱います。</p>
+<p>SFT 又は LoRA を使った SFT でファインチューニングしたモデルは、標準的なベンチマークで評価すべきです。機械学習エンジニアとしては、対象分野に適した評価項目やベンチマークを体系的に整備し、継続的に管理することが重要です。このページでは、代表的なベンチマークと、それらを使ってモデルを評価する方法を見ていきます。特定のユースケースに合わせたカスタムベンチマークの作り方も扱います。</p>
 <h2>自動ベンチマーク</h2>
-<p>自動ベンチマークは、言語モデルがさまざまなタスクをどの程度こなせるかを、標準化された方法で評価する仕組みです。モデルの性能を理解する出発点として有用ですが、包括的な評価戦略の一部にすぎないことを認識しておくことが大切です。</p>
+<p>自動ベンチマークは、言語モデルが様々なタスクをどの程度こなせるかを、標準化された方法で評価する仕組みです。モデルの性能を理解する出発点として有用ですが、包括的な評価戦略の一部にすぎないことを認識しておくことが大切です。</p>
 <h2>自動ベンチマークの理解</h2>
-<p>自動ベンチマークは通常、あらかじめ定義されたタスクと評価メトリクスを持つ、厳選されたデータセットで構成されます。これらのベンチマークは、基本的な言語理解から複雑な推論まで、モデル能力のさまざまな側面を評価することを目的としています。自動ベンチマークを使う主な利点は標準化です。異なるモデル間での一貫した比較ができ、再現可能な結果が得られます。</p>
-<p>ただし、ベンチマークの性能が実世界での有効性にそのまま結びつくとは限らないことを理解しておく必要があります。学術的なベンチマークで優れたモデルでも、特定のドメインの用途や実践的なユースケースでは苦戦することがあります。</p>
+<p>自動ベンチマークは通常、予め定義されたタスクと評価メトリクスを持つ、厳選されたデータセットで構成されます。これらのベンチマークは、基本的な言語理解から複雑な推論まで、モデル能力の様々な側面を評価することを目的としています。自動ベンチマークを使う主な利点は標準化です。異なるモデル間での一貫した比較ができ、再現可能な結果が得られます。</p>
+<p>但し、ベンチマークの性能が実世界での有効性にそのまま結びつくとは限らないことを理解しておく必要があります。学術的なベンチマークで優れたモデルでも、特定のドメインの用途や実践的なユースケースでは苦戦することがあります。</p>
 <h2>汎用知識のベンチマーク</h2>
 <p><a href="https://huggingface.co/datasets/cais/mmlu">MMLU</a>（Massive Multitask Language Understanding）は、科学から人文科学まで57の科目にわたる知識をテストします。包括的ではありますが、特定のドメインで必要となる専門性の深さを反映しているとは限りません。TruthfulQA は、モデルが一般的な誤解を再生産する傾向を評価しますが、あらゆる形の誤情報を捉えられるわけではありません。</p>
 <h2>推論のベンチマーク</h2>
 <p><a href="https://huggingface.co/datasets/lukaemon/bbh">BBH</a>（Big Bench Hard）と <a href="https://huggingface.co/datasets/openai/gsm8k">GSM8K</a> は、複雑な推論タスクに焦点を当てています。BBH は論理的思考と計画をテストし、GSM8K は特に数学の問題解決を対象とします。これらのベンチマークは分析能力の評価に役立ちますが、実際の場面で必要となる、微妙な条件や文脈を踏まえた推論能力までは十分に評価できないことがあります。</p>
 <h2>言語理解</h2>
-<p><a href="https://github.com/stanford-crfm/helm">HELM</a> は、言語モデルを多面的に評価するためのフレームワークです。HELM のようなベンチマークは、常識、世界知識、推論といった側面から、モデルの言語処理能力を把握できます。ただし、自然な会話の複雑さやドメイン固有の専門用語を完全には表せないことがあります。</p>
+<p><a href="https://github.com/stanford-crfm/helm">HELM</a> は、言語モデルを多面的に評価するためのフレームワークです。HELM のようなベンチマークは、常識、世界知識、推論といった側面から、モデルの言語処理能力を把握できます。但し、自然な会話の複雑さやドメイン固有の専門用語を完全には表せないことがあります。</p>
 <h2>ドメイン固有のベンチマーク</h2>
 <p>数学、コーディング、チャットといった特定のドメインに焦点を当てたベンチマークをいくつか見てみましょう。</p>
 <p><a href="https://huggingface.co/papers/2103.03874">MATH ベンチマーク</a> は、数学的推論のもう1つの重要な評価ツールです。代数、幾何、数論、数え上げ、確率などを含む数学コンペティションからの 12,500 問で構成されます。MATH が特に難しいのは、多段階の推論、形式的な数学表記の理解、段階的な解法の生成能力が必要な点です。単純な算術タスクとは異なり、MATH の問題は高度な問題解決戦略と数学概念の応用を求めることが多くあります。</p>
 <p><a href="https://github.com/openai/human-eval">HumanEval ベンチマーク</a> は、164 のプログラミング問題で構成される、コーディングに焦点を当てた評価データセットです。このベンチマークは、与えられたプログラミング課題を解決する、正しく動作する Python コードをモデルが生成できるかを評価します。HumanEval の特徴は、参照解との表面的な類似度だけでなく、生成されたコードに対して実際にテストケースを実行し、コードが正しく動作するかを評価する点です。問題は、基本的な文字列操作から、より複雑なアルゴリズムやデータ構造まで多岐にわたります。</p>
-<p><a href="https://tatsu-lab.github.io/alpaca_eval/">Alpaca Eval</a> は、指示に従う言語モデルの品質を評価するために設計された自動評価フレームワークです。GPT-4 を判定者として使い、有用性、正直さ、無害性といったさまざまな観点でモデルの出力を評価します。このフレームワークは 805 件の厳選されたプロンプトのデータセットを含み、Claude、GPT-4 など複数の参照モデルに対して応答を評価できます。Alpaca Eval が特に便利なのは、人間のアノテータを必要とせずに一貫性のあるスケーラブルな評価を提供しながら、従来の評価指標では捉えにくい、モデル性能の細かな違いも評価できる点です。</p>
+<p><a href="https://tatsu-lab.github.io/alpaca_eval/">Alpaca Eval</a> は、指示に従う言語モデルの品質を評価するために設計された自動評価フレームワークです。GPT-4 を判定者として使い、有用性、正直さ、無害性といった様々な観点でモデルの出力を評価します。このフレームワークは 805 件の厳選されたプロンプトのデータセットを含み、Claude、GPT-4 など複数の参照モデルに対して応答を評価できます。Alpaca Eval が特に便利なのは、人間のアノテータを必要とせずに一貫性のあるスケーラブルな評価を提供しながら、従来の評価指標では捉えにくい、モデル性能の細かな違いも評価できる点です。</p>
 <h2>代替の評価アプローチ</h2>
 <p>標準ベンチマークの限界に対処するため、多くの組織が代替の評価方法を開発してきました。</p>
 <h3>LLM-as-Judge</h3>
 <p>ある言語モデルを使って別のモデルの出力を評価する方法が、ますます普及しています。このアプローチは、従来の指標では捉えにくい応答品質の違いを評価できますが、評価に用いるモデル自体にも偏りや限界があります。</p>
 <h3>評価アリーナ</h3>
-<p><a href="https://lmarena.ai/">Chatbot Arena</a> のような評価アリーナでは、多数のユーザーから集めた評価を基に LLM の性能を比較します。ユーザーはモデル名を伏せた2つのモデルに質問し、それぞれの回答を比較して、どちらが優れているかに投票します。この方法では、多様で難しい質問を通じて、実際の利用傾向やユーザーの好みを反映した評価が得られます。一般ユーザーの投票結果と専門家による評価がよく一致することも、研究で示されています。ただし、参加者の偏りや質問内容の偏り、安全性よりも有用性を重視しやすいことなどが限界として挙げられます。</p>
+<p><a href="https://lmarena.ai/">Chatbot Arena</a> のような評価アリーナでは、多数のユーザーから集めた評価を基に LLM の性能を比較します。ユーザーはモデル名を伏せた2つのモデルに質問し、それぞれの回答を比較して、どちらが優れているかに投票します。この方法では、多様で難しい質問を通じて、実際の利用傾向やユーザーの好みを反映した評価が得られます。一般ユーザーの投票結果と専門家による評価がよく一致することも、研究で示されています。但し、参加者の偏りや質問内容の偏り、安全性よりも有用性を重視しやすいことなどが限界として挙げられます。</p>
 <h3>カスタムベンチマークスイート</h3>
 <p>組織は、自社の具体的なニーズとユースケースに合わせた内製のベンチマークスイートを開発することがよくあります。ドメイン固有の知識テストや、実際のデプロイ条件を反映した評価シナリオが含まれることもあります。</p>
 <h2>カスタム評価</h2>
@@ -269,7 +269,7 @@ window.MathJax = { tex: { inlineMath: [['$', '$'], ['\\(', '\\)']], displayMath:
 </tr>
 <tr>
 <td><code>auto_reduce</code></td>
-<td>プロンプトが長すぎる場合に Few-shot の例を自動で減らすかどうか（0 または 1）</td>
+<td>プロンプトが長すぎる場合に Few-shot の例を自動で減らすかどうか（0 又は 1）</td>
 </tr>
 </tbody>
 </table>
@@ -308,61 +308,61 @@ window.MathJax = { tex: { inlineMath: [['$', '$'], ['\\(', '\\)']], displayMath:
 <div class="quiz">
 <div class="quiz-choices">
 <button type="button" class="quiz-choice" data-correct="false" data-quiz-idx="0">実世界のパフォーマンスを完璧に測る指標が得られる</button>
-<div class="quiz-explain-src" id="qe-123146990685824-0" hidden>不正解です！自動ベンチマークは有用ですが、実世界のパフォーマンスにそのまま結びつくとは限りません。</div>
+<div class="quiz-explain-src" id="qe-123594587387968-0" hidden>不正解です！自動ベンチマークは有用ですが、実世界のパフォーマンスにそのまま結びつくとは限りません。</div>
 <button type="button" class="quiz-choice" data-correct="true" data-quiz-idx="1">モデル間の標準化された比較ができ、再現可能な結果が得られる</button>
-<div class="quiz-explain-src" id="qe-123146990685824-1" hidden>正解です！これは自動ベンチマークの重要な利点の1つです。</div>
+<div class="quiz-explain-src" id="qe-123594587387968-1" hidden>正解です！これは自動ベンチマークの重要な利点の1つです。</div>
 <button type="button" class="quiz-choice" data-correct="false" data-quiz-idx="2">他のあらゆる形式の評価を不要にできる</button>
-<div class="quiz-explain-src" id="qe-123146990685824-2" hidden>不正解です！自動ベンチマークは包括的な評価戦略の一部であるべきで、唯一の方法ではありません。</div>
+<div class="quiz-explain-src" id="qe-123594587387968-2" hidden>不正解です！自動ベンチマークは包括的な評価戦略の一部であるべきで、唯一の方法ではありません。</div>
 </div><div class="quiz-feedback" hidden></div></div>
 <h3>2. 57科目にわたる知識を評価するベンチマークはどれですか？</h3>
 <div class="quiz">
 <div class="quiz-choices">
 <button type="button" class="quiz-choice" data-correct="false" data-quiz-idx="0">BBH (Big Bench Hard)</button>
-<div class="quiz-explain-src" id="qe-123146990697856-0" hidden>不正解です！BBH は複雑な推論タスクに焦点を当てており、幅広い科目知識ではありません。</div>
+<div class="quiz-explain-src" id="qe-123594587431424-0" hidden>不正解です！BBH は複雑な推論タスクに焦点を当てており、幅広い科目知識ではありません。</div>
 <button type="button" class="quiz-choice" data-correct="false" data-quiz-idx="1">GSM8K</button>
-<div class="quiz-explain-src" id="qe-123146990697856-1" hidden>不正解です！GSM8K は特に数学の問題解決を対象としています。</div>
+<div class="quiz-explain-src" id="qe-123594587431424-1" hidden>不正解です！GSM8K は特に数学の問題解決を対象としています。</div>
 <button type="button" class="quiz-choice" data-correct="true" data-quiz-idx="2">MMLU</button>
-<div class="quiz-explain-src" id="qe-123146990697856-2" hidden>正解です！MMLU（Massive Multitask Language Understanding）は、科学から人文科学まで57科目にわたる知識をテストします。</div>
+<div class="quiz-explain-src" id="qe-123594587431424-2" hidden>正解です！MMLU（Massive Multitask Language Understanding）は、科学から人文科学まで57科目にわたる知識をテストします。</div>
 </div><div class="quiz-feedback" hidden></div></div>
 <h3>3. LLM-as-Judge とは何ですか？</h3>
 <div class="quiz">
 <div class="quiz-choices">
 <button type="button" class="quiz-choice" data-correct="true" data-quiz-idx="0">ある言語モデルを使って、別のモデルの出力を評価すること</button>
-<div class="quiz-explain-src" id="qe-123146990685824-0" hidden>正解です！これは、より細かなフィードバックを提供できる代替の評価アプローチです。</div>
+<div class="quiz-explain-src" id="qe-123594587387968-0" hidden>正解です！これは、より細かなフィードバックを提供できる代替の評価アプローチです。</div>
 <button type="button" class="quiz-choice" data-correct="false" data-quiz-idx="1">司法的な推論をテストするベンチマーク</button>
-<div class="quiz-explain-src" id="qe-123146990685824-1" hidden>不正解です！LLM-as-Judge とは、あるモデルを使って別のモデルを評価することであり、司法的な推論をテストすることではありません。</div>
+<div class="quiz-explain-src" id="qe-123594587387968-1" hidden>不正解です！LLM-as-Judge とは、あるモデルを使って別のモデルを評価することであり、司法的な推論をテストすることではありません。</div>
 <button type="button" class="quiz-choice" data-correct="false" data-quiz-idx="2">法律のデータセットでモデルを学習させる方法</button>
-<div class="quiz-explain-src" id="qe-123146990685824-2" hidden>不正解です！これは法律データでの学習とは関係がなく、あるモデルを使って別のモデルの出力を評価することです。</div>
+<div class="quiz-explain-src" id="qe-123594587387968-2" hidden>不正解です！これは法律データでの学習とは関係がなく、あるモデルを使って別のモデルの出力を評価することです。</div>
 </div><div class="quiz-feedback" hidden></div></div>
 <h3>4. 包括的な評価戦略に含めるべきなのは何ですか？</h3>
 <div class="quiz">
 <div class="quiz-choices">
 <button type="button" class="quiz-choice" data-correct="false" data-quiz-idx="0">標準ベンチマークのみ</button>
-<div class="quiz-explain-src" id="qe-123146990697856-0" hidden>不正解です！包括的な戦略には、複数の評価方法を含めるべきです。</div>
+<div class="quiz-explain-src" id="qe-123594587431424-0" hidden>不正解です！包括的な戦略には、複数の評価方法を含めるべきです。</div>
 <button type="button" class="quiz-choice" data-correct="true" data-quiz-idx="1">標準ベンチマーク、カスタム評価データセット、ドメイン固有のテスト</button>
-<div class="quiz-explain-src" id="qe-123146990697856-1" hidden>正解です！包括的な戦略には、複数層の評価を含めるべきです。</div>
+<div class="quiz-explain-src" id="qe-123594587431424-1" hidden>正解です！包括的な戦略には、複数層の評価を含めるべきです。</div>
 <button type="button" class="quiz-choice" data-correct="false" data-quiz-idx="2">ユースケース固有のカスタムデータセットのみ</button>
-<div class="quiz-explain-src" id="qe-123146990697856-2" hidden>不正解です！カスタムデータセットは重要ですが、それだけを評価方法にすべきではありません。</div>
+<div class="quiz-explain-src" id="qe-123594587431424-2" hidden>不正解です！カスタムデータセットは重要ですが、それだけを評価方法にすべきではありません。</div>
 </div><div class="quiz-feedback" hidden></div></div>
 <h3>5. 自動ベンチマークの限界は何ですか？</h3>
 <div class="quiz">
 <div class="quiz-choices">
 <button type="button" class="quiz-choice" data-correct="false" data-quiz-idx="0">実行コストが高すぎる</button>
-<div class="quiz-explain-src" id="qe-123146990685824-0" hidden>不正解です！コストは通常、自動ベンチマークの主な限界ではありません。</div>
+<div class="quiz-explain-src" id="qe-123594587387968-0" hidden>不正解です！コストは通常、自動ベンチマークの主な限界ではありません。</div>
 <button type="button" class="quiz-choice" data-correct="true" data-quiz-idx="1">ベンチマークの性能が、実世界での有効性にそのまま結びつくとは限らない</button>
-<div class="quiz-explain-src" id="qe-123146990685824-1" hidden>正解です！これは、自動ベンチマークを使う際に念頭に置くべき重要な限界です。</div>
+<div class="quiz-explain-src" id="qe-123594587387968-1" hidden>正解です！これは、自動ベンチマークを使う際に念頭に置くべき重要な限界です。</div>
 <button type="button" class="quiz-choice" data-correct="false" data-quiz-idx="2">小規模モデルしか評価できない</button>
-<div class="quiz-explain-src" id="qe-123146990685824-2" hidden>不正解です！自動ベンチマークは、さまざまなサイズのモデルの評価に使えます。</div>
+<div class="quiz-explain-src" id="qe-123594587387968-2" hidden>不正解です！自動ベンチマークは、様々なサイズのモデルの評価に使えます。</div>
 </div><div class="quiz-feedback" hidden></div></div>
 <h3>6. カスタム評価データセットを作成する目的は何ですか？</h3>
 <div class="quiz">
 <div class="quiz-choices">
 <button type="button" class="quiz-choice" data-correct="true" data-quiz-idx="0">特定のユースケースを反映し、ドメインにおける実際のユーザーのクエリを含めるため</button>
-<div class="quiz-explain-src" id="qe-123146990697856-0" hidden>正解です！カスタムデータセットを使うことで、評価を実際のニーズに即したものにできます。</div>
+<div class="quiz-explain-src" id="qe-123594587431424-0" hidden>正解です！カスタムデータセットを使うことで、評価を実際のニーズに即したものにできます。</div>
 <button type="button" class="quiz-choice" data-correct="false" data-quiz-idx="1">標準ベンチマークを完全に置き換えるため</button>
-<div class="quiz-explain-src" id="qe-123146990697856-1" hidden>不正解です！カスタムデータセットは標準ベンチマークを補完するものであり、置き換えるものではありません。</div>
+<div class="quiz-explain-src" id="qe-123594587431424-1" hidden>不正解です！カスタムデータセットは標準ベンチマークを補完するものであり、置き換えるものではありません。</div>
 <button type="button" class="quiz-choice" data-correct="false" data-quiz-idx="2">評価を簡単に済ませるため</button>
-<div class="quiz-explain-src" id="qe-123146990697856-2" hidden>不正解です！カスタムデータセットの作成には追加の労力がかかりますが、より関連性の高い評価が得られます。</div>
+<div class="quiz-explain-src" id="qe-123594587431424-2" hidden>不正解です！カスタムデータセットの作成には追加の労力がかかりますが、より関連性の高い評価が得られます。</div>
 </div><div class="quiz-feedback" hidden></div></div>
 </article>
 

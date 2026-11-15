@@ -208,7 +208,7 @@ window.MathJax = { tex: { inlineMath: [['$', '$'], ['\\(', '\\)']], displayMath:
 <li>
 <p><strong>学習時の利点</strong>:
    - 少ない設定で PEFT/LoRA を学習処理に組み込める
-   - さらにメモリ効率のよい QLoRA（量子化 LoRA）に対応</p>
+   - 更にメモリ効率のよい QLoRA（量子化 LoRA）に対応</p>
 </li>
 <li>
 <p><strong>アダプタの管理</strong>:
@@ -217,8 +217,8 @@ window.MathJax = { tex: { inlineMath: [['$', '$'], ['\\(', '\\)']], displayMath:
 </li>
 </ol>
 <h2>PEFT で LoRA アダプタを読み込む</h2>
-<p><a href="https://github.com/huggingface/peft">PEFT</a> は、LoRA を含む PEFT 手法の読み込みと管理に統一されたインターフェースを提供するライブラリです。異なる PEFT 手法を簡単に読み込んで切り替えられるため、さまざまなファインチューニング手法の実験がしやすくなります。 </p>
-<p>アダプタは <code>load_adapter()</code> で事前学習済みモデルに読み込むことができ、重みがマージされていないさまざまなアダプタを試すのに便利です。有効なアダプタの重みは <code>set_adapter()</code> 関数で設定します。ベースモデルに戻すには、unload() を使ってすべての LoRA モジュールをアンロードできます。これにより、タスク固有の重みを簡単に切り替えられます。  </p>
+<p><a href="https://github.com/huggingface/peft">PEFT</a> は、LoRA を含む PEFT 手法の読み込みと管理に統一されたインターフェースを提供するライブラリです。異なる PEFT 手法を簡単に読み込んで切り替えられるため、様々なファインチューニング手法の実験がしやすくなります。 </p>
+<p>アダプタは <code>load_adapter()</code> で事前学習済みモデルに読み込むことができ、重みがマージされていない様々なアダプタを試すのに便利です。有効なアダプタの重みは <code>set_adapter()</code> 関数で設定します。ベースモデルに戻すには、unload() を使ってすべての LoRA モジュールをアンロードできます。これにより、タスク固有の重みを簡単に切り替えられます。  </p>
 <div class="codehilite"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">peft</span><span class="w"> </span><span class="kn">import</span> <span class="n">PeftModel</span><span class="p">,</span> <span class="n">PeftConfig</span>
 
 <span class="n">config</span> <span class="o">=</span> <span class="n">PeftConfig</span><span class="o">.</span><span class="n">from_pretrained</span><span class="p">(</span><span class="s2">"ybelkada/opt-350m-lora"</span><span class="p">)</span>
@@ -293,7 +293,7 @@ window.MathJax = { tex: { inlineMath: [['$', '$'], ['\\(', '\\)']], displayMath:
 </code></pre></div>
 
 <p>上では、<code>device_map="auto"</code> を使ってモデルを正しいデバイスに自動的に割り当てました。<code>device_map={"": device_index}</code> のようにして、モデルを特定のデバイスに手動で割り当てることもできます。 </p>
-<p>さらに、LoRA の設定で <code>SFTTrainer</code> を定義する必要があります。</p>
+<p>更に、LoRA の設定で <code>SFTTrainer</code> を定義する必要があります。</p>
 <div class="codehilite"><pre><span></span><code><span class="c1"># LoRA の設定で SFTTrainer を作成</span>
 <span class="n">trainer</span> <span class="o">=</span> <span class="n">SFTTrainer</span><span class="p">(</span>
     <span class="n">model</span><span class="o">=</span><span class="n">model</span><span class="p">,</span>

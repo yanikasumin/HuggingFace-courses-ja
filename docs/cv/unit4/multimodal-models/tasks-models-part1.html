@@ -180,7 +180,7 @@ window.MathJax = { tex: { inlineMath: [['$', '$'], ['\\(', '\\)']], displayMath:
 <nav class="page-nav"><a class="nav-link prev" href="vlm-intro.html">← 前へ: 視覚言語モデル入門</a><a class="nav-link toc-link" href="../../index.html">目次へ</a><a class="nav-link next" href="clip-and-relatives/Introduction.html">次へ →: CLIP とその仲間たち</a></nav>
 <article class="content">
 <h1>マルチモーダルタスクとマルチモーダルモデル</h1>
-<p>このセクションでは、画像とテキストを組み合わせたさまざまなマルチモーダルタスクと、それに対応するモデルを紹介します。まず、前のセクションで学んだ「マルチモーダル」の意味を簡単に復習しましょう。私たち人間は、視覚や聴覚、触覚など、さまざまな感覚から情報を受け取り、周囲の世界を理解しています。複数の感覚を組み合わせて理解できることは、単一のモダリティだけを扱う従来の AI モデルにはない強みです。マルチモーダルモデルは、この人間の認知の仕組みを参考に、テキスト、画像、音声、センサーデータなど、さまざまな情報を統合することで、人間との能力の差を縮めようとしています。複数のモダリティを組み合わせると、世界をより多面的かつ細かく理解できるようになり、幅広いタスクや応用が可能になります。</p>
+<p>このセクションでは、画像とテキストを組み合わせた様々なマルチモーダルタスクと、それに対応するモデルを紹介します。まず、前のセクションで学んだ「マルチモーダル」の意味を簡単に復習しましょう。私たち人間は、視覚や聴覚、触覚など、様々な感覚から情報を受け取り、周囲の世界を理解しています。複数の感覚を組み合わせて理解できることは、単一のモダリティだけを扱う従来の AI モデルにはない強みです。マルチモーダルモデルは、この人間の認知の仕組みを参考に、テキスト、画像、音声、センサーデータなど、様々な情報を統合することで、人間との能力の差を縮めようとしています。複数のモダリティを組み合わせると、世界をより多面的かつ細かく理解できるようになり、幅広いタスクや応用が可能になります。</p>
 <h2>タスクの例</h2>
 <p>特定のモデルを見る前に、画像とテキストを含む多様なタスクを理解することが重要です。これらのタスクには、以下が含まれます（これらに限りません）：</p>
 <ul>
@@ -194,23 +194,23 @@ window.MathJax = { tex: { inlineMath: [['$', '$'], ['\\(', '\\)']], displayMath:
 <p><strong>画像キャプション生成（Image captioning）：</strong>画像キャプション生成は、視覚情報と言語を結びつける技術です。画像を分析して細かな情報を取り出し、場面を理解したうえで、その様子を説明する1〜2文の文章を作ります。例えば、穏やかな海に沈む夕日、ブランコで笑う子ども、にぎやかな街の通りなどを文章で描写できます。コンピュータービジョンと言語処理を組み合わせることで、コンピュータが写真を1枚ずつ読み取り、周囲の世界を言葉で説明できるようになります。</p>
 </li>
 <li>
-<p><strong>画像・テキスト検索（Image-Text Retrieval）：</strong>画像・テキスト検索は、画像とその説明文を対応付けて検索する技術です。例えば、図書館で本の表紙の絵や短い要約を手がかりに、特定の本を探すようなものです。画像と文章の両方の意味を理解できる検索エンジンを使うことで、画像検索や自動キャプション生成、視覚障害者が画像の内容を文章で把握するための支援など、さまざまな応用が可能になります。</p>
+<p><strong>画像・テキスト検索（Image-Text Retrieval）：</strong>画像・テキスト検索は、画像とその説明文を対応付けて検索する技術です。例えば、図書館で本の表紙の絵や短い要約を手がかりに、特定の本を探すようなものです。画像と文章の両方の意味を理解できる検索エンジンを使うことで、画像検索や自動キャプション生成、視覚障害者が画像の内容を文章で把握するための支援など、様々な応用が可能になります。</p>
 </li>
 <li>
 <p><strong>視覚的グラウンディング（Visual grounding）：</strong>視覚的グラウンディングは、言葉による説明と画像の中の物体や領域を対応付ける技術です。文章が画像のどの部分を指しているのかを理解することで、AI モデルは自然言語の説明に基づいて物体や領域の位置を特定できます。例えば、「果物かごの中の赤いリンゴはどこ？」と質問すると、AI が画像の中の該当するリンゴをすぐにハイライトします。これが視覚的グラウンディングの働きです。</p>
 </li>
 <li>
-<p><strong>テキストからの画像生成（Text-to-Image generation）：</strong>テキストからの画像生成は、文章による説明をもとに画像を作る技術です。言葉を理解して画像を描く、魔法の絵筆のようなものだと考えると分かりやすいでしょう。言語理解と画像生成を組み合わせることで、写実的な風景から夢のような抽象画まで、さまざまな画像を文章から生成できます。</p>
+<p><strong>テキストからの画像生成（Text-to-Image generation）：</strong>テキストからの画像生成は、文章による説明をもとに画像を作る技術です。言葉を理解して画像を描く、魔法の絵筆のようなものだと考えると分かりやすいでしょう。言語理解と画像生成を組み合わせることで、写実的な風景から夢のような抽象画まで、様々な画像を文章から生成できます。</p>
 </li>
 </ul>
 <h2>視覚的質問応答（VQA）と視覚的推論</h2>
-<p><img alt="VQA" src="https://huggingface.co/datasets/hf-vision/course-assets/resolve/main/multimodal_fusion_text_vision/vqa_visual_reasoning.png" /> <em>VQA および視覚的推論モデルの入力（画像＋テキスト）と出力（テキスト）の例<a href="#pretraining-paper">[1]</a></em></p>
+<p><img alt="VQA" src="https://huggingface.co/datasets/hf-vision/course-assets/resolve/main/multimodal_fusion_text_vision/vqa_visual_reasoning.png" /> <em>VQA 及び視覚的推論モデルの入力（画像＋テキスト）と出力（テキスト）の例<a href="#pretraining-paper">[1]</a></em></p>
 <p><strong>視覚的質問応答（VQA）</strong>
 - <strong>入力：</strong> 画像と質問のペア（画像とそれについての質問）。
 - <strong>出力：</strong>
-    - 多肢選択の場合：あらかじめ定義された選択肢の中で、正解に対応するラベル。
+    - 多肢選択の場合：予め定義された選択肢の中で、正解に対応するラベル。
     - 自由形式の場合：画像と質問に基づいて生成した、自由な形式の自然言語の回答。
-- <strong>タスク：</strong>画像についての質問に答えることです。多くの VQA モデルは、あらかじめ用意された答えから選ぶ分類問題として扱います。上の例も参考にしてください。</p>
+- <strong>タスク：</strong>画像についての質問に答えることです。多くの VQA モデルは、予め用意された答えから選ぶ分類問題として扱います。上の例も参考にしてください。</p>
 <p><strong>視覚的推論</strong>
 - <strong>入力：</strong> 特定の視覚的推論タスクによって異なります：
     - VQA 形式のタスク：画像と質問のペア。
@@ -222,9 +222,9 @@ window.MathJax = { tex: { inlineMath: [['$', '$'], ['\\(', '\\)']], displayMath:
     - マッチング：テキストが画像について正しいかどうかの真／偽。
     - 含意：画像がテキストを意味的に含意するかの予測。
     - サブクエスチョン：知覚に関連するサブクエスチョンへの答え。
-- <strong>タスク：</strong> 画像についてさまざまな推論タスクを実行する。参考として上の例をご覧ください。</p>
+- <strong>タスク：</strong> 画像について様々な推論タスクを実行する。参考として上の例をご覧ください。</p>
 <p>一般に、VQA と視覚的推論はどちらも <em>視覚的質問応答（VQA）</em> タスクとして扱われます。VQA タスクで人気のモデルをいくつか挙げます：
-- <strong>BLIP-VQA：</strong> Salesforce AI が開発した、視覚的質問応答（VQA）タスクのための大規模な事前学習済みモデルです。「Bootstrapping Language-Image Pre-training」（BLIP）アプローチを使い、ノイズの多いウェブデータとキャプション生成の両方を活用して、さまざまな視覚言語タスクで最先端の性能を達成しています。BLIP は Hugging Face で次のように使えます：</p>
+- <strong>BLIP-VQA：</strong> Salesforce AI が開発した、視覚的質問応答（VQA）タスクのための大規模な事前学習済みモデルです。「Bootstrapping Language-Image Pre-training」（BLIP）アプローチを使い、ノイズの多いウェブデータとキャプション生成の両方を活用して、様々な視覚言語タスクで最先端の性能を達成しています。BLIP は Hugging Face で次のように使えます：</p>
 <div class="codehilite"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">PIL</span><span class="w"> </span><span class="kn">import</span> <span class="n">Image</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">transformers</span><span class="w"> </span><span class="kn">import</span> <span class="n">pipeline</span>
 
@@ -261,7 +261,7 @@ window.MathJax = { tex: { inlineMath: [['$', '$'], ['\\(', '\\)']], displayMath:
 </code></pre></div>
 
 <ul>
-<li><strong>ViLT：</strong> 視覚・言語 Transformer（ViLT）モデルで、畳み込みや領域の教師なしに Transformer アーキテクチャを利用し、画像についての自然言語の質問に答えるために VQAv2 データセットでファインチューニングされたものです。ベースの ViLT モデルは大きなアーキテクチャ（B32 サイズ）を誇り、画像とテキストの共同学習を活用することで、さまざまな視覚言語タスク、特に VQA で効果的となり、競争力のある性能を達成しています。ViLT は Hugging Face で次のように使えます：</li>
+<li><strong>ViLT：</strong> 視覚・言語 Transformer（ViLT）モデルで、畳み込みや領域の教師なしに Transformer アーキテクチャを利用し、画像についての自然言語の質問に答えるために VQAv2 データセットでファインチューニングされたものです。ベースの ViLT モデルは大きなアーキテクチャ（B32 サイズ）を誇り、画像とテキストの共同学習を活用することで、様々な視覚言語タスク、特に VQA で効果的となり、競争力のある性能を達成しています。ViLT は Hugging Face で次のように使えます：</li>
 </ul>
 <div class="codehilite"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">transformers</span><span class="w"> </span><span class="kn">import</span> <span class="n">ViltProcessor</span><span class="p">,</span> <span class="n">ViltForQuestionAnswering</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">requests</span>
@@ -376,9 +376,9 @@ window.MathJax = { tex: { inlineMath: [['$', '$'], ['\\(', '\\)']], displayMath:
 <p><img alt="画像キャプション生成" src="https://huggingface.co/datasets/hf-vision/course-assets/resolve/main/multimodal_fusion_text_vision/image_captioning.png" />
 <em>画像キャプション生成モデルの入力（画像）と出力（テキスト）の例。<a href="#pretraining-paper">[1]</a></em>
 - <strong>入力：</strong>
-    - 画像：さまざまな形式（JPEG、PNG など）の画像。
+    - 画像：様々な形式（JPEG、PNG など）の画像。
     - 事前学習済みの画像特徴抽出器（任意）：畳み込みニューラルネットワーク（CNN）など、画像から意味のある特徴を抽出できる事前学習済みニューラルネットワーク。
-- <strong>出力：</strong> テキストのキャプション：入力画像の内容を正確に説明する1文または1段落。物体、行動、関係、全体の文脈を捉えます。参考として上の例をご覧ください。
+- <strong>出力：</strong> テキストのキャプション：入力画像の内容を正確に説明する1文又は1段落。物体、行動、関係、全体の文脈を捉えます。参考として上の例をご覧ください。
 - <strong>タスク：</strong>画像の自然言語による説明を自動生成すること。これには、（1）画像の視覚的内容（物体、行動、関係）を理解すること、（2）この情報を意味のある表現にエンコードすること、（3）この表現を、首尾一貫した、文法的に正しく情報量の多い文や句へデコードすることが含まれます。</p>
 <p>次に、Hugging Face の人気の画像キャプション生成モデルをいくつか見てみましょう：
 - <strong>ViT-GPT2：</strong> 画像キャプションを生成するための PyTorch モデルで、視覚特徴抽出のための Vision Transformer（ViT）とテキスト生成のための GPT-2 を組み合わせて構築されています。COCO データセットで学習されており、画像の細かな特徴を捉える ViT の能力と、自然な文章を生成する GPT-2 の能力を活かして、画像の内容を正確かつ詳しく説明するキャプションを作ります。このオープンソースモデルは、画像理解とキャプション生成のタスクに効果的なソリューションを提供します。<strong>ViT-GPT2</strong> は Hugging Face で次のように使えます：</p>
@@ -445,7 +445,7 @@ window.MathJax = { tex: { inlineMath: [['$', '$'], ['\\(', '\\)']], displayMath:
 <p><img alt="画像・テキスト検索" src="https://huggingface.co/datasets/hf-vision/course-assets/resolve/main/multimodal_fusion_text_vision/image_text_retrieval.png" />
 <em>テキストから画像への検索の入力（テキストクエリ）と出力（画像）の例。<a href="#pretraining-paper">[1]</a></em>
 - <strong>入力：</strong>
-    - 画像：さまざまな形式（JPEG、PNG など）の画像。
+    - 画像：様々な形式（JPEG、PNG など）の画像。
     - テキスト：通常、画像に関連付けられたキャプション、説明、キーワードの形の自然言語テキスト。
 - <strong>出力：</strong> 
     - 関連する画像：テキストクエリが与えられると、システムはそのテキストに最も関連する画像の順位付きリストを返す。
@@ -488,7 +488,7 @@ window.MathJax = { tex: { inlineMath: [['$', '$'], ['\\(', '\\)']], displayMath:
     - 画像：シーンや物体の視覚的表現。
     - 自然言語クエリ：画像の特定の部分を指すテキストの説明や質問。</p>
 <ul>
-<li><strong>出力：</strong> バウンディングボックスまたはセグメンテーションマスク：クエリで説明された物体や領域に対応する、画像内の空間領域。通常は座標やハイライトされた領域として表されます。</li>
+<li><strong>出力：</strong> バウンディングボックス又はセグメンテーションマスク：クエリで説明された物体や領域に対応する、画像内の空間領域。通常は座標やハイライトされた領域として表されます。</li>
 <li><strong>タスク：</strong> 関連する物体や領域の位置を特定する：モデルは、クエリに一致する画像の部分を正しく特定しなければなりません。これには、画像の視覚的内容とクエリの言語的意味の両方の理解が必要です。</li>
 </ul>
 <p>次に、Hugging Face の人気の視覚的グラウンディング（物体検出）モデルをいくつか見てみましょう。
@@ -543,7 +543,7 @@ Grounding DINO モデルは、Google Colab の<a href="https://colab.research.go
 <div class="codehilite"><pre><span></span><code>pip<span class="w"> </span>install<span class="w"> </span>diffusers<span class="w"> </span>--upgrade
 </code></pre></div>
 
-<p>さらに、transformers、safetensors、accelerate と、invisible watermark もインストールしてください：</p>
+<p>更に、transformers、safetensors、accelerate と、invisible watermark もインストールしてください：</p>
 <div class="codehilite"><pre><span></span><code>pip<span class="w"> </span>install<span class="w"> </span>invisible_watermark<span class="w"> </span>transformers<span class="w"> </span>accelerate<span class="w"> </span>safetensors
 </code></pre></div>
 
