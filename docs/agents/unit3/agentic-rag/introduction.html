@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Agentic RAGのユースケース入門 | Hugging Face コース日本語版（デモ版）</title>
+<title>Agentic RAGのユースケース入門 | Hugging Face コース日本語版</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&family=Zen+Kaku+Gothic+New:wght@400;500;700;900&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
@@ -22,12 +22,11 @@ window.MathJax = { tex: { inlineMath: [['$', '$'], ['\\(', '\\)']], displayMath:
       <input type="search" class="search-input" placeholder="コース内を検索" aria-label="サイト内検索" autocomplete="off">
       <div class="search-results" hidden></div>
     </div>
-    <span class="demo-badge">デモ版</span>
   </div>
 </header>
 <div class="layout">
 <aside class="sidebar">
-<div class="sidebar-course"><a href="../../index.html">Agents コース</a><br><span class="badge badge-qa-wip">翻訳済み・QA進行中（未検証の部分を含みます）</span></div>
+<div class="sidebar-course"><a href="../../index.html">Agents コース</a><br><span class="badge badge-qa-pass">翻訳QA 最終合格</span></div>
 <p class="side-group">Unit 0. コースへようこそ</p>
 <ul class="side-list">
 <li><a class="side-link" href="../../unit0/introduction.html">🤗 AI Agents コースへようこそ</a></li>
@@ -100,8 +99,8 @@ window.MathJax = { tex: { inlineMath: [['$', '$'], ['\\(', '\\)']], displayMath:
 <p class="side-group">Unit 3. ユースケース： Agentic RAG</p>
 <ul class="side-list">
 <li><a class="side-link active" href="introduction.html">Agentic RAGのユースケース入門</a></li>
-<li><a class="side-link" href="agentic-rag.html">Agenticな検索拡張生成（RAG）</a></li>
-<li><a class="side-link" href="invitees.html">ゲストのエピソードのためのRAGツールの作成</a></li>
+<li><a class="side-link" href="agentic-rag.html">Agentic RAG（エージェント型検索拡張生成）</a></li>
+<li><a class="side-link" href="invitees.html">ゲストのエピソードを検索するRAGツールの作成</a></li>
 <li><a class="side-link" href="tools.html">エージェントのためのツールの構築と統合</a></li>
 <li><a class="side-link" href="agent.html">ガラ用エージェントの作成</a></li>
 <li><a class="side-link" href="conclusion.html">まとめ</a></li>
@@ -141,41 +140,41 @@ window.MathJax = { tex: { inlineMath: [['$', '$'], ['\\(', '\\)']], displayMath:
 </aside>
 <main class="container">
 <p class="course-crumb"><a href="../../index.html">Agents コース</a>
-<span class="badge badge-qa-wip">翻訳済み・QA進行中（未検証の部分を含みます）</span></p>
-<nav class="page-nav"><a class="nav-link prev" href="../../unit2/langgraph/conclusion.html">← 前へ: まとめ</a><a class="nav-link toc-link" href="../../index.html">目次へ</a><a class="nav-link next" href="agentic-rag.html">次へ →: Agenticな検索拡張生成（RAG）</a></nav>
+<span class="badge badge-qa-pass">翻訳QA 最終合格</span></p>
+<nav class="page-nav"><a class="nav-link prev" href="../../unit2/langgraph/conclusion.html">← 前へ: まとめ</a><a class="nav-link toc-link" href="../../index.html">目次へ</a><a class="nav-link next" href="agentic-rag.html">次へ →: Agentic RAG（エージェント型検索拡張生成）</a></nav>
 <article class="content">
 <h1>Agentic RAGのユースケース入門</h1>
 <p><img alt="Agentic RAGのバナー" src="https://huggingface.co/datasets/agents-course/course-images/resolve/main/en/unit3/agentic-rag/thumbnail.jpg" /></p>
-<p>このユニットでは、ガラ（晩餐会）を主催する頼れるエージェント、Alfredを手助けします。Agentic RAGを使って、ガラのゲストに関する質問に答えられるツールを構築します。</p>
+<p>このユニットでは、ガラ（華やかな祝賀会）を主催する頼れるエージェント、Alfredを手助けします。Agentic RAGを使って、ガラのゲストに関する質問に答えられるツールを構築します。</p>
 <div class="callout callout-tip">
 <p class="callout-title">💡 ヒント</p>
-<p>これはAgentic RAGの「実世界」のユースケースで、自分のプロジェクトや職場でも使えるものです。もっと発展させたい場合は、自分のユースケースで試して、Discordでシェアしてみてはいかがでしょうか。</p>
+<p>これはAgentic RAGを実際の場面で活用する例で、自分のプロジェクトや職場にも応用できます。さらに学びを深めたい場合は、自分の課題に合わせて試し、その結果をDiscordで共有してみてはいかがでしょうか。</p>
 </div>
 <p>このユースケースには、コースで扱ったどのフレームワークを使っても構いません。各フレームワークのコードサンプルは、別々のタブで用意しています。</p>
 <h2>忘れられないガラを</h2>
-<p>さあ、実際のユースケースに手を動かして取り組みましょう。まずは舞台設定です！</p>
-<p><strong>あなたは、今世紀で最も豪華で贅沢なパーティーを開くことにしました。</strong> 豪華なごちそう、魅惑的なダンサー、有名DJ、極上のドリンク、息をのむような花火ショーなど、盛りだくさんです。</p>
-<p>あなたの頼れるご近所エージェント、Alfredは、このパーティーにおけるあなたのあらゆる要望を見守る準備を進めています。そして <strong>Alfredはすべてを自分で管理します</strong>。そのためには、メニュー、ゲスト、スケジュール、天気予報など、パーティーに関するすべての情報にアクセスできる必要があります！</p>
-<p>それだけではありません。パーティーを成功させるため、<strong>パーティーの最中にもあらゆる質問に答えられる</strong> 必要があり、同時に起こりうる予期せぬ事態にも対処しなければなりません。</p>
+<p>それでは、実際の例を使って手を動かしてみましょう。まずは舞台設定から始めます！</p>
+<p><strong>あなたは、今世紀で最も華やかで贅を尽くしたパーティーを開くことにしました。</strong>豪勢な料理、魅惑的なダンサー、有名DJ、極上のドリンク、息をのむような花火ショーなど、見どころは盛りだくさんです。</p>
+<p>身近で頼れるエージェントAlfredは、このパーティーで必要なことにすべて対応できるよう、準備を進めています。そして、<strong>Alfredはパーティーの運営をすべて自分で管理します</strong>。そのためには、メニュー、ゲスト、スケジュール、天気予報など、パーティーに関するあらゆる情報にアクセスできる必要があります！</p>
+<p>それだけではありません。パーティーを成功させるには、<strong>パーティーの最中にも、パーティーについてのあらゆる質問に答えられる</strong>必要があります。同時に、予期せぬ事態にも対処しなければなりません。</p>
 <p>Alfredひとりでは無理なので、必要な情報とツールすべてにアクセスできるようにしておきましょう。</p>
-<p>まず、ガラに対する厳密な要件のリストをAlfredに渡します。</p>
+<p>まず、ガラを開催するうえで必ず満たすべき条件を、Alfredに伝えましょう。</p>
 <h2>ガラの要件</h2>
-<p><strong>ルネサンス</strong> の時代にふさわしい教養ある人物には、3つの主な資質が必要でした。
-それは、<strong>スポーツ、文化、科学の知識</strong> に深く通じていることです。ですから、知識でゲストを感心させ、本当に忘れられないガラを提供できるようにしなければなりません。
-ただし、対立を避けるため、<strong>政治や宗教といった話題はガラでは避けるべき</strong> です。信条や理想をめぐる対立のない、楽しいパーティーである必要があります。</p>
-<p>作法として、<strong>良いホストはゲストの背景を把握しているべき</strong> です。興味・関心や取り組みも含みます。良いホストはまた、ゲスト同士について噂話をしたり、エピソードを共有したりもします。</p>
-<p>最後に、花火を打ち上げる完璧なタイミングを計り、最後は華々しくガラを締めくくれるよう、リアルタイムの更新を継続的に得られるように、<strong>天気に関する一般的な知識</strong> も必要です！ 🎆</p>
+<p><strong>ルネサンス</strong>時代の教養人には、3つの分野に通じていることが求められました。
+それは、<strong>スポーツ、文化、科学についての深い知識</strong>です。私たちもこれらの分野の豊富な知識でゲストを感心させ、本当に忘れられないガラを開けるようにしましょう。
+ただし、対立を避けるため、<strong>政治や宗教といった話題はガラでは避けるべき</strong>です。信条や理想をめぐる対立のない、楽しいパーティーである必要があります。</p>
+<p>マナーとして、<strong>良いホストはゲストの経歴や関心事、現在取り組んでいることを知っておくべきです</strong>。また、ゲストたちとほかのゲストの噂話をしたり、その人にまつわるエピソードを語り合ったりすることもあります。</p>
+<p>最後に、花火を打ち上げる最適なタイミングを見極め、ガラを華々しく締めくくるためには、<strong>天気についての基本的な知識</strong>が必要です。また、最新の天気情報を継続的に確認できるようにしておきましょう！ 🎆</p>
 <p>ご覧のとおり、Alfredがガラを主催するには大量の情報が必要です。
-幸い、<strong>検索拡張生成（Retrieval Augmented Generation、RAG）のトレーニング</strong> を与えることで、Alfredを助けて準備させることができます！</p>
+幸い、Alfredが<strong>検索拡張生成（Retrieval Augmented Generation、RAG）</strong>を使えるようにすることで、ガラの準備を手伝ってもらえます！</p>
 <p>まずは、Alfredがガラを主催するために必要なツールを作成しましょう！</p>
 </article>
-<nav class="page-nav"><a class="nav-link prev" href="../../unit2/langgraph/conclusion.html">← 前へ: まとめ</a><a class="nav-link toc-link" href="../../index.html">目次へ</a><a class="nav-link next" href="agentic-rag.html">次へ →: Agenticな検索拡張生成（RAG）</a></nav>
+<nav class="page-nav"><a class="nav-link prev" href="../../unit2/langgraph/conclusion.html">← 前へ: まとめ</a><a class="nav-link toc-link" href="../../index.html">目次へ</a><a class="nav-link next" href="agentic-rag.html">次へ →: Agentic RAG（エージェント型検索拡張生成）</a></nav>
 </main>
 </div>
 <footer class="site-footer">
   <p>原典: Hugging Face huggingface/agents-course（<a href="https://github.com/huggingface/agents-course">https://github.com/huggingface/agents-course</a>）</p>
   <p>日本語版の翻訳・公開: 霞ヶ関京 / 連絡先: GitHub <a href="https://github.com/yanikasumin">@yanikasumin</a> / YouTube <a href="https://www.youtube.com/@KASUMI_MOF">@KASUMI_MOF</a></p>
-  <p class="demo-note">このサイトはデモ版です。内容は順次更新されます。</p>
+  <p>日本語版は全5コースの翻訳・QAが完了しています。</p>
 </footer>
 <script src="../../../site.js"></script>
 </body>
