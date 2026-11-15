@@ -78,7 +78,7 @@ window.MathJax = { tex: { inlineMath: [['$', '$'], ['\\(', '\\)']], displayMath:
 <li><a class="side-link" href="../unit2/smolagents/why_use_smolagents.html">smolagents を使う理由</a></li>
 <li><a class="side-link" href="../unit2/smolagents/quiz1.html">小クイズ（採点なし）</a></li>
 <li><a class="side-link" href="../unit2/smolagents/code_agents.html">コードを使うエージェントを作る</a></li>
-<li><a class="side-link" href="../unit2/smolagents/tool_calling_agents.html">アクションをコードスニペットまたは JSON 形式で記述する</a></li>
+<li><a class="side-link" href="../unit2/smolagents/tool_calling_agents.html">アクションをコードスニペット又は JSON 形式で記述する</a></li>
 <li><a class="side-link" href="../unit2/smolagents/tools.html">ツール</a></li>
 <li><a class="side-link" href="../unit2/smolagents/retrieval_agents.html">Agentic RAG システムを作る</a></li>
 <li><a class="side-link" href="../unit2/smolagents/quiz2.html">小クイズ（採点なし）</a></li>
@@ -193,7 +193,7 @@ window.MathJax = { tex: { inlineMath: [['$', '$'], ['\\(', '\\)']], displayMath:
 <p>これらは単なる例であり、実際にはあらゆるユースケース向けにツールを作成できます！</p>
 <p>良いツールは、<strong>LLM の力を補完する</strong> ものであるべきです。</p>
 <p>たとえば、算術演算を行う必要がある場合、モデルのネイティブな能力に頼るよりも、LLM に <strong>計算機ツール</strong> を与える方が良い結果が得られます。</p>
-<p>さらに、<strong>LLM は訓練データで学んだ内容を基に、プロンプトに続くテキストを予測して生成します</strong>。そのため、LLM が内部に持つ知識は、訓練時点より前の出来事に限られます。エージェントが最新の情報を必要とする場合、ツールを使う必要があります。</p>
+<p>更に、<strong>LLM は訓練データで学んだ内容を基に、プロンプトに続くテキストを予測して生成します</strong>。そのため、LLM が内部に持つ知識は、訓練時点より前の出来事に限られます。エージェントが最新の情報を必要とする場合、ツールを使う必要があります。</p>
 <p>たとえば、（検索ツールなしで）LLM に今日の天気を直接尋ねると、LLM はランダムな天気をハルシネーションする可能性があります。</p>
 <p><img src="https://huggingface.co/datasets/agents-course/course-images/resolve/main/en/unit1/weather.jpg" alt="天気"/></p>
 <ul>
@@ -221,7 +221,7 @@ window.MathJax = { tex: { inlineMath: [['$', '$'], ['\\(', '\\)']], displayMath:
 <li><strong>ツールが何をするか</strong></li>
 <li><strong>正確にどんな入力を期待するか</strong></li>
 </ol>
-<p>そのため、ツールの説明には通常、プログラミング言語や JSON のように、表現力と厳密さを兼ね備えた形式が使われます。ただし、こうした形式を使うことが必須というわけではありません。正確で一貫性のある形式であれば問題ありません。</p>
+<p>そのため、ツールの説明には通常、プログラミング言語や JSON のように、表現力と厳密さを兼ね備えた形式が使われます。但し、こうした形式を使うことが必須というわけではありません。正確で一貫性のある形式であれば問題ありません。</p>
 <p>これがあまりにも理論的に思える場合は、具体的な例を通して理解しましょう。</p>
 <p>2つの整数を乗算するだけの、簡略化された <strong>計算機</strong> ツールを実装します。Python による実装は次のようになります。</p>
 <div class="codehilite"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">calculator</span><span class="p">(</span><span class="n">a</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">b</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
@@ -247,7 +247,7 @@ window.MathJax = { tex: { inlineMath: [['$', '$'], ['\\(', '\\)']], displayMath:
 <p>追加のツールを提供したい場合は、一貫性を保ち、常に同じ形式を使わなければなりません。このプロセスは壊れやすく、うっかり詳細を見落とすことがあります。</p>
 <p>もっと良い方法はあるでしょうか？</p>
 <h3>ツールセクションの自動整形</h3>
-<p>私たちのツールは Python で書かれており、実装には必要なものがすべてすでに揃っています。</p>
+<p>私たちのツールは Python で書かれており、実装には必要なものがすべて既に揃っています。</p>
 <ul>
 <li>何をする関数かが分かる名前: <code>calculator</code></li>
 <li>関数の docstring コメントで提供される、より長い説明: <code>Multiply two integers.</code></li>
@@ -419,17 +419,16 @@ window.MathJax = { tex: { inlineMath: [['$', '$'], ['\\(', '\\)']], displayMath:
 
 <p>生成した説明はシステムプロンプトに <strong>挿入（injected）</strong> されます。セクション冒頭の例を使い、<code>tools_description</code> を実際のツール説明に置き換えると、システムプロンプトがどのようになるかを示します。</p>
 <p><img src="https://huggingface.co/datasets/agents-course/course-images/resolve/main/en/unit1/Agent_system_prompt_tools.png" alt="ツール用のシステムプロンプト"/></p>
-<p><a href="actions.html">アクション</a> のセクションでは、エージェントが今作成したこのツールをどう <strong>呼び出す（Call）</strong> かについてさらに学びます。</p>
+<p><a href="actions.html">アクション</a> のセクションでは、エージェントが今作成したこのツールをどう <strong>呼び出す（Call）</strong> かについて更に学びます。</p>
 <h3>Model Context Protocol (MCP): 統一されたツールインターフェース</h3>
-<p>Model Context Protocol (MCP) は、アプリケーションが <strong>LLM にツールを提供する</strong> 方法を標準化する <strong>オープンプロトコル</strong> です。
-MCP は次を提供します。</p>
+<p>Model Context Protocol (MCP) は、アプリケーションが <strong>LLM にツールを提供する</strong> 方法を標準化する <strong>オープンプロトコル</strong> です。MCP は次を提供します。</p>
 <ul>
 <li>LLM が直接接続できる、既製の連携機能の一覧（継続的に拡充される）</li>
 <li>LLM プロバイダーやベンダーを切り替える柔軟性</li>
 <li>インフラストラクチャ内でデータを保護するためのベストプラクティス</li>
 </ul>
 <p>つまり、<strong>MCP を実装するフレームワークはすべて、プロトコル内で定義されたツールを活用でき</strong>、フレームワークごとに同じツールインターフェースを再実装する必要がなくなります。</p>
-<p>MCP についてさらに深く知りたい場合は、<a href="https://huggingface.co/learn/mcp-course/">無料の MCP コース</a> をご覧ください。</p>
+<p>MCP について更に深く知りたい場合は、<a href="https://huggingface.co/learn/mcp-course/">無料の MCP コース</a> をご覧ください。</p>
 <hr />
 <p>ツールは、AI エージェントの能力を高める上で重要な役割を果たします。</p>
 <p>まとめとして、次を学びました。</p>

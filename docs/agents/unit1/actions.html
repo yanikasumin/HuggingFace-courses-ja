@@ -78,7 +78,7 @@ window.MathJax = { tex: { inlineMath: [['$', '$'], ['\\(', '\\)']], displayMath:
 <li><a class="side-link" href="../unit2/smolagents/why_use_smolagents.html">smolagents を使う理由</a></li>
 <li><a class="side-link" href="../unit2/smolagents/quiz1.html">小クイズ（採点なし）</a></li>
 <li><a class="side-link" href="../unit2/smolagents/code_agents.html">コードを使うエージェントを作る</a></li>
-<li><a class="side-link" href="../unit2/smolagents/tool_calling_agents.html">アクションをコードスニペットまたは JSON 形式で記述する</a></li>
+<li><a class="side-link" href="../unit2/smolagents/tool_calling_agents.html">アクションをコードスニペット又は JSON 形式で記述する</a></li>
 <li><a class="side-link" href="../unit2/smolagents/tools.html">ツール</a></li>
 <li><a class="side-link" href="../unit2/smolagents/retrieval_agents.html">Agentic RAG システムを作る</a></li>
 <li><a class="side-link" href="../unit2/smolagents/quiz2.html">小クイズ（採点なし）</a></li>
@@ -160,7 +160,7 @@ window.MathJax = { tex: { inlineMath: [['$', '$'], ['\\(', '\\)']], displayMath:
 <div class="callout callout-tip">
 <p class="callout-title">💡 ヒント</p>
 <p>このセクションでは、AI エージェントが環境とやり取りするために取る具体的なステップを探ります。</p>
-<p>アクションの表現方法（JSON やコードの使用）、stop and parse アプローチの重要性を扱い、さまざまなタイプのエージェントを紹介します。</p>
+<p>アクションの表現方法（JSON やコードの使用）、stop and parse アプローチの重要性を扱い、様々なタイプのエージェントを紹介します。</p>
 </div>
 <p>アクションは、<strong>AI エージェントが環境とやり取りするために取る具体的なステップ</strong> です。</p>
 <p>情報を得るために Web を閲覧するにせよ、物理デバイスを制御するにせよ、各アクションはエージェントが実行する意図的な操作です。</p>
@@ -222,7 +222,7 @@ window.MathJax = { tex: { inlineMath: [['$', '$'], ['\\(', '\\)']], displayMath:
 <ol>
 <li><strong>構造化された形式での生成</strong>:</li>
 </ol>
-<p>エージェントは、意図するアクションを明確で事前に決められた形式（JSON またはコード）で出力します。</p>
+<p>エージェントは、意図するアクションを明確で事前に決められた形式（JSON 又はコード）で出力します。</p>
 <ol start="2">
 <li><strong>それ以上の生成の停止</strong>:</li>
 </ol>
@@ -242,11 +242,9 @@ window.MathJax = { tex: { inlineMath: [['$', '$'], ['\\(', '\\)']], displayMath:
 
 <p>するとフレームワークは、呼び出す関数の名前と適用する引数を簡単に解析できます。</p>
 <p>この明確で機械可読な形式により、エラーが最小化され、外部ツールがエージェントの命令を正確に処理できるようになります。</p>
-<p>注意：Function-calling エージェントも同様の仕組みで動作します。各アクションは、指定された関数を正しい引数で呼び出せるように構造化されます。
-これらのタイプのエージェントについては、今後のユニットでさらに深く掘り下げます。</p>
+<p>注意：Function-calling エージェントも同様の仕組みで動作します。各アクションは、指定された関数を正しい引数で呼び出せるように構造化されます。これらのタイプのエージェントについては、今後のユニットで更に深く掘り下げます。</p>
 <h2>Code Agent</h2>
-<p>別のアプローチとして、<em>Code Agent</em> の使用があります。
-考え方はこうです。<strong>単純な JSON オブジェクトを出力する代わりに</strong>、Code Agent は <strong>実行可能なコードブロック（通常は Python のような高水準言語）を生成します</strong>。</p>
+<p>別のアプローチとして、<em>Code Agent</em> の使用があります。考え方はこうです。<strong>単純な JSON オブジェクトを出力する代わりに</strong>、Code Agent は <strong>実行可能なコードブロック（通常は Python のような高水準言語）を生成します</strong>。</p>
 <p><img src="https://huggingface.co/datasets/agents-course/course-images/resolve/main/en/unit1/code-vs-json-actions.png" alt="Code Agent" /></p>
 <p>このアプローチにはいくつかの利点があります。</p>
 <ul>
@@ -255,9 +253,7 @@ window.MathJax = { tex: { inlineMath: [['$', '$'], ['\\(', '\\)']], displayMath:
 <li><strong>デバッグのしやすさの向上:</strong> 明確に定義されたプログラミング構文により、コードのエラーは検出と修正が容易なことが多い。</li>
 <li><strong>直接的な統合:</strong> Code Agent は外部ライブラリや API と直接統合でき、データ処理やリアルタイムの意思決定といった、より複雑な操作が可能になる。</li>
 </ul>
-<p>LLM が生成したコードの実行は、プロンプトインジェクションから有害なコードの実行まで、セキュリティリスクを伴う可能性があることに留意しなければなりません。
-そのため、デフォルトの安全対策を統合した <code>smolagents</code> のような AI エージェントフレームワークの使用が推奨されます。
-リスクとその軽減方法について詳しく知りたい場合は、<a href="https://huggingface.co/docs/smolagents/tutorials/secure_code_execution">こちらの専用セクションをご覧ください</a>。</p>
+<p>LLM が生成したコードの実行は、プロンプトインジェクションから有害なコードの実行まで、セキュリティリスクを伴う可能性があることに留意しなければなりません。そのため、デフォルトの安全対策を統合した <code>smolagents</code> のような AI エージェントフレームワークの使用が推奨されます。リスクとその軽減方法について詳しく知りたい場合は、<a href="https://huggingface.co/docs/smolagents/tutorials/secure_code_execution">こちらの専用セクションをご覧ください</a>。</p>
 <p>たとえば、天気を取得するタスクを与えられた Code Agent は、次のような Python スニペットを生成することがあります。</p>
 <div class="codehilite"><pre><span></span><code><span class="c1"># Code Agent の例: 天気情報を取得する</span>
 <span class="k">def</span><span class="w"> </span><span class="nf">get_weather</span><span class="p">(</span><span class="n">city</span><span class="p">):</span>

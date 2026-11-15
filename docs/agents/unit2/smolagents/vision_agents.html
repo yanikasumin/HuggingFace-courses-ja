@@ -78,7 +78,7 @@ window.MathJax = { tex: { inlineMath: [['$', '$'], ['\\(', '\\)']], displayMath:
 <li><a class="side-link" href="why_use_smolagents.html">smolagents を使う理由</a></li>
 <li><a class="side-link" href="quiz1.html">小クイズ（採点なし）</a></li>
 <li><a class="side-link" href="code_agents.html">コードを使うエージェントを作る</a></li>
-<li><a class="side-link" href="tool_calling_agents.html">アクションをコードスニペットまたは JSON 形式で記述する</a></li>
+<li><a class="side-link" href="tool_calling_agents.html">アクションをコードスニペット又は JSON 形式で記述する</a></li>
 <li><a class="side-link" href="tools.html">ツール</a></li>
 <li><a class="side-link" href="retrieval_agents.html">Agentic RAG システムを作る</a></li>
 <li><a class="side-link" href="quiz2.html">小クイズ（採点なし）</a></li>
@@ -160,7 +160,7 @@ window.MathJax = { tex: { inlineMath: [['$', '$'], ['\\(', '\\)']], displayMath:
 <div class="callout callout-warning">
 <p class="callout-title">⚠️ 注意</p>
 <p>このセクションの例は、強力な VLM モデルへのアクセスを必要とします。私たちは GPT-4o API を使ってテストしました。<br />
-ただし、<a href="why_use_smolagents.html">smolagents を使う理由</a> では、smolagents と Hugging Face がサポートする代替のソリューションについて述べています。他の選択肢を探りたい場合は、そのセクションを必ず確認してください。</p>
+但し、<a href="why_use_smolagents.html">smolagents を使う理由</a> では、smolagents と Hugging Face がサポートする代替のソリューションについて述べています。他の選択肢を探りたい場合は、そのセクションを必ず確認してください。</p>
 </div>
 <p>エージェントに視覚機能を持たせることは、テキスト処理を超えたタスクを解くうえで重要です。Web ブラウジングやドキュメント理解など、現実世界の多くの課題は、豊かな視覚コンテンツの分析を必要とします。幸い、<code>smolagents</code> は Vision-Language Models (VLMs) の組み込みサポートを提供しており、エージェントが画像を効果的に処理・解釈できます。</p>
 <p>この例では、ウェイン邸の執事であるアルフレッドが、パーティーに出席するゲストの身元を確認する任務を負っている場面を想像してください。想像できるとおり、アルフレッドは到着する全員に詳しいわけではないかもしれません。手助けとして、VLM を使って容姿に関する視覚情報を検索し、身元を確認するエージェントが使えます。これにより、アルフレッドは誰を入れるべきか、情報に基づいて判断できます。この例を作ってみましょう！</p>
@@ -170,9 +170,9 @@ window.MathJax = { tex: { inlineMath: [['$', '$'], ['\\(', '\\)']], displayMath:
 <p>コードは、Google Colab で実行できる<a href="https://huggingface.co/agents-course/notebooks/blob/main/unit2/smolagents/vision_agents.ipynb" target="_blank">このノートブック</a>で追うことができます。</p>
 </div>
 <p>このアプローチでは、画像は開始時にエージェントに渡され、タスクプロンプトとともに <code>task_images</code> として保存されます。エージェントは実行を通してこれらの画像を処理します。</p>
-<p>アルフレッドが、パーティーに出席するスーパーヒーローたちの身元を確認したい場合を考えてみましょう。アルフレッドは、過去のパーティーで撮影した画像とゲストの名前を対応付けたデータセットを、すでに持っています。新しい訪問者の画像が与えられれば、エージェントはそれを既存のデータセットと比較し、入場を許可するかどうかを判断できます。</p>
+<p>アルフレッドが、パーティーに出席するスーパーヒーローたちの身元を確認したい場合を考えてみましょう。アルフレッドは、過去のパーティーで撮影した画像とゲストの名前を対応付けたデータセットを、既に持っています。新しい訪問者の画像が与えられれば、エージェントはそれを既存のデータセットと比較し、入場を許可するかどうかを判断できます。</p>
 <p>このケースでは、あるゲストが入ろうとしていて、アルフレッドはこの訪問者がワンダーウーマンのふりをしたジョーカーではないかと疑っています。アルフレッドは、望まない人物の入場を防ぐために身元を確認する必要があります。</p>
-<p>では、実際に作ってみましょう。まず、画像を読み込みます。ここでは例をできるだけシンプルにするために Wikipedia の画像を使いますが、ほかにもさまざまな用途に応用できそうです！</p>
+<p>では、実際に作ってみましょう。まず、画像を読み込みます。ここでは例をできるだけシンプルにするために Wikipedia の画像を使いますが、ほかにも様々な用途に応用できそうです！</p>
 <div class="codehilite"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">PIL</span><span class="w"> </span><span class="kn">import</span> <span class="n">Image</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">requests</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">io</span><span class="w"> </span><span class="kn">import</span> <span class="n">BytesIO</span>
@@ -214,7 +214,7 @@ window.MathJax = { tex: { inlineMath: [['$', '$'], ['\\(', '\\)']], displayMath:
 <span class="p">)</span>
 </code></pre></div>
 
-<p>私が実行したときは、次のような結果になりました。ただし、前述のとおり、皆さんの実行結果は異なる場合があります。</p>
+<p>私が実行したときは、次のような結果になりました。但し、前述のとおり、皆さんの実行結果は異なる場合があります。</p>
 <div class="codehilite"><pre><span></span><code>    <span class="p">{</span>
         <span class="s1">'Costume and Makeup - First Image'</span><span class="p">:</span> <span class="p">(</span>
             <span class="s1">'Purple coat and a purple silk-like cravat or tie over a mustard-yellow shirt.'</span><span class="p">,</span>
@@ -235,15 +235,15 @@ window.MathJax = { tex: { inlineMath: [['$', '$'], ['\\(', '\\)']], displayMath:
 <p>コードは<a href="https://huggingface.co/agents-course/notebooks/blob/main/unit2/smolagents/vision_web_browser.py" target="_blank">この Python ファイル</a>で追うことができます</p>
 </div>
 <p>前のアプローチは貴重で、多くの潜在的なユースケースがあります。しかし、ゲストがデータベースにない状況では、身元を特定する他の方法を探る必要があります。考えられる解決策のひとつは、Web を閲覧して詳細を探すなど、外部ソースから画像と情報を動的に取得することです。</p>
-<p>このアプローチでは、画像は実行中にエージェントのメモリへ動的に追加されます。これまで見てきたように、<code>smolagents</code> のエージェントは、ReAct フレームワークを抽象化した <code>MultiStepAgent</code> クラスを基にしています。このクラスは構造化されたサイクルで動作し、さまざまな変数や知識が各段階で記録されます。</p>
+<p>このアプローチでは、画像は実行中にエージェントのメモリへ動的に追加されます。これまで見てきたように、<code>smolagents</code> のエージェントは、ReAct フレームワークを抽象化した <code>MultiStepAgent</code> クラスを基にしています。このクラスは構造化されたサイクルで動作し、様々な変数や知識が各段階で記録されます。</p>
 <ol>
 <li><strong>SystemPromptStep:</strong> システムプロンプトを格納します。</li>
 <li><strong>TaskStep:</strong> ユーザーのクエリと、提供された入力を記録します。</li>
 <li><strong>ActionStep:</strong> エージェントのアクションと結果のログを記録します。</li>
 </ol>
-<p>この構造化されたアプローチにより、エージェントは視覚情報を動的に取り入れ、進化するタスクに適応して応答できます。以下は、すでに見た図で、動的なワークフローのプロセスと、エージェントのライフサイクルの中で異なるステップがどう統合されるかを示しています。ブラウジングの際、エージェントはスクリーンショットを撮り、<code>ActionStep</code> の中の <code>observation_images</code> として保存できます。</p>
+<p>この構造化されたアプローチにより、エージェントは視覚情報を動的に取り入れ、進化するタスクに適応して応答できます。以下は、既に見た図で、動的なワークフローのプロセスと、エージェントのライフサイクルの中で異なるステップがどう統合されるかを示しています。ブラウジングの際、エージェントはスクリーンショットを撮り、<code>ActionStep</code> の中の <code>observation_images</code> として保存できます。</p>
 <p><img alt="動的な画像の取得" src="https://huggingface.co/datasets/huggingface/documentation-images/resolve/main/blog/smolagents-can-see/diagram_adding_vlms_smolagents.png" /></p>
-<p>必要性が分かったところで、完全な例を作りましょう。この例では、アルフレッドはゲストの身元確認をすべて管理したいと考えています。そのため、Web を閲覧して詳しい情報を探すことが有効な方法になります。この例を完成させるには、エージェント用の新しいツール一式が必要です。さらに、ブラウザ自動化ツールの Selenium と Helium を使います。これらにより、Web を探索し、潜在的なゲストについての詳細を検索し、確認情報を取得するエージェントを作ることができます。必要なツールをインストールしましょう。</p>
+<p>必要性が分かったところで、完全な例を作りましょう。この例では、アルフレッドはゲストの身元確認をすべて管理したいと考えています。そのため、Web を閲覧して詳しい情報を探すことが有効な方法になります。この例を完成させるには、エージェント用の新しいツール一式が必要です。更に、ブラウザ自動化ツールの Selenium と Helium を使います。これらにより、Web を探索し、潜在的なゲストについての詳細を検索し、確認情報を取得するエージェントを作ることができます。必要なツールをインストールしましょう。</p>
 <div class="codehilite"><pre><span></span><code>pip<span class="w"> </span>install<span class="w"> </span><span class="s2">"smolagents[all]"</span><span class="w"> </span>helium<span class="w"> </span>selenium<span class="w"> </span>python-dotenv
 </code></pre></div>
 
@@ -332,7 +332,7 @@ window.MathJax = { tex: { inlineMath: [['$', '$'], ['\\(', '\\)']], displayMath:
 </code></pre></div>
 
 <p>これで、パーティーで使う身元確認システムが完成しました！ アルフレッドは、入場を許可すべきゲストだけを通すためのツールを手に入れました。これで、ウェイン邸で楽しい時間を過ごす準備がすべて整いました！</p>
-<h2>さらに読む</h2>
+<h2>更に読む</h2>
 <ul>
 <li><a href="https://huggingface.co/blog/smolagents-can-see">We just gave sight to smolagents</a> - Vision エージェントの機能を説明するブログ。</li>
 <li><a href="https://huggingface.co/docs/smolagents/examples/web_browser">Web Browser Automation with Agents 🤖🌐</a> - Vision エージェントを使った Web ブラウジングの例。</li>

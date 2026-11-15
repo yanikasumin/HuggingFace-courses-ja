@@ -78,7 +78,7 @@ window.MathJax = { tex: { inlineMath: [['$', '$'], ['\\(', '\\)']], displayMath:
 <li><a class="side-link" href="why_use_smolagents.html">smolagents を使う理由</a></li>
 <li><a class="side-link" href="quiz1.html">小クイズ（採点なし）</a></li>
 <li><a class="side-link" href="code_agents.html">コードを使うエージェントを作る</a></li>
-<li><a class="side-link" href="tool_calling_agents.html">アクションをコードスニペットまたは JSON 形式で記述する</a></li>
+<li><a class="side-link" href="tool_calling_agents.html">アクションをコードスニペット又は JSON 形式で記述する</a></li>
 <li><a class="side-link active" href="tools.html">ツール</a></li>
 <li><a class="side-link" href="retrieval_agents.html">Agentic RAG システムを作る</a></li>
 <li><a class="side-link" href="quiz2.html">小クイズ（採点なし）</a></li>
@@ -154,10 +154,10 @@ window.MathJax = { tex: { inlineMath: [['$', '$'], ['\\(', '\\)']], displayMath:
 <main class="container">
 <p class="course-crumb"><a href="../../index.html">Agents コース</a></p>
 <p class="official-link"><a class="btn btn-official" href="https://huggingface.co/learn/agents-course/unit2/smolagents/tools" target="_blank" rel="noopener">🤗 Hugging Face 公式ページでこの節を読む（英語）</a></p>
-<nav class="page-nav"><a class="nav-link prev" href="tool_calling_agents.html">← 前へ: アクションをコードスニペットまたは JSON 形式で記述する</a><a class="nav-link toc-link" href="../../index.html">目次へ</a><a class="nav-link next" href="retrieval_agents.html">次へ →: Agentic RAG システムを作る</a></nav>
+<nav class="page-nav"><a class="nav-link prev" href="tool_calling_agents.html">← 前へ: アクションをコードスニペット又は JSON 形式で記述する</a><a class="nav-link toc-link" href="../../index.html">目次へ</a><a class="nav-link next" href="retrieval_agents.html">次へ →: Agentic RAG システムを作る</a></nav>
 <article class="content">
 <h1>ツール</h1>
-<p><a href="https://huggingface.co/learn/agents-course/unit1/tools">Unit 1</a>で探ったように、エージェントはさまざまなアクションを実行するためにツールを使います。<code>smolagents</code> では、ツールは<strong>エージェントシステムの中で LLM が呼び出せる関数</strong>として扱われます。</p>
+<p><a href="https://huggingface.co/learn/agents-course/unit1/tools">Unit 1</a>で探ったように、エージェントは様々なアクションを実行するためにツールを使います。<code>smolagents</code> では、ツールは<strong>エージェントシステムの中で LLM が呼び出せる関数</strong>として扱われます。</p>
 <p>ツールとやり取りするために、LLM には次の主要な構成要素を持つ<strong>インターフェースの説明</strong>が必要です。</p>
 <ul>
 <li><strong>名前</strong>: ツールの呼び名</li>
@@ -165,7 +165,7 @@ window.MathJax = { tex: { inlineMath: [['$', '$'], ['\\(', '\\)']], displayMath:
 <li><strong>入力の型と説明</strong>: ツールが受け取る引数</li>
 <li><strong>出力の型</strong>: ツールが返すもの</li>
 </ul>
-<p>たとえば、ウェイン邸でのパーティーの準備をしながら、アルフレッドはケータリングサービスの検索からパーティーテーマのアイデア探しまで、情報を集めるためのさまざまなツールを必要とします。シンプルな検索ツールのインターフェースは、次のようになります。</p>
+<p>たとえば、ウェイン邸でのパーティーの準備をしながら、アルフレッドはケータリングサービスの検索からパーティーテーマのアイデア探しまで、情報を集めるための様々なツールを必要とします。シンプルな検索ツールのインターフェースは、次のようになります。</p>
 <ul>
 <li><strong>名前：</strong> <code>web_search</code></li>
 <li><strong>ツールの説明：</strong> 特定のクエリで Web を検索する</li>
@@ -193,7 +193,7 @@ window.MathJax = { tex: { inlineMath: [['$', '$'], ['\\(', '\\)']], displayMath:
 <p class="callout-title">💡 ヒント</p>
 <p>コードは、Google Colab で実行できる<a href="https://huggingface.co/agents-course/notebooks/blob/main/unit2/smolagents/tools.ipynb" target="_blank">このノートブック</a>で追うことができます。</p>
 </div>
-<p>アルフレッドはすでにパーティーのメニューを決めましたが、今度は大勢のゲストのために料理を用意する手助けが必要です。そのためにケータリングサービスを雇いたいと考えており、利用可能な中で最高評価の選択肢を特定する必要があります。アルフレッドは、自分の地域で最高のケータリングサービスを検索するツールを活用できます。</p>
+<p>アルフレッドは既にパーティーのメニューを決めましたが、今度は大勢のゲストのために料理を用意する手助けが必要です。そのためにケータリングサービスを雇いたいと考えており、利用可能な中で最高評価の選択肢を特定する必要があります。アルフレッドは、自分の地域で最高のケータリングサービスを検索するツールを活用できます。</p>
 <p>以下は、アルフレッドが <code>@tool</code> デコレータを使ってこれを実現する例です。</p>
 <div class="codehilite"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">smolagents</span><span class="w"> </span><span class="kn">import</span> <span class="n">CodeAgent</span><span class="p">,</span> <span class="n">InferenceClientModel</span><span class="p">,</span> <span class="n">tool</span>
 
@@ -291,7 +291,7 @@ window.MathJax = { tex: { inlineMath: [['$', '$'], ['\\(', '\\)']], displayMath:
 <li><strong>GoogleSearchTool</strong></li>
 <li><strong>VisitWebpageTool</strong></li>
 </ul>
-<p>アルフレッドは、ウェイン邸での完璧なパーティーのためにさまざまなツールを使えます。</p>
+<p>アルフレッドは、ウェイン邸での完璧なパーティーのために様々なツールを使えます。</p>
 <ul>
 <li>
 <p>まず、<code>DuckDuckGoSearchTool</code> を使って、独創的なスーパーヒーローをテーマにしたパーティーのアイデアを探せます。</p>
@@ -335,7 +335,7 @@ window.MathJax = { tex: { inlineMath: [['$', '$'], ['\\(', '\\)']], displayMath:
 </code></pre></div>
 
 <h3>Hugging Face Space をツールとしてインポートする</h3>
-<p><code>Tool.from_space()</code> を使えば、HF Space をツールとしてインポートすることもできます。これにより、画像生成からデータ分析まで、さまざまなタスクに対応する、コミュニティで公開された何千もの Space と連携できるようになります。</p>
+<p><code>Tool.from_space()</code> を使えば、HF Space をツールとしてインポートすることもできます。これにより、画像生成からデータ分析まで、様々なタスクに対応する、コミュニティで公開された何千もの Space と連携できるようになります。</p>
 <p>このツールは <code>gradio_client</code> を使って Space の Gradio バックエンドに接続するので、まだインストールしていない場合は <code>pip</code> でインストールしてください。</p>
 <p>パーティーのために、アルフレッドは既存の HF Space を使って、告知に使う AI 生成画像を生成できます（前に触れた事前構築ツールを使う代わりに）。作ってみましょう！</p>
 <div class="codehilite"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">smolagents</span><span class="w"> </span><span class="kn">import</span> <span class="n">CodeAgent</span><span class="p">,</span> <span class="n">InferenceClientModel</span><span class="p">,</span> <span class="n">Tool</span>
@@ -365,8 +365,7 @@ window.MathJax = { tex: { inlineMath: [['$', '$'], ['\\(', '\\)']], displayMath:
 <div class="codehilite"><pre><span></span><code>pip<span class="w"> </span>install<span class="w"> </span>-U<span class="w"> </span>langchain-community
 </code></pre></div>
 
-<p>langchain 統合をインストールしたあと、SerpAPI キーを設定してください。
-これは <code>SerpAPITool</code> のような検索ベースのツールに必要です。</p>
+<p>langchain 統合をインストールしたあと、SerpAPI キーを設定してください。これは <code>SerpAPITool</code> のような検索ベースのツールに必要です。</p>
 <div class="codehilite"><pre><span></span><code><span class="n">os</span><span class="o">.</span><span class="n">environ</span><span class="p">[</span><span class="s1">'SERPAPI_API_KEY'</span><span class="p">]</span> <span class="o">=</span> <span class="s1">'...'</span>
 </code></pre></div>
 
@@ -426,7 +425,7 @@ window.MathJax = { tex: { inlineMath: [['$', '$'], ['\\(', '\\)']], displayMath:
 </ul>
 </article>
 
-<nav class="page-nav"><a class="nav-link prev" href="tool_calling_agents.html">← 前へ: アクションをコードスニペットまたは JSON 形式で記述する</a><a class="nav-link toc-link" href="../../index.html">目次へ</a><a class="nav-link next" href="retrieval_agents.html">次へ →: Agentic RAG システムを作る</a></nav>
+<nav class="page-nav"><a class="nav-link prev" href="tool_calling_agents.html">← 前へ: アクションをコードスニペット又は JSON 形式で記述する</a><a class="nav-link toc-link" href="../../index.html">目次へ</a><a class="nav-link next" href="retrieval_agents.html">次へ →: Agentic RAG システムを作る</a></nav>
 </main>
 </div>
 <footer class="site-footer">

@@ -78,7 +78,7 @@ window.MathJax = { tex: { inlineMath: [['$', '$'], ['\\(', '\\)']], displayMath:
 <li><a class="side-link" href="why_use_smolagents.html">smolagents を使う理由</a></li>
 <li><a class="side-link" href="quiz1.html">小クイズ（採点なし）</a></li>
 <li><a class="side-link active" href="code_agents.html">コードを使うエージェントを作る</a></li>
-<li><a class="side-link" href="tool_calling_agents.html">アクションをコードスニペットまたは JSON 形式で記述する</a></li>
+<li><a class="side-link" href="tool_calling_agents.html">アクションをコードスニペット又は JSON 形式で記述する</a></li>
 <li><a class="side-link" href="tools.html">ツール</a></li>
 <li><a class="side-link" href="retrieval_agents.html">Agentic RAG システムを作る</a></li>
 <li><a class="side-link" href="quiz2.html">小クイズ（採点なし）</a></li>
@@ -154,7 +154,7 @@ window.MathJax = { tex: { inlineMath: [['$', '$'], ['\\(', '\\)']], displayMath:
 <main class="container">
 <p class="course-crumb"><a href="../../index.html">Agents コース</a></p>
 <p class="official-link"><a class="btn btn-official" href="https://huggingface.co/learn/agents-course/unit2/smolagents/code_agents" target="_blank" rel="noopener">🤗 Hugging Face 公式ページでこの節を読む（英語）</a></p>
-<nav class="page-nav"><a class="nav-link prev" href="quiz1.html">← 前へ: 小クイズ（採点なし）</a><a class="nav-link toc-link" href="../../index.html">目次へ</a><a class="nav-link next" href="tool_calling_agents.html">次へ →: アクションをコードスニペットまたは JSON 形式で記述する</a></nav>
+<nav class="page-nav"><a class="nav-link prev" href="quiz1.html">← 前へ: 小クイズ（採点なし）</a><a class="nav-link toc-link" href="../../index.html">目次へ</a><a class="nav-link next" href="tool_calling_agents.html">次へ →: アクションをコードスニペット又は JSON 形式で記述する</a></nav>
 <article class="content">
 <h1>コードを使うエージェントを作る</h1>
 <p>Code Agent は <code>smolagents</code> のデフォルトのエージェントタイプです。アクションを実行するために Python のツール呼び出しを生成し、効率的で表現力豊か、かつ正確なアクション表現を実現します。</p>
@@ -173,7 +173,7 @@ window.MathJax = { tex: { inlineMath: [['$', '$'], ['\\(', '\\)']], displayMath:
 <li><strong>合成可能性（Composability）</strong>: アクションを簡単に組み合わせ、再利用できる</li>
 <li><strong>オブジェクト管理</strong>: 画像のような複雑な構造を直接扱える</li>
 <li><strong>汎用性</strong>: 計算可能なあらゆるタスクを表現できる</li>
-<li><strong>LLM にとって自然</strong>: 高品質なコードは、すでに LLM の訓練データに含まれている</li>
+<li><strong>LLM にとって自然</strong>: 高品質なコードは、既に LLM の訓練データに含まれている</li>
 </ul>
 <h2>Code Agent の仕組み</h2>
 <p><img alt="CodeAgent の実行フロー（出典：smolagents ドキュメント）" src="https://huggingface.co/datasets/huggingface/documentation-images/resolve/main/smolagents/codeagent_docs.png" /></p>
@@ -270,8 +270,7 @@ window.MathJax = { tex: { inlineMath: [['$', '$'], ['\\(', '\\)']], displayMath:
 <p>プレイリストとメニューは準備できましたが、もうひとつ重要な詳細を確認する必要があります。それは準備にかかる時間です。</p>
 <p>アルフレッドは、今から準備を始めると何時にすべての準備が整うのかを計算する必要があります。これは、ほかのスーパーヒーローの助けが必要になった場合に備えるためです。</p>
 <p><code>smolagents</code> は、Python コードスニペットを書いて実行するエージェントに特化しており、セキュリティのためにサンドボックス実行を提供します。</p>
-<p><strong>コード実行には厳格なセキュリティ対策があります</strong>。事前に定義された安全なリストにないインポートは、デフォルトでブロックされます。ただし、<code>additional_authorized_imports</code> に文字列として渡すことで、追加のインポートを許可できます。
-安全なコード実行の詳細については、公式の<a href="https://huggingface.co/docs/smolagents/tutorials/secure_code_execution">ガイド</a>をご覧ください。</p>
+<p><strong>コード実行には厳格なセキュリティ対策があります</strong>。事前に定義された安全なリストにないインポートは、デフォルトでブロックされます。但し、<code>additional_authorized_imports</code> に文字列として渡すことで、追加のインポートを許可できます。安全なコード実行の詳細については、公式の<a href="https://huggingface.co/docs/smolagents/tutorials/secure_code_execution">ガイド</a>をご覧ください。</p>
 <p>エージェントを作成するとき、<code>additional_authorized_imports</code> を使って <code>datetime</code> モジュールのインポートを許可します。</p>
 <div class="codehilite"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">smolagents</span><span class="w"> </span><span class="kn">import</span> <span class="n">CodeAgent</span><span class="p">,</span> <span class="n">InferenceClientModel</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
@@ -293,9 +292,8 @@ window.MathJax = { tex: { inlineMath: [['$', '$'], ['\\(', '\\)']], displayMath:
 <span class="p">)</span>
 </code></pre></div>
 
-<p>これらの例は、コードエージェントでできることのほんの始まりにすぎませんが、パーティーの準備における有用性はすでに見え始めています。
-コードエージェントの作り方についてさらに学ぶには、<a href="https://huggingface.co/docs/smolagents">smolagents のドキュメント</a>をご覧ください。</p>
-<p>まとめると、<code>smolagents</code> は Python コードスニペットを書いて実行するエージェントに特化し、セキュリティのためのサンドボックス実行を提供します。ローカルモデルと API ベースの言語モデルの両方をサポートしており、さまざまな開発環境に適応できます。</p>
+<p>これらの例は、コードエージェントでできることのほんの始まりにすぎませんが、パーティーの準備における有用性は既に見え始めています。コードエージェントの作り方について更に学ぶには、<a href="https://huggingface.co/docs/smolagents">smolagents のドキュメント</a>をご覧ください。</p>
+<p>まとめると、<code>smolagents</code> は Python コードスニペットを書いて実行するエージェントに特化し、セキュリティのためのサンドボックス実行を提供します。ローカルモデルと API ベースの言語モデルの両方をサポートしており、様々な開発環境に適応できます。</p>
 <h3>カスタムのパーティー準備エージェントを Hub に共有する</h3>
 <p><strong>自分たちで作ったアルフレッドのエージェントを、コミュニティにも共有できたら素晴らしい</strong>ですよね。共有すれば、誰でも Hub からエージェントを簡単にダウンロードして使え、ゴッサム究極のパーティープランナーを手元で活用できます。やってみましょう！ 🎉</p>
 <p><code>smolagents</code> ライブラリでは、完全なエージェントをコミュニティと共有したり、他の人のエージェントをダウンロードしてすぐに使ったりできます。次のように簡単です。</p>
@@ -310,7 +308,7 @@ window.MathJax = { tex: { inlineMath: [['$', '$'], ['\\(', '\\)']], displayMath:
 <span class="n">alfred_agent</span><span class="o">.</span><span class="n">run</span><span class="p">(</span><span class="s2">"Give me the best playlist for a party at Wayne's mansion. The party idea is a 'villain masquerade' theme"</span><span class="p">)</span>  
 </code></pre></div>
 
-<p>さらに素晴らしいことに、共有されたエージェントは Hugging Face Spaces として直接利用でき、リアルタイムにやり取りできます。他のエージェントは<a href="https://huggingface.co/spaces/davidberenstein1957/smolagents-and-tools">こちら</a>で探索できます。</p>
+<p>更に素晴らしいことに、共有されたエージェントは Hugging Face Spaces として直接利用でき、リアルタイムにやり取りできます。他のエージェントは<a href="https://huggingface.co/spaces/davidberenstein1957/smolagents-and-tools">こちら</a>で探索できます。</p>
 <p>たとえば、<em>AlfredAgent</em> は<a href="https://huggingface.co/spaces/sergiopaniego/AlfredAgent">こちら</a>で利用できます。以下で直接試すことができます。</p>
 <p><iframe
     src="https://sergiopaniego-alfredagent.hf.space/"
@@ -415,7 +413,7 @@ window.MathJax = { tex: { inlineMath: [['$', '$'], ['\\(', '\\)']], displayMath:
 <div class="codehilite"><pre><span></span><code>pip<span class="w"> </span>install<span class="w"> </span>opentelemetry-sdk<span class="w"> </span>opentelemetry-exporter-otlp<span class="w"> </span>openinference-instrumentation-smolagents<span class="w"> </span>langfuse
 </code></pre></div>
 
-<p>次に、アルフレッドはすでに Langfuse のアカウントを作成し、API キーの準備ができています。まだの場合は、Langfuse Cloud に<a href="https://cloud.langfuse.com/">こちら</a>からサインアップするか、<a href="https://huggingface.co/docs/smolagents/tutorials/inspect_runs">代替手段</a>を探ってください。</p>
+<p>次に、アルフレッドは既に Langfuse のアカウントを作成し、API キーの準備ができています。まだの場合は、Langfuse Cloud に<a href="https://cloud.langfuse.com/">こちら</a>からサインアップするか、<a href="https://huggingface.co/docs/smolagents/tutorials/inspect_runs">代替手段</a>を探ってください。</p>
 <p>API キーを取得したら、次のように適切に設定する必要があります。</p>
 <div class="codehilite"><pre><span></span><code><span class="kn">import</span><span class="w"> </span><span class="nn">os</span>
 
@@ -444,7 +442,7 @@ window.MathJax = { tex: { inlineMath: [['$', '$'], ['\\(', '\\)']], displayMath:
 <span class="n">SmolagentsInstrumentor</span><span class="p">()</span><span class="o">.</span><span class="n">instrument</span><span class="p">()</span>
 </code></pre></div>
 
-<p>アルフレッドが接続できました 🔌！ <code>smolagents</code> の実行が Langfuse に記録され、エージェントの振る舞いを完全に把握できます。このセットアップにより、過去の実行を振り返って Party Preparator Agent をさらに改良する準備が整いました。</p>
+<p>アルフレッドが接続できました 🔌！ <code>smolagents</code> の実行が Langfuse に記録され、エージェントの振る舞いを完全に把握できます。このセットアップにより、過去の実行を振り返って Party Preparator Agent を更に改良する準備が整いました。</p>
 <div class="callout callout-tip">
 <p class="callout-title">💡 ヒント</p>
 <p>エージェントのトレース方法や、収集したデータでパフォーマンスを評価する方法については、<a href="https://huggingface.co/learn/agents-course/bonus-unit2/introduction">Bonus Unit 2</a> をご覧ください。</p>
@@ -459,7 +457,7 @@ window.MathJax = { tex: { inlineMath: [['$', '$'], ['\\(', '\\)']], displayMath:
 <p>アルフレッドは<a href="https://cloud.langfuse.com/project/cm7bq0abj025rad078ak3luwi/traces/995fc019255528e4f48cf6770b0ce27b?timestamp=2025-02-19T10%3A28%3A36.929Z">こちら</a>のログにアクセスして、確認と分析を行えます。</p>
 <div class="callout callout-tip">
 <p class="callout-title">💡 ヒント</p>
-<p>実は、実行中に小さなエラーが発生しました。ログの中で見つけられますか？ エージェントがそれをどのように処理し、それでも有効な答えを返すかを追ってみてください。答え合わせをしたい場合は、エラーへの直接リンクが<a href="https://cloud.langfuse.com/project/cm7bq0abj025rad078ak3luwi/traces/995fc019255528e4f48cf6770b0ce27b?timestamp=2025-02-19T10%3A28%3A36.929Z&observation=80ca57ace4f69b52">こちら</a>です。もちろん、そのエラーはすでに修正されています。詳細はこちらの <a href="https://github.com/huggingface/smolagents/issues/838">issue</a> をご覧ください。</p>
+<p>実は、実行中に小さなエラーが発生しました。ログの中で見つけられますか？ エージェントがそれをどのように処理し、それでも有効な答えを返すかを追ってみてください。答え合わせをしたい場合は、エラーへの直接リンクが<a href="https://cloud.langfuse.com/project/cm7bq0abj025rad078ak3luwi/traces/995fc019255528e4f48cf6770b0ce27b?timestamp=2025-02-19T10%3A28%3A36.929Z&observation=80ca57ace4f69b52">こちら</a>です。もちろん、そのエラーは既に修正されています。詳細はこちらの <a href="https://github.com/huggingface/smolagents/issues/838">issue</a> をご覧ください。</p>
 </div>
 <p>一方、<a href="https://open.spotify.com/playlist/0gZMMHjuxMrrybQ7wTMTpw">おすすめのプレイリスト</a>が、パーティーの準備にぴったりの雰囲気を作ってくれます。素敵ですよね？ 🎶  </p>
 <hr />
@@ -473,7 +471,7 @@ window.MathJax = { tex: { inlineMath: [['$', '$'], ['\\(', '\\)']], displayMath:
 </ul>
 </article>
 
-<nav class="page-nav"><a class="nav-link prev" href="quiz1.html">← 前へ: 小クイズ（採点なし）</a><a class="nav-link toc-link" href="../../index.html">目次へ</a><a class="nav-link next" href="tool_calling_agents.html">次へ →: アクションをコードスニペットまたは JSON 形式で記述する</a></nav>
+<nav class="page-nav"><a class="nav-link prev" href="quiz1.html">← 前へ: 小クイズ（採点なし）</a><a class="nav-link toc-link" href="../../index.html">目次へ</a><a class="nav-link next" href="tool_calling_agents.html">次へ →: アクションをコードスニペット又は JSON 形式で記述する</a></nav>
 </main>
 </div>
 <footer class="site-footer">

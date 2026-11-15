@@ -78,7 +78,7 @@ window.MathJax = { tex: { inlineMath: [['$', '$'], ['\\(', '\\)']], displayMath:
 <li><a class="side-link" href="../unit2/smolagents/why_use_smolagents.html">smolagents を使う理由</a></li>
 <li><a class="side-link" href="../unit2/smolagents/quiz1.html">小クイズ（採点なし）</a></li>
 <li><a class="side-link" href="../unit2/smolagents/code_agents.html">コードを使うエージェントを作る</a></li>
-<li><a class="side-link" href="../unit2/smolagents/tool_calling_agents.html">アクションをコードスニペットまたは JSON 形式で記述する</a></li>
+<li><a class="side-link" href="../unit2/smolagents/tool_calling_agents.html">アクションをコードスニペット又は JSON 形式で記述する</a></li>
 <li><a class="side-link" href="../unit2/smolagents/tools.html">ツール</a></li>
 <li><a class="side-link" href="../unit2/smolagents/retrieval_agents.html">Agentic RAG システムを作る</a></li>
 <li><a class="side-link" href="../unit2/smolagents/quiz2.html">小クイズ（採点なし）</a></li>
@@ -160,9 +160,9 @@ window.MathJax = { tex: { inlineMath: [['$', '$'], ['\\(', '\\)']], displayMath:
 <p><img src="https://huggingface.co/datasets/agents-course/course-images/resolve/main/en/unit1/whiteboard-check-1.jpg" alt="ユニット1の計画"/></p>
 <p>前のセクションでは、各エージェントには <strong>中核となる AI モデル</strong> が必要であり、LLM がこの目的で最も一般的な AI モデルのタイプであることを学びました。</p>
 <p>ここでは、LLM とは何か、そして LLM がエージェントをどう動かしているかを学びます。</p>
-<p>このセクションでは、LLM の使い方を技術的な観点から簡単に説明します。さらに詳しく学びたい場合は、<a href="https://huggingface.co/learn/nlp-course/chapter1/1" target="_blank">無料の自然言語処理コース</a> をご覧ください。</p>
+<p>このセクションでは、LLM の使い方を技術的な観点から簡単に説明します。更に詳しく学びたい場合は、<a href="https://huggingface.co/learn/nlp-course/chapter1/1" target="_blank">無料の自然言語処理コース</a> をご覧ください。</p>
 <h2>大規模言語モデルとは何か？</h2>
-<p>LLM は、<strong>人間の言語を理解し生成すること</strong> に長けた AI モデルの一種です。膨大な量のテキストデータで訓練されており、言語のパターン、構造、さらにはニュアンスまで学ぶことができます。これらのモデルは通常、数百万規模のパラメータで構成されます。</p>
+<p>LLM は、<strong>人間の言語を理解し生成すること</strong> に長けた AI モデルの一種です。膨大な量のテキストデータで訓練されており、言語のパターン、構造、更にはニュアンスまで学ぶことができます。これらのモデルは通常、数百万規模のパラメータで構成されます。</p>
 <p>現在の LLM のほとんどは、<strong>Transformer アーキテクチャ</strong> を基盤としています。Transformer は "Attention" アルゴリズムに基づく深層学習アーキテクチャで、2018 年に Google が BERT を発表して以来、大きな注目を集めています。</p>
 <figure>
 <img src="https://huggingface.co/datasets/agents-course/course-images/resolve/main/en/unit1/transformer.jpg" alt="Transformer"/>
@@ -173,7 +173,7 @@ window.MathJax = { tex: { inlineMath: [['$', '$'], ['\\(', '\\)']], displayMath:
 <p>Transformer には3つのタイプがあります。</p>
 <ol>
 <li><strong>エンコーダ（Encoders）</strong><br />
-   エンコーダベースの Transformer は、テキスト（またはその他のデータ）を入力として受け取り、そのテキストの密な表現（埋め込み）を出力します。</li>
+   エンコーダベースの Transformer は、テキスト（又はその他のデータ）を入力として受け取り、そのテキストの密な表現（埋め込み）を出力します。</li>
 </ol>
 <ul>
 <li><strong>例</strong>: Google の BERT</li>
@@ -198,7 +198,7 @@ window.MathJax = { tex: { inlineMath: [['$', '$'], ['\\(', '\\)']], displayMath:
 <li><strong>ユースケース</strong>:  翻訳、要約、パラフレーズ</li>
 <li><strong>典型的なサイズ</strong>: 数百万のパラメータ</li>
 </ul>
-<p>大規模言語モデルにはさまざまな形式がありますが、LLM は通常、数十億のパラメータを持つデコーダベースのモデルです。よく知られた LLM をいくつか挙げます。</p>
+<p>大規模言語モデルには様々な形式がありますが、LLM は通常、数十億のパラメータを持つデコーダベースのモデルです。よく知られた LLM をいくつか挙げます。</p>
 <table>
 <thead>
 <tr>
@@ -236,7 +236,7 @@ window.MathJax = { tex: { inlineMath: [['$', '$'], ['\\(', '\\)']], displayMath:
 <p>LLM の根底にある原理はシンプルでありながら非常に効果的です。<strong>その目的は、前のトークンのシーケンスが与えられたときに、次のトークンを予測すること</strong> です。「トークン」は LLM が扱う情報の単位です。「トークン」は「単語」のようなものと考えることができますが、効率上の理由から LLM は単語全体を使いません。</p>
 <p>たとえば、英語には推定60万語の単語がありますが、LLM の語彙は約32,000トークン程度かもしれません（Llama 2 がその例です）。トークン化は、組み合わせ可能なサブワード単位で行われることがよくあります。</p>
 <p>たとえば、トークン "interest" と "ing" を組み合わせて "interesting" を作ったり、"ed" を追加して "interested" を作ったりできることを考えてみてください。</p>
-<p>下のインタラクティブなプレイグラウンドで、さまざまなトークナイザを試すことができます。</p>
+<p>下のインタラクティブなプレイグラウンドで、様々なトークナイザを試すことができます。</p>
 <p><iframe
     src="https://agents-course-the-tokenizer-playground.static.hf.space"
     frameborder="0"
@@ -244,7 +244,7 @@ window.MathJax = { tex: { inlineMath: [['$', '$'], ['\\(', '\\)']], displayMath:
     height="450"
 ></iframe>
 </p>
-<p>LLM にはそれぞれ、モデル固有の <strong>特殊トークン</strong> があります。これらのトークンは、生成するテキストの構造を区切るために使われます。たとえば、シーケンス、メッセージ、応答がどこで始まり、どこで終わるかを示します。さらに、モデルに渡す入力プロンプトも特殊トークンで構造化されています。その中で最も重要なのが <strong>シーケンス終了トークン（End of sequence token、EOS）</strong> です。</p>
+<p>LLM にはそれぞれ、モデル固有の <strong>特殊トークン</strong> があります。これらのトークンは、生成するテキストの構造を区切るために使われます。たとえば、シーケンス、メッセージ、応答がどこで始まり、どこで終わるかを示します。更に、モデルに渡す入力プロンプトも特殊トークンで構造化されています。その中で最も重要なのが <strong>シーケンス終了トークン（End of sequence token、EOS）</strong> です。</p>
 <p>特殊トークンの形式は、モデル提供元によって大きく異なります。</p>
 <p>下の表は、特殊トークンの多様性を示しています。</p>
 <table>
@@ -279,7 +279,7 @@ window.MathJax = { tex: { inlineMath: [['$', '$'], ['\\(', '\\)']], displayMath:
       <td><strong>SmolLM2</strong></td>
       <td>Hugging Face</td>
       <td><code>&lt;|im_end|&gt;</code></td>
-      <td>指示またはメッセージの終了</td>
+      <td>指示又はメッセージの終了</td>
     </tr>
     <tr>
       <td><strong>Gemma</strong></td>
@@ -292,7 +292,7 @@ window.MathJax = { tex: { inlineMath: [['$', '$'], ['\\(', '\\)']], displayMath:
 
 <div class="callout callout-tip">
 <p class="callout-title">💡 ヒント</p>
-<p>これらの特殊トークンを暗記する必要はありませんが、その多様性と、LLM のテキスト生成において果たす役割を理解することが重要です。特殊トークンについてさらに知りたい場合は、モデルの Hub リポジトリでその設定を確認できます。たとえば、SmolLM2 モデルの特殊トークンは、その <a href="https://huggingface.co/HuggingFaceTB/SmolLM2-135M-Instruct/blob/main/tokenizer_config.json">tokenizer_config.json</a> で確認できます。</p>
+<p>これらの特殊トークンを暗記する必要はありませんが、その多様性と、LLM のテキスト生成において果たす役割を理解することが重要です。特殊トークンについて更に知りたい場合は、モデルの Hub リポジトリでその設定を確認できます。たとえば、SmolLM2 モデルの特殊トークンは、その <a href="https://huggingface.co/HuggingFaceTB/SmolLM2-135M-Instruct/blob/main/tokenizer_config.json">tokenizer_config.json</a> で確認できます。</p>
 </div>
 <h2>次トークン予測を理解する</h2>
 <p>LLM は <strong>自己回帰的（autoregressive）</strong> にテキストを生成します。これは、あるステップで生成した出力を次のステップの入力に加えながら、順に生成を進めるという意味です。この処理は、モデルが次に EOS トークンを予測するまで続き、その時点でモデルは停止できます。</p>
@@ -326,7 +326,7 @@ window.MathJax = { tex: { inlineMath: [['$', '$'], ['\\(', '\\)']], displayMath:
     height="450"
 ></iframe>
 </p>
-<p>デコーディングについてさらに知りたい場合は、<a href="https://huggingface.co/learn/nlp-course">NLP コース</a> をご覧ください。</p>
+<p>デコーディングについて更に知りたい場合は、<a href="https://huggingface.co/learn/nlp-course">NLP コース</a> をご覧ください。</p>
 <h2>Attention is all you need（必要なのはアテンションだけ）</h2>
 <p>Transformer アーキテクチャの重要な側面は <strong>Attention（アテンション）</strong> です。次の単語を予測する際、文中のすべての単語が等しく重要なわけではありません。<em>"The capital of France is ..."</em> という文では、"France" や "capital" のような単語が最も大きな意味を持ちます。</p>
 <p><img src="https://huggingface.co/datasets/agents-course/course-images/resolve/main/en/unit1/AttentionSceneFinal.gif" alt="次のトークンを予測する際に、文中の単語に異なる度合いで注意を向ける仕組みを示すアニメーション" width="60%">
@@ -337,7 +337,7 @@ window.MathJax = { tex: { inlineMath: [['$', '$'], ['\\(', '\\)']], displayMath:
 <p>LLM は入力されたすべてのトークンを参照し、どのトークンが「重要」かを判断しながら次のトークンを予測します。そのため、入力シーケンスをどのような言葉で記述するかが非常に重要になります。</p>
 <p>LLM に提供する入力シーケンスは <em>プロンプト</em> と呼ばれます。プロンプトを注意深く設計することで、<strong>LLM の生成を望ましい出力へと導きやすく</strong> なります。</p>
 <h2>LLM はどう訓練されるのか？</h2>
-<p>LLM は大規模なテキストデータセットで訓練され、自己教師あり学習またはマスク言語モデリングの目的を通じて、シーケンス内の次の単語を予測することを学びます。</p>
+<p>LLM は大規模なテキストデータセットで訓練され、自己教師あり学習又はマスク言語モデリングの目的を通じて、シーケンス内の次の単語を予測することを学びます。</p>
 <p>この教師なし学習から、モデルは言語の構造と <strong>テキストの根底にあるパターンを学び、未知のデータへ汎化できるように</strong> なります。</p>
 <p>最初の <em>事前学習（pre-training）</em> のあと、LLM は教師あり学習によってファインチューニングされ、特定のタスクを実行できるようになります。たとえば、会話形式やツールの使用に対応するよう訓練されたモデルもあれば、分類やコード生成に焦点を当てるモデルもあります。</p>
 <h2>LLM はどう使えるのか？</h2>
@@ -354,10 +354,10 @@ window.MathJax = { tex: { inlineMath: [['$', '$'], ['\\(', '\\)']], displayMath:
 <h2>LLM は AI エージェントでどう使われるのか？</h2>
 <p>LLM は AI エージェントの重要なコンポーネントであり、<strong>人間の言語を理解し生成するための基盤を提供します</strong>。</p>
 <p>ユーザーの指示を解釈し、会話のコンテキストを維持し、計画を定義し、使うツールを決めることができます。</p>
-<p>これらのステップはこのユニットでさらに詳しく探りますが、今のところ理解すべきなのは、LLM が <strong>エージェントの頭脳</strong> であるということです。</p>
+<p>これらのステップはこのユニットで更に詳しく探りますが、今のところ理解すべきなのは、LLM が <strong>エージェントの頭脳</strong> であるということです。</p>
 <hr />
 <p>たくさんの情報がありました！LLM とは何か、どう機能するか、AI エージェントを動かす上での役割の基礎を扱いました。</p>
-<p>言語モデルと自然言語処理の魅力的な世界にさらに深く入りたい場合は、ぜひ <a href="https://huggingface.co/learn/nlp-course/chapter1/1" target="_blank">無料の NLP コース</a> をご覧ください。</p>
+<p>言語モデルと自然言語処理の魅力的な世界に更に深く入りたい場合は、ぜひ <a href="https://huggingface.co/learn/nlp-course/chapter1/1" target="_blank">無料の NLP コース</a> をご覧ください。</p>
 <p>LLM の仕組みを理解したところで、次は <strong>会話の中で LLM が生成するテキストをどのように構造化するのか</strong> を見ていきましょう。</p>
 <p><a href="https://huggingface.co/agents-course/notebooks/blob/main/unit1/dummy_agent_library.ipynb" target="_blank">このノートブック</a> を実行するには、<a href="https://hf.co/settings/tokens" target="_blank">https://hf.co/settings/tokens</a> から取得できる <strong>Hugging Face トークンが必要です</strong>。</p>
 <p>Jupyter ノートブックの実行方法について詳しくは、<a href="https://huggingface.co/docs/hub/notebooks">Hugging Face Hub で Jupyter ノートブックを使う方法</a> をご覧ください。</p>

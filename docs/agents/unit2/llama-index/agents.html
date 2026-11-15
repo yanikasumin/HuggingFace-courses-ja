@@ -78,7 +78,7 @@ window.MathJax = { tex: { inlineMath: [['$', '$'], ['\\(', '\\)']], displayMath:
 <li><a class="side-link" href="../smolagents/why_use_smolagents.html">smolagents を使う理由</a></li>
 <li><a class="side-link" href="../smolagents/quiz1.html">小クイズ（採点なし）</a></li>
 <li><a class="side-link" href="../smolagents/code_agents.html">コードを使うエージェントを作る</a></li>
-<li><a class="side-link" href="../smolagents/tool_calling_agents.html">アクションをコードスニペットまたは JSON 形式で記述する</a></li>
+<li><a class="side-link" href="../smolagents/tool_calling_agents.html">アクションをコードスニペット又は JSON 形式で記述する</a></li>
 <li><a class="side-link" href="../smolagents/tools.html">ツール</a></li>
 <li><a class="side-link" href="../smolagents/retrieval_agents.html">Agentic RAG システムを作る</a></li>
 <li><a class="side-link" href="../smolagents/quiz2.html">小クイズ（採点なし）</a></li>
@@ -157,10 +157,8 @@ window.MathJax = { tex: { inlineMath: [['$', '$'], ['\\(', '\\)']], displayMath:
 <nav class="page-nav"><a class="nav-link prev" href="quiz1.html">← 前へ: 小さなクイズ（採点なし）</a><a class="nav-link toc-link" href="../../index.html">目次へ</a><a class="nav-link next" href="workflows.html">次へ →: LlamaIndex でエージェントワークフローを作成する</a></nav>
 <article class="content">
 <h1>LlamaIndex でエージェントを使う</h1>
-<p>先ほど登場した、頼れる執事エージェントの Alfred を覚えていますか？ 彼はこれからアップグレードされます！
-LlamaIndex で使えるツールを理解したので、Alfred に新しい能力を与え、さらに役立つエージェントにできます。</p>
-<p>その前に、Alfred のようなエージェントがどう成り立っているかを思い出しておきましょう。
-Unit 1 では、次のことを学びました。</p>
+<p>先ほど登場した、頼れる執事エージェントの Alfred を覚えていますか？ 彼はこれからアップグレードされます！LlamaIndex で使えるツールを理解したので、Alfred に新しい能力を与え、更に役立つエージェントにできます。</p>
+<p>その前に、Alfred のようなエージェントがどう成り立っているかを思い出しておきましょう。Unit 1 では、次のことを学びました。</p>
 <blockquote>
 <p>エージェントとは、AI モデルを活用して環境と対話し、ユーザーが定義した目標を達成するシステムです。推論、計画、アクションの実行（多くの場合は外部ツールを介します）を組み合わせて、タスクを遂行します。</p>
 </blockquote>
@@ -168,7 +166,7 @@ Unit 1 では、次のことを学びました。</p>
 <p><img alt="エージェント" src="https://huggingface.co/datasets/agents-course/course-images/resolve/main/en/unit2/llama-index/agents.png" /></p>
 <ol>
 <li><code>Function Calling Agents</code>：特定の関数を呼び出すことができる AI モデルと連携して動作します。</li>
-<li><code>ReAct Agents</code>：チャットまたはテキスト生成用のエンドポイントを備えたあらゆる AI と連携でき、複雑な推論タスクを扱えます。</li>
+<li><code>ReAct Agents</code>：チャット又はテキスト生成用のエンドポイントを備えたあらゆる AI と連携でき、複雑な推論タスクを扱えます。</li>
 <li><code>Advanced Custom Agents</code>：より複雑なタスクやワークフローを扱うために、より高度な手法を使います。</li>
 </ol>
 <div class="callout callout-tip">
@@ -180,8 +178,7 @@ Unit 1 では、次のことを学びました。</p>
 <p class="callout-title">💡 ヒント</p>
 <p>コードは Google Colab で実行できる <a href="https://huggingface.co/agents-course/notebooks/blob/main/unit2/llama-index/agents.ipynb" target="_blank">このノートブック</a> で確認できます。</p>
 </div>
-<p>エージェントを作成するには、まず<strong>その能力を定義する関数やツールのセット</strong>を与えます。
-基本的なツールを使ったエージェントの作成方法を見ていきましょう。この記事の執筆時点では、エージェントは function calling API を利用できる場合には自動的に使い、利用できない場合には標準的な ReAct エージェントのループを使います。</p>
+<p>エージェントを作成するには、まず<strong>その能力を定義する関数やツールのセット</strong>を与えます。基本的なツールを使ったエージェントの作成方法を見ていきましょう。この記事の執筆時点では、エージェントは function calling API を利用できる場合には自動的に使い、利用できない場合には標準的な ReAct エージェントのループを使います。</p>
 <p>ツールや関数を呼び出す API に対応した LLM は、比較的新しいものです。しかし、ツール呼び出しのために特別なプロンプトを用意する必要がなく、与えられたスキーマに基づいて LLM にツール呼び出しを生成させられるため、強力なツール実行の仕組みとなっています。</p>
 <p>ReAct エージェントも複雑な推論タスクを得意とし、チャットやテキスト補完に対応したあらゆる LLM と連携できます。出力は長くなりますが、特定のアクションを選んだ理由も示してくれます。</p>
 <div class="codehilite"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">llama_index.llms.huggingface_api</span><span class="w"> </span><span class="kn">import</span> <span class="n">HuggingFaceInferenceAPI</span>
@@ -203,8 +200,7 @@ Unit 1 では、次のことを学びました。</p>
 <span class="p">)</span>
 </code></pre></div>
 
-<p><strong>エージェントはデフォルトではステートレス</strong>ですが、<code>Context</code> オブジェクトを使うことで過去のやり取りを記憶できます。
-これは、過去のやり取りを記憶する必要があるエージェントを使う場合に役立ちます。たとえば、複数のメッセージにわたって文脈を保持するチャットボットや、長期間の進捗を追跡するタスクマネージャーなどです。</p>
+<p><strong>エージェントはデフォルトではステートレス</strong>ですが、<code>Context</code> オブジェクトを使うことで過去のやり取りを記憶できます。これは、過去のやり取りを記憶する必要があるエージェントを使う場合に役立ちます。たとえば、複数のメッセージにわたって文脈を保持するチャットボットや、長期間の進捗を追跡するタスクマネージャーなどです。</p>
 <div class="codehilite"><pre><span></span><code><span class="c1"># ステートレス</span>
 <span class="n">response</span> <span class="o">=</span> <span class="k">await</span> <span class="n">agent</span><span class="o">.</span><span class="n">run</span><span class="p">(</span><span class="s2">"What is 2 times 2?"</span><span class="p">)</span>
 
@@ -220,11 +216,9 @@ Unit 1 では、次のことを学びました。</p>
 <p>LlamaIndex のエージェントが非同期で動作することにお気づきでしょうか。上のコードで Python の <code>await</code> 演算子を使っていることからも分かります。Python の非同期コードに慣れていない場合や復習したい場合は、<a href="https://docs.llamaindex.ai/en/stable/getting_started/async_python/">非同期処理の分かりやすいガイド</a>を参考にしてください。</p>
 <p>基本を押さえたので、次はエージェントでより複雑なツールを使う方法を見ていきましょう。</p>
 <h2>QueryEngineTools を使って RAG エージェントを作成する</h2>
-<p><strong>Agentic RAG は、エージェントを使って自分のデータに関する質問に答える強力な方法です。</strong> Alfred にさまざまなツールを渡せば、質問に答える際にそれらを活用してもらえます。
-ただし、ドキュメントに基づいて自動的に質問に答えるのではなく、Alfred は質問に答えるために他のツールやフローを使うかどうかを判断できます。</p>
+<p><strong>Agentic RAG は、エージェントを使って自分のデータに関する質問に答える強力な方法です。</strong> Alfred に様々なツールを渡せば、質問に答える際にそれらを活用してもらえます。但し、ドキュメントに基づいて自動的に質問に答えるのではなく、Alfred は質問に答えるために他のツールやフローを使うかどうかを判断できます。</p>
 <p><img alt="Agentic RAG" src="https://huggingface.co/datasets/agents-course/course-images/resolve/main/en/unit2/llama-index/agentic-rag.png" /></p>
-<p><strong><code>QueryEngine</code> をエージェントのツールとしてラップする</strong>のは簡単です。
-その際には、<strong>名前と説明を定義する</strong>必要があります。LLM はこの情報を使って、ツールを正しく使います。
+<p><strong><code>QueryEngine</code> をエージェントのツールとしてラップする</strong>のは簡単です。その際には、<strong>名前と説明を定義する</strong>必要があります。LLM はこの情報を使って、ツールを正しく使います。
 <a href="components.html">コンポーネントのセクション</a>で作成した <code>QueryEngine</code> を使って、<code>QueryEngineTool</code> を作成する方法を見ていきましょう。</p>
 <div class="codehilite"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">llama_index.core.tools</span><span class="w"> </span><span class="kn">import</span> <span class="n">QueryEngineTool</span>
 
@@ -295,7 +289,7 @@ Unit 1 では、次のことを学びました。</p>
 
 <div class="callout callout-tip">
 <p class="callout-title">💡 ヒント</p>
-<p>エージェントやツールについて、さらに学びたいですか？<a href="https://docs.llamaindex.ai/en/stable/examples/agent/agent_workflow_basic/">AgentWorkflow Basic Introduction</a> や <a href="https://docs.llamaindex.ai/en/stable/understanding/agent/">Agent Learning Guide</a> では、ストリーミング、コンテキストのシリアライズ、human-in-the-loop などについて、さらに詳しく学べます！</p>
+<p>エージェントやツールについて、更に学びたいですか？<a href="https://docs.llamaindex.ai/en/stable/examples/agent/agent_workflow_basic/">AgentWorkflow Basic Introduction</a> や <a href="https://docs.llamaindex.ai/en/stable/understanding/agent/">Agent Learning Guide</a> では、ストリーミング、コンテキストのシリアライズ、human-in-the-loop などについて、更に詳しく学べます！</p>
 </div>
 <p>LlamaIndex におけるエージェントとツールの基本を理解しました。次は、LlamaIndex を使って<strong>設定可能で管理しやすいワークフローを作成する方法</strong>を見ていきましょう！</p>
 </article>
