@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Module 2：GitHub Actions 連携 | Hugging Face コース日本語版（デモ版）</title>
+<title>Module 2：GitHub Actions 連携 | Hugging Face コース日本語版</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&family=Zen+Kaku+Gothic+New:wght@400;500;700;900&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
@@ -22,12 +22,11 @@ window.MathJax = { tex: { inlineMath: [['$', '$'], ['\\(', '\\)']], displayMath:
       <input type="search" class="search-input" placeholder="コース内を検索" aria-label="サイト内検索" autocomplete="off">
       <div class="search-results" hidden></div>
     </div>
-    <span class="demo-badge">デモ版</span>
   </div>
 </header>
 <div class="layout">
 <aside class="sidebar">
-<div class="sidebar-course"><a href="../index.html">MCP コース</a><br><span class="badge badge-qa-wip">翻訳済み・QA進行中（未検証の部分を含みます）</span></div>
+<div class="sidebar-course"><a href="../index.html">MCP コース</a><br><span class="badge badge-qa-pass">翻訳QA 最終合格</span></div>
 <p class="side-group">0. MCP コースへようこそ</p>
 <ul class="side-list">
 <li><a class="side-link" href="../unit0/introduction.html">🤗 Model Context Protocol（MCP）コースへようこそ</a></li>
@@ -37,11 +36,11 @@ window.MathJax = { tex: { inlineMath: [['$', '$'], ['\\(', '\\)']], displayMath:
 <li><a class="side-link" href="../unit1/introduction.html">Model Context Protocol（MCP）入門</a></li>
 <li><a class="side-link" href="../unit1/key-concepts.html">主要な概念と用語</a></li>
 <li><a class="side-link" href="../unit1/architectural-components.html">MCP のアーキテクチャコンポーネント</a></li>
-<li><a class="side-link" href="../unit1/quiz1.html">クイズ 1: MCP の基礎</a></li>
+<li><a class="side-link" href="../unit1/quiz1.html">クイズ 1：MCP の基礎</a></li>
 <li><a class="side-link" href="../unit1/communication-protocol.html">通信プロトコル</a></li>
 <li><a class="side-link" href="../unit1/capabilities.html">MCP の機能（Capabilities）を理解する</a></li>
 <li><a class="side-link" href="../unit1/sdk.html">MCP SDK</a></li>
-<li><a class="side-link" href="../unit1/quiz2.html">クイズ 2: MCP SDK</a></li>
+<li><a class="side-link" href="../unit1/quiz2.html">クイズ 2：MCP SDK</a></li>
 <li><a class="side-link" href="../unit1/mcp-clients.html">MCP クライアント</a></li>
 <li><a class="side-link" href="../unit1/hf-mcp-server.html">Hugging Face MCP Server</a></li>
 <li><a class="side-link" href="../unit1/gradio-mcp.html">Gradio の MCP 統合</a></li>
@@ -73,26 +72,26 @@ window.MathJax = { tex: { inlineMath: [['$', '$'], ['\\(', '\\)']], displayMath:
 <li><a class="side-link" href="../unit3_1/introduction.html">Hugging Face Hub でプルリクエストエージェントを作る</a></li>
 <li><a class="side-link" href="../unit3_1/setting-up-the-project.html">プロジェクトのセットアップ</a></li>
 <li><a class="side-link" href="../unit3_1/creating-the-mcp-server.html">MCP サーバーの作成</a></li>
-<li><a class="side-link" href="../unit3_1/quiz1.html">クイズ1: MCP サーバーの実装</a></li>
+<li><a class="side-link" href="../unit3_1/quiz1.html">クイズ1：MCP サーバーの実装</a></li>
 <li><a class="side-link" href="../unit3_1/mcp-client.html">MCP クライアント</a></li>
 <li><a class="side-link" href="../unit3_1/webhook-listener.html">Webhook リスナー</a></li>
-<li><a class="side-link" href="../unit3_1/quiz2.html">クイズ2: プルリクエストエージェントの統合</a></li>
+<li><a class="side-link" href="../unit3_1/quiz2.html">クイズ2：プルリクエストエージェントの統合</a></li>
 <li><a class="side-link" href="../unit3_1/conclusion.html">まとめ</a></li>
 </ul>
 </aside>
 <main class="container">
 <p class="course-crumb"><a href="../index.html">MCP コース</a>
-<span class="badge badge-qa-wip">翻訳済み・QA進行中（未検証の部分を含みます）</span></p>
+<span class="badge badge-qa-pass">翻訳QA 最終合格</span></p>
 <nav class="page-nav"><a class="nav-link prev" href="build-mcp-server.html">← 前へ: Module 1：MCP サーバーの構築</a><a class="nav-link toc-link" href="../index.html">目次へ</a><a class="nav-link next" href="slack-notification.html">次へ →: Module 3：Slack 通知</a></nav>
 <article class="content">
 <h1>Module 2：GitHub Actions 連携</h1>
 <h2>静かな失敗の襲来</h2>
 <p>CodeCraft Studios での2週目。Module 1 の PR Agent は、すでに開発者がより良いプルリクエストを書く手助けをしています。Sarah の最新の PR は明確な説明のおかげで、Mike の調査時間を20分節約しました。チームは大喜びです！</p>
 <p>しかし、そのとき災難が襲います。</p>
-<p>金曜の午後、重大なバグが本番環境に到達しました。決済システムがダウンし、顧客から苦情が寄せられ、チームは慌てて調査に乗り出します。ストレスの多い2時間を経て、根本原因が判明しました。火曜日の CI 実行で起きたテストの失敗を、誰も気づいていなかったのです。</p>
+<p>金曜の午後、重大なバグが本番環境に到達しました。決済システムがダウンし、顧客から苦情が寄せられ、チームは慌てて調査に乗り出します。緊張の続く2時間の調査を経て、根本原因が判明しました。火曜日の CI 実行でテストが失敗していたことに、誰も気づいていなかったのです。</p>
 <p>「どうして見逃したんだ？」チームリーダーは GitHub Actions をスクロールしながら尋ねます。「テストが失敗していたのは明らかだ。でも47ものリポジトリと毎日数十のコミットがある中で、すべてのビルドを確認する時間なんて誰にある？」</p>
-<p>チームは、CI/CD パイプラインのリアルタイムな可視化が必要だと気づきます。しかし、すべてのプロジェクトの GitHub Actions を手動で確認するのはスケールしません。問題を監視し、即座に知らせてくれる自動化が必要です。</p>
-<p><strong>あなたのミッション</strong>：MCP サーバーに webhook 機能を拡張して GitHub Actions を監視し、二度と失敗を見逃さないようにすることです。</p>
+<p>チームは、CI/CD パイプラインの状態をリアルタイムで把握する必要があると気づきます。しかし、すべてのプロジェクトの GitHub Actions を手動で確認する方法では、プロジェクト数が増えると対応しきれません。問題を監視し、即座に知らせてくれる自動化が必要です。</p>
+<p><strong>あなたのミッション</strong>：MCP サーバーに webhook 機能を追加して GitHub Actions を監視し、二度と失敗を見逃さないようにすることです。</p>
 <h2>構築するもの</h2>
 <p>このモジュールは、静的なファイル分析（Module 1）と動的なチーム通知（Module 3）の橋渡しをします。PR Agent を包括的な開発モニタリングシステムへと変える、リアルタイム機能を追加します。</p>
 <p>Module 1 で作った基盤の上に、以下を追加します。
@@ -103,15 +102,15 @@ window.MathJax = { tex: { inlineMath: [['$', '$'], ['\\(', '\\)']], displayMath:
 <h3>スクリーンキャスト：リアルタイム CI/CD モニタリングの実演！ 🎯</h3>
 <div class="youtube-embed"><iframe src="https://www.youtube-nocookie.com/embed/XIEnmCicFXk" title="YouTube video" loading="lazy" allowfullscreen referrerpolicy="strict-origin-when-cross-origin"></iframe></div>
 <p><strong>セットアップ</strong>：CodeCraft Studios の新しいシステムが、本番環境に到達する前に失敗を捕える様子をご覧ください。
-1. <strong>GitHub Webhooks</strong> - サーバーへイベントを送る実際の webhook 設定を見る
-2. <strong>失敗したテスト</strong> - 以前は見逃されていた赤い X も、もう見逃さない！
-3. <strong>ローカル開発</strong> - webhook サーバーと Cloudflare トンネルが連携して動作する</p>
+1. <strong>GitHub Webhooks</strong>：サーバーへイベントを送る実際の webhook 設定を見る
+2. <strong>失敗したテスト</strong>：以前は見逃されていた赤い X も、もう見逃さない！
+3. <strong>ローカル開発</strong>：webhook サーバーと Cloudflare トンネルが連携して動作する</p>
 <p><strong>リアルタイムな MCP の魔法</strong>：Claude は3つの重要なリクエストに応答します。
-- <strong>"What GitHub Actions events have we received?"</strong> - Claude が新しいツールを使って最近のアクティビティを確認する
-- <strong>"Analyze CI Results"</strong> - Claude がテストの失敗を掘り下げ、実用的な洞察を提供する様子を見る
-- <strong>"Create Deployment Summary"</strong> - MCP Prompts が、チーム向けの分かりやすい更新の作成を Claude に案内する様子を見る</p>
+- <strong>"What GitHub Actions events have we received?"</strong>：Claude が新しいツールを使って最近のアクティビティを確認する
+- <strong>"Analyze CI Results"</strong>：Claude がテストの失敗を掘り下げ、実用的な洞察を提供する様子を見る
+- <strong>"Create Deployment Summary"</strong>：MCP Prompts が、チーム向けの分かりやすい更新の作成を Claude に案内する様子を見る</p>
 <p><strong>静かな失敗はもう終わり</strong> 🚨：火曜日の失敗したテストにあった、あの重大なバグを覚えていますか？このシステムがあれば、Claude は即座に捕えていたはずです。スクリーンキャストでは、MCP サーバーが GitHub の生の webhook データを、明確で実用的なアラートに変換する様子をまさに示しています。</p>
-<p><strong>何が特別なのか</strong>：Module 1 の PR Agent は静的でした。頼まれたときにコードを分析するだけでした。この Module 2 の拡張は動的です。CI/CD パイプラインを24時間体制で監視し、Claude がリアルタイムな洞察を提供する手助けをします。金曜午後のサプライズはもう終わりです！</p>
+<p><strong>何が特別なのか</strong>：Module 1 の PR Agent は静的な仕組みで、依頼されたときにだけコードを分析していました。一方、Module 2 で追加する機能は動的です。CI/CD パイプラインを24時間体制で監視し、Claude がリアルタイムで状況を分析できるようにします。金曜の午後になって突然、重大な問題が発覚するような事態も防げます！</p>
 <h2>学習目標</h2>
 <p>このモジュールの終わりには、以下を理解できるようになります。
 1. MCP サーバーと並行して webhook サーバーを実行する方法
@@ -119,14 +118,14 @@ window.MathJax = { tex: { inlineMath: [['$', '$'], ['\\(', '\\)']], displayMath:
 3. 標準化されたワークフローのための MCP Prompts の作り方
 4. ローカルの webhook テストに Cloudflare Tunnel を使う方法</p>
 <h2>前提条件</h2>
-<p>Module 1 の作業を直接土台にするので、以下を用意してください。
-- <strong>Module 1：MCP サーバーの構築を完了していること</strong> - 同じコードベースを拡張します
-- <strong>GitHub Actions の基本的な理解</strong> - CI/CD ワークフローとは何かを知っておく必要があります
-- <strong>Actions が有効な GitHub リポジトリ</strong> - シンプルなワークフローファイルでも問題ありません
-- <strong>Cloudflare Tunnel（cloudflared）がインストールされていること</strong> - ローカルの webhook サーバーを GitHub に公開します</p>
+<p>Module 1 で作成したものをそのまま引き継いで開発するため、以下を用意してください。
+- <strong>Module 1：MCP サーバーの構築を完了していること</strong>：同じコードベースを拡張します
+- <strong>GitHub Actions の基本的な理解</strong>：CI/CD ワークフローとは何かを知っておく必要があります
+- <strong>Actions が有効な GitHub リポジトリ</strong>：シンプルなワークフローファイルでも問題ありません
+- <strong>Cloudflare Tunnel（cloudflared）がインストールされていること</strong>：ローカルの webhook サーバーを GitHub に公開します</p>
 <h2>主要概念</h2>
 <h3>MCP Prompts</h3>
-<p>Prompts は、複雑なワークフローを Claude に案内する、再利用可能なテンプレートです。Tools（Claude が自動的に呼び出す）とは異なり、Prompts はユーザーが開始するもので、構造化されたガイダンスを提供します。</p>
+<p>Prompts は、Claude が複雑なワークフローに沿って作業できるようにする、再利用可能なテンプレートです。Tools（Claude が自動的に呼び出す）とは異なり、Prompts はユーザーが呼び出すもので、作業を進めるための構造化された指示を提供します。</p>
 <p>使用例：
 - CI/CD の結果を一貫して分析する
 - 標準化されたデプロイ要約を作成する
@@ -134,11 +133,11 @@ window.MathJax = { tex: { inlineMath: [['$', '$'], ['\\(', '\\)']], displayMath:
 <h3>Webhook 連携</h3>
 <p>MCP サーバーでは2つのサービスを実行します。
 1. MCP サーバー（Claude と通信する）
-2. ポート8080の webhook サーバー（GitHub イベントを受信する）</p>
+2. ポート 8080 の webhook サーバー（GitHub イベントを受信する）</p>
 <p>これにより、Claude はリアルタイムの CI/CD イベントに反応できます！</p>
 <div class="callout callout-tip">
 <p class="callout-title">💡 ヒント</p>
-<p><strong>アーキテクチャの洞察</strong>：MCP 通信と webhook 処理に別々のサービスを使うのは、きれいな関心の分離です。webhook サーバーが HTTP の複雑さを処理し、MCP サーバーはデータ分析と Claude 連携に集中します。</p>
+<p><strong>アーキテクチャの洞察</strong>：MCP 通信と webhook 処理を別々のサービスに分けることで、それぞれの責務を明確に分離できます。webhook サーバーが複雑な HTTP 処理を担当し、MCP サーバーはデータ分析と Claude との連携に集中します。</p>
 </div>
 <h2>プロジェクト構成</h2>
 <div class="codehilite"><pre><span></span><code>github-actions-integration/
@@ -155,8 +154,8 @@ window.MathJax = { tex: { inlineMath: [['$', '$'], ['\\(', '\\)']], displayMath:
 <h2>実装ステップ</h2>
 <h3>ステップ1：Webhook サーバーをセットアップして実行する</h3>
 <p>既存のファイルを扱った Module 1 とは異なり、このモジュールではリアルタイムのイベント処理を導入します。スターターコードには以下が含まれています。
-- <strong>あなたの Module 1 の実装</strong> - 既存の PR 分析ツールすべて
-- <strong>完全な webhook サーバー</strong>（<code>webhook_server.py</code>）- GitHub イベントを受信する準備ができている</p>
+- <strong>あなたの Module 1 の実装</strong>：既存の PR 分析ツールすべて
+- <strong>完全な webhook サーバー</strong>（<code>webhook_server.py</code>）：GitHub イベントを受信する準備ができている</p>
 <ol>
 <li>
 <p>依存関係をインストールする（Module 1 と同じ）：
@@ -174,7 +173,7 @@ window.MathJax = { tex: { inlineMath: [['$', '$'], ['\\(', '\\)']], displayMath:
 - 受信した各 GitHub webhook（push、pull request、ワークフロー完了など）は JSON ファイルに追加される
 - イベントはタイムスタンプ付きで保存され、最近のアクティビティを見つけやすい
 - ファイルは、MCP ツールが読み取って分析できるシンプルなイベントログとして機能する
-- データベースは不要 - すべてシンプルで読みやすい JSON 形式で保存される</p>
+- データベースは不要で、すべてのイベントをシンプルで読みやすい JSON 形式で保存する</p>
 <h3>ステップ2：イベントストレージに接続する</h3>
 <p>次に、MCP サーバー（Module 1 のもの）を webhook データに接続します。これは HTTP リクエストを直接処理するよりもはるかに簡単です。webhook サーバーが面倒な処理をすべて担い、イベントを JSON ファイルに保存してくれるからです。</p>
 <p>webhook イベントを読み取るためのパスを追加します。</p>
@@ -188,7 +187,7 @@ window.MathJax = { tex: { inlineMath: [['$', '$'], ['\\(', '\\)']], displayMath:
 <p><strong>開発のヒント</strong>：HTTP リクエストの代わりにファイルを使うと、テストがはるかに簡単になります。webhook をセットアップしなくても、<code>github_events.json</code> に手動でイベントを追加してツールをテストできます。</p>
 </div>
 <h3>ステップ3：GitHub Actions ツールを追加する</h3>
-<p>Module 1 でファイル分析用のツールを作ったように、今度は CI/CD 分析用のツールを作ります。これらのツールは既存の PR 分析ツールと並んで動作し、Claude にコード変更とビルドステータスの両方の完全なビューを提供します。</p>
+<p>Module 1 ではファイル分析用のツールを作りましたが、今度は CI/CD 分析用のツールを作ります。これらのツールは既存の PR 分析ツールと連携して動作し、Claude がコードの変更内容とビルドの状態をまとめて把握できるようにします。</p>
 <div class="callout callout-tip">
 <p class="callout-title">💡 ヒント</p>
 <p><strong>注意</strong>：スターターコードには Module 1 の出力制限の修正がすでに含まれているため、トークン上限エラーには遭遇しません。このモジュールの新しい概念に集中してください！</p>
@@ -198,13 +197,13 @@ window.MathJax = { tex: { inlineMath: [['$', '$'], ['\\(', '\\)']], displayMath:
 <li>
 <p><strong><code>get_recent_actions_events</code></strong>： 
    - <code>EVENTS_FILE</code> から読み取る
-   - 最新のイベントを返す（上限まで）
+   - 新しいイベントから順に、指定された上限件数まで返す
    - ファイルが存在しない場合は空のリストを返す</p>
 </li>
 <li>
 <p><strong><code>get_workflow_status</code></strong>： 
    - ファイルからすべてのイベントを読み取る
-   - workflow_run イベントでフィルタする
+   - <code>workflow_run</code> イベントでフィルタする
    - ワークフロー名でグループ化し、最新のステータスを表示する</p>
 </li>
 </ol>
@@ -253,7 +252,7 @@ window.MathJax = { tex: { inlineMath: [['$', '$'], ['\\(', '\\)']], displayMath:
 - 前回の実行からの経過時間を表示する</p>
 <h3>演習3：通知システム</h3>
 <p>以下を行うツールを追加してください。
-- どのイベントが「確認済み」かを追跡する
+- どのイベントが「閲覧済み」かを追跡する
 - 新しい失敗を強調表示する
 - どのチームメンバーに通知すべきかを提案する</p>
 <h2>よくある問題</h2>
@@ -271,14 +270,14 @@ window.MathJax = { tex: { inlineMath: [['$', '$'], ['\\(', '\\)']], displayMath:
 <h3>Webhook サーバーの問題</h3>
 <ul>
 <li>webhook_server.py が別のターミナルで動いているか確認する</li>
-<li>ポート8080が空いているか確認する： <code>lsof -i :8080</code></li>
+<li>ポート 8080 が空いているか確認する：<code>lsof -i :8080</code></li>
 <li>イベントファイルは、最初のイベントを受信したときに自動で作成される</li>
 </ul>
 <h2>次のステップ</h2>
 <p>素晴らしい仕事です！MCP サーバーにリアルタイム機能を追加することに成功しました。今や、あなたのシステムは次のことができます。</p>
 <ul>
-<li><strong>コード変更を分析する</strong>（Module 1 より） </li>
-<li><strong>CI/CD イベントをリアルタイムで監視する</strong>（このモジュールより）</li>
+<li><strong>コード変更を分析する</strong>（Module 1 で実装した機能） </li>
+<li><strong>CI/CD イベントをリアルタイムで監視する</strong>（このモジュールで追加した機能）</li>
 <li><strong>MCP Prompts を使う</strong>ことで一貫したワークフローガイダンスを提供する</li>
 <li>クリーンなファイルベースのアーキテクチャで <strong>webhook イベントを処理する</strong></li>
 </ul>
@@ -292,13 +291,13 @@ window.MathJax = { tex: { inlineMath: [['$', '$'], ['\\(', '\\)']], displayMath:
 <h3>次にやること：</h3>
 <ol>
 <li><code>/projects/unit3/github-actions-integration/solution/</code> の<strong>ソリューションを確認し</strong>、異なる実装アプローチを見る</li>
-<li><strong>プロンプトを実験する</strong> - さまざまな種類の GitHub イベントで使ってみる</li>
-<li><strong>連携をテストする</strong> - Module 1 のファイル分析ツールと Module 2 のイベントモニタリングを、Claude との1回の会話で組み合わせる</li>
-<li><strong>Module 3 へ進む</strong> - Slack 連携によるチーム通知を追加して、自動化パイプラインを完成させる</li>
+<li><strong>プロンプトの使い方を試す</strong>：さまざまな種類の GitHub イベントに対して使ってみる</li>
+<li><strong>連携をテストする</strong>：Module 1 のファイル分析ツールと Module 2 のイベントモニタリングを、Claude との1回の会話で組み合わせる</li>
+<li><strong>Module 3 へ進む</strong>：Slack 連携によるチーム通知を追加して、自動化パイプラインを完成させる</li>
 </ol>
 <p>Module 3 では、すべてを統合し、チームが実際に使える完全なワークフローに仕上げます！</p>
 <h3>物語は続きます…</h3>
-<p>モニタリングシステムが稼働しています！CodeCraft Studios は今や CI/CD の失敗をリアルタイムで捕え、チームはデプロイにずっと自信を持てるようになりました。しかし来週、新たな課題がやってきます。情報のサイロが、作業の重複や機会損失の原因となっているのです。Module 3 では、全員に情報を届けるインテリジェントなチーム通知で自動化システムを完成させます。</p>
+<p>モニタリングシステムが稼働しています！CodeCraft Studios では CI/CD の失敗をリアルタイムで検知できるようになり、チームも以前より安心してデプロイできるようになりました。しかし来週、新たな課題が生じます。チーム間で情報が共有されていないために、作業の重複や機会損失が発生しているのです。Module 3 では、重要な情報をチーム全員に届けるスマートな通知機能を追加し、自動化システムを完成させます。</p>
 <h2>追加リソース</h2>
 <ul>
 <li><a href="https://modelcontextprotocol.io/docs/concepts/prompts">MCP Prompts ドキュメント</a></li>
@@ -312,7 +311,7 @@ window.MathJax = { tex: { inlineMath: [['$', '$'], ['\\(', '\\)']], displayMath:
 <footer class="site-footer">
   <p>原典: Hugging Face huggingface/mcp-course（<a href="https://github.com/huggingface/mcp-course">https://github.com/huggingface/mcp-course</a>）</p>
   <p>日本語版の翻訳・公開: 霞ヶ関京 / 連絡先: GitHub <a href="https://github.com/yanikasumin">@yanikasumin</a> / YouTube <a href="https://www.youtube.com/@KASUMI_MOF">@KASUMI_MOF</a></p>
-  <p class="demo-note">このサイトはデモ版です。内容は順次更新されます。</p>
+  <p>日本語版は全5コースの翻訳・QAが完了しています。</p>
 </footer>
 <script src="../../site.js"></script>
 </body>
