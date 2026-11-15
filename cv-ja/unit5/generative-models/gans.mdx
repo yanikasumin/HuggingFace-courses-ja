@@ -1,0 +1,58 @@
+# 敵対的生成ネットワーク
+
+## はじめに
+敵対的生成ネットワーク（GAN）は、[Ian Goodfellow](https://scholar.google.ca/citations?user=iYN86KEAAAAJ&hl=en) らが2014年に発表した深層学習モデルの一種です。GAN の基本的な考え方は、実データと見分けがつかないデータを作る生成ネットワークと、実データと生成データを見分ける識別ネットワークを、同時に学習させることです。
+* **アーキテクチャの概要：** GAN は、`生成器（generator）` と `識別器（discriminator）` の2つの主要な要素から構成されます。
+* **生成器：** 生成器はランダムノイズ \\(z\\) を入力として受け取り、合成データサンプルを生成します。その目標は、識別器を欺けるほど現実的なデータを作ることです。
+* **識別器：** 識別器は探偵のような役割で、与えられたサンプルが本物（実際のデータセット由来）か偽物（生成器が生成したもの）かを評価します。その目標は、実サンプルと生成サンプルをますます正確に見分けられるようになることです。
+
+GAN はよく、贋作を作る画家（生成器）と、その贋作の欠点を見つけて偽物だと見抜こうとする美術鑑定家や評論家（識別器）に例えられます。
+
+![Lilian Weng の GAN の図](https://huggingface.co/datasets/hf-vision/course-assets/resolve/main/generative_models/GAN.png)
+
+## GAN と VAE の比較
+GAN と VAE はどちらも機械学習でよく使われる生成モデルですが、長所と短所が異なります。どちらが「優れている」かは、具体的なタスクや要件によって異なります。以下に、それぞれの長所と短所をまとめます。
+* **画像生成：**
+    - **GAN：**
+        * **長所：** より高品質な画像を生成でき、特にシャープなディテールや現実的なテクスチャを持つ複雑なデータで優れています。
+        * **短所：** 学習が難しく、不安定になりやすい傾向があります。
+        * **例：** GAN で生成された寝室の画像は本物と見分けがつかないほどである可能性が高い一方、VAE で生成された寝室はぼやけていたり、照明が非現実的だったりすることがあります。
+        ![GAN で生成された寝室の例（Unsupervised Representation Learning with Deep Convolutional Generative Adversarial Networks, 2015 より）](https://huggingface.co/datasets/hf-vision/course-assets/resolve/main/generative_models/bedroom.png)
+    - **VAE：**
+        * **長所：** GAN よりも学習が容易で安定しています。
+        * **短所：** ぼやけていてディテールに乏しく、非現実的な特徴を持つ画像を生成することがあります。
+* **その他のタスク：**
+    - **GAN：**
+        * **長所：** 超解像や画像変換（image-to-image translation）のようなタスクに使えます。
+        * **短所：** データ点同士の滑らかな遷移が必要なタスクには最適な選択とはいえません。
+    - **VAE：**
+        * **長所：** 画像のノイズ除去や異常検知のようなタスクで広く使われています。
+        * **短所：** 高品質な画像生成が必要なタスクでは、GAN ほど効果的ではない場合があります。
+
+主な違いを表にまとめます。
+
+|特徴|GAN|VAE|
+|-------|-----|---|
+|画質|高い|低い|
+|学習の容易さ|難しい|易しい|
+|安定性|低め|高め|
+|用途|画像生成、超解像、画像変換|画像ノイズ除去、異常検知、信号解析|
+
+最終的に、最良の選択は具体的なニーズと優先順位次第です。現実的な顔や風景を生成するようなタスクで高品質な画像が必要なら、GAN の方が良い選択でしょう。一方、学習が容易で安定したモデルが必要なら、VAE の方が良い選択肢かもしれません。
+
+## GAN の学習
+GAN の学習は、生成器と識別器が追いかけっこを繰り広げる、独特な敵対的プロセスです。
+
+* **敵対的学習プロセス：** 生成器と識別器は同時に学習します。生成器は実データと見分けがつかないデータを生成することを目指し、識別器は本物と偽物を見分ける能力を向上させようとします。
+* **目的関数：** 学習プロセスは、生成器と識別器の両方を最適化するために使われる、min-max ゲーム型の目的関数によって導かれます。生成器は、識別器が生成サンプルを偽物と正しく分類する確率を最小化しようとし、識別器はこの確率を最大化しようとします。この目的関数は次のように表されます。
+$$\min_G \max_D L(D, G)=\mathbb{E}_{x \sim p_{r}(x)} [\log D(x)] + \mathbb{E}_{x \sim p_g(x)} [\log(1 - D(x))]$$
+ここで、識別器はこの損失関数を最大化しようとし、生成器は最小化しようとします。これが敵対的な性質の由来です。
+* **反復的な改善：** 学習が進むにつれて、生成器は現実的なサンプルを生成するのが上手くなり、識別器はより目が利くようになります。この敵対的なループは、生成器が実データと実質的に見分けがつかないデータを生成できるようになるまで続きます。
+
+## 参考文献
+1. [Lilian Weng's Awesome Blog on GANs](https://lilianweng.github.io/posts/2017-08-20-gan/)
+2. [GAN — What is Generative Adversarial Networks](https://jonathan-hui.medium.com/gan-whats-generative-adversarial-networks-and-its-application-f39ed278ef09)
+3. [What are the fundamental differences between VAE and GAN for image generation?](https://ai.stackexchange.com/questions/25601/what-are-the-fundamental-differences-between-vae-and-gan-for-image-generation)
+4. [Issues with GAN and VAE models](https://stats.stackexchange.com/questions/541775/issues-with-gan-and-vae-models)
+5. [VAE Vs. GAN For Image Generation](https://www.baeldung.com/cs/vae-vs-gan-image-generation)
+6. [Diffusion Models vs. GANs vs. VAEs: Comparison of Deep Generative Models](https://towardsai.net/p/machine-learning/diffusion-models-vs-gans-vs-vaes-comparison-of-deep-generative-models)

@@ -1,0 +1,136 @@
+# Stable Diffusion 入門
+この章では、テキストや画像のプロンプトから独自の写実的な画像を生成する AI モデル、Stable Diffusion の構成要素を紹介します。Stable Diffusion は、[この論文](https://arxiv.org/pdf/2112.10752.pdf)の発表を経て、[Stability AI](https://stability.ai/)、[RunwayML](https://runwayml.com/)、ミュンヘン大学（LMU）の CompVis グループの協力により、2022年に公開されました。
+
+この章で学ぶこと：
+- Stable Diffusion の基本的な構成要素
+- `text-to-image`、`image2image`、インペインティングパイプラインの使い方
+
+## Stable Diffusion が動作するために必要なもの
+Stable Diffusion の基本的な仕組みを理解するために、いくつかの質問に答えながら、主要な構成要素を見ていきましょう。
+各構成要素はすでに Diffusers コースで取り上げられているため、ここでは簡潔に議論します。また、GAN と拡散モデルについて詳しく述べた前のセクションも参照できます。
+
+- Stable Diffusion は新しい情報を学習するためにどのような戦略を使いますか。
+    - 拡散モデルの順方向プロセスと逆方向プロセスを使います。順方向プロセスでは、画像にガウスノイズを加えていき、最後にはランダムノイズだけが残ります。通常、ノイズが加わった最終的な画像を見分けることはできません。
+    - 逆方向プロセスでは、学習済みのニューラルネットワークを使い、純粋なノイズから少しずつノイズを取り除いて、最終的に実際の画像に相当するものを生成します。
+
+これらのプロセスはどちらも有限のステップ数 `T` の間行われます（DDPM の論文では T=1000）。プロセスは時刻 \\(t_0\\) に、データ分布から実際の画像をサンプリングすることから始まります。順方向プロセスでは、各時刻 t にガウス分布からノイズをサンプリングし、前の時刻の画像に加えます。より数学的な直感を得るには、拡散モデルに関する [Hugging Face Blog](https://huggingface.co/blog/annotated-diffusion) を読んでください。
+
+- 画像が巨大になりうる中で、どうやって圧縮するのでしょうか。
+
+画像が大きくなるほど、処理に必要な計算量も増えます。特に、self-attention（自己注意機構）という処理では、この傾向が顕著です。画像のサイズが大きくなると、必要な計算量は急激に増えます。数学では、このような増え方を「二次的な増加（quadratic growth）」と呼びます。
+例えば、幅と高さが 128 ピクセルの画像は、幅と高さが 64 ピクセルの画像の4倍のピクセルを持ちます。self-attention の仕組み上、この大きな画像を扱うには単に4倍のメモリと計算能力で済むのではなく、実際には16倍（4×4=16）が必要になります。このため、処理に多くのリソースを必要とする非常に高解像度の画像を扱うことは困難です。
+潜在拡散モデルは、変分オートエンコーダ（VAE）を使って画像を小さく圧縮し、大きな画像を処理する際の計算負荷を減らします。画像には、重複した情報や不要な情報が含まれていることが少なくありません。大量のデータで学習した VAE は、画像の重要な特徴を残しながら、元の画像をずっと小さな表現に圧縮できます。
+
+- プロンプトを使っている以上、テキストと画像をどうやって融合するのでしょうか。
+
+推論時には、生成したい画像の説明文と、出発点となる純粋なノイズをモデルに入力します。モデルはノイズを徐々に取り除きながら、説明文に合った画像を生成しようとします。
+SD は、[CLIP](https://huggingface.co/learn/computer-vision-course/unit4/multimodal-models/clip-and-relatives/clip) と呼ばれるものに基づく、事前学習済みの Transformer モデルを活用します。CLIP のテキストエンコーダは、画像キャプションを、画像とテキストを比較するために使える形に処理するよう設計されているため、画像の説明から有用な表現を作るタスクに適しています。入力プロンプトはまずトークン化され（大きな語彙に基づいて、各単語やサブワードに特定のトークンが割り当てられます）、次に CLIP のテキストエンコーダに通され、トークンごとに 768 次元（SD 1.X の場合）または 1024 次元（SD 2.X）のベクトルが得られます。一貫性を保つため、プロンプトは常時 77 トークンの長さにパディング／切り詰めされ、そのため条件付けとして使う最終表現は、プロンプトごとに 77×1024 の形状のテンソルとなります。
+
+- 優れた帰納バイアスをどうやって組み込むのでしょうか。
+
+新しい画像、例えば写実的なポケモンを生成するには、学習時に見たアニメ調のポケモン画像とは異なる表現も作り出す必要があります。ここで役立つのが U-Net と self-attention（自己注意機構）です。モデルはノイズの加わった画像を受け取り、画像の説明文などの追加情報を使って、ノイズを取り除いた画像を予測します。では、こうした条件となる情報を、どのように U-Net に渡すのでしょうか。その役割を担うのが cross-attention（交差注意機構）です。U-Net の各所に cross-attention 層が組み込まれています。
+U-Net は画像内の各位置について、条件として与えられたテキストの異なるトークンに注意を向け、プロンプトから必要な情報を取り込むことができます。
+
+
+## Diffusers で `text-to-image`、`image-to-image`、インペインティングモデルを使う方法
+このセクションでは、役立つユースケースと、[Diffusers](https://github.com/huggingface/diffusers) ライブラリを使ってこれらのタスクを実行する方法を紹介します。
+- `text-to-image` 推論のステップ
+基本的な仕組みは、テキストプロンプトを入力すると、それに対応する画像が生成されるというものです。
+
+<iframe
+	src="https://hysts-controlnet-v1-1.hf.space/"
+	frameborder="0"
+	width="850"
+	height="450">
+</iframe>
+
+`diffusers` ライブラリを使えば、2ステップで `text-to-image` を動作させることができます。
+
+まず `diffusers` ライブラリをインストールしましょう。
+```bash
+pip install diffusers
+```
+
+次に、パイプラインを初期化し、プロンプトを渡して推論します。
+```python
+from diffusers import AutoPipelineForText2Image
+import torch
+
+pipeline = AutoPipelineForText2Image.from_pretrained(
+    "runwayml/stable-diffusion-v1-5", torch_dtype=torch.float16, variant="fp16"
+).to("cuda")
+generator = torch.Generator(device="cuda").manual_seed(31)
+image = pipeline(
+    "Astronaut in a jungle, cold color palette, muted colors, detailed, 8k",
+    generator=generator,
+).images[0]
+```
+
+- `image-to-image` 推論のステップ
+同様のやり方でパイプラインを初期化できますが、その代わりに画像とテキストプロンプトを渡します。
+```python
+import torch
+from diffusers import AutoPipelineForImage2Image
+from diffusers.utils import load_image, make_image_grid
+
+pipeline = AutoPipelineForImage2Image.from_pretrained(
+    "kandinsky-community/kandinsky-2-2-decoder",
+    torch_dtype=torch.float16,
+    use_safetensors=True,
+)
+pipeline.enable_model_cpu_offload()
+# xFormers がインストールされていない場合、または PyTorch 2.0 以上がインストールされている場合は次の行を削除してください
+pipeline.enable_xformers_memory_efficient_attention()
+
+# パイプラインに渡す画像を読み込む:
+init_image = load_image(
+    "https://huggingface.co/datasets/huggingface/documentation-images/resolve/main/diffusers/cat.png"
+)
+
+# プロンプトと画像をパイプラインに渡して画像を生成する:
+prompt = "cat wizard, gandalf, lord of the rings, detailed, fantasy, cute, adorable, Pixar, Disney, 8k"
+image = pipeline(prompt, image=init_image).images[0]
+make_image_grid([init_image, image], rows=1, cols=2)
+```
+
+- インペインティングのステップ
+インペインティングパイプラインには、元の画像、テキストプロンプト、画像内の対象物に対応するマスクを渡します。マスクは、画像のどの部分を修復・編集するかを指定するためのものです。
+この例では、生成画像に含めたくない内容を指定するために、ネガティブプロンプトも渡します。
+```python
+# パイプラインを読み込む
+import torch
+from diffusers import AutoPipelineForInpainting
+from diffusers.utils import load_image, make_image_grid
+
+pipeline = AutoPipelineForInpainting.from_pretrained(
+    "kandinsky-community/kandinsky-2-2-decoder-inpaint", torch_dtype=torch.float16
+)
+pipeline.enable_model_cpu_offload()
+# xFormers がインストールされていない場合、または PyTorch 2.0 以上がインストールされている場合は次の行を削除してください
+pipeline.enable_xformers_memory_efficient_attention()
+
+# ベース画像とマスク画像を読み込む:
+init_image = load_image(
+    "https://huggingface.co/datasets/huggingface/documentation-images/resolve/main/diffusers/inpaint.png"
+)
+mask_image = load_image(
+    "https://huggingface.co/datasets/huggingface/documentation-images/resolve/main/diffusers/inpaint_mask.png"
+)
+
+# 画像をインペインティングするためのプロンプトを作成し、ベース画像とマスク画像とともにパイプラインに渡す:
+prompt = (
+    "a black cat with glowing eyes, cute, adorable, disney, pixar, highly detailed, 8k"
+)
+negative_prompt = "bad anatomy, deformed, ugly, disfigured"
+image = pipeline(
+    prompt=prompt,
+    negative_prompt=negative_prompt,
+    image=init_image,
+    mask_image=mask_image,
+).images[0]
+make_image_grid([init_image, mask_image, image], rows=1, cols=3)
+```
+
+### さらに読む
+- [Diffusers ドキュメント](https://huggingface.co/docs/diffusers/using-diffusers/pipeline_overview)
+- [Diffusers のインストール](https://huggingface.co/docs/diffusers/installation)

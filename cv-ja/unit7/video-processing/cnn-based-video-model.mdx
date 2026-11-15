@@ -1,0 +1,134 @@
+# CNN ベースのビデオモデル
+
+### 全体的な傾向：
+
+深層学習、特に ImageNet のような大規模データセットで訓練された CNN は、画像認識に革命をもたらしました。その成果はビデオ処理にも広がっています。しかし、ビデオには静止画像と異なり、時間という次元があります。この違いによって、静止画像向けに訓練された CNN では対応しにくい新たな課題が生じました。
+
+# ビデオ処理における過去の SOTA モデル
+
+## Two-Stream Network（2014）
+
+<div class="flex justify-center">
+<img src="https://huggingface.co/datasets/hf-vision/course-assets/resolve/main/previous sota models/SOTA Models Two-Stream architecture for video classification.png" alt="ビデオ分類のための Two-Stream アーキテクチャ">
+</div>
+
+この論文は、深層畳み込みネットワーク（ConvNets）を拡張し、ビデオデータで行動認識を行えるようにしました。
+
+この研究で提案された Two-Stream Network は、ニューラルネットワーク内に2つの独立した処理経路を持つアーキテクチャです。
+
+- **空間ストリーム（Spatial Stream）：** 標準的な 2D CNN で個々のフレームを処理し、見た目の情報を捉えます。
+- **時間ストリーム（Temporal Stream）：** 2D CNN または別のネットワークで、複数のフレーム列（オプティカルフロー）を処理し、動きの情報を捉えます。
+- **融合（Fusion）：** 両ストリームの出力を組み合わせ、見た目と動きの両方の手がかりを、行動認識のようなタスクに活かします。
+
+## 3D ResNets（2017）
+
+<div class="flex justify-center">
+<img src="https://huggingface.co/datasets/hf-vision/course-assets/resolve/main/previous sota models/SOTA Models Residual block. Shortcut connections bypass a signal from the top of the block to the tail. Signals are summed at the tail..png" alt="残差ブロック。ショートカット接続によって信号がブロック内部の層を迂回し、ブロックの末尾で元の経路からの信号と加算されます。">
+</div>
+
+標準的な 3D CNN は、2D の空間方向に時間方向を加えた 3D カーネルを使い、空間情報と時間情報を同時に捉えるモデルです。ただし、パラメータ数が多いため、訓練時の計算負荷が高く、2D CNN よりも処理に時間がかかります。そのため、3D ConvNet は、深い 2D CNN と比べて層数を少なくするのが一般的です。
+
+この論文では、ResNet のアーキテクチャを 3D CNN に応用しています。これにより、3D CNN の層をさらに深くできるようになり、認識精度も向上しました。
+
+実験では、3D ResNets（特に ResNet-34 のような深いもの）が、特に大規模データセットにおいて、[C3D](https://arxiv.org/abs/1412.0767) のようなモデルを上回ることが示されました。Sports-1M C3D のような事前学習済みモデルは、小規模データセットでの過学習を緩和するのに役立ちます。全体として、3D ResNets はより深いアーキテクチャを効果的に活かし、ビデオデータの複雑な時空間パターンを捉えます。
+
+| 手法 | 検証データセット |  |  | テストデータセット |  |  |
+| --- | --- | --- | --- | --- | --- | --- |
+|  | Top-1 | Top-5 | 平均 | Top-1 | Top-5 | 平均 |
+| 3D ResNet-34 | 58.0 | 81.3 | **69.7** | - | - | **68.9** |
+| C3D* | 55.6 | 79.1 | 67.4 | 56.1 | 79.5 | 67.8 |
+| C3D w/ BN | 56.1 | 79.5 | 67.8 | - | - | - |
+| RGB-I3D w/o ImageNet | - | - | 68.4 | 88.0 | **78.2** |  |
+
+## (2+1)D ResNets（2017）
+
+<div class="flex justify-center">
+<img src="https://huggingface.co/datasets/hf-vision/course-assets/resolve/main/previous sota models/SOTA Models 3D vs (2+1)D convolution..png" alt="3D 畳み込みと (2+1)D 畳み込みの比較">
+</div>
+
+(2+1)D ResNets は3D ResNets に着想を得たものです。ただし、主な違いは層の構成方法にあります。このアーキテクチャは、2D畳み込みと1D畳み込みの組み合わせを導入します。
+
+- 2D畳み込みは、フレーム内の空間的特徴を捉えます。
+- 1D畳み込みは、連続するフレーム間の動きの情報を捉えます。
+
+このモデルは、ビデオデータから直接時空間特徴を学習でき、行動認識のようなビデオ分析タスクでより良い性能につながる可能性があります。
+
+- 利点：
+    - 2つの畳み込み演算の間に ReLU という非線形の活性化関数を追加します。これにより、パラメータ数が同じでも、通常の 3D 畳み込みを使うネットワークと比べて非線形な変換が2倍になり、より複雑な関数を表現できます。
+    - 分解によって最適化が容易になり、実際に訓練損失とテスト損失が低くなります。
+
+| 手法 | クリップ単位の Top-1 正解率 | ビデオ単位の Top-1 正解率 | ビデオ単位の Top-5 正解率 |
+| --- | --- | --- | --- |
+| DeepVideo | 41.9 | 60.9 | 80.2 |
+| C3D | 46.1 | 61.1 | 85.2 |
+| 2D ResNet-152 | 46.5 | 64.6 | 86.4 |
+| Conv pooling | - | 71.7 | 90.4 |
+| P3D | 47.9 | 66.4 | 87.4 |
+| R3D-RGB-8frame | 53.8 | - | - |
+| R(2+1)D-RGB-8frame | 56.1 | 72.0 | 91.2 |
+| R(2+1)D-Flow-8frame | 44.5 | 65.5 | 87.2 |
+| R(2+1)D-Two-Stream-8frame | - | 72.2 | 91.4 |
+| R(2+1)D-RGB-32frame | **57.0** | **73.0** | **91.5** |
+| R(2+1)D-Flow-32frame | 46.4 | 68.4 | 88.7 |
+| R(2+1)D-Two-Stream-32frame | - | **73.3** | **91.9** |
+
+# 現在の研究
+
+現在、研究者たちはより深い3D CNN アーキテクチャを探求しています。もう1つの有望なアプローチは、3D CNN を注意機構のような他の技術と組み合わせることです。それと並行して、[Kinetics](https://github.com/google-deepmind/kinetics-i3d) のような、より大規模なビデオデータセットの開発も進められています。
+Kinetics データセットは、人間の行動認識の研究でよく使われる、大規模で高品質なビデオデータセットです。幅広い人間の活動をカバーする数十万本のビデオクリップを含んでいます。
+
+# 現在の研究
+
+### 自己教師あり学習：**MoCo（Momentum Contrast）**
+
+<div class="flex justify-center">
+<img src="https://huggingface.co/datasets/hf-vision/course-assets/resolve/main/unit7 CNN based model/Self-Supervised Learning_MoCo.png" alt="3D 畳み込みと (2+1)D 畳み込みの比較">
+</div>
+
+**概要**
+
+[MoCo](https://arxiv.org/abs/1911.05722) は、自己教師あり学習の分野で著名なモデルで、対照学習のアプローチを使って、ラベルのないビデオクリップから特徴を抽出します。モーメンタムベースのキューを利用することで、大規模なビデオデータセットから効果的に学習し、行動認識やイベント検出といったタスクに最適です。
+
+**主な特徴**
+
+- **モーメンタムエンコーダ（Momentum Encoder）：** モーメンタムで更新されるエンコーダを使い、表現空間の一貫性を保ち、訓練の安定性を高めます。
+- **動的辞書（Dynamic Dictionary）：** キューを使った辞書によって、対照学習に必要な負例を大量に保持し、一貫した形で利用できるようにします。
+- **対照損失関数（Contrastive Loss Function）：** 対照損失を活用し、正例と負例のペアを比較することで、不変な特徴を学習します。
+
+### 効率的なビデオモデル：**X3D（Expanded 3D Networks）**
+
+<div class="flex justify-center">
+<img src="https://huggingface.co/datasets/hf-vision/course-assets/resolve/main/unit7 CNN based model/Efficient Video Models X3D (Expanded 3D Networks).png" alt="3D 畳み込みと (2+1)D 畳み込みの比較">
+</div>
+
+**概要**
+
+[X3D](https://arxiv.org/abs/2004.04730) は、ビデオ認識タスク向けに設計された軽量な3D ConvNet モデルです。3D CNN の概念を基盤としながら、高い性能を維持しつつ、パラメータ数を減らし計算コストを下げるよう最適化されています。そのため、リアルタイムのビデオ分析や、モバイルデバイス・エッジデバイスへのデプロイに適しています。
+
+**主な特徴**
+
+- **効率性：** パラメータ数を大幅に減らし、計算コストを抑えながら、高い精度を達成します。
+- **段階的な拡張（Progressive Expansion）：** ネットワークの次元（深さ、幅など）を体系的に拡張するアプローチを用い、最適な性能を引き出します。
+- **デプロイしやすさ：** 計算リソースが限られたデバイスにも簡単にデプロイできるよう設計されています。
+
+### リアルタイムビデオ処理：**ST-GCN（Spatial-Temporal Graph Convolutional Networks）**
+
+<div class="flex justify-center">
+<img src="https://huggingface.co/datasets/hf-vision/course-assets/resolve/main/unit7 CNN based model/Efficient Video Models X3D (Expanded 3D Networks).png" alt="3D 畳み込みと (2+1)D 畳み込みの比較">
+</div>
+
+**概要**
+
+[ST-GCN](https://arxiv.org/abs/1801.07455) は、リアルタイムの行動認識に特化したモデルで、特にビデオシーケンスにおける人間の動作の分析に使われます。時空間データをグラフ構造でモデル化し、人間の関節の位置と動きを効果的に捉えます。このモデルは、監視やスポーツ分析におけるリアルタイムの行動検出などに広く使われています。
+
+これらの最先端モデルは、ビデオ分類、行動認識、リアルタイム処理といった分野で優れた性能を発揮し、ビデオ処理の発展に重要な役割を果たしています。
+
+**主な特徴**
+
+- **グラフベースのモデリング（Graph-Based Modeling）：** 人間の骨格データをグラフとして表現し、関節の接続を自然にモデル化できます。
+- **時空間畳み込み（Spatio-Temporal Convolutions）：** 空間方向と時間方向のグラフ畳み込みを統合し、動的な動きのパターンを捉えます。
+- **リアルタイム性能（Real-Time Performance）：** 高速な計算に最適化されており、リアルタイムのアプリケーションに適しています。
+
+# まとめ
+
+ビデオ分析モデルの進化は目を見張るものがあります。これらのモデルは、他の SOTA モデルの影響を強く受けています。たとえば、Two-Stream Nets は ConvNets に触発され、(2+1)D ResNets は3D ResNets に着想を得ました。研究が進むにつれて、今後さらに高度なアーキテクチャや技術が登場することが期待されます。

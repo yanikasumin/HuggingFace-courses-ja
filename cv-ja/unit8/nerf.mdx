@@ -1,0 +1,164 @@
+# Neural Radiance Fields（NeRF）
+
+Neural Radiance Fields（NeRF）は、3Dシーンをニューラルネットワークで表現する手法です。シーンの情報を多層パーセプトロン（MLP）によってすべて表現するため、この方法は「陰的表現（implicit representation）」と呼ばれます。
+これは、色や密度といったシーンのパラメータをボクセルグリッドに直接格納する「明示的な表現」とは対照的です。
+この新しいシーンの表現方法は、訓練データにないカメラ視点からの画像を補間・生成する[新規視点合成](https://en.wikipedia.org/wiki/View_synthesis)で、非常に優れた結果を示しました。
+さらに、NeRF は明示的な表現よりも少ないメモリで大規模なシーンを保存できます。ボクセルグリッドでは、各方向の解像度を高くすると必要なメモリ量がその3乗に比例して増えます。一方、NeRF ではニューラルネットワークの重みを保存するだけで済みます。
+
+## 簡単な歴史 📖
+NeRF の分野は比較的若く、最初の論文である [Mildenhall et al.](https://www.matthewtancik.com/nerf) は2020年に発表されました。
+それ以来、膨大な数の論文が発表され、急速な進歩が遂げられてきました。
+2020年以降、620を超えるプレプリントと論文が公開され、GitHub には250を超えるリポジトリがあります（2023年12月時点、[paperswithcode.com](https://paperswithcode.com/method/nerf) の統計より）。
+
+NeRF の最初の定式化は長い訓練時間（高性能な GPU でも数日に及ぶ）を必要としたため、訓練と推論の高速化に向けた進歩が数多くなされてきました。
+重要な飛躍は、2022年に発表された NVIDIA の [Instant-ngp](https://nvlabs.github.io/instant-ngp/) でした。
+このアプローチで使われるモデルアーキテクチャは既存のものと似ていますが、著者らは訓練可能なハッシュテーブルを使う新しいエンコーディング手法を導入しました。
+この種のエンコーディングのおかげで、再構成の品質を損なうことなく MLP を大幅に小型化できます。
+この新しいアプローチは、当時の最先端手法と同等の品質を保ちながら、訓練もクエリも高速でした。
+同じく2022年に発表された [Mipnerf-360](https://jonbarron.info/mipnerf360/) も言及に値します。
+モデルアーキテクチャはほかの多くの NeRF とほぼ同じですが、著者らはシーンの縮約（scene contraction）という新しい手法を導入しました。これにより、あらゆる方向に境界なく広がるシーンを表現できるようになりました。これは実世界での応用に重要です。
+2023年に発表された [Zip-NeRF](https://jonbarron.info/zipnerf/) は、[Instant-ngp](https://nvlabs.github.io/instant-ngp/) のエンコーディングや [Mipnerf-360](https://jonbarron.info/mipnerf360/) のシーンの縮約といった近年の技術を組み合わせ、実世界のシーンに対応しながら訓練時間を1時間未満に短縮しました。
+ただし、この結果も高性能な GPU で測定したものであることには注意してください。
+
+NeRF の分野は急速に進化しているため、最後に最新の研究と今後の研究の方向性を簡単に紹介するセクションを設けました。
+
+歴史の話はこのくらいにして、NeRF の本質に踏み込みましょう！ 🚀🚀
+
+## 基本的なアプローチ（Vanilla NeRF） 📘🔍
+NeRF の背後にある基本的な考え方は、シーンを、位置 \\( \mathbf{x} \in \mathbb{R}^{3} \\) と視方向 \\( \boldsymbol{\theta} \in \mathbb{R}^{2} \\) を色 \\( \mathbf{c} \in \mathbb{R}^{3} \\) と体積密度 \\( \sigma \in \mathbb{R}^{1}\\) に写像する連続関数として表現することです。
+ニューラルネットワークは万能関数近似器として機能するため、シーンを表すこの連続関数を、単純な多層パーセプトロン（MLP）\\( F_{\mathrm{\Theta}} : (\mathbf{x}, \boldsymbol{\theta}) \to (\mathbf{c},\sigma) \\) で近似できます。
+
+単純な NeRF のパイプラインは、次の図にまとめられます。
+
+<div style="display: flex; flex-direction: column; align-items: center;">
+  <img src="https://huggingface.co/datasets/hf-vision/course-assets/resolve/main/nerf_pipeline.png" alt="NeRF のパイプライン" />
+  <p>画像の出典：<a href="https://www.matthewtancik.com/nerf">Mildenhall et al. (2020)</a></p>
+</div>
+
+**(a)** カメラの光線に沿って点と視方向をサンプリングし、ネットワークに通します。
+
+**(b)** ネットワークは、各サンプルについて色ベクトルと密度値を出力します。
+
+**(c)** ネットワークの出力をボリュームレンダリングで組み合わせ、3D空間内の離散的なサンプルから2D画像を得ます。
+
+**(d)** 損失を計算し、バックプロパゲーションによってネットワークの勾配を更新してシーンを表現します。
+
+ここまでは大まかな説明でした。さらに理解を深めるために、ボリュームレンダリングと損失関数の仕組みを詳しく見ていきましょう。
+
+**ボリュームレンダリング**
+
+ボリュームレンダリングの基本原理は、従来のコンピュータグラフィックスですでに確立されており、NeRF で新しく考案されたものではありません。
+NeRF の用途で重要なのは、バックプロパゲーションを可能にするために、このステップが**微分可能**であることです。NeRF における最も単純な形のボリュームレンダリングは、次のように定式化できます。
+
+$$\mathbf{C}(\mathbf{r}) = \int_{t_n}^{t_f}T(t)\sigma(\mathbf{r}(t))\mathbf{c}(\mathbf{r}(t),\mathbf{d})dt$$
+
+上の方程式において、\\( \mathbf{C}(\mathbf{r}) \\) はカメラの光線 \\( \mathbf{r}(t)=\mathbf{o}+t\mathbf{d} \\) の期待される色です。ここで \\( \mathbf{o} \in \mathbb{R}^{3} \\) はカメラの原点、\\( \boldsymbol{d} \in \mathbb{R}^{3} \\) は3D単位ベクトルとしての視方向、\\( t \in \mathbb{R}_+ \\) は光線に沿った距離です。
+\\( t_n \\) と \\( t_f \\) はそれぞれ、光線の手前側（near）と奥側（far）の境界を表します。
+\\( T(t) \\) は、光線 \\( \mathbf{r}(t) \\) に沿って \\( t_n \\) から \\( t \\) までの累積透過率を表します。
+
+離散化すると、上の方程式は次の和として計算できます。
+
+$$\boldsymbol{\hat{C}}(\mathbf{r})=\sum_{i=1}^{N}T_i (1-\exp(-\sigma_i \delta_i)) \mathbf{c}_i\,, \textrm{ where }T_i=\exp \bigg(-\sum_{j=1}^{i-1} \sigma_j \delta_j \bigg)$$
+
+各変数が何を表しているのか、次の離散化されたカメラ光線の模式図で確認してみましょう。
+
+![光線の図](https://huggingface.co/datasets/hf-vision/course-assets/resolve/main/nerf_ray_visualisation.png)
+
+**損失の定式化**
+
+離散化されたボリュームレンダリングの方程式は完全に微分可能なので、土台となるニューラルネットワークの重みは、レンダリングされたピクセルに対する再構成損失を使って訓練できます。
+多くの NeRF のアプローチは、次のように書けるピクセルごとの誤差項を使います。
+
+$$\mathcal{L}_{\rm recon}(\boldsymbol{\hat{C}},\boldsymbol{C^*}) = \left\|\boldsymbol{\hat{C}}-\boldsymbol{C^*}\right\|^2$$
+
+ここで \\( \boldsymbol{\hat{C}} \\) はレンダリングされたピクセルの色、\\( \boldsymbol{C}^* \\) は正解（ground truth）のピクセルの色です。
+
+**補足**
+
+NeRF のパイプライン全体を1つの章で詳細に説明するのは非常に困難です。
+ここまでの説明は基本概念を理解するうえで重要です。こうした仕組みは、どの NeRF モデルでもよく似ており、ほとんど同じ場合もあります。
+ただし、性能の良いモデルを得るには、いくつかの追加の工夫が必要です。
+
+まず、色や形状の高周波な変化を捉えるために、入力信号をエンコードする必要があります。
+入力をニューラルネットワークに通す前にエンコードする手法は、NeRF の分野に固有のものではなく、自然言語処理（NLP）のような他の ML 分野でも広く採用されています。
+入力をより高次元の空間に写像し、シーンのパラメータの高周波な変化を捉えられるようにする非常に単純なエンコーディングは、次のようになります。
+
+```python
+import torch
+import mediapy as media
+import numpy as np
+
+
+def positional_encoding(in_tensor, num_frequencies, min_freq_exp, max_freq_exp):
+    """位置エンコーディングのための関数。"""
+    # 入力テンソルを [0, 2 * pi] にスケーリングする
+    scaled_in_tensor = 2 * np.pi * in_tensor
+    # 周波数スペクトルを生成する
+    freqs = 2 ** torch.linspace(
+        min_freq_exp, max_freq_exp, num_frequencies, device=in_tensor.device
+    )
+    # エンコーディングを生成する
+    scaled_inputs = scaled_in_tensor.unsqueeze(-1) * freqs
+    encoded_inputs = torch.cat(
+        [torch.sin(scaled_inputs), torch.cos(scaled_inputs)], dim=-1
+    )
+    return encoded_inputs.view(*in_tensor.shape[:-1], -1)
+
+
+def visualize_grid(grid, encoded_images, resolution):
+    """グリッドを可視化するヘルパー関数。"""
+    # グリッドを x と y の別々のチャンネルに分割する
+    x_channel, y_channel = grid[..., 0], grid[..., 1]
+    # 元のグリッドを表示する
+    print("Input Values:")
+    media.show_images([x_channel, y_channel], cmap="plasma", border=True)
+    # エンコードされたグリッドを表示する
+    print("Encoded Values:")
+    num_channels_to_visualize = min(
+        8, encoded_images.shape[-1]
+    )  # 最大で8チャンネルまで可視化する
+    encoded_images_to_show = encoded_images.view(resolution, resolution, -1).permute(
+        2, 0, 1
+    )[:num_channels_to_visualize]
+    media.show_images(encoded_images_to_show, vmin=-1, vmax=1, cmap="plasma", border=True)
+
+
+# NeRFEncoding の例と同様のパラメータ
+num_frequencies = 4
+min_freq_exp = 0
+max_freq_exp = 6
+resolution = 128
+
+# [0, 1] の範囲の点の2Dグリッドを生成する
+x_samples = torch.linspace(0, 1, resolution)
+y_samples = torch.linspace(0, 1, resolution)
+grid = torch.stack(
+    torch.meshgrid(x_samples, y_samples), dim=-1
+)  # [resolution, resolution, 2]
+
+# 位置エンコーディングを適用する
+encoded_grid = positional_encoding(grid, num_frequencies, min_freq_exp, max_freq_exp)
+
+# 結果を可視化する
+visualize_grid(grid, encoded_grid, resolution)
+```
+
+出力は、以下の画像のようになるはずです。
+
+![エンコーディング結果](https://huggingface.co/datasets/hf-vision/course-assets/resolve/main/nerf_encodings.png)
+
+もう1つ重要な工夫は、空間内の点を効率よくサンプリングすることです。ほとんどの手法では、このために何らかの工夫をしています。
+要するに、シーン内で何も存在しない領域からは、できるだけサンプリングしないようにしたいのです。
+最終画像への寄与が大きい領域にサンプリングを集中させる方法はいくつかあります。その中でも代表的なのが、*proposal network* と呼ばれる別のネットワークを使い、無駄な計算を減らす方法です。
+そのような *proposal network* の内部の仕組みと最適化に興味があれば、それが初めて提案された [Mipnerf-360](https://jonbarron.info/mipnerf360/) の論文を掘り下げてみてください。
+
+## 自分で NeRF を訓練する
+NeRF の訓練を初めて体験するなら、nerfstudio チームが公開している [Google Colab ノートブック](https://colab.research.google.com/github/nerfstudio-project/nerfstudio/blob/main/colab/demo.ipynb) がおすすめです。実際に訓練の流れを一通り試せます。
+このノートブックでは、好きなシーンの画像をアップロードして NeRF を訓練できます。たとえば、自分のリビングルームを3Dで表現するようにモデルを学習させることもできます。🎉🎉
+
+## この分野の現在の進歩
+この分野は急速に進化しており、新しい論文の数は爆発的と言ってよいほどです。
+訓練とレンダリングの速度に関しては、[VR-NeRF](https://vr-nerf.github.io) と [SMERF](https://smerf-3d.github.io) が非常に有望な結果を示しています。
+私たちは、近いうちに実世界のシーンをエッジデバイス上でリアルタイムにストリーミングできるようになると信じています。これは、現実的な*メタバース*に向けた大きな飛躍です。
+ただし、NeRF 分野の研究は訓練と推論の速度だけに焦点を当てているわけではなく、Generative NeRFs、Pose Estimation、Deformable NeRFs、Compositionality など、さまざまな方向を含んでいます。
+NeRF の関連論文を厳選してまとめた一覧に興味があれば、[Awesome-NeRF](https://github.com/awesome-NeRF/awesome-NeRF) をご覧ください。

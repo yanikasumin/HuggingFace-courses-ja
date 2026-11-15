@@ -1,0 +1,165 @@
+# モデル最適化のツールとフレームワーク
+
+## TensorFlow Model Optimization Toolkit（TMO）
+
+### 概要
+
+TensorFlow Model Optimization Toolkit は、機械学習モデルをデプロイ向けに最適化するためのツール群です。
+TensorFlow Lite の訓練後量子化ツールを使うと、重みを8ビット精度に変換でき、訓練済みモデルのサイズを約4分の1に削減できます。
+このツールキットには、訓練後の量子化だけでは十分な効果が得られない場合に備えて、訓練中にプルーニングや量子化を行うための API も用意されています。
+これらのツールを使うと、レイテンシや推論コストを削減し、リソースが限られたエッジデバイスにもモデルをデプロイしやすくなります。また、既存のハードウェアや新しい専用アクセラレータに合わせて、モデルの実行を最適化できます。
+
+### セットアップガイド
+
+TensorFlow Model Optimization Toolkit は pip パッケージ `tensorflow-model-optimization` として利用できます。パッケージをインストールするには、次のコマンドを実行します。
+```
+pip install -U tensorflow-model-optimization
+```
+
+### ハンズオンガイド
+
+TensorFlow Model Optimization Toolkit の実際の使い方は、[こちらのノートブック](https://github.com/huggingface/computer-vision-course/blob/main/notebooks/Unit%209%20-%20Model%20Optimization/tmo.ipynb)を参照してください。
+
+## PyTorch の量子化
+
+### 概要
+
+PyTorch はモデルを最適化するために、INT8 量子化をサポートしています。通常の FP32 モデルと比べて、モデルサイズと必要なメモリ帯域幅をそれぞれ約4分の1に削減できます。
+PyTorch は、深層学習モデルを量子化するための複数のアプローチをサポートしています。それらは次のとおりです。
+1. モデルを FP32 で訓練し、その後モデルを INT8 に変換します。
+2. 量子化を考慮した訓練（quantization aware training）では、フェイク量子化（fake-quantization）モジュールを使い、順伝播と逆伝播の両方で量子化誤差を模擬しながらモデルを訓練します。
+3. 量子化されたテンソルを表現し、それを使った演算を実行する方法です。この方法を使うと、計算の全部または一部を低精度で行うモデルを直接構築できます。
+
+PyTorch の量子化について詳しくは、[PyTorch の量子化に関する公式ドキュメント](https://pytorch.org/docs/stable/quantization.html)をご覧ください。
+
+### セットアップガイド
+
+PyTorch の量子化は、PyTorch パッケージ内の API として利用できます。使うには、PyTorch をインストールし、次のように量子化 API をインポートするだけです。
+```
+pip install torch
+import torch.quantization
+```
+
+## ハンズオンガイド
+
+PyTorch の量子化の実際の使い方は、[こちらのノートブック](https://github.com/huggingface/computer-vision-course/blob/main/notebooks/Unit%209%20-%20Model%20Optimization/torch.ipynb)を参照してください。
+
+## ONNX Runtime
+
+### 概要
+
+ONNX Runtime は、クロスプラットフォームの機械学習モデルアクセラレータで、ハードウェア固有のライブラリと統合するための柔軟なインターフェースを備えています。
+ONNX Runtime は、PyTorch、TensorFlow/Keras、TFLite、scikit-learn、その他のフレームワークのモデルで使うことができます。
+推論に ONNX Runtime を使う利点は次のとおりです。
+- さまざまな ML モデルの推論性能を改善します。
+- さまざまなハードウェアやオペレーティングシステムで実行できます。
+- Python で訓練し、C#/C++/Java アプリにデプロイできます。
+- 異なるフレームワークで作成されたモデルを使って、訓練や推論を行えます。
+
+ONNX Runtime について詳しくは、[ONNX Runtime の公式ドキュメント](https://onnxruntime.ai/docs/)をご覧ください。
+
+### セットアップガイド
+
+ONNX Runtime には2つの Python パッケージがあり、1つの環境にはそのうち1つだけをインストールすべきです。
+GPU サポート付きで ONNX Runtime を使いたい場合は、GPU パッケージを使ってください。
+ONNX Runtime の Python パッケージは pip パッケージとして利用できます。パッケージをインストールするには、次のコマンドを実行します。
+```
+pip install onnxruntime
+```
+
+GPU 版については、次のコマンドを実行します。
+```
+pip install onnxruntime-gpu
+```
+
+### ハンズオンガイド
+
+ONNX Runtime の実際の使い方は、[こちらのノートブック](https://github.com/huggingface/computer-vision-course/blob/main/notebooks/Unit%209%20-%20Model%20Optimization/onnx.ipynb)を参照してください。
+
+## TensorRT
+
+### 概要
+
+NVIDIA® TensorRT™ は、訓練済みの深層学習モデルを最適化し、高性能な推論を実現するための SDK です。
+TensorRT には、訓練済みモデルの推論処理を最適化する機能と、最適化したモデルを実行するためのランタイムが含まれています。
+選択したフレームワークで深層学習モデルを訓練した後、TensorRT を使うと、より高いスループットと低いレイテンシで実行できます。
+
+### セットアップガイド
+
+TensorRT は pip パッケージ `tensorrt` として利用できます。パッケージをインストールするには、次のコマンドを実行します。
+```
+pip install tensorrt
+```
+その他のインストール方法については、[TensorRT のインストールガイド](https://docs.nvidia.com/deeplearning/tensorrt/quick-start-guide/index.html#install)をご覧ください。
+
+### ハンズオンガイド
+
+TensorRT の実際の使い方は、[こちらのノートブック](https://github.com/huggingface/computer-vision-course/blob/main/notebooks/Unit%209%20-%20Model%20Optimization/tensorrt.ipynb)を参照してください。
+
+## OpenVINO
+
+### 概要
+
+OpenVINO™ ツールキットを使うと、ほぼあらゆるフレームワークで作成した深層学習モデルを最適化し、さまざまな Intel® プロセッサやその他のハードウェア上で、最高水準の性能を引き出しながらデプロイできます。
+OpenVINO を使う利点には次のものがあります。
+- OpenVINO Runtime と直接連携してローカルで推論を実行したり、OpenVINO Model Server を使って別のサーバーや Kubernetes 環境から推論機能を提供したりできます。
+- アプリケーションを一度作成すれば、好みのデバイス、プログラミング言語、OS に対応した環境へデプロイできます。
+- 外部依存関係が最小限です。
+- 最初の推論を CPU で実行して待ち時間を短縮し、モデルのコンパイルとメモリへの読み込みが完了したら、別のデバイスに切り替えます。
+
+### セットアップガイド
+
+OpenVINO は pip パッケージ `openvino` として利用できます。パッケージをインストールするには、次のコマンドを実行します。
+```
+pip install openvino
+```
+
+その他のインストール方法については、[OpenVINO のインストールガイド](https://docs.openvino.ai/2023.2/openvino_docs_install_guides_overview.html?VERSION=v_2023_2_0&OP_SYSTEM=LINUX&DISTRIBUTION=ARCHIVE)をご覧ください。
+
+### ハンズオンガイド
+
+OpenVINO の実際の使い方は、[こちらのノートブック](https://github.com/huggingface/computer-vision-course/blob/main/notebooks/Unit%209%20-%20Model%20Optimization/openvino.ipynb)を参照してください。
+
+## Optimum
+
+### 概要
+
+Optimum は [Transformers](https://huggingface.co/docs/transformers) の拡張機能で、特定のハードウェア上でモデルを訓練・実行するときに、性能を最適化して最大限の効率を引き出すためのツールを提供します。AI 分野では技術が急速に進歩しており、専用ハードウェアや新しい最適化手法が次々と登場しています。
+Optimum を使えば、開発者は Transformers の使いやすさをそのまま活かしながら、こうしたさまざまなハードウェアプラットフォームを簡単に利用できます。
+現在 Optimum がサポートしているプラットフォームは次のとおりです。
+1. [Habana](https://huggingface.co/docs/optimum/habana/index)
+2. [Intel](https://huggingface.co/docs/optimum/intel/index)
+3. [Nvidia](https://github.com/huggingface/optimum-nvidia)
+4. [AWS Trainium and Inferentia](https://huggingface.co/docs/optimum-neuron/index)
+5. [AMD](https://huggingface.co/docs/optimum/amd/index)
+8. [FuriosaAI](https://huggingface.co/docs/optimum/furiosa/index)
+9. [ONNX Runtime](https://huggingface.co/docs/optimum/onnxruntime/overview)
+10. [BetterTransformer](https://huggingface.co/docs/optimum/bettertransformer/overview)
+
+### セットアップガイド
+
+Optimum は pip パッケージ `optimum` として利用できます。パッケージをインストールするには、次のコマンドを実行します。
+```
+pip install optimum
+```
+
+アクセラレータ固有の機能をインストールする方法は、[Optimum のインストールガイド](https://huggingface.co/docs/optimum/installation)をご覧ください。
+
+### ハンズオンガイド
+
+量子化に Optimum を使う方法は、[こちらのノートブック](https://github.com/huggingface/computer-vision-course/blob/main/notebooks/Unit%209%20-%20Model%20Optimization/optimum.ipynb)を参照してください。
+
+## Edge TPU
+
+### 概要
+
+Edge TPU は、エッジデバイス上で AI を実行するために Google が設計した専用 ASIC です。本体が小さく、消費電力も少ない一方で高い性能を発揮するため、エッジ環境でも高精度な AI モデルをデプロイできます。
+Edge TPU を使う利点には次のものがあります。
+- Cloud TPU や Google Cloud サービスを補完し、AI を使ったソリューションをデプロイするための、クラウドからエッジまで一貫したハードウェアとソフトウェアの基盤を提供します。
+- 本体が小さく消費電力も少ないにもかかわらず、高い性能を発揮します。
+- カスタムハードウェア、オープンなソフトウェア、最先端の AI アルゴリズムを組み合わせ、エッジ向けの高品質でデプロイしやすい AI ソリューションを提供します。
+
+Edge TPU について詳しくは、[Edge TPU の公式ページ](https://cloud.google.com/edge-tpu)をご覧ください。
+
+Edge TPU のセットアップ方法と実際の使い方は、[こちらのノートブック](https://github.com/huggingface/computer-vision-course/blob/main/notebooks/Unit%209%20-%20Model%20Optimization/edge_tpu.ipynb)を参照してください。
+
