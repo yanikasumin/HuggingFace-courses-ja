@@ -1,0 +1,214 @@
+# 通信プロトコル
+
+MCP は、クライアントとサーバーが一貫した予測可能な方法でメッセージを交換できる、標準化された通信プロトコルを定義しています。この標準化は、コミュニティ全体の相互運用性にとって極めて重要です。この節では、MCP で使われるプロトコルの構造とトランスポート機構を探ります。
+
+> [!WARNING]
+> ここからは、MCP プロトコルの詳しい仕組みを説明します。MCP を使ってアプリケーションを開発する際に、すべての詳細を知っておく必要はありませんが、どのような仕組みがあるのかを理解しておくと役立ちます。
+
+## JSON-RPC：基盤
+
+MCP では、クライアントとサーバー間のすべての通信において、メッセージ形式として **JSON-RPC 2.0** を使用します。JSON-RPC は、JSON 形式でデータをやり取りする軽量なリモートプロシージャコール（RPC）プロトコルで、次の特徴があります。
+
+- 人が読みやすく、デバッグもしやすい
+- 特定のプログラミング言語に依存せず、さまざまな開発環境で実装できる
+- 仕様が明確に定められており、幅広く利用されている
+
+![メッセージの種類](https://huggingface.co/datasets/mcp-course/images/resolve/main/unit1/5.png)
+
+プロトコルは3種類のメッセージを定義しています。
+
+### 1. リクエスト（Requests）
+
+操作を開始するためにクライアントからサーバーへ送信されます。リクエストメッセージには次が含まれます。
+- 一意の識別子（`id`）
+- 呼び出すメソッド名（例：`tools/call`）
+- メソッドのパラメータ（ある場合）
+
+リクエストの例：
+
+```json
+{
+  "jsonrpc": "2.0",
+  "id": 1,
+  "method": "tools/call",
+  "params": {
+    "name": "weather",
+    "arguments": {
+      "location": "San Francisco"
+    }
+  }
+}
+```
+
+### 2. レスポンス（Responses）
+
+リクエストへの返信としてサーバーからクライアントへ送信されます。レスポンスメッセージには次が含まれます。
+- 対応するリクエストと同じ `id`
+- `result`（成功の場合）または `error`（失敗の場合）のいずれか
+
+成功レスポンスの例：
+```json
+{
+  "jsonrpc": "2.0",
+  "id": 1,
+  "result": {
+    "temperature": 62,
+    "conditions": "Partly cloudy"
+  }
+}
+```
+
+エラーレスポンスの例：
+```json
+{
+  "jsonrpc": "2.0",
+  "id": 1,
+  "error": {
+    "code": -32602,
+    "message": "Invalid location parameter"
+  }
+}
+```
+
+### 3. 通知（Notifications）
+
+レスポンスを必要としない一方通行のメッセージです。通常、イベントに関する更新や通知を提供するためにサーバーからクライアントへ送信されます。
+
+通知の例：
+```json
+{
+  "jsonrpc": "2.0",
+  "method": "progress",
+  "params": {
+    "message": "Processing data...",
+    "percent": 50
+  }
+}
+```
+
+## トランスポート機構
+
+JSON-RPC はメッセージフォーマットを定義しますが、MCP はこれらのメッセージをクライアントとサーバー間でどう運ぶかも規定しています。2つの主要なトランスポート機構がサポートされています。
+
+### stdio（標準入出力）
+
+stdio トランスポートは、クライアントとサーバーが同じマシン上で動作するローカル通信に使われます。
+
+ホストアプリケーションはサーバーをサブプロセスとして起動し、その標準入力（stdin）に書き込み、標準出力（stdout）から読み取ることで通信します。
+
+> [!TIP]
+> このトランスポートの主な用途は、ファイルシステムへのアクセスやローカルスクリプトの実行など、ローカルツールの利用です。
+
+このトランスポートの主な**利点**は、シンプルで、ネットワーク設定が不要であり、オペレーティングシステムによって安全にサンドボックス化されることです。
+
+### HTTP + SSE（Server-Sent Events）と Streamable HTTP
+
+HTTP+SSE トランスポートは、クライアントとサーバーが異なるマシン上にある可能性があるリモート通信に使われます。
+
+通信は HTTP で行われ、サーバーは Server-Sent Events（SSE）を使って永続的な接続越しにクライアントへ更新をプッシュします。
+
+> [!TIP]
+> このトランスポートの**ユースケース**は、リモート API、クラウドサービス、共有リソースへの接続です。
+
+このトランスポートの主な**利点**は、ネットワーク越しに動作し、Web サービスとの統合を可能にし、サーバーレス環境と互換性があることです。
+
+MCP 標準の最近のアップデートでは「Streamable HTTP」が導入・改良されています。これにより、サーバーは必要に応じて SSE によるストリーミングへ動的にアップグレードでき、サーバーレス環境との互換性を保ちながら、より柔軟な運用が可能になります。
+
+## インタラクションのライフサイクル
+
+前節では、クライアント（💻）とサーバー（🌐）の間の単一インタラクションのライフサイクルについて説明しました。ここでは、MCP プロトコルの文脈で、クライアントとサーバー間の完全なインタラクションのライフサイクルを見ていきましょう。
+
+MCP プロトコルは、クライアントとサーバーの間の構造化されたインタラクションライフサイクルを定義しています。
+
+### 初期化（Initialization）
+
+クライアントがサーバーに接続し、プロトコルのバージョンと機能を交換します。サーバーは、サポートするプロトコルのバージョンと機能で応答します。
+
+<table style="width: 100%;">
+  <tr>
+    <td style="background-color: lightgreen; text-align: center; padding: 10px; border: 1px solid #ccc; border-radius: 4px;">💻</td>
+    <td style="text-align: center;">→<br>initialize</td>
+    <td style="background-color: lightblue; text-align: center; padding: 10px; border: 1px solid #ccc; border-radius: 4px;">🌐</td>
+  </tr>
+  <tr>
+    <td style="background-color: lightgreen; text-align: center; padding: 10px; border: 1px solid #ccc; border-radius: 4px;">💻</td>
+    <td style="text-align: center;">←<br>応答</td>
+    <td style="background-color: lightblue; text-align: center; padding: 10px; border: 1px solid #ccc; border-radius: 4px;">🌐</td>
+  </tr>
+  <tr>
+    <td style="background-color: lightgreen; text-align: center; padding: 10px; border: 1px solid #ccc; border-radius: 4px;">💻</td>
+    <td style="text-align: center;">→<br>initialized</td>
+    <td style="background-color: lightblue; text-align: center; padding: 10px; border: 1px solid #ccc; border-radius: 4px;">🌐</td>
+  </tr>
+</table>
+
+クライアントは通知メッセージにより初期化の完了を確認します。
+
+### 発見（Discovery）
+
+クライアントが利用可能な機能に関する情報をリクエストし、サーバーが利用可能なツールのリストで応答します。
+
+<table style="width: 100%;">
+  <tr>
+    <td style="background-color: lightgreen; text-align: center; padding: 10px; border: 1px solid #ccc; border-radius: 4px;">💻</td>
+    <td style="text-align: center;">→<br>tools/list</td>
+    <td style="background-color: lightblue; text-align: center; padding: 10px; border: 1px solid #ccc; border-radius: 4px;">🌐</td>
+  </tr>
+  <tr>
+    <td style="background-color: lightgreen; text-align: center; padding: 10px; border: 1px solid #ccc; border-radius: 4px;">💻</td>
+    <td style="text-align: center;">←<br>応答</td>
+    <td style="background-color: lightblue; text-align: center; padding: 10px; border: 1px solid #ccc; border-radius: 4px;">🌐</td>
+  </tr>
+</table>
+
+このプロセスは、ツール、リソース、プロンプトの種類ごとに繰り返されます。
+
+### 実行（Execution）
+
+クライアントはホストのニーズに基づいて機能を呼び出します。
+
+<table style="width: 100%;">
+  <tr>
+    <td style="background-color: lightgreen; text-align: center; padding: 10px; border: 1px solid #ccc; border-radius: 4px;">💻</td>
+    <td style="text-align: center;">→<br>tools/call</td>
+    <td style="background-color: lightblue; text-align: center; padding: 10px; border: 1px solid #ccc; border-radius: 4px;">🌐</td>
+  </tr>
+  <tr>
+    <td style="background-color: lightgreen; text-align: center; padding: 10px; border: 1px solid #ccc; border-radius: 4px;">💻</td>
+    <td style="text-align: center;">←<br>通知（省略可能な進捗通知）</td>
+    <td style="background-color: lightblue; text-align: center; padding: 10px; border: 1px solid #ccc; border-radius: 4px;">🌐</td>
+  </tr>
+  <tr>
+    <td style="background-color: lightgreen; text-align: center; padding: 10px; border: 1px solid #ccc; border-radius: 4px;">💻</td>
+    <td style="text-align: center;">←<br>応答</td>
+    <td style="background-color: lightblue; text-align: center; padding: 10px; border: 1px solid #ccc; border-radius: 4px;">🌐</td>
+  </tr>
+</table>
+
+### 終了（Termination）
+
+接続が不要になったら正常に閉じられ、サーバーはシャットダウンリクエストを確認応答します。
+
+<table style="width: 100%;">
+  <tr>
+    <td style="background-color: lightgreen; text-align: center; padding: 10px; border: 1px solid #ccc; border-radius: 4px;">💻</td>
+    <td style="text-align: center;">→<br>shutdown</td>
+    <td style="background-color: lightblue; text-align: center; padding: 10px; border: 1px solid #ccc; border-radius: 4px;">🌐</td>
+  </tr>
+  <tr>
+    <td style="background-color: lightgreen; text-align: center; padding: 10px; border: 1px solid #ccc; border-radius: 4px;">💻</td>
+    <td style="text-align: center;">←<br>応答</td>
+    <td style="background-color: lightblue; text-align: center; padding: 10px; border: 1px solid #ccc; border-radius: 4px;">🌐</td>
+  </tr>
+  <tr>
+    <td style="background-color: lightgreen; text-align: center; padding: 10px; border: 1px solid #ccc; border-radius: 4px;">💻</td>
+    <td style="text-align: center;">→<br>exit</td>
+    <td style="background-color: lightblue; text-align: center; padding: 10px; border: 1px solid #ccc; border-radius: 4px;">🌐</td>
+  </tr>
+</table>
+
+クライアントは最後の exit メッセージを送信して終了を完了します。
+
+## プロトコルの進化
+
+MCP プロトコルは、拡張可能で適応性のある設計になっています。初期化フェーズにはバージョンネゴシエーションが含まれており、プロトコルの進化に伴う後方互換性が確保されます。さらに、機能の発見（capability discovery）により、クライアントは各サーバーが提供する具体的な機能に適応でき、同じエコシステム内で基本的なサーバーと高度なサーバーを混在させることができます。

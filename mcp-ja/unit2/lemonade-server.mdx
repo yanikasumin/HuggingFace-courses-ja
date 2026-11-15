@@ -1,0 +1,395 @@
+# AMD NPU と iGPU アクセラレーションによるローカル Tiny Agents
+
+このセクションでは、AMD のニューラルプロセッシングユニット（NPU）と統合 GPU（iGPU）を使い、エンドツーエンドの Tiny Agents アプリケーションを高速化する方法を紹介します。さらに、ローカルファイルを操作し、機密情報をデバイス内で処理できるアシスタントを作成します。これにより、アプリケーションの機能を広げながら、プライバシーを最大限に保護します。
+
+そのために、NPU と iGPU による高速化に対応し、モデルをローカルで実行できる Lemonade Server を使います。
+
+## セットアップ
+### Lemonade Server のセットアップ
+
+Lemonade Server は Windows と Linux の両方にインストールできます。追加のドキュメントは [lemonade-server.ai](https://lemonade-server.ai/) で確認できます。
+
+<hfoptions id="local-models">
+<hfoption id="windows">
+
+Windows に Lemonade Server をインストールするには、最新のインストーラーを[ダウンロード](https://github.com/lemonade-sdk/lemonade/releases/latest/download/Lemonade_Server_Installer.exe)して実行するだけです。
+
+Lemonade Server は、Windows の x86/x64 環境で、すべての実行エンジンによる CPU 推論に対応しています。GPU による高速化には、Vulkan を利用する llamacpp エンジンを使用し、主に AMD Ryzen™ AI 7000/8000/300 シリーズと AMD Radeon™ 7000/9000 シリーズを対象としています。NPU による高速化では、ONNX Runtime GenAI（OGA）エンジンを使い、AMD Ryzen™ AI 300 シリーズのデバイスに対応します。
+
+Lemonade Server をインストールしたら、デスクトップに追加された `Lemonade` アイコンをクリックして起動できます。
+
+</hfoption>
+<hfoption id="linux">
+
+Linux に Lemonade をインストールするには、まず venv を作成して有効化します。
+
+> [!TIP]
+> `uv` がインストールされていない場合は、[こちら](https://docs.astral.sh/uv/getting-started/installation/) の手順に従ってインストールできます。
+
+```bash
+uv venv --python 3.11
+source .venv/bin/activate
+```
+
+次に、`lemonade-sdk` パッケージをインストールします。
+```bash
+uv pip install lemonade-sdk==8.0.3
+```
+
+あるいは、リポジトリをクローンしてパッケージをビルドすることで、ソースからインストールすることもできます。
+```bash
+git clone https://github.com/lemonade-sdk/lemonade-sdk.git
+cd lemonade-sdk
+pip install -e .
+```
+
+インストールが完了したら、次のコマンドを実行して Lemonade を起動できます。
+
+```bash
+lemonade-server-dev serve
+```
+
+Lemonade Server は、Windows x86/x64 上のすべてのプラットフォームとエンジンで CPU 推論をサポートします。GPU アクセラレーションは llamacpp エンジン（Vulkan）を通じて有効化され、AMD Ryzen™ AI 7000/8000/300 シリーズと Radeon™ 7000/9000 シリーズに重点が置かれています。
+
+> [!TIP]
+> *NPU アクセラレーションは、Windows 上の AMD Ryzen™ AI 300 シリーズでのみ利用できます。*
+
+</hfoption>
+</hfoptions>
+
+### Tiny Agents と npx のセットアップ
+
+このセクションでは、`npx` と Tiny Agents がすでにインストールされていることを前提とします。まだインストールしていない場合は、このコースの [Tiny Agents](https://huggingface.co/learn/mcp-course/en/unit2/tiny-agents) のセクションを参照してください。また、`huggingface_hub[mcp]==0.33.2` を使用してください。
+
+## AMD NPU と iGPU で Tiny Agents アプリケーションを実行する
+
+AMD NPU と iGPU で Tiny Agents アプリケーションを実行するには、[前のセクション](https://huggingface.co/learn/mcp-course/en/unit2/tiny-agents) で作成した MCP サーバーを、次に示すように Lemonade Server に向けるだけです。
+
+<hfoptions id="agent-config">
+<hfoption id="windows">
+
+```json
+{
+  "model": "Qwen3-8B-GGUF",
+  "endpointUrl": "http://localhost:8000/api/",
+  "servers": [
+    {
+      "type": "stdio",
+      "command": "C:\\Program Files\\nodejs\\npx.cmd",
+      "args": [
+        "mcp-remote",
+        "http://localhost:7860/gradio_api/mcp/sse"
+      ]
+    }
+  ]
+}
+```
+
+</hfoption>
+<hfoption id="linux">
+
+```json
+{
+  "model": "Qwen3-8B-GGUF",
+  "endpointUrl": "http://localhost:8000/api/",
+  "servers": [
+    {
+      "type": "stdio",
+      "command": "npx",
+      "args": [
+        "mcp-remote",
+        "http://localhost:7860/gradio_api/mcp/sse"
+      ]
+    }
+  ]
+}
+```
+
+</hfoption>
+</hfoptions>
+
+続いて、ローカルで実行するモデルを選びます。利用できるモデルにはさまざまな種類がありますが、ここでは Vulkan を使って AMD GPU 上で効率よく動作する [`Qwen3-8B-GGUF`](https://huggingface.co/Qwen/Qwen3-8B-GGUF) を使用しました。対応モデルの一覧を確認したり、自分のモデルを追加したりするには、http://localhost:8000/#model-management にアクセスしてください。
+
+## 機密情報をローカルで処理するアシスタントを作成する
+
+![Lemonade Server のインターフェース](https://raw.githubusercontent.com/lemonade-sdk/assets/refs/heads/main/huggingface_course/hf_lemonade.png)
+
+次は、ローカルファイルにアクセスでき、機密情報をすべてデバイス内で処理するアシスタントを追加して、アプリケーションの機能を広げましょう。このアシスタントは、採用候補者の履歴書を評価し、採用時の意思決定を支援します。データを外部に送らず、プライバシーと安全性を保ちながら処理することを目指します。
+
+そのために、[Desktop Commander](https://github.com/wonderwhy-er/DesktopCommanderMCP) MCP サーバーを使います。Desktop Commander を使うと、ローカルマシン上でコマンドを実行できるほか、ファイルシステムの幅広い操作、ターミナルの制御、コードの編集も行えます。
+
+基本的な Tiny Agent を使ったプロジェクトをセットアップしましょう。
+
+```bash
+mkdir file-assistant
+cd file-assistant
+```
+
+次に、`file-assistant` フォルダ内に新しい `agent.json` ファイルを作成します。
+
+<hfoptions id="agent-file-config">
+<hfoption id="windows">
+
+```json
+{
+  "model": "user.jan-nano",
+  "endpointUrl": "http://localhost:8000/api/",
+  "servers": [
+    {
+      "type": "stdio",
+      "command": "C:\\Program Files\\nodejs\\npx.cmd",
+      "args": [
+        "-y",
+        "@wonderwhy-er/desktop-commander"
+      ]
+    }
+  ]
+}
+```
+
+</hfoption>
+<hfoption id="linux">
+
+```json
+{
+  "model": "user.jan-nano",
+  "endpointUrl": "http://localhost:8000/api/",
+  "servers": [
+    {
+      "type": "stdio",
+      "command": "npx",
+      "args": [
+        "-y",
+        "@wonderwhy-er/desktop-commander"
+      ]
+    }
+  ]
+}
+```
+
+</hfoption>
+</hfoptions>
+
+最後に、`Jan Nano` モデルをダウンロードします。http://localhost:8000/#model-management にアクセスしてモデル管理ページを開き、「Add a Model」をクリックしてください。次の情報を入力すると、モデルを追加できます。
+
+```
+Model Name: user.jan-nano
+Checkpoint: Menlo/Jan-nano-gguf:jan-nano-4b-Q4_0.gguf
+Recipe: llamacpp
+```
+
+![カスタムモデル](https://raw.githubusercontent.com/lemonade-sdk/assets/refs/heads/main/huggingface_course/custom_model.png)
+
+これで準備完了です！ では、試してみましょう。
+
+### 実際に動かしてみる
+
+![動作の録画](https://raw.githubusercontent.com/lemonade-sdk/assets/refs/heads/main/huggingface_course/recording.gif)
+
+ここでは、機密情報をローカルで処理できるアシスタントを作成します。まず、アシスタントが参照する求人票のファイルを用意しましょう。
+
+`file-assistant` フォルダ内に `job_description.md` というファイルを作成します。
+
+```md
+# Senior Food Technology Engineer
+
+## About the Role
+We're seeking a culinary innovator to transform cooking processes into precise algorithms and AI systems.
+
+## What You'll Do
+- Convert cooking instructions into measurable algorithms
+- Develop AI-powered kitchen tools
+- Create food quality assessment systems
+- Build recipe-following AI models
+
+## Requirements
+- MS in Computer Science (food-related thesis preferred)
+- Python and PyTorch expertise
+- Proven experience combining food science with ML
+- Strong communication skills using culinary metaphors
+
+## Perks
+- Access to experimental kitchen
+- Continuous taste-testing opportunities
+- Collaborative tech-foodie team environment
+
+*Note: Must attend conferences and publish on algorithmic cooking optimization.*
+
+```
+
+次に、`file-assistant` フォルダ内に `candidates` フォルダを作成し、アシスタントに読み込ませるサンプル履歴書のファイルを追加します。
+
+```bash
+mkdir candidates
+touch candidates/john_resume.md
+```
+
+次のサンプル履歴書を追加するか、自分の履歴書を使ってください。
+
+```md
+# John Doe
+
+**Contact Information**
+- Email: email@example.com
+- Phone: (+1) 123-456-7890
+- Location: 1234 Abc Street, Example, EX 01234
+- GitHub: github.com/example
+- LinkedIn: linkedin.com/in/example
+- Website: example.com
+
+## Experience
+
+**Machine Learning Engineer Intern** | Slow Feet Technology | Jul 2021 - Present
+- Developed food-agnostic formulation for cross-ingredient meal cooking
+- Created competitive cream of mushroom soup recipe, published in NeurIPS 2099
+- Built specialized pan for meal cooking research
+
+**Research Intern** | Paddling University | Aug 2020 - Present
+- Designed efficient mapo tofu quality estimation method using thermometer
+- Proposed fast stir frying algorithm for tofu cooking, published in CVPR 2077
+- Outperformed SOTA methods with improved efficiency
+
+**Research Assistant** | Huangdu Institute of Technology | Mar 2020 - Jun 2020
+- Developed novel framework using spoon and chopsticks for eating mapo tofu
+- Designed tofu filtering strategy inspired by beans grinding method
+- Created evaluation criteria for eating plan novelty and diversity
+
+**Research Intern** | Paddling University | Jul 2018 - Aug 2018
+- Designed dual sandwiches using traditional burger ingredients
+- Utilized structure duality to boost cooking speed for shared ingredients
+- Outperformed baselines on QWE'15 and ASDF'14 datasets
+
+## Education
+
+**M.S. in Computer Science** | University of Charles River | Sep 2021 - Jan 2023
+- Location: Boston, MA
+
+**B.Eng. in Software Engineering** | Huangdu Institute of Technology | Sep 2016 - Jul 2020
+- Location: Shanghai, China
+
+## Skills
+
+**Programming Languages:** Python, JavaScript/TypeScript, HTML/CSS, Java
+**Tools and Frameworks:** Git, PyTorch, Keras, scikit-learn, Linux, Vue, React, Django, LaTeX
+**Languages:** English (proficient), Indonesia (native)
+
+## Awards and Honors
+
+- **Gold**, International Collegiate Catching Fish Contest (ICCFC) | 2018
+- **First Prize**, China National Scholarship for Outstanding Culinary Skills | 2017, 2018
+
+## Publications
+
+**Eating is All You Need** | NeurIPS 2099
+- Authors: Haha Ha, San Zhang
+
+**You Only Cook Once: Unified, Real-Time Mapo Tofu Recipe** | CVPR 2077 (Best Paper Honorable Mention)
+- Authors: Haha Ha, San Zhang, Si Li, Wu Wang
+```
+
+その後、次のコマンドでエージェントを実行できます。
+
+```bash
+tiny-agents run agent.json
+```
+
+次のような出力が表示されるはずです。
+
+```
+Agent loaded with 18 tools:
+ • get_config
+ • set_config_value
+ • read_file
+ • read_multiple_files
+ • write_file
+ • create_directory
+ • list_directory
+ • move_file
+ • search_files
+ • search_code
+ • get_file_info
+ • edit_block
+ • execute_command
+ • read_output
+ • force_terminate
+ • list_sessions
+ • list_processes
+ • kill_process
+ »
+ ```
+
+では、開始するためにアシスタントへ情報を提供しましょう。
+
+```
+» Read the contents of C:\Users\your_username\file-assistant\job_description.md
+```
+
+次のような出力が表示されるはずです。
+
+```
+<Tool iNtxGmOuXHqZVBWmKnfxsc61xsJbsoAM>read_file {"path":"C:\\Users\\your_username\\file-assistant\\job_description.md","length":23}
+
+Tool iNtxGmOuXHqZVBWmKnfxsc61xsJbsoAM
+[Reading 23 lines from start]
+
+(...)
+
+The job description for the Senior Food Technology Engineer position emphasizes the need for a candidate who can bridge the gap between food science and artificial intelligence (...). Candidates are also expected to attend conferences and publish research on algorithmic cooking optimization.
+```
+
+> [!TIP]
+> デフォルトのシステムプロンプトを使っているため、アシスタントが一部のツールを複数回呼び出すことがあります。より積極的なアシスタントを作成するには、`agent.json` と同じディレクトリにカスタムの `PROMPT.md` ファイルを用意できます。
+
+すばらしい！ 次に、候補者の履歴書を読み取りましょう。
+
+```
+» Inside the same folder you can find a candidates folder. Check for john_resume.md and let me know if he is a good fit for the job.
+```
+
+次のような出力が表示されるはずです。
+
+```
+<Tool ll2oWo73YeGIft5VbOIpF9GNf0kevjEy>read_file {"path":"C:\\Users\\your_username\\file-assistant\\candidates\\john_resume.md"}
+
+Tool ll2oWo73YeGIft5VbOIpF9GNf0kevjEy
+[Reading 58 lines from start]
+
+(...)
+John Wayne is a **strong fit** for the Senior Food Technology Engineer role. His technical expertise in AI and machine learning, combined with his experience in food-related research and publications, makes him an excellent candidate. He also has the soft skills and cultural fit needed to thrive in a collaborative, innovative environment.
+```
+
+見事です！ これで、候補者を面接に招待する段階に進めます。
+
+```
+» Create a file called "invitation.md" in the "file-assistant" folder and write a short invitation to John to come in for an interview.
+```
+
+`invitation.md` ファイルには、次のような内容が書き込まれるはずです。
+
+```markdown
+# Interview Invitation
+
+Dear John,
+
+We would like to invite you for an interview for the Senior Food Technology Engineer position. The interview will be held on [insert date and time] at [insert location or virtual meeting details].
+
+Please confirm your availability and let us know if you need any additional information.
+
+Best regards,
+[Your Name]
+[Your Contact Information]
+```
+
+やりました！ 機密情報をローカルで処理するのに役立つアシスタントの作成に成功しました。
+
+### 他のモデルとアクセラレーションオプションを探る
+
+上記の例では、Jan-Nano モデルが Vulkan アクセラレーションを活用し、AMD GPU 上で効率的なローカル LLM 推論を行いました。http://localhost:8000/#model-management にアクセスするか、[モデルのドキュメント](https://lemonade-server.ai/docs/server/server_models/) を確認することで、他のモデルやアクセラレーションオプションも試せます。
+
+比較的短いコンテキストで動作し、NPU と iGPU による高速化を活用できる Windows アプリケーションには、Lemonade Server の Hybrid モデルを試せます。これらのモデルは AMD Ryzen AI 300 シリーズの PC 向けに最適化されています。たとえば、`Llama-xLAM-2-8b-fc-r-Hybrid` はツール呼び出し用に特別にファインチューニングされており、高速で応答性のよい動作が期待できます。
+
+## まとめ
+
+このユニットでは、AMD NPU と iGPU を使ってエンドツーエンドの Tiny Agents アプリケーションを高速化する方法を紹介しました。また、機密情報をローカルで処理するアシスタントを作成する方法も紹介しました。
+
+Lemonade Server をローカルモデルの高速化やプライバシー重視のアプリケーションに活用する方法を学んだので、[Lemonade の GitHub リポジトリ](https://github.com/lemonade-sdk/lemonade) でさらに多くの例や機能を探ることができます。このリポジトリには追加のドキュメントや実装例が含まれており、コミュニティによって活発にメンテナンスされています。

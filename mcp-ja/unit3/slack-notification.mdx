@@ -1,0 +1,367 @@
+# Module 3：Slack 通知
+
+## コミュニケーションの溝の危機
+
+CodeCraft Studios での3週目。あなたの自動化システムは、すでにチームの働き方を変えつつあります。
+- **PR Agent**（Module 1）：開発者が明確で役立つプルリクエストの説明を書くようになった
+- **CI/CD Monitor**（Module 2）：チームがテストの失敗を即座に捕え、バグが本番環境に到達するのを防いでいる
+
+チームはすっかり自信をつけていました…月曜の朝、新たな危機が訪れるまでは。
+
+フロントエンドチーム（Emma と Jake）は、厄介な API 連携の問題のデバッグに週末を丸ごと費やしました。ネットワーク呼び出しの確認、リクエスト形式の検証、エラーハンドリングの書き直しまで、あらゆることを試しました。そして日曜の午前2時、ついに原因が判明します。バックエンドチームが金曜日にまさにこの問題を修正し、修正したコードをステージング環境にデプロイしていたのに、そのことを知らせるのを忘れていたのです。
+
+「すでに修正済みの問題の解決に12時間も無駄にした！」Emma は苛立って言います。
+
+一方、デザインチームは先週、新しいユーザーオンボーディングフローのイラストを完成させていましたが、フロントエンドチームは準備ができていることを知りませんでした。その美しいアセットは使われないまま置かれ、チームは暫定的なデザインをリリースしています。
+
+チームは、情報のサイロ問題を抱えていることに気づきます。全員が一生懸命働いているのに、いつ何が起きているのかを効果的に伝え合えていないのです。
+
+**あなたのミッション**：重要な進展をチーム全員に自動で知らせる、インテリジェントな Slack 通知で自動化システムを完成させることです。
+
+## 構築するもの
+
+この最終モジュールで、CodeCraft Studios の変革が完結します。Tools と Prompts を組み合わせ、CI/CD イベントの情報を整理して Slack に送信する通知システムを作成します。これを通して、実際の開発現場で MCP のすべてのプリミティブがどのように連携するかを学びます。
+
+Module 1 と Module 2 の基盤の上に、パズルの最後のピースを追加します。
+- チームチャンネルへメッセージを送る **Slack webhook ツール**
+- CI イベントを賢く整形する**2つの通知プロンプト**
+- 全 MCP プリミティブの連携を示す**完全な統合**
+
+### スクリーンキャスト：完全な自動化システム！ 🎉
+
+<Youtube id="sX5qrbDG-oY" />
+
+**最後のピース**：完成した自動化システムが、Emma と Jake を悩ませたような月曜朝の突然のトラブルをどう防ぐかをご覧ください！
+
+**見どころ**： 
+- **Claude のインテリジェントなワークフロー**：Claude がタスクを分解する様子に注目： ☐ イベントを確認 → ☐ 通知を送信
+- **リアルタイム MCP ツールの実演**：`get_recent_actions_events` が最新の CI データを取得し、`send_slack_notification` がアラートを送信する
+- **並行デモンストレーション**：Slack チャンネルを並べて開き、Claude が送信した整形済みメッセージが表示される様子を示す
+
+**スマートな通知**：Claude はチームに通知をむやみに送りつけるのではなく、必要な情報を整理した分かりやすいアラートを作成します。
+- 🚨 明確な緊急性の指標と絵文字
+- **失敗の詳細な内訳**（test-auth-service ❌、test-api ❌、test-frontend ⏳）
+- パイプラインの実行とプルリクエストへの**実用的なリンク**
+- **全員が必要とする文脈**：リポジトリ、PR #1「various improvements」、コミットハッシュ
+
+**なぜ重要か**：コミュニケーションの溝の危機を覚えていますか？もう終わりです！このシステムにより、`demo-bad-pr` ブランチで CI が失敗すれば、チーム全員が即座に知ることができます。修正済みの問題に対する週末のデバッグ作業は、もうありません！
+
+**取り組みの完了**：Module 1 で取り組んだ PR の混乱から、Module 3 のスマートなチーム通知まで、CodeCraft Studios のチームワークを変えるシステムを構築しました。週末まで問題対応に追われていたメンバーも、これからは必要な情報を共有しながら仕事を進められます！ 🚀
+
+## 学習目標
+
+このモジュールの終わりには、以下を理解できるようになります。
+1. MCP Tools を使って外部 API と連携する方法
+2. 完全なワークフローのために Tools と Prompts を組み合わせる方法  
+3. Slack の Markdown 書式を使って、装飾付きのメッセージを作成する方法
+4. 全 MCP プリミティブが実際にどう連携するか
+
+## 前提条件
+
+これまでのモジュールのすべてに加えて、以下が必要です。
+- **Module 1 と Module 2 の完了**：このモジュールは既存の MCP サーバーを直接拡張します
+- **Slack ワークスペース**：着信 webhook を作成できるもの（個人のワークスペースで可）
+- **REST API の基本的な理解**：Slack の webhook エンドポイントへ HTTP リクエストを送信します
+
+## 主要概念
+
+### MCP 連携パターン
+
+このモジュールでは、完全なワークフローを示します。
+1. **Events** → GitHub Actions の webhook（Module 2 より）
+2. **Prompts** → イベントを読みやすいメッセージに整形する
+3. **Tools** → 整形したメッセージを Slack へ送信する
+4. **Result** → プロフェッショナルなチーム通知
+
+### Slack の Markdown 書式
+
+装飾付きのメッセージを作るには、[Slack の Markdown 書式](https://api.slack.com/reference/surfaces/formatting)を使います。
+- 強調には [`*bold text*`](https://api.slack.com/reference/surfaces/formatting#visual-styles)
+- 詳細には [`_italic text_`](https://api.slack.com/reference/surfaces/formatting#visual-styles)
+- 技術情報には [`` `code blocks` ``](https://api.slack.com/reference/surfaces/formatting#inline-code)
+- 要約には [`> quoted text`](https://api.slack.com/reference/surfaces/formatting#quotes)
+- [絵文字](https://api.slack.com/reference/surfaces/formatting#emoji)：✅ ❌ 🚀 ⚠️
+- [リンク](https://api.slack.com/reference/surfaces/formatting#linking-urls)： `<https://github.com/user/repo|Repository>`
+
+## プロジェクト構成
+
+```
+slack-notification/
+├── starter/          # 作業の開始点
+│   ├── server.py     # Module 1+2 のコード + TODO
+│   ├── webhook_server.py  # Module 2 より
+│   ├── pyproject.toml
+│   └── README.md
+└── solution/         # 完全な実装
+    ├── server.py     # Slack 連携の完全版
+    ├── webhook_server.py
+    └── README.md
+```
+
+## 実装ステップ
+
+### ステップ1：Slack 連携のセットアップ（10分）
+
+1. Slack の webhook を作成する：
+   - [Slack API Apps](https://api.slack.com/apps) にアクセスする
+   - 新しいアプリを作成し、「From scratch」（最初から作成）を選ぶ（[アプリ作成ガイド](https://api.slack.com/authentication/basics#creating)）
+   - アプリ名：「MCP Course Notifications」
+   - ワークスペースを選ぶ
+   - 「Features（機能）」→「[Incoming Webhooks（着信 Webhook）](https://api.slack.com/messaging/webhooks)」へ進む
+   - [着信 webhook を有効化する](https://api.slack.com/messaging/webhooks#enable_webhooks)
+   - 「Add New Webhook to Workspace」（ワークスペースに新しい Webhook を追加）をクリックする
+   - チャンネルを選んで承認する（[Webhook セットアップガイド](https://api.slack.com/messaging/webhooks#getting_started)）
+   - webhook URL をコピーする
+
+2. webhook が動作するかテストする（[webhook 投稿の例](https://api.slack.com/messaging/webhooks#posting_with_webhooks) に従う）：
+   ```bash
+   curl -X POST -H 'Content-type: application/json' \
+     --data '{"text":"Hello from MCP Course!"}' \
+     YOUR_WEBHOOK_URL
+   ```
+
+3. 環境変数を設定する：
+   ```bash
+   export SLACK_WEBHOOK_URL="https://hooks.slack.com/services/YOUR/WEBHOOK/URL"
+   ```
+
+   **⚠️ セキュリティに関する注意**：webhook URL は、Slack チャンネルへのメッセージ投稿権限を与える機密情報です。必ず次のようにしてください。
+   - 環境変数として保存し、コードにハードコードしない
+   - webhook URL をバージョン管理にコミットしない（`.gitignore` に追加する）
+   - パスワードと同じように厳重に扱う。この URL を知る人は誰でもチャンネルにメッセージを送信できる
+
+> [!WARNING]
+> **セキュリティ警告**：webhook URL は機密性の高い認証情報です！webhook URL を知る人は誰でも、あなたの Slack チャンネルにメッセージを送信できます。必ず環境変数として保存し、バージョン管理には決してコミットしないでください。
+
+### ステップ2：Slack ツールを追加する（15分）
+
+動作する webhook が用意できたので、Module 2 の既存の server.py に新しい MCP ツールを追加します。このツールは、webhook URL へ HTTP リクエストを送信して、Slack への通知を処理します。
+
+> [!TIP]
+> **注意**：スターターコードには Module 1 と Module 2 の改善（出力制限、webhook 処理）がすべて含まれています。新しい Slack 連携に集中してください！
+
+`server.py` にこのツールを追加します。
+
+**`send_slack_notification`**：
+- メッセージ文字列のパラメータを受け取る
+- 環境変数から webhook URL を読み取る
+- Slack の webhook へ POST リクエストを送信する
+- 成功／失敗のメッセージを返す
+- 基本的なエラーケースを処理する
+
+```python
+import os
+import requests
+from mcp.types import TextContent
+
+@mcp.tool()
+def send_slack_notification(message: str) -> str:
+    """Send a formatted notification to the team Slack channel."""
+    webhook_url = os.getenv("SLACK_WEBHOOK_URL")
+    if not webhook_url:
+        return "Error: SLACK_WEBHOOK_URL environment variable not set"
+    
+    try:
+        # TODO: webhook_url へ POST リクエストを送信する
+        # TODO: "mrkdwn": true とともに、メッセージを JSON ペイロードに含める
+        # TODO: レスポンスを処理し、ステータスを返す
+        pass
+    except Exception as e:
+        return f"Error sending message: {str(e)}"
+```
+
+### ステップ3：整形プロンプトを作成する（15分）
+
+次に、サーバーへ MCP Prompts を追加します。ここからが重要な部分です！これらのプロンプトを Claude と組み合わせることで、GitHub の webhook データを、情報が整理された Slack メッセージに自動で変換できます。Module 1 で学んだように、Prompts は Claude が一貫して使える再利用可能な指示を提供します。
+
+Slack 形式のメッセージを生成する、2つのプロンプトを実装します。
+
+1. **`format_ci_failure_alert`**：
+   ```python
+   @mcp.prompt()
+   def format_ci_failure_alert() -> str:
+       """Create a Slack alert for CI/CD failures."""
+       return """Format this GitHub Actions failure as a Slack message:
+
+   Use this template:
+   :rotating_light: *CI Failure Alert* :rotating_light:
+   
+   A CI workflow has failed:
+   *Workflow*: workflow_name
+   *Branch*: branch_name
+   *Status*: Failed
+   *View Details*: <LOGS_LINK|View Logs>
+   
+   Please check the logs and address any issues.
+   
+   Use Slack markdown formatting and keep it concise for quick team scanning."""
+   ```
+
+2. **`format_ci_success_summary`**：
+   ```python
+   @mcp.prompt()
+   def format_ci_success_summary() -> str:
+       """Create a Slack message celebrating successful deployments."""
+       return """Format this successful GitHub Actions run as a Slack message:
+
+   Use this template:
+   :white_check_mark: *Deployment Successful* :white_check_mark:
+   
+   Deployment completed successfully for [Repository Name]
+   
+   *Changes:*
+   - Key feature or fix 1
+   - Key feature or fix 2
+   
+   *Links:*
+   <PR_LINK|View Changes>
+   
+   Keep it celebratory but informative. Use Slack markdown formatting."""
+   ```
+
+### ステップ4：完全なワークフローをテストする（10分）
+
+いよいよ楽しい部分です。完全な MCP ワークフローをテストします！Module 2 の webhook 捕捉、このモジュールのプロンプト整形、そして Slack 通知という、3つのコンポーネントすべてが連携して動作します。
+
+1. すべてのサービスを起動する（Module 2 と同じだが、今度は Slack 連携付き）：
+   ```bash
+   # ターミナル1：webhook サーバーを起動
+   python webhook_server.py
+   
+   # ターミナル2：MCP サーバーを起動
+   uv run server.py
+   
+   # ターミナル3：Cloudflare Tunnel を起動  
+   cloudflared tunnel --url http://localhost:8080
+   ```
+
+2. Claude Code で完全な連携をテストする：
+   - トンネル URL で **GitHub の webhook を設定する**（Module 2 と同じ）
+   - **変更を push する**ことで GitHub Actions をトリガーする 
+   - **Claude に依頼し**、最近のイベントを確認してプロンプトで整形してもらう
+   - **Claude に送信させる**：Slack ツールで整形済みメッセージを送る
+   - **確認する**：Slack チャンネルに通知が表示されること
+
+### ステップ5：連携を確認する（5分）
+
+実際の GitHub リポジトリをセットアップしなくても、実装をテストできます！GitHub の webhook イベントをシミュレートする curl コマンドは `manual_test.md` を見てください。
+
+**webhook イベントの流れの理解：**
+- webhook サーバー（Module 2 より）が GitHub イベントを捕捉し、`github_events.json` に保存する
+- MCP ツールがこのファイルから最近の CI/CD アクティビティを取得する  
+- Claude が整形プロンプトを使って読みやすいメッセージを作成する
+- Slack ツールが整形済みメッセージをチームチャンネルへ送信する
+- これにより、次の一連の処理が完成します：GitHub → ローカルストレージ → Claude の分析 → Slack 通知
+
+**クイックテストのワークフロー：**
+1. curl でテスト用の模擬 GitHub イベントを webhook サーバーへ送信する
+2. Claude に最近のイベントの確認と整形を依頼する
+3. 整形済みメッセージを Slack へ送信する
+4. すべてがエンドツーエンドで動作することを確認する
+
+**手動テストの代替手段：** GitHub をセットアップせずに一連の動作をすべてテストしたい場合は、`manual_test.md` に記載された curl コマンドを順番に実行してください。
+
+## Claude Code でのワークフローの例
+
+```
+User: "Check recent CI events and notify the team about any failures"
+
+Claude: 
+1. Uses get_recent_actions_events (from Module 2)
+2. Finds a workflow failure
+3. Uses format_ci_failure_alert prompt to create message
+4. Uses send_slack_notification tool to deliver it
+5. Reports back: "Sent failure alert to #dev-team channel"
+```
+
+## 期待される Slack メッセージの出力
+
+**失敗アラート：**
+```
+🚨 *CI Failure Alert* 🚨
+
+A CI workflow has failed:
+*Workflow*: CI (Run #42)
+*Branch*: feature/slack-integration
+*Status*: Failed
+*View Details*: <https://github.com/user/mcp-course/actions/runs/123|View Logs>
+
+Please check the logs and address any issues.
+```
+
+**成功サマリー：**
+```
+✅ *Deployment Successful* ✅
+
+Deployment completed successfully for mcp-course
+
+*Changes:*
+- Added team notification system
+- Integrated MCP Tools and Prompts
+
+*Links:*
+<https://github.com/user/mcp-course/pull/42|View Changes>
+```
+
+## よくある問題
+
+### Webhook URL の問題
+- 環境変数が正しく設定されているか確認する
+- 連携前に、curl で webhook を直接テストする
+- Slack アプリに適切な権限があるか確認する
+
+### メッセージの書式
+- [Slack の Markdown](https://api.slack.com/reference/surfaces/formatting) は GitHub の Markdown とは異なる
+- **重要**：太字には `*text*` を使う（`**text**` ではない）
+- 適切な書式のため、webhook ペイロードに `"mrkdwn": true` を含める
+- 自動化の前に、メッセージの書式を手動でテストする
+- コミットメッセージ内の特殊文字を適切に処理する（[書式リファレンス](https://api.slack.com/reference/surfaces/formatting#escaping)）
+
+### ネットワークエラー
+- webhook リクエストに基本的なタイムアウト処理を追加する（[webhook のエラーハンドリング](https://api.slack.com/messaging/webhooks#handling_errors)）
+- ツールから意味のあるエラーメッセージを返す
+- リクエストが失敗する場合はインターネット接続を確認する
+
+## 重要なポイント
+
+これで、以下を示す完全な MCP ワークフローを構築しました。
+- 外部 API 連携のための **Tools**（Slack の webhook）
+- インテリジェントなメッセージ整形のための **Prompts**
+- 連携して動作する全 MCP プリミティブの**統合**
+- チームが実際に使える**実世界のアプリケーション**
+
+これにより、MCP を使って実用的な開発自動化ツールを構築できることが分かります！
+
+> [!TIP]
+> **重要な学び**：Tools（外部 API 呼び出し用）と Prompts（一貫した整形用）を組み合わせた、完全な MCP ワークフローを構築しました。この Tools + Prompts のパターンは、高度な MCP 開発の基礎であり、他の多くの自動化シナリオにも応用できます。
+
+## 次のステップ
+
+おめでとうございます！Unit 3 の最終モジュールを完了し、完全なエンドツーエンドの自動化システムを構築しました。3つのモジュールを通じた旅で、以下のハンズオン経験が得られました。
+
+- **Module 1**：MCP Tools とインテリジェントなデータ分析
+- **Module 2**：リアルタイム webhook と MCP Prompts
+- **Module 3**：外部 API 連携とワークフローの完成
+
+### 次にやること：
+1. **完全なシステムをテストする**：実際の GitHub イベントをトリガーし、パイプライン全体の動作を見る
+2. **カスタマイズを実験する**：Slack メッセージの形式を変更したり、新しい通知タイプを追加したりする
+3. **Unit 3 のまとめを確認する**：学んだすべてを振り返り、次のステップを探る
+4. **成功を共有する**：MCP が開発ワークフローをどう自動化できるかをチームメイトに示す
+
+これで、MCP でインテリジェントな自動化システムを構築するための確かな基盤ができました！
+
+### 変革が完了しました！
+CodeCraft Studios は、開発現場が混乱した状態から、チームが円滑に連携できる組織へと変わりました。あなたが構築した自動化システムには、次の機能があります。
+- レビュアーが変更を理解するのに役立つ**スマートな PR の説明**
+- 本番環境に到達する前に失敗を捕える**リアルタイム CI/CD モニタリング**  
+- 全員に自動で情報を届ける**インテリジェントなチーム通知**
+
+チームは今や、プロセスの問題と戦うのではなく、優れたプロダクトの構築に集中できます。そしてあなたは、あらゆる自動化課題に応用できる高度な MCP パターンを学びました！
+
+## 追加リソース
+
+- [Slack Incoming Webhooks ドキュメント](https://api.slack.com/messaging/webhooks)
+- [Slack メッセージ書式ガイド](https://api.slack.com/reference/surfaces/formatting)
+- [MCP Tools ドキュメント](https://modelcontextprotocol.io/docs/concepts/tools)
+- [MCP Prompts ガイド](https://modelcontextprotocol.io/docs/concepts/prompts)

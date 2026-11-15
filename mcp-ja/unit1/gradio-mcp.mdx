@@ -1,0 +1,161 @@
+# Gradio の MCP 統合
+
+ここまでで、MCP プロトコルの基本概念と、MCP サーバーおよびクライアントの実装方法を学びました。この節では、Gradio を使って MCP サーバーをもっと簡単に作成する方法を紹介します。
+
+> [!TIP]
+> Gradio は、機械学習モデル用のカスタマイズ可能な Web インターフェースを素早く作成できる人気の Python ライブラリです。
+
+## Gradio 入門
+
+Gradio を使うと、わずか数行の Python コードでモデルの UI を作成できます。特に次の用途で役立ちます。
+
+- デモやプロトタイプの作成
+- 非技術系ユーザーへのモデルの共有
+- モデルの振る舞いのテストとデバッグ
+
+MCP サポートの追加により、Gradio は標準化された MCP プロトコルを通じて AI モデルの機能を公開する簡単な方法を提供するようになりました。
+
+Gradio と MCP を組み合わせると、人が操作しやすいインターフェースと、AI が利用できるツールの両方を、少ないコードで作成できます。また、Gradio は AI コミュニティで広く使われているため、作成した MCP サーバーをほかの人と共有する際にも便利です。
+
+## 前提条件
+
+Gradio で MCP 機能を使うには、MCP 用の追加依存パッケージ（extra）も含めて Gradio をインストールする必要があります。
+
+```bash
+uv pip install "gradio[mcp]"
+```
+
+また、Cursor のような、MCP プロトコルを使ったツール呼び出しをサポートする LLM アプリケーション（「MCP ホスト」と呼ばれます）も必要です。
+
+## Gradio で MCP サーバーを作成する
+
+Gradio を使って MCP サーバーを作成する基本的な例を見ていきましょう。
+
+```python
+import gradio as gr
+
+def letter_counter(word: str, letter: str) -> int:
+    """
+    単語またはテキスト中の文字の出現回数を数えます。
+
+    Args:
+        word (str): 検索対象の入力テキスト
+        letter (str): 検索する文字
+
+    Returns:
+        int: その文字がテキスト中に現れる回数
+    """
+    word = word.lower()
+    letter = letter.lower()
+    count = word.count(letter)
+    return count
+
+# 標準的な Gradio インターフェースを作成する
+demo = gr.Interface(
+    fn=letter_counter,
+    inputs=["textbox", "textbox"],
+    outputs="number",
+    title="文字の出現回数カウンター",
+    description="テキストと文字を入力すると、その文字がテキスト中に何回現れるかを数えます。"
+)
+
+# Gradio の Web インターフェースと MCP サーバーの両方を起動する
+if __name__ == "__main__":
+    demo.launch(mcp_server=True)
+```
+
+このセットアップにより、文字カウント関数には次の2つの方法でアクセスできるようになります。
+
+1. 人間が直接操作するための従来型の Gradio Web インターフェース
+2. 互換性のあるクライアントに接続できる MCP サーバー
+
+MCP サーバーには次のアドレスでアクセスできます。
+```
+http://your-server:port/gradio_api/mcp/sse
+```
+
+アプリケーション自体にも引き続きアクセスでき、次のような見た目になります。
+
+![Gradio MCP サーバー](https://huggingface.co/datasets/mcp-course/images/resolve/main/unit1/7.png)
+
+## 裏側の仕組み
+
+`launch()` で `mcp_server=True` を設定すると、いくつかのことが起こります。
+
+1. Gradio の関数が自動的に MCP ツールに変換されます
+2. 入力コンポーネントがツールの引数スキーマに対応します
+3. 出力コンポーネントがレスポンスの形式を決定します
+4. Gradio サーバーが MCP プロトコルのメッセージも待ち受けるようになります
+5. クライアント・サーバー通信のために HTTP+SSE 上の JSON-RPC がセットアップされます
+
+## Gradio と MCP の統合で利用できる主な機能
+
+1. **ツール変換**：Gradio アプリの各 API エンドポイントは、対応する名前、説明、入力スキーマを持つ MCP ツールに自動的に変換されます。ツールとスキーマを確認するには、`http://your-server:port/gradio_api/mcp/schema` にアクセスするか、Gradio アプリのフッターにある「View API」（API を表示）リンクを開き、「MCP」をクリックしてください。
+
+2. **環境変数のサポート**：MCP サーバー機能を有効化する方法は2つあります。
+- `launch()` の `mcp_server` パラメータを使う方法：
+  ```python
+  demo.launch(mcp_server=True)
+  ```
+- 環境変数を使う方法：
+  ```bash
+  export GRADIO_MCP_SERVER=True
+  ```
+
+3. **ファイル処理**：サーバーはファイルデータの変換を自動的に処理します。次を含みます。
+   - base64 エンコードされた文字列からファイルデータへの変換
+   - 画像ファイルの処理と正しい形式での返却
+   - 一時ファイルストレージの管理
+
+   MCP クライアントはローカルファイルを常に正しく処理できるとは限らないため、入力画像やファイルは完全な URL（「http://...」または「https://...」）として渡すことが**強く**推奨されます。
+
+4. **🤗 Spaces 上のホスト型 MCP サーバー**：Gradio アプリケーションを Hugging Face Spaces に無料で公開でき、無料のホスト型 MCP サーバーを持つことができます。そのような Space の例はこちらです：https://huggingface.co/spaces/abidlabs/mcp-tools
+
+## クライアントから MCP 対応 Space を使う
+
+Hugging Face の MCP 設定を通じて、MCP 対応の Space をアシスタントに接続できます。
+
+1. MCP 対応の Space を探索する：https://huggingface.co/spaces?search=mcp
+2. https://huggingface.co/settings/mcp を開き（ログイン状態で）、Space を追加する。
+3. MCP クライアントを再起動または更新し、新しいツールを発見させる。
+
+これらの Space は、その関数を引数と説明を持つツールとして公開します。そのため、アシスタントが直接呼び出すことができます。
+
+## トラブルシューティングのヒント
+
+1. **型ヒントと docstring**：関数には型ヒントと妥当な docstring を必ず付けましょう。docstring には、パラメータ名をインデントした「Args:」ブロックを含める必要があります。
+
+2. **文字列入力**：迷った場合は、入力引数を `str` として受け取り、関数の中で目的の型に変換しましょう。
+
+3. **SSE サポート**：一部の MCP ホストは SSE ベースの MCP サーバーをサポートしていません。その場合は `mcp-remote` を使えます。
+   ```json
+   {
+     "mcpServers": {
+       "gradio": {
+         "command": "npx",
+         "args": [
+           "mcp-remote",
+           "http://your-server:port/gradio_api/mcp/sse"
+         ]
+       }
+     }
+   }
+   ```
+
+4. **再起動**：接続の問題が発生した場合は、MCP クライアントと MCP サーバーの両方を再起動してみてください。
+
+## MCP サーバーを共有する
+
+Gradio アプリを Hugging Face Spaces に公開することで、MCP サーバーを共有できます。下の動画では、Hugging Face Space の作成方法を紹介しています。
+
+<Youtube id="3bSVKNKb_PY" />
+
+これで、Hugging Face Space を共有することで、自分の MCP サーバーを他の人に共有できます。
+
+## まとめ
+
+Gradio と MCP の統合は、MCP を使い始めるための手軽な方法です。Gradio の使いやすさと MCP の標準化された仕組みを活用すれば、人が操作しやすいインターフェースと AI が利用できるツールの両方を、少ないコードで素早く作成できます。
+
+コースを進めるにつれて、より高度な MCP の実装を探っていきますが、Gradio はプロトコルを理解し実験するための優れた出発点となります。
+
+次のユニットでは、開発環境のセットアップ、SDK の探索、より高度な MCP サーバーとクライアントの実装に焦点を当て、MCP アプリケーションの構築をさらに深く掘り下げていきます。 

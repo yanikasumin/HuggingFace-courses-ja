@@ -1,0 +1,64 @@
+# Hugging Face MCP Server
+
+Hugging Face MCP（Model Context Protocol）Server は、MCP 対応の AI アシスタント（例えば VS Code、Cursor、Zed、Claude Desktop）を Hugging Face Hub に直接接続します。接続すると、アシスタントが Hub のリソースを検索・探索したり、コミュニティのツールを使ったりできるようになり、すべてエディタやチャット、CLI の中から操作できます。
+
+> [!TIP]
+> Hugging Face MCP Server の主な利点は、Hub 向けの組み込みツールに加え、Gradio Spaces を利用したコミュニティツールも提供することです。自分で MCP サーバーを構築する際には、Hugging Face MCP Server の仕組みを参考にできます。
+
+## できること
+
+- Hub のリソースを検索・探索する：モデル、データセット、Spaces、論文。
+- [Spaces](https://hf.co/spaces) でホストされている MCP 対応の Gradio アプリを通じて、コミュニティツールを実行する。
+- メタデータ、リンク、コンテキストとともに、結果をアシスタントに取り込む。
+
+## 組み込みツール
+
+このサーバーは、サポート対象のクライアント全体で動作する厳選されたツールを提供します。
+
+- モデルの検索と探索（タスク、ライブラリ、ダウンロード数、いいね数で絞り込み）
+- データセットの検索と探索（タグ、サイズ、モダリティで絞り込み）
+- Spaces のセマンティック検索（TTS、ASR、OCR などの機能でアプリを探す）
+- 論文のセマンティック検索（Hub 上の関連研究を発見する）
+
+## はじめに
+
+1. MCP 設定を開く：ログインした状態で https://huggingface.co/settings/mcp にアクセスします。
+
+2. クライアントを選ぶ：MCP 対応のクライアント（例えば VS Code、Cursor、Zed、Claude Desktop）を選択します。ページにはクライアント固有の手順と、コピーして使える設定スニペットが表示されます。
+
+3. 貼り付けて再起動する：スニペットをクライアントの MCP 設定にコピーして保存し、クライアントを再起動または再読み込みします。クライアントに「Hugging Face」（または同様の名前）が接続済み MCP サーバーとして表示されるはずです。
+
+> [!TIP]
+> 設定ページは、クライアントが想定する正確な設定を生成します。手書きで設定を書くのではなく、それを使いましょう。
+
+![MCP 設定の例](https://huggingface.co/datasets/huggingface/documentation-images/resolve/main/hf-mcp-settings.png)
+
+## サーバーを使う
+
+接続したら、アシスタントに Hugging Face のツールを使うよう頼んでみましょう。プロンプトの例：
+
+- 「Qwen 3 の量子化モデルを Hugging Face で検索して。」
+- 「音声ファイルを文字起こしできる Space を探して。」
+- 「天気の時系列に関するデータセットを見せて。」
+- 「ジブリ風の猫の画像を 1024 × 1024 で作成して。」
+
+アシスタントは Hugging Face MCP Server が公開する MCP ツール（Spaces を含む）を呼び出し、タイトル、所有者、ダウンロード数、リンクなどの情報を返します。その後、Hub 上でリソースを開いたり、同じチャットで質問や操作を繰り返したりできます。
+
+![VS Code で Spaces と連携する HF MCP](https://huggingface.co/datasets/huggingface/documentation-images/resolve/main/hf-mcp-vscode.png)
+
+## コミュニティツール（Spaces）を追加する
+
+コミュニティが構築した MCP 対応の Gradio Spaces で、セットアップを拡張できます。
+
+- [MCP に対応した Spaces の一覧から利用できる Space を探す](https://huggingface.co/spaces?search=mcp)。
+- [Hugging Face の MCP 設定で、利用したい Space を追加する](https://huggingface.co/settings/mcp)。
+
+Gradio MCP アプリは、その関数をツール（引数と説明付き）として公開するため、アシスタントが直接呼び出すことができます。追加した新しいツールをクライアントが認識できるよう、クライアントを再起動または更新してください。
+
+## さらに詳しく
+
+- [設定とクライアントのセットアップ](https://huggingface.co/settings/mcp)
+- [変更履歴のお知らせ](https://huggingface.co/changelog/hf-mcp-server)
+- [HF MCP Server のドキュメント](https://huggingface.co/docs/hub/en/hf-mcp-server)
+- [Gradio と Hub ツールで独自の MCP サーバーを構築する方法](https://huggingface.co/docs/hub/main/agents)
+

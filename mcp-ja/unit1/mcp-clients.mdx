@@ -1,0 +1,384 @@
+# MCP クライアント
+
+Model Context Protocol の基本を理解したところで、Model Context Protocol エコシステムにおける MCP クライアントの重要な役割を探っていきましょう。
+
+ Unit 1 のこのパートでは、Model Context Protocol エコシステムにおける MCP クライアントの重要な役割を探ります。
+
+この節では、次のことを行います。
+
+* MCP クライアントとは何か、MCP アーキテクチャにおけるその役割を理解する
+* MCP クライアントの主な責務を学ぶ
+* 主要な MCP クライアントの実装を探る
+* Hugging Face MCP Server と組み込みツールへの接続方法を知る
+* MCP クライアントの実用的な使用例を見る
+
+> [!TIP]
+> このページでは、JSON 形式の設定を使って MCP クライアントをセットアップする方法を、いくつか紹介します。ここでは、MCP サーバーのファイルパスとして `path/to/server.py` のような仮の例を使います。次のユニットでは、実際の MCP サーバーを使って設定します。
+>
+> 今は MCP クライアントの記法の理解に集中してください。MCP サーバーは次のユニットで実装します。
+
+## MCP クライアントを理解する
+
+MCP クライアントは、AI アプリケーション（ホスト）と MCP サーバーが提供する外部機能の間の橋渡し役として動作する重要なコンポーネントです。ホストはメインのアプリケーション（AI アシスタントや IDE のようなもの）、クライアントはそのホスト内の専門モジュールで、MCP 通信の処理を担うものと考えてください。
+
+## ユーザーインターフェースクライアント
+
+まず、MCP で利用できるユーザーインターフェースクライアントを見ていきましょう。
+
+### チャットインターフェースクライアント
+
+- Claude Desktop（Anthropic）
+
+### インタラクティブ開発クライアント
+
+- MCP 対応の VS Code 拡張機能（例：Continue）
+- Cursor IDE（MCP クライアント内蔵）
+- Zed エディタ
+
+これらのクライアントは、複数の MCP サーバーへの接続とリアルタイムのツール呼び出しをサポートしています。
+
+## Hugging Face MCP Server へのクイック接続
+
+Hugging Face は、モデル、データセット、Spaces、論文を探索するための組み込みツールを備えた、ホスト型の MCP サーバーを提供しています。
+
+1. ログインした状態で https://huggingface.co/settings/mcp にアクセスします。
+2. MCP 対応のクライアント（例：VS Code、Cursor、Zed、Claude Desktop）を選択します。
+3. 生成された設定スニペットを、クライアントの MCP 設定にコピーします。
+4. クライアントを再起動またはリロードします。「Hugging Face」が接続済みと表示されるはずです。
+
+ヒント：設定を手作業で書くよりも、自動生成された設定スニペットを使いましょう。各クライアントに合わせた内容になっています。
+
+## MCP クライアントの設定
+
+MCP プロトコルの中核を押さえたところで、MCP サーバーとクライアントの設定方法を見ていきましょう。
+
+MCP サーバーとクライアントを効果的にデプロイするには、適切な設定が必要です。 
+
+> [!TIP]
+> MCP 仕様はまだ進化中であるため、設定方法は今後変わる可能性があります。ここでは現在の設定のベストプラクティスに焦点を当てます。
+
+### MCP 設定ファイル
+
+MCP ホストは、サーバー接続を管理するために設定ファイルを使います。これらのファイルは、どのサーバーが利用可能か、どう接続するかを定義します。
+
+幸い、設定ファイルは非常にシンプルで理解しやすく、主要な MCP ホスト間で一貫しています。
+
+#### `mcp.json` の構造
+
+MCP の標準的な設定ファイルは `mcp.json` という名前です。基本的な構造は次のとおりです。
+
+次は `mcp.json` の基本構造であり、Claude Desktop、Cursor、VS Code のようなアプリケーションに渡すことができます。
+
+```json
+{
+  "servers": [
+    {
+      "name": "Server Name",
+      "transport": {
+        "type": "stdio|sse",
+        // Transport-specific configuration
+      }
+    }
+  ]
+}
+```
+
+この例では、名前とトランスポートタイプを持つ単一のサーバーがあります。トランスポートタイプは `stdio` か `sse` のいずれかです。
+
+#### stdio トランスポートの設定
+
+stdio トランスポートを使うローカルサーバーでは、設定にはサーバープロセスを起動するコマンドと引数が含まれます。
+
+```json
+{
+  "servers": [
+    {
+      "name": "File Explorer",
+      "transport": {
+        "type": "stdio",
+        "command": "python",
+        "args": ["/path/to/file_explorer_server.py"] // This is an example, we'll use a real server in the next unit
+      }
+    }
+  ]
+}
+```
+
+ここでは、「File Explorer」という名前のサーバーがあり、これはローカルスクリプトです。
+
+#### HTTP+SSE トランスポートの設定
+
+HTTP+SSE トランスポートを使うリモートサーバーでは、設定にはサーバーの URL が含まれます。
+
+```json
+{
+  "servers": [
+    {
+      "name": "Remote API Server",
+      "transport": {
+        "type": "sse",
+        "url": "https://example.com/mcp-server"
+      }
+    }
+  ]
+}
+```
+
+#### 設定における環境変数
+
+環境変数は `env` フィールドを使ってサーバープロセスに渡すことができます。サーバーコードからそれらにアクセスする方法は次のとおりです。
+
+<hfoptions id="env-variables">
+<hfoption id="python">
+
+Python では、`os` モジュールを使って環境変数にアクセスします。
+
+```python
+import os
+
+# 環境変数にアクセスする
+github_token = os.environ.get("GITHUB_TOKEN")
+if not github_token:
+    raise ValueError("GITHUB_TOKEN environment variable is required")
+
+# サーバーコードでトークンを使う
+def make_github_request():
+    headers = {"Authorization": f"Bearer {github_token}"}
+    # ... 残りのコード
+```
+
+</hfoption>
+<hfoption id="javascript">
+
+JavaScript では、`process.env` オブジェクトを使って環境変数にアクセスします。
+
+```javascript
+// 環境変数にアクセスする
+const githubToken = process.env.GITHUB_TOKEN;
+if (!githubToken) {
+    throw new Error("GITHUB_TOKEN environment variable is required");
+}
+
+// サーバーコードでトークンを使う
+function makeGithubRequest() {
+    const headers = { "Authorization": `Bearer ${githubToken}` };
+    // ... 残りのコード
+}
+```
+
+</hfoption>
+</hfoptions>
+
+対応する `mcp.json` の設定は次のようになります。
+
+```json
+{
+  "servers": [
+    {
+      "name": "GitHub API",
+      "transport": {
+        "type": "stdio",
+        "command": "python",
+        "args": ["/path/to/github_server.py"], // This is an example, we'll use a real server in the next unit
+        "env": {
+          "GITHUB_TOKEN": "your_github_token"
+        }
+      }
+    }
+  ]
+}
+```
+
+### 設定の例
+
+実際のシナリオでの設定例を見ていきましょう。
+
+#### シナリオ 1：ローカルサーバーの設定
+
+この例では、ファイルエクスプローラーやコードエディタとして動作する Python スクリプトを、ローカルサーバーとして使用します。
+
+```json
+{
+  "servers": [
+    {
+      "name": "File Explorer",
+      "transport": {
+        "type": "stdio",
+        "command": "python",
+        "args": ["/path/to/file_explorer_server.py"] // This is an example, we'll use a real server in the next unit
+      }
+    }
+  ]
+}
+```
+
+#### シナリオ 2：リモートサーバーの設定
+
+このシナリオでは、天気 API であるリモートサーバーがあります。
+
+```json
+{
+  "servers": [
+    {
+      "name": "Weather API",
+      "transport": {
+        "type": "sse",
+        "url": "https://example.com/mcp-server" // This is an example, we'll use a real server in the next unit
+      }
+    }
+  ]
+}
+```
+
+MCP を使った連携を正しく動作させるには、適切な設定が欠かせません。ここまで説明した設定方法を理解すれば、AI アプリケーションと外部機能の間で、安定した信頼性の高い接続を確立できます。
+
+次節では、Hugging Face Hub で利用できる MCP サーバーのエコシステムと、自分のサーバーをそこに公開する方法を探ります。 
+
+## Tiny Agents クライアント
+
+次に、コードの中で MCP クライアントを使う方法を見ていきましょう。
+
+Tiny Agents を MCP クライアントとして使うことで、コードから MCP サーバーに直接接続することもできます。Tiny Agents は、MCP サーバーのツールを使える AI エージェントを作成する簡単な方法を提供します。
+
+Tiny Agents はコマンドライン環境で MCP サーバーを実行できます。そのためには、`npm` をインストールし、`npx` でサーバーを実行する必要があります。**これは Python と JavaScript の両方で必要です。**
+
+`npm` で `npx` をインストールしましょう。`npm` がインストールされていない場合は、[npm のドキュメント](https://docs.npmjs.com/downloading-and-installing-node-js-and-npm)を確認してください。
+
+### セットアップ
+
+まず、`npx` がインストールされていない場合は、次のコマンドでインストールします。
+
+```bash
+# npx をインストールする
+npm install -g npx
+```
+
+次に、MCP サポート付きの huggingface_hub パッケージをインストールする必要があります。これにより、MCP サーバーとクライアントを実行できるようになります。
+
+```bash
+pip install "huggingface_hub[mcp]>=0.32.0"
+```
+
+次に、MCP サーバーにアクセスするために Hugging Face Hub にログインする必要があります。これは Hugging Face CLI を使って行えます。そのためには[ログイントークン](https://huggingface.co/docs/huggingface_hub/v0.32.3/en/quick-start#authentication)が必要です。
+
+
+```bash
+# 新しい CLI を使ってログインする
+hf auth login
+```
+> **注記**
+> `huggingface-cli` コマンドは非推奨となり、`hf` に置き換えられました。
+> 「command not found」エラーに遭遇した場合は、最新バージョンの `huggingface_hub` を使っているか確認してください。
+
+### アクセストークンの権限を設定する
+
+Hugging Face のアクセストークンを作成してログインしたら、推論プロバイダーを利用するために必要な権限が、そのトークンに付与されているか確認してください。
+
+> [!WARNING]
+> **重要：** このステップをスキップすると、ホスト型モデルで Tiny Agents を実行する際に認証エラーが発生する可能性があります。
+
+1. [Hugging Face のアクセストークンページ](https://huggingface.co/settings/tokens)に移動します
+2. MCP トークンを見つけ、その横の3点マーク（⋮）をクリックします
+3. **「Edit permissions」（権限を編集）** を選択します
+4. **Inference（推論）** セクションで、次のチェックボックスをオンにします：
+   - **「Make calls to Inference Providers」（推論プロバイダーへの呼び出しを許可）**
+5. 変更を保存します
+
+この権限は、Tiny Agents が Novita などの推論プロバイダーを通じて、`Qwen/Qwen2.5-72B-Instruct` のようなホスト型モデルの API を呼び出すために必要です。
+
+
+<hfoptions id="language">
+<hfoption id="python">
+
+### MCP サーバーに接続する
+
+では、エージェントの設定ファイル `agent.json` を作成しましょう。
+
+```json
+{
+    "name": "playwright-agent",
+    "description": "Agent with Playwright MCP server",
+    "model": "Qwen/Qwen2.5-72B-Instruct",
+    "provider": "novita",
+    "servers": [
+        {
+            "type": "stdio",
+            "command": "npx",
+            "args": ["@playwright/mcp@latest"]
+        }
+    ]
+}
+```
+
+この設定では、`@playwright/mcp` MCP サーバーを使っています。これは Playwright でブラウザを制御できる MCP サーバーです。
+
+これでエージェントを実行できます。
+
+```bash
+tiny-agents run agent.json
+```
+</hfoption>
+<hfoption id="javascript">
+
+まず、[npm](https://docs.npmjs.com/downloading-and-installing-node-js-and-npm) で Tiny Agents パッケージをインストールします。
+
+```bash
+npm install @huggingface/tiny-agents
+```
+
+### MCP サーバーに接続する
+
+エージェントプロジェクトのディレクトリを作成し、`agent.json` ファイルを作成します。
+
+```bash
+mkdir my-agent
+touch my-agent/agent.json
+```
+
+`my-agent/agent.json` にエージェントの設定ファイルを作成します。
+
+```json
+{
+    "model": "Qwen/Qwen2.5-72B-Instruct",
+    "provider": "novita",
+    "servers": [
+        {
+            "type": "stdio",
+            "command": "npx",
+            "args": ["@playwright/mcp@latest"]
+        }
+    ]
+}
+```
+
+これでエージェントを実行できます。
+
+```bash
+npx @huggingface/tiny-agents run ./my-agent
+```
+
+</hfoption>
+</hfoptions>
+
+下の動画では、エージェントを実行し、ブラウザで新しいタブを開くよう指示しています。
+
+次の例は、Novita 推論プロバイダーを通じて [Qwen/Qwen2.5-72B-Instruct](https://huggingface.co/Qwen/Qwen2.5-72B-Instruct) モデルを利用する Web ブラウジングエージェントです。Playwright MCP サーバーを備えているため、Web ブラウザを操作できます。エージェントの設定は、Hugging Face の [`tiny-agents/tiny-agents`](https://huggingface.co/datasets/tiny-agents/tiny-agents/tree/main/celinah/web-browser) データセット内にある設定ファイルのパスを指定して読み込みます。
+
+<video controls autoplay loop>
+  <source src="https://huggingface.co/datasets/huggingface/documentation-images/resolve/main/blog/python-tiny-agents/web_browser_agent.mp4" type="video/mp4">
+</video>
+
+エージェントを実行すると、接続先の MCP サーバーから利用可能なツールを検出し、その一覧を表示しながら起動します。起動が完了すると、プロンプトを入力できるようになります。
+
+このデモで使われたプロンプト：
+
+> do a Web Search for HF inference providers on Brave Search and open the first result and then give me the list of the inference providers supported on Hugging Face 
+
+## 次のステップ
+
+MCP クライアントを理解した今、次の準備が整いました。
+* 具体的な MCP サーバーの実装を探る
+* カスタム MCP クライアントの作成について学ぶ
+* 高度な MCP 統合パターンを深く掘り下げる
+
+Model Context Protocol の世界への旅を続けましょう！

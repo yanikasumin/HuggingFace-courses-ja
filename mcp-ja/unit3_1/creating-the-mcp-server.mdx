@@ -1,0 +1,317 @@
+# MCP サーバーの作成
+
+MCP サーバーはプルリクエストエージェントの心臓部です。エージェントが Hugging Face Hub とやり取りするためのツールを提供し、特にモデルリポジトリのタグの読み取りと更新を担います。このセクションでは、FastMCP と Hugging Face Hub の Python SDK を使ってサーバーを構築します。
+
+## MCP サーバーのアーキテクチャを理解する
+
+この MCP サーバーは、2つの必須ツールを提供します。
+
+| ツール | 説明 |
+| --- | --- |
+| `get_current_tags` | モデルリポジトリから既存のタグを取得する |
+| `add_new_tag` | プルリクエストでリポジトリに新しいタグを追加する |
+
+これらのツールは Hub API との複雑なやり取りを内部に隠し、エージェントが簡単に利用できるインターフェースを提供します。
+
+![MCP サーバーのツール](https://huggingface.co/datasets/mcp-course/images/resolve/main/unit3/architecture.png)
+
+## MCP サーバーの完全な実装
+
+`mcp_server.py` ファイルを一歩ずつ作っていきましょう。各コンポーネントと、それらがどう連携するかを理解できるよう、段階的に構築します。
+
+### 1. インポートと設定
+
+まず、必要なインポートと設定をすべて用意します。
+
+```python
+#!/usr/bin/env python3
+"""
+Simplified MCP Server for HuggingFace Hub Tagging Operations using FastMCP
+"""
+
+import os
+import json
+from fastmcp import FastMCP
+from huggingface_hub import HfApi, model_info, ModelCard, ModelCardData
+from huggingface_hub.utils import HfHubHTTPError
+from dotenv import load_dotenv
+
+load_dotenv()
+```
+
+上のインポートで、MCP サーバーを構築するために必要なものがすべて揃います。`FastMCP` はサーバーフレームワークを提供し、`huggingface_hub` のインポートはモデルリポジトリとやり取りする手段を提供します。
+
+`load_dotenv()` の呼び出しにより、`.env` ファイルから環境変数が自動で読み込まれ、開発中に API トークンのようなシークレットを簡単に管理できます。
+
+> [!TIP]
+> uv を使っている場合は、プロジェクトのルートに `.env` ファイルを作成すれば、`uv run` でサーバーを実行する限り `load_dotenv()` は不要です。
+
+次に、必要な認証情報でサーバーを設定し、FastMCP インスタンスを作成します。
+
+```python
+# 設定
+HF_TOKEN = os.getenv("HF_TOKEN")
+
+# HF API クライアントを初期化
+hf_api = HfApi(token=HF_TOKEN) if HF_TOKEN else None
+
+# FastMCP サーバーを作成
+mcp = FastMCP("hf-tagging-bot")
+```
+
+この設定ブロックは、重要な3つのことを行います。
+
+1. 環境変数から Hugging Face トークンを取得する
+2. 認証済みの API クライアントを作成する（トークンがある場合のみ）
+3. 分かりやすい名前で FastMCP サーバーを初期化する
+
+`hf_api` を条件付きで作成しているおかげで、トークンがなくてもサーバーを起動でき、基本構造のテストに役立ちます。
+
+### 2. 現在のタグを取得するツール
+
+最初のツール `get_current_tags` を実装しましょう。このツールは、モデルリポジトリから既存のタグを取得します。
+
+```python
+@mcp.tool()
+def get_current_tags(repo_id: str) -> str:
+    """Get current tags from a HuggingFace model repository"""
+    print(f"🔧 get_current_tags を呼び出しました（repo_id: {repo_id}）")
+
+    if not hf_api:
+        error_result = {"error": "HF token not configured"}
+        json_str = json.dumps(error_result)
+        print(f"❌ HF API トークンがありません。返却値：{json_str}")
+        return json_str
+```
+
+関数はまず検証から始まります。認証済みの API クライアントがあるかどうかを確認します。Python オブジェクトではなく JSON 文字列を返している点に注目してください。これは MCP の通信にとって重要です。
+
+> [!TIP]
+> すべての MCP ツールは、Python オブジェクトではなく文字列を返さなければなりません。そのため、結果を JSON 文字列に変換するのに `json.dumps()` を使います。これにより、MCP サーバーとクライアントの間で確実にデータをやり取りできます。
+
+`get_current_tags` 関数のメインロジックを続けます。
+
+```python
+    try:
+        print(f"📡 モデル情報を取得中：{repo_id}")
+        info = model_info(repo_id=repo_id, token=HF_TOKEN)
+        current_tags = info.tags if info.tags else []
+        print(f"🏷️ {len(current_tags)} 個のタグが見つかりました：{current_tags}")
+
+        result = {
+            "status": "success",
+            "repo_id": repo_id,
+            "current_tags": current_tags,
+            "count": len(current_tags),
+        }
+        json_str = json.dumps(result)
+        print(f"✅ get_current_tags の返却値：{json_str}")
+        return json_str
+
+    except Exception as e:
+        print(f"❌ get_current_tags でエラーが発生しました：{str(e)}")
+        error_result = {"status": "error", "repo_id": repo_id, "error": str(e)}
+        json_str = json.dumps(error_result)
+        print(f"❌ get_current_tags のエラー時の返却値：{json_str}")
+        return json_str
+```
+
+この実装は、明確なパターンに従っています。
+
+1. Hugging Face Hub API で**データを取得する**
+2. **レスポンスを処理して**タグ情報を抽出する
+3. **結果を整形する**：一貫した JSON 形式にまとめる
+4. 詳細なエラーメッセージで**エラーを適切に処理する**
+
+> [!TIP]
+> これほど詳細なログはやりすぎに見えるかもしれませんが、サーバー稼働中のデバッグと監視に役立ちます。アプリケーションは Hub からのイベントに自律的に反応するため、ログをリアルタイムで見ることはできません。
+
+### 3. 新しいタグを追加するツール
+
+次は、より複雑なツール `add_new_tag` です。このツールは、プルリクエストを作成してリポジトリに新しいタグを追加します。まず初期設定と検証から始めましょう。
+
+```python
+@mcp.tool()
+def add_new_tag(repo_id: str, new_tag: str) -> str:
+    """Add a new tag to a HuggingFace model repository via PR"""
+    print(f"🔧 add_new_tag を呼び出しました（repo_id: {repo_id}、new_tag: {new_tag}）")
+
+    if not hf_api:
+        error_result = {"error": "HF token not configured"}
+        json_str = json.dumps(error_result)
+        print(f"❌ HF API トークンがありません。返却値：{json_str}")
+        return json_str
+```
+
+最初のツールと同様に、検証から始めます。次に、タグがすでに存在するか確認するため、リポジトリの現在の状態を取得します。
+
+```python
+    try:
+        # 現在のモデル情報とタグを取得
+        print(f"📡 現在のモデル情報を取得中：{repo_id}")
+        info = model_info(repo_id=repo_id, token=HF_TOKEN)
+        current_tags = info.tags if info.tags else []
+        print(f"🏷️ 現在のタグ：{current_tags}")
+
+        # タグがすでに存在するか確認
+        if new_tag in current_tags:
+            print(f"⚠️ タグ '{new_tag}' は {current_tags} にすでに存在します")
+            result = {
+                "status": "already_exists",
+                "repo_id": repo_id,
+                "tag": new_tag,
+                "message": f"Tag '{new_tag}' already exists",
+            }
+            json_str = json.dumps(result)
+            print(f"🏷️ add_new_tag（既存タグ）の返却値：{json_str}")
+            return json_str
+```
+
+このセクションは、**行動する前に検証する**という重要な原則を示しています。不要なプルリクエストを作らないよう、タグがすでに存在するかを確認します。
+
+> [!TIP]
+> 変更を加える前に、必ず現在の状態を確認してください。これにより、同じ作業を繰り返さずに済み、ユーザーにも適切な結果を返せます。特にプルリクエストを作成するときは重要です。重複した PR が増えると、リポジトリの管理が煩雑になります。
+
+次に、更新後のタグリストを準備し、モデルカードを処理します。
+
+```python
+        # 既存のタグに新しいタグを追加
+        updated_tags = current_tags + [new_tag]
+        print(f"🆕 タグを {current_tags} から {updated_tags} に更新します")
+
+        # 更新したタグでモデルカードの内容を作成
+        try:
+            # 既存のモデルカードを読み込む
+            print(f"📄 既存のモデルカードを読み込み中...")
+            card = ModelCard.load(repo_id, token=HF_TOKEN)
+            if not hasattr(card, "data") or card.data is None:
+                card.data = ModelCardData()
+        except HfHubHTTPError:
+            # 存在しない場合は新しいモデルカードを作成
+            print(f"📄 モデルカードが存在しないため、新規作成します")
+            card = ModelCard("")
+            card.data = ModelCardData()
+
+        # タグを更新 - 更新したタグで新しい ModelCardData を作成
+        card_dict = card.data.to_dict()
+        card_dict["tags"] = updated_tags
+        card.data = ModelCardData(**card_dict)
+```
+
+このセクションはモデルカードの管理を担当します。まず既存のモデルカードを読み込もうとし、存在しない場合は新しいものを作成します。これにより、空のリポジトリでもツールが動作します。
+
+モデルカード（`README.md`）には、タグを含むリポジトリのメタデータが入っています。モデルカードのデータを更新してプルリクエストを作成することで、メタデータ変更における Hugging Face の標準的なワークフローに従っています。
+
+次はプルリクエストの作成です。このツールの主要部分になります。
+
+```python
+        # 更新したモデルカードでプルリクエストを作成
+        pr_title = f"Add '{new_tag}' tag"
+        pr_description = f"""
+## Add tag: {new_tag}
+
+This PR adds the `{new_tag}` tag to the model repository.
+
+**Changes:**
+- Added `{new_tag}` to model tags
+- Updated from {len(current_tags)} to {len(updated_tags)} tags
+
+**Current tags:** {", ".join(current_tags) if current_tags else "None"}
+**New tags:** {", ".join(updated_tags)}
+
+🤖 This is a pull request created by the Hugging Face Hub Tagging Bot.
+"""
+
+        print(f"🚀 次のタイトルで PR を作成します：{pr_title}")
+```
+
+何が、なぜ変わるのかを説明する詳細なプルリクエストの説明文を作成します。この透明性は、PR をレビューするリポジトリのメンテナーにとって重要です。
+
+> [!TIP]
+> 明確で詳細な PR の説明文は、自動生成されるプルリクエストに不可欠です。メンテナーが何が起きているのかを理解し、変更をマージすべきか判断する助けになります。
+>
+> また、PR が自動化ツールによって作成されたことを明記するのは良い習慣です。メンテナーが PR への対処法を理解しやすくなります。
+
+最後に、コミットとプルリクエストを作成します。
+
+```python
+        # CommitOperationAdd を使って、更新したモデルカードでコミットを作成
+        from huggingface_hub import CommitOperationAdd
+
+        commit_info = hf_api.create_commit(
+            repo_id=repo_id,
+            operations=[
+                CommitOperationAdd(
+                    path_in_repo="README.md", path_or_fileobj=str(card).encode("utf-8")
+                )
+            ],
+            commit_message=pr_title,
+            commit_description=pr_description,
+            token=HF_TOKEN,
+            create_pr=True,
+        )
+
+        # コミット情報から PR の URL を取り出す
+        pr_url_attr = commit_info.pr_url
+        pr_url = pr_url_attr if hasattr(commit_info, "pr_url") else str(commit_info)
+
+        print(f"✅ PR を作成しました。URL：{pr_url}")
+
+        result = {
+            "status": "success",
+            "repo_id": repo_id,
+            "tag": new_tag,
+            "pr_url": pr_url,
+            "previous_tags": current_tags,
+            "new_tags": updated_tags,
+            "message": f"Created PR to add tag '{new_tag}'",
+        }
+        json_str = json.dumps(result)
+        print(f"✅ add_new_tag の成功時の返却値：{json_str}")
+        return json_str
+```
+
+`create_pr=True` を指定した `create_commit` 関数が、この自動化の鍵です。更新した `README.md` ファイルでコミットを作成し、レビュー用のプルリクエストを自動で開きます。
+
+この複雑な処理に対するエラーハンドリングも忘れないでください。
+
+```python
+    except Exception as e:
+        print(f"❌ add_new_tag でエラーが発生しました：{str(e)}")
+        print(f"❌ エラーの型：{type(e)}")
+        import traceback
+        print(f"❌ トレースバック：{traceback.format_exc()}")
+
+        error_result = {
+            "status": "error",
+            "repo_id": repo_id,
+            "tag": new_tag,
+            "error": str(e),
+        }
+        json_str = json.dumps(error_result)
+        print(f"❌ add_new_tag のエラー時の返却値：{json_str}")
+        return json_str
+```
+
+この手厚いエラーハンドリングには完全なトレースバックが含まれており、問題が起きたときのデバッグに非常に役立ちます。
+
+ログメッセージに絵文字を使うのはふざけているように見えるかもしれませんが、ログの確認がずっと楽になります。関数呼び出しには 🔧、API リクエストには 📡、成功には ✅、エラーには ❌ を使うことで、目的の情報を素早く見つけられます。
+
+> [!TIP]
+> このアプリケーションを作っていると、うっかり PR の無限ループを作ってしまうことがあります。`create_pr=True` を指定した `create_commit` 関数は、コミットのたびに PR を作成するからです。PR がマージされなければ、`create_commit` 関数は何度も何度も呼ばれ続けます……
+>
+> これを防ぐチェックは追加してありますが、意識しておくべき点です。
+
+## 次のステップ
+
+タグ付けツールを備えた堅牢な MCP サーバーが完成しました。続いて、次の作業に進みましょう。
+
+1. **MCP クライアントを作る**：エージェントと MCP サーバーの間のインターフェースを構築する
+2. **Webhook の処理を実装する**：Hub のディスカッションイベントを待ち受ける
+3. **エージェントのロジックを統合する**：Webhook と MCP ツールの呼び出しをつなぐ
+4. **システム全体をテストする**：エンドツーエンドの機能を検証する
+
+次のセクションでは、Webhook ハンドラーがこれらのツールを賢く扱えるようにする MCP クライアントを作成します。
+
+> [!TIP]
+> MCP サーバーは、メインアプリケーションとは別のプロセスとして動作します。この分離によりエラーハンドリングが改善され、サーバーを複数のクライアントやアプリケーションで再利用できます。

@@ -394,3 +394,127 @@
 - Robotics QA: Unit 0 最終合格（P1 30 + P2 1 を修正→再確認で全解消）。Unit 1・2 レビュー実施中
 - 2026-11-11 Robotics Unit 1: 最終合格（round1 レビューは捏造のため取り直し → round2 P1 68件・69箇所 + P2 5件を全件照合・適用 → 再確認で残存3件（レビュアー案由来）→ 全件適用 → 最終確認で残存 P1/P2 = 0、最終合格）
 - 2026-11-11 Robotics Unit 2: 最終合格（round1 P1 80 + P2 2 を全件照合・適用 → 再確認で前回分 82/82 解消、新規残存19件（P1 14 + 強調復元 P2 5）→ 全件適用 → 最終確認で残存 P1/P2 = 0、最終合格）。**Robotics コース QA 完了（Unit 0・1・2、全11ファイル最終合格）**
+
+## Agents Unit 0 — QA完了（2026-11-11）
+- Round 1: 不合格 P1 23 + P2 2 = 25件 → 全件適用（引用不一致0）
+- Round 2（再確認）: 前回25件全解消、新規 P1 6 + P2 1 = 7件 → 全件適用
+- 最終確認（2026-11-11 12:22）: **最終合格**、残存 P1/P2 = 0。累計32件解消
+- 対象: unit0（discord101.mdx / introduction.mdx / onboarding.mdx）
+
+## GitHub Pages デモ版 公開（2026-11-11、本人の指示）
+- URL: https://yanikasumin.github.io/HuggingFace-courses-ja/（リポジトリは同日に HuggingFace-courses-ja へ改名、About も JPMorgan 形式に設定済み）
+- 内容: publish/ の全5コース316セクションを静的サイト化（docs/ 325ファイル、コミット 8c309f01 まで6分割 push）。クイズ215件はクリック式で動作
+- バッジ: LLM / Robotics = 翻訳QA 最終合格、Agents / MCP / CV = 翻訳済み・QA進行中
+- 既知の制限: 目次ページの章見出しは英語のまま（EN _toctree 由来）。本文リンク切れ8件はすべて原典由来
+- ビルダー: ~/workspace/hf-pages-build/build.py（QA 進捗に合わせて再構築する）
+- 2026-11-11: Robotics GitHub読み取りレビュー 最終合格（ChatGPT が GitHub 接続で再取得して判定、思考時間1分2秒）。round1 の21件＋再確認の新規4件すべて解消、残存 P1/P2 = 0。最終コミット 8b1d937。
+- 2026-11-11: GitHub Pages デモ版の UI を Hugging Face 本家風ダークテーマに刷新して再公開（背景 #0B0F19、HFイエロー #FFD21E、左サイドバー目次、カード型レイアウト）。docs/ 325ファイルを7コミットで push 済み。
+- 2026-11-11: Agents Communication 最終合格（P1 2件解消、残存0、新規指摘なし。初回取得の C1/C2 は実ファイルに存在しない捏造だったため却下し、取り直した実在2件で判定）。台帳 qa-others/agents-communication-round1.md。
+- 2026-11-11: Agents Unit 1 round1 修正適用（114件: FIXED 84 / RECONSTRUCTED 29 / KEPT 1 / INVALID 0）。RECONSTRUCTED は取得時に修正案が切断されていた29件を問題点記述＋原典から最小補完。KEPT は O-09 の画像 alt（具体文案が欠落、捏造回避のため再チェックで再提示を依頼）。verify2 ALL OK、2,272行不変。台帳 qa-others/agents-unit1-round1.md。再チェック依頼中。
+- 2026-11-11: Agents Unit 1 再確認（round2）: 113/114 解消。残存 O-09（画像alt 3件）にレビュアーの具体文案を適用（画像内容との整合を照合済み）。あわせて what-are-agents.mdx のツール docstring を既定ルールどおり英語原典へ復元（レビュアー推奨・審査外）。verify2 ALL OK、2,272行不変。最終確認依頼中。台帳 qa-others/agents-unit1-round2.md。
+- 2026-11-11: Agents Unit 1 最終合格（114/114件解消、残存 P1/P2 = 0。思考時間37秒の最終確認で確定）。Agents は Unit 0・Communication・Unit 1 が完了。
+- 2026-11-11: Agents Unit 2 round1 レビュー受領（3トラック並行、ChatGPT Thinking）。smolagents 不合格 P1 69 + P2 14 = 83件 / LlamaIndex 不合格 P1 47 + P2 14 = 61件 / LangGraph 不合格 P1 45 + P2 13 = 58件。合格ファイルは全トラックでゼロ。台帳 qa-others/agents-unit2-{smolagents,llama-index,langgraph}-round1.md。
+- 2026-11-11: Agents Unit 2 smolagents round1 修正適用（83件: FIXED 82 / INVALID 1）。INVALID は tools.mdx P2-02（現在文＝修正案の no-op）。捏造引用ゼロ、全引用が実在し逐語適用。verify2 の NG 2件はレビュアー提案自体に起因（code_agents P2-01 の alt 差し替えで alt 内 URL が計数から外れる／表示文字列翻訳の STRING・f文字列差分は note 級）。全13ファイル行数不変（2,086行）。publish/ 同期・バンドル再構築済み。再チェック依頼中。
+- 2026-11-11: Agents Unit 2 LlamaIndex round1 修正適用（61件: FIXED 60 / RECONSTRUCTED 1）。RECONSTRUCTED は B-P1-07（抽出で ``` に化けた2リンクを実ファイル＋原典から復元）。リンク空欄化3件（A-P1-09 / H-P2-02 / I-P1-07）は実ファイルのリンクを保持し本文変更のみ適用。verify2 は tools.mdx のみ NG（H-P1-03 提案の語順変更による f文字列トークン順序差分。提案逐語適用の結果で Python として正常）。全9ファイル行数不変。publish/ 同期・バンドル再構築済み。再チェック依頼中。
+- 2026-11-11: Agents Unit 2 LangGraph round1 修正適用（58件: FIXED 56 / KEPT 2）。KEPT は D-P1-06・D-P1-07（実行出力例。ライブラリ・モデル生成の出力データのため翻訳せず保持。再チェックでレビュアーの判断を仰ぐ）。件数外対応として document_analysis_agent.mdx の extract_text / divide docstring を英語原典へ逐語復元（モデル入力になり得るため。原典とバイト一致を確認）。verify2 の PROBLEM 2件は表示文字列翻訳に伴うトークナイザ上の差分で、非文字列トークン列は原典と完全一致を確認。全7ファイル行数不変（1,006行）。publish/ 同期・バンドル再構築済み。再チェック依頼中。
+- 2026-11-11: Agents Unit 2 round2 再確認結果（3トラックとも不合格、ただし round1 分はほぼ解消）。
+  - smolagents: 81/83 解消（P1 69件は全解消）。残存13件 = 未解消 P2 2件 + 新規 P1 7 / P2 4。**未解消の tools.mdx P2-02 は、中央の INVALID 判定が誤りだった**：round1 取得時にバッククォートが抽出で脱落し no-op に見えたが、実際の提案は `ToolCollection` のインラインコード化だった（code_agents P2-02 の `get_client()` も同種の未適用）。新規 P1 のうち2件はレビュアー自身の round1 提案に起因。新規 P2 は表記規則の同一リスト内波及漏れ。台帳 qa-others/agents-unit2-smolagents-round2.md。round2 修正中。
+  - LlamaIndex: 61/61 解消と報告（B-P1-07 のリンク復元・3件のリンク保持は「正しい」と明示確認）。残存11件は全て新規。**ただし round2 回答の個別照合と新規指摘には、このトラックに存在しないファイル名（code_agents.mdx / final_quiz.mdx）・行番号（29行のファイルに 59・189・194行）が多数含まれ、混信・捏造の疑いが強い**。全件 grep 検証し、実在するものだけ適用する方針。NEW-P1-07（表示文字列の英語への巻き戻し提案）は既定ルールと競合するため適用しない。台帳 qa-others/agents-unit2-llama-index-round2.md。
+  - LangGraph: 58/58 解消。**D-P1-06・D-P1-07 はレビュアーが「撤回（原文保持を容認）」と正式判断**（翻訳すべきではない、と明言）。docstring 復元も「正しい」と確認。残存4件は全て新規（P1 1 / P2 3）だが、取得文が乱れたもの・存在しないファイル（quiz2.mdx）指定のものを含み、検証中。出力例前後への日本語説明追加の注記には、行数保持方針のため追加はせず、既存の日本語地の文の箇所を示して最終確認で回答する。台帳 qa-others/agents-unit2-langgraph-round2.md。
+- 2026-11-11: Agents Unit 2 smolagents round2 修正適用（残存13件: FIXED 12 / RECONSTRUCTED 1、INVALID・KEPT 0）。全件の引用が実在（捏造ゼロ）。RECONSTRUCTED は NEW-P1-02（リンク記法を保持し文型のみ「図の出典：」に再構成）。NEW-P1-03 の "Feedback: " は前後に出力例ブロックが無いことを確認し、コード内ラベルのみ対訳。verify2 の NG 2件は round1 から継続する既知の意図的差分のみで、新規 NG ゼロ。全ファイル行数不変。publish/ 同期・バンドル再構築済み。最終確認依頼中。
+- 2026-11-11: Agents Unit 2 LlamaIndex round2 検証結果（適用 0 件）。新規11件は**全件 INVALID**：引用文の特徴的断片を9ファイル全体に grep し、日本語版・英語原典とも全件0ヒット。存在しないファイル名（code_agents.mdx / final_quiz.mdx）・行番号（introduction.mdx 実30行への 59・98・189・194行指定）、原典側の根拠（"uninstall LLM layer"、{finished_perc} 等）も実在せず。H-P1-01 の「部分解消」主張も根拠なし（適用文は tools.mdx 4行目に逐語で実在し、根拠の「371行目」は EN tools.mdx 実142行に存在しない）。PDF からも回答本文は復元不能（依頼文のみ）。grep 証拠を提示して最終判定（再判定）を依頼中。台帳 qa-others/agents-unit2-llama-index-round2.md。
+- 2026-11-11: Agents Unit 2 LangGraph round2 検証結果（適用 0 件）。新規4件は**全件 INVALID**：explain_text は日本語版・原典とも出現ゼロ（53行目はフェンスの閉じ）、「資格」は conclusion.mdx に出現ゼロ（17行目は「これからも学び続けて、素敵な自分でいよう！」）、NEW-P2-02 の44・51行に「ファイル名」の語自体なし、NEW-P2-03 の quiz2.mdx は不存在で引用文も7ファイルに無し。D-P1-06・D-P1-07 の説明追加注記への回答材料：両出力ブロック直前に日本語の導入文が既にある（ブロック1は215行「会話は次のように進みます。」＋202・204行の節導入、ブロック2は236行「やり取りは次のように進みます。」）。grep 証拠と併せて最終判定を依頼中。台帳 qa-others/agents-unit2-langgraph-round2.md。
+- 2026-11-11: Agents Unit 2 smolagents **最終合格**（最終確認 Thinking 53秒、解消 13/13、残存 P1/P2 = 0、新規指摘なし）。Unit 2 smolagents トラック（13ファイル）の QA 完了。最終確認の項目別リストには存在しないファイル名が混ざっていたが、判定と検証可能な個別確認事項は実態と一致。台帳 qa-others/agents-unit2-smolagents-round2.md。
+- 2026-11-11: **【訂正】Agents Unit 2 LlamaIndex / LangGraph の round2「新規指摘は全件捏造」という中央の結論を取り下げる**。最終判定の依頼に対し、両チャットのレビュアーが「反証された文面は実際の Round 2 回答には無い」と明言し、実際の round 2 指摘を別内容で提示した（LlamaIndex 11件：agents.mdx 4・55・76行ほか実在ファイル・実在行。LangGraph 4件：document_analysis_agent.mdx 3行の執事紹介文ほか）。提示された引用の一部は中央側の独立確認と一致する（例：LangGraph 202行「### 例 1: 簡単な計算」は round2 検証担当が実ファイルから引用済み。LlamaIndex workflows.mdx 234行の引用は round1 の I-P1-09 適用文と一致）。round2 の取得文は他トラックのファイル名や意味不明の断片を含む混信状態だったことが原因で、混信が回答生成側か取得側かは確定できない（PDF に回答本文が無く検証不能）。**round1 の解消認定は両トラックとも再確認された**（LlamaIndex 61/61、LangGraph 58/58、D-P1-06・D-P1-07 の原文保持と説明行追加不要も再確認）。round3 で提示された LlamaIndex 11件・LangGraph 4件を台帳化し（qa-others/agents-unit2-{llama-index,langgraph}-round3.md）、全件 grep 検証のうえ処理する。
+- 2026-11-11: Agents Unit 2 LlamaIndex round3 修正適用（11件すべて FIXED、INVALID・KEPT 0）。round3 で再提示された指摘は全件、指定ファイル・行番号に実在した。P2-01 は components.mdx の対象11行すべての区切りコロンを全角化し、同パターンの残存ゼロを確認。verify2 は tools.mdx の既知 NG（round1 の H-P1-03 由来）のみで、新規 NG ゼロ。全9ファイル行数不変。publish/ 同期・バンドル再構築済み。最終確認を再依頼中。台帳 qa-others/agents-unit2-llama-index-round3.md。
+- 2026-11-11: Agents Unit 2 LangGraph round3 修正適用（4件すべて FIXED）。NEW-P1-01 は原典3行目に "trusted" が実在することを確認（レビュアーの指摘が正確だった）し、「Mr. Wayne の信頼を得ている執事として」等2区間を置換。P2 3件は見出し・注記ラベルの半角コロンの全角化のみ（first_graph は指定8行すべて一意に特定）。verify2 の PROBLEM 2件は round1 由来の既知差分のみ。全ファイル行数不変。publish/ 同期・バンドル再構築済み。最終確認を再依頼中。台帳 qa-others/agents-unit2-langgraph-round3.md。
+- 2026-11-11: Agents Unit 2 LlamaIndex **最終合格**（最終確認 Thinking 44秒、round2 の11件全件解消、残存 P1/P2 = 0、新規指摘なし）。
+- 2026-11-11: Agents Unit 2 LangGraph **最終合格**（最終確認 Thinking 34秒、残存4件全件解消、残存 P1/P2 = 0、新規指摘なし。NEW-P1-01 の確認文は実ファイルと逐語一致）。
+- **Agents Unit 2 の QA が完了**（smolagents 13 + LlamaIndex 9 + LangGraph 7 + unit2/introduction = 30ファイル、全トラック最終合格）。両最終確認とも項目別リストには存在しないファイル名等のノイズが混ざっていたが、判定は明示的で逐語確認事項は実態と一致。Agents の残りは unit3・unit4・bonus-unit1〜3（レビュー開始）。
+- 2026-11-11: Agents 残り5ユニットの round1 レビュー受領（いずれも Thinking High、統合ファイル1個添付）。Unit 3 不合格 P1 38+P2 12=50 / Unit 4 不合格 P1 33+P2 12=45 / Bonus Unit 1 不合格 P1 34+P2 9=43 / Bonus Unit 2 不合格 P1 27+P2 11=38 / Bonus Unit 3 不合格 P1 40+P2 10=50、合計225件、合格ファイルは全ユニットでゼロ。
+- 2026-11-11: Agents Unit 3 の round1 レビューは捏造と確定（引用が実ファイルに全件実在しない。実ファイルは Alfred のガラ主催ユースケースで、返信の引用・話題と無関係）。修正は適用せず、同じチャットで根拠を示して再レビューを依頼する。台帳 qa-others/agents-unit3-round1.md。
+- 2026-11-11: Agents Bonus Unit 2 の行数不一致（レビュアー主張91行 vs 区切り94行）は中央照合で区切り側が正しいと確定（実ファイル splitlines=94、新規行94、末尾改行あり）。内容欠落ではない。
+- 2026-11-11: Agents Unit 4 / Bonus Unit 1〜3 の round1 修正作業を開始（ユニットごとに並行。引用を全件 grep 照合し、レビュアーの逐語提案で適用する従来手順）。
+- 2026-11-11: Agents Unit 4 round1 修正完了（全45件 FIXED、引用は全件実在、置換58回、verify2 ALL OK、行数207不変、publish 同期済み）。閾値不整合（30%以上 vs 30%を超える）は原典由来として忠実保持。台帳 qa-others/agents-unit4-round1.md、レビュアー原文 qa-others/agents-unit4-round1-review-verbatim.txt。
+- 2026-11-11: レビュー原文の復元方法を確立: ブラウザタスクのハンドオフ全文は qa-others/agents-round1-handoff-full.txt に保存し、ユニット別原文を qa-others/agents-{unit4,bonus-unit1,bonus-unit2,bonus-unit3}-round1-raw.md に切り出した。今後の修正作業はこの原文ファイルを正本とする（サブエージェントは引き継ぎコンテキストに全文を持たないため、生テキストをファイルで渡すこと）。
+- 2026-11-11: Agents Bonus Unit 1 / Bonus Unit 3 の round1 修正を、原文ファイル方式で再着手。
+- 2026-11-11: Agents Bonus Unit 2 round1 修正完了（全38件 FIXED、引用は全件実在、原典由来3件は忠実保持、verify2 は agents-ja・publish 両側 ALL OK、意図した表示文字列対訳は4件のみ、行数701不変、publish 同期済み）。94行 vs 91行はレビュアーの数え違いと台帳に解決記録。再確認時にレビュアーへ提示する。台帳 qa-others/agents-bonus-unit2-round1.md（レビュアー回答全文を逐語収録）。
+- 2026-11-11: Agents Bonus Unit 3 round1 修正完了（全50件 FIXED、引用は全件実在、原典由来 ORIG-01〜03 は忠実保持、編集86回、行数465不変、publish 同期済み）。verify2 の差分は building_your_pokemon_agent.mdx の意図した表示文字列翻訳（B-P1-06〜10）のみで構造問題ゼロ。台帳 qa-others/agents-bonus-unit3-round1.md。
+- 2026-11-11: Agents Bonus Unit 1 round1 修正完了（全43件 FIXED、引用は全件実在（F-P2-02 は句点追加のみの最小適用）、原典由来2件は忠実保持、verify2 ALL OK（差分ゼロ）、行数不変、publish 同期済み）。台帳 qa-others/agents-bonus-unit1-round1.md。
+- 2026-11-11: Agents の round1 修正が4ユニット完了（Unit 4 / Bonus 1〜3）。publish からバンドルを再構築し、各チャットで再確認を依頼する。Unit 3 は再レビュー待ち。
+- 2026-11-11: HF デモサイト改善分を本人の承認で GitHub へ push 完了（docs/ 331ファイル、9コミット、最終 e2f7d004）。push 前に publish の最新状態（Agents Unit 4 / Bonus 1〜3 の round1 修正を含む）でサイトを再構築し、ビルド検証（316セクション・クイズ215/215・リンク切れは既知の原典由来8件のみ）と UI チェック 19/19 を再通過。リポジトリ側で search-index.json と用語集ページの存在を確認済み。Pages のライブ反映は再構築待ち（数分）。
+- 2026-11-11: Agents Bonus Unit 1 最終合格（再確認 Thinking 2分32秒、P1 34/34・P2 9/9 解消、原典由来2件と F-P2-02 の最小適用もレビュアーが承認）。新規 P2 1件（assistant のインラインコード化）は引用の実在を確認して適用済み。台帳 qa-others/agents-bonus-unit1-round2.md。
+- 2026-11-11: Agents Unit 4 再確認（Thinking 4分17秒）: round1 の45件は全件解消。新規3件（GAIA 2件 + 強調復元1件）はいずれも引用の実在と原典を確認して適用済み（verify2 ALL OK）。台帳 qa-others/agents-unit4-round2.md。最終確認を依頼する。
+- 2026-11-11: Agents Bonus Unit 2 再確認（Thinking 4分40秒）: 37/38 解消、残存4件（OBS-P2-04 + 新規P1 3件）をすべて適用済み（verify2 ALL OK）。94行/91行は末尾空行3行が原因と特定。台帳 qa-others/agents-bonus-unit2-round2.md。最終確認を依頼する。
+- 2026-11-11: Agents Bonus Unit 3 最終合格（最終確認 Thinking 4分7秒、round1 の50件全件解消）。新規 P2 5件（太字欠落4 + 空白1）は適用済み。台帳 qa-others/agents-bonus-unit3-round2.md。
+- 2026-11-11: Agents Unit 3 の再審査が到着（Thinking 10分32秒）。前回の捏造レビューとは別物で、実ファイル（Alfred のガラ）と EN 原典に基づく実在の指摘 P1 41 + P2 15 = 56件、原典由来9項目は件数外。原文を qa-others/agents-unit3-round1-redo-raw.md に保存し、修正に着手する。
+- 2026-11-11: Agents Unit 3（再審査分）round1-redo 修正完了（全56件 FIXED、引用は全件実在、原典由来9項目は忠実保持、verify2 は agents-ja・publish 両側 ALL OK、行数1,476不変、publish 同期済み）。台帳 qa-others/agents-unit3-round1-redo.md。再確認を依頼する。
+- 2026-11-11: Agents Bonus Unit 2 最終合格（最終確認 Thinking 42秒、累計41/41 解消、残存0、行数の件も決着）。
+- 2026-11-11: Agents Unit 4 最終合格（最終確認、累計48/48 解消、残存0）。Agents で残るのは Unit 3 の再確認のみ。
+- 2026-11-11: Agents Unit 3 再確認（Thinking 2分45秒）: 54/56 解消、残存3件（invitees のみ、うち P1 2件はレビュアーの前回案自体の不備）を新提案で適用済み。台帳 qa-others/agents-unit3-round2.md。最終確認を依頼する。
+- 2026-11-11: Agents Unit 3 最終合格（最終確認 Thinking 34秒、累計57件解消、残存0）。**これで Agents コース全ユニット（Unit 0 / Communication / Unit 1 / Unit 2 の3トラック / Unit 3 / Unit 4 / Bonus 1〜3、全74ファイル）が最終合格。** Space へ Agents を追加する。
+- 2026-11-11: MCP コースの ChatGPT プロジェクト「MCPコース日本語化」（g-p-6af40d6122fc8191b92481d1666984cb）を作成し、全5ユニット（Unit 0 / 1 / 2 / 3 / 3.1）の初回レビューが完了（Thinking: 6分04秒 / 13分11秒 / 13分47秒 / 8分59秒 / 7分45秒）。回答全文はユニットごとに分けて取得する（初回の取りまとめは出力上限で失敗したため）。
+- 2026-11-11: MCP Unit 3.1 ラウンド1修正完了（P1 28 + P2 20 = 48件、全件 FIXED、引用は全件 grep 一致・捏造なし。print 表示ラベル60箇所の対訳を含む。ORIG-01〜08 は原典由来として保持）。台帳 qa-others/mcp-unit3_1-round1.md。再確認を依頼する。
+- 2026-11-11: MCP Unit 3 ラウンド1修正完了（P1 66 + P2 14 = 80件中 FIXED 78、KEPT 2（SL-P1-10/11、出力サンプル＝データとして保持、再確認で撤回可否を確認）。引用の捏造・混入ゼロ。verify2 ALL OK、行数不変）。台帳 qa-others/mcp-unit3-round1.md。再確認を依頼する。
+- 2026-11-11: MCP Unit 0 ラウンド1修正完了（P1 20 + P2 9 = 29件中 FIXED 28、RECONSTRUCTED 1（P2-06、リンク保持のため最小限の再構成。再確認で明示する）。ORIG-01〜03 は保持。verify2 ALL OK、行数不変）。台帳 qa-others/mcp-unit0-round1.md。再確認を依頼する。
+- 2026-11-11: MCP Unit 1 ラウンド1修正完了（P1 55 + P2 26 = 81件中 FIXED 76、RECONSTRUCTED 5（リンク記法保持・見出し特定等）。行数不一致2件は数え方の差異と確認、欠落なし。verify2 は gradio-mcp の見かけのURL差分1件のみ（実URL不変）。ORIG-01〜06 は保持）。台帳 qa-others/mcp-unit1-round1.md。再確認を依頼する。
+- 2026-11-11: MCP Unit 3.1 再確認（Thinking 2分20秒）: 46/48 解消、残存2件＋新規3件＝5件（いずれも軽微）を全件適用済み（台帳 qa-others/mcp-unit3_1-round2.md）。最終確認を依頼する。
+- 2026-11-11: MCP Unit 2 ラウンド1修正完了（P1 46 + P2 19 = 65件中 FIXED 63、RECONSTRUCTED 2（リンク範囲の最小再構成）。gradio-client の行数不一致は末尾空行の数え方の差異と確認（JA 177 = EN 177）。C-P1-01 は §4 差し替え案を適用。ORIG-01〜12 は保持）。台帳 qa-others/mcp-unit2-round1.md。再確認を依頼する。
+- 2026-11-11: MCP Unit 0 再確認（Thinking 2分14秒）: 27/29 解消、残存2件＋新規2件＝4件（強調記法の復元・修正が中心）を全件適用済み（台帳 qa-others/mcp-unit0-round2.md）。最終確認を依頼する。
+- 2026-11-11: MCP Unit 3 再確認（Thinking 2分48秒）: 解消77＋撤回2（SL-P1-10/11、保持方針を正式承認）＋未解消1（I-P1-05 読点）。必須1件と新規P2 9件（区切り記号統一46行を含む）を全件適用済み（台帳 qa-others/mcp-unit3-round2.md）。最終確認を依頼する。
+- 2026-11-11: MCP Unit 3.1 最終合格（最終確認 Thinking 24秒、残存5件すべて解消、新規指摘なし、残存 P1/P2 ともに0。累計51件解消）。
+- 2026-11-11: MCP Unit 0 最終合格（最終確認 Thinking 21秒、残存4件すべて解消、新規指摘なし、残存0。累計33件解消）。
+- 2026-11-11: MCP Unit 1 再確認（Thinking 2分51秒）: 78/81 解消、未解消3件はレビュアーの前回案自体の不備、新規8件。残存11件（P1 4 / P2 7）を新提案どおり全件適用済み（台帳 qa-others/mcp-unit1-round2.md）。最終確認を依頼する。
+- 2026-11-11: MCP Unit 2 最終合格（再確認 Thinking 1分59秒、65/65 解消、残存0、新規指摘なし。実装注記4点も全件承認）。
+- 2026-11-11: MCP Unit 3 最終合格（最終確認 Thinking 1分35秒、残存 P1 0。任意 P2 2件も合格後に適用済み）。
+- 2026-11-11: MCP Unit 1 最終確認・第3回（Thinking 1分54秒）: 9/11 解消、残存3件（サンプリング行の再提案、半角コロン2箇所）を全件適用済み（台帳 qa-others/mcp-unit1-round3.md）。最終確認（第4回）を依頼する。
+- 2026-11-11: MCP Unit 1 最終合格（最終確認・第4回 Thinking 31秒、残存3件すべて解消、残存0）。**これで MCP コース全5ユニット（Unit 0 / 1 / 2 / 3 / 3.1、全36ファイル）が最終合格。** Space へ MCP を追加する。残るコースは CV のみ。
+- 2026-11-11: スペース「Hugging Face コース日本語版」に MCP コース（全36ファイル、最終合格バッジ）を追加。トップステータスは「最終合格 225 / 225 ファイル」（LLM 104 + Robotics 11 + Agents 74 + MCP 36）。残るスペース追加は CV のみ（QA 完了時）。
+- 2026-11-11: CVコースの QA を開始。ChatGPT プロジェクト「CVコース日本語化」（g-p-6af42b020e388191b2e19c9f14dd1522）を作成し、全14ユニットのレビューチャットを立ち上げて初回レビューを依頼済み（Thinking High、ユニットごとに統合ファイル1件を添付）。チャット URL は qa-others/cv-chats.md に記録。
+- 2026-11-11: CV Unit 0 ラウンド1修正を適用（P1 25・P2 7 の全32件 FIXED、原典由来3件保持・2件は原典自身の主流表記に合わせて訂正、verify2 ALL OK、台帳 qa-others/cv-unit0-round1.md）。同一チャットで再確認を依頼する。
+- 2026-11-11: CV Unit 0 最終合格（再確認 Thinking 1分16秒：前回32件すべて解消、残存0、新規指摘0。ORIG-01・03の正式表記への訂正も妥当と確認、原典由来3件は保持）。
+- 2026-11-11: CV Unit 1 ラウンド1修正を適用（P1 89・P2 18 のうち FIXED 105件、原典由来14件保持、KEPT 2件＋部分1件：A-P1-02の7行目見出しは原典の Overview を落とすため現行維持、D-P2-01は原典の "Link to" を落とすため現行維持、IM-P2-02の次元数表記は実測が拮抗し提案自体も統一になっていないため現行維持として中央判断で再確認時に開示。引用は全件実在、verify2 ALL OK、台帳 qa-others/cv-unit1-round1.md）。publish 同期・バンドル再構築済み。同一チャットで再確認を依頼する。
+- 2026-11-11: CV Unit 2 ラウンド1修正を適用（P1 58・P2 27 の全85件 FIXED、原典由来15件保持、INVALID 0、行数不変1,315行、verify2 ALL OK、台帳 qa-others/cv-unit2-round1.md。I-P2-02 は原典に「後で紹介」の約束がないため提案を採用せず顔文字のみ除去した deviation を再確認時に開示）。publish 同期・バンドル再構築済み。同一チャットで再確認を依頼する。
+- 2026-11-11: CV Unit 4 ラウンド1修正を適用（P1 68・P2 18 の全86件 FIXED、引用は全件実在で捏造なし、原典由来12件保持、verify2 の差分6件＋note1件は表示ラベル対訳による意図した差分のみ、tasks-models-part1 は T-P2-02 で 395→396行、台帳 qa-others/cv-unit4-round1.md）。publish 同期・バンドル再構築済み。同一チャットで再確認を依頼する（deviation 7点を開示）。
+- 2026-11-11: CV Unit 3 ラウンド1修正を適用（P1 36・P2 19 の55件＋原典由来扱いだった MOB-P1-02 の計56件を処理：FIXED 54、MOB-P1-02 は原典由来に分類したまま自然さ修正を適用、DETR-P1-08 は直後の処理がテンソル形状変更であることを確認し内容訂正として適用。引用は全件実在で捏造なし。OD-P1-02 の画像 alt 4件は実画像をダウンロードして実見し提案と一致したため適用。原典由来14件は保持、swin の行数は EN と同じ605行でレビュアーの行数主張は数え方の差異。verify2 の detr 差分は既存の意図した表示ラベル対訳のみ、台帳 qa-others/cv-unit3-round1.md）。publish 同期・バンドル再構築済み。同一チャットで再確認を依頼する。
+- 2026-11-11: CV Unit 2 再確認（Thinking 4分48秒）：83/85 解消、開示した判断5点はすべて支持。残存P2 2件（mobilenet 箇条書きの空白）と新規P1 2件（googlenet 69行・yolo 249行の重複表現）の計4件を中央で適用し verify2 ALL OK（台帳 qa-others/cv-unit2-round2.md）。publish 同期・バンドル再構築済み。最終確認を依頼する。
+- 2026-11-11: CV Unit 1 再確認（Thinking 6分51秒）：105/107 解消、D-P2-01 は指摘撤回・現行維持を正式承認。残存・新規の計9件（A-P1-02 見出し最終案、IM-P2-02 の空白なし統一、NEW-P1 3件・NEW-P2 4件）を中央で適用し verify2 ALL OK（台帳 qa-others/cv-unit1-round2.md）。publish 同期・バンドル再構築済み。最終確認を依頼する。
+- 2026-11-11: CV Unit 6 ラウンド1修正を適用（P1 25・P2 8 の33件を処理：FIXED 31、正式表記への訂正2件（SegFormer / Mask2Former）、原典由来4件は技術修正案を採用せず忠実保持。引用は全件実在、SG-P2-03 は画像 alt に「ピクセル精度」が実在したため本文と対で「ピクセル正解率」に変更、verify2 ALL OK、台帳 qa-others/cv-unit6-round1.md）。publish 同期・バンドル再構築済み。同一チャットで再確認を依頼する。
+- 2026-11-11: CV Unit 2 が最終合格（再確認で残存2件＋新規2件の計4件を修正、最終確認 Thinking 52s で4件すべて解消・残存0・新規0を確認。累積解消 87件、原典由来15件は保持。全9ファイル最終合格）。
+- 2026-11-11: CV Unit 7 ラウンド1修正を適用（P1 65・P2 16 の81件すべて FIXED、原典由来9件は忠実保持を確認。引用照合で捏造なし、適応9件は記法保持のみで文面は提案どおり。表見出し・リンク表示テキストの翻訳は URL 不変を機械照合、verify2 ALL OK、台帳 qa-others/cv-unit7-round1.md）。publish 同期・バンドル再構築済み。同一チャットで再確認を依頼する。
+- 2026-11-11: CV Unit 6 再確認でラウンド1の33件全件解消・原典由来4件の方針承認を確認。新規2件（いずれもレビュアー自身の提案文由来）を中央で適用し verify2 ALL OK・publish 同期・バンドル再構築済み（台帳 qa-others/cv-unit6-round2.md）。最終確認を依頼する。
+- 2026-11-11: CV Unit 1 が最終合格（最終確認 Thinking 2m14s でラウンド2の9件全件解消を確認。新規1件 NEW-P2-05「子守カメラ→見守りカメラ」はレビュアーの条件付き合格文どおりに適用し、他の変更なし・残存0を grep で確認したうえで確定。累積解消115件、原典由来14件は保持。全10ファイル最終合格）。
+- 2026-11-11: CV Unit 4 再確認でラウンド1の84/86件解消と申告判断7点の承認を確認。残存2件＋新規P2 9件を中央で適用（コロン直後空白の除去は両ファイルの全残存と一致、台帳 qa-others/cv-unit4-round2.md）。verify2 は承認済みの対訳ラベル差分のみ。publish 同期・バンドル再構築済み。最終確認を依頼する。
+- 2026-11-11: CV Unit 6 が最終合格（最終確認 Thinking 11s で新規2件の解消・残存0・新規0を確認。累積解消35件、原典由来4件は保持。全3ファイル最終合格）。
+- 2026-11-11: CV Unit 9 ラウンド1修正を適用（P1 50・P2 9 の59件すべて FIXED、原典由来7件は保持。I-P1-10 はレビュアー第6節の最終案を採用、見出し前の空行追加で2ファイルが各+2行。引用照合94件すべて実在で捏造なし、URL 多重集合不変、verify2 ALL OK、台帳 qa-others/cv-unit9-round1.md）。publish 同期・バンドル再構築済み。同一チャットで再確認を依頼する。
+- 2026-11-11: CV Unit 3 再確認でラウンド1の55/56件完全解消（SWIN-P2-01 は太字喪失で一部解消）と申告判断7点の承認を確認。残存1件＋新規12件を中央で適用（detr のラベル全角化はコードと出力の対、台帳 qa-others/cv-unit3-round2.md）。verify2 は意図した対訳ラベル差分のみ。publish 同期・バンドル再構築済み。最終確認を依頼する。
+- 2026-11-11: CV Unit 11 の初回レビューは捏造と判定（レビュー自身が原典未確認を明言、検証した引用11件すべて実ファイルに存在せず、修正案も大半が指示文で適用不能。台帳 qa-others/cv-unit11-round1.md）。修正は適用せず、同一チャットで再レビューを要求する。
+- 2026-11-11: CV Unit 10 ラウンド1修正を適用（P1 78・P2 13 の91件すべて FIXED、原典由来13件は保持、lung の原典誤字1件は表示翻訳で解消。見出し41件とリンク表示テキスト約90件を翻訳、URL 多重集合不変、verify2 ALL OK、台帳 qa-others/cv-unit10-round1.md）。publish 同期・バンドル再構築済み。同一チャットで再確認を依頼する。
+- 2026-11-11: CV Unit 7 再確認でラウンド1の81件全件解消と申告判断5点の承認を確認。新規 P2 3件（コロン・空白の統一、20行）を中央で適用（台帳 qa-others/cv-unit7-round2.md）。verify2 ALL OK、publish 同期・バンドル再構築済み。最終確認を依頼する。
+- 2026-11-11: CV Unit 4 が最終合格（最終確認 Thinking 2m20s、累計解消 95/95、残存 P1/P2 ともに0、原典由来12件は対象外として保持）。Unit 4 完了。
+- 2026-11-11: CV Unit 13 の初回レビューは捏造と判定（引用10件すべて実ファイルに存在せず、原典由来の行番号が実ファイルの行数を超過、多数の修正案が現行文と同一。台帳 qa-others/cv-unit13-round1.md）。修正は適用せず、同一チャットで再レビューを要求する。
+- 2026-11-11: CV Unit 12 のラウンド1修正を適用（75件全件 FIXED、捏造0件、原典由来4件は保持、verify2 ALL OK、URL 多重集合一致）。publish 同期・バンドル再生成済み。再確認を依頼する。
+- 2026-11-11: CV Unit 3 が最終合格（最終確認 Thinking 1m11s。残存2件は半角空白1文字ずつの削除で、レビュアーの条件「この2か所を修正し他を変更しなければ最終合格」を満たす形で中央適用し閉じた。累計69件解消、原典由来14件は保持）。Unit 3 完了。
+- 2026-11-11: CV Unit 9 の再確認でラウンド1の59件全件解消を確認。新規5件（P1 3・P2 2）を中央適用し（全件検証済み、verify2 ALL OK）、最終確認を依頼する。
+- 2026-11-11: CV Unit 5 の再レビュー（本物）ラウンド1修正を適用（FIXED 93 + 原典由来の修正2、原典由来10件は保持、verify2 ALL OK、行数変化は VAE の段落分割 +4行のみ）。publish 同期・バンドル再生成済み。再確認を依頼する。
+- 2026-11-11: CV Unit 11 の再レビューは本物と判定（Thinking 8m24s、P1 72 + P2 4 + 原典由来5、引用検証10件全件一致）。修正担当を起動する。
+- 2026-11-11: CV Unit 10 の再確認でラウンド1の91件中89件解消を確認。残存2件＋新規6件を中央適用し（全件検証済み、verify2 ALL OK）、最終確認を依頼する。
+- 2026-11-11: CV Unit 7 が最終合格（最終確認 Thinking 42s、累計解消84件、残存0、原典由来9件は保持）。Unit 7 完了。
+- 2026-11-11: CV Unit 12 の再確認でラウンド1の75件全件解消を確認。新規5件（P1 2・P2 3）を中央適用し（全件検証済み、verify2 ALL OK）、最終確認を依頼する。
+- 2026-11-11: CV Unit 11 の再レビュー（本物）ラウンド1修正を適用（76件全件 FIXED、原典由来5件は保持、verify2 ALL OK、行数不変）。publish 同期・バンドル再生成済み。再確認を依頼する。
+- 2026-11-11: CV Unit 9 が最終合格（最終確認 Thinking 49s、再確認の新規5件全件解消、残存 P1/P2 = 0、新規指摘なし。累計解消 64/64、原典由来7件は保持。全3ファイル最終合格）。Unit 9 完了。
+- 2026-11-11: CV Unit 8 の再レビューは不完全な取得だった（第1回答が monocular の MON-P1-08 で途切れ、続きの回答は追加指摘14件＋最終集計のみで、MON-P1-09以降と nerf／camera-models／linear-algebra／representations の本体が画面表示に存在しない）。表示された範囲の引用は中央照合で全件実在（サンプル5件）。行数主張の差（nerf 164・linear-algebra 217）は splitlines 基準で実ファイルと一致し、レビュアー側の誤りではない（中央の従来記録は wc -l 基準の163・216）。不足分の再提示を同一チャットで依頼する。台帳 qa-others/cv-unit8-round1.md。
+- 2026-11-11: CV Unit 12 が最終合格（最終確認 Thinking 29s、残存5件全件解消、残存 P1/P2 = 0、新規指摘なし。累計解消 80/80、原典由来4件は保持、ORIG-04 の現行訳保持も承認。全5ファイル最終合格）。Unit 12 完了。
+- 2026-11-11: CV Unit 13 の再レビュー（本物）ラウンド1修正を適用（71件全件 FIXED、引用は中央で実在確認、原典由来5件のうち ORIG-02 のモデル名誤記のみ先例どおり訂正＝StripedHyena-7B、他4件は保持。画像 alt 11件は実画像を実見して提案と一致を確認のうえ適用、Y-P1-25 の133行はレビュアー補足訂正版「想起能力」を採用、verify2 ALL OK、行数不変316行、台帳 qa-others/cv-unit13-round1.md）。publish 同期・バンドル再構築済み。同一チャットで再確認を依頼する。
+- 2026-11-11: CV Unit 5 の再確認でラウンド1の94/95件解消と開示判断全件の承認を確認。残存1件（B-P1-11）＋新規P2 7件を中央で適用（リンク範囲の変更3件、コロン・括弧の統一、VAE 箇条書き内の段落インデント。台帳 qa-others/cv-unit5-round2.md）。verify2 ALL OK、publish 同期・バンドル再構築済み。最終確認を依頼する。
+- 2026-11-11: CV Unit 10 の最終確認で前回8件（残存2＋新規6）全件解消を確認。新規 P2 1件（NEW-P2-05、datagen-diffusion-models.mdx の太字内コロンが CommonMark で太字として解釈されない問題、5行）をレビュアー提案どおり中央で適用（コロンを太字の外へ移動、台帳 qa-others/cv-unit10-round3.md）。verify2 の差分は意図した明示アンカー1件のみ（レビュアー確認済み）。publish 同期・バンドル再構築済み。最終確認を依頼する。
+- 2026-11-11: CV Unit 11 の再確認で前回76件全件解消と、開示した編集判断・ORIG-01〜05 の保持の承認を確認。新規 P2 1件（NEW-U11-1-P2-01、1.mdx 86行の半角コロン）を提案どおり中央で適用（台帳 qa-others/cv-unit11-round2.md）。verify2 ALL OK、publish 同期・バンドル再構築済み。最終確認を依頼する。
+- 2026-11-11: CV Unit 13 の再確認で前回71件中70件解消と、開示判断全件（ORIG-02 のモデル名訂正・画像 alt 11箇所・ORIG 4件の保持）の承認を確認。残存3件（Y-P1-16 の改訂提案、NEW-P1-01 見出し、NEW-P1-02 冒頭の重複解消）を提案どおり中央で適用（台帳 qa-others/cv-unit13-round2.md）。verify2 ALL OK、publish 同期・バンドル再構築済み。最終確認を依頼する。
+- 2026-11-11: CV Unit 11 が最終合格（最終確認 Thinking 19s、NEW-U11-1-P2-01 解消、残存 P1/P2 = 0、新規指摘なし。累計解消 77/77、原典由来5件は保持。全2ファイル最終合格）。Unit 11 完了。
+- 2026-11-11: CV Unit 5 が最終合格（最終確認 Thinking 51s、残存8件全件解消、残存 P1/P2 = 0、新規指摘なし。累計解消 103/103、原典由来10件は保持。全9ファイル最終合格）。Unit 5 完了。
+- 2026-11-11: CV Unit 13 が最終合格（最終確認 Thinking 39s、残存3件全件解消、残存 P1/P2 = 0、新規指摘なし。累計解消 73/73、原典由来5件は従来判断を維持。全4ファイル最終合格）。Unit 13 完了。
+- 2026-11-11: CV Unit 10 が最終合格（最終確認 Thinking 34s、NEW-P2-05 の5箇所すべて解消、残存 P1/P2 = 0、新規指摘なし。累計解消 100/100、原典由来13件は保持。全7ファイル最終合格）。Unit 10 完了。
+- 2026-11-11: CV Unit 8 ラウンド1修正を適用（P1 93 + P2 20 = 113件中 FIXED 112、KEPT 1 = ADD-P2-01 の set_title 図ラベル5行は掲載画像を差し替えられないため保持、INVALID 0、原典由来 ORIG-01〜07 は保持、verify2 ALL OK。不足分の再提示で前半50件が揃い、引用は全件実ファイルと一致。再構成版である旨は raw に明記。適用は qa-others/fix_cv_unit8_round1.py、台帳 qa-others/cv-unit8-round1-fix-report.md、raw は qa-others/cv-unit8-round1-raw-firstpart.md ほか）。publish 同期・バンドル再構築済み。同一チャットで再確認を依頼する。
+- 2026-11-11: CV Unit 8 再確認でラウンド1の113/113解消・例外承認と開示判断全件の承認を確認。新規指摘11件（NEW-P1 10・NEW-P2 1）を中央で適用（全件引用照合済み、NEW-P1-03 はリンク保存で後半のみ差し替え、台帳 qa-others/cv-unit8-round2.md）。verify2 ALL OK、publish 同期・バンドル再構築済み。最終確認を依頼する。
+- 2026-11-11: CV Unit 8 が最終合格（最終確認 Thinking 35s、NEW 11件全件解消、残存 P1/P2 = 0、新規指摘なし。累計解消 124/124 = 修正123 + 例外承認1（ADD-P2-01）、原典由来 ORIG-01〜07 は保持。全10ファイル最終合格）。Unit 8 完了。
+- 2026-11-11: CV コースの翻訳 QA が全14ユニット最終合格で完了（全91ファイル）。これで全5コース（LLM 104・Robotics 11・Agents 74・MCP 36・CV 91 = 316ファイル）の翻訳と QA が完了した。残作業はスペースへの CV 追加と、Agents・MCP・CV の GitHub 一括 push（本人の承認待ち）。

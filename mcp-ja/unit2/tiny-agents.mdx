@@ -1,0 +1,263 @@
+# Hugging Face Hub と MCP で Tiny Agents を構築する
+
+ここまで、Gradio で MCP サーバーを構築し、MCP クライアントの作成方法を学びました。次は、感情分析ツールとやり取りできるエージェントを作り、エンドツーエンドのアプリケーションを完成させましょう。このセクションでは、[Tiny Agents](https://huggingface.co/blog/tiny-agents) プロジェクトを基に進めます。Tiny Agents は、先ほど構築した Gradio 感情分析サーバーのようなサービスに接続する MCP クライアントを、非常に簡単にデプロイする方法を示しています。
+
+Unit 2 の最後の演習では、TypeScript（JavaScript）と Python を使い、さまざまな MCP サーバーと通信できるクライアントの実装方法を順に説明します。接続先には、このユニットで作成した Gradio ベースの感情分析サーバーも含まれます。感情分析ツールを公開する MCP サーバーの構築から、そのツールをほかの機能と組み合わせて使うエージェントの作成まで、一連の流れを完成させます。
+
+![ミーム](https://huggingface.co/datasets/huggingface/documentation-images/resolve/main/blog/tiny-agents/thumbnail.jpg)
+<figcaption>画像提供： https://x.com/adamdotdev</figcaption>
+
+## インストール
+
+Tiny Agents を構築するために必要なパッケージをインストールしましょう。
+
+> [!TIP]
+> Claude Desktop をはじめとする一部の MCP クライアントは、まだ SSE ベースの MCP サーバーをサポートしていません。その場合は、[mcp-remote](https://github.com/geelen/mcp-remote) のようなツールを使えます。まず Node.js をインストールしてください。次に、自分の MCP クライアント設定に次を追加します。
+
+Tiny Agent はコマンドライン環境で MCP サーバーを実行できます。そのためには、`npm` をインストールし、`npx` でサーバーを実行する必要があります。**これらは Python と JavaScript の両方で必要です。**
+
+`npm` で `npx` をインストールしましょう。`npm` がインストールされていない場合は、[npm のドキュメント](https://docs.npmjs.com/downloading-and-installing-node-js-and-npm) を確認してください。
+
+```bash
+# npx をインストール
+npm install -g npx
+```
+
+次に、`mcp-remote` パッケージをインストールする必要があります。
+
+```bash
+npm i mcp-remote
+```
+
+<hfoptions id="tiny-agents">
+<hfoption id="typescript">
+
+JavaScript では、`tiny-agents` パッケージをインストールする必要があります。
+
+```bash
+npm install @huggingface/tiny-agents
+```
+
+</hfoption>
+<hfoption id="python">
+
+Python では、必要な機能をまとめてインストールするために、`mcp` という追加機能（extra）を指定して、最新版の `huggingface_hub` をインストールします。
+
+```bash
+pip install "huggingface_hub[mcp]>=0.32.0"
+```
+
+</hfoption>
+</hfoptions>
+
+## コマンドラインでの Tiny Agents MCP クライアント
+
+[Unit 1](https://huggingface.co/learn/mcp-course/unit1/mcp-clients#tiny-agents-clients) で紹介した例をもう一度使って、基本的な Tiny Agent を作成しましょう。Tiny Agents では、JSON 形式の設定ファイルを使い、コマンドラインから MCP クライアントを作成できます。
+
+<hfoptions id="tiny-agents">
+<hfoption id="typescript">
+
+基本的な Tiny Agent を使ったプロジェクトをセットアップしましょう。
+
+```bash
+mkdir my-agent
+touch my-agent/agent.json
+cd my-agent
+```
+
+JSON ファイルは次のようになります。
+
+```json
+{
+	"model": "Qwen/Qwen2.5-72B-Instruct",
+    "provider": "novita",
+	"servers": [
+		{
+			"type": "stdio",
+			"command": "npx",
+			"args": [
+				"mcp-remote",
+				"http://localhost:7860/gradio_api/mcp/sse"
+			]
+		}
+	]
+}
+```
+
+次のコマンドでエージェントを実行できます。
+
+```bash
+npx @huggingface/tiny-agents run agent.json
+```
+
+</hfoption>
+<hfoption id="python">
+
+基本的な Tiny Agent を使ったプロジェクトをセットアップしましょう。
+
+```bash
+mkdir my-agent
+touch my-agent/agent.json
+cd my-agent
+```
+
+JSON ファイルは次のようになります。
+
+```json
+{
+	"model": "Qwen/Qwen2.5-72B-Instruct",
+    "provider": "novita",
+	"servers": [
+		{
+			"type": "stdio",
+			"command": "npx",
+			"args": [
+				"mcp-remote", 
+				"http://localhost:7860/gradio_api/mcp/sse"
+			]
+		}
+	]
+}
+```
+
+次のコマンドでエージェントを実行できます。
+
+```bash
+tiny-agents run agent.json
+```
+
+</hfoption>
+</hfoptions>
+
+この設定で、Gradio MCP サーバーに接続する基本的な Tiny Agent を動かせます。設定ファイルには、モデル、推論プロバイダー、サーバーの情報が含まれています。
+
+| フィールド | 説明 |
+|-------|-------------|
+| `model` | エージェントに使うオープンソースモデル |
+| `provider` | エージェントに使う推論プロバイダー |
+| `servers` | エージェントに使うサーバー。Gradio MCP サーバーには `mcp-remote` サーバーを使います |
+
+> [!TIP]
+> Tiny Agents では、ローカルで動作するオープンソースモデルも使えます。ローカル推論サーバーを起動した場合は、次のような設定を使います。
+>
+> ```json
+> {
+> 	"model": "Qwen/Qwen3-32B",
+> 	"endpointUrl": "http://localhost:1234/v1",
+> 	"servers": [
+> 		{
+> 			"type": "stdio",
+> 			"command": "npx",
+> 			"args": [
+> 				"mcp-remote",
+> 				"http://localhost:1234/v1/mcp/sse"
+> 			]
+> 		}
+> 	]
+> }
+> ```
+>
+>
+> この設定で、ローカルモデルに接続する Tiny Agent を動かせます。設定ファイルには、モデル、サーバー、エンドポイント URL `http://localhost:1234/v1` が指定されています。エンドポイントは OpenAI 互換である必要があります。
+
+## カスタム Tiny Agents MCP クライアント
+
+Tiny Agents と Gradio MCP サーバーの仕組みを理解したところで、次は両者を連携させてみましょう。MCP の利点は、エージェントがさまざまな MCP 対応サーバーとやり取りするための共通の仕組みを提供することです。このユニットの前半で作成した Gradio ベースの感情分析サーバーにも、同じ方法で接続できます。
+
+### Tiny Agents で Gradio サーバーを使う
+
+Tiny Agent を、このユニットの前半で構築した Gradio 感情分析サーバーに接続するには、サーバーのリストに追加するだけです。エージェント設定の変更方法は次のとおりです。
+
+<hfoptions id="tiny-agents">
+<hfoption id="typescript">
+
+```ts
+const agent = new Agent({
+    provider: process.env.PROVIDER ?? "novita",
+    model: process.env.MODEL_ID ?? "Qwen/Qwen2.5-72B-Instruct",
+    apiKey: process.env.HF_TOKEN,
+    servers: [
+        // ... 既存のサーバー ...
+        {
+            command: "npx",
+            args: [
+                "mcp-remote",
+                "http://localhost:7860/gradio_api/mcp/sse"  // 自分の Gradio MCP サーバー
+            ]
+        }
+    ],
+});
+```
+
+</hfoption>
+<hfoption id="python">
+
+```python
+import os
+
+from huggingface_hub import Agent
+
+agent = Agent(
+    model="Qwen/Qwen2.5-72B-Instruct",
+    provider="novita",
+    servers=[
+        {
+            "command": "npx",
+            "args": [
+                "mcp-remote",
+                "http://localhost:7860/gradio_api/mcp/sse"  # 自分の Gradio MCP サーバー
+            ]
+        }
+    ],
+)
+```
+
+</hfoption>
+</hfoptions>
+
+これで、エージェントは感情分析ツールを他のツールと併せて使えるようになりました！ たとえば、次のようなことができます。
+1. ファイルシステムサーバーを使ってファイルからテキストを読み取る
+2. Gradio サーバーを使ってその感情を分析する
+3. 結果をファイルに書き戻す
+
+### デプロイ時の考慮事項
+
+Gradio MCP サーバーを Hugging Face Spaces にデプロイする際は、エージェント設定内のサーバー URL を、デプロイした Space を指すように更新する必要があります。
+
+
+```json
+{
+    command: "npx",
+    args: [
+        "mcp-remote",
+        "https://YOUR_USERNAME-mcp-sentiment.hf.space/gradio_api/mcp/sse"
+    ]
+}
+```
+
+
+これにより、エージェントはローカルだけでなく、どこからでも感情分析ツールを使えるようになります！
+
+## まとめ：完成したエンドツーエンド MCP アプリケーション
+
+このユニットでは、MCP の基礎の理解から、完全なエンドツーエンドアプリケーションの構築まで進みました。
+
+1. 感情分析ツールを公開する Gradio MCP サーバーを作成した
+2. MCP クライアントを使ってこのサーバーに接続する方法を学んだ
+3. そのツールとやり取りできる TypeScript と Python の小さなエージェントを構築した
+
+ここまでの実装から、Model Context Protocol の利点が分かります。Gradio のような使い慣れたフレームワークで専用のツールを作り、MCP という標準化されたインターフェースを通じて公開できます。これにより、エージェントはそれらのツールをほかの機能と組み合わせて、スムーズに利用できます。
+
+構築した完全なフローにより、エージェントは次のことが可能になります。
+- 複数のツールプロバイダーに接続する
+- 利用可能なツールを動的に発見する
+- カスタムの感情分析ツールを使う
+- ファイルシステムアクセスや Web ブラウジングなどの他の機能と組み合わせる
+
+このように、必要な機能を組み合わせられるモジュール式の仕組みが、柔軟な AI アプリケーションを構築するうえでの MCP の大きな強みです。
+
+## 次のステップ
+
+- Tiny Agents のブログ記事の [Python 版](https://huggingface.co/blog/python-tiny-agents) と [TypeScript 版](https://huggingface.co/blog/tiny-agents) を読む
+- [Tiny Agents のドキュメント](https://huggingface.co/docs/huggingface.js/main/en/tiny-agents/README) を確認する
+- Tiny Agents で何か作ってみましょう！

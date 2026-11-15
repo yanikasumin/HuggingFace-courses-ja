@@ -1,0 +1,79 @@
+# MCP 開発応用編：Claude Code 向けカスタムワークフローサーバーの構築
+
+Unit 3 へようこそ！このユニットでは、MCP の3つのプリミティブをすべて学びながら、Claude Code をカスタム開発ワークフローで強化する実用的な MCP サーバーを構築します。
+
+MCP を作った人たちの話を聞いてみたい方は、次の動画をご覧ください。
+
+<Youtube id="CQywdSdi5iA" />
+
+この動画では、Theo Chu、David Soria Parra、Alex Albert の3人が、Model Context Protocol（MCP）について詳しく解説します。MCP は、AI アプリケーションと外部のデータやツールを接続する方法を変えつつある標準です。
+
+## 構築するもの
+
+**PR Agent ワークフローサーバー**：Claude Code がチームの状況を理解し、開発ワークフローに応じて適切に動作できるようにする MCP サーバーです。
+
+- **スマートな PR 管理**：MCP Tools を使った、コード変更に応じた PR テンプレートの自動選択
+- **CI/CD モニタリング**：Cloudflare Tunnel で GitHub Actions を追跡し、標準化された Prompts を活用
+- **チームコミュニケーション**：MCP の全プリミティブの連携を示す Slack 通知
+
+## 実践ケーススタディ
+
+どの開発チームでも起こり得る問題を題材に、実践的なシナリオを実装します。
+
+**Before（導入前）**：開発者が手動で PR を作成し、Actions の完了を待ち、結果を手動で確認し、チームメンバーへの通知を忘れないようにする
+
+**After（導入後）**：ワークフローサーバーに接続した Claude Code が、賢く次のことをこなします。
+- 変更されたファイルに基づいて適切な PR テンプレートを提案する
+- GitHub Actions の実行を監視し、整形された要約を提供する
+- デプロイの成功／失敗時に Slack でチームへ自動通知する
+- Actions の結果に基づいて、チーム固有のレビュープロセスを開発者に案内する
+
+## 主な学習成果
+
+1. **MCP の中核プリミティブ**：実践的な例を通して Tools と Prompts をマスターする
+2. **MCP サーバー開発**：適切な構造とエラーハンドリングを備えた、動作するサーバーを構築する
+3. **GitHub Actions 連携**：Cloudflare Tunnel を使って webhook を受信し、CI/CD イベントを処理する
+4. **Hugging Face Hub ワークフロー**：LLM 開発チーム向けの専用ワークフローを作成する
+5. **複数システムの連携**：MCP を通じて GitHub、Slack、Hugging Face Hub を接続する
+6. **Claude Code の強化**：Claude にチーム固有のワークフローを理解させる
+
+## MCP プリミティブの実践
+
+このユニットでは、MCP の中核プリミティブをハンズオンで体験します。
+
+- **Tools**（Module 1）：ファイルを分析し、テンプレートを提案するために Claude が呼び出す関数
+- **Prompts**（Module 2）：チームのプロセスを一貫させるための標準化されたワークフロー
+- **Integration**（Module 3）：複雑な自動化のために全プリミティブを連携させる
+
+## モジュールの構成
+
+1. **Module 1：MCP サーバーの構築**：PR テンプレート提案用の Tools を備えた基本サーバーを作成する
+2. **Module 2：GitHub Actions 連携**：Cloudflare Tunnel と Prompts で CI/CD を監視する
+3. **Module 3：Slack 通知**：全 MCP プリミティブを連携させたチームコミュニケーション
+
+## 前提条件
+
+このユニットを始める前に、以下を用意してください。
+
+- Unit 1 と Unit 2 の修了 
+- GitHub Actions と webhook の概念に関する基本的な知識
+- テスト用の GitHub リポジトリへのアクセス（個人のテスト用リポジトリで可）
+- webhook 連携を作成できる Slack ワークスペース
+
+### Claude Code のインストールとセットアップ
+
+このユニットでは、MCP サーバーの連携をテストするために Claude Code が必要です。
+
+> [!TIP]
+> **インストール必須：** このユニットでは、AI ワークフローとの MCP サーバー連携をテストするために Claude Code が必要です。
+
+**クイックセットアップ：**
+
+[公式インストールガイド](https://docs.anthropic.com/en/docs/claude-code/getting-started) に従って Claude Code をインストールし、認証を完了してください。主な手順は、npm でインストールしたあと、プロジェクトディレクトリに移動して、`claude` を実行し、console.anthropic.com 経由で認証することです。
+
+インストールが終われば、このユニット全体を通して Claude Code を使い、MCP サーバーのテストや、構築したワークフロー自動化の操作を行います。
+
+> [!WARNING]
+> **Claude Code が初めての方へ：** セットアップで問題が発生した場合は、[トラブルシューティングガイド](https://docs.anthropic.com/en/docs/claude-code/troubleshooting) に、よくあるインストールと認証の問題がまとめられています。
+
+このユニットを終える頃には、Claude Code を強力なチーム開発アシスタントへと進化させる MCP サーバーを完成させているはずです。また、3つの MCP プリミティブすべてを使った開発を実際に体験できます。

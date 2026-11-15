@@ -1,0 +1,237 @@
+# MCP の機能（Capabilities）を理解する
+
+MCP サーバーは、通信プロトコルを通じてさまざまな機能をクライアントに公開します。これらの機能は4つの主要なカテゴリに分かれ、それぞれに異なる特徴と用途があります。ここでは、MCP の基本的な構成要素である4つの機能について説明します。
+
+> [!TIP]
+> この節では、各プログラミング言語の例を、特定のフレームワークに依存しない関数として示します。フレームワーク固有の複雑な仕組みではなく、基本的な概念と、それらがどう連携するかに注目するためです。
+>
+> 次のユニットでは、これらの概念が MCP 固有のコードでどう実装されるかを示します。
+
+## ツール（Tools）
+
+ツールは、AI モデルが MCP プロトコルを通じて呼び出せる実行可能な関数やアクションです。
+
+- **制御**：ツールは通常、**モデルが制御**します。つまり、AI モデル（LLM）がユーザーのリクエストとコンテキストに基づいて、ツールをいつ呼び出すかを判断します。
+- **安全性**：副作用を伴うアクションを実行できるため、ツールの実行は危険な場合があります。そのため、通常は明示的なユーザーの承認が必要です。
+- **ユースケース**：メッセージの送信、チケットの作成、API のクエリ、計算の実行など。
+
+**例**：指定した場所の現在の天気データを取得する天気ツール：
+
+<hfoptions id="tool-example">
+<hfoption id="python">
+
+```python
+def get_weather(location: str) -> dict:
+    """指定した場所の現在の天気を取得します。"""
+    # 天気 API に接続してデータを取得する
+    return {
+        "temperature": 72,
+        "conditions": "Sunny",
+        "humidity": 45
+    }
+```
+
+</hfoption>
+<hfoption id="javascript">
+
+```javascript
+function getWeather(location) {
+    // 天気 API に接続してデータを取得する
+    return {
+        temperature: 72,
+        conditions: 'Sunny',
+        humidity: 45
+    };
+}
+```
+
+</hfoption>
+</hfoptions>
+
+## リソース（Resources）
+
+リソースはデータソースへの読み取り専用アクセスを提供し、AI モデルが複雑なロジックを実行することなくコンテキストを取得できるようにします。
+
+- **制御**：リソースへのアクセスは通常、**アプリケーションが制御**します。つまり、ホストアプリケーションがいつアクセスするかを判断します。
+- **性質**：REST API の GET エンドポイントと同様に、最小限の計算でデータを取得するよう設計されています。
+- **安全性**：読み取り専用であるため、通常はツールよりセキュリティリスクが低くなります。
+- **ユースケース**：ファイル内容へのアクセス、データベースレコードの取得、設定情報の読み取りなど。
+
+**例**：ファイル内容へのアクセスを提供するリソース：
+
+<hfoptions id="resource-example">
+<hfoption id="python">
+
+```python
+def read_file(file_path: str) -> str:
+    """指定したパスのファイルの内容を読み取ります。"""
+    with open(file_path, 'r') as f:
+        return f.read()
+```
+
+</hfoption>
+<hfoption id="javascript">
+
+```javascript
+function readFile(filePath) {
+    // fs.readFile を使ってファイル内容を読み取る
+    const fs = require('fs');
+    return new Promise((resolve, reject) => {
+        fs.readFile(filePath, 'utf8', (err, data) => {
+            if (err) {
+                reject(err);
+                return;
+            }
+            resolve(data);
+        });
+    });
+}
+```
+
+</hfoption>
+</hfoptions>
+
+## プロンプト（Prompts）
+
+プロンプトは、ユーザー、AI モデル、サーバーの機能の間のやり取りをガイドする、事前に定義されたテンプレートやワークフローです。
+
+- **制御**：プロンプトは**ユーザーが制御**するもので、多くの場合、ホストアプリケーションの UI に選択肢として提示されます。
+- **目的**：利用可能なツールやリソースを最適に使えるよう、やり取りを構造化します。
+- **選択**：通常、ユーザーが AI モデルの処理開始前にプロンプトを選択し、やり取りのコンテキストを設定します。
+- **ユースケース**：一般的なワークフロー、専門タスクのテンプレート、ガイド付きのやり取りなど。
+
+**例**：コードレビューを生成するためのプロンプトテンプレート：
+
+<hfoptions id="prompt-example">
+<hfoption id="python">
+
+```python
+def code_review(code: str, language: str) -> list:
+    """提供されたコードスニペットのコードレビューを生成します。"""
+    return [
+        {
+            "role": "system",
+            "content": f"You are a code reviewer examining {language} code. Provide a detailed review highlighting best practices, potential issues, and suggestions for improvement."
+        },
+        {
+            "role": "user",
+            "content": f"Please review this {language} code:\n\n```{language}\n{code}\n```"
+        }
+    ]
+```
+
+</hfoption>
+<hfoption id="javascript">
+
+```javascript
+function codeReview(code, language) {
+    return [
+        {
+            role: 'system',
+            content: `You are a code reviewer examining ${language} code. Provide a detailed review highlighting best practices, potential issues, and suggestions for improvement.`
+        },
+        {
+            role: 'user',
+            content: `Please review this ${language} code:\n\n\`\`\`${language}\n${code}\n\`\`\``
+        }
+    ];
+}
+```
+
+</hfoption>
+</hfoptions>
+
+## サンプリング（Sampling）
+
+サンプリングにより、サーバーはクライアント（具体的にはホストアプリケーション）に LLM とのやり取りの実行をリクエストできます。
+
+- **制御**：サンプリングは**サーバーが開始**しますが、クライアントまたはホストアプリケーションによる仲介が必要です。
+- **目的**：サーバー駆動のエージェント的な振る舞いや、再帰的・複数ステップのやり取りを可能にします。
+- **安全性**：ツールと同様、サンプリング操作には通常、ユーザーの承認が必要です。
+- **ユースケース**：複雑な複数ステップのタスク、自律エージェントのワークフロー、インタラクティブなプロセスなど。
+
+**例**：サーバーが、処理したデータの分析をクライアントにリクエストすることがあります：
+
+<hfoptions id="sampling-example">
+<hfoption id="python">
+
+```python
+def request_sampling(messages, system_prompt=None, include_context="none"):
+    """クライアントに LLM サンプリングをリクエストします。"""
+    # 実際の実装では、これはクライアントにリクエストを送信します
+    return {
+        "role": "assistant",
+        "content": "Analysis of the provided data..."
+    }
+```
+
+</hfoption>
+<hfoption id="javascript">
+
+```javascript
+function requestSampling(messages, systemPrompt = null, includeContext = 'none') {
+    // 実際の実装では、これはクライアントにリクエストを送信します
+    return {
+        role: 'assistant',
+        content: 'Analysis of the provided data...'
+    };
+}
+
+function handleSamplingRequest(request) {
+    const { messages, systemPrompt, includeContext } = request;
+    // 実際の実装では、これはリクエストを処理してレスポンスを返します
+    return {
+        role: 'assistant',
+        content: 'Response to the sampling request...'
+    };
+}
+```
+
+</hfoption>
+</hfoptions>
+
+サンプリングのフローは次のステップに従います。
+1. サーバーが `sampling/createMessage` リクエストをクライアントに送信する
+2. クライアントがリクエストを確認し、必要に応じて変更する
+3. クライアントが LLM からサンプリングする
+4. クライアントが LLM の生成結果を確認する
+5. クライアントが結果をサーバーに返す
+
+> [!TIP]
+> このように人間が処理に介入できる設計（human-in-the-loop）により、ユーザーは LLM に渡す情報や、LLM が生成する内容を引き続き管理できます。サンプリングを実装する際は、明確で構造化されたプロンプトを用意し、関連するコンテキストを含めることが重要です。
+
+## 機能はどう連携するか
+
+これらの機能が連携して複雑なやり取りを可能にする様子を見てみましょう。次の表では、機能、制御主体、制御の方向、その他の詳細をまとめています。
+
+| 機能 | 制御主体 | やり取りの方向 | 副作用 | 承認の必要性 | 主な用途 |
+|------|----------|----------------|--------|--------------|----------|
+| ツール | モデル（LLM） | クライアント → サーバー | あり（場合による） | 必要 | アクション、API 呼び出し、データ操作 |
+| リソース | アプリケーション | クライアント → サーバー | なし（読み取り専用） | 通常は不要 | データ取得、コンテキスト収集 |
+| プロンプト | ユーザー | サーバー → クライアント | なし | 不要（ユーザーが選択） | ガイド付きワークフロー、専門テンプレート |
+| サンプリング | サーバー | サーバー → クライアント → サーバー | 間接的にあり | 必要 | 複数ステップのタスク、エージェント的な振る舞い |
+
+これらの機能は、互いに補完し合うよう設計されています。
+
+1. ユーザーが専門ワークフローを開始するために**プロンプト**を選択する
+2. そのプロンプトには**リソース**からのコンテキストが含まれる
+3. 処理中に、AI モデルが特定のアクションを実行するために**ツール**を呼び出す
+4. 複雑な操作では、サーバーが**サンプリング**を使って追加の LLM 処理をリクエストする
+
+これらの基本機能を明確に区別することで、MCP のやり取りを整理できます。これにより、AI モデルは機能ごとに定められた制御の範囲を守りながら、情報の取得、アクションの実行、複雑なワークフローの処理を行えます。
+
+## ディスカバリプロセス
+
+MCP の重要な特徴の1つが、機能の動的な発見です。クライアントがサーバーに接続すると、特定の list メソッドを通じて利用可能なツール、リソース、プロンプトを問い合わせることができます。
+
+- `tools/list`：利用可能なツールを発見する
+- `resources/list`：利用可能なリソースを発見する
+- `prompts/list`：利用可能なプロンプトを発見する
+
+この動的な発見の仕組みにより、クライアントはサーバーの機能をあらかじめプログラム内に書き込んでおかなくても、各サーバーが提供する機能に対応できます。
+
+## まとめ
+
+これらのコアプリミティブを理解することは、MCP を効果的に扱ううえで不可欠です。明確な制御の境界を持つ異なる種類の機能を提供することで、MCP は適切な安全性と制御の仕組みを維持しながら、AI モデルと外部システムの間の強力なやり取りを可能にします。
+
+次節では、Gradio が MCP とどのように連携し、これらの機能を利用するための使いやすいインターフェースを提供するのかを説明します。
