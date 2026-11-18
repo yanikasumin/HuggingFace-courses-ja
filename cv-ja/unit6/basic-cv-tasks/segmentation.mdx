@@ -7,6 +7,7 @@
 ![画像セグメンテーション](https://huggingface.co/datasets/hf-vision/course-assets/resolve/main/segmentation-example.png)
 
 用途や目的によって、適したセグメンテーションの種類は異なります。代表的なものは次の通りです。
+
 - **セマンティックセグメンテーション（Semantic Segmentation）**：各ピクセルに最も可能性の高いクラスを割り当てます。例えば、画像に猫が2匹写っていても、それぞれを別の個体として区別しません。あくまで各ピクセルがどのクラスに属するかを判定します。
 - **インスタンスセグメンテーション（Instance Segmentation）**：物体の各インスタンスを固有のマスクで識別します。物体検出とセグメンテーションの要素を組み合わせ、同じクラスの個々の物体を区別します。
 - **パノプティックセグメンテーション（Panoptic Segmentation）**：セマンティックセグメンテーションとインスタンスセグメンテーションを組み合わせた手法です。各ピクセルにクラスとインスタンスの両方を割り当て、画像内に何が有るか、そしてどこに在るかを一緒に扱います。
@@ -48,16 +49,19 @@ masks = pipe(raw_image)
 モデルの評価にはいくつかの指標が使えます。代表的なものは次の通りです。
 
 - **Intersection over Union（IoU）／Jaccard 指数**は、予測マスクと正解データの共通部分と和集合の比です。
+
 IoU は、セグメンテーションで最もよく使われる評価指標の1つです。クラスごとのデータ数に偏りがあっても影響を受け難い為、モデルの開発を始める際にも適しています。
 
 ![IoU](https://huggingface.co/datasets/hf-vision/course-assets/resolve/main/iou.png)
 
 - **ピクセル正解率（Pixel accuracy）**：正しく分類されたピクセル数を、全ピクセル数で割って求めます。
+
 直感的な指標ですが、クラス不均衡に敏感な為、誤解を招くことがあります。
 
 ![ピクセル正解率](https://huggingface.co/datasets/hf-vision/course-assets/resolve/main/pixel-accuracy.png)
 
 - **Dice 係数**：予測マスクと正解マスクが重なった部分の大きさを2倍し、両方のマスクの大きさの合計で割った値です。
+
 Dice 係数は、予測マスクと正解マスクがどの程度重なっているかを表します。重なり具合のわずかな違いも捉えたい場合に適した指標です。
 
 ![Dice 係数](https://huggingface.co/datasets/hf-vision/course-assets/resolve/main/dice-coefficient.png)

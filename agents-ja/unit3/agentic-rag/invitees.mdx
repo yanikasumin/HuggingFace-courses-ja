@@ -157,6 +157,7 @@ docs = [
 </hfoptions>
 
 上のコードでは、次のことをしています。
+
 - データセットを読み込む
 - 各ゲストのエントリを、整形された内容を持つ `Document` オブジェクトに変換する
 - `Document` オブジェクトをリストに格納する
@@ -206,6 +207,7 @@ guest_info_tool = GuestInfoRetrieverTool(docs)
 ```
 
 このツールをステップごとに見ていきましょう。
+
 - `name` と `description` は、エージェントがこのツールをいつ、どう使うかを理解する助けになります
 - `inputs` はツールが期待するパラメータを定義します（この場合は検索クエリ）
 - 埋め込みを必要としない強力なテキスト検索アルゴリズムである `BM25Retriever` を使っています
@@ -238,6 +240,7 @@ guest_info_tool = FunctionTool.from_defaults(get_guest_info_retriever)
 ```
 
 このツールをステップごとに見ていきましょう。
+
 - `docstring`（ドキュメント文字列）は、エージェントがこのツールをいつ、どう使うかを理解する助けになります
 - 型デコレータはツールが期待するパラメータを定義します（この場合は検索クエリ）
 - 埋め込みを必要としない強力なテキスト検索アルゴリズムである `BM25Retriever` を使っています
@@ -273,6 +276,7 @@ guest_info_tool = Tool(
 ```
 
 このツールをステップごとに見ていきましょう。
+
 - `name` と `description` は、エージェントがこのツールをいつ、どう使うかを理解する助けになります
 - 型デコレータはツールが期待するパラメータを定義します（この場合は検索クエリ）
 - 埋め込みを必要としない強力なテキスト検索アルゴリズムである `BM25Retriever` を使っています
@@ -315,6 +319,7 @@ Based on the information I retrieved, Lady Ada Lovelace is an esteemed mathemati
 ```
 
 この最後のステップでは、次の処理を行っています。
+
 - `InferenceClientModel` クラスを使ってHugging Faceモデルを初期化します
 - エージェント（Alfred）を、問題解決の為にPythonコードを実行出来る `CodeAgent` として作成します
 - 「Lady Ada Lovelace」という名前のゲストに関する情報を取得するようAlfredに頼みます
@@ -350,6 +355,7 @@ Lady Ada Lovelace is an esteemed mathematician and friend, renowned for her pion
 ```
 
 この最後のステップでは、次の処理を行っています。
+
 - `HuggingFaceInferenceAPI` クラスを使ってHugging Faceモデルを初期化します
 - 作成したばかりのツールを含め、エージェント（Alfred）を `AgentWorkflow` として作成します
 - 「Lady Ada Lovelace」という名前のゲストに関する情報を取得するようAlfredに頼みます
@@ -418,6 +424,7 @@ Lady Ada Lovelace is an esteemed mathematician and pioneer in computing, often c
 ```
 
 この最後のステップでは、次の処理を行っています。
+
 - `HuggingFaceEndpoint` クラスを使ってHugging Faceモデルを初期化します。あわせてチャットインターフェースを生成し、ツールを追加します
 - エージェント（Alfred）を、2つのノード（`assistant`、`tools`）をエッジで結んだ `StateGraph` として作成します
 - 「Lady Ada Lovelace」という名前のゲストに関する情報を取得するようAlfredに頼みます

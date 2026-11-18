@@ -2,6 +2,7 @@
 この章では、テキストや画像のプロンプトから独自の写実的な画像を生成する AI モデル、Stable Diffusion の構成要素を紹介します。Stable Diffusion は、[この論文](https://arxiv.org/pdf/2112.10752.pdf)の発表を経て、[Stability AI](https://stability.ai/)、[RunwayML](https://runwayml.com/)、ミュンヘン大学（LMU）の CompVis グループの協力により、2022年に公開されました。
 
 この章で学ぶこと：
+
 - Stable Diffusion の基本的な構成要素
 - `text-to-image`、`image2image`、インペインティングパイプラインの使い方
 
@@ -33,7 +34,9 @@ Stable Diffusion の基本的な仕組みを理解する為に、いくつかの
 
 ## Diffusers で `text-to-image`、`image-to-image`、インペインティングモデルを使う方法
 このセクションでは、役立つユースケースと、[Diffusers](https://github.com/huggingface/diffusers) ライブラリを使ってこれらのタスクを実行する方法を紹介します。
+
 - `text-to-image` 推論のステップ
+
 基本的な仕組みは、テキストプロンプトを入力すると、それに対応する画像が生成されるというものです。
 
 <iframe
@@ -68,6 +71,7 @@ image = pipeline(
 （プロンプトの訳：ジャングルの中の宇宙飛行士、寒色のパレット、彩度を抑えた色、詳細、8k）
 
 - `image-to-image` 推論のステップ
+
 同様のやり方でパイプラインを初期化出来ますが、その代わりに画像とテキストプロンプトを渡します。
 ```python
 import torch
@@ -97,6 +101,7 @@ make_image_grid([init_image, image], rows=1, cols=2)
 （プロンプトの訳：猫の魔法使い、ガンダルフ、指輪物語、詳細、ファンタジー、かわいい、愛らしい、ピクサー、ディズニー、8k）
 
 - インペインティングのステップ
+
 インペインティングパイプラインには、元の画像、テキストプロンプト、画像内の対象物に対応するマスクを渡します。マスクは、画像のどの部分を修復・編集するかを指定する為のものです。この例では、生成画像に含めたくない内容を指定する為に、ネガティブプロンプトも渡します。
 ```python
 # パイプラインを読み込む

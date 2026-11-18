@@ -190,6 +190,7 @@ class SwinTransformer(nn.Module):
 `SwinTransformerBlock` は、Swin Transformer の中核となる処理、つまりローカルなウィンドウ attention と、その後の MLP 処理をカプセル化したものです。ローカルなパッチに注目しながらグローバルな表現も学習出来る能力を保つことで、Swin Transformer が大きな画像を効率的に扱えるようにする上で、重要な役割を果たします。
 
 **レイヤーの構成要素**：
+
 - **正規化レイヤー1（`self.norm1`）**：attention 機構の前に適用されます。
 - **Window Attention（`self.attn`）**：ローカルウィンドウ内で self-attention を計算します。
 - **Drop Path（`self.drop_path`）**：正則化の為の stochastic depth を実装します。
@@ -375,6 +376,7 @@ class SwinTransformerBlock(nn.Module):
 重要なステップは4つです。
 
 1. **循環シフト（cyclic shift）**：
+
 特徴マップは `window_partition` でウィンドウに分割されます。その区画に **cyclic shift** が適用されます。cyclic shift とは、列の中の要素（ここでは区画）を左又は右へずらし、一端からはみ出した要素を反対側に回り込ませる操作です。要素同士の相対的な位置は変わりますが、列そのものはそのまま保たれます。例えば、列 `A, B, C, D` を右へ1つ cyclic shift すると `D, A, B, C` になります。
 
 cyclic shift により、モデルは隣接するウィンドウ同士の関係を捉えられるようになり、個々のウィンドウのローカルな範囲を超えた空間的文脈を学習する能力が高まります。
