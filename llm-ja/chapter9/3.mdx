@@ -21,7 +21,7 @@
   - `inputs`：入力コンポーネントの種類。Gradio には `"image"` や `"mic"` など、多くの組み込みコンポーネントが用意されています。
   - `outputs`：出力コンポーネントの種類。こちらも `"image"` や `"label"` など、多くの組み込みコンポーネントが用意されています。
 
-コンポーネントの完全な一覧は、[Gradio のドキュメント](https://gradio.app/docs) を参照して下さい。各組み込みコンポーネントは、対応するクラスをインスタンス化することでカスタマイズ出来ます。
+コンポーネントの完全な一覧は、[Gradio のドキュメント](https://gradio.app/docs) を参照してください。各組み込みコンポーネントは、対応するクラスをインスタンス化することでカスタマイズ出来ます。
 
 例えば、[前のセクション](/course/chapter9/2) で見たように、`inputs` パラメータに `"textbox"` を渡す代わりに、`Textbox(lines=7, label="Prompt")` コンポーネントを渡せば、7行のテキストボックスにラベルを付けられます。
 
@@ -55,7 +55,7 @@ mic = gr.Audio(source="microphone", type="numpy", label="Speak here...")
 gr.Interface(reverse_audio, mic, "audio").launch()
 ```
 
-上のコードを実行すると、下のようなインターフェースが生成されます（ブラウザがマイクの許可を求めてこない場合は、<a href="https://huggingface.co/spaces/course-demos/audio-reverse" target="_blank">デモを別のタブで開いて下さい</a>）。
+上のコードを実行すると、下のようなインターフェースが生成されます（ブラウザがマイクの許可を求めてこない場合は、<a href="https://huggingface.co/spaces/course-demos/audio-reverse" target="_blank">デモを別のタブで開いてください</a>）。
 
 <iframe src="https://course-demos-audio-reverse.hf.space" frameBorder="0" height="250" title="Gradio アプリ" class="container p-0 flex-grow space-iframe" allow="accelerometer; ambient-light-sensor; autoplay; battery; camera; document-domain; encrypted-media; fullscreen; geolocation; gyroscope; layout-animations; legacy-image-formats; magnetometer; microphone; midi; oversized-images; payment; picture-in-picture; publickey-credentials-get; sync-xhr; usb; vr ; wake-lock; xr-spatial-tracking" sandbox="allow-forms allow-modals allow-popups allow-popups-to-escape-sandbox allow-same-origin allow-scripts allow-downloads"></iframe>
 
@@ -65,7 +65,7 @@ gr.Interface(reverse_audio, mic, "audio").launch()
 
 もっと複雑な、複数の入出力を持つ関数が有るとします。下の例の関数は、ドロップダウンのインデックス、スライダーの値、数値を受け取り、音階の音声サンプルを返します。
 
-入力コンポーネントと出力コンポーネントのリストをどのように渡しているか見て、何が起きているか追ってみて下さい。
+入力コンポーネントと出力コンポーネントのリストをどのように渡しているか見て、何が起きているか追ってみてください。
 
 入出力コンポーネントのリストを渡す際は、次の対応関係が重要です。
 * 入力コンポーネントのリストを渡すと、各コンポーネントが順番にパラメータに対応します。
@@ -122,7 +122,7 @@ gr.Interface(
 
 **音声認識** モデルのデモが出来るインターフェースを作りましょう。面白くする為に、マイク入力とアップロードされたファイルの *どちらでも* 受け付けられるようにします。
 
-いつものように、音声認識モデルは 🤗 Transformers の `pipeline()` 関数で読み込みます。手早く復習したい場合は、[Chapter 1 の該当セクション](/course/chapter1/3) に戻って下さい。次に、音声を処理して文字起こしを返す `transcribe_audio()` 関数を実装します。最後に、この関数を、入力に `Audio` コンポーネント、出力にテキストだけを使った `Interface` でラップします。
+いつものように、音声認識モデルは 🤗 Transformers の `pipeline()` 関数で読み込みます。手早く復習したい場合は、[Chapter 1 の該当セクション](/course/chapter1/3) に戻ってください。次に、音声を処理して文字起こしを返す `transcribe_audio()` 関数を実装します。最後に、この関数を、入力に `Audio` コンポーネント、出力にテキストだけを使った `Interface` でラップします。
 
 このアプリケーションのコード全体は次の通りです:
 
@@ -145,11 +145,11 @@ gr.Interface(
 ).launch()
 ```
 
-ブラウザがマイクの許可を求めてこない場合は、<a href="https://huggingface.co/spaces/course-demos/audio-reverse" target="_blank">デモを別のタブで開いて下さい</a>。
+ブラウザがマイクの許可を求めてこない場合は、<a href="https://huggingface.co/spaces/course-demos/audio-reverse" target="_blank">デモを別のタブで開いてください</a>。
 
 <iframe src="https://course-demos-asr.hf.space" frameBorder="0" height="550" title="Gradio アプリ" class="container p-0 flex-grow space-iframe" allow="accelerometer; ambient-light-sensor; autoplay; battery; camera; document-domain; encrypted-media; fullscreen; geolocation; gyroscope; layout-animations; legacy-image-formats; magnetometer; microphone; midi; oversized-images; payment; picture-in-picture; publickey-credentials-get; sync-xhr; usb; vr ; wake-lock; xr-spatial-tracking" sandbox="allow-forms allow-modals allow-popups allow-popups-to-escape-sandbox allow-same-origin allow-scripts allow-downloads"></iframe>
 
 
 これだけです！このインターフェースで音声を文字起こし出来るようになりました。ここでは `optional` パラメータに `True` を渡すことで、ユーザーがマイクと音声ファイルのどちらかを提供出来るようにしています（どちらも提供しない場合はエラーメッセージが返ります）。
 
-インターフェースを他の人と共有する方法は、このまま読み進めて下さい！
+インターフェースを他の人と共有する方法は、このまま読み進めてください！

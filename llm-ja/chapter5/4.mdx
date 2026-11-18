@@ -20,7 +20,7 @@
 
 Pile は、大規模言語モデルの訓練の為に [EleutherAI](https://www.eleuther.ai) が作成した英語テキストコーパスです。科学論文、GitHub のコードリポジトリ、フィルタリングされた Web テキストなど、多様なデータセットを含んでいます。訓練コーパスは [14 GB のチャンク](https://the-eye.eu/public/AI/pile/)で入手出来、[個別の構成要素](https://the-eye.eu/public/AI/pile_preliminary_components/)もいくつかダウンロード出来ます。
 
-先ず、PubMed Abstracts データセットを見てみましょう。これは [PubMed](https://pubmed.ncbi.nlm.nih.gov/) に掲載された1500万件の生物医学系出版物の抄録を集めたコーパスです。このデータセットは [JSON Lines 形式](https://jsonlines.org)で保存され、`zstandard` ライブラリで圧縮されています。その為、先ずこのライブラリをインストールする必要があります。
+まず、PubMed Abstracts データセットを見てみましょう。これは [PubMed](https://pubmed.ncbi.nlm.nih.gov/) に掲載された1500万件の生物医学系出版物の抄録を集めたコーパスです。このデータセットは [JSON Lines 形式](https://jsonlines.org)で保存され、`zstandard` ライブラリで圧縮されています。その為、まずこのライブラリをインストールする必要があります。
 
 ```py
 !pip install zstandard
@@ -47,7 +47,7 @@ Dataset({
 データセットには15,518,009行と2つの列が有ることが分かります。かなりの量です。
 
 > [!TIP]
-> デフォルトでは、Datasets はデータセットの読み込みに必要なファイルを解凍します。ハードドライブの空き容量を節約したい場合は、`load_dataset()` の `download_config` 引数に `DownloadConfig(delete_extracted=True)` を渡せます。詳細は[ドキュメント](https://huggingface.co/docs/datasets/package_reference/builder_classes#datasets.DownloadConfig)を参照して下さい。
+> デフォルトでは、Datasets はデータセットの読み込みに必要なファイルを解凍します。ハードドライブの空き容量を節約したい場合は、`load_dataset()` の `download_config` 引数に `DownloadConfig(delete_extracted=True)` を渡せます。詳細は[ドキュメント](https://huggingface.co/docs/datasets/package_reference/builder_classes#datasets.DownloadConfig)を参照してください。
 
 最初のサンプルの内容を確認してみましょう。
 
@@ -105,7 +105,7 @@ print(f"データセットのサイズ（キャッシュファイル）: {size_g
 
 Pandas に慣れている人には、この結果は意外かもしれません。Wes Kinney の有名な[経験則](https://wesmckinney.com/blog/apache-arrow-pandas-internals/)では、通常、データセットのサイズの5倍から10倍の RAM が必要とされるからです。では、Datasets はこのメモリ管理の問題をどう解決しているのでしょうか。Datasets は各データセットを[メモリマップドファイル](https://en.wikipedia.org/wiki/Memory-mapped_file)として扱います。これは RAM とファイルシステム上のストレージを対応付ける仕組みであり、データセット全体をメモリに読み込まなくても、その要素にアクセスして操作出来ます。
 
-メモリマップドファイルは複数のプロセス間で共有も出来る為、`Dataset.map()` のようなメソッドを、データセットを移動したりコピーしたりすることなく並列化出来ます。これらの機能は全て、裏側では [Apache Arrow](https://arrow.apache.org) のメモリ形式と [`pyarrow`](https://arrow.apache.org/docs/python/index.html) ライブラリによって実現されており、データの読み込みと処理を非常に高速にしています。（Apache Arrow の詳細や Pandas との比較については、[Dejan Simic のブログ記事](https://towardsdatascience.com/apache-arrow-read-dataframe-with-zero-memory-69634092b1a)を参照して下さい。）実際に確かめる為に、PubMed Abstracts データセットの全ての要素をたどる簡単な速度テストをしてみましょう。
+メモリマップドファイルは複数のプロセス間で共有も出来る為、`Dataset.map()` のようなメソッドを、データセットを移動したりコピーしたりすることなく並列化出来ます。これらの機能は全て、裏側では [Apache Arrow](https://arrow.apache.org) のメモリ形式と [`pyarrow`](https://arrow.apache.org/docs/python/index.html) ライブラリによって実現されており、データの読み込みと処理を非常に高速にしています。（Apache Arrow の詳細や Pandas との比較については、[Dejan Simic のブログ記事](https://towardsdatascience.com/apache-arrow-read-dataframe-with-zero-memory-69634092b1a)を参照してください。）実際に確かめる為に、PubMed Abstracts データセットの全ての要素をたどる簡単な速度テストをしてみましょう。
 
 ```py
 import timeit

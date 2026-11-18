@@ -128,7 +128,7 @@ headers = {"Authorization": f"token {GITHUB_TOKEN}"}
 ```
 
 > [!WARNING]
-> ⚠️ `GITHUB_TOKEN` を貼り付けたノートブックを共有しないで下さい。誤ってこの情報を漏らさないよう、実行後は最後のセルを削除することをお勧めします。更に良いのは、トークンを *.env* ファイルに保存し、[`python-dotenv` ライブラリ](https://github.com/theskumar/python-dotenv)を使って環境変数として自動的に読み込む方法です。
+> ⚠️ `GITHUB_TOKEN` を貼り付けたノートブックを共有しないでください。誤ってこの情報を漏らさないよう、実行後は最後のセルを削除することをお勧めします。更に良いのは、トークンを *.env* ファイルに保存し、[`python-dotenv` ライブラリ](https://github.com/theskumar/python-dotenv)を使って環境変数として自動的に読み込む方法です。
 
 アクセストークンが用意出来たので、GitHub リポジトリから全ての issue をダウンロード出来る関数を作りましょう。
 
@@ -199,7 +199,7 @@ Dataset({
 
 素晴らしい。これで初めてのデータセットをゼロから作れました！しかし、Datasets リポジトリの [Issues タブ](https://github.com/huggingface/datasets/issues)には合計で約1,000件の issue しか表示されないのに、何故数千件もの issue が有るのでしょうか？  GitHub の[ドキュメント](https://docs.github.com/en/rest/reference/issues#list-issues-assigned-to-the-authenticated-user)に記載されているように、これはプルリクエストも全てダウンロードしている為です。
 
-> GitHub の REST API v3 では、全てのプルリクエストを issue とみなしますが、全ての issue がプルリクエストであるとは限りません。その為、「Issues」エンドポイントは issue とプルリクエストの両方を返すことがあります。プルリクエストは `pull_request` キーで識別出来ます。なお、「Issues」エンドポイントから取得したプルリクエストの `id` は、プルリクエスト自身の ID ではなく、issue としての ID であることに注意して下さい。
+> GitHub の REST API v3 では、全てのプルリクエストを issue とみなしますが、全ての issue がプルリクエストであるとは限りません。その為、「Issues」エンドポイントは issue とプルリクエストの両方を返すことがあります。プルリクエストは `pull_request` キーで識別出来ます。なお、「Issues」エンドポイントから取得したプルリクエストの `id` は、プルリクエスト自身の ID ではなく、issue としての ID であることに注意してください。
 
 issue とプルリクエストの内容はかなり異なる為、両者を区別出来るよう、軽い前処理を行いましょう。
 
@@ -328,7 +328,7 @@ issues_with_comments_dataset = issues_dataset.map(
 
 拡張したデータセットが用意出来たので、コミュニティと共有する為に Hub にプッシュしましょう！データセットのアップロードは非常に簡単です。Transformers のモデルやトークナイザと同様に、`push_to_hub()` メソッドを使ってデータセットをプッシュ出来ます。
 
-その為には認証トークンが必要です。先ず `notebook_login()` 関数で Hugging Face Hub にログインすれば取得出来ます。
+その為には認証トークンが必要です。まず `notebook_login()` 関数で Hugging Face Hub にログインすれば取得出来ます。
 
 ```py
 from huggingface_hub import notebook_login
@@ -365,7 +365,7 @@ Dataset({
 やりました。データセットを Hub にプッシュし、他の人が使えるようになりました！残る重要な作業は1つだけです。コーパスがどのように作成されたかを説明し、コミュニティに他の有用な情報を提供するデータセットカードを追加することです。
 
 > [!TIP]
-> データセットは、`huggingface-cli` と少しの Git の工夫を使って、ターミナルから直接 Hugging Face Hub にアップロードすることも出来ます。方法の詳細は [Datasets ガイド](https://huggingface.co/docs/datasets/share#share-a-dataset-using-the-cli)を参照して下さい。
+> データセットは、`huggingface-cli` と少しの Git の工夫を使って、ターミナルから直接 Hugging Face Hub にアップロードすることも出来ます。方法の詳細は [Datasets ガイド](https://huggingface.co/docs/datasets/share#share-a-dataset-using-the-cli)を参照してください。
 
 ## データセットカードの作成[[creating-a-dataset-card]]
 
@@ -393,4 +393,4 @@ Hugging Face Hub では、この情報は各データセットリポジトリの
 以上です！このセクションでは、良いデータセットの作成にはかなり手間がかかることを見てきましたが、幸いなことに、アップロードしてコミュニティと共有するのは難しくありません。次のセクションでは、新しいデータセットを使って、質問に最も関連性の高い issue やコメントを見つけるセマンティック検索エンジンを Datasets で作成します。
 
 > [!TIP]
-> **やってみよう！** このセクションと同じ手順で、好きなオープンソースライブラリ（勿論 Datasets 以外のものを選んで下さい！）の GitHub issues のデータセットを作成してみましょう。おまけとして、`labels` フィールドに在るタグを予測するマルチラベル分類器をファインチューニングしてみましょう。
+> **やってみよう！** このセクションと同じ手順で、好きなオープンソースライブラリ（勿論 Datasets 以外のものを選んでください！）の GitHub issues のデータセットを作成してみましょう。おまけとして、`labels` フィールドに在るタグを予測するマルチラベル分類器をファインチューニングしてみましょう。

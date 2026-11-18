@@ -61,7 +61,7 @@ print(type(encoding))
 <class 'transformers.tokenization_utils_base.BatchEncoding'>
 ```
 
-`AutoTokenizer` クラスはデフォルトで高速トークナイザを選択する為、この `BatchEncoding` オブジェクトが提供する追加のメソッドを使えます。トークナイザが高速か低速かを確認する方法は2つあります。先ず、`tokenizer` の `is_fast` 属性を確認する方法です。
+`AutoTokenizer` クラスはデフォルトで高速トークナイザを選択する為、この `BatchEncoding` オブジェクトが提供する追加のメソッドを使えます。トークナイザが高速か低速かを確認する方法は2つあります。まず、`tokenizer` の `is_fast` 属性を確認する方法です。
 
 ```python
 tokenizer.is_fast
@@ -81,7 +81,7 @@ encoding.is_fast
 True
 ```
 
-高速トークナイザで何が出来るか見てみましょう。先ず、ID をトークンに戻す変換をしなくても、トークンにアクセス出来ます。
+高速トークナイザで何が出来るか見てみましょう。まず、ID をトークンに戻す変換をしなくても、トークンにアクセス出来ます。
 
 ```py
 encoding.tokens()
@@ -109,7 +109,7 @@ encoding.word_ids()
 > [!TIP]
 > 単語とは何かという概念は複雑です。例えば、"I'll"（"I will" の短縮形）は1つの単語として数えるのでしょうか、それとも2つでしょうか。実際には、トークナイザとそれが適用する事前トークン化の操作によって異なります。空白で分割するだけのトークナイザは、これを1つの単語と見なします。空白に加えて句読点も使うトークナイザは、2つの単語と見なします。
 >
-> **試してみましょう！** `bert-base-cased` と `roberta-base` のチェックポイントからトークナイザを作成し、"81s" をトークン化してみて下さい。何が観察出来ますか。単語 ID はどうなっていますか。
+> **試してみましょう！** `bert-base-cased` と `roberta-base` のチェックポイントからトークナイザを作成し、"81s" をトークン化してみてください。何が観察出来ますか。単語 ID はどうなっていますか。
 
 同様に、`sentence_ids()` メソッドを使えば、トークンを由来となった文にマッピング出来ます（但し、この場合はトークナイザが返す `token_type_ids` からも同じ情報が得られます）。
 
@@ -127,7 +127,7 @@ Sylvain
 前述の通り、これは全て、高速トークナイザが各トークンの由来となったテキストの範囲を*オフセット*のリストとして追跡していることによって実現しています。その使い方を示す為に、次は `token-classification` パイプラインの結果を手動で再現する方法を紹介します。
 
 > [!TIP]
-> **試してみましょう！** 自分で例文を作り、どのトークンがどの単語 ID に関連付けられているか、また1つの単語の文字範囲を抽出するにはどうすればよいか理解してみて下さい。ボーナスとして、2つの文を入力に使って、文 ID が妥当かどうか確認してみましょう。
+> **試してみましょう！** 自分で例文を作り、どのトークンがどの単語 ID に関連付けられているか、また1つの単語の文字範囲を抽出するにはどうすればよいか理解してみてください。ボーナスとして、2つの文を入力に使って、文 ID が妥当かどうか確認してみましょう。
 
 ## `token-classification` パイプラインの内部[[inside-the-token-classification-pipeline]]
 
@@ -145,7 +145,7 @@ Sylvain
 
 ### パイプラインで基本的な結果を得る[[getting-the-base-results-with-the-pipeline]]
 
-先ず、手動の結果と比較出来るよう、トークン分類パイプラインを用意しましょう。デフォルトで使われるモデルは [`dbmdz/bert-large-cased-finetuned-conll03-english`](https://huggingface.co/dbmdz/bert-large-cased-finetuned-conll03-english) で、文に対して NER を実行します。
+まず、手動の結果と比較出来るよう、トークン分類パイプラインを用意しましょう。デフォルトで使われるモデルは [`dbmdz/bert-large-cased-finetuned-conll03-english`](https://huggingface.co/dbmdz/bert-large-cased-finetuned-conll03-english) で、文に対して NER を実行します。
 
 ```py
 from transformers import pipeline
@@ -192,7 +192,7 @@ token_classifier("My name is Sylvain and I work at Hugging Face in Brooklyn.")
 
 {#if fw === 'pt'}
 
-先ず、入力をトークン化してモデルに通す必要があります。これは [Chapter 2](/course/chapter2) とまったく同じ方法で行います。`AutoXxx` クラスを使ってトークナイザとモデルをインスタンス化し、例に適用します。
+まず、入力をトークン化してモデルに通す必要があります。これは [Chapter 2](/course/chapter2) とまったく同じ方法で行います。`AutoXxx` クラスを使ってトークナイザとモデルをインスタンス化し、例に適用します。
 
 ```py
 from transformers import AutoTokenizer, AutoModelForTokenClassification
@@ -220,7 +220,7 @@ torch.Size([1, 19, 9])
 
 {:else}
 
-先ず、入力をトークン化してモデルに通す必要があります。これは [Chapter 2](/course/chapter2) とまったく同じ方法で行います。`TFAutoXxx` クラスを使ってトークナイザとモデルをインスタンス化し、例に適用します。
+まず、入力をトークン化してモデルに通す必要があります。これは [Chapter 2](/course/chapter2) とまったく同じ方法で行います。`TFAutoXxx` クラスを使ってトークナイザとモデルをインスタンス化し、例に適用します。
 
 ```py
 from transformers import AutoTokenizer, TFAutoModelForTokenClassification

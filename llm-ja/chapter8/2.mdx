@@ -11,7 +11,7 @@
 
 <Youtube id="DQ-CpJn6Rc4"/>
 
-このセクション用に[テンプレートのモデルリポジトリ](https://huggingface.co/lewtun/distilbert-base-uncased-finetuned-squad-d5716d28)を用意しました。この章のコードを実行したい場合は、先ずモデルを [Hugging Face Hub](https://huggingface.co) 上の自分のアカウントにコピーする必要があります。その為には、先ず Jupyter ノートブックで次を実行するか、
+このセクション用に[テンプレートのモデルリポジトリ](https://huggingface.co/lewtun/distilbert-base-uncased-finetuned-squad-d5716d28)を用意しました。この章のコードを実行したい場合は、まずモデルを [Hugging Face Hub](https://huggingface.co) 上の自分のアカウントにコピーする必要があります。その為には、まず Jupyter ノートブックで次を実行するか、
 
 ```python
 from huggingface_hub import notebook_login
@@ -58,7 +58,7 @@ Transformer モデルのデバッグを学ぶ第一歩として、次のよう�
 
 > やあ！Hugging Face コースの [Chapter 7](/course/chapter7/7) のテクニックを使って実験してみたら、SQuAD でかなり良い結果が出たよ！このモデルをプロジェクトの出発点に出来ると思う。Hub 上のモデル ID は "lewtun/distillbert-base-uncased-finetuned-squad-d5716d28" だよ。気軽に試してみて :)
 
-そして、先ず思いつくのは、🤗 Transformers の `pipeline` を使ってモデルを読み込むことです。
+そして、まず思いつくのは、🤗 Transformers の `pipeline` を使ってモデルを読み込むことです。
 
 ```python
 from transformers import pipeline
@@ -83,10 +83,10 @@ OSError: Can't load config for 'lewtun/distillbert-base-uncased-finetuned-squad-
 <img src="https://huggingface.co/datasets/huggingface-course/documentation-images/resolve/main/en/chapter8/traceback.png" alt="Python のトレースバック。" width="100%"/>
 </div>
 
-これらのレポートには大量の情報が含まれているので、重要な部分を一緒にたどっていきましょう。先ず注意すべきは、トレースバックは_下から上へ_読むということです。英語のテキストを上から下へ読むのに慣れていると奇妙に聞こえるかもしれませんが、これは、トレースバックが `pipeline` がモデルとトークナイザをダウンロードする時に行う関数呼び出しの順序を示している為です（`pipeline` が裏側でどう動くかの詳細は [Chapter 2](/course/chapter2) を参照して下さい）。
+これらのレポートには大量の情報が含まれているので、重要な部分を一緒にたどっていきましょう。まず注意すべきは、トレースバックは_下から上へ_読むということです。英語のテキストを上から下へ読むのに慣れていると奇妙に聞こえるかもしれませんが、これは、トレースバックが `pipeline` がモデルとトークナイザをダウンロードする時に行う関数呼び出しの順序を示している為です（`pipeline` が裏側でどう動くかの詳細は [Chapter 2](/course/chapter2) を参照してください）。
 
 > [!TIP]
-> 🚨 Google Colab のトレースバックで "6 frames" の周りに在る青いボックスが見えますか？これは Colab の特殊な機能で、トレースバックを「フレーム」に圧縮します。エラーの発生源が見つからない場合は、小さな2つの矢印をクリックしてトレースバック全体を展開して下さい。
+> 🚨 Google Colab のトレースバックで "6 frames" の周りに在る青いボックスが見えますか？これは Colab の特殊な機能で、トレースバックを「フレーム」に圧縮します。エラーの発生源が見つからない場合は、小さな2つの矢印をクリックしてトレースバック全体を展開してください。
 
 つまり、トレースバックの最後の行が、最後のエラーメッセージを示し、発生した例外の名前を与えてくれます。今回の場合、例外の種類は `OSError` で、システム関連のエラーを示しています。付随するエラーメッセージを読むと、モデルの *config.json* ファイルに問題が有るようで、修正方法として2つの提案が示されています。
 
@@ -101,9 +101,9 @@ Make sure that:
 ```
 
 > [!TIP]
-> 理解し難いエラーメッセージに遭遇したら、そのメッセージを Google や [Stack Overflow](https://stackoverflow.com/) の検索バーにコピー＆ペーストして下さい（本当に、それでよいのです！）。そのエラーに遭遇した最初の人である可能性は低く、これはコミュニティの他の人が投稿した解決策を見つけるよい方法です。例えば、Stack Overflow で `OSError: Can't load config for` を検索すると、問題解決の出発点として使えそうな[検索結果](https://stackoverflow.com/search?q=OSError%3A+Can%27t+load+config+for+)がいくつか得られます。
+> 理解し難いエラーメッセージに遭遇したら、そのメッセージを Google や [Stack Overflow](https://stackoverflow.com/) の検索バーにコピー＆ペーストしてください（本当に、それでよいのです！）。そのエラーに遭遇した最初の人である可能性は低く、これはコミュニティの他の人が投稿した解決策を見つけるよい方法です。例えば、Stack Overflow で `OSError: Can't load config for` を検索すると、問題解決の出発点として使えそうな[検索結果](https://stackoverflow.com/search?q=OSError%3A+Can%27t+load+config+for+)がいくつか得られます。
 
-最初の提案は、モデル ID が本当に正しいかどうかを確認することです。そこで先ず、その識別子をコピーして Hub の検索バーに貼り付けます。
+最初の提案は、モデル ID が本当に正しいかどうかを確認することです。そこでまず、その識別子をコピーして Hub の検索バーに貼り付けます。
 
 <div class="flex justify-center">
 <img src="https://huggingface.co/datasets/huggingface-course/documentation-images/resolve/main/en/chapter8/wrong-model-id.png" alt="間違ったモデル名。" width="100%"/>
@@ -156,7 +156,7 @@ config = AutoConfig.from_pretrained(pretrained_checkpoint)
 ```
 
 > [!WARNING]
-> 🚨 ここで取るアプローチは万全ではありません。同僚がファインチューニングの前に `distilbert-base-uncased` の設定を調整していた可能性が有るからです。実際には、先ず同僚に確認したいところですが、このセクションでは、デフォルトの設定を使ったものと仮定します。
+> 🚨 ここで取るアプローチは万全ではありません。同僚がファインチューニングの前に `distilbert-base-uncased` の設定を調整していた可能性が有るからです。実際には、まず同僚に確認したいところですが、このセクションでは、デフォルトの設定を使ったものと仮定します。
 
 次に、設定の `push_to_hub()` 関数を使って、これをモデルリポジトリにプッシュ出来ます。
 
@@ -202,7 +202,7 @@ pipeline のデバッグ方法が分かった所で、モデル自体のフォ�
 
 ## モデルのフォワードパスをデバッグする[[debugging-the-forward-pass-of-your-model]]
 
-`pipeline` は、予測を手早く生成したい殆どの用途には最適ですが、モデルのロジットにアクセスしたい場合もあります（例えば、適用したいカスタムの後処理が有る場合など）。この場合に何がうまくいかないかを見る為に、先ず `pipeline` からモデルとトークナイザを取り出しましょう。
+`pipeline` は、予測を手早く生成したい殆どの用途には最適ですが、モデルのロジットにアクセスしたい場合もあります（例えば、適用したいカスタムの後処理が有る場合など）。この場合に何がうまくいかないかを見る為に、まず `pipeline` からモデルとトークナイザを取り出しましょう。
 
 ```python
 tokenizer = reader.tokenizer
