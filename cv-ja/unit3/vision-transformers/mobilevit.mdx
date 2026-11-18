@@ -1,12 +1,14 @@
 # MobileViT v2 
 
-これまで取り上げてきた Vision Transformer のアーキテクチャは計算量が多く、モバイルデバイスで動かすのは困難です。従来、モバイル向けの視覚タスクで最先端だったアーキテクチャは CNN を使っていました。しかし CNN はグローバルな表現を学習できないため、Transformer 系のモデルより性能が劣ります。
+これまで取り上げてきた Vision Transformer のアーキテクチャは計算量が多く、モバイルデバイスで動かすのは困難です。従来、モバイル向けの視覚タスクで最先端だったアーキテクチャは CNN を使っていました。しかし CNN はグローバルな表現を学習出来ない為、Transformer 系のモデルより性能が劣ります。
 
-MobileViT は、モバイル向けの画像認識に求められる、処理の遅延が少なく軽量なモデルの実現を目指したアーキテクチャです。同時に、Transformer と CNN の両方の利点を活かしています。Apple が開発した MobileViT は、Google の研究チームによる MobileNet を基盤としています。従来の MobileNet アーキテクチャに MobileViT Block と separable self-attention を追加した構成です。この2つの要素によって、処理の遅延を抑え、パラメータ数と計算量を削減できます。そのため、計算資源に制約のあるデバイスでも画像認識モデルを動かせます。
+MobileViT は、モバイル向けの画像認識に求められる、処理の遅延が少なく軽量なモデルの実現を目指したアーキテクチャです。同時に、Transformer と CNN の両方の利点を活かしています。
+
+Apple が開発した MobileViT は、Google の研究チームによる MobileNet を基盤としています。従来の MobileNet アーキテクチャに MobileViT Block と separable self-attention を追加した構成です。この2つの要素によって、処理の遅延を抑え、パラメータ数と計算量を削減出来ます。その為、計算資源に制約の有るデバイスでも画像認識モデルを動かせます。
 
 ## MobileViT アーキテクチャ
 
-論文「MobileViT: Light-weight, General-purpose, and Mobile-friendly Vision Transformer」（Sachin Mehta と Mohammad Rastegari による）で提示された MobileViT のアーキテクチャは次のとおりです。
+論文「MobileViT: Light-weight, General-purpose, and Mobile-friendly Vision Transformer」（Sachin Mehta と Mohammad Rastegari による）で提示された MobileViT のアーキテクチャは次の通りです。
 ![MobileViT アーキテクチャ](https://huggingface.co/datasets/hf-vision/course-assets/resolve/main/MobileViT-Architecture.png)
 
 一部は前の章で見たものと似ているはずです。MobileNet ブロック、nxn 畳み込み、ダウンサンプリング、グローバルプーリング、そして最後の線形層です。
@@ -22,7 +24,7 @@ MobileViT Block の図を次に示します。
 
 情報量が多い図です。順に分解して見ていきます。
 
-- ブロックは、複数のチャンネルを持つ画像を入力として受け取ります。たとえば RGB 画像なら 3 チャンネルなので、ブロックは 3 チャンネルの画像を受け取ります。 
+- ブロックは、複数のチャンネルを持つ画像を入力として受け取ります。例えば RGB 画像なら 3 チャンネルなので、ブロックは 3 チャンネルの画像を受け取ります。 
 - 次に、チャンネルに対して N × N の畳み込みを行い、既存のチャンネルに追加します。
 - 続いて、これらのチャンネルの線形結合を作り、既存のチャンネルのスタックに追加します。
 - 各チャンネルについて、画像を平坦化したパッチへ展開（unfold）します。
@@ -42,7 +44,7 @@ MobileViT Block の図を次に示します。
 
 元の MobileViT アーキテクチャで主な効率のボトルネックになっているのは、Transformer の multi-head self-attention です。入力トークンに対して O(k^2) の時間計算量が必要です。
 
-Multi-head self-attention には、バッチ単位の行列積のようなコストの高い演算も必要で、リソースに制約のあるデバイスではレイテンシに影響します。
+Multi-head self-attention には、バッチ単位の行列積のようなコストの高い演算も必要で、リソースに制約の有るデバイスではレイテンシに影響します。
 
 同じ著者らは、attention をいかに高速化するかを扱った別の論文も書いています。その手法は separable self-attention と呼ばれています。
 
@@ -50,7 +52,7 @@ Multi-head self-attention には、バッチ単位の行列積のようなコス
 
 従来の multi-head attention では、入力トークンに対する計算量は二次（O(k^2)）です。この論文で導入された separable self-attention の計算量は、入力トークンに対して O(k) です。
 
-更に、この attention 手法はバッチ単位の行列積を一切使わないため、携帯電話のようなリソースに制約のあるデバイスでのレイテンシ削減に役立ちます。
+更に、この attention 手法はバッチ単位の行列積を一切使わない為、携帯電話のようなリソースに制約の有るデバイスでのレイテンシ削減に役立ちます。
 
 これは大きな改善です。
 
@@ -67,7 +69,7 @@ Transformer、Linformer、MobileViT の attention の仕組みの比較を次に
 
 上の画像は、Transformer、Linformer、MobileViT v2 の各アーキテクチャにおける attention の種類ごとの比較です。
 
-たとえば、Transformer と Linformer のどちらのアーキテクチャでも、アテンションの計算ではバッチ単位の行列積を2回行います。  
+例えば、Transformer と Linformer のどちらのアーキテクチャでも、アテンションの計算ではバッチ単位の行列積を2回行います。  
 
 一方、separable self-attention では、この2回のバッチ単位の行列積を、それぞれ別の線形演算に置き換えます。これにより、推論速度が更に向上します。 
 
@@ -80,11 +82,11 @@ MobileViT ブロックは、空間的に局所的な情報を保持しながら�
 
 iPhone 12 で様々なアーキテクチャを使って行ったテストでは、上に示すように、separable attention の導入により性能が大きく向上しました。
 
-全体として、MobileViT アーキテクチャは、リソースに制約のある視覚タスク向けの非常に強力なアーキテクチャであり、高速な推論と高い精度を提供します。
+全体として、MobileViT アーキテクチャは、リソースに制約の有る視覚タスク向けの非常に強力なアーキテクチャであり、高速な推論と高い精度を提供します。
 
 # Transformers ライブラリ
 
-MobileViT v2 をローカルで試したい場合は、Hugging Face の `transformers` ライブラリを使えます。方法は次のとおりです。
+MobileViT v2 をローカルで試したい場合は、Hugging Face の `transformers` ライブラリを使えます。方法は次の通りです。
 
 ```bash
 pip install transformers
@@ -117,7 +119,7 @@ print(model.config.id2label[predicted_label])
 
 # Inference API
 
-更に軽量なコンピュータビジョン環境として、MobileViT v2 で Hugging Face Inference API を使うこともできます。Inference API は、Hugging Face Hub で公開されている多くのモデルとやり取りするための API です。Inference API には、Python から次のように問い合わせできます。
+更に軽量なコンピュータビジョン環境として、MobileViT v2 で Hugging Face Inference API を使うことも出来ます。Inference API は、Hugging Face Hub で公開されている多くのモデルとやり取りする為の API です。Inference API には、Python から次のように問い合わせ出来ます。
 
 ```py
 import json
@@ -138,7 +140,7 @@ def query(filename):
 
 data = query("cats.jpg")
 ```
-JavaScript でも同じことができます。
+JavaScript でも同じことが出来ます。
 ```js
 import fetch from "node-fetch";
 import fs from "fs";
@@ -159,7 +161,7 @@ query("cats.jpg").then((response) => {
     console.log(JSON.stringify(response));
 });
 ```
-最後に、curl 経由で Inference API に問い合わせることもできます。
+最後に、curl 経由で Inference API に問い合わせることも出来ます。
 ```bash
 curl https://api-inference.huggingface.co/models/apple/mobilevitv2-1.0-imagenet1k-256 \
         -X POST \
