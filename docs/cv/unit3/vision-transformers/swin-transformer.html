@@ -68,7 +68,7 @@ window.MathJax = { tex: { inlineMath: [['$', '$'], ['\\(', '\\)']], displayMath:
 <li><a class="side-link" href="../../unit1/chapter1/definition.html">コンピュータビジョンとは</a></li>
 <li><a class="side-link" href="../../unit1/chapter1/applications.html">コンピュータビジョンの応用</a></li>
 <li><a class="side-link" href="../../unit1/image_and_imaging/examples-preprocess.html">コンピュータビジョンタスクのための前処理</a></li>
-<li><a class="side-link" href="../../unit1/feature-extraction/feature_description.html">Feature Description</a></li>
+<li><a class="side-link" href="../../unit1/feature-extraction/feature_description.html">特徴記述（Feature Description）</a></li>
 <li><a class="side-link" href="../../unit1/feature-extraction/feature-matching.html">特徴マッチング（Feature Matching）</a></li>
 <li><a class="side-link" href="../../unit1/feature-extraction/real-world-applications.html">コンピュータビジョンにおける特徴抽出の実社会での応用</a></li>
 </ul>
@@ -80,7 +80,7 @@ window.MathJax = { tex: { inlineMath: [['$', '$'], ['\\(', '\\)']], displayMath:
 <li><a class="side-link" href="../../unit2/cnns/mobilenet.html">MobileNet</a></li>
 <li><a class="side-link" href="../../unit2/cnns/convnext.html">ConvNeXt - 2020年代に向けた ConvNet（2022）</a></li>
 <li><a class="side-link" href="../../unit2/cnns/intro-transfer-learning.html">転移学習</a></li>
-<li><a class="side-link" href="../../unit2/cnns/mobilenetextra.html">事前学習済みの MobileNet モデルを読み込む</a></li>
+<li><a class="side-link" href="../../unit2/cnns/mobilenetextra.html">MobileNet を更に深く掘り下げる</a></li>
 <li><a class="side-link" href="../../unit2/cnns/resnet.html">ResNet（残差ネットワーク）</a></li>
 <li><a class="side-link" href="../../unit2/cnns/yolo.html">YOLO</a></li>
 </ul>
@@ -379,13 +379,15 @@ window.MathJax = { tex: { inlineMath: [['$', '$'], ['\\(', '\\)']], displayMath:
 
 <h3>Swin Transformer Block</h3>
 <p><code>SwinTransformerBlock</code> は、Swin Transformer の中核となる処理、つまりローカルなウィンドウ attention と、その後の MLP 処理をカプセル化したものです。ローカルなパッチに注目しながらグローバルな表現も学習出来る能力を保つことで、Swin Transformer が大きな画像を効率的に扱えるようにする上で、重要な役割を果たします。</p>
-<p><strong>レイヤーの構成要素</strong>：
-- <strong>正規化レイヤー1（<code>self.norm1</code>）</strong>：attention 機構の前に適用されます。
-- <strong>Window Attention（<code>self.attn</code>）</strong>：ローカルウィンドウ内で self-attention を計算します。
-- <strong>Drop Path（<code>self.drop_path</code>）</strong>：正則化の為の stochastic depth を実装します。
-- <strong>正規化レイヤー2（<code>self.norm2</code>）</strong>：MLP レイヤーの前に適用されます。
-- <strong>MLP（<code>mlp</code>）</strong>：attention の後の特徴を処理する multi-layer perceptron です。
-- <strong>Attention Mask（<code>self.register_buffer</code>）</strong>：アテンションマスクは、自己アテンションの計算時に、ウィンドウ内のどの要素同士が互いに注目出来るかを制御します。シフトウィンドウ方式では、異なるウィンドウ間でも一部の要素が互いの情報を参照出来る為、モデルは個々のウィンドウを超えた広い文脈を捉えられます。</p>
+<p><strong>レイヤーの構成要素</strong>：</p>
+<ul>
+<li><strong>正規化レイヤー1（<code>self.norm1</code>）</strong>：attention 機構の前に適用されます。</li>
+<li><strong>Window Attention（<code>self.attn</code>）</strong>：ローカルウィンドウ内で self-attention を計算します。</li>
+<li><strong>Drop Path（<code>self.drop_path</code>）</strong>：正則化の為の stochastic depth を実装します。</li>
+<li><strong>正規化レイヤー2（<code>self.norm2</code>）</strong>：MLP レイヤーの前に適用されます。</li>
+<li><strong>MLP（<code>mlp</code>）</strong>：attention の後の特徴を処理する multi-layer perceptron です。</li>
+<li><strong>Attention Mask（<code>self.register_buffer</code>）</strong>：アテンションマスクは、自己アテンションの計算時に、ウィンドウ内のどの要素同士が互いに注目出来るかを制御します。シフトウィンドウ方式では、異なるウィンドウ間でも一部の要素が互いの情報を参照出来る為、モデルは個々のウィンドウを超えた広い文脈を捉えられます。</li>
+</ul>
 <h4>Swin Transformer Block の初期化</h4>
 <div class="codehilite"><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">SwinTransformerBlock</span><span class="p">(</span><span class="n">nn</span><span class="o">.</span><span class="n">Module</span><span class="p">):</span>
 <span class="w">    </span><span class="sa">r</span><span class="sd">"""Swin Transformer Block.</span>
@@ -563,9 +565,9 @@ window.MathJax = { tex: { inlineMath: [['$', '$'], ['\\(', '\\)']], displayMath:
 <h4>Swin Transformer Block のフォワードパス</h4>
 <p>重要なステップは4つです。</p>
 <ol>
-<li><strong>循環シフト（cyclic shift）</strong>：
-特徴マップは <code>window_partition</code> でウィンドウに分割されます。その区画に <strong>cyclic shift</strong> が適用されます。cyclic shift とは、列の中の要素（ここでは区画）を左又は右へずらし、一端からはみ出した要素を反対側に回り込ませる操作です。要素同士の相対的な位置は変わりますが、列そのものはそのまま保たれます。例えば、列 <code>A, B, C, D</code> を右へ1つ cyclic shift すると <code>D, A, B, C</code> になります。</li>
+<li><strong>循環シフト（cyclic shift）</strong>：</li>
 </ol>
+<p>特徴マップは <code>window_partition</code> でウィンドウに分割されます。その区画に <strong>cyclic shift</strong> が適用されます。cyclic shift とは、列の中の要素（ここでは区画）を左又は右へずらし、一端からはみ出した要素を反対側に回り込ませる操作です。要素同士の相対的な位置は変わりますが、列そのものはそのまま保たれます。例えば、列 <code>A, B, C, D</code> を右へ1つ cyclic shift すると <code>D, A, B, C</code> になります。</p>
 <p>cyclic shift により、モデルは隣接するウィンドウ同士の関係を捉えられるようになり、個々のウィンドウのローカルな<a class="gloss-link" href="../../../glossary/index.html#term-range" data-title="範囲（range）" data-def="データの広がりを最も単純に表す方法が、最大値から最小値を引いた差である範囲を使うことだ。計算は引き算一つで済む一方、決めるのは両端の二つの値だけなので、極端な値が一つ混じるだけで大きく変わってしまう弱点がある。そのため分布全体の散らばりは分散や四分位範囲などと併せて判断する必要があり、機械学習でもデータを0から1の間にそろえる正規化の計算に現れるものの、外れ値の影響を受けやすい点には注意が要る。" data-def-html="データの広がりを最も単純に表す方法が、最大値から最小値を引いた差である範囲を使うことだ。計算は引き算一つで済む一方、決めるのは両端の二つの値だけなので、極端な値が一つ混じるだけで大きく変わってしまう弱点がある。そのため分布全体の散らばりは&lt;a class=&quot;gloss-link&quot; href=&quot;../../../glossary/index.html#term-variance&quot; data-title=&quot;分散（variance）&quot; data-def=&quot;平均が同じデータでも、値が平均の近くに集まっている場合と大きく散らばっている場合では性質がまったく違うため、その散らばり具合を一つの数で表す必要があり、それが分散だ。各値について平均との差を取り、その差を二乗（同じ数を2回掛けること）してから平均を取ると、平均から遠い値ほど大きく効く形でばらつきを測れる。機械学習では、特徴量ごとに分散を見ることで情報量の乏しい列を見分けたり、学習を安定させるためのデータの整え方を判断したりする際の手がかりになる。&quot;&gt;分散&lt;/a&gt;や&lt;a class=&quot;gloss-link&quot; href=&quot;../../../glossary/index.html#term-interquartile-range&quot; data-title=&quot;四分位範囲（interquartile range）&quot; data-def=&quot;極端な値に左右されずに中央付近の散らばりを測りたいときに使う幅が四分位範囲だ。データを大きさの順に並べて四等分したときの第3四分位数から第1四分位数を引いた差として求められ、中央に位置する半数のデータが収まる幅を表す。最大値と最小値だけで決まる範囲とは違い、一つ二つの異常な値では大きく変わらないため、機械学習の前処理ではこの幅をもとに外れ値を検出する方法が広く使われている。&quot;&gt;四分位範囲&lt;/a&gt;などと併せて判断する必要があり、&lt;a class=&quot;gloss-link&quot; href=&quot;../../../glossary/index.html#term-machine-learning&quot; data-title=&quot;機械学習（Machine Learning）&quot; data-def=&quot;プログラムの手順を人間が一つ一つ書き与える従来の方法では、複雑な判断をすべて書き切ることは難しいため、データから規則性や判断の基準をコンピュータ自身に学ばせる技術を機械学習という。訓練用のデータを用いて学ばせることでモデルはパターンを身に付け、正解の分からない新しいデータに対しても予測や分類ができるようになる。人工知能を実現する主要な方法の一つであり、現在の人工知能の中心的な仕組みになっている。&quot;&gt;機械学習&lt;/a&gt;でもデータを0から1の間にそろえる&lt;a class=&quot;gloss-link&quot; href=&quot;../../../glossary/index.html#term-normalization&quot; data-title=&quot;正規化（Normalization）&quot; data-def=&quot;データの値の範囲や分布の形を、扱いやすい基準にそろえる処理の総称が正規化だ。特徴ごとに単位も大きさもばらばらだと、大きな値を持つ特徴ばかりが計算を支配してしまうため、0から1の範囲に収めたり、平均0・ばらつき1にそろえたりする。ニューラルネットワークの内部でも、層に入る値の分布をそろえるバッチ正規化やレイヤー正規化として使われ、学習を安定させる役割を持つ。そろえ方によって手法が分かれるため、文脈からどの正規化を指しているかを確認する必要がある。&quot;&gt;正規化&lt;/a&gt;の計算に現れるものの、外れ値の影響を受けやすい点には注意が要る。">範囲</a>を超えた空間的文脈を学習する能力が高まります。</p>
 <ol start="2">
 <li>
