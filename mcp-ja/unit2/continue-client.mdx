@@ -1,10 +1,10 @@
 # ローカルモデル・オープンソースモデルで MCP を使う
 
-このセクションでは、Continue を使って MCP をローカルモデルやオープンソースモデルと連携させます。Continue は AI コーディングアシスタントを構築するためのツールで、Ollama などのローカルツールにも対応しています。
+このセクションでは、Continue を使って MCP をローカルモデルやオープンソースモデルと連携させます。Continue は AI コーディングアシスタントを構築する為のツールで、Ollama などのローカルツールにも対応しています。
 
 ## Continue のセットアップ
 
-Continue は VS Code マーケットプレイスからインストールできます。
+Continue は VS Code マーケットプレイスからインストール出来ます。
 
 > [!TIP]
 > *Continue には [JetBrains](https://plugins.jetbrains.com/plugin/22707-continue) 用の拡張機能もあります。*
@@ -13,26 +13,32 @@ Continue は VS Code マーケットプレイスからインストールでき�
 
 1. [Visual Studio Marketplace の Continue 拡張機能ページ](https://marketplace.visualstudio.com/items?itemName=Continue.continue) で `Install` をクリックする
 2. VS Code で Continue 拡張機能ページが開くので、そこで再度 `Install` をクリックする
-3. 左サイドバーに Continue のロゴが表示されます。使いやすくするために、Continue を右サイドバーに移動しましょう
+3. 左サイドバーに Continue のロゴが表示されます。使いやすくする為に、Continue を右サイドバーに移動しましょう
 
 ![右サイドバーへの移動](https://mintlify.s3.us-west-1.amazonaws.com/continue-docs/images/move-to-right-sidebar-b2d315296198e41046fc174d8178f30a.gif)
 
-Continue の設定が完了したら、次にローカルモデルを取得するために Ollama をセットアップします。
+Continue の設定が完了したら、次にローカルモデルを取得する為に Ollama をセットアップします。
 
 ### ローカルモデル
 
-Continue と互換性のあるローカルモデルを実行する方法は数多くあります。人気のある選択肢は Ollama、Llama.cpp、LM Studio の3つです。Ollama は、大規模言語モデル（LLM）をローカルで簡単に実行できるオープンソースツールです。Llama.cpp は LLM を実行するための高性能な C++ ライブラリで、OpenAI 互換サーバーも含まれます。LM Studio は、ローカルモデルを実行するためのグラフィカルインターフェースを提供します。
+Continue と互換性の有るローカルモデルを実行する方法は数多くあります。人気の有る選択肢は Ollama、Llama.cpp、LM Studio の3つです。
 
-Hugging Face Hub では、ローカルで実行できるモデルを探せます。また、主要なローカル推論アプリ向けの実行コマンドや、モデルを簡単に開くためのリンクも確認できます。
+Ollama は、大規模言語モデル（LLM）をローカルで簡単に実行出来るオープンソースツールです。
+
+Llama.cpp は LLM を実行する為の高性能な C++ ライブラリで、OpenAI 互換サーバーも含まれます。
+
+LM Studio は、ローカルモデルを実行する為のグラフィカルインターフェースを提供します。
+
+Hugging Face Hub では、ローカルで実行出来るモデルを探せます。また、主要なローカル推論アプリ向けの実行コマンドや、モデルを簡単に開く為のリンクも確認出来ます。
 
 ![Hugging Face Hub](https://cdn-uploads.huggingface.co/production/uploads/64445e5f1bc692d87b27e183/d6XMR5q9DwVpdEKFeLW9t.png)
 
 <hfoptions id="local-models">
 <hfoption id="llamacpp">
 
-Llama.cpp は、LLM を提供するための軽量な OpenAI API 互換 HTTP サーバーである `llama-server` を提供します。[Llama.cpp リポジトリ](https://github.com/ggml-org/llama.cpp) の手順に従ってソースからビルドすることも、システム向けのビルド済みバイナリがあればそれを使うこともできます。詳細は [Llama.cpp のドキュメント](https://github.com/ggerganov/llama.cpp) を参照してください。
+Llama.cpp は、LLM を提供する為の軽量な OpenAI API 互換 HTTP サーバーである `llama-server` を提供します。[Llama.cpp リポジトリ](https://github.com/ggml-org/llama.cpp) の手順に従ってソースからビルドすることも、システム向けのビルド済みバイナリが有ればそれを使うことも出来ます。詳細は [Llama.cpp のドキュメント](https://github.com/ggerganov/llama.cpp) を参照して下さい。
 
-`llama-server` が用意できたら、次のようなコマンドで Hugging Face のモデルを実行できます。
+`llama-server` が用意出来たら、次のようなコマンドで Hugging Face のモデルを実行出来ます。
 
 ```bash
 llama-server -hf unsloth/Devstral-Small-2505-GGUF:Q4_K_M
@@ -40,7 +46,7 @@ llama-server -hf unsloth/Devstral-Small-2505-GGUF:Q4_K_M
 
 </hfoption>
 <hfoption id="lmstudio">
-LM Studio は、Mac、Windows、Linux 向けのアプリケーションで、グラフィカルインターフェースを使ってオープンソースモデルをローカルで簡単に実行できます。使い始めるには、次の操作を行います。
+LM Studio は、Mac、Windows、Linux 向けのアプリケーションで、グラフィカルインターフェースを使ってオープンソースモデルをローカルで簡単に実行出来ます。使い始めるには、次の操作を行います。
 
 1.  [LM Studio でモデルを開く](lmstudio://open_from_hf?model=unsloth/Devstral-Small-2505-GGUF)。
 2.  モデルのダウンロードが完了したら、「Local Server」タブに移動し、「Start Server」をクリックします。
@@ -48,22 +54,22 @@ LM Studio は、Mac、Windows、Linux 向けのアプリケーションで、グ
 <hfoption id="ollama">
 Ollama を使うには、[インストール](https://ollama.com/download) して、`ollama run` コマンドで実行したいモデルをダウンロードします。
 
-たとえば、[Devstral-Small](https://huggingface.co/unsloth/Devstral-Small-2505-GGUF?local-app=ollama) モデルは次のコマンドでダウンロードして実行できます。
+例えば、[Devstral-Small](https://huggingface.co/unsloth/Devstral-Small-2505-GGUF?local-app=ollama) モデルは次のコマンドでダウンロードして実行出来ます。
 
 ```bash
 ollama run hf.co/unsloth/Devstral-Small-2505-GGUF:Q4_K_M
 ```
-このモデルのサイズは約14 GB なので、実行するマシンに十分な空き RAM があることを確認してください。そうでない場合、「model requires more system memory than is available」のようなエラーが表示されることがあります。
+このモデルのサイズは約14 GB なので、実行するマシンに十分な空き RAM が有ることを確認して下さい。そうでない場合、「model requires more system memory than is available」のようなエラーが表示されることがあります。
 </hfoption>
 </hfoptions>
 
 > [!TIP]
-> Continue は、Ollama、Llama.cpp、LM Studio をはじめ、様々なローカルモデルプロバイダーに対応しています。対応プロバイダーの一覧や詳しい設定方法については、[Continue のドキュメント](https://docs.continue.dev/customize/model-providers) を参照してください。
+> Continue は、Ollama、Llama.cpp、LM Studio を初め、様々なローカルモデルプロバイダーに対応しています。対応プロバイダーの一覧や詳しい設定方法については、[Continue のドキュメント](https://docs.continue.dev/customize/model-providers) を参照して下さい。
 
-ツール呼び出しが組み込み機能として備わっているモデルを使うことが重要です。たとえば Codestral、Qwen、Llama 3.1x です。
+ツール呼び出しが組み込み機能として備わっているモデルを使うことが重要です。例えば Codestral、Qwen、Llama 3.1x です。
 
 1. ワークスペースのトップレベルに `.continue/models` というフォルダを作成する
-2. モデルプロバイダーを設定するファイルをこのフォルダに追加する。例: `local-models.yaml`
+2. モデルプロバイダーを設定するファイルをこのフォルダに追加する。例：`local-models.yaml`
 3. Ollama、Llama.cpp、LM Studio のどれを使うかに応じて、次の設定を追加する
 
 <hfoptions id="local-models">
@@ -123,30 +129,30 @@ models:
 </hfoption>
 </hfoptions>
 
-モデルにはそれぞれ最大コンテキスト長があり、ここでは `128000` トークンとされています。今回の設定では複数の MCP リクエストを処理するため、コンテキストウィンドウを広く使い、より多くのトークンを扱える必要があります。
+モデルにはそれぞれ最大コンテキスト長があり、ここでは `128000` トークンとされています。今回の設定では複数の MCP リクエストを処理する為、コンテキストウィンドウを広く使い、より多くのトークンを扱える必要があります。
 
 ## 仕組み
 
 ### ツールのハンドシェイク
 
-ツールを使うと、モデルは外部のシステムとやり取りできるようになります。ツールの情報は、名前と引数のスキーマを含む JSON オブジェクトとしてモデルに渡されます。たとえば、`filepath` 引数を持つ `read_file` ツールを使えば、モデルは指定したファイルの内容を要求できます。
+ツールを使うと、モデルは外部のシステムとやり取り出来るようになります。ツールの情報は、名前と引数のスキーマを含む JSON オブジェクトとしてモデルに渡されます。例えば、`filepath` 引数を持つ `read_file` ツールを使えば、モデルは指定したファイルの内容を要求出来ます。
 
 ![自律エージェントの図](https://gist.github.com/user-attachments/assets/c7301fc0-fa5c-4dc4-9955-7ba8a6587b7a)
 
 次に、エージェントがツールを使う際のやり取り（ハンドシェイク）を、手順に沿って説明します。
 
 1. Agent モードでは、利用可能なツールが `user` チャットリクエストと一緒に送信される
-2. モデルは、レスポンスにツール呼び出しを含めることを選択できる
+2. モデルは、レスポンスにツール呼び出しを含めることを選択出来る
 3. ユーザーが許可を与える。そのツールのポリシーが `Automatic` に設定されている場合、このステップはスキップされる
 4. Continue は、組み込み機能、又はそのツールを提供する MCP サーバーを使ってツールを呼び出す
 5. Continue は結果をモデルに送り返す
 6. モデルが応答し、場合によっては別のツール呼び出しを行い、ステップ2に戻る
 
-Continue は複数のローカルモデルプロバイダーに対応しており、タスクに応じてモデルを使い分けたり、切り替えたりできます。このセクションではローカル環境を優先する構成を扱いますが、Continue は OpenAI、Anthropic、Microsoft/Azure、Mistral などの主要なプロバイダーとも連携できます。また、独自のモデル提供環境を運用することもできます。
+Continue は複数のローカルモデルプロバイダーに対応しており、タスクに応じてモデルを使い分けたり、切り替えたり出来ます。このセクションではローカル環境を優先する構成を扱いますが、Continue は OpenAI、Anthropic、Microsoft/Azure、Mistral などの主要なプロバイダーとも連携出来ます。また、独自のモデル提供環境を運用することも出来ます。
 
 ### ローカルモデルと MCP の統合
 
-すべてがセットアップできたので、既存の MCP サーバーを追加しましょう。以下は、アシスタントで使う新しい MCP サーバーをセットアップする簡単な例です。
+全てがセットアップ出来たので、既存の MCP サーバーを追加しましょう。以下は、アシスタントで使う新しい MCP サーバーをセットアップする簡単な例です。
 
 1. ワークスペースのトップレベルに `.continue/mcpServers` というフォルダを作成する
 2. このフォルダに `playwright-mcp.yaml` というファイルを追加する
@@ -177,12 +183,16 @@ mcpServers:
 Do not output code or instructions—just complete the task and confirm when it is done.
 ```
 
+（プロンプトの訳：1. Playwright を使って、https://news.ycombinator.com に移動します。2. ホームページの上位4件の投稿のタイトルと URL を抽出します。3. プロジェクトのルートディレクトリに、hn.txt というファイルを作成します。4. このリストをプレーンテキストとして hn.txt ファイルに保存します。各行には、タイトルと URL をハイフンで区切って含めます。コードや指示は出力せず、タスクを完了し、完了したらその旨を知らせて下さい）
+
 結果として、現在の作業ディレクトリに `hn.txt` というファイルが生成されます。
 
 ![MCP の出力例](https://deploy-preview-6060--continuedev.netlify.app/assets/images/mcp-playwright-50b192a2ff395f7a6cc11618c5e2d5b1.png)
 
 ## まとめ
 
-Continue を Llama 3.1 のようなローカルモデルや MCP サーバーと組み合わせることで、コードとデータをプライベートに保ちながら最先端の AI 機能を活用できる、強力な開発ワークフローが実現しました。
+Continue を Llama 3.1 のようなローカルモデルや MCP サーバーと組み合わせることで、コードとデータをプライベートに保ちながら最先端の AI 機能を活用出来る、強力な開発ワークフローが実現しました。
 
-この構成では、Web の自動操作やファイル管理などの専用ツールを組み合わせて、AI アシスタントを自由にカスタマイズできます。これらはすべてローカルマシン上で動作します。開発環境を更に充実させたい場合は、[Continue Hub の MCP 探索ページ](https://hub.continue.dev/explore/mcp) で様々な MCP サーバーを試してみましょう。ローカル AI によってコーディング環境がどう変わるかを体験できます。
+この構成では、Web の自動操作やファイル管理などの専用ツールを組み合わせて、AI アシスタントを自由にカスタマイズ出来ます。これらは全てローカルマシン上で動作します。
+
+開発環境を更に充実させたい場合は、[Continue Hub の MCP 探索ページ](https://hub.continue.dev/explore/mcp) で様々な MCP サーバーを試してみましょう。ローカル AI によってコーディング環境がどう変わるかを体験出来ます。

@@ -3,7 +3,7 @@
 前のセクションでは、Gradio で MCP サーバーを作成し、クライアントから接続する方法を学びました。ここでは、Gradio 自体を MCP クライアントとして使い、MCP サーバーに接続する方法を説明します。
 
 > [!TIP]
-> Gradio は UI クライアントや MCP サーバーの作成に特に適していますが、Gradio 自体を MCP クライアントとして使い、その機能を UI から利用できるようにすることもできます。
+> Gradio は UI クライアントや MCP サーバーの作成に特に適していますが、Gradio 自体を MCP クライアントとして使い、その機能を UI から利用出来るようにすることも出来ます。
 
 前のセクションで作成したサーバーに似ていますが、更に機能を備えた MCP サーバーに接続し、そのツールを使って質問に答えます。
 
@@ -38,9 +38,9 @@ sepia: Apply a sepia filter to the input image.
 
 ### Gradio から MCP サーバーに接続する
 
-サンプル MCP サーバーに接続できました。次は、それをサンプルアプリケーションで使います。
+サンプル MCP サーバーに接続出来ました。次は、それをサンプルアプリケーションで使います。
 
-まず、まだインストールしていない場合は、`smolagents`、Gradio、mcp-client ライブラリをインストールする必要があります。
+先ず、未だインストールしていない場合は、`smolagents`、Gradio、mcp-client ライブラリをインストールする必要があります。
 
 ```bash
 pip install "smolagents[mcp]" "gradio[mcp]" mcp fastmcp
@@ -57,7 +57,7 @@ from mcp import StdioServerParameters
 from smolagents import InferenceClientModel, CodeAgent, ToolCollection, MCPClient
 ```
 
-次に、MCP サーバーに接続し、質問に答えるために使えるツールを取得します。
+次に、MCP サーバーに接続し、質問に答える為に使えるツールを取得します。
 
 ```python
 mcp_client = MCPClient(
@@ -66,16 +66,18 @@ mcp_client = MCPClient(
 tools = mcp_client.get_tools()
 ```
 
-ツールが用意できたので、それらを使って質問に答えるシンプルなエージェントを作成できます。ここでは、シンプルな `InferenceClientModel` と `smolagents` のデフォルトモデルを使います。
+ツールが用意出来たので、それらを使って質問に答えるシンプルなエージェントを作成出来ます。ここでは、シンプルな `InferenceClientModel` と `smolagents` のデフォルトモデルを使います。
 
-InferenceClientModel に api_key を渡すことが重要です。トークンは Hugging Face アカウントから取得できます。詳しくは [Hugging Face のアクセストークンに関する説明](https://huggingface.co/docs/hub/en/security-tokens) を参照してください。アクセストークンは環境変数 `HF_TOKEN` で設定します。
+InferenceClientModel に api_key を渡すことが重要です。トークンは Hugging Face アカウントから取得出来ます。詳しくは [Hugging Face のアクセストークンに関する説明](https://huggingface.co/docs/hub/en/security-tokens) を参照して下さい。
+
+アクセストークンは環境変数 `HF_TOKEN` で設定します。
 
 ```python
 model = InferenceClientModel(token=os.getenv("HF_TOKEN"))
 agent = CodeAgent(tools=[*tools], model=model)
 ```
 
-これで、エージェントを使って質問に答えるシンプルな Gradio インターフェースを作成できます。
+これで、エージェントを使って質問に答えるシンプルな Gradio インターフェースを作成出来ます。
 
 ```python
 demo = gr.ChatInterface(
@@ -101,7 +103,7 @@ demo.launch()
 
 ## 完全な例
 
-Gradio で MCP クライアントを使う完全な例は次のとおりです。
+Gradio で MCP クライアントを使う完全な例は次の通りです。
 
 ```python
 import gradio as gr
@@ -132,11 +134,11 @@ finally:
     mcp_client.disconnect()
 ```
 
-`finally` ブロックで MCP クライアントを閉じていることに注目してください。MCP クライアントはプログラム内で長く使い続けるオブジェクトなので、プログラムの終了時には必ず閉じる必要があります。
+`finally` ブロックで MCP クライアントを閉じていることに注目して下さい。MCP クライアントはプログラム内で長く使い続けるオブジェクトなので、プログラムの終了時には必ず閉じる必要があります。
 
 ## Hugging Face Spaces へのデプロイ
 
-サーバーを他の人が使えるようにするには、前のセクションと同様に、Hugging Face Spaces にデプロイできます。Gradio MCP クライアントを Hugging Face Spaces にデプロイするには、次の操作を行います。
+サーバーを他の人が使えるようにするには、前のセクションと同様に、Hugging Face Spaces にデプロイ出来ます。Gradio MCP クライアントを Hugging Face Spaces にデプロイするには、次の操作を行います。
 
 1. Hugging Face で新しい Space を作成する
    - huggingface.co/spaces にアクセスする
@@ -167,7 +169,7 @@ git remote add origin https://huggingface.co/spaces/YOUR_USERNAME/mcp-client
 git push -u origin main
 ```
 
-注：Git のリモートリポジトリ（`origin`）を追加するときは、アクセストークンを使う方法について、[Git のパスワード認証廃止に関する記事](https://huggingface.co/blog/password-git-deprecation) を参照してください。
+注：Git のリモートリポジトリ（`origin`）を追加する時は、アクセストークンを使う方法について、[Git のパスワード認証廃止に関する記事](https://huggingface.co/blog/password-git-deprecation) を参照して下さい。
 
 ## まとめ
 
