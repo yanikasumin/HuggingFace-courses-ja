@@ -41,7 +41,7 @@ tool.call("New York")
 （ツール説明と出力の訳：docstring と説明は「指定された場所の天気を取得するのに役立ちます」です。戻り値は「{location} の天気は晴れです」という形式の文で、呼び出し例の場所は New York です）
 
 > [!TIP]
-> 関数呼び出しに対応したエージェントや LLM を使う場合、どのツールが選ばれるか、また、そのツールにどのような引数が渡されるかは、ツールの名前や、ツールの用途・引数についての説明に大きく左右されます。関数呼び出しの詳細は <a href="https://docs.llamaindex.ai/en/stable/examples/workflow/function_calling_agent/">Function Calling Guide</a> を参照して下さい。
+> 関数呼び出しに対応したエージェントや LLM を使う場合、どのツールが選ばれるか、また、そのツールにどのような引数が渡されるかは、ツールの名前や、ツールの用途・引数についての説明に大きく左右されます。関数呼び出しの詳細は <a href="https://docs.llamaindex.ai/en/stable/examples/workflow/function_calling_agent/">Function Calling Guide</a> を参照してください。
 
 ## QueryEngineTool を作成する
 
@@ -69,7 +69,7 @@ tool = QueryEngineTool.from_defaults(query_engine, name="some useful name", desc
 
 ## Toolspecs を作成する
 
-`ToolSpecs` は、複数のツールをうまく連携させた集合だと考えて下さい。専門家が使う、よく整理された道具箱のようなものです。整備士の道具箱に、車の修理で互いの役割を補い合う道具がそろっているように、`ToolSpec` は特定の目的に合わせて関連するツールを組み合わせます。例えば、経理エージェントの `ToolSpec` であれば、表計算の機能、メールの機能、計算ツールをうまく統合し、財務タスクを正確且つ効率的に処理出来るでしょう。
+`ToolSpecs` は、複数のツールをうまく連携させた集合だと考えてください。専門家が使う、よく整理された道具箱のようなものです。整備士の道具箱に、車の修理で互いの役割を補い合う道具がそろっているように、`ToolSpec` は特定の目的に合わせて関連するツールを組み合わせます。例えば、経理エージェントの `ToolSpec` であれば、表計算の機能、メールの機能、計算ツールをうまく統合し、財務タスクを正確且つ効率的に処理出来るでしょう。
 
 <details>
 <summary>Google Toolspec をインストールする</summary>
@@ -99,7 +99,7 @@ tool_spec_list = tool_spec.to_tool_list()
 
 LlamaIndex では、[LlamaHub 上の ToolSpec](https://llamahub.ai/l/tools/llama-index-tools-mcp?from=) を通じて MCP ツールも使えます。MCP サーバーを起動すれば、以下のコードを使ってそのまま利用を開始出来ます。
 
-MCP について更に深く知りたい場合は、[無料の MCP コース](https://huggingface.co/learn/mcp-course/) を確認して下さい。
+MCP について更に深く知りたい場合は、[無料の MCP コース](https://huggingface.co/learn/mcp-course/) を確認してください。
 
 <details>
 <summary>MCP Toolspec をインストールする</summary>
@@ -130,7 +130,7 @@ API に直接クエリを実行すると、**必要以上に大量のデータ�
 
 以下では、主要な 2 つのユーティリティツールを確認します。
 
-1. `OnDemandToolLoader`：既存の任意の LlamaIndex データローダー（BaseReader クラス）を、エージェントが使えるツールに変換するツールです。このツールは、データローダーの `load_data` を実行する為に必要なパラメータ全てと、自然言語のクエリ文字列を使って呼び出せます。実行時には、先ずデータローダーからデータを読み込み、インデックス化し（例えばベクトルストアを使って）、その上で「オンデマンド」にクエリします。これら 3 つのステップは全て、1 回のツール呼び出しの中で行われます。
+1. `OnDemandToolLoader`：既存の任意の LlamaIndex データローダー（BaseReader クラス）を、エージェントが使えるツールに変換するツールです。このツールは、データローダーの `load_data` を実行する為に必要なパラメータ全てと、自然言語のクエリ文字列を使って呼び出せます。実行時には、まずデータローダーからデータを読み込み、インデックス化し（例えばベクトルストアを使って）、その上で「オンデマンド」にクエリします。これら 3 つのステップは全て、1 回のツール呼び出しの中で行われます。
 2. `LoadAndSearchToolSpec`：LoadAndSearchToolSpec は、既存の任意のツールを入力として受け取ります。ツールスペックとして `to_tool_list` を実装しており、この関数を呼び出すと、読み込み用ツールと検索用ツールの 2 つが返されます。読み込み用ツールを実行すると、内部のツールが呼び出され、その出力がインデックス化されます（デフォルトではベクトルインデックスを使います）。検索用ツールを実行すると、クエリ文字列を入力として受け取り、内部のインデックスを呼び出します。
 
 > [!TIP]
