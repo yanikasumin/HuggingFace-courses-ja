@@ -50,7 +50,7 @@ training_args = TrainingArguments("test-trainer")
 学習中にモデルを Hub に自動的にアップロードしたい場合は、`TrainingArguments` に `push_to_hub=True` を渡します。詳細は [第4章](/course/chapter4/3) で説明します。
 
 > [!TIP]
-> **高度な設定**：利用可能な全ての学習引数と最適化戦略の詳細については、[TrainingArguments ドキュメント](https://huggingface.co/docs/transformers/main/en/main_classes/trainer#transformers.TrainingArguments) と [学習設定のクックブック](https://huggingface.co/learn/cookbook/en/fine_tuning_code_llm_on_single_gpu) を確認して下さい。
+> **高度な設定**：利用可能な全ての学習引数と最適化戦略の詳細については、[TrainingArguments ドキュメント](https://huggingface.co/docs/transformers/main/en/main_classes/trainer#transformers.TrainingArguments) と [学習設定のクックブック](https://huggingface.co/learn/cookbook/en/fine_tuning_code_llm_on_single_gpu) を確認してください。
 
 2つ目のステップは、モデルの定義です。[前の章](/course/chapter2) と同様に、`AutoModelForSequenceClassification` クラスを使用し、ラベルは2つとします。
 
@@ -80,7 +80,7 @@ trainer = Trainer(
 トークナイザを `processing_class` として渡すと、`Trainer` が使用するデフォルトの `data_collator` は `DataCollatorWithPadding` になります。この場合、`data_collator=data_collator` の行は省略出来ますが、ここでは処理パイプラインの重要な部分を示す為に含めています。
 
 > [!TIP]
-> **更に学ぶ**：`Trainer` クラスとそのパラメータについて詳しくは、[Trainer API ドキュメント](https://huggingface.co/docs/transformers/main/en/main_classes/trainer) を参照して下さい。より高度な使い方は、[学習クックブックのレシピ](https://huggingface.co/learn/cookbook/en/fine_tuning_code_llm_on_single_gpu) でも紹介されています。
+> **更に学ぶ**：`Trainer` クラスとそのパラメータについて詳しくは、[Trainer API ドキュメント](https://huggingface.co/docs/transformers/main/en/main_classes/trainer) を参照してください。より高度な使い方は、[学習クックブックのレシピ](https://huggingface.co/learn/cookbook/en/fine_tuning_code_llm_on_single_gpu) でも紹介されています。
 
 データセットでモデルをファインチューニングするには、`Trainer` の `train()` メソッドを呼び出すだけです。
 
@@ -131,7 +131,7 @@ metric.compute(predictions=preds, references=predictions.label_ids)
 ```
 
 > [!TIP]
-> 様々な評価メトリクスと戦略については、[Evaluate ドキュメント](https://huggingface.co/docs/evaluate/) を参照して下さい。
+> 様々な評価メトリクスと戦略については、[Evaluate ドキュメント](https://huggingface.co/docs/evaluate/) を参照してください。
 
 実行結果は毎回同じとは限りません。モデルのヘッドがランダムに初期化される為、メトリクスの値が変わることが有るからです。ここでは、モデルの検証データセットに対する正解率が85.78%、F1 スコアが89.97であることが分かります。これらは、GLUE ベンチマークの MRPC データセットで結果を評価する為に使用される2つのメトリクスです。
 
@@ -164,7 +164,7 @@ trainer = Trainer(
 )
 ```
 
-`eval_strategy` を `"epoch"` に設定した新しい `TrainingArguments` と、新しいモデルを作成している点に注意して下さい。そうしなければ、既に学習済みのモデルの学習を継続することになってしまいます。新しい学習実行を開始するには、次を実行します。
+`eval_strategy` を `"epoch"` に設定した新しい `TrainingArguments` と、新しいモデルを作成している点に注意してください。そうしなければ、既に学習済みのモデルの学習を継続することになってしまいます。新しい学習実行を開始するには、次を実行します。
 
 ```py
 trainer.train()
@@ -209,14 +209,14 @@ training_args = TrainingArguments(
 ```
 
 > [!TIP]
-> **パフォーマンスの最適化**：分散学習、メモリの最適化、ハードウェア固有の最適化など、より高度な学習テクニックについては、[Transformers のパフォーマンスガイド](https://huggingface.co/docs/transformers/main/en/performance) を参照して下さい。
+> **パフォーマンスの最適化**：分散学習、メモリの最適化、ハードウェア固有の最適化など、より高度な学習テクニックについては、[Transformers のパフォーマンスガイド](https://huggingface.co/docs/transformers/main/en/performance) を参照してください。
 
 `Trainer` は、複数の GPU や TPU でもそのまま動作し、分散学習の為の多くのオプションを提供します。対応している機能については、第10章で詳しく説明します。
 
 これで、`Trainer` API を使用したファインチューニングの入門は終わりです。代表的な NLP タスクにファインチューニングを適用する例は [第7章](/course/chapter7) で紹介しますが、今は、純粋な PyTorch の学習ループで同じことを行う方法を見ていきましょう。
 
 > [!TIP]
-> **その他の例**：様々な実行例をまとめた [Transformers のノートブック](https://huggingface.co/docs/transformers/main/en/notebooks) もご覧下さい。
+> **その他の例**：様々な実行例をまとめた [Transformers のノートブック](https://huggingface.co/docs/transformers/main/en/notebooks) もご覧ください。
 
 ## セクションクイズ[[section-quiz]]
 
