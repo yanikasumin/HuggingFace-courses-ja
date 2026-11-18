@@ -185,10 +185,12 @@ window.MathJax = { tex: { inlineMath: [['$', '$'], ['\\(', '\\)']], displayMath:
 </ul>
 <h3>smolagents を使うべき時</h3>
 <p>これらの利点を踏まえて、他のフレームワークではなく smolagents を使うべきなのはどんな時でしょうか。</p>
-<p>smolagents が理想的なのは、次のような場合です。
-- <strong>軽量で最小限のソリューション</strong>が必要な時。
-- 複雑な設定なしに<strong>素早く実験</strong>したい時。
-- <strong>アプリケーションのロジックがシンプル</strong>な時。</p>
+<p>smolagents が理想的なのは、次のような場合です。</p>
+<ul>
+<li><strong>軽量で最小限のソリューション</strong>が必要な時。</li>
+<li>複雑な設定なしに<strong>素早く実験</strong>したい時。</li>
+<li><strong>アプリケーションのロジックがシンプル</strong>な時。</li>
+</ul>
 <h3>コードと JSON のアクション</h3>
 <p>他のフレームワークではエージェントがアクションを <a class="gloss-link" href="../../../glossary/index.html#term-json" data-title="JSON（JavaScript Object Notation）" data-def="名前と値の組と値の並びを組み合わせて、入れ子になったデータをテキストで表す形式がJSONである。名前と値の組を波括弧で囲んだまとまりと、値の並びを角括弧で囲んだ配列を組み合わせることで、複雑な構造も表せる。人間にも読みやすく多くのプログラミング言語で読み書きできるため、言語に依存しない形式として、Web上のAPIでデータをやり取りする標準的な形式に広く使われている。" data-def-html="名前と値の組と値の並びを組み合わせて、入れ子になったデータをテキストで表す形式がJSONである。名前と値の組を波括弧で囲んだまとまりと、値の並びを角括弧で囲んだ配列を組み合わせることで、複雑な構造も表せる。人間にも読みやすく多くのプログラミング言語で読み書きできるため、言語に依存しない形式として、Web上の&lt;a class=&quot;gloss-link&quot; href=&quot;../../../glossary/index.html#term-api&quot; data-title=&quot;API（Application Programming Interface）&quot; data-def=&quot;内部の仕組みを知らなくても、決められた呼び出し方に従えば他のソフトウェアの機能やデータを使える接続口がAPIだ。利用する側は定められた手順で要求を送るだけで、必要な機能を使ったりデータを受け取ったりできる。Web上のサービスが公開するAPIでは、HTTPで要求を送りJSONなどの形式で応答を受け取る形が広く使われており、プログラム同士をつなぐ際の基本的な手段になっている。&quot;&gt;API&lt;/a&gt;でデータをやり取りする標準的な形式に広く使われている。">JSON</a> で書きますが、<code>smolagents</code> は<strong>コードによるツール呼び出しに焦点を当てて</strong>おり、実行プロセスを簡素化しています。ツールを呼び出すコードを構築する為に JSON をパースする必要がなく、出力をそのまま実行出来るからです。</p>
 <p>次の図がこの違いを示しています。</p>
@@ -196,9 +198,11 @@ window.MathJax = { tex: { inlineMath: [['$', '$'], ['\\(', '\\)']], displayMath:
 <p>コードと JSON のアクションの違いを復習するには、<a href="https://huggingface.co/learn/agents-course/unit1/actions#actions-enabling-the-agent-to-engage-with-its-environment">Unit 1 の Actions セクション</a>を振り返ってください。</p>
 <h3><code>smolagents</code> のエージェントタイプ</h3>
 <p><code>smolagents</code> のエージェントは<strong>マルチステップエージェント</strong>として動作します。</p>
-<p>各 <a href="https://huggingface.co/docs/smolagents/main/en/reference/agents#smolagents.MultiStepAgent"><code>MultiStepAgent</code></a> は次を行います。
-- 1回の思考
-- 1回のツール呼び出しと実行</p>
+<p>各 <a href="https://huggingface.co/docs/smolagents/main/en/reference/agents#smolagents.MultiStepAgent"><code>MultiStepAgent</code></a> は次を行います。</p>
+<ul>
+<li>1回の思考</li>
+<li>1回のツール呼び出しと実行</li>
+</ul>
 <p>smolagents は、主要なエージェントタイプである <strong><a href="https://huggingface.co/docs/smolagents/main/en/reference/agents#smolagents.CodeAgent">CodeAgent</a></strong> に加えて、ツール呼び出しを JSON で書く <strong><a href="https://huggingface.co/docs/smolagents/main/en/reference/agents#smolagents.ToolCallingAgent">ToolCallingAgent</a></strong> もサポートしています。</p>
 <p>各エージェントタイプについては、続くセクションで詳しく見ていきます。</p>
 <div class="callout callout-tip">

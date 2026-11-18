@@ -221,9 +221,11 @@ LlamaIndex にデータを読み込む主な方法は、次の 3 つです。</p
 
 <p>ドキュメントを読み込んだら、<code>Node</code> オブジェクトと呼ばれる小さな断片に分割する必要があります。
 <code>Node</code> は、元のドキュメントから切り出したテキストの断片です。<a class="gloss-link" href="../../../glossary/index.html#term-aiaas-maas" data-title="AIaaS／MaaS（AI / Model as a Service）" data-def="自分でモデルを学習させたり、高性能な計算装置を用意したりしなくてもAIを使えるようにした提供形態が、AIaaS／MaaSである。利用者はインターネット経由で提供される人工知能の機能や学習済みモデルを必要なときに呼び出し、結果を受け取るだけで済むため、導入の手間や初期費用を抑えられる。反面、提供者の仕様や料金に依存することになるため、その点には注意が要る。" data-def-html="自分でモデルを&lt;a class=&quot;gloss-link&quot; href=&quot;../../../glossary/index.html#term-training&quot; data-title=&quot;学習（訓練）（Training）&quot; data-def=&quot;学習は、機械学習のモデルにデータを与え、そのデータに合うようにモデル内部の数値を調整していく過程である。モデルは予測と正解のずれを手がかりに数値を少しずつ直し、ずれが小さくなる方向へ進んでいく。この過程を繰り返すことで、個々の例を覚えるだけでなく、見たことのないデータに対しても予測できるようになることが期待される。&quot;&gt;学習&lt;/a&gt;させたり、高性能な計算装置を用意したりしなくてもAIを使えるようにした提供形態が、AIaaS／MaaSである。利用者はインターネット経由で提供される&lt;a class=&quot;gloss-link&quot; href=&quot;../../../glossary/index.html#term-artificial-intelligence-ai&quot; data-title=&quot;人工知能（Artificial Intelligence / AI）&quot; data-def=&quot;人間の知的な働きをコンピュータで実現しようとする技術全体を指す言葉が人工知能である。人間が行ってきた学習や推論（手がかりから結論を導くこと）、物事の認識、言葉の理解といった判断や作業を機械にも行わせることを目指しており、その実現方法の中核を占めるのが、データから学ぶ機械学習である。現在使われている人工知能は特定の作業に特化したものが中心であり、人間のように何でもこなせるわけではない。&quot;&gt;人工知能&lt;/a&gt;の機能や学習済みモデルを必要なときに呼び出し、結果を受け取るだけで済むため、導入の手間や初期費用を抑えられる。反面、提供者の仕様や料金に依存することになるため、その点には注意が要る。">AI</a> が扱い易い大きさになっていますが、元の <code>Document</code> オブジェクトへの参照は保持されています。</p>
-<p><code>IngestionPipeline</code> は、2 つの重要な変換処理を通じて、これらのノードの作成を支援します。
-1. <code>SentenceSplitter</code> は、自然な文の区切りで分割し、ドキュメントを扱い易い塊に分けます。
-2. <code>HuggingFaceEmbedding</code> は、各塊を数値埋め込みに変換します。これは、AI が効率的に処理出来る形で意味的な内容を捉えたベクトル表現です。</p>
+<p><code>IngestionPipeline</code> は、2 つの重要な変換処理を通じて、これらのノードの作成を支援します。</p>
+<ol>
+<li><code>SentenceSplitter</code> は、自然な文の区切りで分割し、ドキュメントを扱い易い塊に分けます。</li>
+<li><code>HuggingFaceEmbedding</code> は、各塊を数値埋め込みに変換します。これは、AI が効率的に処理出来る形で意味的な内容を捉えたベクトル表現です。</li>
+</ol>
 <p>このプロセスにより、検索や分析に使い易い形でドキュメントを整理出来ます。</p>
 <div class="codehilite"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">llama_index.core</span><span class="w"> </span><span class="kn">import</span> <span class="n">Document</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">llama_index.embeddings.huggingface</span><span class="w"> </span><span class="kn">import</span> <span class="n">HuggingFaceEmbedding</span>
