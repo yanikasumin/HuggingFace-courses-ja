@@ -10,7 +10,7 @@ LangGraph のアプリケーションは **エントリーポイント** から�
 
 ## 1. 状態（State）
 
-**状態（State）** は LangGraph の中心的な概念です。アプリケーション内を流れるすべての情報を表します。
+**状態（State）** は LangGraph の中心的な概念です。アプリケーション内を流れる全ての情報を表します。
 
 ```python
 from typing_extensions import TypedDict
@@ -19,9 +19,9 @@ class State(TypedDict):
     graph_state: str
 ```
 
-状態は **ユーザーが定義する** ものです。そのため、意思決定プロセスに必要なすべてのデータを含むよう、フィールドを慎重に設計する必要があります！
+状態は **ユーザーが定義する** ものです。その為、意思決定プロセスに必要な全てのデータを含むよう、フィールドを慎重に設計する必要があります！
 
-> 💡 **ヒント：** アプリケーションがステップ間で追跡する必要がある情報について、よく考えてください。
+> 💡 **ヒント：** アプリケーションがステップ間で追跡する必要がある情報について、よく考えて下さい。
 
 ## 2. ノード
 
@@ -44,7 +44,7 @@ def node_3(state):
     return {"graph_state": state['graph_state'] +" sad!"}
 ```
 
-たとえば、ノードには次のような処理を含められます。
+例えば、ノードには次のような処理を含められます。
 - **LLM の呼び出し**：テキストを生成したり、意思決定を行ったりします
 - **ツールの呼び出し**：外部システムとやり取りします
 - **条件分岐ロジック**：次のステップを決定します
@@ -76,7 +76,7 @@ def decide_mood(state) -> Literal["node_2", "node_3"]:
     return "node_3"
 ```
 
-エッジには次の種類があります。
+エッジには次の種類が有ります。
 - **直接エッジ**：常にノード A からノード B へ進みます
 - **条件付きエッジ**：現在の状態に基づいて次のノードを選択します
 
@@ -104,23 +104,28 @@ builder.add_edge("node_3", END)
 graph = builder.compile()
 ```
 
-そして、可視化できます！
+そして、可視化出来ます。
 ```python
 # 表示
 display(Image(graph.get_graph().draw_mermaid_png()))
 ```
 <img src="https://huggingface.co/datasets/agents-course/course-images/resolve/main/en/unit2/LangGraph/basic_graph.jpeg" alt="グラフの可視化"/>
 
-そして何より、このグラフを呼び出して実行できます。
+そして何より、このグラフを呼び出して実行出来ます。
 ```python
 graph.invoke({"graph_state" : "Hi, this is Lance."})
 ```
+
+（入力文の訳：こんにちは、Lance です）
+
 出力：
 ```
 ---ノード 1---
 ---ノード 3---
 {'graph_state': 'Hi, this is Lance. I am sad!'}
 ```
+
+（出力の訳：こんにちは、Lance です。私は悲しいです！。ノード 1 が「私は」を、ノード 3 が「悲しいです！」を付け足した結果です。ノード 2 が選ばれた場合は「嬉しいです！」が付け足されます）
 
 ## 次のステップ
 

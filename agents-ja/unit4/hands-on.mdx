@@ -14,35 +14,37 @@ GAIAベンチマークの現状を踏まえると、レベル1の問題で正答
 
 ## 提出の流れ
 
-では、どうすれば回答を提出できるのでしょうか？
+では、どうすれば回答を提出出来るのでしょうか？
 
-このユニットでは、問題を取得し、回答を送って採点してもらえるAPIを用意しました。APIエンドポイントの概要は次のとおりです。実際に操作しながら試したい場合は、[APIドキュメント](https://agents-course-unit4-scoring.hf.space/docs)を参照してください。
+このユニットでは、問題を取得し、回答を送って採点してもらえるAPIを用意しました。APIエンドポイントの概要は次の通りです。実際に操作しながら試したい場合は、[APIドキュメント](https://agents-course-unit4-scoring.hf.space/docs)を参照して下さい。
 
 * **`GET /questions`**：フィルタリングされた評価問題の全リストを取得します。
 * **`GET /random-question`**：リストからランダムに1問を取得します。
 * **`GET /files/{task_id}`**：指定したタスクIDに関連するファイルをダウンロードします。
 * **`POST /submit`**：エージェントの回答を提出し、スコアを計算して、リーダーボードを更新します。
 
-提出された回答は、正解データ（ground truth）と **完全一致（EXACT MATCH）** するかどうかで採点されます。そのため、エージェントへのプロンプトの書き方が重要です。GAIAチームは、エージェント向けのプロンプト例を[こちら](https://huggingface.co/spaces/gaia-benchmark/leaderboard)で公開しています。但し、このコースでは、提出する回答に「FINAL ANSWER」という文字列を含めないでください。エージェントには答えだけを返させ、余計な文字を含めないようにしてください。
+提出された回答は、正解データ（ground truth）と **完全一致（EXACT MATCH）** するかどうかで採点されます。その為、エージェントへのプロンプトの書き方が重要です。
 
-🎨 **テンプレートを自分流にアレンジしましょう！**
+GAIAチームは、エージェント向けのプロンプト例を[こちら](https://huggingface.co/spaces/gaia-benchmark/leaderboard)で公開しています。但し、このコースでは、提出する回答に「FINAL ANSWER」という文字列を含めないで下さい。エージェントには答えだけを返させ、余計な文字を含めないようにして下さい。
 
-APIの使い方を示すため、[基本テンプレート](https://huggingface.co/spaces/agents-course/Final_Assignment_Template)を用意しました。これを出発点として利用できます。
+**テンプレートを自分流にアレンジしましょう！**
 
-このテンプレートは自由に、そして **積極的に** 変更してください。機能を追加しても、構成を全面的に作り直してもかまいません。自分の進め方やアイデアに合うように工夫しましょう。
+APIの使い方を示す為、[基本テンプレート](https://huggingface.co/spaces/agents-course/Final_Assignment_Template)を用意しました。これを出発点として利用出来ます。
+
+このテンプレートは自由に、そして **積極的に** 変更して下さい。機能を追加しても、構成を全面的に作り直してもかまいません。自分の進め方やアイデアに合うように工夫しましょう。
 
 このテンプレートは、提出時にAPIへ送る次の3つの情報を用意します。
 
-* **ユーザー名（Username）：** Hugging Faceのユーザー名（ここではGradioログイン経由で取得）で、提出者を識別するために使われます。
-* **コードリンク（`agent_code`）：** 提出内容を確認するために使う、Hugging Face Spaceのソースコードを表示するURL（`.../tree/main`）です。Spaceは公開したままにしてください。
-* **回答（`answers`）：** 採点のためにエージェントが生成した回答のリスト（`{"task_id": ..., "submitted_answer": ...}`）です。
+* **ユーザー名（Username）：** Hugging Faceのユーザー名（ここではGradioログイン経由で取得）で、提出者を識別する為に使われます。
+* **コードリンク（`agent_code`）：** 提出内容を確認する為に使う、Hugging Face Spaceのソースコードを表示するURL（`.../tree/main`）です。Spaceは公開したままにして下さい。
+* **回答（`answers`）：** 採点の為にエージェントが生成した回答のリスト（`{"task_id": ..., "submitted_answer": ...}`）です。
 
-まずは、この[テンプレート](https://huggingface.co/spaces/agents-course/Final_Assignment_Template)を自分のHugging Faceアカウントに複製してみましょう。
+先ずは、この[テンプレート](https://huggingface.co/spaces/agents-course/Final_Assignment_Template)を自分のHugging Faceアカウントに複製してみましょう。
 
-🏆 リーダーボードは[こちら](https://huggingface.co/spaces/agents-course/Students_leaderboard)
+リーダーボードは[こちら](https://huggingface.co/spaces/agents-course/Students_leaderboard)
 
-*補足：このリーダーボードは、楽しみながら参加してもらうためのものです。スコアを十分に検証せずに投稿できることは承知しています。但し、裏付けとなる公開リンクのない高スコアが多数投稿された場合は、リーダーボードを役立つものに保つため、投稿内容の一部を確認・修正・削除することがあります。*
-リーダーボードには、あなたのSpaceのソースコードへのリンクが表示されます。これは受講生向けのリーダーボードです。納得のいくスコアを獲得できたら、Spaceは公開したままにしてください。
+*補足：このリーダーボードは、楽しみながら参加してもらう為のものです。スコアを十分に検証せずに投稿出来ることは承知しています。但し、裏付けとなる公開リンクの無い高スコアが多数投稿された場合は、リーダーボードを役立つものに保つ為、投稿内容の一部を確認・修正・削除することが有ります。*
+リーダーボードには、あなたのSpaceのソースコードへのリンクが表示されます。これは受講生向けのリーダーボードです。納得のいくスコアを獲得出来たら、Spaceは公開したままにして下さい。
 <iframe
 	src="https://agents-course-students-leaderboard.hf.space"
 	frameborder="0"
