@@ -86,7 +86,7 @@ window.MathJax = { tex: { inlineMath: [['$', '$'], ['\\(', '\\)']], displayMath:
 </ul>
 <p class="side-group">Unit 3 - Vision Transformer</p>
 <ul class="side-list">
-<li><a class="side-link" href="vision-transformers-for-image-classification.html">画像分類のための Vision Transformer の転移学習とファインチューニング</a></li>
+<li><a class="side-link" href="vision-transformers-for-image-classification.html">画像分類の為の Vision Transformer の転移学習とファインチューニング</a></li>
 <li><a class="side-link" href="swin-transformer.html">Swin Transformer</a></li>
 <li><a class="side-link active" href="cvt.html">Convolutional Vision Transformer (CvT)</a></li>
 <li><a class="side-link" href="dinat.html">Dilated Neighborhood Attention Transformer（DiNAT）</a></li>
@@ -146,7 +146,7 @@ window.MathJax = { tex: { inlineMath: [['$', '$'], ['\\(', '\\)']], displayMath:
 <li><a class="side-link" href="../../unit8/terminologies/camera-models.html">カメラモデル</a></li>
 <li><a class="side-link" href="../../unit8/terminologies/linear-algebra.html">3Dデータのための線形代数の基礎</a></li>
 <li><a class="side-link" href="../../unit8/terminologies/representations.html">3Dデータの表現方法</a></li>
-<li><a class="side-link" href="../../unit8/monocular_depth_estimation.html">単眼深度推定の概要：メトリック深度と相対深度、Depth Anything V2 のファインチューニング 👐 📚</a></li>
+<li><a class="side-link" href="../../unit8/monocular_depth_estimation.html">単眼深度推定の概要：メトリック深度と相対深度、Depth Anything V2 のファインチューニング</a></li>
 <li><a class="side-link" href="../../unit8/3d-vision/nvs.html">新規視点合成（Novel View Synthesis）</a></li>
 <li><a class="side-link" href="../../unit8/3d_measurements_stereo_vision.html">はじめに</a></li>
 <li><a class="side-link" href="../../unit8/nerf.html">Neural Radiance Fields（NeRF）</a></li>
@@ -176,9 +176,9 @@ window.MathJax = { tex: { inlineMath: [['$', '$'], ['\\(', '\\)']], displayMath:
 <ul class="side-list">
 <li><a class="side-link" href="../../unit12/pre-intro.html">CV モデルにおける倫理的基盤を探る</a></li>
 <li><a class="side-link" href="../../unit12/introduction.html">導入</a></li>
-<li><a class="side-link" href="../../unit12/ethics-bias-ai.html">AI における倫理とバイアス 🧑‍🤝‍🧑</a></li>
-<li><a class="side-link" href="../../unit12/conclusion.html">Hugging Face の取り組み：倫理と社会 🤗🌎</a></li>
-<li><a class="side-link" href="../../unit12/supplementary-material.html">参考文献とリソース 🤗🌎</a></li>
+<li><a class="side-link" href="../../unit12/ethics-bias-ai.html">AI における倫理とバイアス</a></li>
+<li><a class="side-link" href="../../unit12/conclusion.html">Hugging Face の取り組み：倫理と社会 🤗</a></li>
+<li><a class="side-link" href="../../unit12/supplementary-material.html">参考文献とリソース 🤗</a></li>
 </ul>
 <p class="side-group">Unit 13 - 展望</p>
 <ul class="side-list">
@@ -196,9 +196,10 @@ window.MathJax = { tex: { inlineMath: [['$', '$'], ['\\(', '\\)']], displayMath:
 <h1>Convolutional Vision Transformer (CvT)</h1>
 <p>このセクションでは、Vision Transformer (ViT) <a href="#vision-transformer">[1]</a> の派生モデルで、コンピュータビジョンの画像分類タスクで広く使われている Convolutional Vision Transformer (CvT) を詳しく見ていきます。</p>
 <h2>振り返り</h2>
-<p>CvT に入る前に、前セクションで扱った ViT のアーキテクチャを簡単に振り返っておくと、CvT の特徴が分かりやすくなります。ViT は各画像を固定長のトークン列（重ならないパッチ）に分解し、Multi-head Self Attention と Position-wise Feed-forward module (FFN) からなる標準的な Transformer 層を複数重ねて、分類のための大域的な関係をモデル化します。</p>
+<p>CvT に入る前に、前セクションで扱った ViT のアーキテクチャを簡単に振り返っておくと、CvT の特徴が分かり易くなります。ViT は各画像を固定長のトークン列（重ならないパッチ）に分解し、Multi-head Self Attention と Position-wise Feed-forward module (FFN) からなる標準的な Transformer 層を複数重ねて、分類の為の大域的な関係をモデル化します。</p>
 <h2>概要</h2>
-<p>Convolutional Vision Transformer (CvT) は、論文 CvT: Introducing Convolutions to Vision Transformers <a href="#cvt">[2]</a> で提案されたモデルです。著者は Haiping Wu、Bin Xiao、Noel Codella、Mengchen Liu、Xiyang Dai、Lu Yuan、Lei Zhang です。CvT は CNN の利点である <em>local receptive fields</em>（局所受容野）、<em>shared weights</em>（重みの共有）、<em>spatial subsampling</em>（空間サブサンプリング）と、<em>shift</em>、<em>scale</em>、<em>distortion invariance</em>（平行移動・スケール・歪みに対する不変性）を取り入れつつ、Transformer の利点である <em>dynamic attention</em>、<em>global context fusion</em>、<em>better generalization</em>（動的アテンション、大域的な文脈の融合、より良い汎化）も保っています。CvT は ViT と比べて計算効率を維持しながら、より高い性能を達成します。更に、畳み込みによって組み込まれた局所的な文脈構造のおかげで、CvT は位置埋め込みを必要としません。そのため、可変の入力解像度を必要とする幅広いビジョンタスクへの適応で有利になる可能性があります。</p>
+<p>Convolutional Vision Transformer (CvT) は、論文 CvT: Introducing Convolutions to Vision Transformers <a href="#cvt">[2]</a> で提案されたモデルです。著者は Haiping Wu、Bin Xiao、Noel Codella、Mengchen Liu、Xiyang Dai、Lu Yuan、Lei Zhang です。CvT は CNN の利点である <em>local receptive fields</em>（局所受容野）、<em>shared weights</em>（重みの共有）、<em>spatial subsampling</em>（空間サブサンプリング）と、<em>shift</em>、<em>scale</em>、<em>distortion invariance</em>（平行移動・スケール・歪みに対する不変性）を取り入れつつ、Transformer の利点である <em>dynamic attention</em>、<em>global context fusion</em>、<em>better generalization</em>（動的アテンション、大域的な文脈の融合、より良い汎化）も保っています。CvT は ViT と比べて計算効率を維持しながら、より高い性能を達成します。</p>
+<p>更に、畳み込みによって組み込まれた局所的な文脈構造のお陰で、CvT は位置埋め込みを必要としません。その為、可変の入力解像度を必要とする幅広いビジョンタスクへの適応で有利になる可能性があります。</p>
 <h2>アーキテクチャ</h2>
 <p><img alt="CvT アーキテクチャ" src="https://huggingface.co/datasets/hf-vision/course-assets/resolve/main/cvt_architecture.png" />
 <em>（a）全体のアーキテクチャ。Convolutional Token Embedding 層によって実現される階層的な多段階構造を示します。（b）Convolutional Transformer Block の詳細。最初の層として畳み込み射影を含みます。 <a href="#cvt">[2]</a></em></p>
@@ -395,7 +396,7 @@ window.MathJax = { tex: { inlineMath: [['$', '$'], ['\\(', '\\)']], displayMath:
 <p>forward メソッドは入力テンソル x を受け取り、<code>self.proj</code> を使って畳み込み演算を適用します。出力は rearrange 関数で空間次元を平坦化するように変形されます。正規化層があれば、平坦化された表現に適用されます。最後に、テンソルを元の空間次元に戻して返します。</p>
 </li>
 </ul>
-<p>まとめると、このモジュールは画像のパッチ単位の埋め込みのために設計されており、各パッチは畳み込み層で独立に処理され、埋め込まれた特徴に対して任意で正規化が適用されます。</p>
+<p>まとめると、このモジュールは画像のパッチ単位の埋め込みの為に設計されており、各パッチは畳み込み層で独立に処理され、埋め込まれた特徴に対して任意で正規化が適用されます。</p>
 <ol start="4">
 <li><strong>Vision Transformer</strong> ブロックの実装</li>
 </ol>
@@ -496,7 +497,7 @@ window.MathJax = { tex: { inlineMath: [['$', '$'], ['\\(', '\\)']], displayMath:
             <span class="k">return</span> <span class="n">x</span><span class="p">,</span> <span class="n">cls_tokens</span>
 </code></pre></div>
 
-<p>このコードは Vision Transformer モジュールを定義しています。概要は次のとおりです。</p>
+<p>このコードは Vision Transformer モジュールを定義しています。概要は次の通りです。</p>
 <ul>
 <li>
 <p><strong>初期化</strong>：<code>VisionTransformer</code> クラスは、パッチサイズ、埋め込み次元、層の数、アテンションのヘッド数、ドロップアウト率など、モデルのアーキテクチャを決める様々なパラメータで初期化されます。</p>
@@ -508,7 +509,7 @@ window.MathJax = { tex: { inlineMath: [['$', '$'], ['\\(', '\\)']], displayMath:
 <p><strong>Transformer Blocks</strong>：モデルは Transformer ブロック（<code>Block</code>）のスタックで構成されます。ブロックの数は depth パラメータで決まります。各ブロックには multi-head self-attention 機構と feedforward ニューラルネットワークが含まれます。</p>
 </li>
 <li>
-<p><strong>Classification Token</strong>：任意で、学習可能な classification token（<code>cls_token</code>）を入力列に追加できます。このトークンは分類タスクに使われます。</p>
+<p><strong>Classification Token</strong>：任意で、学習可能な classification token（<code>cls_token</code>）を入力列に追加出来ます。このトークンは分類タスクに使われます。</p>
 </li>
 <li>
 <p><strong>Stochastic Depth</strong>：Transformer ブロックには stochastic depth が適用され、訓練時にブロックのランダムな部分集合をスキップすることで正則化を改善します。これは <code>drop_path_rate</code> パラメータで制御されます。</p>
@@ -605,20 +606,20 @@ window.MathJax = { tex: { inlineMath: [['$', '$'], ['\\(', '\\)']], displayMath:
 <ul>
 <li>モデルは複数の段階で構成され、各段階は <code>VisionTransformer</code> クラスのインスタンスで表されます。</li>
 <li>各段階には、<code>spec</code> 辞書で指定されたパッチサイズ、ストライド、深さ、ヘッド数などの設定が適用されます。</li>
-<li><code>forward_features</code> メソッドは入力 x をすべての段階に通し、最終的な表現を集約します。</li>
-<li>このクラスには、最終出力を生成するために線形変換を行う分類ヘッドがあります。</li>
+<li><code>forward_features</code> メソッドは入力 x を全ての段階に通し、最終的な表現を集約します。</li>
+<li>このクラスには、最終出力を生成する為に線形変換を行う分類ヘッドがあります。</li>
 <li><code>forward</code> メソッドは <code>forward_features</code> を呼び出し、その結果を分類ヘッドに通します。</li>
 <li>Vision Transformer の段階は stage0、stage1 のように順に名付けられ、各段階が <code>VisionTransformer</code> クラスのインスタンスとなって、Transformer の階層を形成します。</li>
 </ul>
 <p>お疲れさまでした。これで CvT アーキテクチャを PyTorch で実装する方法が分かりました。CvT アーキテクチャの完全なコードは<a href="https://github.com/microsoft/CvT/blob/main/lib/models/cls_cvt.py">こちら</a>で見られます。</p>
 <h2>試してみる</h2>
-<p>PyTorch 実装の複雑な詳細に入らずに CvT を使いたい場合は、Hugging Face の <code>transformers</code> ライブラリを使うと簡単にできます。手順は次のとおりです。</p>
+<p>PyTorch 実装の複雑な詳細に入らずに CvT を使いたい場合は、Hugging Face の <code>transformers</code> ライブラリを使うと簡単に出来ます。手順は次の通りです。</p>
 <div class="codehilite"><pre><span></span><code>pip<span class="w"> </span>install<span class="w"> </span>transformers
 </code></pre></div>
 
 <p>CvT モデルのドキュメントは<a href="https://huggingface.co/docs/transformers/model_doc/cvt#overview">こちら</a>にあります。</p>
 <h3>使い方</h3>
-<p>COCO 2017 データセットの画像を 1,000 個の ImageNet クラスのいずれかに分類するために CvT モデルを使う方法は、次のとおりです。</p>
+<p>COCO 2017 データセットの画像を 1,000 個の ImageNet クラスのいずれかに分類する為に CvT モデルを使う方法は、次の通りです。</p>
 <div class="codehilite"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">transformers</span><span class="w"> </span><span class="kn">import</span> <span class="n">AutoFeatureExtractor</span><span class="p">,</span> <span class="n">CvtForImageClassification</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">PIL</span><span class="w"> </span><span class="kn">import</span> <span class="n">Image</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">requests</span>
@@ -639,13 +640,13 @@ window.MathJax = { tex: { inlineMath: [['$', '$'], ['\\(', '\\)']], displayMath:
 
 <h2>参考文献</h2>
 <ul>
-<li><a href="https://arxiv.org/abs/2010.11929">画像は16×16の単語に相当する：大規模画像認識のための Transformer</a> <a id="vision-transformer"></a></li>
+<li><a href="https://arxiv.org/abs/2010.11929">画像は16×16の単語に相当する：大規模画像認識の為の Transformer</a> <a id="vision-transformer"></a></li>
 <li><a href="https://arxiv.org/abs/2103.15808">CvT：Vision Transformer への畳み込みの導入</a> <a id="cvt"></a></li>
 <li><a href="https://arxiv.org/abs/2012.12877">データ効率の高い画像 Transformer の学習とアテンションによる蒸留</a> <a id="deit"></a></li>
 <li><a href="https://arxiv.org/abs/2102.10882">Vision Transformer の条件付き位置エンコーディング</a> <a id="cpvt"></a></li>
 <li><a href="https://arxiv.org/abs/2103.00112v3">Transformer の中の Transformer</a><a id="tnt"></a></li>
 <li><a href="https://arxiv.org/abs/2101.11986">Tokens-to-Token ViT：ImageNet で Vision Transformer をゼロから学習する</a> <a id="t2t"></a></li>
-<li><a href="https://arxiv.org/abs/2102.12122">Pyramid Vision Transformer：畳み込みを使わない密な予測のための汎用バックボーン</a> <a id="pvt"></a></li>
+<li><a href="https://arxiv.org/abs/2102.12122">Pyramid Vision Transformer：畳み込みを使わない密な予測の為の汎用バックボーン</a> <a id="pvt"></a></li>
 <li><a href="https://github.com/microsoft/CvT/tree/main">CvT の実装</a> <a id="cvt-imp"></a></li>
 </ul>
 </article>

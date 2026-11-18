@@ -86,7 +86,7 @@ window.MathJax = { tex: { inlineMath: [['$', '$'], ['\\(', '\\)']], displayMath:
 </ul>
 <p class="side-group">Unit 3 - Vision Transformer</p>
 <ul class="side-list">
-<li><a class="side-link" href="vision-transformers-for-image-classification.html">画像分類のための Vision Transformer の転移学習とファインチューニング</a></li>
+<li><a class="side-link" href="vision-transformers-for-image-classification.html">画像分類の為の Vision Transformer の転移学習とファインチューニング</a></li>
 <li><a class="side-link" href="swin-transformer.html">Swin Transformer</a></li>
 <li><a class="side-link" href="cvt.html">Convolutional Vision Transformer (CvT)</a></li>
 <li><a class="side-link" href="dinat.html">Dilated Neighborhood Attention Transformer（DiNAT）</a></li>
@@ -146,7 +146,7 @@ window.MathJax = { tex: { inlineMath: [['$', '$'], ['\\(', '\\)']], displayMath:
 <li><a class="side-link" href="../../unit8/terminologies/camera-models.html">カメラモデル</a></li>
 <li><a class="side-link" href="../../unit8/terminologies/linear-algebra.html">3Dデータのための線形代数の基礎</a></li>
 <li><a class="side-link" href="../../unit8/terminologies/representations.html">3Dデータの表現方法</a></li>
-<li><a class="side-link" href="../../unit8/monocular_depth_estimation.html">単眼深度推定の概要：メトリック深度と相対深度、Depth Anything V2 のファインチューニング 👐 📚</a></li>
+<li><a class="side-link" href="../../unit8/monocular_depth_estimation.html">単眼深度推定の概要：メトリック深度と相対深度、Depth Anything V2 のファインチューニング</a></li>
 <li><a class="side-link" href="../../unit8/3d-vision/nvs.html">新規視点合成（Novel View Synthesis）</a></li>
 <li><a class="side-link" href="../../unit8/3d_measurements_stereo_vision.html">はじめに</a></li>
 <li><a class="side-link" href="../../unit8/nerf.html">Neural Radiance Fields（NeRF）</a></li>
@@ -176,9 +176,9 @@ window.MathJax = { tex: { inlineMath: [['$', '$'], ['\\(', '\\)']], displayMath:
 <ul class="side-list">
 <li><a class="side-link" href="../../unit12/pre-intro.html">CV モデルにおける倫理的基盤を探る</a></li>
 <li><a class="side-link" href="../../unit12/introduction.html">導入</a></li>
-<li><a class="side-link" href="../../unit12/ethics-bias-ai.html">AI における倫理とバイアス 🧑‍🤝‍🧑</a></li>
-<li><a class="side-link" href="../../unit12/conclusion.html">Hugging Face の取り組み：倫理と社会 🤗🌎</a></li>
-<li><a class="side-link" href="../../unit12/supplementary-material.html">参考文献とリソース 🤗🌎</a></li>
+<li><a class="side-link" href="../../unit12/ethics-bias-ai.html">AI における倫理とバイアス</a></li>
+<li><a class="side-link" href="../../unit12/conclusion.html">Hugging Face の取り組み：倫理と社会 🤗</a></li>
+<li><a class="side-link" href="../../unit12/supplementary-material.html">参考文献とリソース 🤗</a></li>
 </ul>
 <p class="side-group">Unit 13 - 展望</p>
 <ul class="side-list">
@@ -195,19 +195,20 @@ window.MathJax = { tex: { inlineMath: [['$', '$'], ['\\(', '\\)']], displayMath:
 <article class="content">
 <h1>Vision Transformer における知識蒸留</h1>
 <p>ここでは知識蒸留（Knowledge Distillation）について学びます。<a href="https://huggingface.co/distilgpt2">distilGPT</a> や <a href="https://huggingface.co/distilbert-base-uncased-finetuned-sst-2-english">distilbert</a> の背後にある手法です。この2つは、<em>Hugging Face Hub で最もダウンロードされているモデルの一部です！</em></p>
-<p>正解だけを教えて、あとは見たことのない問題でテストする、そんな先生を思い浮かべてみてください。これは、ラベル付きデータセットを与えて訓練する、機械学習モデルの教師あり学習に似ています。但し、モデルをラベルで訓練する代わりに、<a href="https://arxiv.org/abs/1503.02531">知識蒸留</a>という別の道を選ぶこともできます。大きなモデルに匹敵する性能を持ちながら、はるかに小さく、しかも高速なモデルを得るための方法です。</p>
+<p>正解だけを教えて、あとは見たことの無い問題でテストする、そんな先生を思い浮かべてみて下さい。これは、ラベル付きデータセットを与えて訓練する、機械学習モデルの教師あり学習に似ています。</p>
+<p>但し、モデルをラベルで訓練する代わりに、<a href="https://arxiv.org/abs/1503.02531">知識蒸留</a>という別の道を選ぶことも出来ます。大きなモデルに匹敵する性能を持ちながら、はるかに小さく、しかも高速なモデルを得る為の方法です。</p>
 <h2>知識蒸留の直感的な理解</h2>
 <p>次のような選択式の問題を出されたとします。</p>
 <p><img alt="選択式の問題" src="https://huggingface.co/datasets/hf-vision/course-assets/resolve/main/multiple-choice-question.png" /></p>
 <p>「答えは Draco Malfoy です」とだけ言われても、各キャラクターと Harry Potter との関係については、あまり学べません。</p>
 <p>一方で、「Ron Weasley ではないと強く確信しています。Neville Longbottom でもないと思いますが、こちらの確信度はそれほど高くありません。そして、Draco Malfoy である可能性は非常に高いと思います」と言われたらどうでしょうか。これなら、各キャラクターと Harry Potter との関係について、より多くの情報が得られます。知識蒸留では、まさにこのような情報を生徒モデルに伝えます。</p>
 <h2>ニューラルネットワークの知識を蒸留する</h2>
-<p>論文 <a href="https://arxiv.org/abs/1503.02531"><em>ニューラルネットワークの知識を蒸留する（Distilling the Knowledge in a Neural Network）</em></a> で、Hinton らは知識蒸留と呼ばれる訓練手法を提案しました。着想を得たのは、意外にも_昆虫_からです。昆虫が、異なるタスクに最適化された幼虫の姿から成虫の姿へ移行するように、大規模な機械学習モデルも、最初は幼虫のように扱いにくい形でデータから構造を取り出す段階を経て、その知識を、デプロイ向けのより小さく効率的なモデルへ蒸留できます。</p>
-<p>知識蒸留の本質は、教師ネットワークが予測した logits を使って、より小さく効率的な生徒モデルへ情報を伝えることです。そのために損失関数を書き換え、_蒸留損失（distillation loss）_を含めます。この損失により、生徒モデルの出力空間上の分布が、教師の分布に近づくよう促されます。</p>
+<p>論文 <a href="https://arxiv.org/abs/1503.02531"><em>ニューラルネットワークの知識を蒸留する（Distilling the Knowledge in a Neural Network）</em></a> で、Hinton らは知識蒸留と呼ばれる訓練手法を提案しました。着想を得たのは、意外にも_昆虫_からです。昆虫が、異なるタスクに最適化された幼虫の姿から成虫の姿へ移行するように、大規模な機械学習モデルも、最初は幼虫のように扱い難い形でデータから構造を取り出す段階を経て、その知識を、デプロイ向けのより小さく効率的なモデルへ蒸留出来ます。</p>
+<p>知識蒸留の本質は、教師ネットワークが予測した logits を使って、より小さく効率的な生徒モデルへ情報を伝えることです。その為に損失関数を書き換え、_蒸留損失（distillation loss）_を含めます。この損失により、生徒モデルの出力空間上の分布が、教師の分布に近づくよう促されます。</p>
 <p>蒸留損失は次のように定式化されます。</p>
 <p><img alt="蒸留損失" src="https://huggingface.co/datasets/hf-vision/course-assets/resolve/main/KL-Loss.png" /></p>
 <p>KL 損失は、教師モデルと生徒モデルの出力分布の間の<a href="https://en.wikipedia.org/wiki/Kullback–Leibler_divergence">カルバック・ライブラー・ダイバージェンス</a>（KL ダイバージェンス）を指します。生徒モデルの全体の損失は、この蒸留損失と、正解ラベルに対する通常の交差エントロピー損失の和として定式化されます。</p>
-<p>この損失関数を Python で実装した例と、Python で完結する具体例は、このセクションの <a href="https://github.com/huggingface/computer-vision-course/blob/main/notebooks/Unit%203%20-%20Vision%20Transformers/KnowledgeDistillation.ipynb">ノートブック</a> で確認できます。</p>
+<p>この損失関数を Python で実装した例と、Python で完結する具体例は、このセクションの <a href="https://github.com/huggingface/computer-vision-course/blob/main/notebooks/Unit%203%20-%20Vision%20Transformers/KnowledgeDistillation.ipynb">ノートブック</a> で確認出来ます。</p>
 <p>&lt;a
   target="_blank"
   href="https://colab.research.google.com/github/huggingface/computer-vision-course/blob/main/notebooks/Unit%203%20-%20Vision%20Transformers/KnowledgeDistillation.ipynb"</p>
@@ -219,20 +220,23 @@ window.MathJax = { tex: { inlineMath: [['$', '$'], ['\\(', '\\)']], displayMath:
 </a></p>
 </blockquote>
 <h1>エッジデバイス向けに知識蒸留を活用する</h1>
-<p>AI モデルをエッジデバイスで動かす機会が増えるにつれ、知識蒸留の重要性も高まっています。たとえば、サイズが1 GBで応答に1秒かかる大規模モデルは、計算能力やメモリへの要求が高いため、リアルタイム用途には適していません。こうした制約は主にモデルのサイズから生じます。そのため、性能の低下を最小限に抑えながらモデルのパラメータ数を90%以上削減できる知識蒸留が、この分野で広く使われるようになりました。</p>
+<p>AI モデルをエッジデバイスで動かす機会が増えるにつれ、知識蒸留の重要性も高まっています。例えば、サイズが1 GBで応答に1秒掛かる大規模モデルは、計算能力やメモリへの要求が高い為、リアルタイム用途には適していません。こうした制約は主にモデルのサイズから生じます。その為、性能の低下を最小限に抑えながらモデルのパラメータ数を90%以上削減出来る知識蒸留が、この分野で広く使われるようになりました。</p>
 <h2>知識蒸留がもたらすもの（良い面と悪い面）</h2>
 <h3>1. エントロピーの増加</h3>
-<p>情報理論におけるエントロピーは、物理学における対応概念と同様に、系の中の「混沌」や無秩序の度合いを測るものです。ここでの文脈では、分布が含む情報量を定量化します。次の例を考えてみてください。</p>
+<p>情報理論におけるエントロピーは、物理学における対応概念と同様に、系の中の「混沌」や無秩序の度合いを測るものです。ここでの文脈では、分布が含む情報量を定量化します。次の例を考えてみて下さい。</p>
 <ul>
-<li><code>[0, 1, 0, 0]</code> と <code>[0.2, 0.5, 0.2, 0.1]</code> では、覚えにくいのはどちらでしょうか？</li>
+<li><code>[0, 1, 0, 0]</code> と <code>[0.2, 0.5, 0.2, 0.1]</code> では、覚え難いのはどちらでしょうか？</li>
 </ul>
-<p>最初のベクトル <code>[0, 1, 0, 0]</code> は、含む情報が少ないため、覚えやすく、圧縮もしやすいベクトルです。2番目の位置に「1」がある、と表せます。一方、<code>[0.2, 0.5, 0.2, 0.1]</code> はより多くの情報を含んでいます。これを踏まえて、たとえばパラメータ数 80M のネットワークを ImageNet で訓練し、先ほど説明したようにパラメータ数 5M の生徒モデルへ蒸留したとします。この場合、教師モデルの出力に含まれるエントロピーは、生徒モデルの出力よりもはるかに低いことが分かります。つまり、生徒モデルの出力は、正しくても、教師の出力より混沌としているということです。これは単純な事実に帰着します。教師はパラメータが多い分、より多くの特徴を取り出せるため、クラス同士を見分けやすいのです。知識蒸留に対するこの見方は非常に興味深く、生徒のエントロピーを下げる研究が活発に行われています。エントロピーを損失関数として使う方法や、物理学に着想を得た類似の指標（エネルギーなど）を適用する方法が検討されています。</p>
+<p>最初のベクトル <code>[0, 1, 0, 0]</code> は、含む情報が少ない為、覚え易く、圧縮もし易いベクトルです。2番目の位置に「1」が在る、と表せます。一方、<code>[0.2, 0.5, 0.2, 0.1]</code> はより多くの情報を含んでいます。</p>
+<p>これを踏まえて、例えばパラメータ数 80M のネットワークを ImageNet で訓練し、先ほど説明したようにパラメータ数 5M の生徒モデルへ蒸留したとします。この場合、教師モデルの出力に含まれるエントロピーは、生徒モデルの出力よりもはるかに低いことが分かります。つまり、生徒モデルの出力は、正しくても、教師の出力より混沌としているということです。これは単純な事実に帰着します。教師はパラメータが多い分、より多くの特徴を取り出せる為、クラス同士を見分け易いのです。</p>
+<p>知識蒸留に対するこの見方は非常に興味深く、生徒のエントロピーを下げる研究が活発に行われています。エントロピーを損失関数として使う方法や、物理学に着想を得た類似の指標（エネルギーなど）を適用する方法が検討されています。</p>
 <h3>2. 一貫した勾配更新</h3>
-<p>モデルは、損失関数を最小化し、勾配降下法でパラメータを更新しながら、反復的に学習します。教師モデルにおいて、クラス A のサンプルを検出したときに活性化する役割を持つパラメータの集合 <code>P = {w1, w2, w3, ..., wn}</code> を考えてみてください。クラス A に似ているものの実際はクラス B に属する曖昧なサンプルがあると、誤分類のあとでモデルの勾配更新は激しくなり、不安定さにつながります。これに対して蒸留のプロセスでは、教師モデルのソフトなターゲットにより、訓練中の勾配更新はより安定し、一貫したものになります。その結果、生徒モデルの学習プロセスはより滑らかになります。</p>
-<h3>3. ラベルなしデータで訓練できる</h3>
-<p>教師モデルがあることで、生徒モデルはラベルなしデータでも訓練できます。教師モデルがラベルなしサンプルに対して疑似ラベルを生成し、生徒モデルはそれを訓練に使えます。この方法により、使える訓練データの量を大きく増やせます。</p>
+<p>モデルは、損失関数を最小化し、勾配降下法でパラメータを更新しながら、反復的に学習します。教師モデルにおいて、クラス A のサンプルを検出した時に活性化する役割を持つパラメータの集合 <code>P = {w1, w2, w3, ..., wn}</code> を考えてみて下さい。クラス A に似ているものの実際はクラス B に属する曖昧なサンプルが有ると、誤分類のあとでモデルの勾配更新は激しくなり、不安定さにつながります。これに対して蒸留のプロセスでは、教師モデルのソフトなターゲットにより、訓練中の勾配更新はより安定し、一貫したものになります。その結果、生徒モデルの学習プロセスはより滑らかになります。</p>
+<h3>3. ラベルなしデータで訓練出来る</h3>
+<p>教師モデルが有ることで、生徒モデルはラベルなしデータでも訓練出来ます。教師モデルがラベルなしサンプルに対して疑似ラベルを生成し、生徒モデルはそれを訓練に使えます。この方法により、使える訓練データの量を大きく増やせます。</p>
 <h3>4. 視点の転換</h3>
-<p>深層学習モデルは通常、十分なデータを与えれば、背後にある現象を正確に表す関数 <code>F</code> を近似できる、という前提で訓練されます。しかし現実には、データ不足のためにこの前提が成り立たない場合が多くあります。従来のアプローチでは、より大きなモデルを作り、最適な結果が得られるまで反復的にファインチューニングします。これに対して知識蒸留は視点を転換します。既に十分に訓練された教師モデル <code>F</code> があるなら、目標はより小さなモデル <code>f</code> で <code>F</code> を近似することになる、という考え方です。</p>
+<p>深層学習モデルは通常、十分なデータを与えれば、背後に在る現象を正確に表す関数 <code>F</code> を近似出来る、という前提で訓練されます。しかし現実には、データ不足の為にこの前提が成り立たない場合が多くあります。従来のアプローチでは、より大きなモデルを作り、最適な結果が得られるまで反復的にファインチューニングします。</p>
+<p>これに対して知識蒸留は視点を転換します。既に十分に訓練された教師モデル <code>F</code> が有るなら、目標はより小さなモデル <code>f</code> で <code>F</code> を近似することになる、という考え方です。</p>
 </article>
 
 <nav class="page-nav"><a class="nav-link prev" href="oneformer.html">← 前へ: OneFormer：1つの Transformer で画像セグメンテーションを統合する</a><a class="nav-link toc-link" href="../../index.html">目次へ</a><a class="nav-link next" href="../../unit4/multimodal-models/pre-intro.html">次へ →: テキストと視覚を組み合わせるマルチモーダルモデル：AI で感覚情報を結びつける</a></nav>

@@ -86,7 +86,7 @@ window.MathJax = { tex: { inlineMath: [['$', '$'], ['\\(', '\\)']], displayMath:
 </ul>
 <p class="side-group">Unit 3 - Vision Transformer</p>
 <ul class="side-list">
-<li><a class="side-link" href="../../unit3/vision-transformers/vision-transformers-for-image-classification.html">画像分類のための Vision Transformer の転移学習とファインチューニング</a></li>
+<li><a class="side-link" href="../../unit3/vision-transformers/vision-transformers-for-image-classification.html">画像分類の為の Vision Transformer の転移学習とファインチューニング</a></li>
 <li><a class="side-link" href="../../unit3/vision-transformers/swin-transformer.html">Swin Transformer</a></li>
 <li><a class="side-link" href="../../unit3/vision-transformers/cvt.html">Convolutional Vision Transformer (CvT)</a></li>
 <li><a class="side-link" href="../../unit3/vision-transformers/dinat.html">Dilated Neighborhood Attention Transformer（DiNAT）</a></li>
@@ -146,7 +146,7 @@ window.MathJax = { tex: { inlineMath: [['$', '$'], ['\\(', '\\)']], displayMath:
 <li><a class="side-link" href="../../unit8/terminologies/camera-models.html">カメラモデル</a></li>
 <li><a class="side-link" href="../../unit8/terminologies/linear-algebra.html">3Dデータのための線形代数の基礎</a></li>
 <li><a class="side-link" href="../../unit8/terminologies/representations.html">3Dデータの表現方法</a></li>
-<li><a class="side-link" href="../../unit8/monocular_depth_estimation.html">単眼深度推定の概要：メトリック深度と相対深度、Depth Anything V2 のファインチューニング 👐 📚</a></li>
+<li><a class="side-link" href="../../unit8/monocular_depth_estimation.html">単眼深度推定の概要：メトリック深度と相対深度、Depth Anything V2 のファインチューニング</a></li>
 <li><a class="side-link" href="../../unit8/3d-vision/nvs.html">新規視点合成（Novel View Synthesis）</a></li>
 <li><a class="side-link" href="../../unit8/3d_measurements_stereo_vision.html">はじめに</a></li>
 <li><a class="side-link" href="../../unit8/nerf.html">Neural Radiance Fields（NeRF）</a></li>
@@ -176,9 +176,9 @@ window.MathJax = { tex: { inlineMath: [['$', '$'], ['\\(', '\\)']], displayMath:
 <ul class="side-list">
 <li><a class="side-link" href="../../unit12/pre-intro.html">CV モデルにおける倫理的基盤を探る</a></li>
 <li><a class="side-link" href="../../unit12/introduction.html">導入</a></li>
-<li><a class="side-link" href="../../unit12/ethics-bias-ai.html">AI における倫理とバイアス 🧑‍🤝‍🧑</a></li>
-<li><a class="side-link" href="../../unit12/conclusion.html">Hugging Face の取り組み：倫理と社会 🤗🌎</a></li>
-<li><a class="side-link" href="../../unit12/supplementary-material.html">参考文献とリソース 🤗🌎</a></li>
+<li><a class="side-link" href="../../unit12/ethics-bias-ai.html">AI における倫理とバイアス</a></li>
+<li><a class="side-link" href="../../unit12/conclusion.html">Hugging Face の取り組み：倫理と社会 🤗</a></li>
+<li><a class="side-link" href="../../unit12/supplementary-material.html">参考文献とリソース 🤗</a></li>
 </ul>
 <p class="side-group">Unit 13 - 展望</p>
 <ul class="side-list">
@@ -194,37 +194,39 @@ window.MathJax = { tex: { inlineMath: [['$', '$'], ['\\(', '\\)']], displayMath:
 <nav class="page-nav"><a class="nav-link prev" href="../../unit1/feature-extraction/real-world-applications.html">← 前へ: コンピュータビジョンにおける特徴抽出の実社会での応用</a><a class="nav-link toc-link" href="../../index.html">目次へ</a><a class="nav-link next" href="vgg.html">次へ →: 大規模画像認識のための非常に深い畳み込みネットワーク（2014）</a></nav>
 <article class="content">
 <h1>畳み込みニューラルネットワーク入門</h1>
-<p>前のユニットでは、視覚、画像、コンピュータビジョンの基礎を学びました。また、コンピュータで画像を解析するうえで重要な要素である視覚的特徴についても見てきました。</p>
-<p>これまで扱った手法は、現在では「古典的な」コンピュータビジョンと呼ばれることがよくあります。小規模で制約の多いデータセットや環境ではうまく機能しますが、実世界の大きなデータセットを相手にすると限界が見えてきます。</p>
+<p>前のユニットでは、視覚、画像、コンピュータビジョンの基礎を学びました。また、コンピュータで画像を解析する上で重要な要素である視覚的特徴についても見てきました。</p>
+<p>これまで扱った手法は、現在では「古典的な」コンピュータビジョンと呼ばれることがよく有ります。小規模で制約の多いデータセットや環境ではうまく機能しますが、実世界の大きなデータセットを相手にすると限界が見えてきます。</p>
 <p>このユニットでは、コンピュータビジョンの規模と性能を大きく前進させた畳み込みニューラルネットワーク（Convolutional Neural Networks）について学びます。</p>
 <h2>畳み込み：基本的な考え方</h2>
-<p>畳み込み（convolution）は、データから特徴を抽出するために使われる演算です。データは1次元、2次元、3次元のいずれでも構いません。具体例で演算の仕組みを説明します。今のところは、数値を並べた行列をデータの上で少しずつずらし、重なった位置の数値同士を掛け合わせて、その結果をすべて足し合わせる演算だと理解しておけば十分です。この行列はカーネル（kernel）又はフィルタ（filter）と呼ばれます。「特徴抽出と何の関係があるのか、どうやって適用すればいいのか」と思うかもしれません。慌てなくて大丈夫です。これから説明します。</p>
-<p>直感をつかむために、例を見てみましょう。1次元のデータがあり、それを可視化したものがこちらです。可視化すると、畳み込み演算の効果が分かりやすくなります。</p>
+<p>畳み込み（convolution）は、データから特徴を抽出する為に使われる演算です。データは1次元、2次元、3次元のいずれでも構いません。具体例で演算の仕組みを説明します。今の所は、数値を並べた行列をデータの上で少しずつずらし、重なった位置の数値同士を掛け合わせて、その結果を総て足し合わせる演算だと理解しておけば十分です。この行列はカーネル（kernel）又はフィルタ（filter）と呼ばれます。</p>
+<p>「特徴抽出と何の関係があるのか、どうやって適用すればいいのか」と思うかもしれません。慌てなくて大丈夫です。これから説明します。</p>
+<p>直感をつかむ為に、例を見てみましょう。1次元のデータが有り、それを可視化したものがこちらです。可視化すると、畳み込み演算の効果が分かり易くなります。</p>
 <div class="flex justify-center">
     <img src="https://huggingface.co/datasets/hf-vision/course-assets/resolve/main/CNNs/kernel_image.png" alt="カーネルのイメージ">
 </div>
 
-<p>カーネルは [-1, 1] です。まず一番左の要素にカーネルを置き、重なった数値同士を掛けて合計します。カーネルでは、その要素の1つを中心として扱います。ここでは右側の要素である 1 を中心とします。左側には想像上のゼロがあると仮定します。これはパッド（pad）と呼ばれるもので、後ほど改めて出てきます。カーネルの中心はすべての要素に触れなければいけないので、便宜上、要素の左側にゼロを置きます。パディングをしなければ、-1 は一番左の要素と掛けられますが、1 が一番左の要素に触れなくなってしまうため、パディングを適用するのです。どのような様子か見てみましょう。</p>
+<p>カーネルは [-1, 1] です。先ず一番左の要素にカーネルを置き、重なった数値同士を掛けて合計します。カーネルでは、その要素の1つを中心として扱います。ここでは右側の要素である 1 を中心とします。左側には想像上のゼロが有ると仮定します。これはパッド（pad）と呼ばれるもので、後ほど改めて出てきます。</p>
+<p>カーネルの中心は全ての要素に触れなければいけないので、便宜上、要素の左側にゼロを置きます。パディングをしなければ、-1 は一番左の要素と掛けられますが、1 が一番左の要素に触れなくなってしまう為、パディングを適用するのです。どのような様子か見てみましょう。</p>
 <div class="flex justify-center">
     <img src="https://huggingface.co/datasets/hf-vision/course-assets/resolve/main/CNNs/1d_conv.jpg" alt="1次元畳み込み">
 </div>
 
-<p>一番左の要素（現在はパッドです）に -1 を掛け、最初の要素（ゼロ）に 1 を掛けて合計すると 0 になり、それを記録します。次に、カーネルを1つ分ずらして同じことを行い、再び記録します。このとき、カーネルを一度にどれだけずらすかをストライドと呼びます。通常は1ピクセルずつ移動させます。より多くのピクセル分を動かすこともできます。現在の結果（畳み込まれたデータ）は [0, 0] という配列です。</p>
+<p>一番左の要素（現在はパッドです）に -1 を掛け、最初の要素（ゼロ）に 1 を掛けて合計すると 0 になり、それを記録します。次に、カーネルを1つ分ずらして同じことを行い、再び記録します。この時、カーネルを一度にどれだけずらすかをストライドと呼びます。通常は1ピクセルずつ移動させます。より多くのピクセル分を動かすことも出来ます。現在の結果（畳み込まれたデータ）は [0, 0] という配列です。</p>
 <div class="flex justify-center">
     <img src="https://huggingface.co/datasets/hf-vision/course-assets/resolve/main/CNNs/1d_conv_multiplication.png" alt="1次元畳み込みの乗算">
 </div>
 
-<p>カーネルの右側の要素がすべての要素に触れるまでこれを繰り返すと、以下の結果が得られます。</p>
+<p>カーネルの右側の要素が全ての要素に触れるまでこれを繰り返すと、以下の結果が得られます。</p>
 <div class="flex justify-center">
     <img src="https://huggingface.co/datasets/hf-vision/course-assets/resolve/main/CNNs/1d_conv_result.png" alt="1次元畳み込みの結果">
 </div>
 
-<p>何か気づきましたか。このフィルタはデータの変化率（導関数！）を与えています。これが、データから抽出できる特徴の1つです。可視化してみましょう。</p>
+<p>何か気づきましたか。このフィルタはデータの変化率（導関数！）を与えています。これが、データから抽出出来る特徴の1つです。可視化してみましょう。</p>
 <div class="flex justify-center">
     <img src="https://huggingface.co/datasets/hf-vision/course-assets/resolve/main/CNNs/convolved_illustrated.png" alt="畳み込みの図解">
 </div>
 
-<p>畳み込まれたデータ（畳み込みの結果）は特徴マップ（feature map）と呼ばれます。抽出できる特徴、つまりデータに関する特性や変化率を示しているので、この名前は理にかなっています。</p>
+<p>畳み込まれたデータ（畳み込みの結果）は特徴マップ（feature map）と呼ばれます。抽出出来る特徴、つまりデータに関する特性や変化率を示しているので、この名前は理にかなっています。</p>
 <p>これはまさにエッジ検出フィルタが行っていることです。次に2次元データで見てみましょう。今度はカーネルが変わります。3×3 のカーネルを使います（2×2 でも構いません）。</p>
 <div class="flex justify-center">
     <img src="https://huggingface.co/datasets/hf-vision/course-assets/resolve/main/CNNs/2d_conv.png" alt="2次元畳み込み">
@@ -235,7 +237,7 @@ window.MathJax = { tex: { inlineMath: [['$', '$'], ['\\(', '\\)']], displayMath:
     <img src="https://huggingface.co/datasets/hf-vision/course-assets/resolve/main/CNNs/2d_conv_matrix.png" alt="2次元畳み込み">
 </div>
 
-<p>これを画像だと思ってください。ここから横方向の変化を抽出したいとします。フィルタの中心はすべてのピクセルに触れなければいけないので、画像にパディングを施します。</p>
+<p>これを画像だと思って下さい。ここから横方向の変化を抽出したいとします。フィルタの中心は全てのピクセルに触れなければいけないので、画像にパディングを施します。</p>
 <div class="flex justify-center">
     <img src="https://huggingface.co/datasets/hf-vision/course-assets/resolve/main/CNNs/padding.png" alt="パディング">
 </div>
@@ -257,17 +259,18 @@ window.MathJax = { tex: { inlineMath: [['$', '$'], ['\\(', '\\)']], displayMath:
 
 <p><a href="https://en.wikipedia.org/wiki/Prewitt_operator">Prewitt フィルタ</a>を反転させると、縦方向の変化が得られます。<a href="https://en.wikipedia.org/wiki/Sobel_operator">Sobel フィルタ</a>も、エッジ検出で有名なフィルタです。</p>
 <h2>畳み込みニューラルネットワーク</h2>
-<p>なるほど、ではこれは深層学習とどう関係するのでしょうか。特徴を抽出するためにフィルタを力任せに探す方法は、すべての画像に対してうまくいくわけではありません。重要な情報を抽出したり、画像中の物体を検出したりするための最適なフィルタを何らかの方法で見つけられたらどうでしょうか。そこで登場するのが畳み込みニューラルネットワークです。画像を様々なフィルタで畳み込み、特徴マップのピクセルがやがて最適化すべきパラメータとなり、最終的にその問題に最適なフィルタが見つかります。</p>
+<p>なるほど、ではこれは深層学習とどう関係するのでしょうか。特徴を抽出する為にフィルタを力任せに探す方法は、全ての画像に対してうまくいく訳ではありません。重要な情報を抽出したり、画像中の物体を検出したりする為の最適なフィルタを何らかの方法で見つけられたらどうでしょうか。そこで登場するのが畳み込みニューラルネットワークです。画像を様々なフィルタで畳み込み、特徴マップのピクセルがやがて最適化すべきパラメータとなり、最終的にその問題に最適なフィルタが見つかります。</p>
 <p>考え方は、フィルタを使って情報を抽出するというものです。複数のフィルタをランダムに初期化し、特徴マップを作り、それを分類器に入力して、バックプロパゲーションを行います。その前に、「プーリング」と呼ばれるものを紹介します。</p>
-<p>上の例で分かるように、特徴マップには変化を示すピクセルが数多くあります。エッジがあることを知るには、変化（エッジや角など何でも）が存在することだけが分かれば十分です。</p>
+<p>上の例で分かるように、特徴マップには変化を示すピクセルが数多く有ります。エッジが有ることを知るには、変化（エッジや角など何でも）が存在することだけが分かれば十分です。</p>
 <div class="flex justify-center">
     <img src="https://huggingface.co/datasets/hf-vision/course-assets/resolve/main/CNNs/max_pooling.png" alt="プーリング">
 </div>
 
-<p>上の例では、2つのうち1つだけが得られれば十分でした。そうすれば、特徴を保ったまま保持するパラメータを減らせます。特徴マップの中で最も重要な要素を取り出すこの操作がプーリングです。プーリングを行うと、エッジがどこにあるかという正確なピクセルの位置は失われますが、保持するパラメータは少なくなります。またこの方法により、特徴抽出の仕組みが小さな変化に対して堅牢になります。たとえば、画像に顔があることを知るには、2つの目、鼻、口があることが分かればよく、それらの要素間の距離や大きさは顔ごとに変わる傾向がありますが、プーリングによってモデルはそうした変化に対して堅牢になります。プーリングのもう1つの利点は、様々な入力サイズに対応しやすくなることです。以下は最大プーリング（max pooling）の演算で、4ピクセルごとに最大のピクセルを取得します。プーリングには平均プーリング、重み付きプーリング、L2 プーリングなど、様々な種類があります。</p>
-<p>簡単な CNN アーキテクチャを構築してみましょう。説明のために Keras の例を使い、何が起きているかを順に追っていきます。以下がモデルです（繰り返しますが、慌てなくて大丈夫です。順に説明します）。</p>
-<p>Keras の Sequential API が何をするか分からない場合のために説明すると、レゴブロックのように層を積み重ねて接続します。各層にはそれぞれハイパーパラメータがあります。Conv2D 層では畳み込みフィルタの数、カーネルサイズ、活性化関数を指定します。MaxPooling2D 層ではプーリングサイズを、Dense 層では出力ユニット数を指定します。今は、それぞれの層でこうした設定を行うのだと理解しておけば大丈夫です。</p>
-<p>ほとんどの ConvNet の実装では、画像処理のようにカーネルをすべてのピクセルに触れさせるためのパディングは行いません。ゼロでパディングをすると、境界にも特徴があるかもしれないという前提が入り、計算の複雑さも増します。そのため、最初の入力サイズが (26,26) になり、境界沿いの情報が失われます。</p>
+<p>上の例では、2つの内1つだけが得られれば十分でした。そうすれば、特徴を保ったまま保持するパラメータを減らせます。特徴マップの中で最も重要な要素を取り出すこの操作がプーリングです。プーリングを行うと、エッジがどこに在るかという正確なピクセルの位置は失われますが、保持するパラメータは少なくなります。またこの方法により、特徴抽出の仕組みが小さな変化に対して堅牢になります。例えば、画像に顔が有ることを知るには、2つの目、鼻、口が有ることが分かればよく、それらの要素間の距離や大きさは顔ごとに変わる傾向が有りますが、プーリングによってモデルはそうした変化に対して堅牢になります。</p>
+<p>プーリングのもう1つの利点は、様々な入力サイズに対応し易くなることです。以下は最大プーリング（max pooling）の演算で、4ピクセルごとに最大のピクセルを取得します。プーリングには平均プーリング、重み付きプーリング、L2 プーリングなど、様々な種類が有ります。</p>
+<p>簡単な CNN アーキテクチャを構築してみましょう。説明の為に Keras の例を使い、何が起きているかを順に追っていきます。以下がモデルです（繰り返しますが、慌てなくて大丈夫です。順に説明します）。</p>
+<p>Keras の Sequential API が何をするか分からない場合の為に説明すると、レゴブロックのように層を積み重ねて接続します。各層にはそれぞれハイパーパラメータが有ります。Conv2D 層では畳み込みフィルタの数、カーネルサイズ、活性化関数を指定します。MaxPooling2D 層ではプーリングサイズを、Dense 層では出力ユニット数を指定します。今は、それぞれの層でこうした設定を行うのだと理解しておけば大丈夫です。</p>
+<p>殆どの ConvNet の実装では、画像処理のようにカーネルを全てのピクセルに触れさせる為のパディングは行いません。ゼロでパディングをすると、境界にも特徴が有るかもしれないという前提が入り、計算の複雑さも増します。その為、最初の入力サイズが (26,26) になり、境界沿いの情報が失われます。</p>
 <div class="codehilite"><pre><span></span><code><span class="n">model</span> <span class="o">=</span> <span class="n">keras</span><span class="o">.</span><span class="n">Sequential</span><span class="p">(</span>
     <span class="p">[</span>
         <span class="n">keras</span><span class="o">.</span><span class="n">Input</span><span class="p">(</span><span class="n">shape</span><span class="o">=</span><span class="n">input_shape</span><span class="p">),</span>
@@ -307,12 +310,12 @@ Non-trainable params: 0
 _________________________________________________________________
 </code></pre></div>
 
-<p>畳み込みニューラルネットワークは、入力層と畳み込み層から始まります。Keras の Conv2D 層は、カーネルの数とカーネルのサイズをパラメータとして取ります。起きていることは以下の図のとおりです。ここでは画像を32個のカーネルで畳み込み、画像と同じ大きさの特徴マップが32個得られます。</p>
+<p>畳み込みニューラルネットワークは、入力層と畳み込み層から始まります。Keras の Conv2D 層は、カーネルの数とカーネルのサイズをパラメータとして取ります。起きていることは以下の図の通りです。ここでは画像を32個のカーネルで畳み込み、画像と同じ大きさの特徴マップが32個得られます。</p>
 <div class="flex justify-center">
     <img src="https://huggingface.co/datasets/hf-vision/course-assets/resolve/main/CNNs/network_illustration.png" alt="ネットワーク">
 </div>
 
-<p>畳み込み層の後には、上述のとおり、保持するパラメータの数を減らし、モデルを変化に対して堅牢にするために最大プーリング層を置きます。これにより、計算されるパラメータの数が減ります。</p>
+<p>畳み込み層の後には、上述の通り、保持するパラメータの数を減らし、モデルを変化に対して堅牢にする為に最大プーリング層を置きます。これにより、計算されるパラメータの数が減ります。</p>
 <div class="flex justify-center">
     <img src="https://huggingface.co/datasets/hf-vision/course-assets/resolve/main/CNNs/network_illustration_2.png" alt="ネットワーク">
 </div>
@@ -320,14 +323,15 @@ _________________________________________________________________
 <div class="flex justify-center">
     <img src="https://huggingface.co/datasets/hf-vision/course-assets/resolve/main/CNNs/network_illustration_3.png" alt="ネットワーク">
 </div>
-<p>続いて、過学習を避けるためにパラメータの一部を落とすドロップアウトを使います。最後に、重みの最終形が Dense 層を通って分類され、バックプロパゲーションが行われます。</p>
+<p>続いて、過学習を避ける為にパラメータの一部を落とすドロップアウトを使います。最後に、重みの最終形が Dense 層を通って分類され、バックプロパゲーションが行われます。</p>
 <h3>畳み込みニューラルネットワークにおけるバックプロパゲーションの理論</h3>
-<p>ここではバックプロパゲーションはどのように機能するのでしょうか。最適化したいのは最適なカーネルの値であり、それが重みとなります。最終的には、分類器がピクセル値、カーネル、クラスの間の関係を見つけ出すことが期待されます。つまり、ピクセル値に初期の重み（カーネルの要素）を使って畳み込みを行い、プーリングと活性化を経て得られた値を、長い1次元の配列に並べたものを使います。これらの重みを、「猫と犬の写真を区別するために、どのカーネルを適用すべきか」という問いに答えられるよう更新します。CNN の訓練の要点は最適なカーネルを見つけることであり、それはバックプロパゲーションを使って見つけられます。CNN 以前は、特徴を抽出するために人々が自ら画像にたくさんのフィルタを試していましたが、汎用的なフィルタ（上で見た Prewitt や Sobel など）は、画像が同じデータセット内でも大きく異なり得るため、すべての画像に必ずしも有効とは限りません。だからこそ CNN は従来の画像処理技術を上回る性能を発揮します。</p>
-<p>畳み込みニューラルネットワークを使うと、ストレージの面でもいくつかの利点があります。</p>
+<p>ここではバックプロパゲーションはどのように機能するのでしょうか。最適化したいのは最適なカーネルの値であり、それが重みとなります。最終的には、分類器がピクセル値、カーネル、クラスの間の関係を見つけ出すことが期待されます。つまり、ピクセル値に初期の重み（カーネルの要素）を使って畳み込みを行い、プーリングと活性化を経て得られた値を、長い1次元の配列に並べたものを使います。これらの重みを、「猫と犬の写真を区別する為に、どのカーネルを適用すべきか」という問いに答えられるよう更新します。CNN の訓練の要点は最適なカーネルを見つけることであり、それはバックプロパゲーションを使って見つけられます。</p>
+<p>CNN 以前は、特徴を抽出する為に人々が自ら画像に沢山のフィルタを試していましたが、汎用的なフィルタ（上で見た Prewitt や Sobel など）は、画像が同じデータセット内でも大きく異なり得る為、全ての画像に必ずしも有効とは限りません。だからこそ CNN は従来の画像処理技術を上回る性能を発揮します。</p>
+<p>畳み込みニューラルネットワークを使うと、ストレージの面でもいくつかの利点が有ります。</p>
 <h3>パラメータ共有</h3>
-<p>畳み込みニューラルネットワークでは、すべてのピクセル、すべてのチャンネル、すべての画像に対して同じフィルタで畳み込みを行います。これによりパラメータの保持の面で利点があり、全結合ニューラルネットワークで画像を処理するよりもはるかに効率的です。これは「重みの共有（weight tying）」と呼ばれ、その重みは「tied weights」と呼ばれます。これはオートエンコーダでも見られる仕組みです。</p>
+<p>畳み込みニューラルネットワークでは、全てのピクセル、全てのチャンネル、全ての画像に対して同じフィルタで畳み込みを行います。これによりパラメータの保持の面で利点があり、全結合ニューラルネットワークで画像を処理するよりもはるかに効率的です。これは「重みの共有（weight tying）」と呼ばれ、その重みは「tied weights」と呼ばれます。これはオートエンコーダでも見られる仕組みです。</p>
 <h3>疎な相互作用</h3>
-<p>全結合ニューラルネットワークでは、データ全体を一度に入力します。画像には数百から数千のピクセルがあるため、これは非常に負担が大きくなります。一方、ConvNet では、特徴を抽出するために使うカーネルが小さいです。これは疎な相互作用（sparse interaction）と呼ばれ、使用するメモリを減らす助けになります。</p>
+<p>全結合ニューラルネットワークでは、データ全体を一度に入力します。画像には数百から数千のピクセルが有る為、これは非常に負担が大きくなります。一方、ConvNet では、特徴を抽出する為に使うカーネルが小さいです。これは疎な相互作用（sparse interaction）と呼ばれ、使用するメモリを減らす助けになります。</p>
 </article>
 
 <nav class="page-nav"><a class="nav-link prev" href="../../unit1/feature-extraction/real-world-applications.html">← 前へ: コンピュータビジョンにおける特徴抽出の実社会での応用</a><a class="nav-link toc-link" href="../../index.html">目次へ</a><a class="nav-link next" href="vgg.html">次へ →: 大規模画像認識のための非常に深い畳み込みネットワーク（2014）</a></nav>

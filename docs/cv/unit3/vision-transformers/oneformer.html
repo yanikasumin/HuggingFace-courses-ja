@@ -86,7 +86,7 @@ window.MathJax = { tex: { inlineMath: [['$', '$'], ['\\(', '\\)']], displayMath:
 </ul>
 <p class="side-group">Unit 3 - Vision Transformer</p>
 <ul class="side-list">
-<li><a class="side-link" href="vision-transformers-for-image-classification.html">画像分類のための Vision Transformer の転移学習とファインチューニング</a></li>
+<li><a class="side-link" href="vision-transformers-for-image-classification.html">画像分類の為の Vision Transformer の転移学習とファインチューニング</a></li>
 <li><a class="side-link" href="swin-transformer.html">Swin Transformer</a></li>
 <li><a class="side-link" href="cvt.html">Convolutional Vision Transformer (CvT)</a></li>
 <li><a class="side-link" href="dinat.html">Dilated Neighborhood Attention Transformer（DiNAT）</a></li>
@@ -146,7 +146,7 @@ window.MathJax = { tex: { inlineMath: [['$', '$'], ['\\(', '\\)']], displayMath:
 <li><a class="side-link" href="../../unit8/terminologies/camera-models.html">カメラモデル</a></li>
 <li><a class="side-link" href="../../unit8/terminologies/linear-algebra.html">3Dデータのための線形代数の基礎</a></li>
 <li><a class="side-link" href="../../unit8/terminologies/representations.html">3Dデータの表現方法</a></li>
-<li><a class="side-link" href="../../unit8/monocular_depth_estimation.html">単眼深度推定の概要：メトリック深度と相対深度、Depth Anything V2 のファインチューニング 👐 📚</a></li>
+<li><a class="side-link" href="../../unit8/monocular_depth_estimation.html">単眼深度推定の概要：メトリック深度と相対深度、Depth Anything V2 のファインチューニング</a></li>
 <li><a class="side-link" href="../../unit8/3d-vision/nvs.html">新規視点合成（Novel View Synthesis）</a></li>
 <li><a class="side-link" href="../../unit8/3d_measurements_stereo_vision.html">はじめに</a></li>
 <li><a class="side-link" href="../../unit8/nerf.html">Neural Radiance Fields（NeRF）</a></li>
@@ -176,9 +176,9 @@ window.MathJax = { tex: { inlineMath: [['$', '$'], ['\\(', '\\)']], displayMath:
 <ul class="side-list">
 <li><a class="side-link" href="../../unit12/pre-intro.html">CV モデルにおける倫理的基盤を探る</a></li>
 <li><a class="side-link" href="../../unit12/introduction.html">導入</a></li>
-<li><a class="side-link" href="../../unit12/ethics-bias-ai.html">AI における倫理とバイアス 🧑‍🤝‍🧑</a></li>
-<li><a class="side-link" href="../../unit12/conclusion.html">Hugging Face の取り組み：倫理と社会 🤗🌎</a></li>
-<li><a class="side-link" href="../../unit12/supplementary-material.html">参考文献とリソース 🤗🌎</a></li>
+<li><a class="side-link" href="../../unit12/ethics-bias-ai.html">AI における倫理とバイアス</a></li>
+<li><a class="side-link" href="../../unit12/conclusion.html">Hugging Face の取り組み：倫理と社会 🤗</a></li>
+<li><a class="side-link" href="../../unit12/supplementary-material.html">参考文献とリソース 🤗</a></li>
 </ul>
 <p class="side-group">Unit 13 - 展望</p>
 <ul class="side-list">
@@ -196,32 +196,35 @@ window.MathJax = { tex: { inlineMath: [['$', '$'], ['\\(', '\\)']], displayMath:
 <h1>OneFormer：1つの Transformer で画像セグメンテーションを統合する</h1>
 <p><img align="center" width="1050" height="303" src="https://huggingface.co/datasets/hf-vision/course-assets/resolve/main/oneformer/teaser.svg"></p>
 <h2>はじめに</h2>
-<p>OneFormer は、画像セグメンテーションに対する画期的なアプローチです。画像セグメンテーションは、画像を意味のある領域に分割するコンピュータビジョンのタスクです。従来の手法では、個々の物体を識別するインスタンスセグメンテーション（instance segmentation）や、領域にカテゴリのラベルを付けるセマンティックセグメンテーション（semantic segmentation）など、タスクごとに別々のモデルとアーキテクチャを使っていました。より最近の試みでは、アーキテクチャを共有してこれらのタスクを統一しようとしましたが、それでもタスクごとに別々の訓練が必要でした。</p>
-<p>ここに登場する OneFormer は、こうした課題を克服するために設計された汎用画像セグメンテーションのフレームワークです。独自のマルチタスク手法を導入し、セマンティック、インスタンス、パノプティックの各セグメンテーションタスクを、タスクごとに別々に訓練することなく、1つのモデルで処理できます。中核となる工夫は、タスク条件付き共同訓練です。モデルはタスク入力によって誘導され、訓練時も推論時も、異なるタスクに動的に対応できます。</p>
-<p>この進歩により、訓練プロセスがシンプルになるだけでなく、様々なデータセットで既存のモデルを上回る性能が得られます。OneFormer は、すべてのタスクに必要な正解情報を統一するパノプティックアノテーションを使うことでこれを実現しています。更に、このフレームワークは query-text 対照学習を導入し、タスク同士の区別をより明確にして、全体の性能を高めています。</p>
+<p>OneFormer は、画像セグメンテーションに対する画期的なアプローチです。画像セグメンテーションは、画像を意味の有る領域に分割するコンピュータビジョンのタスクです。従来の手法では、個々の物体を識別するインスタンスセグメンテーション（instance segmentation）や、領域にカテゴリのラベルを付けるセマンティックセグメンテーション（semantic segmentation）など、タスクごとに別々のモデルとアーキテクチャを使っていました。より最近の試みでは、アーキテクチャを共有してこれらのタスクを統一しようとしましたが、それでもタスクごとに別々の訓練が必要でした。</p>
+<p>ここに登場する OneFormer は、こうした課題を克服する為に設計された汎用画像セグメンテーションのフレームワークです。独自のマルチタスク手法を導入し、セマンティック、インスタンス、パノプティックの各セグメンテーションタスクを、タスクごとに別々に訓練することなく、1つのモデルで処理出来ます。中核となる工夫は、タスク条件付き共同訓練です。モデルはタスク入力によって誘導され、訓練時も推論時も、異なるタスクに動的に対応出来ます。</p>
+<p>この進歩により、訓練プロセスがシンプルになるだけでなく、様々なデータセットで既存のモデルを上回る性能が得られます。OneFormer は、全てのタスクに必要な正解情報を統一するパノプティックアノテーションを使うことでこれを実現しています。更に、このフレームワークは query-text 対照学習を導入し、タスク同士の区別をより明確にして、全体の性能を高めています。</p>
 <h2>OneFormer の背景</h2>
 <p><img alt="OneFormer の手法" src="https://huggingface.co/datasets/hf-vision/course-assets/resolve/main/oneformer/oneformer.svg" />
 <em>OneFormer 論文から引用した画像</em></p>
-<p>OneFormer の重要性を理解するために、画像セグメンテーションの背景を見ていきます。画像処理において、セグメンテーションは画像を異なる部分に分割する処理で、物体の認識やシーンの内容理解といったタスクに欠かせません。従来、セグメンテーションの主なタスクは2種類でした。1つはセマンティックセグメンテーション（semantic segmentation）で、ピクセルに「道路」や「空」のようなカテゴリのラベルを付けます。もう1つはインスタンスセグメンテーション（instance segmentation）で、明確な境界を持つ個々の物体を識別します。</p>
+<p>OneFormer の重要性を理解する為に、画像セグメンテーションの背景を見ていきます。画像処理において、セグメンテーションは画像を異なる部分に分割する処理で、物体の認識やシーンの内容理解といったタスクに欠かせません。従来、セグメンテーションの主なタスクは2種類でした。1つはセマンティックセグメンテーション（semantic segmentation）で、ピクセルに「道路」や「空」のようなカテゴリのラベルを付けます。もう1つはインスタンスセグメンテーション（instance segmentation）で、明確な境界を持つ個々の物体を識別します。</p>
 <p>その後、研究者らはセマンティックセグメンテーションとインスタンスセグメンテーションを統一する方法として、パノプティックセグメンテーション（panoptic segmentation）を提案しました。しかし、こうした進歩があっても課題は残りました。パノプティックセグメンテーション向けに設計された既存のモデルでも、タスクごとに別々の訓練が必要で、せいぜい半汎用にとどまっていたのです。</p>
-<p>ここで OneFormer が状況を変えます。新しいアプローチとして、マルチタスクの汎用アーキテクチャを導入しました。考え方はシンプルです。このフレームワークを、1つの汎用アーキテクチャ、1つのモデル、1つのデータセットだけで、1回だけ訓練します。すると OneFormer は、セマンティック、インスタンス、パノプティックの各セグメンテーションタスクで、特化したフレームワークを上回ります。この進歩は、単に精度が上がるという話ではありません。画像セグメンテーションをより汎用的で効率的なものにする点に意味があります。OneFormer があれば、タスクごとに大量のリソースを使って別々に訓練する必要は過去のものになります。</p>
+<p>ここで OneFormer が状況を変えます。新しいアプローチとして、マルチタスクの汎用アーキテクチャを導入しました。考え方はシンプルです。このフレームワークを、1つの汎用アーキテクチャ、1つのモデル、1つのデータセットだけで、1回だけ訓練します。すると OneFormer は、セマンティック、インスタンス、パノプティックの各セグメンテーションタスクで、特化したフレームワークを上回ります。</p>
+<p>この進歩は、単に精度が上がるという話ではありません。画像セグメンテーションをより汎用的で効率的なものにする点に意味があります。OneFormer があれば、タスクごとに大量のリソースを使って別々に訓練する必要は過去のものになります。</p>
 <h2>OneFormer の中核となる概念</h2>
 <p><img alt="タスク条件付き共同訓練" src="https://huggingface.co/datasets/hf-vision/course-assets/resolve/main/oneformer/text_gen.svg" /></p>
 <p>OneFormer を際立たせている主な特徴を分解して見ていきます。</p>
 <h3>Task-Dynamic Mask</h3>
 <p>OneFormer は「Task-Dynamic Mask」という仕組みを使い、様々な画像セグメンテーションタスクに対応します。モデルに画像を入力すると、この仕組みによって、シーン全体に注目するのか、境界の明確な個々の物体を識別するのか、あるいは両方を組み合わせるのかを判断します。</p>
 <h3>Task-Conditioned Joint Training</h3>
-<p>OneFormer の大きな特徴の1つが、タスク条件付き共同訓練です。セマンティック、インスタンス、パノプティックの各セグメンテーションを別々に訓練するのではなく、訓練中に各タスクを一様にサンプリングします。この方法により、モデルは異なるセグメンテーションタスクをまとめて学習し、それらのタスクに対して汎化できます。タスクトークンを通じてモデルに処理対象のタスクを伝えることで、訓練の手順を統一し、タスクごとに専用のアーキテクチャやモデル、データセットを用意する必要性を減らします。その結果、訓練パイプラインを簡素化し、必要な計算資源も削減できます。</p>
+<p>OneFormer の大きな特徴の1つが、タスク条件付き共同訓練です。セマンティック、インスタンス、パノプティックの各セグメンテーションを別々に訓練するのではなく、訓練中に各タスクを一様にサンプリングします。この方法により、モデルは異なるセグメンテーションタスクをまとめて学習し、それらのタスクに対して汎化出来ます。タスクトークンを通じてモデルに処理対象のタスクを伝えることで、訓練の手順を統一し、タスクごとに専用のアーキテクチャやモデル、データセットを用意する必要性を減らします。その結果、訓練パイプラインを簡素化し、必要な計算資源も削減出来ます。</p>
 <h3>Query-Text Contrastive Loss</h3>
-<p>最後に、「Query-Text Contrastive Loss」について説明します。OneFormer がタスクやクラス同士の違いを自ら学ぶための方法、と考えてください。訓練プロセスでは、モデルは画像から取り出した特徴（クエリ）と、対応するテキスト記述（「車が写った写真」のようなもの）を比較します。これにより、モデルは各タスクの固有の特徴を理解し、異なるクラス同士の混同を減らせます。OneFormer の「Task-Dynamic Mask」は、マルチタスクのアシスタントのように汎用的に振る舞えるようにするものです。そして「Query-Text Contrastive Loss」は、視覚的な特徴とテキスト記述を比べることで、各タスクの具体的な内容を学ぶ助けになります。</p>
-<p>これらの中核となる概念を組み合わせることで、OneFormer は画像セグメンテーションのための賢く効率的なツールになり、プロセスをより汎用的で身近なものにします。 </p>
+<p>最後に、「Query-Text Contrastive Loss」について説明します。OneFormer がタスクやクラス同士の違いを自ら学ぶ為の方法、と考えて下さい。訓練プロセスでは、モデルは画像から取り出した特徴（クエリ）と、対応するテキスト記述（「車が写った写真」のようなもの）を比較します。これにより、モデルは各タスクの固有の特徴を理解し、異なるクラス同士の混同を減らせます。</p>
+<p>OneFormer の「Task-Dynamic Mask」は、マルチタスクのアシスタントのように汎用的に振る舞えるようにするものです。そして「Query-Text Contrastive Loss」は、視覚的な特徴とテキスト記述を比べることで、各タスクの具体的な内容を学ぶ助けになります。</p>
+<p>これらの中核となる概念を組み合わせることで、OneFormer は画像セグメンテーションの為の賢く効率的なツールになり、プロセスをより汎用的で身近なものにします。 </p>
 <h2>まとめ</h2>
 <p><img alt="結果の比較" src="https://huggingface.co/datasets/hf-vision/course-assets/resolve/main/oneformer/plots.svg" />
 <em>OneFormer 論文から引用した画像</em></p>
-<p>まとめると、OneFormer フレームワークは画像セグメンテーション分野における画期的なアプローチです。様々な領域にわたってこのタスクをシンプルにし、統一することを目指しています。セグメンテーションタスクごとに特化したアーキテクチャに頼る従来の手法とは異なり、OneFormer は新しいマルチタスクの汎用アーキテクチャを導入しました。汎用データセットで1回だけ訓練した1つのモデルで、既存のフレームワークを上回ります。更に、訓練時に query-text 対照損失を取り入れることで、モデルがタスク間及びクラス間の違いを学習する能力が高まります。OneFormer は、コンピュータビジョンにおける最近の成功に着想を得た Transformer ベースのアーキテクチャを使い、タスクへの感度を高めるためにタスク誘導クエリを導入しています。結果は目覚ましく、OneFormer は ADE20k、Cityscapes、COCO といったベンチマークデータセットで、セマンティック、インスタンス、パノプティックの各セグメンテーションタスクにおいて最先端のモデルを上回ります。このフレームワークの性能は、新しい ConvNeXt 及び DiNAT バックボーンによって更に高まります。</p>
-<p>要するに、OneFormer は汎用的で身近な画像セグメンテーションに向けた大きな一歩です。多様なセグメンテーションタスクを処理できる1つのモデルを導入することで、このフレームワークはセグメンテーションプロセスを効率化し、必要なリソースを減らします。</p>
+<p>まとめると、OneFormer フレームワークは画像セグメンテーション分野における画期的なアプローチです。様々な領域にわたってこのタスクをシンプルにし、統一することを目指しています。セグメンテーションタスクごとに特化したアーキテクチャに頼る従来の手法とは異なり、OneFormer は新しいマルチタスクの汎用アーキテクチャを導入しました。汎用データセットで1回だけ訓練した1つのモデルで、既存のフレームワークを上回ります。更に、訓練時に query-text 対照損失を取り入れることで、モデルがタスク間及びクラス間の違いを学習する能力が高まります。OneFormer は、コンピュータビジョンにおける最近の成功に着想を得た Transformer ベースのアーキテクチャを使い、タスクへの感度を高める為にタスク誘導クエリを導入しています。</p>
+<p>結果は目覚ましく、OneFormer は ADE20k、Cityscapes、COCO といったベンチマークデータセットで、セマンティック、インスタンス、パノプティックの各セグメンテーションタスクにおいて最先端のモデルを上回ります。このフレームワークの性能は、新しい ConvNeXt 及び DiNAT バックボーンによって更に高まります。</p>
+<p>要するに、OneFormer は汎用的で身近な画像セグメンテーションに向けた大きな一歩です。多様なセグメンテーションタスクを処理出来る1つのモデルを導入することで、このフレームワークはセグメンテーションプロセスを効率化し、必要なリソースを減らします。</p>
 <h2>モデルの使用例</h2>
-<p>モデルの使用例を見ていきます。DiNAT バックボーンには NATTEN ライブラリが必要で、インストールに時間がかかる場合があります。</p>
+<p>モデルの使用例を見ていきます。DiNAT バックボーンには NATTEN ライブラリが必要で、インストールに時間が掛かる場合があります。</p>
 <div class="codehilite"><pre><span></span><code>!pip<span class="w"> </span>install<span class="w"> </span>-q<span class="w"> </span>natten<span class="w"> </span>
 </code></pre></div>
 

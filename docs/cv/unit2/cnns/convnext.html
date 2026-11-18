@@ -86,7 +86,7 @@ window.MathJax = { tex: { inlineMath: [['$', '$'], ['\\(', '\\)']], displayMath:
 </ul>
 <p class="side-group">Unit 3 - Vision Transformer</p>
 <ul class="side-list">
-<li><a class="side-link" href="../../unit3/vision-transformers/vision-transformers-for-image-classification.html">画像分類のための Vision Transformer の転移学習とファインチューニング</a></li>
+<li><a class="side-link" href="../../unit3/vision-transformers/vision-transformers-for-image-classification.html">画像分類の為の Vision Transformer の転移学習とファインチューニング</a></li>
 <li><a class="side-link" href="../../unit3/vision-transformers/swin-transformer.html">Swin Transformer</a></li>
 <li><a class="side-link" href="../../unit3/vision-transformers/cvt.html">Convolutional Vision Transformer (CvT)</a></li>
 <li><a class="side-link" href="../../unit3/vision-transformers/dinat.html">Dilated Neighborhood Attention Transformer（DiNAT）</a></li>
@@ -146,7 +146,7 @@ window.MathJax = { tex: { inlineMath: [['$', '$'], ['\\(', '\\)']], displayMath:
 <li><a class="side-link" href="../../unit8/terminologies/camera-models.html">カメラモデル</a></li>
 <li><a class="side-link" href="../../unit8/terminologies/linear-algebra.html">3Dデータのための線形代数の基礎</a></li>
 <li><a class="side-link" href="../../unit8/terminologies/representations.html">3Dデータの表現方法</a></li>
-<li><a class="side-link" href="../../unit8/monocular_depth_estimation.html">単眼深度推定の概要：メトリック深度と相対深度、Depth Anything V2 のファインチューニング 👐 📚</a></li>
+<li><a class="side-link" href="../../unit8/monocular_depth_estimation.html">単眼深度推定の概要：メトリック深度と相対深度、Depth Anything V2 のファインチューニング</a></li>
 <li><a class="side-link" href="../../unit8/3d-vision/nvs.html">新規視点合成（Novel View Synthesis）</a></li>
 <li><a class="side-link" href="../../unit8/3d_measurements_stereo_vision.html">はじめに</a></li>
 <li><a class="side-link" href="../../unit8/nerf.html">Neural Radiance Fields（NeRF）</a></li>
@@ -176,9 +176,9 @@ window.MathJax = { tex: { inlineMath: [['$', '$'], ['\\(', '\\)']], displayMath:
 <ul class="side-list">
 <li><a class="side-link" href="../../unit12/pre-intro.html">CV モデルにおける倫理的基盤を探る</a></li>
 <li><a class="side-link" href="../../unit12/introduction.html">導入</a></li>
-<li><a class="side-link" href="../../unit12/ethics-bias-ai.html">AI における倫理とバイアス 🧑‍🤝‍🧑</a></li>
-<li><a class="side-link" href="../../unit12/conclusion.html">Hugging Face の取り組み：倫理と社会 🤗🌎</a></li>
-<li><a class="side-link" href="../../unit12/supplementary-material.html">参考文献とリソース 🤗🌎</a></li>
+<li><a class="side-link" href="../../unit12/ethics-bias-ai.html">AI における倫理とバイアス</a></li>
+<li><a class="side-link" href="../../unit12/conclusion.html">Hugging Face の取り組み：倫理と社会 🤗</a></li>
+<li><a class="side-link" href="../../unit12/supplementary-material.html">参考文献とリソース 🤗</a></li>
 </ul>
 <p class="side-group">Unit 13 - 展望</p>
 <ul class="side-list">
@@ -197,17 +197,18 @@ window.MathJax = { tex: { inlineMath: [['$', '$'], ['\\(', '\\)']], displayMath:
 <h2>はじめに</h2>
 <p>近年、Vision Transformer（ViT）の登場によって、画像認識の最先端で使われるモデルは、従来の CNN を中心としたものから ViT を採用したものへと急速に移り変わりました。一方、研究によって、CNN にも ViT の設計上の工夫を数多く取り入れられることが分かってきました。ConvNeXt は、こうした工夫を取り入れて従来の畳み込みモデルを大幅に改善したモデルです。精度とスケーラビリティの両面で、ViT に匹敵する結果を達成しています。</p>
 <h2>主な改良点</h2>
-<p>ConvNeXt 論文の著者らは、標準的な ResNet（ResNet-50）を出発点として、Vision Transformer の階層構造を参考にしながら、モデルの構造を段階的に改良しました。主な改良点は次のとおりです。
+<p>ConvNeXt 論文の著者らは、標準的な ResNet（ResNet-50）を出発点として、Vision Transformer の階層構造を参考にしながら、モデルの構造を段階的に改良しました。主な改良点は次の通りです。
 - 訓練手法
 - マクロ設計
 - ResNeXt 化
 - 逆ボトルネック（Inverted Bottleneck）
 - 大きなカーネルサイズ
 - ミクロ設計</p>
-<p>それぞれの改良点を順に見ていきます。一つ一つの工夫は、必ずしも新しいものではありません。しかし、既存の設計を体系的に取り入れ、変更を加えることで、モデルの性能をどのように改善できるかが分かります。各改良の効果を確かめるため、ImageNet-1K における変更前後のモデルの精度を比較します。</p>
+<p>それぞれの改良点を順に見ていきます。一つ一つの工夫は、必ずしも新しいものではありません。しかし、既存の設計を体系的に取り入れ、変更を加えることで、モデルの性能をどのように改善出来るかが分かります。</p>
+<p>各改良の効果を確かめる為、ImageNet-1K における変更前後のモデルの精度を比較します。</p>
 <p><img alt="ブロックの比較" src="https://huggingface.co/datasets/hf-vision/course-assets/resolve/main/block_comparison.png" /></p>
 <h2>訓練手法</h2>
-<p>研究者たちはまず、モデルの構造だけでなく、訓練方法も性能に大きく影響することに着目しました。そこで、DeiT や Swin Transformer で使われている訓練手法を ConvNeXt に取り入れました。主な変更点は次のとおりです。
+<p>研究者たちは先ず、モデルの構造だけでなく、訓練方法も性能に大きく影響することに着目しました。そこで、DeiT や Swin Transformer で使われている訓練手法を ConvNeXt に取り入れました。主な変更点は次の通りです。
 - エポック数：元の90エポックから300エポックに延長しました。
 - 最適化手法：Adam とは重み減衰の扱いが異なる AdamW オプティマイザを使います。
 - データ拡張：次の手法を使って訓練データに様々な変化を加えます。
@@ -220,27 +221,27 @@ window.MathJax = { tex: { inlineMath: [['$', '$'], ['\\(', '\\)']], displayMath:
 <h2>マクロ設計</h2>
 <p>マクロ設計とは、層の配置、各ステージへの計算負荷の配分、モデル全体の構造など、ネットワークの大まかな構成を決める設計のことです。著者らは Swin Transformer のネットワーク構造を調べ、ConvNeXt の性能向上に役立つ重要な設計上の工夫を2つ見つけました。</p>
 <h3>ステージの計算比率</h3>
-<p>ステージの計算比率とは、ニューラルネットワークモデルの各ステージ間での計算負荷の配分を指します。ResNet-50 には (3, 4, 6, 3) 個のブロックを持つ4つの主要なステージがあり、計算比率は 3:4:6:3 です。Swin Transformer の計算比率 1:1:3:1 に倣い、研究者たちは ResNet の各ステージのブロック数を (3, 4, 6, 3) から (3, 3, 9, 3) に調整しました。ステージの計算比率の変更により、モデルの精度は 78.8% から 79.4% に向上しました。</p>
+<p>ステージの計算比率とは、ニューラルネットワークモデルの各ステージ間での計算負荷の配分を指します。ResNet-50 には (3, 4, 6, 3) 個のブロックを持つ4つの主要なステージが有り、計算比率は 3:4:6:3 です。Swin Transformer の計算比率 1:1:3:1 に倣い、研究者たちは ResNet の各ステージのブロック数を (3, 4, 6, 3) から (3, 3, 9, 3) に調整しました。ステージの計算比率の変更により、モデルの精度は 78.8% から 79.4% に向上しました。</p>
 <h3>ステムを Patchify に変更</h3>
 <p>通常、ResNet の冒頭では、入力画像にストライド2の 7×7 畳み込みを適用し、続いて最大プーリングを行います。これによって、画像の縦横のサイズを4分の1に縮小します。しかし著者たちは、ステムをカーネルサイズ4×4、ストライド4の畳み込み層に置き換える方が効果的だと分かりました。これは、画像を重なりのない4×4のパッチに分け、それぞれに畳み込みを適用することに相当します。Patchify は層の数を減らしながら、画像を4分の1にダウンサンプリングするという同じ目的を果たします。この Patchify のステップにより、モデルの精度は 79.4% から 79.5% にわずかに向上しました。</p>
 <h2>ResNeXt 化</h2>
-<p>ConvNeXt は、前のセクションで説明した ResNeXt のアイデアも取り入れています。ResNeXt は標準的な ResNet よりも、浮動小数点演算回数（FLOPs）と精度のトレードオフに優れています。深さ方向畳み込み（depthwise convolution）と 1 × 1 畳み込みを使うことで、空間方向とチャンネル方向の混合を分離できます。これは Vision Transformer にも見られる特性です。深さ方向畳み込みを使うと、演算量（FLOPs）と精度の両方が下がります。しかし、チャンネル数を64から96に増やすことで、同程度の FLOPs を維持しながら、元の ResNet-50 より高い精度が得られました。この変更により、モデルの精度は 79.5% から 80.5% に向上しました。</p>
+<p>ConvNeXt は、前のセクションで説明した ResNeXt のアイデアも取り入れています。ResNeXt は標準的な ResNet よりも、浮動小数点演算回数（FLOPs）と精度のトレードオフに優れています。深さ方向畳み込み（depthwise convolution）と 1 × 1 畳み込みを使うことで、空間方向とチャンネル方向の混合を分離出来ます。これは Vision Transformer にも見られる特性です。深さ方向畳み込みを使うと、演算量（FLOPs）と精度の両方が下がります。しかし、チャンネル数を64から96に増やすことで、同程度の FLOPs を維持しながら、元の ResNet-50 より高い精度が得られました。この変更により、モデルの精度は 79.5% から 80.5% に向上しました。</p>
 <h2>逆ボトルネック</h2>
-<p>逆ボトルネックは、すべての Transformer ブロックに共通する設計上の考え方の一つです。逆ボトルネックでは、隠れ層の次元数を入力の次元数よりも大幅に大きくします。このアイデアは MobileNetV2 によってコンピュータビジョンでも使われ、広まりました。ConvNeXt はこのアイデアを取り入れ、入力層は96チャンネル、隠れ層は384チャンネルまで増やします。この手法により、モデルの精度は 80.5% から 80.6% に向上しました。</p>
+<p>逆ボトルネックは、全ての Transformer ブロックに共通する設計上の考え方の一つです。逆ボトルネックでは、隠れ層の次元数を入力の次元数よりも大幅に大きくします。このアイデアは MobileNetV2 によってコンピュータビジョンでも使われ、広まりました。ConvNeXt はこのアイデアを取り入れ、入力層は96チャンネル、隠れ層は384チャンネルまで増やします。この手法により、モデルの精度は 80.5% から 80.6% に向上しました。</p>
 <p><img alt="逆ボトルネックの比較" src="https://huggingface.co/datasets/hf-vision/course-assets/resolve/main/inverted_bottleneck.png" /></p>
 <h2>大きなカーネルサイズ</h2>
 <p>Vision Transformer の高い性能を支える要因の一つが、非局所的な自己注意（self-attention）です。これにより、画像のより広い範囲の特徴を捉えられるようになります。Swin Transformer では、注意ブロックのウィンドウサイズは少なくとも 7×7 に設定されており、ResNeXt のカーネルサイズ 3×3 を上回ります。但し、カーネルサイズを調整する前に、以下の画像に示すように深さ方向畳み込み層の位置を変更する必要があります。深さ方向畳み込み層の位置を変更すると、1×1の畳み込み層で計算を効率よく処理しながら、深さ方向畳み込み層でより広い範囲の特徴を捉えられるようになります。これにより、カーネルサイズを大きくする利点を生かせるようになります。7×7 のカーネルサイズを実装すると精度は 80.6% に維持されますが、モデル全体の FLOPs 効率は下がります。</p>
 <p><img alt="深さ方向畳み込み層を上に移動" src="https://huggingface.co/datasets/hf-vision/course-assets/resolve/main/depthwise_moveup.png" /></p>
 <h2>ミクロ設計</h2>
-<p>ここまでの変更に加えて、著者らはモデルの細かな設計も見直しました。ミクロ設計とは、活性化関数の選択や各層の構成など、モデル内部の細部に関する設計のことです。主な変更点は次のとおりです。
-- 活性化：ReLU 活性化を GELU（Gaussian Error Linear Unit）に置き換えます。そのうえで、2つの1×1畳み込み層の間にある GELU 層を1つだけ残し、残差ブロック内のほかの GELU 層は取り除きます。
+<p>ここまでの変更に加えて、著者らはモデルの細かな設計も見直しました。ミクロ設計とは、活性化関数の選択や各層の構成など、モデル内部の細部に関する設計のことです。主な変更点は次の通りです。
+- 活性化：ReLU 活性化を GELU（Gaussian Error Linear Unit）に置き換えます。その上で、2つの1×1畳み込み層の間に在る GELU 層を1つだけ残し、残差ブロック内の他の GELU 層は取り除きます。
 - 正規化：BatchNorm 層を2つ取り除き、BatchNorm を LayerNorm に置き換えることで正規化層を減らし、1×1畳み込み層の前に LayerNorm 層を1つだけ残します。
 - ダウンサンプリング層：ResNet のステージの間に個別のダウンサンプリング層を追加します。
 これらの最終的な変更により、ConvNeXt の精度は 80.6% から 82.0% に向上しました。最終的な ConvNeXt モデルは、Swin Transformer の精度 81.3% を上回ります。</p>
 <h2>モデルのコード</h2>
-<p>ConvNeXt をプログラムで利用する方法については、<a href="https://huggingface.co/docs/transformers/model_doc/convnext">Hugging Face の公式ドキュメント</a>を参照してください。</p>
+<p>ConvNeXt をプログラムで利用する方法については、<a href="https://huggingface.co/docs/transformers/model_doc/convnext">Hugging Face の公式ドキュメント</a>を参照して下さい。</p>
 <h2>参考文献</h2>
-<p>ConvNeXt アーキテクチャは、2022年に発表された論文「A ConvNet for the 2020s」で提案されました。著者は、Facebook AI Research の Zhuang Liu、Hanzi Mao、Chao-Yuan Wu、Christoph Feichtenhofer、Trevor Darrell、Saining Xie らの研究者です。論文は<a href="https://arxiv.org/abs/2201.03545">こちら</a>、GitHub リポジトリは<a href="https://github.com/facebookresearch/ConvNeXt">こちら</a>にあります。</p>
+<p>ConvNeXt アーキテクチャは、2022年に発表された論文「A ConvNet for the 2020s」で提案されました。著者は、Facebook AI Research の Zhuang Liu、Hanzi Mao、Chao-Yuan Wu、Christoph Feichtenhofer、Trevor Darrell、Saining Xie らの研究者です。論文は<a href="https://arxiv.org/abs/2201.03545">こちら</a>、GitHub リポジトリは<a href="https://github.com/facebookresearch/ConvNeXt">こちら</a>に在ります。</p>
 </article>
 
 <nav class="page-nav"><a class="nav-link prev" href="mobilenet.html">← 前へ: MobileNet</a><a class="nav-link toc-link" href="../../index.html">目次へ</a><a class="nav-link next" href="intro-transfer-learning.html">次へ →: 転移学習</a></nav>

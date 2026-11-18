@@ -86,7 +86,7 @@ window.MathJax = { tex: { inlineMath: [['$', '$'], ['\\(', '\\)']], displayMath:
 </ul>
 <p class="side-group">Unit 3 - Vision Transformer</p>
 <ul class="side-list">
-<li><a class="side-link" href="../../unit3/vision-transformers/vision-transformers-for-image-classification.html">画像分類のための Vision Transformer の転移学習とファインチューニング</a></li>
+<li><a class="side-link" href="../../unit3/vision-transformers/vision-transformers-for-image-classification.html">画像分類の為の Vision Transformer の転移学習とファインチューニング</a></li>
 <li><a class="side-link" href="../../unit3/vision-transformers/swin-transformer.html">Swin Transformer</a></li>
 <li><a class="side-link" href="../../unit3/vision-transformers/cvt.html">Convolutional Vision Transformer (CvT)</a></li>
 <li><a class="side-link" href="../../unit3/vision-transformers/dinat.html">Dilated Neighborhood Attention Transformer（DiNAT）</a></li>
@@ -146,7 +146,7 @@ window.MathJax = { tex: { inlineMath: [['$', '$'], ['\\(', '\\)']], displayMath:
 <li><a class="side-link" href="../../unit8/terminologies/camera-models.html">カメラモデル</a></li>
 <li><a class="side-link" href="../../unit8/terminologies/linear-algebra.html">3Dデータのための線形代数の基礎</a></li>
 <li><a class="side-link" href="../../unit8/terminologies/representations.html">3Dデータの表現方法</a></li>
-<li><a class="side-link" href="../../unit8/monocular_depth_estimation.html">単眼深度推定の概要：メトリック深度と相対深度、Depth Anything V2 のファインチューニング 👐 📚</a></li>
+<li><a class="side-link" href="../../unit8/monocular_depth_estimation.html">単眼深度推定の概要：メトリック深度と相対深度、Depth Anything V2 のファインチューニング</a></li>
 <li><a class="side-link" href="../../unit8/3d-vision/nvs.html">新規視点合成（Novel View Synthesis）</a></li>
 <li><a class="side-link" href="../../unit8/3d_measurements_stereo_vision.html">はじめに</a></li>
 <li><a class="side-link" href="../../unit8/nerf.html">Neural Radiance Fields（NeRF）</a></li>
@@ -176,9 +176,9 @@ window.MathJax = { tex: { inlineMath: [['$', '$'], ['\\(', '\\)']], displayMath:
 <ul class="side-list">
 <li><a class="side-link" href="../../unit12/pre-intro.html">CV モデルにおける倫理的基盤を探る</a></li>
 <li><a class="side-link" href="../../unit12/introduction.html">導入</a></li>
-<li><a class="side-link" href="../../unit12/ethics-bias-ai.html">AI における倫理とバイアス 🧑‍🤝‍🧑</a></li>
-<li><a class="side-link" href="../../unit12/conclusion.html">Hugging Face の取り組み：倫理と社会 🤗🌎</a></li>
-<li><a class="side-link" href="../../unit12/supplementary-material.html">参考文献とリソース 🤗🌎</a></li>
+<li><a class="side-link" href="../../unit12/ethics-bias-ai.html">AI における倫理とバイアス</a></li>
+<li><a class="side-link" href="../../unit12/conclusion.html">Hugging Face の取り組み：倫理と社会 🤗</a></li>
+<li><a class="side-link" href="../../unit12/supplementary-material.html">参考文献とリソース 🤗</a></li>
 </ul>
 <p class="side-group">Unit 13 - 展望</p>
 <ul class="side-list">
@@ -196,30 +196,31 @@ window.MathJax = { tex: { inlineMath: [['$', '$'], ['\\(', '\\)']], displayMath:
 <h1>GoogLeNet</h1>
 <p>この章では、GoogLeNet と呼ばれる畳み込みアーキテクチャを見ていきます。</p>
 <h2>概要</h2>
-<p>Inception アーキテクチャは、分類や検出などのコンピュータビジョンのタスクのために設計された畳み込みニューラルネットワーク（CNN）であり、その効率性で際立っています。パラメータ数は700万未満で、従来のモデルよりも大幅にコンパクトです。パラメータ数で比べると、AlexNet の約9分の1、VGG16 の約22分の1です。このアーキテクチャは ImageNet 2014 チャレンジで注目を集め、Google による適応版である GoogLeNet（LeNet へのオマージュとして名付けられました）が、従来の主要手法よりも少ないパラメータを使いながら性能の新たな基準を打ち立てました。</p>
+<p>Inception アーキテクチャは、分類や検出などのコンピュータビジョンのタスクの為に設計された畳み込みニューラルネットワーク（CNN）であり、その効率性で際立っています。パラメータ数は700万未満で、従来のモデルよりも大幅にコンパクトです。パラメータ数で比べると、AlexNet の約9分の1、VGG16 の約22分の1です。このアーキテクチャは ImageNet 2014 チャレンジで注目を集め、Google による適応版である GoogLeNet（LeNet へのオマージュとして名付けられました）が、従来の主要手法よりも少ないパラメータを使いながら性能の新たな基準を打ち立てました。</p>
 <h3>アーキテクチャの革新</h3>
 <p>Inception アーキテクチャの登場以前は、AlexNet や VGG などのモデルが、より深いネットワーク構造の利点を示していました。しかし、深いネットワークは通常、計算ステップが増え、過学習や勾配消失問題などの課題につながります。Inception アーキテクチャはその解決策を提供し、浮動小数点パラメータの数を減らしながら複雑な CNN の訓練を可能にします。</p>
 <h4>Inception の「Network In Network」モジュール</h4>
 <p>AlexNet や VGG のような従来のネットワークでは、基本ブロックは畳み込み層そのものでした。しかし、Lin ら（2013年）は Network In Network という概念を提案し、畳み込み層を1つ使うだけでは、基本的な構成ブロックとして必ずしも十分ではなく、もっと複雑な構造にすべきだと主張しました。そこで Inception モデルの著者たちは、それに着想を得て、有名な映画「インセプション」（夢の中の夢）にちなんで名付けられた Inception モジュールという、より複雑な構成ブロックを採用することにしました。</p>
-<p>Inception モジュールでは、異なるカーネルサイズの畳み込みフィルタを使い、複数のスケールで特徴を抽出します。任意の入力特徴マップに対して、\(1 \times 1\) 畳み込み、3×3 畳み込み、5×5 畳み込みを並列に適用します。畳み込みに加えて、最大プーリング演算も適用されます。4つの演算すべてに、空間次元が同じになるようなパディングとストライドが設定されます。これらの特徴が連結され、次のステージへの入力となります。図1をご覧ください。</p>
+<p>Inception モジュールでは、異なるカーネルサイズの畳み込みフィルタを使い、複数のスケールで特徴を抽出します。任意の入力特徴マップに対して、\(1 \times 1\) 畳み込み、3×3 畳み込み、5×5 畳み込みを並列に適用します。畳み込みに加えて、最大プーリング演算も適用されます。4つの演算全てに、空間次元が同じになるようなパディングとストライドが設定されます。これらの特徴が連結され、次のステージへの入力となります。図1をご覧下さい。</p>
 <p><img alt="素朴な Inception モジュール" src="https://huggingface.co/datasets/hf-vision/course-assets/resolve/main/inception_naive.png" /></p>
 <p>図1：素朴な Inception モジュール</p>
-<p>図のように、5×5 のような大きなカーネルサイズで複数のスケールの畳み込みを適用すると、パラメータ数が大幅に増える可能性があります。この問題は、入力特徴のサイズ（チャンネル数）が大きくなるほど顕著になります。そのため、こうした「Inception モジュール」をネットワークの深くに積み重ねていくと、計算量が大幅に増大します。簡単な解決策は、計算量が増えやすい箇所で特徴の数を減らすことです。計算量の多さの主な原因は畳み込み層です。計算量の安い \(1 \times 1\) 畳み込みを 3×3 や 5×5 の畳み込みの直前に置くことで、特徴の次元を削減します。例で見てみましょう。</p>
-<p>\( S \times S \times 128 \) の特徴マップを、5×5 畳み込みで \( S \times S \times 256 \) に変換したいとします。パラメータ数（バイアスを除く）は 5*5*128*256 = 819,200 です。しかし、まず \(1 \times 1\) 畳み込みで特徴の次元を64まで削減すると、パラメータ数（バイアスを除く）は \( 1\times 1\times 128\times 64 + 5\times 5\times 64\times 256 = 8,192 + 409,600 = 417,792 \) となります。つまり、パラメータ数がほぼ半分に減りました！</p>
-<p>また、出力特徴マップと連結する前に、最大プーリングの出力特徴も削減したいところです。そこで、最大プーリング層の後にもう1つ \( 1\times 1 \) 畳み込みを追加します。各 \( 1\times 1 \) 畳み込みの後には ReLU 活性化も追加し、モジュールの非線形性と複雑さを高めます。図2をご覧ください。</p>
+<p>図のように、5×5 のような大きなカーネルサイズで複数のスケールの畳み込みを適用すると、パラメータ数が大幅に増える可能性があります。この問題は、入力特徴のサイズ（チャンネル数）が大きくなる程顕著になります。その為、こうした「Inception モジュール」をネットワークの深くに積み重ねていくと、計算量が大幅に増大します。</p>
+<p>簡単な解決策は、計算量が増え易い箇所で特徴の数を減らすことです。計算量の多さの主な原因は畳み込み層です。計算量の安い \(1 \times 1\) 畳み込みを 3×3 や 5×5 の畳み込みの直前に置くことで、特徴の次元を削減します。例で見てみましょう。</p>
+<p>\( S \times S \times 128 \) の特徴マップを、5×5 畳み込みで \( S \times S \times 256 \) に変換したいとします。パラメータ数（バイアスを除く）は 5*5*128*256 = 819,200 です。しかし、先ず \(1 \times 1\) 畳み込みで特徴の次元を64まで削減すると、パラメータ数（バイアスを除く）は \( 1\times 1\times 128\times 64 + 5\times 5\times 64\times 256 = 8,192 + 409,600 = 417,792 \) となります。つまり、パラメータ数がほぼ半分に減りました！</p>
+<p>また、出力特徴マップと連結する前に、最大プーリングの出力特徴も削減したい所です。そこで、最大プーリング層の後にもう1つ \( 1\times 1 \) 畳み込みを追加します。各 \( 1\times 1 \) 畳み込みの後には ReLU 活性化も追加し、モジュールの非線形性と複雑さを高めます。図2をご覧下さい。</p>
 <p><img alt="次元削減した Inception モジュール" src="https://huggingface.co/datasets/hf-vision/course-assets/resolve/main/inception_reduced.png" /></p>
 <p>図2：Inception モジュール</p>
-<p>また、複数のスケールでの畳み込みを並列に実行することで、ネットワークを深くすることなく演算を増やせるため、本質的に勾配消失問題が緩和されます。</p>
+<p>また、複数のスケールでの畳み込みを並列に実行することで、ネットワークを深くすることなく演算を増やせる為、本質的に勾配消失問題が緩和されます。</p>
 <h4>平均プーリング</h4>
-<p>AlexNet や VGG のような従来のネットワークでは、最終層はいくつかの全結合層でした。これらの全結合層はユニット数が多いため、ネットワークのパラメータの大部分を占めます。たとえば、VGG16 のパラメータの89%は最後の3つの全結合層にあります。AlexNet のパラメータの95%は最後の全結合層にあります。これほど多くの全結合層が必要とされていたのは、畳み込み層だけでは十分に複雑な処理ができないと考えられていたためでしょう。</p>
+<p>AlexNet や VGG のような従来のネットワークでは、最終層はいくつかの全結合層でした。これらの全結合層はユニット数が多い為、ネットワークのパラメータの大部分を占めます。例えば、VGG16 のパラメータの89%は最後の3つの全結合層に在ります。AlexNet のパラメータの95%は最後の全結合層に在ります。これ程多くの全結合層が必要とされていたのは、畳み込み層だけでは十分に複雑な処理が出来ないと考えられていた為でしょう。</p>
 <p>しかし、Inception ブロックを使えば、全結合層を使わなくても、空間方向に単純な平均プーリングを行うだけで十分なはずです。これも Network in Network 論文から導かれたものでした。但し、GoogLeNet には全結合層が1つ含まれています。著者たちは top-1 精度が 0.6% 向上したと報告しています。</p>
-<p>GoogLeNet では、全結合層にあるパラメータは全体の15%だけです。</p>
+<p>GoogLeNet では、全結合層に在るパラメータは全体の15%だけです。</p>
 <h4>補助分類器</h4>
-<p>計算量の少ない \( 1 \times 1 \) 畳み込みを導入し、複数の全結合層を平均プーリングに置き換えたことで、ネットワークのパラメータ数は大幅に減りました。その分、更に多くの層を追加し、ネットワークを深くできます。しかし、層を積み重ねると勾配消失の問題が生じ得ます。勾配が入力側の層へ逆伝播するうちに小さくなり、ゼロに近づいてしまうのです。</p>
+<p>計算量の少ない \( 1 \times 1 \) 畳み込みを導入し、複数の全結合層を平均プーリングに置き換えたことで、ネットワークのパラメータ数は大幅に減りました。その分、更に多くの層を追加し、ネットワークを深く出来ます。しかし、層を積み重ねると勾配消失の問題が生じ得ます。勾配が入力側の層へ逆伝播するうちに小さくなり、ゼロに近づいてしまうのです。</p>
 <p>論文では補助分類器（auxiliary classifier）が導入されています。中間層からいくつかの小さな分類器を分岐させ、各分類器の損失に小さな重みを付けて、ネットワーク全体の損失に加えます。これにより、入力に近い層も適度な大きさの勾配を受け取れるようになります。</p>
 <p>補助分類器は以下から構成されます。
 - フィルタサイズ \( 5 \times 5 \)、ストライド3の平均プーリング層。
-- 次元削減のための128個のフィルタを持つ \( 1 \times 1 \) 畳み込みと、整流線形活性化（ReLU）。
+- 次元削減の為の128個のフィルタを持つ \( 1 \times 1 \) 畳み込みと、整流線形活性化（ReLU）。
 - 1024個のユニットと整流線形活性化を持つ全結合層。
 - 出力の70%を無効化するドロップアウト層。
 - 分類器として softmax 損失を持つ線形層。</p>
@@ -227,7 +228,8 @@ window.MathJax = { tex: { inlineMath: [['$', '$'], ['\\(', '\\)']], displayMath:
 <p><img alt="GoogLeNet の補助分類器" src="https://huggingface.co/datasets/hf-vision/course-assets/resolve/main/googlenet_auxiliary_classifier.jpg" /></p>
 <p>図3：補助分類器</p>
 <h3>GoogLeNet のアーキテクチャ</h3>
-<p>GoogLeNet の完全なアーキテクチャを下の図に示します。Inception ブロック内部を含むすべての畳み込みは ReLU 活性化を使います。最初に、畳み込み層と最大プーリング層からなる2つのブロックがあります。続いて、2つの Inception モジュール（3a と 3b）と最大プーリング層が配置されます。その後、5つの Inception ブロック（4a、4b、4c、4d、4e）と最大プーリング層が続きます。補助分類器は 4a と 4d の出力から取り出されます。次に2つの Inception ブロック（5a と 5b）が続きます。その後、平均プーリングと128ユニットの全結合層が使われます。</p>
+<p>GoogLeNet の完全なアーキテクチャを下の図に示します。Inception ブロック内部を含む全ての畳み込みは ReLU 活性化を使います。最初に、畳み込み層と最大プーリング層からなる2つのブロックが有ります。続いて、2つの Inception モジュール（3a と 3b）と最大プーリング層が配置されます。その後、5つの Inception ブロック（4a、4b、4c、4d、4e）と最大プーリング層が続きます。</p>
+<p>補助分類器は 4a と 4d の出力から取り出されます。次に2つの Inception ブロック（5a と 5b）が続きます。その後、平均プーリングと128ユニットの全結合層が使われます。</p>
 <p><img alt="GoogLeNet の全体アーキテクチャ" src="https://huggingface.co/datasets/hf-vision/course-assets/resolve/main/googlenet_architecture.png" />
 図4：GoogLeNet の完全なアーキテクチャ</p>
 <h3>コード</h3>

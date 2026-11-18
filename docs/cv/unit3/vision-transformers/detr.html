@@ -86,7 +86,7 @@ window.MathJax = { tex: { inlineMath: [['$', '$'], ['\\(', '\\)']], displayMath:
 </ul>
 <p class="side-group">Unit 3 - Vision Transformer</p>
 <ul class="side-list">
-<li><a class="side-link" href="vision-transformers-for-image-classification.html">画像分類のための Vision Transformer の転移学習とファインチューニング</a></li>
+<li><a class="side-link" href="vision-transformers-for-image-classification.html">画像分類の為の Vision Transformer の転移学習とファインチューニング</a></li>
 <li><a class="side-link" href="swin-transformer.html">Swin Transformer</a></li>
 <li><a class="side-link" href="cvt.html">Convolutional Vision Transformer (CvT)</a></li>
 <li><a class="side-link" href="dinat.html">Dilated Neighborhood Attention Transformer（DiNAT）</a></li>
@@ -146,7 +146,7 @@ window.MathJax = { tex: { inlineMath: [['$', '$'], ['\\(', '\\)']], displayMath:
 <li><a class="side-link" href="../../unit8/terminologies/camera-models.html">カメラモデル</a></li>
 <li><a class="side-link" href="../../unit8/terminologies/linear-algebra.html">3Dデータのための線形代数の基礎</a></li>
 <li><a class="side-link" href="../../unit8/terminologies/representations.html">3Dデータの表現方法</a></li>
-<li><a class="side-link" href="../../unit8/monocular_depth_estimation.html">単眼深度推定の概要：メトリック深度と相対深度、Depth Anything V2 のファインチューニング 👐 📚</a></li>
+<li><a class="side-link" href="../../unit8/monocular_depth_estimation.html">単眼深度推定の概要：メトリック深度と相対深度、Depth Anything V2 のファインチューニング</a></li>
 <li><a class="side-link" href="../../unit8/3d-vision/nvs.html">新規視点合成（Novel View Synthesis）</a></li>
 <li><a class="side-link" href="../../unit8/3d_measurements_stereo_vision.html">はじめに</a></li>
 <li><a class="side-link" href="../../unit8/nerf.html">Neural Radiance Fields（NeRF）</a></li>
@@ -176,9 +176,9 @@ window.MathJax = { tex: { inlineMath: [['$', '$'], ['\\(', '\\)']], displayMath:
 <ul class="side-list">
 <li><a class="side-link" href="../../unit12/pre-intro.html">CV モデルにおける倫理的基盤を探る</a></li>
 <li><a class="side-link" href="../../unit12/introduction.html">導入</a></li>
-<li><a class="side-link" href="../../unit12/ethics-bias-ai.html">AI における倫理とバイアス 🧑‍🤝‍🧑</a></li>
-<li><a class="side-link" href="../../unit12/conclusion.html">Hugging Face の取り組み：倫理と社会 🤗🌎</a></li>
-<li><a class="side-link" href="../../unit12/supplementary-material.html">参考文献とリソース 🤗🌎</a></li>
+<li><a class="side-link" href="../../unit12/ethics-bias-ai.html">AI における倫理とバイアス</a></li>
+<li><a class="side-link" href="../../unit12/conclusion.html">Hugging Face の取り組み：倫理と社会 🤗</a></li>
+<li><a class="side-link" href="../../unit12/supplementary-material.html">参考文献とリソース 🤗</a></li>
 </ul>
 <p class="side-group">Unit 13 - 展望</p>
 <ul class="side-list">
@@ -195,36 +195,40 @@ window.MathJax = { tex: { inlineMath: [['$', '$'], ['\\(', '\\)']], displayMath:
 <article class="content">
 <h1>DEtection TRansformer (DETR)</h1>
 <h2>アーキテクチャの概要</h2>
-<p>DETR は主に物体検出タスクに使われます。物体検出とは、画像の中の物体を検出する処理です。たとえば、モデルの入力は道路の画像で、出力は <code>[('car',X1,Y1,W1,H1),('pedestrian',X2,Y2,W2,H2)]</code> のようになります。ここで X、Y、W、H は、バウンディングボックスの位置を示す x、y 座標と、ボックスの幅と高さを表します。YOLO のような従来の物体検出モデルでは、アンカーボックスの事前設定など、人手で設計した要素を使います。物体の位置や形状について予め仮定を置く必要があり、その設定は後の学習にも影響します。また、重なり合うバウンディングボックスを取り除く後処理も必要で、その際の判定基準は慎重に選ばなければなりません。DEtection TRansformer、略して DETR は、特徴抽出のバックボーンの後に encoder-decoder Transformer を使ってバウンディングボックスを並列に直接予測することで検出器を簡素化し、後処理を最小限に抑えます。</p>
+<p>DETR は主に物体検出タスクに使われます。物体検出とは、画像の中の物体を検出する処理です。例えば、モデルの入力は道路の画像で、出力は <code>[('car',X1,Y1,W1,H1),('pedestrian',X2,Y2,W2,H2)]</code> のようになります。ここで X、Y、W、H は、バウンディングボックスの位置を示す x、y 座標と、ボックスの幅と高さを表します。</p>
+<p>YOLO のような従来の物体検出モデルでは、アンカーボックスの事前設定など、人手で設計した要素を使います。物体の位置や形状について予め仮定を置く必要があり、その設定は後の学習にも影響します。また、重なり合うバウンディングボックスを取り除く後処理も必要で、その際の判定基準は慎重に選ばなければなりません。</p>
+<p>DEtection TRansformer、略して DETR は、特徴抽出のバックボーンの後に encoder-decoder Transformer を使ってバウンディングボックスを並列に直接予測することで検出器を簡素化し、後処理を最小限に抑えます。</p>
 <p><img alt="DETR のアーキテクチャ図" src="https://huggingface.co/datasets/hf-vision/course-assets/resolve/main/DETR.png" />
 DETR のモデルアーキテクチャは、他の画像ベースのネットワークと同様に CNN バックボーンから始まります。その出力を処理して Transformer encoder に入力すると、N 個の埋め込みが得られます。encoder の埋め込みは、学習された位置埋め込み（object queries と呼ばれます）に加えられ、Transformer decoder で使われて、更に N 個の埋め込みが生成されます。最後のステップとして、N 個の埋め込みはそれぞれ個別の feed forward 層に通され、バウンディングボックスの幅、高さ、座標と、物体のクラス（又は物体が存在するかどうか）を予測します。</p>
 <h2>主な特徴</h2>
 <h3>Encoder-Decoder</h3>
-<p>他の Transformer と同様に、Transformer encoder は CNN バックボーンの出力が列であることを想定しています。そのため、<code>[dimension, height, width]</code> サイズの特徴マップは縮小され、<code>[dimension, less than height x width]</code> に平坦化されます。
+<p>他の Transformer と同様に、Transformer encoder は CNN バックボーンの出力が列であることを想定しています。その為、<code>[dimension, height, width]</code> サイズの特徴マップは縮小され、<code>[dimension, less than height x width]</code> に平坦化されます。
 <img alt="Encoder の特徴マップ" src="https://huggingface.co/datasets/hf-vision/course-assets/resolve/main/DETR_FeatureMaps.png" />
-<em><strong>左</strong>：特徴マップの256次元のうち、12次元を可視化したものです。各次元では、画像を縮小しながら、元の猫の画像から異なる特徴を抽出しています。猫の模様に強く反応する次元もあれば、ベッドシーツに強く反応する次元もあります。</em>
+<em><strong>左</strong>：特徴マップの256次元の内、12次元を可視化したものです。各次元では、画像を縮小しながら、元の猫の画像から異なる特徴を抽出しています。猫の模様に強く反応する次元もあれば、ベッドシーツに強く反応する次元もあります。</em>
 <em><strong>右</strong>：元の特徴次元である 256 というサイズを保ったまま、幅と高さは更に縮小され、850 というサイズに平坦化されています。</em>
-Transformer は入力要素の順序を入れ替えても、その関係を区別できないため、各埋め込みが画像のどの位置に対応するかをモデルに伝える必要があります。そのため、エンコーダーとデコーダーの両方に位置埋め込みを加えます。エンコーダーでは固定の位置エンコーディングを使い、デコーダーでは学習可能な位置エンコーディング（object queries）を使います。固定の位置エンコーディングは、元の Transformer 論文で使われたものと似ており、特徴次元ごとに異なる周波数の正弦波関数で定義されます。学習するパラメータを持たず、画像内の位置に応じて値が決まることで、位置情報をモデルに与えます。一方、学習可能な位置エンコーディングでは、位置ごとに異なる表現を持ち、その値を訓練を通じて学習します。</p>
+Transformer は入力要素の順序を入れ替えても、その関係を区別出来ない為、各埋め込みが画像のどの位置に対応するかをモデルに伝える必要があります。その為、エンコーダーとデコーダーの両方に位置埋め込みを加えます。エンコーダーでは固定の位置エンコーディングを使い、デコーダーでは学習可能な位置エンコーディング（object queries）を使います。</p>
+<p>固定の位置エンコーディングは、元の Transformer 論文で使われたものと似ており、特徴次元ごとに異なる周波数の正弦波関数で定義されます。学習するパラメータを持たず、画像内の位置に応じて値が決まることで、位置情報をモデルに与えます。一方、学習可能な位置エンコーディングでは、位置ごとに異なる表現を持ち、その値を訓練を通じて学習します。</p>
 <h3>集合ベースの大域損失関数</h3>
-<p>人気のある物体検出モデルである YOLO では、損失関数はバウンディングボックス、objectness（すなわち、注目領域に物体が存在する確率）、クラスの損失から構成されます。損失は各グリッドセルに対する複数のバウンディングボックスについて計算され、その数は固定です。一方 DETR では、アーキテクチャは順序不変な方法で一意なバウンディングボックスを生成することが求められます（すなわち、出力における検出の順序は重要ではなく、バウンディングボックスは互いに異ならなければならず、すべて同じではいけません）。そのため、予測がどれほど良いかを評価するにはマッチングが必要です。</p>
+<p>人気の有る物体検出モデルである YOLO では、損失関数はバウンディングボックス、objectness（即ち、注目領域に物体が存在する確率）、クラスの損失から構成されます。損失は各グリッドセルに対する複数のバウンディングボックスについて計算され、その数は固定です。一方 DETR では、アーキテクチャは順序不変な方法で一意なバウンディングボックスを生成することが求められます（即ち、出力における検出の順序は重要ではなく、バウンディングボックスは互いに異ならなければならず、全て同じではいけません）。その為、予測がどれ程良いかを評価するにはマッチングが必要です。</p>
 <p><strong>二部マッチング（Bipartite Matching）</strong>
-二部マッチングは、正解のバウンディングボックスと予測されたボックスとの間で 1 対 1 のマッチングを計算する方法です。正解と予測されたバウンディングボックス、及びクラスとの間で最も類似度が高いマッチを見つけます。これにより、最も近い予測が対応する正解とマッチし、損失関数の中でボックスとクラスを適切に調整できます。マッチングを行わないと、正解の順序と揃っていない予測は、正しくても誤りとして扱われてしまいます。</p>
+二部マッチングは、正解のバウンディングボックスと予測されたボックスとの間で 1 対 1 のマッチングを計算する方法です。正解と予測されたバウンディングボックス、及びクラスとの間で最も類似度が高いマッチを見つけます。これにより、最も近い予測が対応する正解とマッチし、損失関数の中でボックスとクラスを適切に調整出来ます。マッチングを行わないと、正解の順序と揃っていない予測は、正しくても誤りとして扱われてしまいます。</p>
 <h2>DETR を使って物体を検出する</h2>
-<p>Hugging Face の <code>transformers</code> ライブラリを使って DETR で推論を行う例については、<code>DETR.ipynb</code> を参照してください。</p>
+<p>Hugging Face の <code>transformers</code> ライブラリを使って DETR で推論を行う例については、<code>DETR.ipynb</code> を参照して下さい。</p>
 <h2>DETR の進化</h2>
 <h3>Deformable DETR</h3>
-<p>DETR には主に2つの課題があります。学習が収束するまでに時間がかかることと、小さな物体の検出精度が十分でないことです。
+<p>DETR には主に2つの課題があります。学習が収束するまでに時間が掛かることと、小さな物体の検出精度が十分でないことです。
 <strong>Deformable Attention</strong>
-1つ目の課題は、注目するサンプリング点の数を減らす Deformable Attention によって解決します。従来のアテンションは画像全体を対象とするため計算効率が悪く、扱える画像の解像度にも大きな制約があります。これに対して Deformable Attention は、入力に応じて学習した各参照点の周囲から、一定数のサンプリング点だけを選んで注目します。たとえば犬の画像なら、犬の中心を参照点とし、耳や口、尻尾の付近をサンプリング点とする、といった具合です。</p>
+1つ目の課題は、注目するサンプリング点の数を減らす Deformable Attention によって解決します。従来のアテンションは画像全体を対象とするため計算効率が悪く、扱える画像の解像度にも大きな制約があります。これに対して Deformable Attention は、入力に応じて学習した各参照点の周囲から、一定数のサンプリング点だけを選んで注目します。例えば犬の画像なら、犬の中心を参照点とし、耳や口、尻尾の付近をサンプリング点とする、といった具合です。</p>
 <p><strong>Multi-scale Deformable Attention Module</strong>
-2つ目の課題は、マルチスケールの特徴マップを導入した YOLOv3 と同様の方法で解決します。畳み込みニューラルネットワークでは、浅い層で線などの細かい特徴を抽出し、深い層では車輪や耳など、より大きな特徴を抽出します。同様に、Deformable Attention の異なる層からは、解像度の異なる特徴マップが得られます。エンコーダーの複数の層からの出力をデコーダーにつなぐことで、様々な大きさの物体を検出できるようになります。</p>
+2つ目の課題は、マルチスケールの特徴マップを導入した YOLOv3 と同様の方法で解決します。畳み込みニューラルネットワークでは、浅い層で線などの細かい特徴を抽出し、深い層では車輪や耳など、より大きな特徴を抽出します。同様に、Deformable Attention の異なる層からは、解像度の異なる特徴マップが得られます。エンコーダーの複数の層からの出力をデコーダーにつなぐことで、様々な大きさの物体を検出出来るようになります。</p>
 <h3>Conditional DETR</h3>
-<p>Conditional DETR も、元の DETR で学習の収束に時間がかかる問題の解決を目指したモデルで、6.7倍以上速い収束を実現します。著者らは、object queries が特定の入力画像に依存しない、汎用的なものであることを発見しました。デコーダーで <strong>Conditional Cross-Attention</strong> を使うことで、バウンディングボックス回帰の対象となる領域を、クエリがより正確に特定できるようになります。
+<p>Conditional DETR も、元の DETR で学習の収束に時間が掛かる問題の解決を目指したモデルで、6.7倍以上速い収束を実現します。著者らは、object queries が特定の入力画像に依存しない、汎用的なものであることを発見しました。デコーダーで <strong>Conditional Cross-Attention</strong> を使うことで、バウンディングボックス回帰の対象となる領域を、クエリがより正確に特定出来るようになります。
 <img alt="Conditional DETR の decoder 層" src="https://huggingface.co/datasets/hf-vision/course-assets/resolve/main/DETR_DecoderLayer.png" />
 <em>左：DETR の Decoder 層。右：Conditional DETR の Decoder 層</em>
-上の図では、元の DETR と Conditional DETR の decoder 層が比較されており、主な違いは cross-attention ブロックのクエリ入力です。著者らは、content query c<sub>q</sub>（decoder の self attention の出力）と spatial query p<sub>q</sub> を区別しています。元の DETR は単に両者を足し合わせます。Conditional DETR では両者は連結され、c<sub>q</sub> は物体の内容に注目し、p<sub>q</sub> はバウンディングボックスの領域に注目します。spatial query p<sub>q</sub> は、decoder の埋め込みと object queries の両方が同じ空間に射影され（それぞれ T と p<sub>s</sub> になります）、互いに掛け合わされた結果です。前の層の decoder の埋め込みにはバウンディングボックス領域のための情報が含まれ、object queries には各バウンディングボックスについて学習された参照点の情報が含まれます。そのため、それらの射影が組み合わさって、cross-attention が encoder 入力及び正弦波の位置埋め込みとの類似度を測れる表現となります。これは、object queries と固定の参照点だけを使う DETR よりも効果的です。</p>
+上の図では、元の DETR と Conditional DETR の decoder 層が比較されており、主な違いは cross-attention ブロックのクエリ入力です。著者らは、content query c<sub>q</sub>（decoder の self attention の出力）と spatial query p<sub>q</sub> を区別しています。元の DETR は単に両者を足し合わせます。Conditional DETR では両者は連結され、c<sub>q</sub> は物体の内容に注目し、p<sub>q</sub> はバウンディングボックスの領域に注目します。</p>
+<p>spatial query p<sub>q</sub> は、decoder の埋め込みと object queries の両方が同じ空間に射影され（それぞれ T と p<sub>s</sub> になります）、互いに掛け合わされた結果です。前の層の decoder の埋め込みにはバウンディングボックス領域の為の情報が含まれ、object queries には各バウンディングボックスについて学習された参照点の情報が含まれます。その為、それらの射影が組み合わさって、cross-attention が encoder 入力及び正弦波の位置埋め込みとの類似度を測れる表現となります。これは、object queries と固定の参照点だけを使う DETR よりも効果的です。</p>
 <h2>DETR の推論</h2>
-<p>Hugging Face Hub にある既存の DETR モデルを使って、次のように推論できます。</p>
+<p>Hugging Face Hub に在る既存の DETR モデルを使って、次のように推論出来ます。</p>
 <div class="codehilite"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">transformers</span><span class="w"> </span><span class="kn">import</span> <span class="n">DetrImageProcessor</span><span class="p">,</span> <span class="n">DetrForObjectDetection</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">torch</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">PIL</span><span class="w"> </span><span class="kn">import</span> <span class="n">Image</span>
@@ -260,7 +264,7 @@ Transformer は入力要素の順序を入れ替えても、その関係を区�
     <span class="p">)</span>
 </code></pre></div>
 
-<p>出力は次のとおりです。</p>
+<p>出力は次の通りです。</p>
 <div class="codehilite"><pre><span></span><code>検出：cat、信頼度：0.998、位置：<span class="o">[</span><span class="m">344</span>.06,<span class="w"> </span><span class="m">24</span>.85,<span class="w"> </span><span class="m">640</span>.34,<span class="w"> </span><span class="m">373</span>.74<span class="o">]</span>
 検出：remote、信頼度：0.997、位置：<span class="o">[</span><span class="m">328</span>.13,<span class="w"> </span><span class="m">75</span>.93,<span class="w"> </span><span class="m">372</span>.81,<span class="w"> </span><span class="m">187</span>.66<span class="o">]</span>
 検出：remote、信頼度：0.997、位置：<span class="o">[</span><span class="m">39</span>.34,<span class="w"> </span><span class="m">70</span>.13,<span class="w"> </span><span class="m">175</span>.56,<span class="w"> </span><span class="m">118</span>.78<span class="o">]</span>
@@ -269,7 +273,7 @@ Transformer は入力要素の順序を入れ替えても、その関係を区�
 </code></pre></div>
 
 <h2>DETR の PyTorch 実装</h2>
-<p>元の論文の DETR の実装は次のとおりです。</p>
+<p>元の論文の DETR の実装は次の通りです。</p>
 <div class="codehilite"><pre><span></span><code><span class="kn">import</span><span class="w"> </span><span class="nn">torch</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">torch</span><span class="w"> </span><span class="kn">import</span> <span class="n">nn</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">torchvision.models</span><span class="w"> </span><span class="kn">import</span> <span class="n">resnet50</span>
@@ -314,7 +318,7 @@ Transformer は入力要素の順序を入れ替えても、その関係を区�
 
 <h3><code>forward</code> 関数を 1 行ずつ見ていく</h3>
 <p><strong>バックボーン</strong>
-入力画像はまず ResNet バックボーンに通され、次に畳み込み層に通されます。これにより次元が <code>hidden_dim</code> に削減されます。</p>
+入力画像は先ず ResNet バックボーンに通され、次に畳み込み層に通されます。これにより次元が <code>hidden_dim</code> に削減されます。</p>
 <div class="codehilite"><pre><span></span><code><span class="n">x</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">backbone</span><span class="p">(</span><span class="n">inputs</span><span class="p">)</span>
 <span class="n">h</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">conv</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
 </code></pre></div>
@@ -325,7 +329,7 @@ Transformer は入力要素の順序を入れ替えても、その関係を区�
 </code></pre></div>
 
 <p><strong>位置埋め込み</strong></p>
-<p>論文では encoder と decoder でそれぞれ固定の埋め込みと訓練される埋め込みが使われていますが、実装では著者らは簡単のために両方に訓練される埋め込みを使いました。</p>
+<p>論文では encoder と decoder でそれぞれ固定の埋め込みと訓練される埋め込みが使われていますが、実装では著者らは簡単の為に両方に訓練される埋め込みを使いました。</p>
 <div class="codehilite"><pre><span></span><code><span class="n">pos</span> <span class="o">=</span> <span class="p">(</span>
     <span class="n">torch</span><span class="o">.</span><span class="n">cat</span><span class="p">(</span>
         <span class="p">[</span>
@@ -359,11 +363,11 @@ Transformer に入る前に、サイズ <code>(batch size, hidden_dim, H, W)</co
 <div class="codehilite"><pre><span></span><code><span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">linear_class</span><span class="p">(</span><span class="n">h</span><span class="p">),</span> <span class="bp">self</span><span class="o">.</span><span class="n">linear_bbox</span><span class="p">(</span><span class="n">h</span><span class="p">)</span><span class="o">.</span><span class="n">sigmoid</span><span class="p">()</span>
 </code></pre></div>
 
-<p>1 つ目はクラスを予測します。<code>No Object</code> クラスのために追加のクラスが加えられます。</p>
+<p>1 つ目はクラスを予測します。<code>No Object</code> クラスの為に追加のクラスが加えられます。</p>
 <div class="codehilite"><pre><span></span><code><span class="bp">self</span><span class="o">.</span><span class="n">linear_class</span> <span class="o">=</span> <span class="n">nn</span><span class="o">.</span><span class="n">Linear</span><span class="p">(</span><span class="n">hidden_dim</span><span class="p">,</span> <span class="n">num_classes</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)</span>
 </code></pre></div>
 
-<p>2 つ目の線形層は、xy 座標、高さ、幅のための出力サイズ 4 でバウンディングボックスを予測します。</p>
+<p>2 つ目の線形層は、xy 座標、高さ、幅の為の出力サイズ 4 でバウンディングボックスを予測します。</p>
 <div class="codehilite"><pre><span></span><code><span class="bp">self</span><span class="o">.</span><span class="n">linear_bbox</span> <span class="o">=</span> <span class="n">nn</span><span class="o">.</span><span class="n">Linear</span><span class="p">(</span><span class="n">hidden_dim</span><span class="p">,</span> <span class="mi">4</span><span class="p">)</span>
 </code></pre></div>
 
