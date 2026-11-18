@@ -7,24 +7,24 @@
     {label: "Aws Studio", value: "https://studiolab.sagemaker.aws/import/github/huggingface/notebooks/blob/master/course/en/chapter5/section3.ipynb"},
 ]} />
 
-多くの場合、手元のデータはモデルの訓練にそのまま使える形には整っていません。このセクションでは、データセットをきれいに整える為に 🤗 Datasets が提供する様々な機能を探っていきます。
+手元のデータが、そのままモデルの訓練に使える形に整っていることはあまりありません。このセクションでは、🤗 Datasets がデータセットを整える為に提供する様々な機能を見ていきます。
 
 <Youtube id="tqfSFcPMgOI"/>
 
 ## データを切り分けて加工する[[slicing-and-dicing-our-data]]
 
-Pandas と同様に、Datasets には `Dataset` オブジェクトや `DatasetDict` オブジェクトの内容を操作する関数がいくつも用意されています。`Dataset.map()` メソッドは [Chapter 3](/course/chapter3) で既に紹介しました。このセクションでは、それ以外に使える関数を見ていきます。
+🤗 Datasets には、Pandas と同様に、`Dataset` オブジェクトや `DatasetDict` オブジェクトの内容を操作する関数が用意されています。`Dataset.map()` メソッドは [Chapter 3](/course/chapter3) で既に取り上げました。このセクションでは、その他の関数を見ていきます。
 
-この例では、[UC Irvine Machine Learning Repository](https://archive.ics.uci.edu/ml/index.php) で公開されている [Drug Review Dataset](https://archive.ics.uci.edu/ml/datasets/Drug+Review+Dataset+%28Drugs.com%29) を使います。これは、様々な薬に対する患者のレビューと、治療対象の症状、患者の満足度を示す10点満点の星評価を収めたデータセットです。
+この例では、[Drug Review Dataset](https://archive.ics.uci.edu/ml/datasets/Drug+Review+Dataset+%28Drugs.com%29) を使います。[UC Irvine Machine Learning Repository](https://archive.ics.uci.edu/ml/index.php) で公開されているデータセットで、様々な薬に対する患者のレビューと、治療対象の症状、患者の満足度を示す10点満点の星評価が収められています。
 
-まず、`wget` コマンドと `unzip` コマンドでデータをダウンロードして展開する必要があります。
+まず、データをダウンロードして展開します。`wget` コマンドと `unzip` コマンドを使います。
 
 ```py
 !wget "https://archive.ics.uci.edu/ml/machine-learning-databases/00462/drugsCom_raw.zip"
 !unzip drugsCom_raw.zip
 ```
 
-TSV は、区切り文字にカンマではなくタブを使う CSV の一種に過ぎません。その為、`load_dataset()` 関数で `csv` ローディングスクリプトを使い、`delimiter` 引数を指定することで、これらのファイルを次のように読み込めます。
+TSV は、区切り文字にカンマではなくタブを使う CSV の一種です。その為、`load_dataset()` 関数で `csv` ローディングスクリプトを使い、`delimiter` 引数を指定すれば、これらのファイルを読み込めます。
 
 ```py
 from datasets import load_dataset
@@ -34,7 +34,7 @@ data_files = {"train": "drugsComTrain_raw.tsv", "test": "drugsComTest_raw.tsv"}
 drug_dataset = load_dataset("csv", data_files=data_files, delimiter="\t")
 ```
 
-データ分析では、まず小さなランダムサンプルを取り出して、扱っているデータの傾向を手早く把握するのが一般的です。Datasets では、`Dataset.shuffle()` 関数と `Dataset.select()` 関数をつなげることでランダムサンプルを作れます。
+データ分析では、まず小さなランダムサンプルを取り出し、扱っているデータがどのようなものかを手早く把握するのが良い方法です。🤗 Datasets では、`Dataset.shuffle()` 関数と `Dataset.select()` 関数をつなげるとランダムサンプルを作れます。
 
 ```py
 drug_sample = drug_dataset["train"].shuffle(seed=42).select(range(1000))
@@ -56,22 +56,22 @@ drug_sample[:3]
 
 （レビューの訳：1件目は「前の人も言っていたように、私はアリーブを強く信じています。痛風には処方薬よりも速く効きます。もう補充の為に医者に行く必要はありません……アリーブが効きます！」です。2件目は、線維筋痛症の痛みの為にシンバルタを約1年半服用した経験で、痛み止めや抗うつ薬としては優れているが、副作用が利点を上回った為に減薬中である、という内容です。3件目は「モビックを1年以上服用し、血圧の上昇以外に副作用はありませんでした。重い膝と足首の痛みは、モビックを服用した後、完全に消えました。服用をやめようとしましたが、数日後に痛みが戻りました」です）
 
-再現性を確保する為、`Dataset.shuffle()` ではシードを固定しています。`Dataset.select()` は、インデックスを順次取得出来る反復可能オブジェクト（iterable）を引数として受け取ります。そこで、シャッフルしたデータセットから最初の1,000件を取得する為に、`range(1000)` を渡しています。
+ここでは再現性の為に、`Dataset.shuffle()` のシードを固定しています。`Dataset.select()` にはインデックスの反復可能オブジェクト（iterable）を渡します。シャッフル後のデータセットから最初の1,000件を取り出す為に、`range(1000)` を渡しています。
 
-このサンプルを見るだけでも、データセットにいくつかの特徴が有ることが分かります。
+このサンプルだけでも、データセットには既にいくつかの癖があることが分かります。
 
 * `Unnamed: 0` 列は、各患者の匿名化された ID のように見えます。
 * `condition` 列には、大文字と小文字のラベルが混在しています。
 * レビューは長さがまちまちで、改行コード（`\r\n`）や、`&\#039;` のような HTML 文字参照が混ざっています。
 
-Datasets を使ってこれらの問題にどう対処出来るか見ていきましょう。`Unnamed: 0` 列が患者 ID を表しているという仮説を検証するには、`Dataset.unique()` 関数を使って、ID の数が各分割の行数と一致するかを確認出来ます。
+これらの問題に 🤗 Datasets でどう対処するかを見ていきます。まず、`Unnamed: 0` 列が患者 ID であるという仮説を検証します。`Dataset.unique()` 関数を使い、ID の数が各分割の行数と一致するかを確認します。
 
 ```py
 for split in drug_dataset.keys():
     assert len(drug_dataset[split]) == len(drug_dataset[split].unique("Unnamed: 0"))
 ```
 
-仮説は正しそうです。では、`Unnamed: 0` 列の名前をもう少し解釈し易いものに変えて、データセットを少し整えましょう。`DatasetDict.rename_column()` 関数を使えば、両方の分割にわたって一度に列名を変更出来ます。
+仮説は正しそうです。次に、データセットを少し整えます。`Unnamed: 0` 列の名前を、意味の分かる名前に変えます。`DatasetDict.rename_column()` 関数を使うと、両方の分割の列名を一度に変更出来ます。
 
 ```py
 drug_dataset = drug_dataset.rename_column(
@@ -94,9 +94,9 @@ DatasetDict({
 ```
 
 > [!TIP]
-> **やってみよう！** `Dataset.unique()` 関数を使って、訓練セットとテストセットに含まれる薬と症状が、それぞれ何種類あるか調べてみましょう。
+> ✏️ **やってみよう！** `Dataset.unique()` 関数を使って、訓練セットとテストセットに含まれる薬と症状が、それぞれ何種類あるか調べてみましょう。
 
-次に、`Dataset.map()` を使って `condition` ラベルを全て正規化します。[Chapter 3](/course/chapter3) でトークナイズを行った時と同様に、`drug_dataset` の各分割の全ての行に適用出来る単純な関数を定義出来ます。
+次に、`Dataset.map()` を使って `condition` ラベルを正規化します。[Chapter 3](/course/chapter3) でトークナイズを行った時と同様に、`drug_dataset` の各分割の全ての行に適用する単純な関数を定義します。
 
 ```py
 def lowercase_condition(example):
@@ -110,14 +110,14 @@ drug_dataset.map(lowercase_condition)
 AttributeError: 'NoneType' object has no attribute 'lower'
 ```
 
-おっと、`Dataset.map()` でエラーが発生しました！このエラーから、`condition` 列には `None` が含まれていることが分かります。`None` は文字列ではない為、小文字に変換出来ません。そこで、`Dataset.filter()` を使って該当する行を取り除きましょう。`Dataset.filter()` は `Dataset.map()` と似た仕組みで、データセットのサンプルを1件ずつ受け取る関数を引数として指定します。例えば、次のような関数を定義出来ます。
+おっと、`Dataset.map()` で問題が起きました。エラーから、`condition` 列には `None` が含まれていることが分かります。`None` は文字列ではない為、小文字に変換出来ません。そこで、`Dataset.filter()` を使って該当する行を取り除きます。`Dataset.filter()` は `Dataset.map()` と似た関数で、データセットのサンプルを1件受け取る関数を指定します。明示的に書くと、次のようになります。
 
 ```py
 def filter_nones(x):
     return x["condition"] is not None
 ```
 
-この関数を `drug_dataset.filter(filter_nones)` で実行することも出来ますが、ラムダ関数を使えば1行で書けます。Python のラムダ関数は、明示的に名前を付けずに定義出来る小さな関数です。一般形は次の通りです。
+この関数は `drug_dataset.filter(filter_nones)` として実行出来ますが、ラムダ関数を使えば1行で書けます。ラムダ関数とは、名前を付けずに定義出来る小さな関数です。Python での一般形は次の通りです。
 
 ```
 lambda <arguments> : <expression>
@@ -151,7 +151,7 @@ lambda x : x * x
 16.0
 ```
 
-ラムダ関数は、小さくて使い捨ての関数を定義したい場合に便利です（詳細については、Andre Burgaud による素晴らしい [Real Python のチュートリアル](https://realpython.com/python-lambda/) を読むことをお勧めします）。Datasets では、ラムダ関数を使って `map()` や `filter()` の簡単な処理を定義出来ます。この方法を使って、データセット内の `None` エントリを取り除きましょう。
+ラムダ関数は、小さくて一度だけ使う関数を定義する場合に便利です。詳しくは、Andre Burgaud による [Real Python のチュートリアル](https://realpython.com/python-lambda/) が参考になります。🤗 Datasets では、ラムダ関数で `map()` や `filter()` の簡単な処理を定義出来ます。この方法で、データセット内の `None` を取り除きます。
 
 ```py
 drug_dataset = drug_dataset.filter(lambda x: x["condition"] is not None)
@@ -169,20 +169,20 @@ drug_dataset["train"]["condition"][:3]
 ['left ventricular dysfunction', 'adhd', 'birth control']
 ```
 
-うまくいきました！ラベルが整ったところで、次はレビュー自体のクリーニングを見ていきましょう。
+うまくいきました。ラベルが整いました。次に、レビュー自体を整える方法を見ていきます。
 
 ## 新しい列の作成[[creating-new-columns]]
 
-顧客レビューを扱う時は、まず各レビューの単語数を調べておくとよいでしょう。レビューには \"Great!\" のように1語だけのものもあれば、数千語に及ぶ長文もあります。こうした極端に短いレビューや長いレビューへの対処方法は、用途によって異なります。ここでは、テキストを空白文字で区切り、おおよその単語数を数える簡単な方法を使います。
+顧客レビューを扱う時は、各レビューの単語数を調べておくのが良い方法です。レビューには \"Great!\" のように1語だけのものもあれば、数千語に及ぶ長文もあります。極端な長さのレビューへの対処は用途によって異なります。各レビューの単語数は、テキストを空白で区切る方法で大まかに数えます。
 
-各レビューの単語数を数える単純な関数を定義しましょう。
+単語数を数える単純な関数は次の通りです。
 
 ```py
 def compute_review_length(example):
     return {"review_length": len(example["review"].split())}
 ```
 
-`lowercase_condition()` 関数とは違い、`compute_review_length()` は既存の列名には無い `review_length` というキーを持つ辞書を返します。この関数を `Dataset.map()` に渡すと、データセットの全ての行に適用され、新しい `review_length` 列が作られます。
+`lowercase_condition()` 関数とは違い、`compute_review_length()` 関数は、既存の列名には無い `review_length` というキーを持つ辞書を返します。`Dataset.map()` にこの関数を渡すと、データセットの全ての行に適用され、新しい `review_length` 列が作られます。
 
 ```py
 drug_dataset = drug_dataset.map(compute_review_length)
@@ -203,7 +203,7 @@ drug_dataset["train"][0]
 
 （レビューの訳：「副作用はありません。バイストリック 5 Mg とフィッシュオイルと併せて服用しています」）
 
-期待通り、訓練セットに `review_length` 列が追加されています。この列を基準に `Dataset.sort()` でデータセットを並べ替えると、単語数が最も少ないレビューを確認出来ます。
+期待通り、訓練セットに `review_length` 列が追加されました。`Dataset.sort()` でこの列を基準に並べ替えると、最も短いレビューが分かります。
 
 ```py
 drug_dataset["train"].sort("review_length")[:3]
@@ -222,12 +222,12 @@ drug_dataset["train"].sort("review_length")[:3]
 
 （レビューの訳：「素晴らしい。」「役に立たない」「まあまあ」）
 
-予想通り、1語だけのレビューも含まれています。感情分析ならそれでも構いませんが、症状を予測するには、十分な手掛かりが得られません。
+予想通り、1語だけのレビューがありました。感情分析では使える場合もありますが、症状の予測には情報が足りません。
 
 > [!TIP]
-> データセットに新しい列を追加する別の方法として、`Dataset.add_column()` 関数があります。列を Python のリストや NumPy 配列として渡すことが出来、`Dataset.map()` が分析に適さない場面で便利です。
+> 🙋 データセットに新しい列を追加する別の方法として、`Dataset.add_column()` 関数があります。列を Python のリストや NumPy 配列として渡すことが出来、`Dataset.map()` が分析に適さない場面で便利です。
 
-`Dataset.filter()` 関数を使って、単語数が30未満のレビューを取り除きましょう。`condition` 列を処理した時と同じように、レビューの単語数がこのしきい値を超えるという条件を指定すれば、非常に短いレビューを除外出来ます。
+次に、単語数が30未満のレビューを取り除きます。`Dataset.filter()` 関数を使います。`condition` 列の処理と同様に、単語数がしきい値を超えることを条件に指定します。
 
 ```py
 drug_dataset = drug_dataset.filter(lambda x: x["review_length"] > 30)
@@ -238,12 +238,12 @@ print(drug_dataset.num_rows)
 {'train': 138514, 'test': 46108}
 ```
 
-見ての通り、元の訓練セットとテストセットからレビューの約15%が取り除かれました。
+元の訓練セットとテストセットから、レビューの約15%が取り除かれました。
 
 > [!TIP]
-> **やってみよう！** `Dataset.sort()` 関数を使って、単語数が最も多いレビューを確認してみましょう。レビューを単語数の降順に並べ替える為に必要な引数は、[ドキュメント](https://huggingface.co/docs/datasets/package_reference/main_classes#datasets.Dataset.sort)で確認してください。
+> ✏️ **やってみよう！** `Dataset.sort()` 関数を使って、単語数が最も多いレビューを確認してみましょう。レビューを単語数の降順に並べ替える為に必要な引数は、[ドキュメント](https://huggingface.co/docs/datasets/package_reference/main_classes#datasets.Dataset.sort)で確認してください。
 
-最後に、レビューに含まれる HTML 文字参照を処理しましょう。Python の `html` モジュールを使えば、次のように HTML 文字参照を元の文字に変換出来ます。
+最後に、レビューに含まれる HTML 文字参照を処理します。Python の `html` モジュールを使うと、次のように元の文字に戻せます。
 
 ```py
 import html
@@ -258,21 +258,21 @@ html.unescape(text)
 
 （出力の訳：「私は BERT という名前の Transformer です」）
 
-`Dataset.map()` を使って、コーパス内の全ての HTML 文字参照を元の文字に戻しましょう。
+`Dataset.map()` を使って、コーパス内の全ての HTML 文字参照を元の文字に戻します。
 
 ```python
 drug_dataset = drug_dataset.map(lambda x: {"review": html.unescape(x["review"])})
 ```
 
-見ての通り、`Dataset.map()` メソッドはデータ処理にかなり役立ちます。しかも、その能力のほんの一部に触れただけです。
+`Dataset.map()` メソッドはデータ処理にかなり役立ちます。ここまでで触れたのは、その能力のほんの一部です。
 
 ## `map()` メソッドのスーパーパワー[[the-map-methods-superpowers]]
 
-`Dataset.map()` メソッドには `batched` 引数があり、`True` に設定すると、複数のサンプルがまとめてマッピング関数に渡されます（バッチサイズは変更出来ますが、デフォルトは1,000です）。例えば、先程 HTML 文字参照を変換した処理には、少し時間がかかりました（所要時間は進捗バーで確認出来ます）。リスト内包表記を使って複数の要素をまとめて処理すれば、この処理を高速化出来ます。
+`Dataset.map()` メソッドには `batched` 引数があります。`True` に設定すると、複数のサンプルがまとめてマップ関数に渡されます。バッチサイズは変更出来ますが、既定は1,000です。先程の HTML 文字参照を変換する処理には少し時間がかかりました。所要時間は進捗バーで確認出来ます。リスト内包表記で複数の要素をまとめて処理すると、この処理を高速化出来ます。
 
-`batched=True` を指定すると、関数はデータセットの各フィールドをキーとする辞書を受け取ります。但し、各キーに対応する値は単一の値ではなく、値のリストになります。戻り値も同様に、更新又は追加したいフィールドをキーとし、それぞれの値がリストになっている辞書にする必要があります。
+`batched=True` を指定すると、関数はデータセットのフィールドをキーとする辞書を受け取ります。但し、各値が単一の値ではなく、値のリストになります。戻り値も同じ形にします。更新又は追加するフィールドをキーとし、各値をリストにします。
 
-例えば、`batched=True` を使って全ての HTML 文字参照を変換するには、次のように書けます。
+`batched=True` を使って全ての HTML 文字参照を変換する例は次の通りです。
 
 ```python
 new_drug_dataset = drug_dataset.map(
@@ -280,9 +280,9 @@ new_drug_dataset = drug_dataset.map(
 )
 ```
 
-このコードをノートブックで実行すると、先程のコードよりもずっと速く処理が終わることが分かるでしょう。これは、レビュー内の HTML 文字参照が既に変換されているからではありません。先程のコードを `batched=True` なしでもう一度実行しても、所要時間は殆ど変わりません。処理が速くなるのは、リスト内包表記が通常の `for` ループよりも高速であり、更に、要素を1件ずつではなくまとめて処理することでも効率が上がる為です。
+このコードをノートブックで実行すると、先程のコードよりもずっと速く終わります。速くなる理由は、レビューの HTML 文字参照が既に変換済みだからではありません。`batched=True` なしで先程のコードを再実行しても、所要時間は殆ど変わりません。リスト内包表記は通常の `for` ループより高速です。更に、要素を1件ずつではなくまとめて扱うことでも効率が上がります。
 
-`Dataset.map()` と `batched=True` の組み合わせは、[Chapter 6](/course/chapter6) で紹介する高速トークナイザ（fast tokenizer）の性能を引き出す上で欠かせません。高速トークナイザは、大量のテキストをすばやくトークナイズ出来ます。例えば、薬のレビューを全て高速トークナイザで処理するには、次のような関数を使えます。
+`Dataset.map()` と `batched=True` の組み合わせは、[Chapter 6](/course/chapter6) で紹介する高速トークナイザ（fast tokenizer）の速さを引き出す上で欠かせません。高速トークナイザは大量のテキストをすばやくトークナイズ出来ます。薬のレビューを全て高速トークナイザで処理する関数は、例えば次の通りです。
 
 ```python
 from transformers import AutoTokenizer
@@ -294,29 +294,29 @@ def tokenize_function(examples):
     return tokenizer(examples["review"], truncation=True)
 ```
 
-[Chapter 3](/course/chapter3) で見た通り、トークナイザには1つ又は複数のサンプルを渡せる為、この関数は `batched=True` の有無にかかわらず使えます。この機会に、様々な選択肢の性能を比較してみましょう。ノートブックでは、計測したいコード行の前に `%time` を付ければ、1行の命令の時間を測れます。
+[Chapter 3](/course/chapter3) で見た通り、トークナイザには1つ又は複数のサンプルを渡せます。その為、この関数は `batched=True` の有無にかかわらず使えます。この機会に、各選択肢の性能を比較します。ノートブックでは、計測したい行の前に `%time` を付けると、1行の実行時間を測れます。
 
 ```python no-format
 %time tokenized_dataset = drug_dataset.map(tokenize_function, batched=True)
 ```
 
-セル全体の実行時間を測りたい場合は、セルの先頭に `%%time` を置くことも出来ます。原典の著者が使用した環境では、この処理に10.8秒かかりました。これは、実行結果の「Wall time」の後に表示される数値です。
+セル全体の時間を測る場合は、セルの先頭に `%%time` を置きます。このコードを実行したハードウェアでは、この命令に10.8秒かかりました。「Wall time」の後に表示される数値です。
 
 > [!TIP]
-> **やってみよう！** 同じ命令を `batched=True` の有無で実行し、更に低速トークナイザ（`AutoTokenizer.from_pretrained()` メソッドに `use_fast=False` を追加）でも試して、自分のハードウェアでどのような数値が得られるか確認してみましょう。
+> ✏️ **やってみよう！** 同じ命令を `batched=True` の有無で実行し、更に低速トークナイザ（`AutoTokenizer.from_pretrained()` メソッドに `use_fast=False` を追加）でも試して、自分のハードウェアでどのような数値が得られるか確認してみましょう。
 
-バッチ処理の有無、高速トークナイザと低速トークナイザで得られた結果は次の通りです。
+バッチ処理の有無と、高速トークナイザと低速トークナイザの組み合わせで得られた結果は次の通りです。
 
 オプション         | 高速トークナイザ | 低速トークナイザ
 :--------------:|:--------------:|:-------------:
 `batched=True`  | 10.8s          | 4min41s
 `batched=False` | 59.2s          | 5min3s
 
-つまり、高速トークナイザと `batched=True` オプションの組み合わせは、バッチ処理なしの低速な組み合わせよりも30倍高速ということです。本当に驚くべきことです！これが、`AutoTokenizer` を使う時に高速トークナイザがデフォルトである（そして「高速」と呼ばれる）主な理由です。裏側ではトークナイズのコードが Rust で実行されており、Rust はコード実行の並列化が容易な言語である為、このような高速化が可能になっています。
+つまり、高速トークナイザに `batched=True` を組み合わせると、バッチ処理なしの低速トークナイザより30倍高速です。これが、`AutoTokenizer` で高速トークナイザが既定になっている主な理由であり、「高速」と呼ばれる理由です。裏側ではトークナイズのコードが Rust で実行されます。Rust はコードの実行を並列化し易い言語であり、この高速化はその為に可能になっています。
 
-並列化は、高速トークナイザがバッチ処理でほぼ6倍の高速化を達成出来る理由でもあります。単一のトークナイズ操作は並列化出来ませんが、多数のテキストを同時にトークナイズしたい場合は、実行を複数のプロセスに分割し、それぞれが自分の担当するテキストを処理すればよいのです。
+並列化は、高速トークナイザがバッチ処理でほぼ6倍速くなる理由でもあります。単一のトークナイズ操作は並列化出来ません。多数のテキストを同時にトークナイズする場合は、実行を複数のプロセスに分け、各プロセスが担当分のテキストを処理出来ます。
 
-`Dataset.map()` 自体にも、処理を並列化する機能があります。この機能は Rust で実装されている訳ではない為、低速トークナイザが高速トークナイザに追いつく程の高速化は期待出来ません。それでも、特に高速版が存在しないトークナイザを使う場合には役立ちます。マルチプロセッシングを有効にするには、`Dataset.map()` の `num_proc` 引数で使用するプロセス数を指定します。
+`Dataset.map()` 自体にも並列化の機能があります。Rust による実装ではない為、低速トークナイザが高速トークナイザに追いつく程にはなりません。それでも役立つ場合があります。特に、高速版が存在しないトークナイザを使う場合です。マルチプロセッシングを使うには、`Dataset.map()` の `num_proc` 引数で使用するプロセス数を指定します。
 
 ```py
 slow_tokenizer = AutoTokenizer.from_pretrained("bert-base-cased", use_fast=False)
@@ -329,7 +329,7 @@ def slow_tokenize_function(examples):
 tokenized_dataset = drug_dataset.map(slow_tokenize_function, batched=True, num_proc=8)
 ```
 
-時間を測りながら少し実験すれば、使うプロセスの最適な数が分かります。私たちの場合、8が最も良い高速化をもたらすようでした。マルチプロセッシングの有無で得られた数値は次の通りです。
+最適なプロセス数は、時間を測りながら少し実験すると分かります。この検証では8が最も良い結果でした。マルチプロセッシングの有無で得られた数値は次の通りです。
 
 オプション         | 高速トークナイザ | 低速トークナイザ
 :--------------:|:--------------:|:-------------:
@@ -338,17 +338,17 @@ tokenized_dataset = drug_dataset.map(slow_tokenize_function, batched=True, num_p
 `batched=True`, `num_proc=8`  | 6.52s          | 41.3s
 `batched=False`, `num_proc=8` | 9.49s          | 45.2s
 
-低速トークナイザでも、実行時間が大幅に短縮され、より実用的な水準になりましたが、高速トークナイザの性能も大幅に向上しました。但し、常にそうなるとは限りません。8以外の `num_proc` の値では、そのオプションなしで `batched=True` を使うほうが速いという結果がテストで示されました。一般に、`batched=True` と高速トークナイザの組み合わせに Python のマルチプロセッシングを使うことはお勧めしません。
+低速トークナイザの数値は大幅に改善し、実用的な水準になりました。高速トークナイザの性能も大幅に向上しています。但し、常にそうなるとは限りません。`num_proc` に8以外の値を指定したテストでは、そのオプションなしで `batched=True` を使う方が速い結果でした。一般に、高速トークナイザと `batched=True` の組み合わせでは、Python のマルチプロセッシングは使わない方がよいでしょう。
 
 > [!TIP]
 > `num_proc` を使って処理を高速化するのは、通常は良い考えです。但し、使用している関数自体が既に何らかのマルチプロセッシングを行っていない場合に限ります。
 
-1つのメソッドでこれだけのことが出来るのも驚きですが、まだあります！`Dataset.map()` と `batched=True` を使えば、データセット内の要素数を変更することも出来ます。これは、1つのサンプルから訓練用の特徴量を複数作りたい場面など、多くの状況で非常に便利です。[Chapter 7](/course/chapter7) で取り組むいくつかの NLP タスクの前処理でも必要になります。
+1つのメソッドにこれだけの機能が集まっていますが、更にまだあります。`Dataset.map()` と `batched=True` を使うと、データセットの要素数を変更出来ます。1つのサンプルから訓練用の特徴量を複数作る場合など、多くの場面で便利な機能です。[Chapter 7](/course/chapter7) で取り組むいくつかの NLP タスクの前処理でも必要になります。
 
 > [!TIP]
-> 機械学習では、サンプル（example）は通常、モデルに入力する特徴量（feature）の集合として定義されます。文脈によっては、これらの特徴量が `Dataset` の列の集合である場合もあれば、（この場合や質問応答のように）1つのサンプルから複数の特徴量が抽出され、1つの列に属する場合もあります。
+> 💡 機械学習では、サンプル（example）は通常、モデルに入力する特徴量（feature）の集合として定義されます。文脈によっては、これらの特徴量が `Dataset` の列の集合である場合もあれば、（この場合や質問応答のように）1つのサンプルから複数の特徴量が抽出され、1つの列に属する場合もあります。
 
-仕組みを見ていきましょう！ここではサンプルをトークナイズし、最大長を128トークンに設定します。但し、最初の分割部分（チャンク）だけを返すのではなく、テキストを分割して出来た全てのチャンクを返すようにします。これには `return_overflowing_tokens=True` を指定します。
+仕組みは次の通りです。サンプルをトークナイズし、最大長を128にします。但し、最初のチャンクだけではなく、分割で出来た全てのチャンクを返します。その為に `return_overflowing_tokens=True` を指定します。
 
 ```py
 def tokenize_and_split(examples):
@@ -360,7 +360,7 @@ def tokenize_and_split(examples):
     )
 ```
 
-データセット全体に `Dataset.map()` を使う前に、1つのサンプルでテストしてみましょう。
+データセット全体に `Dataset.map()` を適用する前に、1つのサンプルでテストします。
 
 ```py
 result = tokenize_and_split(drug_dataset["train"][0])
@@ -371,7 +371,7 @@ result = tokenize_and_split(drug_dataset["train"][0])
 [128, 49]
 ```
 
-訓練セットの最初のサンプルは、トークナイズすると指定した最大トークン数を超える為、2つの特徴量に分割されました。1つ目の長さは128、2つ目は49です。では、データセット内の全てのサンプルに対して同じ処理を行いましょう！
+訓練セットの最初のサンプルは、指定した最大トークン数を超えた為、2つの特徴量に分かれました。1つ目の長さは128、2つ目は49です。次に、データセットの全ての要素に同じ処理を適用します。
 
 ```py
 tokenized_dataset = drug_dataset.map(tokenize_and_split, batched=True)
@@ -381,9 +381,9 @@ tokenized_dataset = drug_dataset.map(tokenize_and_split, batched=True)
 ArrowInvalid: Column 1 named condition expected length 1463 but got length 1000
 ```
 
-おっと、うまくいきませんでした！何故でしょうか。エラーメッセージを見ると、列の長さが一致していないことが分かります。一方は1,463件、もう一方は1,000件です。`Dataset.map()` の[ドキュメント](https://huggingface.co/docs/datasets/package_reference/main_classes#datasets.Dataset.map)を読んだことがあれば、マッピング関数に渡されるサンプル数が関係していると思い当たるかもしれません。今回は、1,000件のサンプルを関数に渡したところ、1,463件の新しい特徴量が生成されました。その為、列の長さが一致しなくなったのです。
+うまくいきませんでした。エラーメッセージが手掛かりになります。列の長さが一致していません。一方は1,463で、もう一方は1,000です。`Dataset.map()` の[ドキュメント](https://huggingface.co/docs/datasets/package_reference/main_classes#datasets.Dataset.map)にもある通り、関係するのはマップ関数に渡されるサンプルの数です。ここでは1,000件のサンプルから1,463件の新しい特徴量が生成され、形が合わなくなりました。
 
-問題は、サイズの異なる2つのデータセットを混ぜようとしていることです。元のデータセットの列には1,000件の値があります。一方、`return_overflowing_tokens=True` によって長いレビューが分割される為、新しい列には1,463件の値が生成されます。`Dataset` ではこれは成り立たない為、古いデータセットの列を取り除くか、新しいデータセットと同じサイズにする必要があります。前者は `remove_columns` 引数で行えます。
+問題は、大きさの異なる2つのデータセットを混ぜようとしていることです。元のデータセットの列の要素数は1,000件です。一方、構築中の新しいデータセットの要素数は1,463件です。長いレビューが `return_overflowing_tokens=True` によって複数のサンプルに分かれる為です。`Dataset` ではこれは成り立ちません。古いデータセットの列を取り除くか、古い列を新しいデータセットと同じ大きさにする必要があります。取り除く方法は `remove_columns` 引数で指定出来ます。
 
 ```py
 tokenized_dataset = drug_dataset.map(
@@ -391,7 +391,7 @@ tokenized_dataset = drug_dataset.map(
 )
 ```
 
-今度はエラーなく動作します。長さを比較すれば、新しいデータセットが元のデータセットよりもはるかに多くの要素を持つことを確認出来ます。
+今度はエラーなく動作します。長さを比べると、新しいデータセットの要素数が元のデータセットより大幅に増えていることが確認出来ます。
 
 ```py
 len(tokenized_dataset["train"]), len(drug_dataset["train"])
@@ -401,7 +401,7 @@ len(tokenized_dataset["train"]), len(drug_dataset["train"])
 (206772, 138514)
 ```
 
-列の長さが一致しない問題は、元の列を新しい列と同じ長さにすることでも解決出来ます。その為には、`return_overflowing_tokens=True` を指定した時にトークナイザが返す `overflow_to_sample_mapping` フィールドを使います。このフィールドには、新しく生成された各特徴量のインデックスと、その特徴量がどの元サンプルから作られたかを示すインデックスの対応関係が格納されています。この対応関係を使い、各サンプルから生成された特徴量の数に合わせて元の列の値を複製すれば、列の長さを揃えられます。
+長さが一致しない問題は、古い列を新しい列と同じ大きさにしても解決出来ます。その為には、`return_overflowing_tokens=True` を指定した時にトークナイザが返す `overflow_to_sample_mapping` フィールドを使います。このフィールドは、新しい特徴量のインデックスと、その特徴量の元になったサンプルのインデックスとの対応です。この対応を使い、元のデータセットの各キーを、適切な大きさの値のリストに対応付けます。各サンプルの値は、そのサンプルが生成する新しい特徴量の数だけ繰り返します。
 
 ```py
 def tokenize_and_split(examples):
@@ -418,7 +418,7 @@ def tokenize_and_split(examples):
     return result
 ```
 
-古い列を取り除かなくても、`Dataset.map()` で動作することが分かります。
+古い列を取り除かなくても、`Dataset.map()` が動作することが分かります。
 
 ```py
 tokenized_dataset = drug_dataset.map(tokenize_and_split, batched=True)
@@ -438,23 +438,23 @@ DatasetDict({
 })
 ```
 
-訓練用の特徴量の数は以前と同じですが、ここでは元のフィールドを全て保持しています。モデルの出力を後処理する際に、これらのフィールドが必要になる場合は、この方法を使うとよいでしょう。
+訓練用の特徴量の数は前と同じですが、ここでは元のフィールドを全て保持しています。モデルを適用した後の後処理でこれらのフィールドが必要な場合は、この方法が向いています。
 
-これで、Datasets を使ってデータセットを様々な方法で前処理出来ることを見てきました。Datasets の処理関数は、モデルの訓練に必要なことの大半をカバーしますが、`DataFrame.groupby()` や可視化用の高レベル API など、より強力な機能を利用する為に Pandas へ切り替える必要がある場面もあるでしょう。
+ここまでで、🤗 Datasets を使ってデータセットを様々な方法で前処理出来ることを見てきました。🤗 Datasets の処理関数で、モデルの訓練に必要な作業の大半はまかなえます。但し、場面によっては Pandas に切り替える必要があります。`DataFrame.groupby()` や可視化用の高水準 API など、より強力な機能を使う場合です。
 
-幸い、Datasets は Pandas、NumPy、PyTorch、TensorFlow、JAX といったライブラリと相互運用出来るよう設計されています。その仕組みを見ていきましょう。
+幸い、🤗 Datasets は Pandas、NumPy、PyTorch、TensorFlow、JAX といったライブラリと相互に運用出来るよう設計されています。その仕組みを見ていきます。
 
 ## `Dataset` から `DataFrame` へ、そして戻す[[from-datasets-to-dataframes-and-back]]
 
 <Youtube id="tfcY1067A5Q"/>
 
-様々なサードパーティライブラリ間の変換を可能にする為、Datasets には `Dataset.set_format()` 関数があります。この関数はデータセットの出力形式だけを変更する為、基盤となるデータ形式（Apache Arrow）に影響を与えることなく、別の形式へ簡単に切り替えられます。形式の変更はインプレース（その場）で行われます。実例として、データセットを Pandas に変換してみましょう。
+サードパーティライブラリとの変換を可能にする為に、🤗 Datasets には `Dataset.set_format()` 関数があります。この関数はデータセットの出力形式だけを変更します。その為、基盤となるデータ形式である Apache Arrow に影響を与えずに、別の形式へ簡単に切り替えられます。書式設定はインプレース（その場）で行われます。例として、データセットを Pandas に変換します。
 
 ```py
 drug_dataset.set_format("pandas")
 ```
 
-これで、データセットの要素にアクセスすると、辞書ではなく `pandas.DataFrame` が得られます。
+これで、データセットの要素にアクセスすると、辞書ではなく `pandas.DataFrame` が返ります。
 
 ```py
 drug_dataset["train"][:3]
@@ -511,17 +511,17 @@ drug_dataset["train"][:3]
   </tbody>
 </table>
 
-`drug_dataset["train"]` の全ての要素を選択して、訓練セット全体の `pandas.DataFrame` を作りましょう。
+`drug_dataset["train"]` の要素を全て選択し、訓練セット全体の `pandas.DataFrame` を作ります。
 
 ```py
 train_df = drug_dataset["train"][:]
 ```
 
 > [!TIP]
-> 裏側では、`Dataset.set_format()` はデータセットの `__getitem__()` という特殊メソッド（ダンダーメソッド）の戻り値の形式を変更します。つまり、`"pandas"` 形式の `Dataset` から `train_df` のような新しいオブジェクトを作りたい場合、データセット全体をスライスして `pandas.DataFrame` を取得する必要があります。出力形式にかかわらず、`drug_dataset["train"]` の型が `Dataset` であることは、自分で確認出来ます。
+> 🚨 裏側では、`Dataset.set_format()` はデータセットの `__getitem__()` という特殊メソッド（ダンダーメソッド）の戻り値の形式を変更します。つまり、`"pandas"` 形式の `Dataset` から `train_df` のような新しいオブジェクトを作りたい場合、データセット全体をスライスして `pandas.DataFrame` を取得する必要があります。出力形式にかかわらず、`drug_dataset["train"]` の型が `Dataset` であることは、自分で確認出来ます。
 
 
-ここからは、Pandas の様々な機能を自由に使えます。例えば、Pandas のメソッドを組み合わせて、`condition` 列に含まれる各症状の出現頻度を調べることが出来ます。
+ここからは、Pandas の機能を全て使えます。例えば、メソッドをつなげる凝った書き方で、`condition` の各項目のクラス分布を計算出来ます。
 
 ```py
 frequencies = (
@@ -572,7 +572,7 @@ frequencies.head()
 </table>
 
 
-Pandas による分析が終わったら、`Dataset.from_pandas()` 関数を使って、いつでも新しい `Dataset` オブジェクトを作れます。
+Pandas による分析が終わったら、`Dataset.from_pandas()` 関数を使って新しい `Dataset` オブジェクトを作れます。
 
 
 ```py
@@ -590,9 +590,9 @@ Dataset({
 ```
 
 > [!TIP]
-> **やってみよう！** 薬ごとの平均評価を計算し、結果を新しい `Dataset` に保存してみましょう。
+> ✏️ **やってみよう！** 薬ごとの平均評価を計算し、結果を新しい `Dataset` に保存してみましょう。
 
-以上で、Datasets の様々な前処理機能を一通り紹介しました。このセクションの締めくくりとして、分類器の訓練に備えてデータセットの検証セットを作成しましょう。その前に、`drug_dataset` の出力形式を `"pandas"` から `"arrow"` に戻しておきます。
+🤗 Datasets で使える様々な前処理手法の紹介は以上です。セクションの締めくくりとして、検証セットを作成し、分類器の訓練に備えます。その前に、`drug_dataset` の出力形式を `"pandas"` から `"arrow"` に戻します。
 
 ```python
 drug_dataset.reset_format()
@@ -600,9 +600,9 @@ drug_dataset.reset_format()
 
 ## 検証セットの作成[[creating-a-validation-set]]
 
-評価用のテストセットはありますが、開発中はテストセットを使わず、別に検証セットを作ることをお勧めします。検証セットでのモデルの性能に満足出来たら、テストセットで最終確認が出来ます。このプロセスにより、テストセットに過学習してしまい、実際のデータではうまく動かないモデルをデプロイするリスクを軽減出来ます。
+評価に使えるテストセットは既にあります。但し、開発中はテストセットには触れず、別に検証セットを作るのが良い方法です。検証セットでのモデルの性能に満足出来たら、テストセットで最終的な確認をします。この進め方により、テストセットに過学習し、実際のデータでは失敗するモデルをデプロイ（展開）してしまう危険を減らせます。
 
-Datasets には、`scikit-learn` でよく使われるデータ分割機能に基づいた `Dataset.train_test_split()` 関数があります。これを使って、訓練セットを `train` と `validation` の2つに分けましょう。再現性を確保する為、`seed` 引数も指定します。
+🤗 Datasets には、`scikit-learn` でよく知られた機能に基づく `Dataset.train_test_split()` 関数があります。これを使って、訓練セットを `train` と `validation` の2つに分割します。再現性の為、`seed` 引数を設定します。
 
 ```py
 drug_dataset_clean = drug_dataset["train"].train_test_split(train_size=0.8, seed=42)
@@ -630,13 +630,13 @@ DatasetDict({
 })
 ```
 
-素晴らしい。これで、モデルの訓練に使えるデータセットが出来ました！[セクション5](/course/chapter5/5) ではデータセットを Hugging Face Hub にアップロードする方法を紹介しますが、その前に、分析の締めくくりとして、データセットをローカルマシンに保存するいくつかの方法を見ておきましょう。
+これで、モデルの訓練に使えるデータセットが用意出来ました。[セクション5](/course/chapter5/5) ではデータセットを Hugging Face Hub にアップロードする方法を紹介します。その前に、分析の締めくくりとして、データセットをローカルマシンに保存する方法をいくつか見ておきます。
 
 ## データセットの保存[[saving-a-dataset]]
 
 <Youtube id="blF9uxYcKHo"/>
 
-Datasets は、ダウンロードした全てのデータセットとそれに対して行った操作をキャッシュしますが、データセットをディスクに保存したい場合もあります（キャッシュが削除される場合など）。下の表に示すように、Datasets にはデータセットを異なる形式で保存する3つの主要な関数が用意されています。
+🤗 Datasets は、ダウンロードしたデータセットと、それに対して行った操作を全てキャッシュします。但し、データセットをディスクに保存したい場合もあります。キャッシュが削除される場合などです。下の表の通り、🤗 Datasets にはデータセットを異なる形式で保存する主な関数が3つあります。
 
 | データ形式 |        関数        |
 | :---------: | :--------------------: |
@@ -644,7 +644,7 @@ Datasets は、ダウンロードした全てのデータセットとそれに�
 |     CSV     |    `Dataset.to_csv()`    |
 |    JSON     |   `Dataset.to_json()`    |
 
-例えば、クリーニング済みのデータセットを Arrow 形式で保存してみましょう。
+例として、整えたデータセットを Arrow 形式で保存します。
 
 ```py
 drug_dataset_clean.save_to_disk("drug-reviews")
@@ -671,9 +671,9 @@ drug-reviews/
     └── state.json
 ```
 
-各分割には、それぞれ専用の *dataset.arrow* テーブルと、*dataset_info.json* や *state.json* のメタデータが対応していることが分かります。Arrow 形式は、行と列からなる表形式のデータを保持し、大規模なデータセットの処理や転送を行う高性能なアプリケーション向けに最適化された形式だと考えてください。
+各分割には、それぞれ専用の *dataset.arrow* テーブルと、*dataset_info.json* と *state.json* のメタデータが対応しています。Arrow 形式は、列と行からなる派手な表と捉えると分かり易いでしょう。大規模なデータセットを処理し、転送する高性能なアプリケーションの構築に最適化されています。
 
-データセットが保存出来たら、次のように `load_from_disk()` 関数を使って読み込むことが出来ます。
+保存したデータセットは、`load_from_disk()` 関数で読み込めます。使い方は次の通りです。
 
 ```py
 from datasets import load_from_disk
@@ -699,14 +699,14 @@ DatasetDict({
 })
 ```
 
-CSV 形式と JSON 形式では、各分割を別々のファイルとして保存する必要があります。1つの方法は、`DatasetDict` オブジェクトのキーと値を反復処理することです。
+CSV 形式と JSON 形式では、各分割を別々のファイルに保存する必要があります。その方法の1つは、`DatasetDict` オブジェクトのキーと値を順に処理することです。
 
 ```py
 for split, dataset in drug_dataset_clean.items():
     dataset.to_json(f"drug-reviews-{split}.jsonl")
 ```
 
-これにより、各分割が [JSON Lines 形式](https://jsonlines.org)で保存されます。この形式では、データセットの各行が JSON の1行として保存されます。最初のサンプルは次のようになっています。
+これにより、各分割が [JSON Lines 形式](https://jsonlines.org) で保存されます。データセットの各行が、JSON の1行として保存される形式です。最初のサンプルは次の通りです。
 
 ```py
 !head -n 1 drug-reviews-train.jsonl
@@ -718,7 +718,7 @@ for split, dataset in drug_dataset_clean.items():
 
 （レビューの訳：「レクサプロの通常の副作用、つまり不眠、性欲の低下、日中の眠気を経験したようです。医師が、眠くなるなら夜に服用するように言ったので、夜に服用しています。そうなると思って、最初から夜に服用し始めました。奇妙な夢を見ますが、楽しい夢も有ります。線維筋痛症と診断されました。痛みには効いているようです。家族に不安やうつがあり、効かなかった他の薬もかなり試しました。服用してまだ2週間ですが、気持ちが前向きになり、人生でもっと色々なことを成し遂げたいと思うようになりました。副作用が次第に消えていくことを願っています。他の人の反応を聞くと、続ける価値は有ります。素晴らしい薬です」）
 
-その後、[セクション2](/course/chapter5/2) のテクニックを使って、次のように JSON ファイルを読み込むことが出来ます。
+JSON ファイルは、[セクション2](/course/chapter5/2) の手法で次のように読み込めます。
 
 ```py
 data_files = {
@@ -729,7 +729,7 @@ data_files = {
 drug_dataset_reloaded = load_dataset("json", data_files=data_files)
 ```
 
-これで、Datasets を使ったデータ加工の方法を一通り紹介しました！モデルの訓練に使えるクリーニング済みのデータセットも用意出来たので、次のようなことを試してみましょう。
+🤗 Datasets を使ったデータ加工の紹介は以上です。モデルの訓練に使える、整えたデータセットが用意出来ました。次のような応用が考えられます。
 
 1. [Chapter 3](/course/chapter3) のテクニックを使って、薬のレビューから患者の症状を予測出来る分類器を訓練する。
 2. [Chapter 1](/course/chapter1) の `summarization` パイプラインを使って、レビューの要約を生成する。

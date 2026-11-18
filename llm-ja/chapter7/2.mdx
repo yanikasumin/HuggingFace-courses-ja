@@ -22,7 +22,7 @@
 
 {/if}
 
-最初に取り上げる応用はトークン分類です。この汎用的なタスクは、「文中の各トークンにラベルを割り当てる」問題として定式化出来るもの全てを包含します。例として次のようなものがあります。
+最初に取り上げる応用はトークン分類です。トークン分類とは、文中の各トークンにラベルを割り当てるタスクです。この形に定式化出来る問題は数多くあります。代表的な例は次の通りです。
 
 - **固有表現認識（NER）**：文中のエンティティ（人名、地名、組織名など）を見つけます。エンティティの種類ごとに1つのクラスと、「エンティティではない」場合の1つのクラスを用意することで、各トークンへのラベル割り当てとして定式化出来ます。
 - **品詞タグ付け（POS）**：文中の各単語が、特定の品詞（名詞、動詞、形容詞など）のどれに対応するかを付けます。
@@ -30,7 +30,7 @@
 
 <Youtube id="wVHdVlPScxA"/>
 
-勿論、トークン分類の問題は他にも数多くの種類があり、ここに挙げたのは代表的な例の一部に過ぎません。このセクションでは、NER タスクでモデル（BERT）をファインチューニングし、次のような予測が出来るようにします。
+トークン分類の問題は他にも数多くの種類があります。ここに挙げたのは代表的な例の一部です。このセクションでは、モデル（BERT）を NER タスクでファインチューニングし、次のような予測が出来るようにします。
 
 <iframe src="https://course-demos-bert-finetuned-ner.hf.space" frameBorder="0" height="350" title="Gradio アプリ" class="block dark:hidden container p-0 flex-grow space-iframe" allow="accelerometer; ambient-light-sensor; autoplay; battery; camera; document-domain; encrypted-media; fullscreen; geolocation; gyroscope; layout-animations; legacy-image-formats; magnetometer; microphone; midi; oversized-images; payment; picture-in-picture; publickey-credentials-get; sync-xhr; usb; vr ; wake-lock; xr-spatial-tracking" sandbox="allow-forms allow-modals allow-popups allow-popups-to-escape-sandbox allow-same-origin allow-scripts allow-downloads"></iframe>
 
@@ -43,7 +43,7 @@
 
 ## データの準備[[preparing-the-data]]
 
-まず何よりも、トークン分類に適したデータセットが必要です。このセクションでは、Reuters のニュース記事を含む [CoNLL-2003 データセット](https://huggingface.co/datasets/conll2003)を使います。
+トークン分類には、まず適したデータセットが必要です。このセクションでは、Reuters のニュース記事を含む [CoNLL-2003 データセット](https://huggingface.co/datasets/conll2003)を使います。
 
 > [!TIP]
 > 💡 データセットが、対応するラベルと共に単語に分割されたテキストで構成されている限り、ここで説明するデータ処理の手順を自分のデータセットにも適用出来ます。`Dataset` に独自のカスタムデータを読み込む方法を復習したい場合は、[Chapter 5](/course/chapter5)を参照してください。
@@ -58,7 +58,7 @@ from datasets import load_dataset
 raw_datasets = load_dataset("conll2003")
 ```
 
-これによりデータセットがダウンロードされ、キャッシュされます。[Chapter 3](/course/chapter3) で GLUE の MRPC データセットを見たときと同じです。このオブジェクトを調べると、含まれている列と、学習セット・検証セット・テストセットへの分割が分かります。
+このコードでデータセットをダウンロードし、キャッシュします。[Chapter 3](/course/chapter3) で GLUE の MRPC データセットを読み込んだときと同じ手順です。返ってきたオブジェクトを調べると、含まれている列と、学習セット・検証セット・テストセットへの分割が分かります。
 
 ```py
 raw_datasets
@@ -81,7 +81,7 @@ DatasetDict({
 })
 ```
 
-特に、このデータセットには、先に挙げた3つのタスク（NER、POS、チャンキング）のラベルが含まれていることが分かります。他のデータセットとの大きな違いは、入力テキストが文や文書としてではなく、単語のリストとして提示されることです（最後の列の名前は `tokens` ですが、中身は単語であり、事前にトークン化された入力として、サブワードトークン化の為にトークナイザを通す必要があります）。
+このデータセットには、先に挙げた3つのタスク（NER、POS、チャンキング）のラベルが含まれています。他のデータセットとの大きな違いは、入力テキストの形式です。文や文書ではなく、単語のリストとして与えられます。最後の列の名前は `tokens` ですが、中身は単語です。事前に分割された入力として扱い、サブワードトークン化の為にトークナイザを通す必要があります。
 
 学習セットの最初の要素を見てみましょう。
 
@@ -103,7 +103,7 @@ raw_datasets["train"][0]["ner_tags"]
 [3, 0, 7, 0, 0, 0, 7, 0, 0]
 ```
 
-これらは学習にそのまま使える整数のラベルですが、データを確認したい時には必ずしも便利ではありません。テキスト分類の場合と同様に、整数とラベル名の対応は、データセットの `features` 属性を見ることで取得出来ます。
+これらは学習にそのまま使える整数のラベルです。但し、データの中身を確認する目的には向きません。テキスト分類の場合と同様に、整数とラベル名の対応は、データセットの `features` 属性から取得出来ます。
 
 ```py
 ner_feature = raw_datasets["train"].features["ner_tags"]
@@ -114,7 +114,7 @@ ner_feature
 Sequence(feature=ClassLabel(num_classes=9, names=['O', 'B-PER', 'I-PER', 'B-ORG', 'I-ORG', 'B-LOC', 'I-LOC', 'B-MISC', 'I-MISC'], names_file=None, id=None), length=-1, id=None)
 ```
 
-つまり、この列に含まれる要素は `ClassLabel` のシーケンスです。シーケンスの要素の型は、この `ner_feature` の `feature` 属性にあります。その `feature` の `names` 属性を見れば、名前のリストにアクセス出来ます。
+この列の要素は、`ClassLabel` のシーケンスです。シーケンスの要素の型は `ner_feature` の `feature` 属性にあり、その `feature` の `names` 属性に名前のリストが入っています。
 
 ```py
 label_names = ner_feature.feature.names
@@ -133,7 +133,7 @@ label_names
 - `B-LOC`／`I-LOC` は、その単語が*場所*エンティティの先頭である／内部にあることを意味します。
 - `B-MISC`／`I-MISC` は、その単語が*その他の*エンティティの先頭である／内部にあることを意味します。
 
-先程見たラベルをデコードすると、次のようになります。
+先程のラベルを名前に戻すと、次のようになります。
 
 ```python
 words = raw_datasets["train"][0]["tokens"]
@@ -169,15 +169,15 @@ print(line2)
 見ての通り、「European Union」や「Werner Zwingmann」のように2つの単語にまたがるエンティティには、最初の単語に `B-` ラベル、2番目の単語に `I-` ラベルが割り当てられます。
 
 > [!TIP]
-> **試してみましょう！** 同じ2つの文を、POS ラベル又はチャンキングラベルと一緒に表示してください。
+> ✏️ **試してみましょう！** 同じ2つの文を、POS ラベル又はチャンキングラベルと一緒に表示してください。
 
 ### データの処理[[processing-the-data]]
 
 <Youtube id="iY2AZYdZAr0"/>
 
-通常通り、テキストは、モデルが理解出来るようトークン ID に変換する必要があります。[Chapter 6](/course/chapter6/) で見たように、トークン分類タスクの場合に大きく異なるのは、入力が事前にトークン化されていることです。幸い、トークナイザ API はこれに簡単に対応出来ます。特別なフラグで `tokenizer` に知らせるだけです。
+テキストは、これまでと同様にトークン ID へ変換してからモデルへ渡します。トークン分類で異なるのは、入力が事前に単語へ分割されている点です（[Chapter 6](/course/chapter6/) 参照）。トークナイザ API はこの形式にも対応しています。特別なフラグで `tokenizer` に知らせるだけです。
 
-まず、`tokenizer` オブジェクトを作成しましょう。先に述べたように BERT の事前学習済みモデルを使うので、関連するトークナイザをダウンロードしてキャッシュすることから始めます。
+まず、`tokenizer` オブジェクトを作成します。使うモデルは BERT の事前学習済みモデルです。対応するトークナイザをダウンロードし、キャッシュします。
 
 ```python
 from transformers import AutoTokenizer
@@ -186,7 +186,7 @@ model_checkpoint = "bert-base-cased"
 tokenizer = AutoTokenizer.from_pretrained(model_checkpoint)
 ```
 
-`model_checkpoint` は、[Hub](https://huggingface.co/models) にある好みのモデルに置き換えることも、事前学習済みモデルとトークナイザを保存したローカルフォルダに置き換えることも出来ます。唯一の制約は、Tokenizers ライブラリを利用した高速トークナイザが使えることです。高速バージョンを持つ全てのアーキテクチャは、[この大きな表](https://huggingface.co/transformers/#supported-frameworks)で確認出来ます。使用している `tokenizer` オブジェクトが本当に Tokenizers に支えられているかどうかは、その `is_fast` 属性を見れば確認出来ます。
+`model_checkpoint` は、[Hub](https://huggingface.co/models) にある別のモデルや、事前学習済みモデルとトークナイザを保存したローカルフォルダに置き換えることも出来ます。制約は次の点だけです。Tokenizers ライブラリによる高速トークナイザが使える必要があります。高速バージョンを持つアーキテクチャの一覧は、[この大きな表](https://huggingface.co/transformers/#supported-frameworks)で確認出来ます。使用している `tokenizer` オブジェクトが Tokenizers によるものかどうかは、`is_fast` 属性で確認出来ます。
 
 ```py
 tokenizer.is_fast
@@ -207,11 +207,11 @@ inputs.tokens()
 ['[CLS]', 'EU', 'rejects', 'German', 'call', 'to', 'boycott', 'British', 'la', '##mb', '.', '[SEP]']
 ```
 
-見ての通り、トークナイザはモデルが使う特殊トークン（先頭の `[CLS]` と末尾の `[SEP]`）を追加し、殆どの単語はそのままにしました。但し、単語 `lamb` は2つのサブワード、`la` と `##mb` にトークン化されました。これにより、入力とラベルの間に不一致が生じます。ラベルのリストは9要素しかないのに、入力は12トークンになっています。
+トークナイザは、モデルが使う特殊トークン（先頭の `[CLS]` と末尾の `[SEP]`）を追加し、殆どの単語はそのまま残しました。一方、単語 `lamb` は `la` と `##mb` の2つのサブワードに分かれました。その結果、入力とラベルの数が合いません。ラベルは9要素ですが、入力は12トークンあります。
 
-特殊トークンへの対応は簡単です（先頭と末尾にあることが分かっているため）。しかし、全てのラベルが適切な単語に対応するよう揃える必要もあります。
+特殊トークンへの対応は簡単です。位置が先頭と末尾に決まっている為です。残る問題は、全てのラベルを適切な単語に対応させることです。
 
-幸い、高速トークナイザを使っている為、Tokenizers の強力な機能を利用出来ます。つまり、各トークンを対応する単語へ簡単にマッピング出来ます（[Chapter 6](/course/chapter6/3) で見た通りです）。
+高速トークナイザには、各トークンを対応する単語へ対応付ける機能があります（[Chapter 6](/course/chapter6/3) で見た機能です）。これを使います。
 
 ```py
 inputs.word_ids()
@@ -221,9 +221,7 @@ inputs.word_ids()
 [None, 0, 1, 2, 3, 4, 5, 6, 7, 7, 8, None]
 ```
 
-少し作業すれば、ラベルのリストをトークンに合わせて拡張出来ます。適用する1つ目のルールは、特殊トークンに `-100` というラベルを付けることです。これは、デフォルトでは `-100` が、使用する損失関数（交差エントロピー）で無視されるインデックスだからです。
-
-次に、各トークンには、それが含まれる単語を開始したトークンと同じラベルを付けます。同じエンティティの一部だからです。単語の内部にあって先頭ではないトークンについては、`B-` を `I-` に置き換えます（そのトークンはエンティティを開始しないため）。
+ラベルのリストは、トークンに合わせて拡張出来ます。拡張のルールは次の通りです。1つ目は、特殊トークンに `-100` というラベルを付けることです。`-100` は、既定で損失関数（交差エントロピー）において無視されるインデックスである為です。単語内の各トークンには、その単語の先頭のトークンと同じラベルを付けます。同じエンティティの一部である為です。但し、単語の内部にあって先頭ではないトークンでは、`B-` を `I-` に置き換えます。エンティティを開始するトークンではない為です。
 
 ```python
 def align_labels_with_tokens(labels, word_ids):
@@ -263,14 +261,14 @@ print(align_labels_with_tokens(labels, word_ids))
 [-100, 3, 0, 7, 0, 0, 0, 7, 0, 0, 0, -100]
 ```
 
-見ての通り、この関数は、先頭と末尾の2つの特殊トークンに `-100` を追加し、2つのトークンに分割された単語の為に新しい `0` を追加しました。
+この関数は、先頭と末尾の2つの特殊トークンに `-100` を追加しています。更に、2つのトークンに分割された単語には、新しい `0` を追加しています。
 
 > [!TIP]
-> **試してみましょう！** 一部の研究者は、単語ごとに1つのラベルだけを割り当て、或る単語に属する他のサブトークンには `-100` を割り当てることを好みます。これは、多くのサブトークンに分割される長い単語が損失に大きく寄与するのを避ける為です。このルールに従い、先程の関数を変更して、ラベルを入力 ID に揃えるようにしてください。
+> ✏️ **試してみましょう！** 単語ごとに1つのラベルだけを割り当て、或る単語に属する他のサブトークンには `-100` を割り当てる方法もあります。多くのサブトークンに分割される長い単語が、損失に大きく寄与するのを避ける為です。このルールに従って先程の関数を変更し、ラベルを入力 ID に揃えてください。
 
-データセット全体を前処理するには、全ての入力をトークン化し、全てのラベルに `align_labels_with_tokens()` を適用する必要があります。
+データセット全体を前処理するには、全ての入力をトークン化し、全てのラベルに `align_labels_with_tokens()` を適用します。
 
-高速トークナイザの速度を活かすには、多数のテキストを同時にトークン化するのが最適です。そこで、サンプルのリストを処理する関数を書き、`batched=True` オプションを指定して `Dataset.map()` メソッドを使います。前の例と唯一異なる点は、トークナイザへの入力がテキストのリスト（この場合は単語のリストのリスト）の場合、`word_ids()` 関数に、単語 ID が欲しいサンプルのインデックスを渡す必要があることです。その為、それも追加しています。
+高速トークナイザの速度を活かす為、多数のテキストを同時にトークン化します。サンプルのリストを処理する関数を書き、`batched=True` オプションを指定して `Dataset.map()` メソッドを使います。前の例との違いは次の点だけです。トークナイザへの入力がテキストのリスト（この場合は単語のリストのリスト）の場合、`word_ids()` 関数には、単語 ID が欲しいサンプルのインデックスを渡す必要があります。その処理も追加しています。
 
 ```py
 def tokenize_and_align_labels(examples):
@@ -299,7 +297,7 @@ tokenized_datasets = raw_datasets.map(
 )
 ```
 
-一番大変な部分は終わりました！データの前処理が済んだので、実際の学習は [Chapter 3](/course/chapter3) で行ったことと非常によく似たものになります。
+難しい部分はここまでです。データの前処理が済んだので、実際の学習は [Chapter 3](/course/chapter3) で行った手順とよく似ています。
 
 {#if fw === 'pt'}
 
@@ -318,7 +316,7 @@ Keras を使う実際のコードは以前と非常によく似ています。�
 
 ### データのバッチ化[[data-collation]]
 
-[Chapter 3](/course/chapter3) のように `DataCollatorWithPadding` をそのまま使うことはできません。これは入力（入力 ID、アテンションマスク、トークンタイプ ID）しかパディングしない為です。ここでは、ラベルも入力とまったく同じ方法でパディングして同じサイズに保ち、対応する予測が損失の計算で無視されるよう、`-100` を値として使う必要があります。
+`DataCollatorWithPadding` は、[Chapter 3](/course/chapter3) と同じようには使えません。入力（入力 ID、アテンションマスク、トークンタイプ ID）しかパディングしない為です。ここではラベルも入力と同じ方法でパディングし、同じサイズに保つ必要があります。パディングの値には `-100` を使います。対応する予測が損失の計算で無視される為です。
 
 この処理は全て [`DataCollatorForTokenClassification`](https://huggingface.co/transformers/main_classes/data_collator.html#datacollatorfortokenclassification) が行います。`DataCollatorWithPadding` と同様に、入力の前処理に使った `tokenizer` を受け取ります。
 
@@ -342,7 +340,7 @@ data_collator = DataCollatorForTokenClassification(
 
 {/if}
 
-数個のサンプルでテストするには、トークン化した学習セットからサンプルのリストを渡して呼び出すだけです。
+数個のサンプルでテストするには、トークン化した学習セットからサンプルのリストを渡して呼び出します。
 
 ```py
 batch = data_collator([tokenized_datasets["train"][i] for i in range(2)])
@@ -354,7 +352,7 @@ tensor([[-100,    3,    0,    7,    0,    0,    0,    7,    0,    0,    0, -100]
         [-100,    1,    2, -100, -100, -100, -100, -100, -100, -100, -100, -100]])
 ```
 
-これを、データセットの1番目と2番目の要素のラベルと比較してみましょう。
+データセットの1番目と2番目の要素のラベルと比較してみましょう。
 
 ```py
 for i in range(2):
@@ -368,11 +366,11 @@ for i in range(2):
 
 {#if fw === 'pt'}
 
-見ての通り、2番目のラベルの集合は、1番目の長さに合わせて `-100` でパディングされています。
+2番目のラベルの集合は、1番目の長さに合わせて `-100` でパディングされています。
 
 {:else}
 
-データコレータの準備が出来ました。次に、`to_tf_dataset()` メソッドを使って `tf.data.Dataset` を作ります。定型コードを少し減らせる `model.prepare_tf_dataset()` を使うことも出来ます。これはこの章の他のセクションでも見られます。
+データコレータの準備が出来ました。次に、`to_tf_dataset()` メソッドで `tf.data.Dataset` を作ります。`model.prepare_tf_dataset()` を使えば、定型コードを少し減らすことも出来ます。この方法は、この章の他のセクションでも使います。
 
 ```py
 tf_train_dataset = tokenized_datasets["train"].to_tf_dataset(
@@ -391,7 +389,7 @@ tf_eval_dataset = tokenized_datasets["validation"].to_tf_dataset(
 ```
 
 
- 次はモデル自体です。
+ 次に、モデル自体を定義します。
 
 {/if}
 
@@ -399,16 +397,16 @@ tf_eval_dataset = tokenized_datasets["validation"].to_tf_dataset(
 
 ### モデルの定義[[defining-the-model]]
 
-トークン分類の問題を扱っているので、`TFAutoModelForTokenClassification` クラスを使います。このモデルを定義する際に覚えておくべき主な点は、ラベルの数に関する情報を渡すことです。最も簡単な方法は、`num_labels` 引数でその数を渡すことですが、このセクションの冒頭で紹介した推論ウィジェットを正しく動作させたい場合は、正しいラベルの対応を設定する方がよいでしょう。
+トークン分類の問題では、`TFAutoModelForTokenClassification` クラスを使います。モデルを定義する際には、ラベルの数に関する情報を渡す必要があります。最も簡単な方法は `num_labels` 引数で数を渡す方法です。但し、このセクションの冒頭で紹介した推論ウィジェットを正しく動作させるには、正しいラベルの対応を設定する方が適しています。
 
-ラベルの対応は、2つの辞書 `id2label` と `label2id` で設定します。これらには、ID からラベルへのマッピングと、その逆のマッピングが含まれます。
+ラベルの対応は、`id2label` と `label2id` の2つの辞書で設定します。ID からラベルへの対応と、その逆の対応を表す辞書です。
 
 ```py
 id2label = {i: label for i, label in enumerate(label_names)}
 label2id = {v: k for k, v in id2label.items()}
 ```
 
-これで、これらを `TFAutoModelForTokenClassification.from_pretrained()` メソッドに渡すことができ、モデルの設定に組み込まれて、適切に保存され Hub にアップロードされます。
+これらを `TFAutoModelForTokenClassification.from_pretrained()` メソッドに渡すと、モデルの設定に組み込まれ、保存と Hub へのアップロードが正しく行われます。
 
 ```py
 from transformers import TFAutoModelForTokenClassification
@@ -435,7 +433,7 @@ model.config.num_labels
 
 ### モデルのファインチューニング[[fine-tuning-the-model]]
 
-これでモデルを学習する準備が出来ました。但し、その前にもう少し準備作業があります。Hugging Face にログインし、学習のハイパーパラメータを定義しましょう。ノートブックで作業している場合は、これに役立つ便利な関数があります。
+モデルの学習を始める前に、残りの準備を行います。Hugging Face へのログインと、学習のハイパーパラメータの定義です。ノートブックで作業している場合は、ログインに便利な関数があります。
 
 ```python
 from huggingface_hub import notebook_login
@@ -443,7 +441,7 @@ from huggingface_hub import notebook_login
 notebook_login()
 ```
 
-これにより、Hugging Face のログイン認証情報を入力出来るウィジェットが表示されます。
+Hugging Face のログイン認証情報を入力するウィジェットが表示されます。
 
 ノートブックで作業していない場合は、ターミナルで次の行を入力してください。
 
@@ -476,9 +474,9 @@ optimizer, schedule = create_optimizer(
 model.compile(optimizer=optimizer)
 ```
 
-`compile()` に `loss` 引数を渡していないことにも注意してください。これは、モデルが内部で損失を計算出来る為です。損失なしでコンパイルし、入力辞書の中にラベルを含めて渡す（データセットでもそのようにしています）と、モデルはその内部損失を使って学習します。この損失は、選択したタスクとモデルの種類に適したものになります。
+`compile()` に `loss` 引数を渡していない点に注意してください。モデルは内部で損失を計算出来る為です。損失を指定せずにコンパイルし、入力辞書の中にラベルを含めて渡す（データセットでもそのようにしています）と、モデルは内部の損失を使って学習します。この損失は、選択したタスクとモデルの種類に適したものです。
 
-次に、学習中にモデルを Hub にアップロードする `PushToHubCallback` を定義し、そのコールバックでモデルを fit します。
+次に、`PushToHubCallback` を定義します。学習中にモデルを Hub にアップロードするコールバックです。そのコールバックを指定してモデルを fit します。
 
 ```python
 from transformers.keras_callbacks import PushToHubCallback
@@ -493,14 +491,14 @@ model.fit(
 )
 ```
 
-`hub_model_id` 引数で、push 先のリポジトリの完全な名前を指定出来ます（特に、組織に push する場合はこの引数を使う必要があります）。例えば、モデルを [`huggingface-course` 組織](https://huggingface.co/huggingface-course)に push した際には、`hub_model_id="huggingface-course/bert-finetuned-ner"` を追加しました。デフォルトでは、使用されるリポジトリは自分の名前空間にあり、設定した出力ディレクトリにちなんだ名前になります（例: `"cool_huggingface_user/bert-finetuned-ner"`）。
+`hub_model_id` 引数で、push 先のリポジトリの完全な名前を指定出来ます（特に、組織に push する場合はこの引数を使う必要があります）。例えば、モデルを [`huggingface-course` 組織](https://huggingface.co/huggingface-course)に push した際には、`hub_model_id="huggingface-course/bert-finetuned-ner"` を追加しました。既定では、使用されるリポジトリは自分の名前空間にあり、設定した出力ディレクトリにちなんだ名前になります（例: `"cool_huggingface_user/bert-finetuned-ner"`）。
 
 > [!TIP]
 > 💡 使用している出力ディレクトリが既に存在する場合、それは push 先リポジトリのローカルクローンである必要があります。そうでない場合、`model.fit()` を呼び出した時にエラーが発生し、新しい名前を設定する必要があります。
 
-学習が行われている間、モデルが保存されるたびに（ここではエポックごと）、バックグラウンドで Hub にアップロードされることにも注意してください。これにより、必要に応じて別のマシンで学習を再開出来ます。
+学習中は、モデルが保存されるたびに（ここではエポックごと）、バックグラウンドで Hub にアップロードされます。必要に応じて、別のマシンで学習を再開出来ます。
 
-この段階では、Model Hub の推論ウィジェットを使ってモデルをテストし、友人と共有出来ます。トークン分類タスクでのモデルのファインチューニングに成功しました。おめでとうございます！しかし、私たちのモデルは実際どれほど良いのでしょうか？それを確かめる為に、いくつかの指標を評価する必要があります。
+この段階では、Model Hub の推論ウィジェットを使ってモデルをテストし、友人と共有出来ます。トークン分類タスクでのファインチューニングは完了です。但し、モデルの出来はまだ確認していません。いくつかの指標を評価して確認します。
 
 {/if}
 
@@ -509,7 +507,7 @@ model.fit(
 
 {#if fw === 'pt'}
 
-`Trainer` にエポックごとに指標を計算させるには、予測とラベルの配列を受け取り、指標名と値の辞書を返す `compute_metrics()` 関数を定義する必要があります。
+`Trainer` にエポックごとに指標を計算させるには、`compute_metrics()` 関数を定義する必要があります。予測とラベルの配列を受け取り、指標名と値の辞書を返す関数です。
 
 トークン分類の予測を評価する為に伝統的に使われるフレームワークは、[*seqeval*](https://github.com/chakki-works/seqeval) です。この指標を使うには、まず *seqeval* ライブラリをインストールする必要があります。
 
@@ -537,7 +535,7 @@ import evaluate
 metric = evaluate.load("seqeval")
 ```
 
-この指標は、通常の accuracy とは異なる振る舞いをします。ラベルを整数ではなく文字列のリストとして受け取る為、指標に渡す前に予測とラベルを完全にデコードする必要があります。仕組みを見てみましょう。まず、最初の学習サンプルのラベルを取得します。
+この指標は、通常の accuracy とは異なる振る舞いをします。ラベルを整数ではなく文字列のリストとして受け取ります。その為、指標に渡す前に予測とラベルを文字列へデコードする必要があります。まず、最初の学習サンプルのラベルを取得して仕組みを確認します。
 
 ```py
 labels = raw_datasets["train"][0]["ner_tags"]
@@ -549,7 +547,7 @@ labels
 ['B-ORG', 'O', 'B-MISC', 'O', 'O', 'O', 'B-MISC', 'O', 'O']
 ```
 
-次に、インデックス2の値を変えるだけで、これらに対する偽の予測を作成出来ます。
+次に、インデックス2の値だけを変えて、偽の予測を作成します。
 
 ```py
 predictions = labels.copy()
@@ -570,9 +568,9 @@ metric.compute(predictions=[predictions], references=[labels])
 
 {#if fw === 'pt'}
 
-これは大量の情報を返しています。エンティティごとの適合率、再現率、F1 スコアと、全体の値が得られます。指標の計算では全体のスコアだけを保持しますが、報告してほしい指標を全て返すよう、`compute_metrics()` 関数を調整してもかまいません。
+返ってくる情報は多岐にわたります。エンティティごとの適合率、再現率、F1 スコアと、全体の値です。ここでの指標の計算では全体のスコアだけを保持しますが、`compute_metrics()` 関数を調整し、報告したい指標を全て返すことも出来ます。
 
-この `compute_metrics()` 関数は、まずロジットの argmax を取って予測に変換します（通常通り、ロジットと確率は同じ順序にある為、softmax を適用する必要はありません）。次に、ラベルと予測の両方を整数から文字列に変換します。ラベルが `-100` の値を全て取り除き、結果を `metric.compute()` メソッドに渡します。
+この `compute_metrics()` 関数は、まずロジットの argmax を取って予測に変換します。ロジットと確率は同じ順序にある為、softmax を適用する必要はありません。次に、ラベルと予測の両方を整数から文字列に変換し、ラベルが `-100` の値を取り除いて、結果を `metric.compute()` メソッドに渡します。
 
 ```py
 import numpy as np
@@ -597,13 +595,13 @@ def compute_metrics(eval_preds):
     }
 ```
 
-これで、`Trainer` を定義する準備はほぼ整いました。あとはファインチューニングする `model` が必要です！
+これで、`Trainer` を定義する準備はほぼ整いました。残るのは、ファインチューニングする `model` です。
 
 {:else}
 
-これは大量の情報を返しています。エンティティごとの適合率、再現率、F1 スコアと、全体の値が得られます。では、実際のモデルの予測を使って本物のスコアを計算するとどうなるか見てみましょう。
+返ってくる情報は多岐にわたります。エンティティごとの適合率、再現率、F1 スコアと、全体の値です。次に、実際のモデルの予測を使ってスコアを計算します。
 
-TensorFlow は、シーケンス長が可変である為、予測をそのまま連結することを好みません。つまり、`model.predict()` をそのまま使うことはできません。しかし、それで諦める訳にはいきません。予測をバッチごとに取得し、処理しながら1つの大きなリストへ連結していきます。その際、マスキング／パディングを示す `-100` のトークンを除去し、最後にそのリストで指標を計算します。
+TensorFlow では、シーケンス長が可変の予測をそのまま連結することは出来ません。つまり、`model.predict()` はそのまま使えません。代わりに、予測をバッチごとに取得し、処理しながら1つの大きなリストへ連結します。その際、マスキング／パディングを示す `-100` のトークンを除去し、最後にそのリストで指標を計算します。
 
 ```py
 import numpy as np
@@ -643,16 +641,16 @@ metric.compute(predictions=[all_predictions], references=[all_labels])
 
 ### モデルの定義[[defining-the-model]]
 
-トークン分類の問題を扱っているので、`AutoModelForTokenClassification` クラスを使います。このモデルを定義する際に覚えておくべき主な点は、ラベルの数に関する情報を渡すことです。最も簡単な方法は、`num_labels` 引数でその数を渡すことですが、このセクションの冒頭で紹介した推論ウィジェットを正しく動作させたい場合は、正しいラベルの対応を設定する方がよいでしょう。
+トークン分類の問題では、`AutoModelForTokenClassification` クラスを使います。モデルを定義する際には、ラベルの数に関する情報を渡す必要があります。最も簡単な方法は `num_labels` 引数で数を渡す方法です。但し、このセクションの冒頭で紹介した推論ウィジェットを正しく動作させるには、正しいラベルの対応を設定する方が適しています。
 
-ラベルの対応は、2つの辞書 `id2label` と `label2id` で設定します。これらには、ID からラベルへのマッピングと、その逆のマッピングが含まれます。
+ラベルの対応は、`id2label` と `label2id` の2つの辞書で設定します。ID からラベルへの対応と、その逆の対応を表す辞書です。
 
 ```py
 id2label = {i: label for i, label in enumerate(label_names)}
 label2id = {v: k for k, v in id2label.items()}
 ```
 
-これで、これらを `AutoModelForTokenClassification.from_pretrained()` メソッドに渡すことができ、モデルの設定に組み込まれて、適切に保存され Hub にアップロードされます。
+これらを `AutoModelForTokenClassification.from_pretrained()` メソッドに渡すと、モデルの設定に組み込まれ、保存と Hub へのアップロードが正しく行われます。
 
 ```py
 from transformers import AutoModelForTokenClassification
@@ -675,11 +673,11 @@ model.config.num_labels
 ```
 
 > [!WARNING]
-> ⚠️ モデルのラベル数が間違っていると、後で `Trainer.train()` メソッドを呼び出した時に分かり難いエラーが発生します（「CUDA error: device-side assert triggered」のようなものです）。この種のエラーについてユーザーから報告されるバグの最大の原因がこれです。期待通りのラベル数であることを確認する為に、このチェックを行ってください。
+> ⚠️ モデルのラベル数が間違っていると、後で `Trainer.train()` メソッドを呼び出した時に分かり難いエラーが発生します（「CUDA error: device-side assert triggered」のようなものです）。ユーザーから報告されるこの種のバグでは、これが最大の原因です。期待通りのラベル数であることを、このチェックで確認してください。
 
 ### モデルのファインチューニング[[fine-tuning-the-model]]
 
-これでモデルを学習する準備が出来ました。`Trainer` を定義する前に、最後に2つだけ行うことがあります。Hugging Face へのログインと、学習引数の定義です。ノートブックで作業している場合は、これに役立つ便利な関数があります。
+モデルの学習を始める前に、最後に2つだけ行うことがあります。Hugging Face へのログインと、学習引数の定義です。ノートブックで作業している場合は、ログインに便利な関数があります。`Trainer` の定義はその後に行います。
 
 ```python
 from huggingface_hub import notebook_login
@@ -687,7 +685,7 @@ from huggingface_hub import notebook_login
 notebook_login()
 ```
 
-これにより、Hugging Face のログイン認証情報を入力出来るウィジェットが表示されます。
+Hugging Face のログイン認証情報を入力するウィジェットが表示されます。
 
 ノートブックで作業していない場合は、ターミナルで次の行を入力してください。
 
@@ -711,9 +709,9 @@ args = TrainingArguments(
 )
 ```
 
-これらの殆どは以前にも見たものです。いくつかのハイパーパラメータ（学習率、学習するエポック数、重み減衰など）を設定し、`push_to_hub=True` を指定して、モデルの保存と評価をエポックの終了ごとに行い、結果を Model Hub にアップロードしたいことを示します。
+これらの殆どは以前にも見たものです。ハイパーパラメータ（学習率、学習するエポック数、重み減衰など）を設定し、`push_to_hub=True` を指定します。これにより、エポックの終了ごとにモデルの保存と評価を行い、結果を Model Hub にアップロードします。
 
-`hub_model_id` 引数で、push 先のリポジトリの名前を指定出来ることにも注意してください（特に、組織に push する場合はこの引数を使う必要があります）。例えば、モデルを [`huggingface-course` 組織](https://huggingface.co/huggingface-course)に push した際には、`TrainingArguments` に `hub_model_id="huggingface-course/bert-finetuned-ner"` を追加しました。デフォルトでは、使用されるリポジトリは自分の名前空間にあり、設定した出力ディレクトリにちなんだ名前になる為、この場合は `"sgugger/bert-finetuned-ner"` になります。
+push 先のリポジトリの名前は、`hub_model_id` 引数で指定出来ます。組織に push する場合は、この引数が必要です。例えば、モデルを [`huggingface-course` 組織](https://huggingface.co/huggingface-course)に push した際には、`TrainingArguments` に `hub_model_id="huggingface-course/bert-finetuned-ner"` を追加しました。既定のリポジトリは自分の名前空間にあり、名前は設定した出力ディレクトリに基づきます。この場合は `"sgugger/bert-finetuned-ner"` になります。
 
 > [!TIP]
 > 💡 使用している出力ディレクトリが既に存在する場合、それは push 先リポジトリのローカルクローンである必要があります。そうでない場合、`Trainer` を定義した時にエラーが発生し、新しい名前を設定する必要があります。
@@ -735,7 +733,7 @@ trainer = Trainer(
 trainer.train()
 ```
 
-学習が行われている間、モデルが保存されるたびに（ここではエポックごと）、バックグラウンドで Hub にアップロードされることにも注意してください。これにより、必要に応じて別のマシンで学習を再開出来ます。
+学習中は、モデルが保存されるたびに（ここではエポックごと）、バックグラウンドで Hub にアップロードされます。必要に応じて、別のマシンで学習を再開出来ます。
 
 学習が完了したら、`push_to_hub()` メソッドを使って、モデルの最新バージョンを確実にアップロードします。
 
@@ -749,17 +747,17 @@ trainer.push_to_hub(commit_message="Training complete")
 'https://huggingface.co/sgugger/bert-finetuned-ner/commit/26ab21e5b1568f9afeccdaed2d8715f571d786ed'
 ```
 
-`Trainer` は、全ての評価結果を含むモデルカードの草案も作成し、アップロードします。この段階では、Model Hub の推論ウィジェットを使ってモデルをテストし、友人と共有出来ます。トークン分類タスクでのモデルのファインチューニングに成功しました。おめでとうございます！
+`Trainer` は、全ての評価結果を含むモデルカードの草案も作成し、アップロードします。この段階では、Model Hub の推論ウィジェットを使ってモデルをテストし、友人と共有出来ます。トークン分類タスクでのファインチューニングは完了です。
 
 学習ループについてもう少し深く知りたい場合は、次に、Accelerate を使って同じことを行う方法を紹介します。
 
 ## カスタム学習ループ[[a-custom-training-loop]]
 
-次に、完全な学習ループを見ていきましょう。必要な部分を簡単にカスタマイズ出来るようになります。評価にいくつか変更点はありますが、[Chapter 3](/course/chapter3/4) で行ったことと非常によく似ています。
+次に、完全な学習ループを見ていきます。学習ループを直接書けば、必要な部分をカスタマイズ出来ます。評価にいくつか変更点はありますが、全体は [Chapter 3](/course/chapter3/4) で行った内容とよく似ています。
 
 ### 学習のための準備[[preparing-everything-for-training]]
 
-まず、データセットから `DataLoader` を構築する必要があります。`data_collator` を `collate_fn` として再利用し、学習セットはシャッフルしますが、検証セットはシャッフルしません。
+まず、データセットから `DataLoader` を構築します。`data_collator` は `collate_fn` として再利用します。学習セットはシャッフルし、検証セットはシャッフルしません。
 
 ```py
 from torch.utils.data import DataLoader
@@ -775,7 +773,7 @@ eval_dataloader = DataLoader(
 )
 ```
 
-次に、モデルを再びインスタンス化します。前のファインチューニングを継続するのではなく、BERT の事前学習済みモデルから再び開始する為です。
+次に、モデルを再びインスタンス化します。前のファインチューニングの続きからではなく、BERT の事前学習済みモデルから開始する為です。
 
 ```py
 model = AutoModelForTokenClassification.from_pretrained(
@@ -807,7 +805,7 @@ model, optimizer, train_dataloader, eval_dataloader = accelerator.prepare(
 > [!TIP]
 > 🚨 TPU で学習する場合は、このセルより上にあるコードを全て、専用の学習関数の中に移動する必要があります。詳細は [Chapter 3](/course/chapter3) を参照してください。
 
-`train_dataloader` を `accelerator.prepare()` に渡したので、その長さを使って学習ステップ数を計算出来ます。このメソッドは長さを変える為、必ずデータローダを準備した後にこれを行うことを忘れないでください。学習率から 0 までの古典的な線形スケジュールを使います。
+`train_dataloader` を `accelerator.prepare()` に渡した後は、その長さを使って学習ステップ数を計算出来ます。データローダの長さはこのメソッドで変わる為、計算は必ず準備の後に行います。スケジュールには、学習率から 0 まで下げる古典的な線形スケジュールを使います。
 
 ```py
 from transformers import get_scheduler
@@ -824,7 +822,7 @@ lr_scheduler = get_scheduler(
 )
 ```
 
-最後に、モデルを Hub に push するには、作業フォルダに `Repository` オブジェクトを作成する必要があります。まず、まだログインしていない場合は Hugging Face にログインしてください。リポジトリ名は、モデルに付けたいモデル ID から決めます（`repo_name` は自由に置き換えてかまいません。ユーザー名を含む必要があるだけで、それは `get_full_repo_name()` 関数が行います）。
+最後に、モデルを Hub に push する為の準備をします。作業フォルダに `Repository` オブジェクトを作成します。まだログインしていない場合は、先に Hugging Face にログインしてください。リポジトリ名は、モデルに付けたいモデル ID から決めます。`repo_name` は自由に置き換えてかまいませんが、ユーザー名を含む必要があります。ユーザー名の付加は `get_full_repo_name()` 関数が行います。
 
 ```py
 from huggingface_hub import Repository, get_full_repo_name
@@ -838,7 +836,7 @@ repo_name
 'sgugger/bert-finetuned-ner-accelerate'
 ```
 
-次に、そのリポジトリをローカルフォルダにクローン出来ます。既に存在する場合は、このローカルフォルダは作業中のリポジトリの既存のクローンである必要があります。
+次に、そのリポジトリをローカルフォルダにクローンします。フォルダが既に存在する場合は、作業中のリポジトリの既存のクローンである必要があります。
 
 ```py
 output_dir = "bert-finetuned-ner-accelerate"
@@ -849,7 +847,7 @@ repo = Repository(output_dir, clone_from=repo_name)
 
 ### 学習ループ[[training-loop]]
 
-これで完全な学習ループを書く準備が出来ました。評価部分を単純化する為に、予測とラベルを受け取り、`metric` オブジェクトが期待するように文字列のリストに変換する `postprocess()` 関数を定義します。
+これで完全な学習ループを書く準備が出来ました。評価部分を単純化する為に、予測とラベルを受け取り、`metric` オブジェクトが期待する形式である文字列のリストに変換する `postprocess()` 関数を定義します。
 
 ```py
 def postprocess(predictions, labels):
@@ -865,10 +863,10 @@ def postprocess(predictions, labels):
     return true_labels, true_predictions
 ```
 
-次に学習ループを書くことが出来ます。学習の進み具合を追うプログレスバーを定義した後、ループは3つの部分で構成されます。
+次に学習ループを書きます。学習の進み具合を追うプログレスバーを定義した後、ループ本体は3つの部分で構成されます。
 
 - 学習そのもの。`train_dataloader` への古典的なイテレーションで、モデルへの順伝播を行い、次に逆伝播とオプティマイザのステップを行います。
-- 評価。モデルからバッチの出力を得た後に、目新しい点があります。2つのプロセスが入力とラベルを異なる形状にパディングしている可能性がある為、`gather()` メソッドを呼び出す前に、`accelerator.pad_across_processes()` を使って予測とラベルを同じ形状にする必要があります。これを行わないと、評価はエラーになるか、永遠にハングしてしまいます。その後、結果を `metric.add_batch()` に送り、評価ループが終わったら `metric.compute()` を呼び出します。
+- 評価。バッチの出力をモデルから得た後の処理に注意点があります。2つのプロセスが入力とラベルを異なる形状にパディングしている可能性がある為、`gather()` メソッドを呼び出す前に、`accelerator.pad_across_processes()` を使って予測とラベルを同じ形状に揃えます。これを行わないと、評価はエラーになるか、ハングしたままになります。その後、結果を `metric.add_batch()` に送り、評価ループが終わったら `metric.compute()` を呼び出します。
 - 保存とアップロード。まずモデルとトークナイザを保存し、次に `repo.push_to_hub()` を呼び出します。`blocking=False` 引数を使って、Hub ライブラリに非同期プロセスで push するよう指示している点に注意してください。これにより、学習は通常通り継続し、この（時間のかかる）命令はバックグラウンドで実行されます。
 
 学習ループの完全なコードは次の通りです。
@@ -939,17 +937,17 @@ unwrapped_model = accelerator.unwrap_model(model)
 unwrapped_model.save_pretrained(output_dir, save_function=accelerator.save)
 ```
 
-1行目は自明です。全てのプロセスに、続行する前に全員がその段階に到達するまで待つよう指示します。これは、保存する前に全てのプロセスで同じモデルが存在することを確実にする為です。
+1行目は、全てのプロセスに、続行する前に全員がその段階に到達するまで待つよう指示します。保存する前に、全てのプロセスで同じモデルが存在することを確実にする為です。
 
-次に `unwrapped_model` を取得します。これは定義したベースモデルです。`accelerator.prepare()` メソッドはモデルを分散学習用に変更する為、`save_pretrained()` メソッドはもう存在しません。`accelerator.unwrap_model()` メソッドはその手順を元に戻します。最後に、`save_pretrained()` を呼び出しますが、そのメソッドに `torch.save()` の代わりに `accelerator.save()` を使うよう指示します。
+次に `unwrapped_model` を取得します。これは定義したベースモデルです。`accelerator.prepare()` メソッドはモデルを分散学習用に変更する為、`save_pretrained()` メソッドは使えなくなります。`accelerator.unwrap_model()` メソッドでその変更を元に戻します。最後に、`save_pretrained()` を呼び出します。その際、`torch.save()` の代わりに `accelerator.save()` を使うよう指示します。
 
-これが済めば、`Trainer` で学習したモデルとかなり似た結果を出すモデルが得られるはずです。このコードで学習したモデルは、[*huggingface-course/bert-finetuned-ner-accelerate*](https://huggingface.co/huggingface-course/bert-finetuned-ner-accelerate)で確認出来ます。学習ループへの調整を試したい場合は、上に示したコードを直接編集して実装出来ます！
+これで、`Trainer` で学習したモデルとかなり似た結果を出すモデルが得られるはずです。このコードで学習したモデルは、[*huggingface-course/bert-finetuned-ner-accelerate*](https://huggingface.co/huggingface-course/bert-finetuned-ner-accelerate)で確認出来ます。学習ループを調整したい場合は、上に示したコードを直接編集して試すことが出来ます。
 
 {/if}
 
 ## ファインチューニング済みモデルの使用[[using-the-fine-tuned-model]]
 
-Model Hub で推論ウィジェットを使って、私たちがファインチューニングしたモデルを使う方法は既に紹介しました。ローカルで `pipeline` を使ってモデルを実行するには、適切なモデル識別子を指定するだけです。
+ファインチューニングしたモデルを Model Hub の推論ウィジェットで使う方法は、既に紹介しました。ローカルで `pipeline` を使って実行する場合は、適切なモデル識別子を指定します。
 
 ```py
 from transformers import pipeline
@@ -970,4 +968,4 @@ token_classifier("My name is Sylvain and I work at Hugging Face in Brooklyn.")
 
 （入力文の訳：「私の名前は Sylvain で、Brooklyn の Hugging Face で働いています。」）
 
-素晴らしい！私たちのモデルは、このパイプラインのデフォルトのモデルと同じくらいよく機能しています！
+この通り、モデルはこのパイプラインの既定のモデルと同じ程度に機能しています。

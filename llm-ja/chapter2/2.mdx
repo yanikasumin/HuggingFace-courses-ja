@@ -53,7 +53,7 @@ classifier(
 
 この前処理は全て、モデルの事前学習時とまったく同じ方法で行う必要があります。そこで、まず必要な情報を [Model Hub](https://huggingface.co/models) からダウンロードします。これには `AutoTokenizer` クラスの `from_pretrained()` メソッドを使います。モデルのチェックポイント名を指定すると、対応するトークナイザのデータが自動的にダウンロードされ、キャッシュに保存されます。以降はキャッシュから読み込まれる為、通常、ダウンロードが必要なのは最初の実行時だけです。
 
-`sentiment-analysis` パイプラインのデフォルトのチェックポイントは `distilbert-base-uncased-finetuned-sst-2-english` です。モデルカードは[このページ](https://huggingface.co/distilbert-base-uncased-finetuned-sst-2-english)で確認出来ます。これを使って、次のコードを実行します。
+`sentiment-analysis` パイプラインの既定のチェックポイントは `distilbert-base-uncased-finetuned-sst-2-english` です。モデルカードは[このページ](https://huggingface.co/distilbert-base-uncased-finetuned-sst-2-english)で確認出来ます。これを使って、次のコードを実行します。
 
 ```python
 from transformers import AutoTokenizer
@@ -117,7 +117,7 @@ model = AutoModel.from_pretrained(checkpoint)
 
 これが何を意味するのか分からなくても、心配はいりません。後ほど全て説明します。
 
-隠れ状態はそれ自体でも有用ですが、通常はモデルの別の部分である *ヘッド* への入力となります。[第1章](/course/chapter1) では、様々なタスクを同じアーキテクチャで実行出来ましたが、タスクごとに異なるヘッドが関連づけられます。
+隠れ状態は、それ自体が役立つ場合もありますが、通常はモデルの別の部分である *ヘッド* への入力になります。[第1章](/course/chapter1) では同じアーキテクチャで様々なタスクを実行しましたが、タスクごとに組み合わせるヘッドは異なります。
 
 ### 高次元のベクトル？[[a-high-dimensional-vector]]
 
@@ -151,9 +151,9 @@ Transformers のモデル出力は、`namedtuple` や辞書のように扱えま
 <img class="hidden dark:block" src="https://huggingface.co/datasets/huggingface-course/documentation-images/resolve/main/en/chapter2/transformer_and_head-dark.svg" alt="Transformer ネットワークとそのヘッド"/>
 </div>
 
-Transformer モデルの出力は、処理の為にモデルヘッドへ直接送られます。
+Transformer モデルの出力は、そのままモデルヘッドに渡され、そこで処理されます。
 
-この図では、モデルは埋め込み層とそれに続く層で表されています。埋め込み層は、トークン化された入力の各入力 ID を、対応するトークンを表すベクトルに変換します。続く層は、アテンション機構を使ってこれらのベクトルを操作し、文の最終的な表現を作り出します。
+この図では、モデルは埋め込み層とそれに続く層で表されています。埋め込み層は、トークン化された入力の各入力 ID を、対応するトークンを表すベクトルに変換します。続く層は、アテンション機構でこれらのベクトルを処理し、文の最終的な表現を作ります。
 
 Transformers には多種多様なアーキテクチャがあり、それぞれが特定のタスクに取り組むよう設計されています。以下はその一部です。
 
@@ -164,7 +164,7 @@ Transformers には多種多様なアーキテクチャがあり、それぞれ�
 - `*ForQuestionAnswering`
 - `*ForSequenceClassification`
 - `*ForTokenClassification`
-- 他にも多数
+- 他にも多数 🤗
 
 この例では、文を肯定的か否定的かに分類出来るよう、シーケンス分類ヘッドを持つモデルが必要です。その為、実際には `AutoModel` クラスではなく、`AutoModelForSequenceClassification` を使います。
 
@@ -201,7 +201,7 @@ tensor([[-1.5607,  1.6123],
         [ 4.1692, -3.3464]], grad_fn=<AddmmBackward>)
 ```
 
-モデルは、1つ目の文に対して `[-1.5607, 1.6123]` を、2つ目の文に対して `[ 4.1692, -3.3464]` を予測しました。これらは確率ではなく *ロジット*、つまりモデルの最終層が出力する、正規化されていない生のスコアです。確率に変換するには、[SoftMax](https://en.wikipedia.org/wiki/Softmax_function) 層を通す必要があります。全ての Transformers モデルはロジットを出力します。これは、学習時に使う損失関数が、通常、SoftMax のような最終段階の活性化関数と、交差エントロピーのような損失の計算を組み合わせている為です。
+モデルは、1つ目の文に対して `[-1.5607, 1.6123]` を、2つ目の文に対して `[ 4.1692, -3.3464]` を予測しました。これらは確率ではなく *ロジット* です。ロジットは、モデルの最終層が出力する、正規化されていない生のスコアです。確率に直すには、[SoftMax](https://en.wikipedia.org/wiki/Softmax_function) 層を通します。Transformers のモデルがロジットを出力するのは、学習の際に、SoftMax のような最後の活性化関数と、交差エントロピーのような損失関数とをまとめて計算するのが一般的なためです。
 
 ```py
 import torch
@@ -235,4 +235,4 @@ model.config.id2label
 これで、パイプラインの3つのステップ、つまりトークナイザによる前処理、入力をモデルに通すこと、後処理を、無事に再現出来ました。ここからは、それぞれのステップをもう少し深く掘り下げていきます。
 
 > [!TIP]
-> **試してみましょう！** 自分で選んだ2つ（以上）のテキストを `sentiment-analysis` パイプラインに通してみてください。その上で、ここで見たステップを自分で再現し、同じ結果が得られるかどうか確認してみましょう。
+> ✏️ **試してみましょう！** 自分で選んだ2つ（以上）のテキストを `sentiment-analysis` パイプラインに通してみてください。その上で、ここで見たステップを自分で再現し、同じ結果が得られるかどうか確認してみましょう。

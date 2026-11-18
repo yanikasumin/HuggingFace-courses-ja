@@ -9,9 +9,9 @@
     {label: "Aws Studio", value: "https://studiolab.sagemaker.aws/import/github/huggingface/notebooks/blob/master/course/en/chapter2/section6_pt.ipynb"},
 ]} />
 
-ここ数セクションでは、殆どの作業を手作業で行ってきました。トークナイザの仕組みを探り、トークン化、入力 ID への変換、パディング、切り捨て、アテンションマスクを見てきました。
+ここ数セクションでは、殆どの作業を手作業で進めてきました。トークナイザの仕組みを調べ、トークン化、入力 ID への変換、パディング、切り捨て、アテンションマスクを扱ってきました。
 
-しかし、セクション2で見たように、🤗 Transformers API にはこれら全てを処理出来る高レベルな関数があり、ここで詳しく見ていきます。文に対して直接 `tokenizer` を呼び出すと、モデルにそのまま渡せる入力が返ってきます。
+しかし、セクション2で見たように、🤗 Transformers API はこれら全てを代わりに処理してくれます。ここで取り上げる高水準の関数がそれです。`tokenizer` を文に対して直接呼び出すと、モデルへそのまま渡せる入力が返ってきます。
 
 ```py
 from transformers import AutoTokenizer
@@ -26,9 +26,9 @@ model_inputs = tokenizer(sequence)
 
 （入力文の訳：ずっと Hugging Face のコースを待ち望んでいました）
 
-ここでは、`model_inputs` 変数に、モデルがうまく動作する為に必要なものが全て含まれています。DistilBERT の場合、それは入力 ID とアテンションマスクです。追加の入力を受け取る他のモデルでは、それらも `tokenizer` オブジェクトによって出力されます。
+この例では、`model_inputs` 変数に、モデルが正しく動作する為に必要なものが全て入っています。DistilBERT の場合は、入力 ID とアテンションマスクです。追加の入力を受け付けるモデルについては、その追加の入力も `tokenizer` オブジェクトが出力します。
 
-以下の例で分かるように、この方法は非常に強力です。まず、単一のシーケンスをトークン化出来ます。
+以下の例をいくつか見れば分かるように、このメソッドは非常に強力です。まず、単一のシーケンスをトークン化出来ます。
 
 ```py
 sequence = "I've been waiting for a HuggingFace course my whole life."
@@ -36,7 +36,7 @@ sequence = "I've been waiting for a HuggingFace course my whole life."
 model_inputs = tokenizer(sequence)
 ```
 
-API を変更することなく、複数のシーケンスを一度に処理することも出来ます。
+API の使い方は変わりませんが、複数のシーケンスを一度に扱うことも出来ます。
 
 ```py
 sequences = ["I've been waiting for a HuggingFace course my whole life.", "So have I!"]
@@ -46,7 +46,7 @@ model_inputs = tokenizer(sequences)
 
 （追加された文の訳：私もです）
 
-パディングの方法は、目的に応じて次のように指定出来ます。
+パディングは、いくつかの目的に応じて行えます。
 
 ```py
 # シーケンスを最大のシーケンス長までパディングします
@@ -73,7 +73,7 @@ model_inputs = tokenizer(sequences, truncation=True)
 model_inputs = tokenizer(sequences, max_length=8, truncation=True)
 ```
 
-`tokenizer` オブジェクトは、指定したフレームワークのテンソルへの変換にも対応しています。生成したテンソルは、そのままモデルに渡せます。例えば、次のコードサンプルでは、トークナイザに様々なフレームワークのテンソルを返すよう指示しています。`"pt"` は PyTorch テンソルを返し、`"np"` は NumPy 配列を返します。
+`tokenizer` オブジェクトは、特定のフレームワークのテンソルへの変換も処理出来ます。変換後のテンソルは、そのままモデルへ送れます。例えば、次のコードでは、異なるフレームワークのテンソルを返すようトークナイザに指示しています。`"pt"` を指定すると PyTorch テンソルが返り、`"np"` を指定すると NumPy 配列が返ります。
 
 ```py
 sequences = ["I've been waiting for a HuggingFace course my whole life.", "So have I!"]
@@ -87,7 +87,7 @@ model_inputs = tokenizer(sequences, padding=True, return_tensors="np")
 
 ## 特殊トークン[[special-tokens]]
 
-トークナイザが返した入力 ID を見ると、前に得たものとはわずかに異なることが分かります。
+トークナイザが返した入力 ID をよく見ると、前に得たものと僅かに異なることに気づきます。
 
 ```py
 sequence = "I've been waiting for a HuggingFace course my whole life."
@@ -105,7 +105,7 @@ print(ids)
 [1045, 1005, 2310, 2042, 3403, 2005, 1037, 17662, 12172, 2607, 2026, 2878, 2166, 1012]
 ```
 
-先頭に1つ、末尾に1つ、トークン ID が追加されています。上の2つの ID シーケンスをデコードして、これが何なのか確認しましょう。
+トークン ID が、先頭に1つ、末尾に1つ追加されています。上の2つの ID の並びをデコードすると、その正体が分かります。
 
 ```py
 print(tokenizer.decode(model_inputs["input_ids"]))
@@ -117,11 +117,11 @@ print(tokenizer.decode(ids))
 "i've been waiting for a huggingface course my whole life."
 ```
 
-トークナイザは、先頭に特殊トークン `[CLS]` を、末尾に特殊トークン `[SEP]` を追加しました。これらの特殊トークンは事前学習時にも使われている為、推論時にも同じように追加する必要があります。モデルによっては特殊トークンを追加しないものもあれば、異なる特殊トークンを追加するものもあります。また、先頭だけ、あるいは末尾だけに追加するモデルもあります。いずれにしても、トークナイザはモデルがどの特殊トークンを必要とするかを知っており、自動的に処理してくれます。
+トークナイザは、特殊な語 `[CLS]` を先頭に、特殊な語 `[SEP]` を末尾に追加していました。モデルはこれらの語と共に事前学習されている為、推論で同じ結果を得るには、推論時にも追加しなければなりません。モデルによっては、特殊な語を追加しないものや、異なるものを追加するものもあります。先頭にだけ追加するモデルもあれば、末尾にだけ追加するモデルもあります。いずれの場合でも、どの特殊トークンが期待されているかはトークナイザが把握しており、自動的に対処します。
 
 ## まとめ: トークナイザからモデルへ[[wrapping-up-from-tokenizer-to-model]]
 
-ここまで、`tokenizer` オブジェクトがテキストを処理する各ステップを見てきました。最後に、高レベルな API の使い方をまとめて確認しましょう。この API では、複数のシーケンスへのパディング、非常に長いシーケンスの切り捨て、様々な種類のテンソルへの変換を一度に処理出来ます。
+`tokenizer` オブジェクトをテキストに適用した時に行われる個別の手順は、全て見てきました。最後にもう一度、中心となる API が、複数のシーケンス（パディング）、非常に長いシーケンス（切り捨て）、そして複数の種類のテンソルをどう扱うかを確認しましょう。
 
 ```py
 import torch

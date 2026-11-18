@@ -7,21 +7,21 @@
     {label: "Aws Studio", value: "https://studiolab.sagemaker.aws/import/github/huggingface/notebooks/blob/master/course/en/chapter9/section6.ipynb"},
 ]} />
 
-基本的なインターフェースを作って共有出来るようになったので、状態（state）や解釈（interpretation）といった、より高度な機能を見ていきましょう。
+基本的なインターフェースの作成と共有が出来るようになりました。この節では、状態（state）や解釈（interpretation）など、より高度な機能を扱います。
 
 ### 状態を使ってデータを保持する[[using-state-to-persist-data]]
 
-Gradio は *セッション状態* をサポートしています。これは、ページが読み込まれてから再読み込みされるまでの間、複数回の送信をまたいでデータが保持される仕組みです。セッション状態は、例えば、ユーザーがモデルとやり取りする間データを保持したいチャットボットのようなデモを作る時に便利です。
+Gradio は *セッション状態* をサポートします。セッション状態とは、ページを読み込んだ後の複数回の送信にわたってデータを保持する仕組みです。例えばチャットボットのデモでは、ユーザーがモデルとやり取りする間、データを保持する用途に使います。
 
-なお、セッション状態では、モデルのユーザー間でデータが共有されることはありません。
+セッション状態のデータは、モデルのユーザー同士では共有されません。
 
-セッション状態にデータを保存するには、次の3つが必要です:
+セッション状態にデータを保存するには、次の3つを行います：
 
-1. 関数に、インターフェースの状態を表す *追加のパラメータ* を渡します。
-1. 関数の最後に、状態の更新後の値を *追加の戻り値* として返します。
+1. インターフェースの状態を表す *追加のパラメータ* を、関数に渡します。
+1. 関数の最後で、更新した状態の値を *追加の戻り値* として返します。
 1. `Interface` を作成する際に、'state' 入力コンポーネントと 'state' 出力コンポーネントを追加します。
 
-下のチャットボットの例を見てください:
+下記にチャットボットの例を示します：
 
 ```py
 import random
@@ -55,11 +55,11 @@ iface.launch()
 
 <iframe src="https://course-demos-Chatbot-Demo.hf.space" frameBorder="0" height="350" title="Gradio アプリ" class="container p-0 flex-grow space-iframe" allow="accelerometer; ambient-light-sensor; autoplay; battery; camera; document-domain; encrypted-media; fullscreen; geolocation; gyroscope; layout-animations; legacy-image-formats; magnetometer; microphone; midi; oversized-images; payment; picture-in-picture; publickey-credentials-get; sync-xhr; usb; vr ; wake-lock; xr-spatial-tracking" sandbox="allow-forms allow-modals allow-popups allow-popups-to-escape-sandbox allow-same-origin allow-scripts allow-downloads"></iframe>
 
-出力コンポーネントの状態が送信をまたいで保持されていることに注目してください。なお、状態パラメータにはデフォルト値を渡すことが出来、それが状態の初期値として使われます。
+出力コンポーネントの状態は、送信を繰り返しても保持されます。状態パラメータには既定値を渡せます。既定値は、状態の初期値として使われます。
 
 ### 解釈を使って予測を理解する[[using-interpretation-to-understand-predictions]]
 
-殆どの機械学習モデルはブラックボックスであり、関数の内部ロジックはエンドユーザーには見えません。透明性を高める為、Interface クラスの `interpretation` 引数に `"default"` を指定するだけで、予測結果の解釈機能を追加出来ます。これにより、ユーザーは入力のどの部分が出力に影響しているかを理解出来ます。解釈も含まれた画像分類器のシンプルなインターフェースを、下で見てみましょう:
+機械学習モデルの多くはブラックボックスです。関数の内部の処理は、エンドユーザーからは見えません。Gradio では、透明性を確保する為に、解釈機能を簡単に追加出来ます。Interface クラスの `interpretation` 引数に `"default"` を指定するだけです。解釈機能を使うと、入力のどの部分が出力に影響したかをユーザーが確認出来ます。下記は、解釈機能を含めた単純な画像分類器のインターフェースです：
 
 ```py
 import requests
@@ -90,14 +90,12 @@ gr.Interface(
 ).launch()
 ```
 
-入力を送信し、出力コンポーネントの下に在る Interpret をクリックして、解釈機能をテストしてみてください。
+解釈機能は、入力を送信した後、出力コンポーネントの下の Interpret をクリックすると試せます。
 
 <iframe src="https://course-demos-gradio-image-interpretation.hf.space" frameBorder="0" height="570" title="Gradio アプリ" class="container p-0 flex-grow space-iframe" allow="accelerometer; ambient-light-sensor; autoplay; battery; camera; document-domain; encrypted-media; fullscreen; geolocation; gyroscope; layout-animations; legacy-image-formats; magnetometer; microphone; midi; oversized-images; payment; picture-in-picture; publickey-credentials-get; sync-xhr; usb; vr ; wake-lock; xr-spatial-tracking" sandbox="allow-forms allow-modals allow-popups allow-popups-to-escape-sandbox allow-same-origin allow-scripts allow-downloads"></iframe>
 
-Gradio が提供するデフォルトの解釈方法の他、`interpretation` パラメータに `shap` を指定し、`num_shap` パラメータを設定することも出来ます。これは Shapley 値に基づく解釈で、詳しくは[こちら](https://christophm.github.io/interpretable-ml-book/shap.html)で読めます。
+既定の解釈方法以外では、`interpretation` パラメータに `shap` を指定する方法も使えます。この場合は `num_shap` パラメータも設定します。これは Shapley 値に基づく解釈で、詳しくは[こちら](https://christophm.github.io/interpretable-ml-book/shap.html)で読めます。
 
-最後に、独自の解釈関数を `interpretation` パラメータに渡すことも出来ます。例は Gradio の getting started ページの[こちら](https://gradio.app/getting_started/)にあります。
+独自の解釈関数を `interpretation` パラメータに渡すことも出来ます。例は、Gradio の getting started ページの[こちら](https://gradio.app/getting_started/)にあります。
 
-これで Gradio の `Interface` クラスの深掘りは終わりです。見てきたように、このクラスを使えば数行の Python コードで機械学習デモを簡単に作れます。
-
-しかし、レイアウトを変更したり、複数の予測関数をつなげたりして、デモをカスタマイズしたくなることもあるでしょう。`Interface` をカスタマイズ可能な「ブロック」に分割出来たら便利だと思いませんか？幸い、その方法が有ります！それが最終セクションのテーマです。
+以上で、Gradio の `Interface` クラスの詳しい説明は終わりです。このクラスを使うと、数行の Python コードで機械学習のデモを作成出来ます。一方で、レイアウトを変更したい場合や、複数の予測関数をつなげたい場合もあります。そのようなカスタマイズには、`Interface` を分割した「ブロック」が向いています。ブロックは、次の最終セクションで扱います。

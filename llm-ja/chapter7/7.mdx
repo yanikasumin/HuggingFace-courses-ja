@@ -22,26 +22,26 @@
 
 {/if}
 
-質問応答を見ていきましょう！このタスクには様々な種類がありますが、このセクションで焦点を当てるのは *抽出型* の質問応答と呼ばれるものです。ドキュメントについて質問を投げかけ、その答えをドキュメント自体の中の _テキストの範囲（スパン）_ として特定します。
+このセクションでは質問応答を扱います。質問応答には様々な種類があります。このセクションで扱うのは *抽出型* の質問応答です。抽出型の質問応答では、ドキュメントについて質問し、答えをドキュメント自体の中の _テキストの範囲（スパン）_ として特定します。
 
 <Youtube id="ajPx5LwJD-I"/>
 
-クラウドワーカーが Wikipedia の記事の集合に対して作成した質問からなる [SQuAD データセット](https://rajpurkar.github.io/SQuAD-explorer/) を使って、BERT モデルをファインチューニングします。これにより、次のような予測を計算出来るモデルが得られます。
+このセクションでは、[SQuAD データセット](https://rajpurkar.github.io/SQuAD-explorer/) を使って BERT モデルをファインチューニングします。SQuAD は、クラウドワーカーが Wikipedia の記事の集合を対象に作成した質問からなるデータセットです。ファインチューニングにより、次のような予測を行うモデルが得られます。
 
 <iframe src="https://course-demos-bert-finetuned-squad.hf.space" frameBorder="0" height="450" title="Gradio アプリ" class="block dark:hidden container p-0 flex-grow space-iframe" allow="accelerometer; ambient-light-sensor; autoplay; battery; camera; document-domain; encrypted-media; fullscreen; geolocation; gyroscope; layout-animations; legacy-image-formats; magnetometer; microphone; midi; oversized-images; payment; picture-in-picture; publickey-credentials-get; sync-xhr; usb; vr ; wake-lock; xr-spatial-tracking" sandbox="allow-forms allow-modals allow-popups allow-popups-to-escape-sandbox allow-same-origin allow-scripts allow-downloads"></iframe>
 
-これは、このセクションで示すコードを使って実際に学習し、Hub にアップロードしたモデルを紹介するものです。[こちら](https://huggingface.co/huggingface-course/bert-finetuned-squad?context=%F0%9F%A4%97+Transformers+is+backed+by+the+three+most+popular+deep+learning+libraries+%E2%80%94+Jax%2C+PyTorch+and+TensorFlow+%E2%80%94+with+a+seamless+integration+between+them.+It%27s+straightforward+to+train+your+models+with+one+before+loading+them+for+inference+with+the+other.&question=Which+deep+learning+libraries+back+%F0%9F%A4%97+Transformers%3F) でモデルを確認し、予測を再確認出来ます。
+上の埋め込みは、このセクションで示すコードで学習し、Hub にアップロードしたモデルのデモです。モデルと予測は[こちら](https://huggingface.co/huggingface-course/bert-finetuned-squad?context=%F0%9F%A4%97+Transformers+is+backed+by+the+three+most+popular+deep+learning+libraries+%E2%80%94+Jax%2C+PyTorch+and+TensorFlow+%E2%80%94+with+a+seamless+integration+between+them.+It%27s+straightforward+to+train+your+models+with+one+before+loading+them+for+inference+with+the+other.&question=Which+deep+learning+libraries+back+%F0%9F%A4%97+Transformers%3F)で確認出来ます。
 
 > [!TIP]
-> 💡 BERT のようなエンコーダのみのモデルは、「Transformer アーキテクチャを発明したのは誰か？」のような事実確認の質問に対する答えの抽出は得意な傾向がありますが、「なぜ空は青いのか？」のような自由回答形式の質問は苦手です。こうした難しいケースでは、T5 や BART のようなエンコーダ・デコーダモデルが一般的に使われ、[テキスト要約](/course/chapter7/5) とよく似た方法で情報を統合します。この種の *生成型* の質問応答に興味が有る場合は、[ELI5 データセット](https://huggingface.co/datasets/eli5) をもとにした[デモ](https://yjernite.github.io/lfqa.html) を確認することをお勧めします。
+> 💡 BERT のようなエンコーダのみのモデルは、「Transformer アーキテクチャを発明したのは誰か？」のような事実を問う質問への答えの抽出を得意とします。一方、「なぜ空は青いのか？」のような自由な回答を求める質問は苦手です。こうした質問には、T5 や BART のようなエンコーダ・デコーダモデルが一般的に使われます。これらのモデルは、[テキスト要約](/course/chapter7/5) とよく似た方法で情報を統合して答えを生成します。この種の *生成型* の質問応答については、[ELI5 データセット](https://huggingface.co/datasets/eli5) をもとにした[デモ](https://yjernite.github.io/lfqa.html) をお勧めします。
 
 ## データを準備する[[preparing-the-data]]
 
-抽出型質問応答の学術ベンチマークとして最もよく使われるデータセットは [SQuAD](https://rajpurkar.github.io/SQuAD-explorer/) なので、ここでもそれを使います。答えの無い質問を含む、より難しい [SQuAD v2](https://huggingface.co/datasets/squad_v2) ベンチマークもあります。自分のデータセットに、コンテキストの列、質問の列、答えの列が含まれていれば、以下の手順を応用出来るはずです。
+抽出型の質問応答では、[SQuAD](https://rajpurkar.github.io/SQuAD-explorer/) が学術ベンチマークとして最もよく使われています。このセクションでも SQuAD を使います。より難しいベンチマークとして、答えの無い質問を含む [SQuAD v2](https://huggingface.co/datasets/squad_v2) もあります。自分のデータセットにコンテキストの列、質問の列、答えの列があれば、下記の手順をそのまま応用出来ます。
 
 ### SQuAD データセット[[the-squad-dataset]]
 
-いつものように、`load_dataset()` のお陰で、データセットのダウンロードとキャッシュを1ステップで行えます。
+データセットのダウンロードとキャッシュは、`load_dataset()` で1ステップで行えます。
 
 ```py
 from datasets import load_dataset
@@ -49,7 +49,7 @@ from datasets import load_dataset
 raw_datasets = load_dataset("squad")
 ```
 
-次に、このオブジェクトを見て SQuAD データセットについて詳しく確認しましょう。
+次に、このオブジェクトの中身を確認し、SQuAD データセットの構成を見ます。
 
 ```py
 raw_datasets
@@ -68,7 +68,7 @@ DatasetDict({
 })
 ```
 
-`context`、`question`、`answers` の各フィールドで必要なものは全て揃っているようです。学習セットの最初の要素について、これらを表示してみましょう。
+`context`、`question`、`answers` の各フィールドで必要なものは全て揃っています。学習セットの最初の要素について、これらのフィールドを表示します。
 
 ```py
 print("コンテキスト: ", raw_datasets["train"][0]["context"])
@@ -84,9 +84,9 @@ print("答え: ", raw_datasets["train"][0]["answers"])
 
 （コンテキストと質問の訳：コンテキストは、ノートルダム大学の本館の黄金のドームや聖母マリア像など、カトリック的な建築についての説明です（途中で切れています）。質問は「1858年にフランスのルルドで、聖母マリアは誰の前に現れたとされていますか？」で、答えは「聖ベルナデッタ・スビルー」です。）
 
-`context` フィールドと `question` フィールドはとても使い易いものです。`answers` フィールドは少し扱いが難しく、どちらもリストである2つのフィールドを持つ辞書になっています。これは評価の際に `squad` メトリクスが期待する形式です。自分のデータを使う場合は、答えを同じ形式にすることに必ずしもこだわる必要はありません。`text` フィールドは自明でしょう。`answer_start` フィールドには、コンテキスト内での各答えの開始文字インデックスが含まれます。
+`context` フィールドと `question` フィールドは、そのまま使うことが出来ます。`answers` フィールドは少し複雑で、どちらもリストである2つのフィールドを持つ辞書になっています。これは評価の際に `squad` メトリクスが期待する形式です。自分のデータを使う場合は、答えを同じ形式に揃える必要はありません。`text` フィールドの意味は明らかです。`answer_start` フィールドには、コンテキスト内での各答えの開始位置の文字インデックスが入ります。
 
-学習時には、可能な答えは1つだけです。`Dataset.filter()` メソッドを使って再確認出来ます。
+学習データでは、各サンプルに対する答えは1つだけです。このことは `Dataset.filter()` メソッドで確認出来ます。
 
 ```py
 raw_datasets["train"].filter(lambda x: len(x["answers"]["text"]) != 1)
@@ -113,7 +113,7 @@ print(raw_datasets["validation"][2]["answers"])
 
 （答えの訳：いずれも固有名詞で、1件目は「デンバー・ブロンコス」、2件目は「カリフォルニア州サンタクララ」「リーバイス・スタジアム」など、開催地の表記ゆれです。）
 
-評価スクリプトは 🤗 Datasets のメトリクスが全てまとめて処理してくれるので、深くは掘り下げません。要点を言うと、一部の質問には複数の可能な答えがあり、このスクリプトは予測した答えを許容可能な全ての答えと比較し、最良のスコアを採用します。例えば、インデックス2のサンプルを見てみましょう。
+評価スクリプトの詳細は扱いません。評価は 🤗 Datasets のメトリクスがまとめて処理します。要点は次の通りです。一部の質問には複数の答えが認められています。スクリプトは、予測した答えを認められた全ての答えと比較し、最も高いスコアをその予測のスコアとします。例えば、インデックス2のサンプルを見ます。
 
 ```py
 print(raw_datasets["validation"][2]["context"])
@@ -127,15 +127,15 @@ print(raw_datasets["validation"][2]["question"])
 
 （コンテキストと質問の訳：コンテキストは、第50回スーパーボウルでデンバー・ブロンコスがカロライナ・パンサーズを破ったことや、開催地がカリフォルニア州サンタクララのリーバイス・スタジアムだったことの説明です（途中で切れています）。質問は「第50回スーパーボウルはどこで開催されましたか？」です。）
 
-答えは、先程見た3つの可能性の内のいずれかで確かにあり得ることが分かります。
+先程見た3つの答えのいずれも、この質問への答えとして成立することが分かります。
 
 ### 学習データを処理する[[processing-the-training-data]]
 
 <Youtube id="qgaM0weJHpA"/>
 
-学習データの前処理から始めましょう。難しいのは、質問への答えに対するラベルの生成です。ラベルは、コンテキスト内で答えに対応するトークンの開始位置と終了位置になります。
+学習データの前処理を行います。前処理で難しいのは、答えに対するラベルの生成です。ラベルとは、コンテキスト内で答えに対応するトークンの開始位置と終了位置です。
 
-先を急ぎ過ぎないようにしましょう。まず、トークナイザを使って入力のテキストを、モデルが理解出来る ID に変換する必要があります。
+順を追って進めます。まず、トークナイザを使って入力テキストを、モデルが扱える ID に変換します。
 
 ```py
 from transformers import AutoTokenizer
@@ -144,7 +144,7 @@ model_checkpoint = "bert-base-cased"
 tokenizer = AutoTokenizer.from_pretrained(model_checkpoint)
 ```
 
-前に述べたように、BERT モデルをファインチューニングしますが、高速トークナイザが実装されているモデルタイプであれば、他のものも使えます。高速版が用意されている全てのアーキテクチャは[この大きな表](https://huggingface.co/transformers/#supported-frameworks)で確認出来ます。また、使っている `tokenizer` オブジェクトが実際に Tokenizers に基づいているかは、その `is_fast` 属性を見れば確認出来ます。
+前に述べたように、ここでは BERT モデルをファインチューニングします。高速トークナイザが実装されているモデルであれば、他のモデルでも構いません。高速版が用意されているアーキテクチャの一覧は[この大きな表](https://huggingface.co/transformers/#supported-frameworks)にあります。使用中の `tokenizer` オブジェクトが Tokenizers に基づいているかどうかは、`is_fast` 属性で確認出来ます。
 
 ```py
 tokenizer.is_fast
@@ -154,13 +154,13 @@ tokenizer.is_fast
 True
 ```
 
-質問とコンテキストを一緒にトークナイザに渡すと、特殊トークンが適切に挿入され、次のような文が形成されます。
+質問とコンテキストを一緒にトークナイザに渡すと、特殊トークンが挿入され、次の形の入力になります。
 
 ```
 [CLS] question [SEP] context [SEP]
 ```
 
-確認してみましょう。
+実際に確認します。
 
 ```py
 context = raw_datasets["train"][0]["context"]
@@ -183,21 +183,21 @@ tokenizer.decode(inputs["input_ids"])
 
 （入力の訳：質問とコンテキストは、前のデータセットサンプルの例と同じです。）
 
-ラベルは、答えの開始と終了となるトークンのインデックスになります。モデルには、入力のトークンごとに開始と終了のロジットを1つずつ予測するタスクが課されます。理論上のラベルは次のようになります。
+ラベルは、答えの開始トークンと終了トークンのインデックスです。モデルは、入力の各トークンについて、開始のロジットと終了のロジットを1つずつ予測します。正解ラベルは次の通りです。
 
 <div class="flex justify-center">
 <img class="block dark:hidden" src="https://huggingface.co/datasets/huggingface-course/documentation-images/resolve/main/en/chapter7/qa_labels.svg" alt="質問応答のためのワンホットエンコードされたラベル。"/>
 <img class="hidden dark:block" src="https://huggingface.co/datasets/huggingface-course/documentation-images/resolve/main/en/chapter7/qa_labels-dark.svg" alt="質問応答のためのワンホットエンコードされたラベル。"/>
 </div>
 
-この例ではコンテキストはそれほど長くありませんが、データセットには、設定した最大長（この場合は384）を超える非常に長いコンテキストを持つサンプルもあります。[Chapter 6](/course/chapter6/4) で `question-answering` pipeline の内部を調べた時に見たように、長いコンテキストには、データセットの1つのサンプルから、スライディングウィンドウで複数の学習用特徴量を作成することで対処します。
+この例のコンテキストは長くありません。しかし、データセットには、設定した最大長（この場合は384）を超える長いコンテキストを持つサンプルもあります。長いコンテキストへの対処法は、[Chapter 6](/course/chapter6/4) で `question-answering` pipeline の内部を調べた際に扱いました。1つのサンプルからスライディングウィンドウで複数の学習用特徴量を作成する方法です。
 
-現在の例でこれがどう動くかを見る為に、長さを100に制限し、50トークンのスライディングウィンドウを使います。おさらいすると、使用するのは次のものです。
+現在の例でこの方法の動きを確認する為に、長さを100に制限し、50トークンのスライディングウィンドウを使います。使用する引数は次の通りです。
 
 - 最大長を設定する `max_length`（ここでは100）
 - 質問とコンテキストが長過ぎる場合に（2番目の位置にある）コンテキストを切り捨てる `truncation="only_second"`
 - 連続する2つのチャンク間で重なるトークン数を設定する `stride`（ここでは50）
-- あふれたトークンが欲しいことをトークナイザに伝える `return_overflowing_tokens=True`
+- あふれたトークンを返すことをトークナイザに指定する `return_overflowing_tokens=True`
 
 ```py
 inputs = tokenizer(
@@ -220,11 +220,11 @@ for ids in inputs["input_ids"]:
 '[CLS] To whom did the Virgin Mary allegedly appear in 1858 in Lourdes France? [SEP]. It is a replica of the grotto at Lourdes, France where the Virgin Mary reputedly appeared to Saint Bernadette Soubirous in 1858. At the end of the main drive ( and in a direct line that connects through 3 statues and the Gold Dome ), is a simple, modern stone statue of Mary. [SEP]'
 ```
 
-見ての通り、この例は4つの入力に分割され、それぞれに質問とコンテキストの一部が含まれています。質問への答え（"Bernadette Soubirous"）は3番目と最後の入力にしか現れない点に注意してください。
+この例は4つの入力に分割されました。各入力には、質問とコンテキストの一部が含まれます。質問への答え（"Bernadette Soubirous"）が現れるのは、3番目と最後の入力だけです。
 
-長いコンテキストをこの方法で扱うと、答えがコンテキストに含まれていない学習サンプルも生成されます。そうしたサンプルでは、ラベルは `start_position = end_position = 0` となります（つまり `[CLS]` トークンを予測します）。答えが切り捨てられて開始部分（又は終了部分）しか残っていないという不運な場合も、これらのラベルを設定します。答えが完全にコンテキスト内に含まれるサンプルでは、ラベルは答えが始まるトークンのインデックスと、答えが終わるトークンのインデックスになります。
+長いコンテキストをこの方法で扱うと、答えがコンテキストに含まれない学習サンプルも生じます。その場合のラベルは `start_position = end_position = 0` です。これは `[CLS]` トークンを予測することに当たります。答えが切り捨てられ、開始部分（又は終了部分）しか残らない場合も、同じラベルを設定します。答えが完全にコンテキスト内に含まれる場合は、答えが始まるトークンのインデックスと、答えが終わるトークンのインデックスがラベルになります。
 
-データセットは、コンテキスト内での答えの開始文字を提供してくれます。答えの長さを加えると、コンテキスト内での終了文字が分かります。これらをトークンのインデックスに対応付けるには、[Chapter 6](/course/chapter6/4) で学んだオフセットマッピングを使う必要があります。`return_offsets_mapping=True` を渡すことで、トークナイザにこれらを返させることが出来ます。
+データセットには、コンテキスト内での答えの開始文字が記録されています。開始文字に答えの長さを加えると、終了文字が得られます。開始文字と終了文字をトークンのインデックスに対応付けるには、[Chapter 6](/course/chapter6/4) で学んだオフセットマッピングを使います。トークナイザに `return_offsets_mapping=True` を渡すと、オフセットマッピングが返ります。
 
 ```py
 inputs = tokenizer(
@@ -243,7 +243,7 @@ inputs.keys()
 dict_keys(['input_ids', 'token_type_ids', 'attention_mask', 'offset_mapping', 'overflow_to_sample_mapping'])
 ```
 
-見ての通り、通常の入力 ID、トークンタイプ ID、アテンションマスクに加え、要求したオフセットマッピングと、追加のキー `overflow_to_sample_mapping` が返ってきます。対応する値は、複数のテキストを同時にトークン化する時に役立ちます（トークナイザが Rust に基づいている恩恵を受ける為にも、そうすべきです）。1つのサンプルから複数の特徴量が生まれることがある為、これは各特徴量を、それが由来するサンプルに対応付けます。ここでは1つのサンプルだけをトークン化したので、`0` のリストが得られます。
+返されるのは、通常の入力 ID、トークンタイプ ID、アテンションマスクに加えて、要求したオフセットマッピングと、追加のキー `overflow_to_sample_mapping` です。このキーの値は、複数のテキストを同時にトークン化する際に使います。トークナイザが Rust に基づく利点を活かす為にも、トークン化はまとめて行うのが適切です。1つのサンプルから複数の特徴量が生まれる場合がある為、この値は各特徴量がどのサンプルに由来するかを表します。ここではサンプルを1つだけトークン化したので、得られるのは `0` のリストです。
 
 ```py
 inputs["overflow_to_sample_mapping"]
@@ -253,7 +253,7 @@ inputs["overflow_to_sample_mapping"]
 [0, 0, 0, 0]
 ```
 
-しかし、もっと多くのサンプルをトークン化すると、これはより便利になります。
+複数のサンプルをトークン化すると、この値が役立ちます。
 
 ```py
 inputs = tokenizer(
@@ -275,16 +275,16 @@ print(f"それぞれの由来は次のとおりです: {inputs['overflow_to_samp
 'それぞれの由来は次のとおりです: [0, 0, 0, 0, 1, 1, 1, 1, 2, 2, 2, 2, 3, 3, 3, 3, 3, 3, 3].'
 ```
 
-見ての通り、最初の3つのサンプル（学習セットのインデックス2、3、4）はそれぞれ4つの特徴量を生み、最後のサンプル（学習セットのインデックス5）は7つの特徴量を生みました。
+最初の3つのサンプル（学習セットのインデックス2、3、4）は、それぞれ4つの特徴量を生みました。最後のサンプル（学習セットのインデックス5）は、7つの特徴量を生みました。
 
-この情報は、得られた各特徴量を対応するラベルに対応付けるのに役立ちます。前述の通り、それらのラベルは次の通りです。
+この対応付けを使って、各特徴量にラベルを割り当てます。ラベルの決め方は次の通りです。
 
 - 答えがコンテキストの対応する範囲にない場合は `(0, 0)`
 - 答えがコンテキストの対応する範囲に在る場合は `(start_position, end_position)`。ここで `start_position` は答えの開始位置に在るトークンの（入力 ID における）インデックス、`end_position` は答えが終わるトークンのインデックスです
 
-どちらのケースか、該当する場合はトークンの位置を特定する為に、まず入力 ID の中でコンテキストが始まるインデックスと終わるインデックスを見つけます。これにはトークンタイプ ID を使うことも出来ますが、全てのモデルに存在するとは限らないため（例えば DistilBERT はそれらを必要としません）、代わりにトークナイザが返す `BatchEncoding` の `sequence_ids()` メソッドを使います。
+どちらの場合に当たるかと、当たる場合のトークン位置を決めるには、まず入力 ID の中でコンテキストが始まる位置と終わる位置を求めます。求め方にはトークンタイプ ID を使う方法もあります。しかし、トークンタイプ ID は全てのモデルに存在するとは限りません。例えば DistilBERT はトークンタイプ ID を必要としません。そこで、トークナイザが返す `BatchEncoding` の `sequence_ids()` メソッドを使います。
 
-それらのトークンのインデックスが得られたら、対応するオフセットを見ます。オフセットは、元のコンテキスト内での文字範囲を表す2つの整数のタプルです。これにより、この特徴量のコンテキストのチャンクが答えより後から始まっているか、答えが始まる前に終わっているか（その場合、ラベルは `(0, 0)` です）を検出出来ます。そうでない場合は、ループして答えの最初と最後のトークンを見つけます。
+次に、各トークンに対応するオフセットを見ます。オフセットは、元のコンテキスト内での文字範囲を表す2つの整数のタプルです。オフセットからは、この特徴量に含まれるコンテキストが答えより後から始まっているか、答えが始まる前に終わっているかを判定出来ます。どちらかに当たる場合、答えはこの範囲に無く、ラベルは `(0, 0)` です。どちらにも当たらない場合は、範囲内を走査して答えの最初と最後のトークンを求めます。
 
 ```py
 answers = raw_datasets["train"][2:6]["answers"]
@@ -331,7 +331,7 @@ start_positions, end_positions
  [85, 53, 21, 0, 0, 70, 33, 0, 40, 0, 0, 0, 68, 35, 0, 0, 0, 0, 0])
 ```
 
-アプローチが正しいことを確認する為に、いくつかの結果を見てみましょう。最初の特徴量では `(83, 85)` がラベルとして得られたので、データセットに記録された正解と、83から85（両端を含む）までのトークンをデコードした範囲を比較します。
+この方法が正しいかどうかを、いくつかの結果で確認します。最初の特徴量のラベルは `(83, 85)` です。データセットに記録された正解と、83から85（両端を含む）までのトークンをデコードした文字列を比較します。
 
 ```py
 idx = 0
@@ -351,7 +351,7 @@ print(f"正解: {answer}, ラベルによる答え: {labeled_answer}")
 
 （出力の訳：「the Main Building」は「本館」という意味です。）
 
-一致しました！次に、ラベルを `(0, 0)` に設定したインデックス4を確認しましょう。これは、その特徴量のコンテキストチャンクに答えが含まれていないことを意味します。
+両者は一致しました。次に、ラベルを `(0, 0)` に設定したインデックス4を確認します。このラベルは、その特徴量のコンテキストに答えが含まれていないことを意味します。
 
 ```py
 idx = 4
@@ -371,9 +371,9 @@ print(f"正解: {answer}, デコードした例: {decoded_example}")
 実際、コンテキストの中に答えは見当たりません。
 
 > [!TIP]
-> **やってみましょう！** XLNet アーキテクチャを使う場合、パディングは左側に適用され、質問とコンテキストが入れ替わります。先程見たコードを全て XLNet アーキテクチャに合わせて変更してください（`padding=True` も追加します）。パディングを適用すると `[CLS]` トークンが位置0にない場合があることに注意してください。
+> ✏️ **やってみましょう！** XLNet アーキテクチャを使う場合、パディングは左側に適用され、質問とコンテキストが入れ替わります。先程見たコードを全て XLNet アーキテクチャに合わせて変更してください（`padding=True` も追加します）。パディングを適用すると `[CLS]` トークンが位置0にない場合があることに注意してください。
 
-学習データの前処理を段階的に見てきたので、それを関数にまとめ、学習データセット全体に適用出来ます。殆どのコンテキストは長く（対応するサンプルは複数の特徴量に分割されます）、動的パディングを適用する実質的な利点はない為、全ての特徴量を設定した最大長までパディングします。
+ここまでの前処理を関数にまとめ、学習データセット全体に適用します。コンテキストの多くは長く、対応するサンプルは複数の特徴量に分割されます。その為、動的パディングに実質的な利点はありません。全ての特徴量は、設定した最大長までパディングします。
 
 ```py
 max_length = 384
@@ -436,9 +436,9 @@ def preprocess_training_examples(examples):
     return inputs
 ```
 
-使用する最大長とスライディングウィンドウの長さを決める2つの定数を定義したこと、そしてトークン化の前に少しだけクリーンアップを加えたことに注意してください。SQuAD データセットの一部の質問には、冒頭と末尾に余分な空白があります。これらは何の意味も持ちません（RoBERTa のようなモデルでトークン化すると場所を取るだけです）。そこで、余分な空白を取り除きました。
+この関数では、使用する最大長とスライディングウィンドウの長さを決める2つの定数を定義しています。トークン化の前には、小さな前処理も加えています。SQuAD データセットの一部の質問には、冒頭と末尾に余分な空白が含まれます。余分な空白に意味はありません。RoBERTa のようなモデルでトークン化すると、空白が場所を取るだけです。その為、余分な空白は取り除いています。
 
-この関数を学習セット全体に適用するには、`batched=True` フラグと共に `Dataset.map()` メソッドを使います。データセットの長さを変更するので（1つのサンプルから複数の学習用特徴量が生まれるため）、ここではこのフラグが必要です。
+この関数を学習セット全体に適用するには、`batched=True` フラグを指定して `Dataset.map()` メソッドを使います。1つのサンプルから複数の学習用特徴量が生まれる為、このフラグが必要です。
 
 ```py
 train_dataset = raw_datasets["train"].map(
@@ -453,13 +453,13 @@ len(raw_datasets["train"]), len(train_dataset)
 (87599, 88729)
 ```
 
-見ての通り、前処理によっておよそ1,000件の特徴量が追加されました。学習セットの準備が整いました。検証セットの前処理に取り掛かりましょう！
+前処理により、特徴量はおよそ1,000件増えました。学習セットの準備は以上です。次に、検証セットの前処理を行います。
 
 ### 検証データを処理する[[processing-the-validation-data]]
 
-検証データの前処理は、ラベルを生成する必要がない分、少し簡単です（検証の損失を計算したい場合は別ですが、その数値がモデルの良し悪しの理解にあまり役立つことはありません）。面白いのは、モデルの予測を元のコンテキストの範囲として解釈する部分です。その為には、オフセットマッピングと、作成された各特徴量をそれが由来する元のサンプルに対応付ける方法の両方を保存しておく必要があります。元のデータセットには ID 列があるので、その ID を使います。
+検証データの前処理は、学習データより少し簡単です。ラベルを生成する必要がない為です。検証の損失を計算する使い方もありますが、その数値はモデルの良し悪しを判断する材料にはあまりなりません。検証データで中心になるのは、モデルの予測を元のコンテキストの範囲として解釈する処理です。この処理には、オフセットマッピングと、作成した各特徴量を元のサンプルに対応付ける方法の両方が必要です。元のデータセットには ID 列がある為、対応付けにはその ID を使います。
 
-ここで加えるのは、オフセットマッピングの少しのクリーンアップだけです。オフセットマッピングには質問とコンテキストの両方のオフセットが含まれますが、後処理の段階に入ると、入力 ID のどの部分がコンテキストでどの部分が質問だったかを知る方法がなくなります（使用した `sequence_ids()` メソッドはトークナイザの出力に対してのみ利用出来ます）。そこで、質問に対応するオフセットを `None` に設定します。
+ここで加える処理は、オフセットマッピングの小さな整理だけです。オフセットマッピングには、質問とコンテキストの両方のオフセットが含まれます。しかし、後処理の段階では、入力 ID のどの部分がコンテキストで、どの部分が質問だったかを知る方法がありません。`sequence_ids()` メソッドはトークナイザの出力に対してのみ使える為です。そこで、質問に対応するオフセットは `None` に設定します。
 
 ```py
 def preprocess_validation_examples(examples):
@@ -492,7 +492,7 @@ def preprocess_validation_examples(examples):
     return inputs
 ```
 
-前と同様に、この関数を検証データセット全体に適用出来ます。
+学習データと同様に、この関数を検証データセット全体に適用します。
 
 ```py
 validation_dataset = raw_datasets["validation"].map(
@@ -507,7 +507,7 @@ len(raw_datasets["validation"]), len(validation_dataset)
 (10570, 10822)
 ```
 
-この場合は数百件のサンプルが追加されただけなので、検証データセットのコンテキストは少し短いようです。
+この場合、追加されたサンプルは数百件だけです。検証データセットのコンテキストは、学習データより少し短いと考えられます。
 
 全てのデータの前処理が出来たので、学習に移れます。
 
@@ -515,13 +515,13 @@ len(raw_datasets["validation"]), len(validation_dataset)
 
 ## `Trainer` API でモデルをファインチューニングする[[fine-tuning-the-model-with-the-trainer-api]]
 
-この例の学習コードは、前のセクションのコードとよく似たものになります。最も難しいのは `compute_metrics()` 関数を書くことです。全てのサンプルを設定した最大長までパディングしたので、定義すべきデータコレータはありません。その為、このメトリクス計算だけを気にすればよいことになります。難しいのは、モデルの予測を元のサンプルのテキストの範囲へと後処理する部分です。それが出来れば、Datasets ライブラリのメトリクスが作業の殆どを引き受けてくれます。
+この例の学習コードは、前のセクションのコードとよく似ています。難しいのは `compute_metrics()` 関数を書くことです。全てのサンプルは設定した最大長までパディング済みです。その為、データコレータを定義する必要はありません。残る課題はメトリクスの計算だけです。メトリクスの計算で難しいのは、モデルの予測を元のサンプルのテキスト範囲へ後処理する部分です。この後処理が出来れば、残りの作業の殆どは Datasets ライブラリのメトリクスが引き受けます。
 
 {:else}
 
 ## Keras でモデルをファインチューニングする[[fine-tuning-the-model-with-keras]]
 
-この例の学習コードは、前のセクションのコードとよく似たものになりますが、メトリクスの計算が独特に難しいものになります。全てのサンプルを設定した最大長までパディングしたので、定義すべきデータコレータはありません。その為、このメトリクス計算だけを気にすればよいことになります。難しいのは、モデルの予測を元のサンプルのテキストの範囲へと後処理する部分です。それが出来れば、Datasets ライブラリのメトリクスが作業の殆どを引き受けてくれます。
+この例の学習コードは、前のセクションのコードとよく似ています。但し、メトリクスの計算にはこの例特有の難しさがあります。全てのサンプルは設定した最大長までパディング済みです。その為、データコレータを定義する必要はありません。残る課題はメトリクスの計算だけです。メトリクスの計算で難しいのは、モデルの予測を元のサンプルのテキスト範囲へ後処理する部分です。この後処理が出来れば、残りの作業の殆どは Datasets ライブラリのメトリクスが引き受けます。
 
 {/if}
 
@@ -537,16 +537,16 @@ len(raw_datasets["validation"]), len(validation_dataset)
 
 {/if}
 
-モデルは、[`question-answering` pipeline](/course/chapter6/3b) の内部を調べた時に見たように、入力 ID における答えの開始位置と終了位置のロジットを出力します。後処理のステップはそこで行ったものと似ているので、行った操作を簡単に振り返っておきましょう。
+モデルは、入力 ID における答えの開始位置と終了位置のロジットを出力します。これは [`question-answering` pipeline](/course/chapter6/3b) の内部を調べた際に見た通りです。後処理の手順はその際の処理と似ています。まず、行った操作を簡単に振り返ります。
 
 - コンテキスト外のトークンに対応する開始と終了のロジットをマスクしました。
 - 次に、ソフトマックスを使って開始と終了のロジットを確率に変換しました。
 - 対応する2つの確率の積を取ることで、各 `(start_token, end_token)` ペアにスコアを与えました。
 - 有効な答えが得られる（例: `start_token` が `end_token` より小さい）ペアの中で、スコアが最大のものを探しました。
 
-ここでは、実際のスコアを計算する必要がない（必要なのは予測された答えだけである）為、この処理を少し変更します。つまり、ソフトマックスのステップを省略出来ます。高速化の為、可能な全ての `(start_token, end_token)` ペアにスコアを付けるのではなく、上位の `n_best` 個のロジット（`n_best=20`）に対応するペアだけにスコアを付けます。ソフトマックスを省略するので、これらのスコアはロジットのスコアとなり、開始と終了のロジットの合計を取ることで得られます（規則 \\(\log(ab) = \log(a) + \log(b)\\)).
+ここでは、この処理を少し変更します。実際のスコアは必要ありません。必要なのは予測された答えだけです。その為、ソフトマックスのステップは省略出来ます。高速化の為、スコアを付ける対象も絞ります。可能な全ての `(start_token, end_token)` ペアではなく、上位の `n_best` 個のロジット（`n_best=20`）に対応するペアだけにスコアを付けます。ソフトマックスを省略する為、スコアはロジットのままです。スコアは、開始のロジットと終了のロジットの合計で得られます（規則 \\(\log(ab) = \log(a) + \log(b)\\)).
 
-これら全てを示すには、何らかの予測が必要です。まだモデルを学習していないので、QA pipeline のデフォルトモデルを使って、検証セットの一部について予測を生成します。前と同じ処理関数が使えます。この関数はグローバル定数 `tokenizer` に依存しているので、一時的に使いたいモデルのトークナイザにそのオブジェクトを差し替えるだけです。
+この後処理を示すには、予測の実例が必要です。モデルはまだ学習していません。そこで、QA pipeline の既定モデルを使い、検証セットの一部について予測を生成します。処理には前と同じ関数が使えます。この関数はグローバル定数 `tokenizer` に依存します。その為、そのオブジェクトを、一時的に使いたいモデルのトークナイザに差し替えます。
 
 ```python
 small_eval_set = raw_datasets["validation"].select(range(100))
@@ -566,7 +566,7 @@ eval_set = small_eval_set.map(
 tokenizer = AutoTokenizer.from_pretrained(model_checkpoint)
 ```
 
-次に、モデルが想定していない `eval_set` の列を取り除き、小さな検証セット全体でバッチを構築して、モデルに通します。GPU が利用出来る場合は、高速化の為にそれを使います。
+次に、`eval_set` から、モデルが想定していない列を取り除きます。小さな検証セット全体でバッチを構築し、モデルに通します。GPU が利用出来る場合は、高速化の為に GPU を使います。
 
 {#if fw === 'pt'}
 
@@ -587,7 +587,7 @@ with torch.no_grad():
     outputs = trained_model(**batch)
 ```
 
-`Trainer` は予測を NumPy 配列として返すので、開始と終了のロジットを取得し、その形式に変換します。
+`Trainer` は予測を NumPy 配列として返します。開始と終了のロジットを取得し、NumPy 配列の形式に変換します。
 
 ```python
 start_logits = outputs.start_logits.cpu().numpy()
@@ -609,7 +609,7 @@ trained_model = TFAutoModelForQuestionAnswering.from_pretrained(trained_checkpoi
 outputs = trained_model(**batch)
 ```
 
-実験し易いように、これらの出力を NumPy 配列に変換しましょう。
+実験し易いように、これらの出力は NumPy 配列に変換しておきます。
 
 ```python
 start_logits = outputs.start_logits.numpy()
@@ -618,7 +618,7 @@ end_logits = outputs.end_logits.numpy()
 
 {/if}
 
-次に、`small_eval_set` の各サンプルについて予測された答えを見つける必要があります。1つのサンプルが `eval_set` の中で複数の特徴量に分割されている場合がある為、最初のステップは、`small_eval_set` の各サンプルを `eval_set` の対応する特徴量に対応付けることです。
+次に、`small_eval_set` の各サンプルについて、予測された答えを求めます。1つのサンプルが `eval_set` の中で複数の特徴量に分割されている場合があります。まず、`small_eval_set` の各サンプルを、`eval_set` の対応する特徴量に対応付けます。
 
 ```python
 import collections
@@ -628,13 +628,13 @@ for idx, feature in enumerate(eval_set):
     example_to_features[feature["example_id"]].append(idx)
 ```
 
-これが手に入れば、本格的に作業出来ます。全てのサンプルをループし、各サンプルについて関連する全ての特徴量をループします。前述の通り、開始と終了の上位 `n_best` 個のロジットについてロジットスコアを見ますが、次のような位置は除外します。
+対応付けが出来たら、予測された答えを求める処理に入ります。全てのサンプルを走査し、各サンプルについて、関連する全ての特徴量を走査します。開始と終了の上位 `n_best` 個のロジットについてロジットスコアを調べます。但し、次の位置は除外します。
 
 - 答えがコンテキストの中に入らないもの
 - 答えの長さが負になるもの
 - 答えが長過ぎるもの（可能性を `max_answer_length=30` に制限します）
 
-1つのサンプルについて、スコア付けされた可能な答えが全て揃ったら、ロジットスコアが最も良いものを選ぶだけです。
+1つのサンプルについて、候補となる答えに全てスコアを付けたら、ロジットスコアが最も高いものを選びます。
 
 ```python
 import numpy as np
@@ -678,7 +678,7 @@ for example in small_eval_set:
     predicted_answers.append({"id": example_id, "prediction_text": best_answer["text"]})
 ```
 
-予測された答えの最終的な形式は、使用するメトリクスが期待するものになります。いつものように、Evaluate ライブラリを使って読み込むことが出来ます。
+予測された答えの最終的な形式は、使用するメトリクスが想定する形式です。メトリクスは Evaluate ライブラリで読み込めます。
 
 ```python
 import evaluate
@@ -686,7 +686,7 @@ import evaluate
 metric = evaluate.load("squad")
 ```
 
-このメトリクスは、予測された答えを上で見た形式（サンプルの ID 用のキーと予測テキスト用のキーを持つ辞書のリスト）で、データセットに記録された正解を下の形式（サンプルの ID 用のキーと可能な答え用のキーを持つ辞書のリスト）で期待します。
+このメトリクスは、予測された答えと、データセットに記録された正解を、それぞれ決まった形式で受け取ります。予測された答えは、サンプルの ID のキーと予測テキストのキーを持つ辞書のリストです。正解は、サンプルの ID のキーと可能な答えのキーを持つ辞書のリストです。
 
 ```python
 theoretical_answers = [
@@ -694,7 +694,7 @@ theoretical_answers = [
 ]
 ```
 
-両方のリストの最初の要素を見て、妥当な結果が得られているか確認出来ます。
+両方のリストの最初の要素を比べると、結果が妥当かどうかを確認出来ます。
 
 ```python
 print(predicted_answers[0])
@@ -706,7 +706,7 @@ print(theoretical_answers[0])
 {'id': '56be4db0acb8001400a502ec', 'answers': {'text': ['Denver Broncos', 'Denver Broncos', 'Denver Broncos'], 'answer_start': [177, 177, 177]}}
 ```
 
-悪くありません！メトリクスが与えるスコアを見てみましょう。
+結果は妥当です。次に、メトリクスが与えるスコアを確認します。
 
 ```python
 metric.compute(predictions=predicted_answers, references=theoretical_answers)
@@ -716,17 +716,17 @@ metric.compute(predictions=predicted_answers, references=theoretical_answers)
 {'exact_match': 83.0, 'f1': 88.25}
 ```
 
-繰り返しになりますが、[その論文](https://arxiv.org/abs/1910.01108v2) によれば、SQuAD でファインチューニングした DistilBERT がデータセット全体でこれらのスコアとして79.1と86.9を得ていることを考えると、かなり良い結果です。
+[その論文](https://arxiv.org/abs/1910.01108v2) によれば、SQuAD でファインチューニングした DistilBERT は、データセット全体で79.1と86.9のスコアを得ています。今回の結果は、これに近い良好な値です。
 
 {#if fw === 'pt'}
 
-ここまで行ったことを、全て `Trainer` で使う `compute_metrics()` 関数にまとめましょう。通常、この `compute_metrics()` 関数は、ロジットとラベルを持つタプル `eval_preds` を受け取るだけです。しかしここではもう少し情報が必要です。特徴量のデータセットでオフセットを、サンプルのデータセットで元のコンテキストを参照しなければならない為、この関数で学習中の通常の評価結果を得ることはできません。学習の最後に結果を確認するためだけに使います。
+ここまでの処理を、`Trainer` で使う `compute_metrics()` 関数にまとめます。通常、`compute_metrics()` 関数は、ロジットとラベルを持つタプル `eval_preds` を受け取るだけです。しかし、ここではそれだけでは足りません。特徴量のデータセットでオフセットを参照し、サンプルのデータセットで元のコンテキストを参照する必要がある為です。その為、この関数では学習中の通常の評価結果は得られません。この関数は、学習の最後に結果を確認する為だけに使います。
 
-`compute_metrics()` 関数は、前に行ったのと同じステップをまとめたものです。有効な答えが1つも得られなかった場合（その場合は空文字列を予測します）に備えて、小さなチェックを加えているだけです。
+`compute_metrics()` 関数は、前に行ったステップをまとめたものです。加えたのは小さなチェックだけです。有効な答えが1つも得られなかった場合に、空文字列を予測する為のチェックです。
 
 {:else}
 
-ここまで行ったことを、全て、モデルの学習後に使う `compute_metrics()` 関数にまとめましょう。出力されたロジットだけでなく、もう少し情報を渡す必要があります。特徴量のデータセットでオフセットを、サンプルのデータセットで元のコンテキストを参照しなければならない為です。
+ここまでの処理を、モデルの学習後に使う `compute_metrics()` 関数にまとめます。この関数には、出力されたロジットだけでは足りません。特徴量のデータセットでオフセットを参照し、サンプルのデータセットで元のコンテキストを参照する必要がある為、追加の情報も渡します。
 
 {/if}
 
@@ -784,7 +784,7 @@ def compute_metrics(start_logits, end_logits, features, examples):
     return metric.compute(predictions=predicted_answers, references=theoretical_answers)
 ```
 
-予測に対して動作するか確認出来ます。
+この関数が予測に対して動作するかを確認します。
 
 ```python
 compute_metrics(start_logits, end_logits, eval_set, small_eval_set)
@@ -794,13 +794,13 @@ compute_metrics(start_logits, end_logits, eval_set, small_eval_set)
 {'exact_match': 83.0, 'f1': 88.25}
 ```
 
-良さそうです！これを使ってモデルをファインチューニングしましょう。
+関数が正しく動作することが確認出来ました。次に、この関数を使ってモデルをファインチューニングします。
 
 ### モデルをファインチューニングする[[fine-tuning-the-model]]
 
 {#if fw === 'pt'}
 
-モデルの学習の準備が整いました。まず、前のように `AutoModelForQuestionAnswering` クラスを使ってモデルを作成しましょう。
+モデルの学習を始めます。まず、前のように `AutoModelForQuestionAnswering` クラスを使ってモデルを作成します。
 
 ```python
 model = AutoModelForQuestionAnswering.from_pretrained(model_checkpoint)
@@ -808,7 +808,7 @@ model = AutoModelForQuestionAnswering.from_pretrained(model_checkpoint)
 
 {:else}
 
-モデルの学習の準備が整いました。まず、前のように `TFAutoModelForQuestionAnswering` クラスを使ってモデルを作成しましょう。
+モデルの学習を始めます。まず、前のように `TFAutoModelForQuestionAnswering` クラスを使ってモデルを作成します。
 
 ```python
 model = TFAutoModelForQuestionAnswering.from_pretrained(model_checkpoint)
@@ -816,9 +816,9 @@ model = TFAutoModelForQuestionAnswering.from_pretrained(model_checkpoint)
 
 {/if}
 
-いつものように、一部の重みが使われていない（事前学習ヘッドのもの）ことと、他の重みがランダムに初期化されている（質問応答ヘッドのもの）ことを知らせる警告が出ます。もう慣れている頃だと思いますが、これはこのモデルがまだ使える状態ではなく、ファインチューニングが必要だということです。まさにそれをこれから行います！
+いつものように、警告が表示されます。使われていない重みがあることと、ランダムに初期化された重みがあることを知らせる警告です。使われていないのは事前学習ヘッドの重みで、ランダムに初期化されたのは質問応答ヘッドの重みです。この警告は、このモデルがそのままでは使えず、ファインチューニングが必要であることを意味します。ファインチューニングは次に行います。
 
-モデルを Hub にプッシュ出来るようにするには、Hugging Face にログインする必要があります。ノートブックでこのコードを実行している場合は、次のユーティリティ関数でログイン出来ます。ログイン認証情報を入力出来るウィジェットが表示されます。
+モデルを Hub にプッシュするには、Hugging Face へのログインが必要です。ノートブックでこのコードを実行している場合は、次のユーティリティ関数でログイン出来ます。この関数は、ログイン認証情報を入力するウィジェットを表示します。
 
 ```python
 from huggingface_hub import notebook_login
@@ -834,11 +834,11 @@ huggingface-cli login
 
 {#if fw === 'pt'}
 
-これが終わったら、`TrainingArguments` を定義出来ます。メトリクスを計算する関数を定義した時に述べたように、`compute_metrics()` 関数のシグネチャの為、通常の評価ループは持てません。その為の独自の `Trainer` サブクラスを書くことも出来ます（そのアプローチは[質問応答のサンプルスクリプト](https://github.com/huggingface/transformers/blob/master/examples/pytorch/question-answering/trainer_qa.py)にあります）が、このセクションには少し長過ぎます。代わりに、ここでは学習の最後にのみモデルを評価し、通常の評価の方法は下の「カスタム学習ループ」で示します。
+ログインが終わったら、`TrainingArguments` を定義出来ます。メトリクスを計算する関数を定義した際に述べたように、`compute_metrics()` 関数のシグネチャの為、通常の評価ループは持てません。独自の `Trainer` サブクラスを書けば評価ループを持てます。その方法は[質問応答のサンプルスクリプト](https://github.com/huggingface/transformers/blob/master/examples/pytorch/question-answering/trainer_qa.py)にあります。但し、このセクションで扱うには少し長過ぎます。ここでは学習の最後にのみモデルを評価します。通常の評価の方法は、下の「カスタム学習ループ」で示します。
 
-まさにここが、`Trainer` API の限界が見え、Accelerate ライブラリが輝く所です。クラスを特定の用途に合わせてカスタマイズするのは骨が折れますが、完全に公開された学習ループを調整するのは簡単です。
+この制約は、`Trainer` API の限界です。クラスを特定の用途に合わせてカスタマイズするのは骨が折れます。一方、Accelerate ライブラリのように学習ループが全て公開されている場合は、調整は容易です。
 
-`TrainingArguments` を見てみましょう。
+`TrainingArguments` の内容は次の通りです。
 
 ```python
 from transformers import TrainingArguments
@@ -855,11 +855,11 @@ args = TrainingArguments(
 )
 ```
 
-これらの殆どは以前にも見たものです。いくつかのハイパーパラメータ（学習率、学習するエポック数、重み減衰など）を設定し、各エポックの終了時にモデルを保存すること、評価をスキップすること、結果を Model Hub にアップロードすることを指定します。また、`fp16=True` で混合精度の学習を有効にします。最近の GPU では学習をかなり高速化出来る為です。
+これらの項目の殆どは以前にも出てきたものです。ハイパーパラメータとして、学習率、学習するエポック数、重み減衰などを設定しています。併せて、各エポックの終了時にモデルを保存すること、評価をスキップすること、結果を Model Hub にアップロードすることを指定しています。`fp16=True` は混合精度の学習を有効にする指定です。最近の GPU では、混合精度により学習をかなり高速化出来ます。
 
 {:else}
 
-それが終わったら、TF データセットを作成出来ます。今回はシンプルなデフォルトのデータコレータが使えます。
+次に、TF データセットを作成します。今回は、シンプルな既定のデータコレータが使えます。
 
 ```python
 from transformers import DefaultDataCollator
@@ -867,7 +867,7 @@ from transformers import DefaultDataCollator
 data_collator = DefaultDataCollator(return_tensors="tf")
 ```
 
-あとは、いつものようにデータセットを作成します。
+データセットは、いつもの手順で作成します。
 
 ```python
 tf_train_dataset = model.prepare_tf_dataset(
@@ -908,18 +908,18 @@ model.compile(optimizer=optimizer)
 tf.keras.mixed_precision.set_global_policy("mixed_float16")
 ```
 
-最後に、`model.fit()` で学習する準備が整いました。各エポックの後にモデルを Hub にアップロードする為に `PushToHubCallback` を使います。
+最後に、`model.fit()` で学習を行います。各エポックの後にモデルを Hub にアップロードする為、`PushToHubCallback` を使います。
 
 {/if}
 
-デフォルトでは、使用されるリポジトリは自分の名前空間内にあり、設定した出力ディレクトリにちなんだ名前になる為、この場合は `"sgugger/bert-finetuned-squad"` になります。これは `hub_model_id` を渡すことで上書き出来ます。例えば、モデルを `huggingface_course` 組織にプッシュする為に `hub_model_id="huggingface_course/bert-finetuned-squad"` を使いました（これはこのセクションの冒頭でリンクしたモデルです）。
+既定では、使用されるリポジトリは自分の名前空間内にあり、名前は設定した出力ディレクトリに基づきます。この場合は `"sgugger/bert-finetuned-squad"` になります。これは `hub_model_id` を渡すことで上書き出来ます。例えば、モデルを `huggingface_course` 組織にプッシュする為に `hub_model_id="huggingface_course/bert-finetuned-squad"` を使いました（これはこのセクションの冒頭でリンクしたモデルです）。
 
 {#if fw === 'pt'}
 
 > [!TIP]
 > 💡 使用している出力ディレクトリが存在する場合は、それがプッシュ先のリポジトリのローカルクローンである必要があります（`Trainer` を定義する時にエラーが出る場合は、新しい名前を設定してください）。
 
-最後に、全てを `Trainer` クラスに渡して学習を開始するだけです。
+最後に、全てを `Trainer` クラスに渡し、学習を開始します。
 
 ```python
 from transformers import Trainer
@@ -947,11 +947,11 @@ model.fit(tf_train_dataset, callbacks=[callback], epochs=num_train_epochs)
 
 {/if}
 
-学習中、モデルが保存されるたびに（ここでは各エポック）、バックグラウンドで Hub にアップロードされる点に注意してください。これにより、必要に応じて別のマシンで学習を再開出来ます。学習全体には時間がかかります（Titan RTX で1時間強）。その間にコーヒーを飲んだり、難しいと感じたコースの部分を読み返したり出来ます。また、最初のエポックが終わると直ぐに、いくつかの重みが Hub にアップロードされ、モデルのページでモデルを試し始められることも覚えておいてください。
+学習中は、モデルが保存されるたびに、Hub へバックグラウンドでアップロードされます。ここでは保存は各エポックの終了時です。必要であれば、別のマシンで学習を再開することも出来ます。学習全体には時間がかかります。Titan RTX で1時間強です。その間は、コーヒーを飲んだり、難しいと感じたコースの部分を読み返したり出来ます。最初のエポックが終わると直ぐに、いくつかの重みが Hub にアップロードされます。モデルのページでモデルを試し始めることも出来ます。
 
 {#if fw === 'pt'}
 
-学習が完了したら、ようやくモデルを評価出来ます（全ての計算時間を無駄にしていないことを祈りましょう）。`Trainer` の `predict()` メソッドは、最初の要素がモデルの予測（ここでは開始と終了のロジットのペア）であるタプルを返します。これを `compute_metrics()` 関数に送ります。
+学習が完了したら、モデルを評価します（全ての計算時間が無駄になっていないことを祈ります）。`Trainer` の `predict()` メソッドはタプルを返します。タプルの最初の要素はモデルの予測で、ここでは開始と終了のロジットのペアです。この予測を `compute_metrics()` 関数に渡します。
 
 ```python
 predictions, _, _ = trainer.predict(validation_dataset)
@@ -961,7 +961,7 @@ compute_metrics(start_logits, end_logits, validation_dataset, raw_datasets["vali
 
 {:else}
 
-学習が完了したら、ようやくモデルを評価出来ます（全ての計算時間を無駄にしていないことを祈りましょう）。モデルの `predict()` メソッドが予測の取得を引き受けてくれます。先に `compute_metrics()` 関数の定義という大変な作業を済ませてあるので、結果は1行で得られます。
+学習が完了したら、モデルを評価します（全ての計算時間が無駄になっていないことを祈ります）。モデルの `predict()` メソッドが予測を取得します。`compute_metrics()` 関数は既に定義してある為、結果は1行で得られます。
 
 ```python
 predictions = model.predict(tf_eval_dataset)
@@ -979,17 +979,17 @@ compute_metrics(
 {'exact_match': 81.18259224219489, 'f1': 88.67381321905516}
 ```
 
-素晴らしい！比較として、BERT の論文でこのモデルについて報告されているベースラインのスコアは80.8と88.5であり、ちょうど期待通りの位置にいます。
+BERT の論文でこのモデルについて報告されているベースラインのスコアは、80.8と88.5です。今回の結果は、この値とほぼ一致しています。
 
 {#if fw === 'pt'}
 
-最後に、`push_to_hub()` メソッドを使って、モデルの最新バージョンを確実にアップロードします。
+最後に、`push_to_hub()` メソッドで、モデルの最新バージョンをアップロードします。
 
 ```py
 trainer.push_to_hub(commit_message="Training complete")
 ```
 
-これは、行ったばかりのコミットの URL を返します。確認したい場合に使えます。
+戻り値は、行ったばかりのコミットの URL です。コミットの内容は、この URL で確認出来ます。
 
 ```python out
 'https://huggingface.co/sgugger/bert-finetuned-squad/commit/9dcee1fbc25946a6ed4bb32efb1bd71d5fa90b68'
@@ -999,22 +999,22 @@ trainer.push_to_hub(commit_message="Training complete")
 
 {/if}
 
-この段階では、Model Hub の推論ウィジェットを使ってモデルをテストし、友人や家族、お気に入りのペットと共有出来ます。質問応答タスクでモデルのファインチューニングに成功しました。おめでとうございます！
+この段階で、Model Hub の推論ウィジェットを使ってモデルをテスト出来ます。モデルは、友人や家族、お気に入りのペットとも共有出来ます。以上で、質問応答タスクでのモデルのファインチューニングは完了です。
 
 > [!TIP]
-> **やってみましょう！** 別のモデルアーキテクチャを試して、このタスクでより良い性能が得られるか確認してください！
+> ✏️ **やってみましょう！** 別のモデルアーキテクチャを試して、このタスクでより良い性能が得られるか確認してください。
 
 {#if fw === 'pt'}
 
-学習ループをもう少し深く掘り下げたい場合は、Accelerate を使って同じことを行う方法をこれから示します。
+次に、学習ループをもう少し詳しく扱います。Accelerate を使って同じ学習を行う方法を示します。
 
 ## カスタム学習ループ[[a-custom-training-loop]]
 
-完全な学習ループを見ていきましょう。必要な部分を簡単にカスタマイズ出来るようになります。評価ループを除いて、[Chapter 3](/course/chapter3/4) の学習ループとよく似たものになります。`Trainer` クラスの制約を受けなくなったので、モデルを定期的に評価出来ます。
+完全な学習ループを示します。学習ループを直接書けば、必要な部分を簡単にカスタマイズ出来ます。この学習ループは、評価ループを除いて、[Chapter 3](/course/chapter3/4) の学習ループとよく似ています。`Trainer` クラスの制約を受けない為、モデルを定期的に評価出来ます。
 
 ### 学習のための準備をする[[preparing-everything-for-training]]
 
-まず、データセットから `DataLoader` を構築する必要があります。それらのデータセットの形式を `"torch"` に設定し、検証セットの、モデルが使わない列を取り除きます。次に、Transformers が提供する `default_data_collator` を `collate_fn` として使い、学習セットはシャッフルしますが、検証セットはシャッフルしません。
+まず、データセットから `DataLoader` を構築します。データセットの形式は `"torch"` に設定します。検証セットからは、モデルが使わない列を取り除きます。次に、Transformers が提供する `default_data_collator` を `collate_fn` として使います。学習セットはシャッフルしますが、検証セットはシャッフルしません。
 
 ```py
 from torch.utils.data import DataLoader
@@ -1035,13 +1035,13 @@ eval_dataloader = DataLoader(
 )
 ```
 
-次に、モデルを再インスタンス化します。前のファインチューニングを続けるのではなく、BERT の事前学習済みモデルから再び始めることを確実にする為です。
+次に、モデルを再びインスタンス化します。BERT の事前学習済みモデルから始める為です。前のファインチューニングの続きから始めることはしません。
 
 ```py
 model = AutoModelForQuestionAnswering.from_pretrained(model_checkpoint)
 ```
 
-次に、オプティマイザが必要です。いつものように古典的な `AdamW` を使います。これは Adam のようなものですが、重み減衰の適用方法に修正が加えられています。
+次に、オプティマイザを用意します。オプティマイザには古典的な `AdamW` を使います。これは Adam に似ていますが、重み減衰の適用方法に修正が加えられています。
 
 ```py
 from torch.optim import AdamW
@@ -1049,7 +1049,7 @@ from torch.optim import AdamW
 optimizer = AdamW(model.parameters(), lr=2e-5)
 ```
 
-これらのオブジェクトが全て揃ったら、`accelerator.prepare()` メソッドに送ることが出来ます。Colab ノートブックで TPU を使って学習したい場合は、このコードを全て学習関数の中に移動する必要があり、`Accelerator` をインスタンス化するセルは一切実行すべきではないことを覚えておいてください。混合精度の学習は、`Accelerator` に `fp16=True` を渡すことで強制出来ます（スクリプトとしてコードを実行している場合は、Accelerate の `config` を適切に設定してください）。
+これらのオブジェクトが全て揃ったら、`accelerator.prepare()` メソッドに送ることが出来ます。Colab ノートブックで TPU を使って学習する場合は、このコードを全て学習関数の中に移動する必要があります。その場合、`Accelerator` をインスタンス化するセルは一切実行してはいけません。混合精度の学習は、`Accelerator` に `fp16=True` を渡すことで強制出来ます。スクリプトとしてコードを実行している場合は、Accelerate の `config` を適切に設定してください。
 
 ```py
 from accelerate import Accelerator
@@ -1060,7 +1060,7 @@ model, optimizer, train_dataloader, eval_dataloader = accelerator.prepare(
 )
 ```
 
-前のセクションで知った通り、`train_dataloader` の長さを使って学習ステップ数を計算出来るのは、それが `accelerator.prepare()` メソッドを経た後だけです。前のセクションと同じ線形スケジュールを使います。
+学習ステップ数を `train_dataloader` の長さから計算出来るのは、それが `accelerator.prepare()` メソッドを経た後だけです。これは前のセクションで確認した通りです。スケジュールには、前のセクションと同じ線形スケジュールを使います。
 
 ```py
 from transformers import get_scheduler
@@ -1077,7 +1077,7 @@ lr_scheduler = get_scheduler(
 )
 ```
 
-モデルを Hub にプッシュする為に、作業フォルダ内に `Repository` オブジェクトを作成する必要があります。まだログインしていない場合は、まず Hugging Face Hub にログインしてください。リポジトリ名は、モデルに付けたいモデル ID から決めます（`repo_name` は自由に置き換えてかまいません。ユーザー名を含む必要があり、`get_full_repo_name()` 関数はまさにそれを行います）。
+モデルを Hub にプッシュするには、作業フォルダ内に `Repository` オブジェクトを作成する必要があります。まだログインしていない場合は、まず Hugging Face Hub にログインしてください。リポジトリ名は、モデルに付けたいモデル ID から決まります。`repo_name` は自由に置き換えてかまいません。但し、ユーザー名を含む必要があります。ユーザー名を含める処理を行うのが `get_full_repo_name()` 関数です。
 
 ```py
 from huggingface_hub import Repository, get_full_repo_name
@@ -1098,14 +1098,14 @@ output_dir = "bert-finetuned-squad-accelerate"
 repo = Repository(output_dir, clone_from=repo_name)
 ```
 
-`repo.push_to_hub()` メソッドを呼ぶことで、`output_dir` に保存したものを何でもアップロード出来るようになりました。これにより、各エポックの終了時に中間モデルをアップロード出来ます。
+`repo.push_to_hub()` メソッドを呼ぶと、`output_dir` に保存したものをアップロード出来ます。これにより、各エポックの終了時に中間モデルをアップロード出来ます。
 
 ## 学習ループ[[training-loop]]
 
-完全な学習ループを書く準備が整いました。学習の進み具合を追うプログレスバーを定義した後、ループは3つの部分から構成されます。
+完全な学習ループを書く準備が整いました。ループは3つの部分から構成されます。最初に、学習の進み具合を追うプログレスバーを定義します。
 
 - 学習そのもの。`train_dataloader` に対する古典的な反復、モデルを通じた順伝播、それに続く逆伝播とオプティマイザのステップです。
-- 評価。`start_logits` と `end_logits` の値を全て集めてから、NumPy 配列に変換します。評価ループが終わったら、全ての結果を連結します。`Accelerator` が、各プロセスでサンプル数が同じになるよう末尾にいくつかのサンプルを追加している場合がある為、切り捨てる必要がある点に注意してください。
+- 評価。`start_logits` と `end_logits` の値を全て集め、NumPy 配列に変換します。評価ループが終わったら、全ての結果を連結します。`Accelerator` が末尾にサンプルを追加している場合がある為、結果は切り捨てます。末尾へのサンプルの追加は、各プロセスでサンプル数を同じにする為に行われます。
 - 保存とアップロード。まずモデルとトークナイザを保存し、次に `repo.push_to_hub()` を呼びます。前と同様に、引数 `blocking=False` を使って、Hub ライブラリに非同期プロセスでプッシュするよう伝えます。こうすると、学習は通常通り続き、この（長い）命令はバックグラウンドで実行されます。
 
 学習ループの完全なコードは次の通りです。
@@ -1162,7 +1162,7 @@ for epoch in range(num_train_epochs):
         )
 ```
 
-Accelerate で保存されたモデルを見るのが初めての場合の為に、それに伴う3行のコードを少し見てみましょう。
+Accelerate で保存されたモデルを初めて扱う場合の為に、保存に伴う3行のコードを説明します。
 
 ```py
 accelerator.wait_for_everyone()
@@ -1172,15 +1172,15 @@ unwrapped_model.save_pretrained(output_dir, save_function=accelerator.save)
 
 最初の行は自明です。全てのプロセスに、全員がその段階に到達するまで待ってから続行するよう伝えます。これは、保存前に全てのプロセスで同じモデルを持つことを確実にする為です。
 
-次に、定義したベースモデルである `unwrapped_model` を取得します。`accelerator.prepare()` メソッドはモデルを分散学習用に変更する為、`save_pretrained()` メソッドはもう存在しません。`accelerator.unwrap_model()` メソッドがそのステップを元に戻します。最後に、`save_pretrained()` を呼びますが、そのメソッドに `torch.save()` の代わりに `accelerator.save()` を使うよう伝えます。
+次に、`unwrapped_model` を取得します。これは、定義したベースモデルそのものです。`accelerator.prepare()` メソッドはモデルを分散学習用に変更する為、変更後のモデルには `save_pretrained()` メソッドがありません。`accelerator.unwrap_model()` メソッドは、この変更を元に戻します。最後に `save_pretrained()` を呼びます。その際、保存には `torch.save()` ではなく `accelerator.save()` を使うよう指定します。
 
-これが終わると、`Trainer` で学習したモデルとかなり似た結果を出すモデルが得られるはずです。このコードで学習したモデルは [*huggingface-course/bert-finetuned-squad-accelerate*](https://huggingface.co/huggingface-course/bert-finetuned-squad-accelerate) で確認出来ます。学習ループへの調整を試したい場合は、上のコードを編集して直接実装出来ます！
+以上で学習は完了です。得られるモデルは、`Trainer` で学習したモデルとかなり似た結果を出すはずです。このコードで学習したモデルは [*huggingface-course/bert-finetuned-squad-accelerate*](https://huggingface.co/huggingface-course/bert-finetuned-squad-accelerate) で確認出来ます。学習ループへの調整を試す場合は、上のコードを編集して直接実装出来ます。
 
 {/if}
 
 ## ファインチューニングしたモデルを使う[[using-the-fine-tuned-model]]
 
-Model Hub 上でファインチューニングしたモデルを推論ウィジェットで使う方法は既に示しました。ローカルで `pipeline` を使って推論するには、モデル識別子を指定するだけです。
+Model Hub 上でファインチューニングしたモデルを推論ウィジェットで使う方法は、既に示しました。ローカルで `pipeline` を使って推論する場合は、モデル識別子を指定します。
 
 ```py
 from transformers import pipeline
@@ -1206,4 +1206,4 @@ question_answerer(question=question, context=context)
 
 （入力と出力の訳：コンテキストは「Transformers は、最も人気のある3つの深層学習ライブラリ、Jax、PyTorch、TensorFlow に支えられており、それらの間の連携も滑らかです。あるライブラリで学習したモデルを、別のライブラリで読み込んで推論に使うことも簡単に行えます。」で、質問は「Transformers を支えている深層学習ライブラリはどれですか？」です。答えはライブラリ名そのものです。）
 
-素晴らしい！モデルはこの pipeline のデフォルトモデルと同等に動作しています！
+モデルは、この pipeline の既定モデルと同等に動作しています。

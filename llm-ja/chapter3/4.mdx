@@ -9,10 +9,10 @@
 
 <Youtube id="Dh9CL8fyG80"/>
 
-ここでは、`Trainer` クラスを使わずに、現在の PyTorch で推奨されている方法に沿って学習ループをゼロから実装し、前のセクションと同じ結果を得る方法を見ていきます。セクション2のデータ処理は、すでに済んでいるものとします。まず、必要な処理をまとめた短いコードを示します。
+ここでは、`Trainer` クラスを使わず、PyTorch の学習ループをゼロから実装して、前のセクションと同じ結果を得る方法を見ていきます。書き方は、現在の PyTorch で推奨されている方法に沿います。セクション2のデータ処理は済んでいるものとし、まず必要なものを短いコードでまとめます。
 
 > [!TIP]
-> **学習ループをゼロから実装する**：このセクションは、これまでに学んだ内容を前提としています。PyTorch の学習ループの書き方や推奨される実装方法について詳しく知りたい場合は、[🤗 Transformers の学習ドキュメント](https://huggingface.co/docs/transformers/main/en/training#train-in-native-pytorch) と [カスタム学習クックブック](https://huggingface.co/learn/cookbook/en/fine_tuning_code_llm_on_single_gpu#model) を参照してください。
+> 🏗️ **学習ループをゼロから実装する**：このセクションは前の内容を前提としています。PyTorch の学習ループと推奨される書き方については、[🤗 Transformers の学習ドキュメント](https://huggingface.co/docs/transformers/main/en/training#train-in-native-pytorch) と [カスタム学習クックブック](https://huggingface.co/learn/cookbook/en/fine_tuning_code_llm_on_single_gpu#model) が参考になります。
 
 ```py
 from datasets import load_dataset
@@ -33,13 +33,13 @@ data_collator = DataCollatorWithPadding(tokenizer=tokenizer)
 
 ### 学習の準備[[prepare-for-training]]
 
-学習ループを書く前に、いくつかのオブジェクトを定義する必要があります。まずは、データをバッチ単位で順番に取り出す為のデータローダです。その前に、`tokenized_datasets` に少し後処理を加えます。これは、`Trainer` が自動で行っていた処理です。具体的には、次の3つの処理が必要です。
+学習ループを書く前に、いくつかのオブジェクトを用意します。最初は、バッチ単位でデータを順に取り出すデータローダです。但し、その前に `tokenized_datasets` へ少し後処理を加えます。`Trainer` が自動で済ませていた処理です。具体的には、次の3つを行います。
 
-- モデルが受け取らない列（`sentence1` 列や `sentence2` 列など）を削除する
-- 列名 `label` を `labels` に変更する（モデルが受け取る引数名は `labels` の為）
-- データセットの形式を設定し、リストではなく PyTorch テンソルを返すようにする
+- モデルが想定していない列（`sentence1` 列や `sentence2` 列など）を削除する
+- 列 `label` の名前を `labels` に変える（モデルが受け取る引数の名前が `labels` の為）
+- データセットの形式を指定し、リストではなく PyTorch テンソルが返るようにする
 
-`tokenized_datasets` には、これらのステップに対応するメソッドがそれぞれ用意されています。
+`tokenized_datasets` には、これらの処理に対応するメソッドがそれぞれ有ります。
 
 ```py
 tokenized_datasets = tokenized_datasets.remove_columns(["sentence1", "sentence2", "idx"])
@@ -48,7 +48,7 @@ tokenized_datasets.set_format("torch")
 tokenized_datasets["train"].column_names
 ```
 
-結果として、モデルが受け付ける列だけが残っていることを確認出来ます。
+実行すると、モデルが受け付ける列だけが残っていることを確認出来ます。
 
 ```python
 ["attention_mask", "input_ids", "labels", "token_type_ids"]
@@ -67,7 +67,7 @@ eval_dataloader = DataLoader(
 )
 ```
 
-データ処理に間違いが無いか手早く確認する為に、バッチを次のように調べられます。
+データ処理に間違いが無いかは、バッチを取り出して次のように調べると手早く確認出来ます。
 
 ```py
 for batch in train_dataloader:
@@ -82,9 +82,9 @@ for batch in train_dataloader:
  'token_type_ids': torch.Size([8, 65])}
 ```
 
-学習用データローダでは `shuffle=True` を設定し、バッチ内の最も長い入力に合わせてパディングしています。その為、手元でコードを実行すると、テンソルの形状は上の例と少し異なる場合があります。
+学習用データローダでは `shuffle=True` を設定し、パディングはバッチ内で最も長い入力に合わせています。手元で実行すると、テンソルの形状が上の例と少し異なる場合が有ります。
 
-これでデータの前処理は全て完了しました（機械学習に取り組む人にとって、前処理を終えるのはうれしいことですが、そこまでたどり着くのも簡単ではありません）。次はモデルです。前のセクションとまったく同じようにモデルを作成します。
+これでデータの前処理は全て終わりました。前処理を終えられるのは、機械学習に取り組む人にとって満足感の有ることですが、たどり着くまでがなかなか大変です。次はモデルを用意します。作り方は前のセクションと全く同じです。
 
 ```py
 from transformers import AutoModelForSequenceClassification
@@ -92,7 +92,7 @@ from transformers import AutoModelForSequenceClassification
 model = AutoModelForSequenceClassification.from_pretrained(checkpoint, num_labels=2)
 ```
 
-学習が問題なく進むことを確認する為に、バッチをこのモデルに渡してみます。
+学習が順調に進むかを確認する為、バッチをこのモデルに渡してみます。
 
 ```py
 outputs = model(**batch)
@@ -103,9 +103,9 @@ print(outputs.loss, outputs.logits.shape)
 tensor(0.5441, grad_fn=<NllLossBackward>) torch.Size([8, 2])
 ```
 
-Transformers のモデルは全て、`labels` が与えられると損失を返します。ロジットも得られます（バッチ内の各入力につき2つなので、サイズ 8 x 2 のテンソルです）。
+Transformers のモデルは全て、`labels` を渡すと損失を返します。併せてロジットも得られます。各入力につき2つずつ出る為、全体ではサイズ 8 x 2 のテンソルです。
 
-学習ループを書く準備はほぼ整いました。あと2つ、オプティマイザと学習率スケジューラが足りません。`Trainer` がやっていたことを手作業で再現するので、同じデフォルトを使います。`Trainer` が使うオプティマイザは `AdamW` です。これは Adam と同じですが、重み減衰による正則化の工夫が加わっています（Ilya Loshchilov と Frank Hutter による ["Decoupled Weight Decay Regularization"](https://arxiv.org/abs/1711.05101) を参照）。
+学習ループを書く準備はほぼ整いました。残るのはオプティマイザと学習率スケジューラの2つです。ここでは `Trainer` の動きを手作業で再現するので、既定もそれに合わせます。`Trainer` が使うオプティマイザは `AdamW` です。Adam を基に、重み減衰による正則化の工夫を加えたものになります（Ilya Loshchilov と Frank Hutter による ["Decoupled Weight Decay Regularization"](https://arxiv.org/abs/1711.05101) を参照）。
 
 ```py
 from torch.optim import AdamW
@@ -114,14 +114,14 @@ optimizer = AdamW(model.parameters(), lr=5e-5)
 ```
 
 > [!TIP]
-> **現代的な最適化のヒント**：更に性能を高めたい場合は、次を試せます。
+> 💡 **現代的な最適化のヒント**：更に性能を高めたい場合は、次を試せます。
 > - **重み減衰ありの AdamW**：`AdamW(model.parameters(), lr=5e-5, weight_decay=0.01)`
 > - **8-bit Adam**：`bitsandbytes` を使ったメモリ効率のよい最適化
-> - **学習率の調整**：大きなモデルでは、低めの学習率（1e-5 〜 3e-5）がうまくいくことが多い
+> - **学習率の調整**：大きなモデルでは、低めの学習率（1e-5 〜 3e-5）がうまくいくことが多いです
 >
-> **最適化のリソース**：オプティマイザと学習戦略の詳細は [Transformers 最適化ガイド](https://huggingface.co/docs/transformers/main/en/performance#optimizer) を参照してください。
+> 🚀 **最適化のリソース**：オプティマイザと学習戦略の詳細は [Transformers 最適化ガイド](https://huggingface.co/docs/transformers/main/en/performance#optimizer) を参照してください。
 
-最後に、デフォルトの学習率スケジューラを設定します。このスケジューラは、学習率を最大値（5e-5）から 0 まで直線的に下げるものです。正しく設定するには、学習ステップの総数を知る必要があります。総ステップ数は、実行するエポック数に学習用バッチの数（学習用データローダの長さ）を掛けて求めます。`Trainer` のデフォルトは3エポックなので、ここでも同じ設定を使います。
+最後に学習率スケジューラです。既定のスケジューラは、学習率を最大値（5e-5）から 0 まで直線的に下げます。これを設定するには学習ステップの総数が要ります。総数は、エポック数に学習用バッチの数（学習用データローダの長さ）を掛けたものです。`Trainer` の既定は3エポックなので、ここでも同じ設定にします。
 
 ```py
 from transformers import get_scheduler
@@ -143,7 +143,7 @@ print(num_training_steps)
 
 ### 学習ループ[[the-training-loop]]
 
-最後にもう1つ。GPU を使える環境なら使いたい所です（CPU では、学習に数分ではなく数時間掛かるかもしれません）。その為に、モデルとバッチを配置する `device` を定義します。
+もう1つ、デバイスの指定が残っています。GPU を使えるなら使いたい所です。CPU では、学習に数分ではなく数時間掛かる場合が有る為です。モデルとバッチを置く先として、`device` を定義します。
 
 ```py
 import torch
@@ -157,7 +157,7 @@ device
 device(type='cuda')
 ```
 
-これで学習の準備が整いました。学習がどこまで進んだか分かるように、`tqdm` ライブラリを使って、全学習ステップの進捗を示すプログレスバーを追加します。
+これで学習を始められます。進み具合が分かるよう、`tqdm` ライブラリでプログレスバーを付け、全学習ステップに対する進捗を表示します。
 
 ```py
 from tqdm.auto import tqdm
@@ -179,24 +179,24 @@ for epoch in range(num_epochs):
 ```
 
 > [!TIP]
-> **現代的な学習の最適化**：学習ループを更に効率化するには、次を検討してください。
+> 💡 **現代的な学習の最適化**：学習ループを更に効率化するには、次を検討してください。
 >
 > - **勾配クリッピング**：`optimizer.step()` の前に `torch.nn.utils.clip_grad_norm_(model.parameters(), max_norm=1.0)` を追加する
 > - **混合精度**：`torch.cuda.amp.autocast()` と `GradScaler` を使って学習を高速化する
 > - **勾配累積**：複数のバッチにわたって勾配を蓄積し、大きなバッチサイズを擬似的に再現する
 > - **チェックポイント保存**：定期的にモデルのチェックポイントを保存し、中断しても再開出来るようにする
 >
-> **実装ガイド**：これらの最適化の詳しい例は、[Transformers の効率的な学習ガイド](https://huggingface.co/docs/transformers/main/en/perf_train_gpu_one) と [オプティマイザの一覧](https://huggingface.co/docs/transformers/main/en/optimizers) を参照してください。
+> 🔧 **実装ガイド**：これらの最適化の詳しい例は、[Transformers の効率的な学習ガイド](https://huggingface.co/docs/transformers/main/en/perf_train_gpu_one) と [オプティマイザの一覧](https://huggingface.co/docs/transformers/main/en/optimizers) を参照してください。
 
-学習ループの核となる部分は、入門編で見たものとよく似ていることが分かります。学習状況を報告する処理は追加していない為、この学習ループだけではモデルの性能を把握出来ません。それには評価ループを追加する必要があります。
+学習ループの中心部分は、入門編で見たものとよく似ています。但し、ここでは学習状況を報告する処理を入れていない為、このループだけではモデルの性能が分かりません。性能を見るには、評価ループを追加します。
 
 
 ### 評価ループ[[the-evaluation-loop]]
 
-前と同じく、Evaluate ライブラリが提供する指標を使います。`metric.compute()` メソッドは既に見ましたが、`add_batch()` メソッドを使えば、評価ループの実行中に、指標の計算に必要な予測結果と正解ラベルをバッチごとに蓄積出来ます。全てのバッチを蓄積したら、`metric.compute()` で最終結果が得られます。評価ループでの実装は次の通りです。
+評価には、前と同じく Evaluate ライブラリの指標を使います。`metric.compute()` メソッドは既に見ました。これに加え、`add_batch()` メソッドを使うと、予測ループを回しながらバッチごとに予測と正解ラベルを蓄積出来ます。全バッチを蓄積し終えたら、`metric.compute()` で最終結果を得ます。評価ループは次のように実装します。
 
 > [!TIP]
-> **評価のベストプラクティス**：より高度な評価戦略と指標については、[Evaluate のドキュメント](https://huggingface.co/docs/evaluate/) と [包括的な評価クックブック](https://github.com/huggingface/evaluation-guidebook) を参照してください。
+> 📊 **評価のベストプラクティス**：より高度な評価戦略と指標については、[Evaluate のドキュメント](https://huggingface.co/docs/evaluate/) と [包括的な評価クックブック](https://github.com/huggingface/evaluation-guidebook) を参照してください。
 
 ```py
 import evaluate
@@ -219,19 +219,19 @@ metric.compute()
 {'accuracy': 0.8431372549019608, 'f1': 0.8907849829351535}
 ```
 
-繰り返しになりますが、モデルヘッドの初期値やデータをシャッフルする順序はランダムに決まる為、実行するたびに結果が少し異なる場合があります。但し、おおむね同じくらいの値になるはずです。
+結果は、実行のたびに少し異なる場合が有ります。モデルヘッドの初期値と、データをシャッフルする順序がランダムに決まる為です。但し、大凡同じくらいの値になるはずです。
 
 > [!TIP]
-> **試してみましょう！** 前の学習ループを変更して、SST-2 データセットでモデルをファインチューニングしてみてください。
+> ✏️ **試してみましょう！** 前の学習ループを変更して、SST-2 データセットでモデルをファインチューニングしてみてください。
 
 ### 🤗 Accelerate で学習ループを強化する[[supercharge-your-training-loop-with-accelerate]]
 
 <Youtube id="s7dy8QRgjJ0" />
 
-先程定義した学習ループは、単一の CPU や GPU では問題なく動作します。しかし [Accelerate](https://github.com/huggingface/accelerate) ライブラリを使えば、わずかな変更で複数の GPU や TPU を使った分散学習が可能になります。Accelerate は、分散学習、混合精度、デバイス配置に伴う複雑な処理を自動で行ってくれます。学習用と検証用のデータローダを作成する所から、自分で学習ループを書くと次のようになります。
+先程定義した学習ループは、単一の CPU や GPU であれば問題なく動きます。これを複数の GPU や TPU による分散学習に対応させるには、[Accelerate](https://github.com/huggingface/accelerate) ライブラリを使えば、わずかな変更で済みます。分散学習や混合精度、デバイス配置といった複雑な処理は、Accelerate が自動で引き受けます。学習用と検証用のデータローダを作る所から、手書きの学習ループは次のようになります。
 
 > [!TIP]
-> **Accelerate の詳細**：分散学習、混合精度、ハードウェア最適化の全ては [Accelerate のドキュメント](https://huggingface.co/docs/accelerate/) で学べます。実践的な例は [Transformers のドキュメント](https://huggingface.co/docs/transformers/main/en/accelerate) にあります。
+> ⚡ **Accelerate の詳細**：分散学習、混合精度、ハードウェア最適化の全ては [Accelerate のドキュメント](https://huggingface.co/docs/accelerate/) で学べます。実践的な例は [Transformers のドキュメント](https://huggingface.co/docs/transformers/main/en/accelerate) にあります。
 
 ```py
 from accelerate import Accelerator
@@ -271,12 +271,12 @@ for epoch in range(num_epochs):
         progress_bar.update(1)
 ```
 
-まず、必要なライブラリをインポートし、次の行で `Accelerator` オブジェクトを作成します。このオブジェクトが実行環境を確認し、適切な分散学習の設定を初期化します。デバイスへの配置は Accelerate が処理してくれる為、モデルをデバイスに移すコードは削除出来ます（残しておきたい場合は、`device` を `accelerator.device` に変更してください）。
+追加するのは、まずインポート文です。次に `Accelerator` オブジェクトを作成します。このオブジェクトが環境を確認し、分散学習に必要な設定を初期化します。デバイスへの配置は Accelerate が担う為、モデルをデバイスへ移す行は削除出来ます。残したい場合は、`device` の代わりに `accelerator.device` を使ってください。
 
-最も重要なのは、データローダ、モデル、オプティマイザを `accelerator.prepare()` に渡す部分です。この処理で各オブジェクトが分散学習に適した形にラップされ、分散学習が正しく動作するようになります。あとは、バッチを `device` に移すコードを削除し（残す場合は `accelerator.device` を使うように変更します）、`loss.backward()` を `accelerator.backward(loss)` に置き換えるだけです。
+作業の中心は、データローダとモデル、オプティマイザを `accelerator.prepare()` に渡す行です。この行で各オブジェクトが適切な入れ物にラップされ、分散学習が想定通りに動くようになります。あとは、バッチを `device` に移す行を削除し（残す場合は `accelerator.device` を使うよう直します）、`loss.backward()` を `accelerator.backward(loss)` に置き換えるだけです。
 
 > [!TIP]
-> ⚠️ Cloud TPU による高速化の恩恵を受けるには、トークナイザの `padding="max_length"` 引数と `max_length` 引数を使って、サンプルを固定長にパディングすることをお勧めします。
+> ⚠️ Cloud TPU の高速化を活かすには、トークナイザの `padding="max_length"` 引数と `max_length` 引数で、サンプルを固定長にパディングすることをお勧めします。
 
 そのままコピーして試せるように、Accelerate を使った完全な学習ループを載せておきます。
 
@@ -318,13 +318,13 @@ for epoch in range(num_epochs):
         progress_bar.update(1)
 ```
 
-このコードを `train.py` に保存すれば、どのような分散学習環境でも実行出来るようになります。実際に試すには、まず次のコマンドを実行します。
+このコードを `train.py` というスクリプトにまとめれば、どの分散環境でも実行出来ます。自分の分散環境で試すには、まず次のコマンドを実行します。
 
 ```bash
 accelerate config
 ```
 
-表示されるいくつかの質問に答えると、回答内容が設定ファイルに保存されます。このファイルは、次のコマンドで使用されます。
+いくつかの質問に答えると、その内容が設定ファイルに書き出されます。この設定ファイルを使うのが、次のコマンドです。
 
 ```
 accelerate launch train.py
@@ -332,7 +332,7 @@ accelerate launch train.py
 
 これで分散学習が起動します。
 
-ノートブックで試したい場合（例えば Colab で TPU を使ってテストする場合）は、コードを `training_function()` という関数の中に入れ、最後のセルで次のコードを実行します。
+ノートブックで試す場合（例えば Colab の TPU でテストする場合）は、コードを `training_function()` という関数に入れ、最後のセルで次を実行します。
 
 ```python
 from accelerate import notebook_launcher
@@ -343,23 +343,23 @@ notebook_launcher(training_function)
 その他の例は [Accelerate リポジトリ](https://github.com/huggingface/accelerate/tree/main/examples) にあります。
 
 > [!TIP]
-> **分散学習**：マルチ GPU・マルチノード学習の包括的な解説は、[Transformers 分散学習ガイド](https://huggingface.co/docs/transformers/main/en/perf_train_gpu_many) と [学習のスケーリングに関するクックブック](https://huggingface.co/docs/transformers/main/en/accelerate) を参照してください。
+> 🌐 **分散学習**：マルチ GPU・マルチノード学習の包括的な解説は、[Transformers 分散学習ガイド](https://huggingface.co/docs/transformers/main/en/perf_train_gpu_many) と [学習のスケーリングに関するクックブック](https://huggingface.co/docs/transformers/main/en/accelerate) を参照してください。
 
 ### 次のステップとベストプラクティス[[next-steps-and-best-practices]]
 
-学習ループをゼロから実装する方法を学んだ所で、本番環境で使う際に検討しておきたい点をいくつか紹介します。
+学習ループをゼロから実装する方法は以上です。最後に、本番で使う際に検討しておきたい点をいくつか挙げます。
 
 **モデルの評価**：正解率だけでなく、常に複数の指標でモデルを評価してください。包括的な評価には Evaluate ライブラリを使います。
 
 **ハイパーパラメータ調整**：体系的なハイパーパラメータ最適化には、Optuna や Ray Tune のようなライブラリの利用を検討してください。
 
-**モデルの監視**：学習中は、学習時の指標や学習曲線、検証データでの性能を継続して記録してください。
+**モデルの監視**：学習の全期間を通して、学習指標と学習曲線、検証性能を記録し続けてください。
 
 **モデルの共有**：学習が終わったら、モデルを Hugging Face Hub で共有し、コミュニティが使えるようにしてください。
 
 **効率化**：大きなモデルでは、勾配チェックポイント、パラメータ効率のよいファインチューニング（LoRA、AdaLoRA）、量子化といった手法を検討してください。
 
-カスタム学習ループによるファインチューニングの詳細な解説は以上です。ここで学んだスキルは、学習プロセスを完全に制御したい場合や、`Trainer` API の範囲を超えるカスタム学習ロジックを実装したい場合に役立ちます。
+カスタム学習ループによるファインチューニングの解説は以上です。ここで学んだスキルは、学習プロセスを完全に制御したい場合や、`Trainer` API の範囲を超えるカスタム学習ロジックを実装したい場合に役立ちます。
 
 ## セクションクイズ[[section-quiz]]
 
@@ -534,7 +534,7 @@ notebook_launcher(training_function)
 />
 
 > [!TIP]
-> **要点：**
+> 💡 **要点：**
 > - 自分で実装した学習ループでは学習処理を完全に制御出来ますが、各処理の正しい順序（フォワード → バックワード → オプティマイザステップ → スケジューラステップ → 勾配をゼロにする）を理解する必要があります
 > - 重み減衰ありの AdamW が、Transformer モデルに推奨されるオプティマイザです
 > - 評価中は、正しい動作と効率の為に、常に `model.eval()` と `torch.no_grad()` を使ってください
