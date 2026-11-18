@@ -23,10 +23,13 @@
 <meta name="twitter:description" content="Trainer API でモデルをファインチューニングする｜LLM コース（大規模言語モデルと Transformers を学ぶコース）の日本語訳。🤗 Transformers には Trainer クラスが用意されており、🤗 Transformers が提供するどの事前学習済みモデルでも、推奨される手法に沿って自分…">
 <meta name="twitter:image" content="https://yanikasumin.github.io/HuggingFace-courses-ja/og-llm.png">
 <link rel="icon" type="image/svg+xml" href="https://yanikasumin.github.io/HuggingFace-courses-ja/favicon.svg">
+<link rel="icon" type="image/x-icon" href="https://yanikasumin.github.io/HuggingFace-courses-ja/favicon.ico">
+<link rel="icon" type="image/png" sizes="48x48" href="https://yanikasumin.github.io/HuggingFace-courses-ja/favicon-48.png">
 <link rel="icon" type="image/png" sizes="32x32" href="https://yanikasumin.github.io/HuggingFace-courses-ja/favicon-32.png">
 <link rel="apple-touch-icon" sizes="180x180" href="https://yanikasumin.github.io/HuggingFace-courses-ja/apple-touch-icon.png">
 <link rel="manifest" href="https://yanikasumin.github.io/HuggingFace-courses-ja/site.webmanifest">
 <meta name="theme-color" content="#0B0F19">
+<script type="application/ld+json">{"@context": "https://schema.org", "@graph": [{"@type": "BreadcrumbList", "itemListElement": [{"@type": "ListItem", "position": 1, "name": "Hugging Face 学習コース日本語版", "item": "https://yanikasumin.github.io/HuggingFace-courses-ja/"}, {"@type": "ListItem", "position": 2, "name": "LLM コース", "item": "https://yanikasumin.github.io/HuggingFace-courses-ja/llm/"}, {"@type": "ListItem", "position": 3, "name": "Trainer API でモデルをファインチューニングする"}]}, {"@type": "LearningResource", "name": "Trainer API でモデルをファインチューニングする", "description": "Trainer API でモデルをファインチューニングする｜LLM コース（大規模言語モデルと Transformers を学ぶコース）の日本語訳。🤗 Transformers には Trainer クラスが用意されており、🤗 Transformers が提供するどの事前学習済みモデルでも、推奨される手法に沿って自分…", "url": "https://yanikasumin.github.io/HuggingFace-courses-ja/llm/chapter3/3.html", "inLanguage": "ja", "learningResourceType": "course material", "educationalLevel": "beginner to advanced", "isPartOf": {"@type": "Course", "name": "LLM コース", "url": "https://yanikasumin.github.io/HuggingFace-courses-ja/llm/", "provider": {"@type": "Organization", "name": "Hugging Face", "sameAs": "https://huggingface.co"}}}]}</script>
 <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-1676481412757711" crossorigin="anonymous"></script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -97,14 +100,14 @@ window.MathJax = { tex: { inlineMath: [['$', '$'], ['\\(', '\\)']], displayMath:
 <li><a class="side-link" href="../chapter4/2.html">事前学習済みモデルを使う</a></li>
 <li><a class="side-link" href="../chapter4/3.html">事前学習済みモデルを共有する</a></li>
 <li><a class="side-link" href="../chapter4/4.html">モデルカードを作る</a></li>
-<li><a class="side-link" href="../chapter4/5.html">Part 1 完了！</a></li>
+<li><a class="side-link" href="../chapter4/5.html">Part 1 修了！</a></li>
 <li><a class="side-link" href="../chapter4/6.html">章末クイズ</a></li>
 </ul>
 <p class="side-group">第5章 🤗 Datasets ライブラリ</p>
 <ul class="side-list">
 <li><a class="side-link" href="../chapter5/1.html">はじめに</a></li>
 <li><a class="side-link" href="../chapter5/2.html">データセットが Hub にない場合は？</a></li>
-<li><a class="side-link" href="../chapter5/3.html">切り分けて、加工して</a></li>
+<li><a class="side-link" href="../chapter5/3.html">データを切り分けて加工しよう</a></li>
 <li><a class="side-link" href="../chapter5/4.html">ビッグデータ？🤗 Datasets にお任せ！</a></li>
 <li><a class="side-link" href="../chapter5/5.html">独自のデータセットを作成する</a></li>
 <li><a class="side-link" href="../chapter5/6.html">FAISS によるセマンティック検索</a></li>
@@ -381,73 +384,73 @@ def compute_metrics(eval_preds):
 <div class="quiz">
 <div class="quiz-choices">
 <button type="button" class="quiz-choice" data-correct="false" data-quiz-idx="0">使用するモデルアーキテクチャを指定します。</button>
-<div class="quiz-explain-src" id="qe-124579634941312-0" hidden>モデルアーキテクチャは、モデルを読み込む際に指定するものであり、Trainer で指定するものではありません。</div>
+<div class="quiz-explain-src" id="qe-123274694661504-0" hidden>モデルアーキテクチャは、モデルを読み込む際に指定するものであり、Trainer で指定するものではありません。</div>
 <button type="button" class="quiz-choice" data-correct="true" data-quiz-idx="1">データの処理に使用するトークナイザを Trainer に伝えます。</button>
-<div class="quiz-explain-src" id="qe-124579634941312-1" hidden>比較的最近追加された processing_class パラメータは、Trainer がデータ処理に使用するトークナイザを指定するためのものです。</div>
+<div class="quiz-explain-src" id="qe-123274694661504-1" hidden>比較的最近追加された processing_class パラメータは、Trainer がデータ処理に使用するトークナイザを指定するためのものです。</div>
 <button type="button" class="quiz-choice" data-correct="false" data-quiz-idx="2">学習のバッチサイズを決定します。</button>
-<div class="quiz-explain-src" id="qe-124579634941312-2" hidden>バッチサイズは TrainingArguments で設定するものであり、processing_class で設定するものではありません。</div>
+<div class="quiz-explain-src" id="qe-123274694661504-2" hidden>バッチサイズは TrainingArguments で設定するものであり、processing_class で設定するものではありません。</div>
 <button type="button" class="quiz-choice" data-correct="false" data-quiz-idx="3">評価の頻度を制御します。</button>
-<div class="quiz-explain-src" id="qe-124579634941312-3" hidden>評価の頻度は、TrainingArguments の eval_strategy で制御します。</div>
+<div class="quiz-explain-src" id="qe-123274694661504-3" hidden>評価の頻度は、TrainingArguments の eval_strategy で制御します。</div>
 </div><div class="quiz-feedback" hidden></div></div>
 <h3>2. 学習中の評価の頻度を制御する TrainingArguments パラメータはどれですか？</h3>
 <div class="quiz">
 <div class="quiz-choices">
 <button type="button" class="quiz-choice" data-correct="false" data-quiz-idx="0">eval_frequency</button>
-<div class="quiz-explain-src" id="qe-124579634946048-0" hidden>TrainingArguments に eval_frequency パラメータは存在しません。</div>
+<div class="quiz-explain-src" id="qe-123274694664320-0" hidden>TrainingArguments に eval_frequency パラメータは存在しません。</div>
 <button type="button" class="quiz-choice" data-correct="true" data-quiz-idx="1">eval_strategy</button>
-<div class="quiz-explain-src" id="qe-124579634946048-1" hidden>eval_strategy は 'epoch'、'steps'、'no' に設定でき、評価のタイミングを制御します。</div>
+<div class="quiz-explain-src" id="qe-123274694664320-1" hidden>eval_strategy は 'epoch'、'steps'、'no' に設定でき、評価のタイミングを制御します。</div>
 <button type="button" class="quiz-choice" data-correct="false" data-quiz-idx="2">evaluation_steps</button>
-<div class="quiz-explain-src" id="qe-124579634946048-2" hidden>eval_steps は評価間のステップ数を設定しますが、評価を行うかどうか、いつ行うかを決定するのは eval_strategy です。</div>
+<div class="quiz-explain-src" id="qe-123274694664320-2" hidden>eval_steps は評価間のステップ数を設定しますが、評価を行うかどうか、いつ行うかを決定するのは eval_strategy です。</div>
 <button type="button" class="quiz-choice" data-correct="false" data-quiz-idx="3">do_eval</button>
-<div class="quiz-explain-src" id="qe-124579634946048-3" hidden>現代の TrainingArguments に do_eval パラメータは存在しません。</div>
+<div class="quiz-explain-src" id="qe-123274694664320-3" hidden>現代の TrainingArguments に do_eval パラメータは存在しません。</div>
 </div><div class="quiz-feedback" hidden></div></div>
 <h3>3. TrainingArguments の <code>fp16=True</code> は何を有効にしますか？</h3>
 <div class="quiz">
 <div class="quiz-choices">
 <button type="button" class="quiz-choice" data-correct="false" data-quiz-idx="0">学習を高速化するための16ビット整数精度です。</button>
-<div class="quiz-explain-src" id="qe-124579634941312-0" hidden>fp16 は浮動小数点精度を指し、整数精度ではありません。</div>
+<div class="quiz-explain-src" id="qe-123274694661504-0" hidden>fp16 は浮動小数点精度を指し、整数精度ではありません。</div>
 <button type="button" class="quiz-choice" data-correct="true" data-quiz-idx="1">16ビット浮動小数点数を使用した混合精度学習で、学習が高速化し、メモリ使用量が削減されます。</button>
-<div class="quiz-explain-src" id="qe-124579634941312-1" hidden>混合精度学習では、順伝播に16ビット浮動小数点数、勾配に32ビット浮動小数点数を使用し、速度の向上とメモリ使用量の削減を実現します。</div>
+<div class="quiz-explain-src" id="qe-123274694661504-1" hidden>混合精度学習では、順伝播に16ビット浮動小数点数、勾配に32ビット浮動小数点数を使用し、速度の向上とメモリ使用量の削減を実現します。</div>
 <button type="button" class="quiz-choice" data-correct="false" data-quiz-idx="2">ちょうど16エポックの学習です。</button>
-<div class="quiz-explain-src" id="qe-124579634941312-2" hidden>fp16 はエポック数とは何の関係もありません。</div>
+<div class="quiz-explain-src" id="qe-123274694661504-2" hidden>fp16 はエポック数とは何の関係もありません。</div>
 <button type="button" class="quiz-choice" data-correct="false" data-quiz-idx="3">分散学習に GPU を16台使用することです。</button>
-<div class="quiz-explain-src" id="qe-124579634941312-3" hidden>GPU の数は fp16 パラメータで制御されるものではありません。</div>
+<div class="quiz-explain-src" id="qe-123274694661504-3" hidden>GPU の数は fp16 パラメータで制御されるものではありません。</div>
 </div><div class="quiz-feedback" hidden></div></div>
 <h3>4. Trainer における <code>compute_metrics</code> 関数の役割は何ですか？</h3>
 <div class="quiz">
 <div class="quiz-choices">
 <button type="button" class="quiz-choice" data-correct="false" data-quiz-idx="0">学習中の損失を計算します。</button>
-<div class="quiz-explain-src" id="qe-124579634946048-0" hidden>損失はモデルが自動的に計算するため、compute_metrics では計算しません。</div>
+<div class="quiz-explain-src" id="qe-123274694664320-0" hidden>損失はモデルが自動的に計算するため、compute_metrics では計算しません。</div>
 <button type="button" class="quiz-choice" data-correct="true" data-quiz-idx="1">ロジットを予測に変換し、正解率や F1 などの評価指標を計算します。</button>
-<div class="quiz-explain-src" id="qe-124579634946048-1" hidden>compute_metrics は予測とラベルを受け取り、評価用のメトリクスを返します。</div>
+<div class="quiz-explain-src" id="qe-123274694664320-1" hidden>compute_metrics は予測とラベルを受け取り、評価用のメトリクスを返します。</div>
 <button type="button" class="quiz-choice" data-correct="false" data-quiz-idx="2">使用するオプティマイザを決定します。</button>
-<div class="quiz-explain-src" id="qe-124579634946048-2" hidden>オプティマイザを選ぶのは compute_metrics の役割ではありません。</div>
+<div class="quiz-explain-src" id="qe-123274694664320-2" hidden>オプティマイザを選ぶのは compute_metrics の役割ではありません。</div>
 <button type="button" class="quiz-choice" data-correct="false" data-quiz-idx="3">学習データを前処理します。</button>
-<div class="quiz-explain-src" id="qe-124579634946048-3" hidden>データの前処理は学習前に行うため、評価中に compute_metrics が前処理を行うことはありません。</div>
+<div class="quiz-explain-src" id="qe-123274694664320-3" hidden>データの前処理は学習前に行うため、評価中に compute_metrics が前処理を行うことはありません。</div>
 </div><div class="quiz-feedback" hidden></div></div>
 <h3>5. Trainer に <code>eval_dataset</code> を提供しないとどうなりますか？</h3>
 <div class="quiz">
 <div class="quiz-choices">
 <button type="button" class="quiz-choice" data-correct="false" data-quiz-idx="0">学習がエラーで失敗します。</button>
-<div class="quiz-explain-src" id="qe-124579634941312-0" hidden>eval_dataset がなくても学習は実行できますが、評価メトリクスは得られません。</div>
+<div class="quiz-explain-src" id="qe-123274694661504-0" hidden>eval_dataset がなくても学習は実行できますが、評価メトリクスは得られません。</div>
 <button type="button" class="quiz-choice" data-correct="false" data-quiz-idx="1">Trainer が学習データを自動的に分割して評価に使用します。</button>
-<div class="quiz-explain-src" id="qe-124579634941312-1" hidden>Trainer は検証用の分割を自動的には作成しません。</div>
+<div class="quiz-explain-src" id="qe-123274694661504-1" hidden>Trainer は検証用の分割を自動的には作成しません。</div>
 <button type="button" class="quiz-choice" data-correct="true" data-quiz-idx="2">学習中に評価メトリクスは得られませんが、学習自体は実行できます。</button>
-<div class="quiz-explain-src" id="qe-124579634941312-2" hidden>評価は任意です。評価なしで学習することもできますが、検証メトリクスは表示されません。</div>
+<div class="quiz-explain-src" id="qe-123274694661504-2" hidden>評価は任意です。評価なしで学習することもできますが、検証メトリクスは表示されません。</div>
 <button type="button" class="quiz-choice" data-correct="false" data-quiz-idx="3">モデルが学習データを評価に使用します。</button>
-<div class="quiz-explain-src" id="qe-124579634941312-3" hidden>Trainer が学習データを自動的に評価に使用することはありません。単に評価を行わないだけです。</div>
+<div class="quiz-explain-src" id="qe-123274694661504-3" hidden>Trainer が学習データを自動的に評価に使用することはありません。単に評価を行わないだけです。</div>
 </div><div class="quiz-feedback" hidden></div></div>
 <h3>6. 勾配累積とは何ですか？また、どのように有効にしますか？</h3>
 <div class="quiz">
 <div class="quiz-choices">
 <button type="button" class="quiz-choice" data-correct="false" data-quiz-idx="0">勾配をディスクに保存するもので、save_gradients=True で有効にします。</button>
-<div class="quiz-explain-src" id="qe-124579634946048-0" hidden>勾配累積に、勾配をディスクに保存することは含まれません。</div>
+<div class="quiz-explain-src" id="qe-123274694664320-0" hidden>勾配累積に、勾配をディスクに保存することは含まれません。</div>
 <button type="button" class="quiz-choice" data-correct="true" data-quiz-idx="1">更新前に複数のバッチにわたって勾配を累積するもので、gradient_accumulation_steps で有効にします。</button>
-<div class="quiz-explain-src" id="qe-124579634946048-1" hidden>これにより、複数の順伝播にわたって勾配を累積することで、より大きなバッチサイズをシミュレートできます。</div>
+<div class="quiz-explain-src" id="qe-123274694664320-1" hidden>これにより、複数の順伝播にわたって勾配を累積することで、より大きなバッチサイズをシミュレートできます。</div>
 <button type="button" class="quiz-choice" data-correct="false" data-quiz-idx="2">勾配の計算を高速化するもので、fp16 で自動的に有効になります。</button>
-<div class="quiz-explain-src" id="qe-124579634946048-2" hidden>fp16 は学習を高速化できますが、勾配累積は別のテクニックです。</div>
+<div class="quiz-explain-src" id="qe-123274694664320-2" hidden>fp16 は学習を高速化できますが、勾配累積は別のテクニックです。</div>
 <button type="button" class="quiz-choice" data-correct="false" data-quiz-idx="3">勾配のオーバーフローを防ぐもので、gradient_clipping=True で有効にします。</button>
-<div class="quiz-explain-src" id="qe-124579634946048-3" hidden>それは勾配クリッピングの説明であり、勾配累積ではありません。</div>
+<div class="quiz-explain-src" id="qe-123274694664320-3" hidden>それは勾配クリッピングの説明であり、勾配累積ではありません。</div>
 </div><div class="quiz-feedback" hidden></div></div>
 <div class="callout callout-tip">
 <p class="callout-title">💡 ヒント</p>

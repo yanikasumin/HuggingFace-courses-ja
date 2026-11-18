@@ -23,10 +23,13 @@
 <meta name="twitter:description" content="データを処理する｜LLM コース（大規模言語モデルと Transformers を学ぶコース）の日本語訳。前の章 の例を引き続き使い、1バッチのデータでシーケンス分類モデルを学習させるコードを見てみましょう。">
 <meta name="twitter:image" content="https://yanikasumin.github.io/HuggingFace-courses-ja/og-llm.png">
 <link rel="icon" type="image/svg+xml" href="https://yanikasumin.github.io/HuggingFace-courses-ja/favicon.svg">
+<link rel="icon" type="image/x-icon" href="https://yanikasumin.github.io/HuggingFace-courses-ja/favicon.ico">
+<link rel="icon" type="image/png" sizes="48x48" href="https://yanikasumin.github.io/HuggingFace-courses-ja/favicon-48.png">
 <link rel="icon" type="image/png" sizes="32x32" href="https://yanikasumin.github.io/HuggingFace-courses-ja/favicon-32.png">
 <link rel="apple-touch-icon" sizes="180x180" href="https://yanikasumin.github.io/HuggingFace-courses-ja/apple-touch-icon.png">
 <link rel="manifest" href="https://yanikasumin.github.io/HuggingFace-courses-ja/site.webmanifest">
 <meta name="theme-color" content="#0B0F19">
+<script type="application/ld+json">{"@context": "https://schema.org", "@graph": [{"@type": "BreadcrumbList", "itemListElement": [{"@type": "ListItem", "position": 1, "name": "Hugging Face 学習コース日本語版", "item": "https://yanikasumin.github.io/HuggingFace-courses-ja/"}, {"@type": "ListItem", "position": 2, "name": "LLM コース", "item": "https://yanikasumin.github.io/HuggingFace-courses-ja/llm/"}, {"@type": "ListItem", "position": 3, "name": "データを処理する"}]}, {"@type": "LearningResource", "name": "データを処理する", "description": "データを処理する｜LLM コース（大規模言語モデルと Transformers を学ぶコース）の日本語訳。前の章 の例を引き続き使い、1バッチのデータでシーケンス分類モデルを学習させるコードを見てみましょう。", "url": "https://yanikasumin.github.io/HuggingFace-courses-ja/llm/chapter3/2.html", "inLanguage": "ja", "learningResourceType": "course material", "educationalLevel": "beginner to advanced", "isPartOf": {"@type": "Course", "name": "LLM コース", "url": "https://yanikasumin.github.io/HuggingFace-courses-ja/llm/", "provider": {"@type": "Organization", "name": "Hugging Face", "sameAs": "https://huggingface.co"}}}]}</script>
 <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-1676481412757711" crossorigin="anonymous"></script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -97,14 +100,14 @@ window.MathJax = { tex: { inlineMath: [['$', '$'], ['\\(', '\\)']], displayMath:
 <li><a class="side-link" href="../chapter4/2.html">事前学習済みモデルを使う</a></li>
 <li><a class="side-link" href="../chapter4/3.html">事前学習済みモデルを共有する</a></li>
 <li><a class="side-link" href="../chapter4/4.html">モデルカードを作る</a></li>
-<li><a class="side-link" href="../chapter4/5.html">Part 1 完了！</a></li>
+<li><a class="side-link" href="../chapter4/5.html">Part 1 修了！</a></li>
 <li><a class="side-link" href="../chapter4/6.html">章末クイズ</a></li>
 </ul>
 <p class="side-group">第5章 🤗 Datasets ライブラリ</p>
 <ul class="side-list">
 <li><a class="side-link" href="../chapter5/1.html">はじめに</a></li>
 <li><a class="side-link" href="../chapter5/2.html">データセットが Hub にない場合は？</a></li>
-<li><a class="side-link" href="../chapter5/3.html">切り分けて、加工して</a></li>
+<li><a class="side-link" href="../chapter5/3.html">データを切り分けて加工しよう</a></li>
 <li><a class="side-link" href="../chapter5/4.html">ビッグデータ？🤗 Datasets にお任せ！</a></li>
 <li><a class="side-link" href="../chapter5/5.html">独自のデータセットを作成する</a></li>
 <li><a class="side-link" href="../chapter5/6.html">FAISS によるセマンティック検索</a></li>
@@ -466,61 +469,61 @@ batch = data_collator(samples)
 <div class="quiz">
 <div class="quiz-choices">
 <button type="button" class="quiz-choice" data-correct="false" data-quiz-idx="0">メモリ使用量が少なくなります。</button>
-<div class="quiz-explain-src" id="qe-124579634922560-0" hidden>メモリ効率が向上する場合もありますが、それが主な利点ではありません。</div>
+<div class="quiz-explain-src" id="qe-123274694490240-0" hidden>メモリ効率が向上する場合もありますが、それが主な利点ではありません。</div>
 <button type="button" class="quiz-choice" data-correct="true" data-quiz-idx="1">複数のサンプルを一度に処理するため、トークン化がはるかに高速になります。</button>
-<div class="quiz-explain-src" id="qe-124579634922560-1" hidden>正解です！バッチ処理なら、高速なトークナイザが複数のサンプルを同時に処理できるので、トークン化が大幅に速くなります。</div>
+<div class="quiz-explain-src" id="qe-123274694490240-1" hidden>正解です！バッチ処理なら、高速なトークナイザが複数のサンプルを同時に処理できるので、トークン化が大幅に速くなります。</div>
 <button type="button" class="quiz-choice" data-correct="false" data-quiz-idx="2">パディングを自動的に処理してくれます。</button>
-<div class="quiz-explain-src" id="qe-124579634922560-2" hidden>バッチ処理によってパディングが自動的に処理されるわけではありません。パディングはデータコレータが行います。</div>
+<div class="quiz-explain-src" id="qe-123274694490240-2" hidden>バッチ処理によってパディングが自動的に処理されるわけではありません。パディングはデータコレータが行います。</div>
 <button type="button" class="quiz-choice" data-correct="false" data-quiz-idx="3">データを PyTorch テンソルに変換します。</button>
-<div class="quiz-explain-src" id="qe-124579634922560-3" hidden>テンソルへの変換はフォーマットを設定するときに行われ、バッチ単位のマッピングでは行われません。</div>
+<div class="quiz-explain-src" id="qe-123274694490240-3" hidden>テンソルへの変換はフォーマットを設定するときに行われ、バッチ単位のマッピングでは行われません。</div>
 </div><div class="quiz-feedback" hidden></div></div>
 <h3>2. データセット内の最大長まですべてのシーケンスをパディングするのではなく、動的パディングを使用するのはなぜですか？</h3>
 <div class="quiz">
 <div class="quiz-choices">
 <button type="button" class="quiz-choice" data-correct="false" data-quiz-idx="0">モデルの構造上、動的パディングが必要だからです。</button>
-<div class="quiz-explain-src" id="qe-124579634604544-0" hidden>いいえ、モデルは固定パディングと動的パディングの両方に対応できます。</div>
+<div class="quiz-explain-src" id="qe-123274697867200-0" hidden>いいえ、モデルは固定パディングと動的パディングの両方に対応できます。</div>
 <button type="button" class="quiz-choice" data-correct="true" data-quiz-idx="1">各バッチ内の最長シーケンスに合わせてパディングするため、余分な計算を減らせます。</button>
-<div class="quiz-explain-src" id="qe-124579634604544-1" hidden>正解です！動的パディングは、データセット全体ではなく各バッチ内の最長シーケンスに合わせてパディングすることで、パディングトークンに対する不要な計算を回避します。</div>
+<div class="quiz-explain-src" id="qe-123274697867200-1" hidden>正解です！動的パディングは、データセット全体ではなく各バッチ内の最長シーケンスに合わせてパディングすることで、パディングトークンに対する不要な計算を回避します。</div>
 <button type="button" class="quiz-choice" data-correct="false" data-quiz-idx="2">モデルの正解率が向上します。</button>
-<div class="quiz-explain-src" id="qe-124579634604544-2" hidden>パディングの戦略はモデルの精度に直接影響しません。</div>
+<div class="quiz-explain-src" id="qe-123274697867200-2" hidden>パディングの戦略はモデルの精度に直接影響しません。</div>
 <button type="button" class="quiz-choice" data-correct="false" data-quiz-idx="3">DataCollatorWithPadding を使用する際に必要だからです。</button>
-<div class="quiz-explain-src" id="qe-124579634604544-3" hidden>DataCollatorWithPadding により動的パディングが可能になりますが、希望すれば固定パディングを使用することもできます。</div>
+<div class="quiz-explain-src" id="qe-123274697867200-3" hidden>DataCollatorWithPadding により動的パディングが可能になりますが、希望すれば固定パディングを使用することもできます。</div>
 </div><div class="quiz-feedback" hidden></div></div>
 <h3>3. BERT のトークン化において、<code>token_type_ids</code> フィールドは何を表しますか？</h3>
 <div class="quiz">
 <div class="quiz-choices">
 <button type="button" class="quiz-choice" data-correct="false" data-quiz-idx="0">シーケンスにおける各トークンの位置です。</button>
-<div class="quiz-explain-src" id="qe-124579634922560-0" hidden>それは位置埋め込みであり、token_type_ids ではありません。</div>
+<div class="quiz-explain-src" id="qe-123274694490240-0" hidden>それは位置埋め込みであり、token_type_ids ではありません。</div>
 <button type="button" class="quiz-choice" data-correct="true" data-quiz-idx="1">文ペアを処理する際、各トークンがどちらの文に属しているかです。</button>
-<div class="quiz-explain-src" id="qe-124579634922560-1" hidden>正解です！token_type_ids は、文ペアの1つ目の文（0）と2つ目の文（1）を区別します。</div>
+<div class="quiz-explain-src" id="qe-123274694490240-1" hidden>正解です！token_type_ids は、文ペアの1つ目の文（0）と2つ目の文（1）を区別します。</div>
 <button type="button" class="quiz-choice" data-correct="false" data-quiz-idx="2">各トークンのアテンションマスクです。</button>
-<div class="quiz-explain-src" id="qe-124579634922560-2" hidden>アテンションマスクは、どのトークンに注意を払うべきかを示す別のフィールドです。</div>
+<div class="quiz-explain-src" id="qe-123274694490240-2" hidden>アテンションマスクは、どのトークンに注意を払うべきかを示す別のフィールドです。</div>
 <button type="button" class="quiz-choice" data-correct="false" data-quiz-idx="3">各トークンの語彙 ID です。</button>
-<div class="quiz-explain-src" id="qe-124579634922560-3" hidden>それは input_ids フィールドであり、token_type_ids ではありません。</div>
+<div class="quiz-explain-src" id="qe-123274694490240-3" hidden>それは input_ids フィールドであり、token_type_ids ではありません。</div>
 </div><div class="quiz-feedback" hidden></div></div>
 <h3>4. <code>load_dataset('glue', 'mrpc')</code> でデータセットを読み込む際、第2引数は何を指定しますか？</h3>
 <div class="quiz">
 <div class="quiz-choices">
 <button type="button" class="quiz-choice" data-correct="false" data-quiz-idx="0">読み込むデータセットのバージョンです。</button>
-<div class="quiz-explain-src" id="qe-124579634604544-0" hidden>バージョンの指定には異なるパラメータを使用します。</div>
+<div class="quiz-explain-src" id="qe-123274697867200-0" hidden>バージョンの指定には異なるパラメータを使用します。</div>
 <button type="button" class="quiz-choice" data-correct="true" data-quiz-idx="1">GLUE ベンチマーク内の特定のタスク又はサブセットです。</button>
-<div class="quiz-explain-src" id="qe-124579634604544-1" hidden>正解です！MRPC は、複数のタスクで構成される GLUE ベンチマークに含まれる1つのタスクです。</div>
+<div class="quiz-explain-src" id="qe-123274697867200-1" hidden>正解です！MRPC は、複数のタスクで構成される GLUE ベンチマークに含まれる1つのタスクです。</div>
 <button type="button" class="quiz-choice" data-correct="false" data-quiz-idx="2">データセットの分割（train/validation/test）です。</button>
-<div class="quiz-explain-src" id="qe-124579634604544-2" hidden>学習用・検証用・テスト用のデータには、データセットを読み込んでからアクセスします。load_dataset の第2引数で指定するものではありません。</div>
+<div class="quiz-explain-src" id="qe-123274697867200-2" hidden>学習用・検証用・テスト用のデータには、データセットを読み込んでからアクセスします。load_dataset の第2引数で指定するものではありません。</div>
 <button type="button" class="quiz-choice" data-correct="false" data-quiz-idx="3">データを返すフォーマットです。</button>
-<div class="quiz-explain-src" id="qe-124579634604544-3" hidden>フォーマットは、読み込み後に set_format() メソッドで設定します。</div>
+<div class="quiz-explain-src" id="qe-123274697867200-3" hidden>フォーマットは、読み込み後に set_format() メソッドで設定します。</div>
 </div><div class="quiz-feedback" hidden></div></div>
 <h3>5. 学習前に <code>sentence1</code> や <code>sentence2</code> のような列を削除する目的は何ですか？</h3>
 <div class="quiz">
 <div class="quiz-choices">
 <button type="button" class="quiz-choice" data-correct="false" data-quiz-idx="0">学習中にメモリを節約するためです。</button>
-<div class="quiz-explain-src" id="qe-124579634922560-0" hidden>メモリの節約にはなりますが、それが主な理由ではありません。</div>
+<div class="quiz-explain-src" id="qe-123274694490240-0" hidden>メモリの節約にはなりますが、それが主な理由ではありません。</div>
 <button type="button" class="quiz-choice" data-correct="true" data-quiz-idx="1">モデルはこれらの生テキスト列を受け付けないため、エラーが発生します。</button>
-<div class="quiz-explain-src" id="qe-124579634922560-1" hidden>正解です！モデルが受け取るのは数値のテンソルであり、生のテキスト文字列ではありません。テキスト列を残したままではエラーになります。</div>
+<div class="quiz-explain-src" id="qe-123274694490240-1" hidden>正解です！モデルが受け取るのは数値のテンソルであり、生のテキスト文字列ではありません。テキスト列を残したままではエラーになります。</div>
 <button type="button" class="quiz-choice" data-correct="false" data-quiz-idx="2">これらの列は評価には必要ありません。</button>
-<div class="quiz-explain-src" id="qe-124579634922560-2" hidden>それは事実ですが、主な理由はモデルが生のテキストを処理できないことです。</div>
+<div class="quiz-explain-src" id="qe-123274694490240-2" hidden>それは事実ですが、主な理由はモデルが生のテキストを処理できないことです。</div>
 <button type="button" class="quiz-choice" data-correct="false" data-quiz-idx="3">学習速度が大幅に向上します。</button>
-<div class="quiz-explain-src" id="qe-124579634922560-3" hidden>互換性のないデータ型によるエラーを回避することに比べれば、速度の向上はわずかです。</div>
+<div class="quiz-explain-src" id="qe-123274694490240-3" hidden>互換性のないデータ型によるエラーを回避することに比べれば、速度の向上はわずかです。</div>
 </div><div class="quiz-feedback" hidden></div></div>
 <div class="callout callout-tip">
 <p class="callout-title">💡 ヒント</p>

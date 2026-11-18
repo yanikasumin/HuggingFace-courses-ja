@@ -3,30 +3,33 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>章末クイズ | Hugging Face 学習コース日本語版</title>
+<title>章末クイズ | 第5章 🤗 Datasets ライブラリ | Hugging Face 学習コース日本語版</title>
 <meta name="description" content="章末クイズ｜LLM コース（大規模言語モデルと Transformers を学ぶコース）の日本語訳。この章ではたくさんの内容を扱いました！細部まで全部を把握できていなくても心配いりません。">
 <meta name="robots" content="index, follow">
 <link rel="canonical" href="https://yanikasumin.github.io/HuggingFace-courses-ja/llm/chapter5/8.html">
-<meta property="og:title" content="章末クイズ | Hugging Face 学習コース日本語版">
+<meta property="og:title" content="章末クイズ | 第5章 🤗 Datasets ライブラリ | Hugging Face 学習コース日本語版">
 <meta property="og:description" content="章末クイズ｜LLM コース（大規模言語モデルと Transformers を学ぶコース）の日本語訳。この章ではたくさんの内容を扱いました！細部まで全部を把握できていなくても心配いりません。">
 <meta property="og:image" content="https://yanikasumin.github.io/HuggingFace-courses-ja/og-llm.png">
 <meta property="og:image:width" content="1200">
 <meta property="og:image:height" content="630">
-<meta property="og:image:alt" content="章末クイズ | Hugging Face 学習コース日本語版">
+<meta property="og:image:alt" content="章末クイズ | 第5章 🤗 Datasets ライブラリ | Hugging Face 学習コース日本語版">
 <meta name="google-site-verification" content="A8PVY1lQPEN4macCCmGuTad7GqnBmMgMo1SRR3C320c">
 <meta property="og:type" content="article">
 <meta property="og:url" content="https://yanikasumin.github.io/HuggingFace-courses-ja/llm/chapter5/8.html">
 <meta property="og:site_name" content="Hugging Face 学習コース日本語版">
 <meta property="og:locale" content="ja_JP">
 <meta name="twitter:card" content="summary_large_image">
-<meta name="twitter:title" content="章末クイズ | Hugging Face 学習コース日本語版">
+<meta name="twitter:title" content="章末クイズ | 第5章 🤗 Datasets ライブラリ | Hugging Face 学習コース日本語版">
 <meta name="twitter:description" content="章末クイズ｜LLM コース（大規模言語モデルと Transformers を学ぶコース）の日本語訳。この章ではたくさんの内容を扱いました！細部まで全部を把握できていなくても心配いりません。">
 <meta name="twitter:image" content="https://yanikasumin.github.io/HuggingFace-courses-ja/og-llm.png">
 <link rel="icon" type="image/svg+xml" href="https://yanikasumin.github.io/HuggingFace-courses-ja/favicon.svg">
+<link rel="icon" type="image/x-icon" href="https://yanikasumin.github.io/HuggingFace-courses-ja/favicon.ico">
+<link rel="icon" type="image/png" sizes="48x48" href="https://yanikasumin.github.io/HuggingFace-courses-ja/favicon-48.png">
 <link rel="icon" type="image/png" sizes="32x32" href="https://yanikasumin.github.io/HuggingFace-courses-ja/favicon-32.png">
 <link rel="apple-touch-icon" sizes="180x180" href="https://yanikasumin.github.io/HuggingFace-courses-ja/apple-touch-icon.png">
 <link rel="manifest" href="https://yanikasumin.github.io/HuggingFace-courses-ja/site.webmanifest">
 <meta name="theme-color" content="#0B0F19">
+<script type="application/ld+json">{"@context": "https://schema.org", "@graph": [{"@type": "BreadcrumbList", "itemListElement": [{"@type": "ListItem", "position": 1, "name": "Hugging Face 学習コース日本語版", "item": "https://yanikasumin.github.io/HuggingFace-courses-ja/"}, {"@type": "ListItem", "position": 2, "name": "LLM コース", "item": "https://yanikasumin.github.io/HuggingFace-courses-ja/llm/"}, {"@type": "ListItem", "position": 3, "name": "章末クイズ"}]}, {"@type": "LearningResource", "name": "章末クイズ", "description": "章末クイズ｜LLM コース（大規模言語モデルと Transformers を学ぶコース）の日本語訳。この章ではたくさんの内容を扱いました！細部まで全部を把握できていなくても心配いりません。", "url": "https://yanikasumin.github.io/HuggingFace-courses-ja/llm/chapter5/8.html", "inLanguage": "ja", "learningResourceType": "course material", "educationalLevel": "beginner to advanced", "isPartOf": {"@type": "Course", "name": "LLM コース", "url": "https://yanikasumin.github.io/HuggingFace-courses-ja/llm/", "provider": {"@type": "Organization", "name": "Hugging Face", "sameAs": "https://huggingface.co"}}}]}</script>
 <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-1676481412757711" crossorigin="anonymous"></script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -210,11 +213,11 @@ window.MathJax = { tex: { inlineMath: [['$', '$'], ['\\(', '\\)']], displayMath:
 <div class="quiz">
 <div class="quiz-choices">
 <button type="button" class="quiz-choice" data-correct="true" data-quiz-idx="0">ローカル（たとえば自分のノートパソコン上）</button>
-<div class="quiz-explain-src" id="qe-138143656079424-0" hidden>正解です！<code>load_dataset()</code> の <code>data_files</code> 引数にローカルファイルのパスを渡せば、ローカルデータセットを読み込めます。</div>
+<div class="quiz-explain-src" id="qe-123274695128256-0" hidden>正解です！<code>load_dataset()</code> の <code>data_files</code> 引数にローカルファイルのパスを渡せば、ローカルデータセットを読み込めます。</div>
 <button type="button" class="quiz-choice" data-correct="true" data-quiz-idx="1">Hugging Face Hub</button>
-<div class="quiz-explain-src" id="qe-138143656079424-1" hidden>正解です！データセット ID を指定すれば、Hub 上のデータセットを読み込めます。たとえば <code>load_dataset('emotion')</code> です。</div>
+<div class="quiz-explain-src" id="qe-123274695128256-1" hidden>正解です！データセット ID を指定すれば、Hub 上のデータセットを読み込めます。たとえば <code>load_dataset('emotion')</code> です。</div>
 <button type="button" class="quiz-choice" data-correct="true" data-quiz-idx="2">リモートサーバー</button>
-<div class="quiz-explain-src" id="qe-138143656079424-2" hidden>正解です！<code>load_dataset()</code> の <code>data_files</code> 引数に URL を渡せば、リモートファイルを読み込めます。</div>
+<div class="quiz-explain-src" id="qe-123274695128256-2" hidden>正解です！<code>load_dataset()</code> の <code>data_files</code> 引数に URL を渡せば、リモートファイルを読み込めます。</div>
 </div><div class="quiz-feedback" hidden></div></div>
 <h3>2. 次のように GLUE タスクの1つを読み込んだとします。</h3>
 <div class="codehilite"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">datasets</span><span class="w"> </span><span class="kn">import</span> <span class="n">load_dataset</span>
@@ -226,41 +229,41 @@ window.MathJax = { tex: { inlineMath: [['$', '$'], ['\\(', '\\)']], displayMath:
 <div class="quiz">
 <div class="quiz-choices">
 <button type="button" class="quiz-choice" data-correct="false" data-quiz-idx="0"><code>dataset.sample(50)</code></button>
-<div class="quiz-explain-src" id="qe-138143656616768-0" hidden>これは不正解です。<code>Dataset.sample()</code> というメソッドは存在しません。</div>
+<div class="quiz-explain-src" id="qe-123274694696512-0" hidden>これは不正解です。<code>Dataset.sample()</code> というメソッドは存在しません。</div>
 <button type="button" class="quiz-choice" data-correct="true" data-quiz-idx="1"><code>dataset.shuffle().select(range(50))</code></button>
-<div class="quiz-explain-src" id="qe-138143656616768-1" hidden>正解です！この章で見たとおり、まずデータセットをシャッフルし、その後で50件のサンプルを選びます。</div>
+<div class="quiz-explain-src" id="qe-123274694696512-1" hidden>正解です！この章で見たとおり、まずデータセットをシャッフルし、その後で50件のサンプルを選びます。</div>
 <button type="button" class="quiz-choice" data-correct="false" data-quiz-idx="2"><code>dataset.select(range(50)).shuffle()</code></button>
-<div class="quiz-explain-src" id="qe-138143656616768-2" hidden>これは不正解です。コードは実行できますが、シャッフルされるのはデータセットの最初の50件だけです。</div>
+<div class="quiz-explain-src" id="qe-123274694696512-2" hidden>これは不正解です。コードは実行できますが、シャッフルされるのはデータセットの最初の50件だけです。</div>
 </div><div class="quiz-feedback" hidden></div></div>
 <h3>3. 家庭のペットに関する <code>pets_dataset</code> というデータセットがあり、各ペットの名前を示す <code>name</code> 列があるとします。次のうち、名前が「L」で始まるペットだけを抽出できる方法をすべて選んでください。</h3>
 <div class="quiz">
 <div class="quiz-choices">
 <button type="button" class="quiz-choice" data-correct="true" data-quiz-idx="0"><code>pets_dataset.filter(lambda x : x['name'].startswith('L'))</code></button>
-<div class="quiz-explain-src" id="qe-138143656079424-0" hidden>正解です！このような手早いフィルタには Python のラムダ関数を使うのがおすすめです。ほかにどんな解法が考えられますか？</div>
+<div class="quiz-explain-src" id="qe-123274695128256-0" hidden>正解です！このような手早いフィルタには Python のラムダ関数を使うのがおすすめです。ほかにどんな解法が考えられますか？</div>
 <button type="button" class="quiz-choice" data-correct="false" data-quiz-idx="1"><code>pets_dataset.filter(lambda x['name'].startswith('L'))</code></button>
-<div class="quiz-explain-src" id="qe-138143656079424-1" hidden>これは不正解です。ラムダ関数は <code>lambda *arguments* : *expression*</code> という一般形を取るため、この場合は引数を指定する必要があります。</div>
+<div class="quiz-explain-src" id="qe-123274695128256-1" hidden>これは不正解です。ラムダ関数は <code>lambda *arguments* : *expression*</code> という一般形を取るため、この場合は引数を指定する必要があります。</div>
 <button type="button" class="quiz-choice" data-correct="true" data-quiz-idx="2"><code>def filter_names(x): return x['name'].startswith('L')</code> のような関数を作って、<code>pets_dataset.filter(filter_names)</code> を実行する。</button>
-<div class="quiz-explain-src" id="qe-138143656079424-2" hidden>正解です！<code>Dataset.map()</code> と同じように、<code>Dataset.filter()</code> にも名前を付けて定義した関数を渡せます。短いラムダ関数では書きにくい複雑な処理がある場合に便利です。他の選択肢では、どれがうまくいきますか？</div>
+<div class="quiz-explain-src" id="qe-123274695128256-2" hidden>正解です！<code>Dataset.map()</code> と同じように、<code>Dataset.filter()</code> にも名前を付けて定義した関数を渡せます。短いラムダ関数では書きにくい複雑な処理がある場合に便利です。他の選択肢では、どれがうまくいきますか？</div>
 </div><div class="quiz-feedback" hidden></div></div>
 <h3>4. メモリマッピングとは何ですか？</h3>
 <div class="quiz">
 <div class="quiz-choices">
 <button type="button" class="quiz-choice" data-correct="false" data-quiz-idx="0">CPU と GPU の RAM の間のマッピング</button>
-<div class="quiz-explain-src" id="qe-138143656616768-0" hidden>違います。もう一度考えてみましょう！</div>
+<div class="quiz-explain-src" id="qe-123274694696512-0" hidden>違います。もう一度考えてみましょう！</div>
 <button type="button" class="quiz-choice" data-correct="true" data-quiz-idx="1">RAM とファイルシステムストレージの間のマッピング</button>
-<div class="quiz-explain-src" id="qe-138143656616768-1" hidden>正解です！🤗 Datasets は各データセットをメモリマップドファイルとして扱います。これにより、データセット全体をメモリに読み込まなくても、その要素にアクセスして操作できます。</div>
+<div class="quiz-explain-src" id="qe-123274694696512-1" hidden>正解です！🤗 Datasets は各データセットをメモリマップドファイルとして扱います。これにより、データセット全体をメモリに読み込まなくても、その要素にアクセスして操作できます。</div>
 <button type="button" class="quiz-choice" data-correct="false" data-quiz-idx="2">🤗 Datasets キャッシュ内の2つのファイルの間のマッピング</button>
-<div class="quiz-explain-src" id="qe-138143656616768-2" hidden>これは正しくありません。もう一度考えてみましょう！</div>
+<div class="quiz-explain-src" id="qe-123274694696512-2" hidden>これは正しくありません。もう一度考えてみましょう！</div>
 </div><div class="quiz-feedback" hidden></div></div>
 <h3>5. 次のうち、メモリマッピングの主な利点に当てはまるものをすべて選んでください。</h3>
 <div class="quiz">
 <div class="quiz-choices">
 <button type="button" class="quiz-choice" data-correct="true" data-quiz-idx="0">メモリマップドファイルへのアクセスは、ディスクへの読み書きよりも高速である。</button>
-<div class="quiz-explain-src" id="qe-138143656079424-0" hidden>正解です！おかげで 🤗 Datasets は非常に高速に動作します。但し、利点はそれだけではありません。</div>
+<div class="quiz-explain-src" id="qe-123274695128256-0" hidden>正解です！おかげで 🤗 Datasets は非常に高速に動作します。但し、利点はそれだけではありません。</div>
 <button type="button" class="quiz-choice" data-correct="true" data-quiz-idx="1">アプリケーションが巨大なファイル全体を RAM に読み込まなくても、その一部のデータにアクセスできる。</button>
-<div class="quiz-explain-src" id="qe-138143656079424-1" hidden>正解です！おかげで、ノートパソコン上でも CPU を爆発させることなく、数ギガバイト規模のデータセットを読み込めます。メモリマッピングには他にどんな利点がありますか？</div>
+<div class="quiz-explain-src" id="qe-123274695128256-1" hidden>正解です！おかげで、ノートパソコン上でも CPU を爆発させることなく、数ギガバイト規模のデータセットを読み込めます。メモリマッピングには他にどんな利点がありますか？</div>
 <button type="button" class="quiz-choice" data-correct="false" data-quiz-idx="2">消費エネルギーが少なく、バッテリーが長持ちする。</button>
-<div class="quiz-explain-src" id="qe-138143656079424-2" hidden>これは正しくありません。もう一度考えてみましょう！</div>
+<div class="quiz-explain-src" id="qe-123274695128256-2" hidden>これは正しくありません。もう一度考えてみましょう！</div>
 </div><div class="quiz-feedback" hidden></div></div>
 <h3>6. 次のコードが失敗するのはなぜですか？</h3>
 <div class="codehilite"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">datasets</span><span class="w"> </span><span class="kn">import</span> <span class="n">load_dataset</span>
@@ -272,49 +275,49 @@ window.MathJax = { tex: { inlineMath: [['$', '$'], ['\\(', '\\)']], displayMath:
 <div class="quiz">
 <div class="quiz-choices">
 <button type="button" class="quiz-choice" data-correct="false" data-quiz-idx="0">RAM に収まらないほど大きなデータセットをストリーミングしようとしているから。</button>
-<div class="quiz-explain-src" id="qe-138143656616768-0" hidden>これは正しくありません。ストリーミングデータセットは必要に応じて解凍されます。また、ごくわずかな RAM でもテラバイト級のデータセットを処理できます！</div>
+<div class="quiz-explain-src" id="qe-123274694696512-0" hidden>これは正しくありません。ストリーミングデータセットは必要に応じて解凍されます。また、ごくわずかな RAM でもテラバイト級のデータセットを処理できます！</div>
 <button type="button" class="quiz-choice" data-correct="true" data-quiz-idx="1"><code>IterableDataset</code> にアクセスしようとしているから。</button>
-<div class="quiz-explain-src" id="qe-138143656616768-1" hidden>正解です！<code>IterableDataset</code> はコンテナではなくジェネレータなので、その要素には <code>next(iter(dataset))</code> を使ってアクセスする必要があります。</div>
+<div class="quiz-explain-src" id="qe-123274694696512-1" hidden>正解です！<code>IterableDataset</code> はコンテナではなくジェネレータなので、その要素には <code>next(iter(dataset))</code> を使ってアクセスする必要があります。</div>
 <button type="button" class="quiz-choice" data-correct="false" data-quiz-idx="2"><code>allocine</code> データセットに <code>train</code> 分割が存在しないから。</button>
-<div class="quiz-explain-src" id="qe-138143656616768-2" hidden>これは不正解です。Hub の [<code>allocine</code> データセットカード](https://huggingface.co/datasets/allocine) で、どの分割が含まれているか確認してみてください。</div>
+<div class="quiz-explain-src" id="qe-123274694696512-2" hidden>これは不正解です。Hub の [<code>allocine</code> データセットカード](https://huggingface.co/datasets/allocine) で、どの分割が含まれているか確認してみてください。</div>
 </div><div class="quiz-feedback" hidden></div></div>
 <h3>7. 次のうち、データセットカードを作成する主な利点に当てはまるものをすべて選んでください。</h3>
 <div class="quiz">
 <div class="quiz-choices">
 <button type="button" class="quiz-choice" data-correct="true" data-quiz-idx="0">データセットの想定用途や対応タスクについての情報を提供し、コミュニティの他の人が必要な情報を得た上で、そのデータセットを利用するかどうか判断できる。</button>
-<div class="quiz-explain-src" id="qe-138143656079424-0" hidden>正解です！ドキュメントのないデータセットは、作成者の意図を反映しないモデルの訓練に使われるおそれがあります。また、プライバシーやライセンスの制限に反するデータでモデルを訓練すると、法的な扱いが不明確なモデルが生まれる可能性もあります。但し、利点はそれだけではありません！</div>
+<div class="quiz-explain-src" id="qe-123274695128256-0" hidden>正解です！ドキュメントのないデータセットは、作成者の意図を反映しないモデルの訓練に使われるおそれがあります。また、プライバシーやライセンスの制限に反するデータでモデルを訓練すると、法的な扱いが不明確なモデルが生まれる可能性もあります。但し、利点はそれだけではありません！</div>
 <button type="button" class="quiz-choice" data-correct="true" data-quiz-idx="1">コーパスに含まれるバイアスへの注意を促す。</button>
-<div class="quiz-explain-src" id="qe-138143656079424-1" hidden>正解です！ほぼすべてのデータセットには何らかのバイアスがあり、そのデータセットを使う後続のタスクに悪影響を及ぼす可能性があります。バイアスの存在を認識しておくことで、モデル開発者は内在するバイアスへの対処法を理解できます。データセットカードは他に何の役に立ちますか？</div>
+<div class="quiz-explain-src" id="qe-123274695128256-1" hidden>正解です！ほぼすべてのデータセットには何らかのバイアスがあり、そのデータセットを使う後続のタスクに悪影響を及ぼす可能性があります。バイアスの存在を認識しておくことで、モデル開発者は内在するバイアスへの対処法を理解できます。データセットカードは他に何の役に立ちますか？</div>
 <button type="button" class="quiz-choice" data-correct="true" data-quiz-idx="2">コミュニティの他の人が自分のデータセットを使ってくれる可能性が高まる。</button>
-<div class="quiz-explain-src" id="qe-138143656079424-2" hidden>正解です！よく書かれたデータセットカードがあると、自分の大切なデータセットをより多くの人に使ってもらいやすくなります。他にどんな利点がありますか？</div>
+<div class="quiz-explain-src" id="qe-123274695128256-2" hidden>正解です！よく書かれたデータセットカードがあると、自分の大切なデータセットをより多くの人に使ってもらいやすくなります。他にどんな利点がありますか？</div>
 </div><div class="quiz-feedback" hidden></div></div>
 <h3>8. 次のうち、セマンティック検索について正しく説明しているものをすべて選んでください。</h3>
 <div class="quiz">
 <div class="quiz-choices">
 <button type="button" class="quiz-choice" data-correct="false" data-quiz-idx="0">クエリ内の単語とコーパス内のドキュメントとの完全一致を探す方法</button>
-<div class="quiz-explain-src" id="qe-138143656616768-0" hidden>これは不正解です。この種の検索は *語彙検索（lexical search）* と呼ばれ、従来の検索エンジンで一般的に見られるものです。</div>
+<div class="quiz-explain-src" id="qe-123274694696512-0" hidden>これは不正解です。この種の検索は *語彙検索（lexical search）* と呼ばれ、従来の検索エンジンで一般的に見られるものです。</div>
 <button type="button" class="quiz-choice" data-correct="true" data-quiz-idx="1">クエリの文脈的な意味を理解して、一致するドキュメントを探す方法</button>
-<div class="quiz-explain-src" id="qe-138143656616768-1" hidden>正解です！セマンティック検索は埋め込みベクトルでクエリとドキュメントを表現し、類似度指標で両者の重なりの度合いを測ります。他にどう説明できますか？</div>
+<div class="quiz-explain-src" id="qe-123274694696512-1" hidden>正解です！セマンティック検索は埋め込みベクトルでクエリとドキュメントを表現し、類似度指標で両者の重なりの度合いを測ります。他にどう説明できますか？</div>
 <button type="button" class="quiz-choice" data-correct="true" data-quiz-idx="2">検索精度を向上させる方法</button>
-<div class="quiz-explain-src" id="qe-138143656616768-2" hidden>正解です！セマンティック検索エンジンはキーワードマッチングよりもクエリの意図をよく捉えることができ、通常、関連性の高いドキュメントをより高い精度で取得できます。但し、正しい答えはそれだけではありません。セマンティック検索には他にどんな利点がありますか？</div>
+<div class="quiz-explain-src" id="qe-123274694696512-2" hidden>正解です！セマンティック検索エンジンはキーワードマッチングよりもクエリの意図をよく捉えることができ、通常、関連性の高いドキュメントをより高い精度で取得できます。但し、正しい答えはそれだけではありません。セマンティック検索には他にどんな利点がありますか？</div>
 </div><div class="quiz-feedback" hidden></div></div>
 <h3>9. 非対称セマンティック検索では、通常どのようなクエリと段落の組み合わせを扱いますか？</h3>
 <div class="quiz">
 <div class="quiz-choices">
 <button type="button" class="quiz-choice" data-correct="true" data-quiz-idx="0">短いクエリと、そのクエリに答える長めの段落</button>
-<div class="quiz-explain-src" id="qe-138143656079424-0" hidden>正解です！</div>
+<div class="quiz-explain-src" id="qe-123274695128256-0" hidden>正解です！</div>
 <button type="button" class="quiz-choice" data-correct="false" data-quiz-idx="1">ほぼ同じ長さのクエリと段落</button>
-<div class="quiz-explain-src" id="qe-138143656079424-1" hidden>これは実際には対称セマンティック検索の例です。もう一度考えてみましょう！</div>
+<div class="quiz-explain-src" id="qe-123274695128256-1" hidden>これは実際には対称セマンティック検索の例です。もう一度考えてみましょう！</div>
 <button type="button" class="quiz-choice" data-correct="false" data-quiz-idx="2">長いクエリと、そのクエリに答える短めの段落</button>
-<div class="quiz-explain-src" id="qe-138143656079424-2" hidden>これは不正解です。もう一度考えてみましょう！</div>
+<div class="quiz-explain-src" id="qe-123274695128256-2" hidden>これは不正解です。もう一度考えてみましょう！</div>
 </div><div class="quiz-feedback" hidden></div></div>
 <h3>10. 音声処理など、ほかの分野で利用するデータも 🤗 Datasets で読み込めますか？</h3>
 <div class="quiz">
 <div class="quiz-choices">
 <button type="button" class="quiz-choice" data-correct="false" data-quiz-idx="0">いいえ</button>
-<div class="quiz-explain-src" id="qe-138143656616768-0" hidden>これは不正解です。🤗 Datasets は現在、表形式データ、音声、コンピュータビジョンに対応しています。コンピュータビジョンの例として、Hub の <a  href='https://huggingface.co/datasets/mnist'>MNIST データセット</a> を見てみてください。</div>
+<div class="quiz-explain-src" id="qe-123274694696512-0" hidden>これは不正解です。🤗 Datasets は現在、表形式データ、音声、コンピュータビジョンに対応しています。コンピュータビジョンの例として、Hub の <a  href='https://huggingface.co/datasets/mnist'>MNIST データセット</a> を見てみてください。</div>
 <button type="button" class="quiz-choice" data-correct="true" data-quiz-idx="1">はい</button>
-<div class="quiz-explain-src" id="qe-138143656616768-1" hidden>正解です！🤗 Transformers ライブラリでは、音声処理や画像処理の分野でも興味深い開発が進んでいます。これらの取り組みを調べ、🤗 Datasets がそれらの分野でどう使われているか確認してみてください。</div>
+<div class="quiz-explain-src" id="qe-123274694696512-1" hidden>正解です！🤗 Transformers ライブラリでは、音声処理や画像処理の分野でも興味深い開発が進んでいます。これらの取り組みを調べ、🤗 Datasets がそれらの分野でどう使われているか確認してみてください。</div>
 </div><div class="quiz-feedback" hidden></div></div>
 </article>
 
