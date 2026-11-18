@@ -1,12 +1,14 @@
 # 拡散モデルを使った合成データの生成
 
-腫瘍の領域をセグメンテーションするモデルを訓練したいとしましょう。医療画像は収集が難しいため、モデルの学習を収束させるのは非常に大変です。理想的には、シンプルなベースラインを構築するのに十分なデータが少なくとも欲しいところですが、サンプルがほんの少ししかなかったらどうでしょうか？合成データの生成手法はこのジレンマを解決しようとするものであり、生成モデルのブームによって、現在では多くの選択肢があります！
+腫瘍の領域をセグメンテーションするモデルを訓練したいとしましょう。医療画像は収集が難しい為、モデルの学習を収束させるのは非常に大変です。
 
-前のセクションで見たように、DCGAN のような生成モデルを使って合成画像を生成することができます。このセクションでは、[diffusers](https://huggingface.co/docs/diffusers/index) を使った拡散モデル（diffusion models）に焦点を当てます！
+理想的には、シンプルなベースラインを構築するのに十分なデータが少なくとも欲しい所ですが、サンプルがほんの少ししかなかったらどうでしょうか？合成データの生成手法はこのジレンマを解決しようとするものであり、生成モデルのブームによって、現在では多くの選択肢があります！
+
+前のセクションで見たように、DCGAN のような生成モデルを使って合成画像を生成することが出来ます。このセクションでは、[diffusers](https://huggingface.co/docs/diffusers/index) を使った拡散モデル（diffusion models）に焦点を当てます！
 
 ## 拡散モデルのおさらい
 
-拡散モデルは、高品質な画像を生成する能力のおかげで、近年大きな人気を集めている生成モデルです。現在では、画像、動画、テキストの合成に広く使われています。
+拡散モデルは、高品質な画像を生成する能力のお陰で、近年大きな人気を集めている生成モデルです。現在では、画像、動画、テキストの合成に広く使われています。
 
 拡散モデルは、ランダムなガウスノイズを段階的に取り除く方法を学習して画像を生成します。訓練時には、入力データにガウスノイズを加え、それを取り除く処理をモデルに学習させます。
 
@@ -14,7 +16,7 @@
 
 拡散モデルの仕組みには多くの基礎概念が関わっていますが、簡単に説明すると次のようになります。
 
-まず、モデルは入力にノイズを加えて処理します。
+先ず、モデルは入力にノイズを加えて処理します。
 
 ![ノイズ付加](https://huggingface.co/datasets/hf-vision/course-assets/resolve/main/synthetic-data-creation-diffusion-models/noising.jpg?download=true)
 
@@ -22,27 +24,27 @@
 
 ![ノイズ除去](https://huggingface.co/datasets/hf-vision/course-assets/resolve/main/synthetic-data-creation-diffusion-models/denoising.jpg?download=true)
 
-理論に深く踏み込むことはしませんが、拡散モデルの仕組みを理解しておくと、ユースケースに合わせて合成データを生成する手法を選ぶ必要があるときに、とても役立ちます。
+理論に深く踏み込むことはしませんが、拡散モデルの仕組みを理解しておくと、ユースケースに合わせて合成データを生成する手法を選ぶ必要が有る時に、とても役立ちます。
 
 ## テキストから画像を生成する拡散モデル：Stable Diffusion
 
-本質的に、Stable Diffusion（SD）の仕組みは上で述べたものと同じです。高品質な画像を生成するために、次の3つの主要コンポーネントを使います。
+本質的に、Stable Diffusion（SD）の仕組みは上で述べたものと同じです。高品質な画像を生成する為に、次の3つの主要コンポーネントを使います。
 
 1. **拡散プロセス（The diffusion process）**：入力は複数回処理され、画像に関する有用な情報を生成します。この「有用性」はモデルの訓練中に学習されます。
 
 2. **画像エンコーダ・デコーダモデル（Image encoder and decoder model）**：画像をピクセル空間から、より次元の小さい空間に圧縮します。重要でない情報を抽象化することで、処理性能を高めます。
 
-3. **任意の条件付けエンコーダ（Optional conditional encoder）**：このコンポーネントは、生成プロセスを入力で条件付けるために使われます。この追加の入力は、テキストプロンプト、画像、音声、その他の表現でありえます。当初はテキストエンコーダでした。
+3. **任意の条件付けエンコーダ（Optional conditional encoder）**：このコンポーネントは、生成プロセスを入力で条件付ける為に使われます。この追加の入力は、テキストプロンプト、画像、音声、その他の表現でありえます。当初はテキストエンコーダでした。
 
 全体のワークフローは次のようになります。
 ![Stable Diffusion の全体ワークフロー](https://huggingface.co/datasets/hf-vision/course-assets/resolve/main/synthetic-data-creation-diffusion-models/general-workflow.png?download=true)
 
-当初は、プロンプトでモデルを条件付けるためにテキストエンコーダを使っていました。
+当初は、プロンプトでモデルを条件付ける為にテキストエンコーダを使っていました。
 ![元の Stable Diffusion のワークフロー](https://huggingface.co/datasets/hf-vision/course-assets/resolve/main/synthetic-data-creation-diffusion-models/stable-diffusion-workflow.png?download=true)
 
-この短い概要は氷山の一角にすぎません！Stable Diffusion（あるいは拡散モデル）の背後にある理論を深く掘り下げたい場合は、[参考資料のセクション](#further-reading-about-stable-diffusion)をご覧ください！
+この短い概要は氷山の一角に過ぎません！Stable Diffusion（あるいは拡散モデル）の背後にある理論を深く掘り下げたい場合は、[参考資料のセクション](#further-reading-about-stable-diffusion)をご覧下さい！
 
-[diffusers](https://huggingface.co/docs/diffusers/index) は、様々なタスクにすぐ使える pipeline を提供しています。たとえば次のようなものです。
+[diffusers](https://huggingface.co/docs/diffusers/index) は、様々なタスクに直ぐに使える pipeline を提供しています。例えば次のようなものです。
 
 | タスク | 説明 | パイプライン |
 |---|---|---|
@@ -52,9 +54,9 @@
 | テキストによる画像のインペインティング | 画像、マスク、テキストプロンプトを与え、マスクした部分を補完する | [inpaint](https://huggingface.co/docs/diffusers/using-diffusers/inpaint) |
 | テキストによる深度情報を使った画像変換 | 深度推定によって画像の構造を保ちながら、テキストプロンプトに従って画像の一部を変換する | [depth2img](https://huggingface.co/docs/diffusers/using-diffusers/depth2img) |
 
-対応しているタスクの一覧は、[Diffusers の概要](https://huggingface.co/docs/diffusers/api/pipelines/overview#diffusers-summary)の表で確認できます。
+対応しているタスクの一覧は、[Diffusers の概要](https://huggingface.co/docs/diffusers/api/pipelines/overview#diffusers-summary)の表で確認出来ます。
 
-つまり、合成データを生成するためのツールがたくさん手元にあるということです！
+つまり、合成データを生成する為のツールが沢山手元に有るということです！
 
 ## 合成データを生成する方法
 
@@ -62,51 +64,53 @@
 
 **既存のデータセットの拡張（Extending an existing dataset）：**
 
-- **サンプルが十分でない**：良い例は、[DDSM](https://www.mammoimage.org/databases/)（Digital Database for Screening Mammography、約2500サンプル）のような医療画像データセットです。サンプル量が少ないと、その後の分析のためのモデル構築が難しくなります。このような医療画像データセットを構築するのは、かなり費用もかかります。
+- **サンプルが十分でない**：良い例は、[DDSM](https://www.mammoimage.org/databases/)（Digital Database for Screening Mammography、約2500サンプル）のような医療画像データセットです。サンプル量が少ないと、その後の分析の為のモデル構築が難しくなります。このような医療画像データセットを構築するのは、かなり費用もかかります。
 
 **データセットをゼロから作成する（Creating a Dataset from Scratch）：**
 
-- **サンプルがまったくない**：監視カメラ（CCTV）の映像から武器を検出するシステムを作りたいとしましょう。検出対象の武器の画像がない場合でも、別の環境で撮影された似た画像にスタイル変換を適用し、監視カメラの映像のように見せることができます。
+- **サンプルが全く無い**：監視カメラ（CCTV）の映像から武器を検出するシステムを作りたいとしましょう。検出対象の武器の画像が無い場合でも、別の環境で撮影された似た画像にスタイル変換を適用し、監視カメラの映像のように見せることが出来ます。
 
 **プライバシーの保護（Preserving Privacy）：**
 
-- 病院は患者の膨大なデータを収集し、監視カメラは人々の顔や行動に関する生の情報を記録します。こうしたデータには、プライバシー侵害のリスクがあります。拡散モデルを使えば、個人のプライバシーを犠牲にすることなく、プライバシーに配慮した合成データセットを生成し、システム開発に利用できます。
+- 病院は患者の膨大なデータを収集し、監視カメラは人々の顔や行動に関する生の情報を記録します。こうしたデータには、プライバシー侵害のリスクがあります。拡散モデルを使えば、個人のプライバシーを犠牲にすることなく、プライバシーに配慮した合成データセットを生成し、システム開発に利用出来ます。
 
-テキストから画像を生成する拡散モデルを使って、目的に合わせた画像を作る方法はいくつかあります。たとえば、[Stable Diffusion XL](https://huggingface.co/docs/diffusers/api/pipelines/stable_diffusion/stable_diffusion_xl) などの事前学習済みモデルに適切なプロンプトを入力して生成する方法です。但し、画像の品質が安定しないこともあり、特定の用途に適したプロンプトを作るのは簡単ではありません。
+テキストから画像を生成する拡散モデルを使って、目的に合わせた画像を作る方法はいくつかあります。例えば、[Stable Diffusion XL](https://huggingface.co/docs/diffusers/api/pipelines/stable_diffusion/stable_diffusion_xl) などの事前学習済みモデルに適切なプロンプトを入力して生成する方法です。但し、画像の品質が安定しないこともあり、特定の用途に適したプロンプトを作るのは簡単ではありません。
 
-通常、望むパーソナライズされた出力を生成するには、モデルの一部を変更する必要があります。そのために使える手法をいくつか紹介します。
+通常、望むパーソナライズされた出力を生成するには、モデルの一部を変更する必要があります。その為に使える手法をいくつか紹介します。
 
 **[Textual Inversion](https://huggingface.co/docs/diffusers/main/en/training/text_inversion) で訓練する：**
 
 ![Textual Inversion](https://huggingface.co/datasets/hf-vision/course-assets/resolve/main/synthetic-data-creation-diffusion-models/textual_inversion.png?download=true)
 
-Textual Inversion は、モデル内部のテキスト埋め込みを調整する手法です。語彙に新しいトークンを追加し、少数のサンプルを使って、そのトークンに対応する埋め込みをファインチューニングできます。
+Textual Inversion は、モデル内部のテキスト埋め込みを調整する手法です。語彙に新しいトークンを追加し、少数のサンプルを使って、そのトークンに対応する埋め込みをファインチューニング出来ます。
 
 新しいトークンに対応するサンプルを与えることで、物体の特徴を捉えるよう埋め込みを最適化しようとします。
 
 **[LoRA（Low-Rank Adaptation）](https://huggingface.co/docs/diffusers/main/en/training/lora?installation=PyTorch) モデルを訓練する：**
 
-LoRA は、LLM のファインチューニングを効率化するために開発された手法です。重みの更新を、低ランク分解によって2つの小さな行列で表します。これにより、更新が必要なパラメータ数を大幅に減らせます。あとは、これらの行列を訓練することで、新しいデータにモデルを適応させられます。
+LoRA は、LLM のファインチューニングを効率化する為に開発された手法です。重みの更新を、低ランク分解によって2つの小さな行列で表します。これにより、更新が必要なパラメータ数を大幅に減らせます。あとは、これらの行列を訓練することで、新しいデータにモデルを適応させられます。
 
 ベースモデルの重みはプロセス全体を通じて凍結されたままで、新しい更新行列だけを訓練します。最後に、適応した重みを元の重みと組み合わせます。
 
-このため、LoRA の訓練はモデル全体をファインチューニングするよりもはるかに高速です。また、LoRA は元のモデルに追加する形で利用できるため、ほかの手法と組み合わせることもできます。
+この為、LoRA の訓練はモデル全体をファインチューニングするよりもはるかに高速です。また、LoRA は元のモデルに追加する形で利用出来る為、他の手法と組み合わせることも出来ます。
 
 **[DreamBooth](https://huggingface.co/docs/diffusers/main/en/training/dreambooth) で訓練する：**
 
 ![DreamBooth](https://huggingface.co/datasets/hf-vision/course-assets/resolve/main/synthetic-data-creation-diffusion-models/dreambooth.png?download=true)
 
-DreamBooth は、出力をパーソナライズするためにモデルをファインチューニングする手法です。対象の画像を数枚与えると、事前に訓練されたテキストから画像へのモデルをファインチューニングできます。主な考え方は、その特定の対象に一意な識別子を関連付けることです。
+DreamBooth は、出力をパーソナライズする為にモデルをファインチューニングする手法です。対象の画像を数枚与えると、事前に訓練されたテキストから画像へのモデルをファインチューニング出来ます。主な考え方は、その特定の対象に一意な識別子を関連付けることです。
 
-訓練用データセットを作る際は、語彙に含まれるトークンを識別子として使います。できれば、あまり使われない珍しいトークンを選びます。よく使われるトークンを選ぶと、モデルはそのトークンが元から持っている意味との結び付きを切り離すことまで学習しなければならないからです。
+訓練用データセットを作る際は、語彙に含まれるトークンを識別子として使います。出来れば、あまり使われない珍しいトークンを選びます。
 
-元の論文では、著者らは語彙内の希少なトークンを見つけ、そこから識別子を選びます。これにより、識別子が強い事前分布を持つリスクが減ります。モデルのすべての層をファインチューニングすることで最良の結果が得られたとも述べられています。
+よく使われるトークンを選ぶと、モデルはそのトークンが元から持っている意味との結び付きを切り離すことまで学習しなければならないからです。
+
+元の論文では、著者らは語彙内の希少なトークンを見つけ、そこから識別子を選びます。これにより、識別子が強い事前分布を持つリスクが減ります。モデルの全ての層をファインチューニングすることで最良の結果が得られたとも述べられています。
 
 **[Custom Diffusion](https://huggingface.co/docs/diffusers/main/en/training/custom_diffusion) で訓練する：**
 
 ![Custom Diffusion](https://huggingface.co/datasets/hf-vision/course-assets/resolve/main/synthetic-data-creation-diffusion-models/custom_diffusion.png?download=true)
 
-Custom Diffusion は、モデルを用途に合わせて調整できる非常に強力な手法です。前述の手法と同様に、少数のサンプルしか必要としません。特に優れているのは、複数の概念を同時に学習できる点です。
+Custom Diffusion は、モデルを用途に合わせて調整出来る非常に強力な手法です。前述の手法と同様に、少数のサンプルしか必要としません。特に優れているのは、複数の概念を同時に学習出来る点です。
 
 上で述べた拡散プロセスの一部とテキストエンコーダだけを訓練することで動作し、最適化するパラメータが少なくなります。従って、この方法でも高速なファインチューニングが可能です！
 

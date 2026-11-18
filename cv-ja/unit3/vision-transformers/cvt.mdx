@@ -4,11 +4,13 @@
 
 ## 振り返り
 
-CvT に入る前に、前セクションで扱った ViT のアーキテクチャを簡単に振り返っておくと、CvT の特徴が分かりやすくなります。ViT は各画像を固定長のトークン列（重ならないパッチ）に分解し、Multi-head Self Attention と Position-wise Feed-forward module (FFN) からなる標準的な Transformer 層を複数重ねて、分類のための大域的な関係をモデル化します。
+CvT に入る前に、前セクションで扱った ViT のアーキテクチャを簡単に振り返っておくと、CvT の特徴が分かり易くなります。ViT は各画像を固定長のトークン列（重ならないパッチ）に分解し、Multi-head Self Attention と Position-wise Feed-forward module (FFN) からなる標準的な Transformer 層を複数重ねて、分類の為の大域的な関係をモデル化します。
 
 ## 概要
 
-Convolutional Vision Transformer (CvT) は、論文 CvT: Introducing Convolutions to Vision Transformers [[2]](#cvt) で提案されたモデルです。著者は Haiping Wu、Bin Xiao、Noel Codella、Mengchen Liu、Xiyang Dai、Lu Yuan、Lei Zhang です。CvT は CNN の利点である _local receptive fields_（局所受容野）、_shared weights_（重みの共有）、_spatial subsampling_（空間サブサンプリング）と、_shift_、_scale_、_distortion invariance_（平行移動・スケール・歪みに対する不変性）を取り入れつつ、Transformer の利点である _dynamic attention_、_global context fusion_、_better generalization_（動的アテンション、大域的な文脈の融合、より良い汎化）も保っています。CvT は ViT と比べて計算効率を維持しながら、より高い性能を達成します。更に、畳み込みによって組み込まれた局所的な文脈構造のおかげで、CvT は位置埋め込みを必要としません。そのため、可変の入力解像度を必要とする幅広いビジョンタスクへの適応で有利になる可能性があります。
+Convolutional Vision Transformer (CvT) は、論文 CvT: Introducing Convolutions to Vision Transformers [[2]](#cvt) で提案されたモデルです。著者は Haiping Wu、Bin Xiao、Noel Codella、Mengchen Liu、Xiyang Dai、Lu Yuan、Lei Zhang です。CvT は CNN の利点である _local receptive fields_（局所受容野）、_shared weights_（重みの共有）、_spatial subsampling_（空間サブサンプリング）と、_shift_、_scale_、_distortion invariance_（平行移動・スケール・歪みに対する不変性）を取り入れつつ、Transformer の利点である _dynamic attention_、_global context fusion_、_better generalization_（動的アテンション、大域的な文脈の融合、より良い汎化）も保っています。CvT は ViT と比べて計算効率を維持しながら、より高い性能を達成します。
+
+更に、畳み込みによって組み込まれた局所的な文脈構造のお陰で、CvT は位置埋め込みを必要としません。その為、可変の入力解像度を必要とする幅広いビジョンタスクへの適応で有利になる可能性があります。
 
 ## アーキテクチャ
 
@@ -159,7 +161,7 @@ class ConvEmbed(nn.Module):
 
 - forward メソッドは入力テンソル x を受け取り、`self.proj` を使って畳み込み演算を適用します。出力は rearrange 関数で空間次元を平坦化するように変形されます。正規化層があれば、平坦化された表現に適用されます。最後に、テンソルを元の空間次元に戻して返します。
 
-まとめると、このモジュールは画像のパッチ単位の埋め込みのために設計されており、各パッチは畳み込み層で独立に処理され、埋め込まれた特徴に対して任意で正規化が適用されます。
+まとめると、このモジュールは画像のパッチ単位の埋め込みの為に設計されており、各パッチは畳み込み層で独立に処理され、埋め込まれた特徴に対して任意で正規化が適用されます。
 
 4. **Vision Transformer** ブロックの実装
 
@@ -261,7 +263,7 @@ class VisionTransformer(nn.Module):
             return x, cls_tokens
 ```
 
-このコードは Vision Transformer モジュールを定義しています。概要は次のとおりです。
+このコードは Vision Transformer モジュールを定義しています。概要は次の通りです。
 
 - **初期化**：`VisionTransformer` クラスは、パッチサイズ、埋め込み次元、層の数、アテンションのヘッド数、ドロップアウト率など、モデルのアーキテクチャを決める様々なパラメータで初期化されます。
 
@@ -269,7 +271,7 @@ class VisionTransformer(nn.Module):
 
 - **Transformer Blocks**：モデルは Transformer ブロック（`Block`）のスタックで構成されます。ブロックの数は depth パラメータで決まります。各ブロックには multi-head self-attention 機構と feedforward ニューラルネットワークが含まれます。
 
-- **Classification Token**：任意で、学習可能な classification token（`cls_token`）を入力列に追加できます。このトークンは分類タスクに使われます。
+- **Classification Token**：任意で、学習可能な classification token（`cls_token`）を入力列に追加出来ます。このトークンは分類タスクに使われます。
 
 - **Stochastic Depth**：Transformer ブロックには stochastic depth が適用され、訓練時にブロックのランダムな部分集合をスキップすることで正則化を改善します。これは `drop_path_rate` パラメータで制御されます。
 
@@ -362,8 +364,8 @@ class ConvolutionalVisionTransformer(nn.Module):
 
 - モデルは複数の段階で構成され、各段階は `VisionTransformer` クラスのインスタンスで表されます。
 - 各段階には、`spec` 辞書で指定されたパッチサイズ、ストライド、深さ、ヘッド数などの設定が適用されます。
-- `forward_features` メソッドは入力 x をすべての段階に通し、最終的な表現を集約します。
-- このクラスには、最終出力を生成するために線形変換を行う分類ヘッドがあります。
+- `forward_features` メソッドは入力 x を全ての段階に通し、最終的な表現を集約します。
+- このクラスには、最終出力を生成する為に線形変換を行う分類ヘッドがあります。
 - `forward` メソッドは `forward_features` を呼び出し、その結果を分類ヘッドに通します。
 - Vision Transformer の段階は stage0、stage1 のように順に名付けられ、各段階が `VisionTransformer` クラスのインスタンスとなって、Transformer の階層を形成します。
 
@@ -371,7 +373,7 @@ class ConvolutionalVisionTransformer(nn.Module):
 
 ## 試してみる
 
-PyTorch 実装の複雑な詳細に入らずに CvT を使いたい場合は、Hugging Face の `transformers` ライブラリを使うと簡単にできます。手順は次のとおりです。
+PyTorch 実装の複雑な詳細に入らずに CvT を使いたい場合は、Hugging Face の `transformers` ライブラリを使うと簡単に出来ます。手順は次の通りです。
 
 ```bash
 pip install transformers
@@ -381,7 +383,7 @@ CvT モデルのドキュメントは[こちら](https://huggingface.co/docs/tra
 
 ### 使い方
 
-COCO 2017 データセットの画像を 1,000 個の ImageNet クラスのいずれかに分類するために CvT モデルを使う方法は、次のとおりです。
+COCO 2017 データセットの画像を 1,000 個の ImageNet クラスのいずれかに分類する為に CvT モデルを使う方法は、次の通りです。
 
 ```python
 from transformers import AutoFeatureExtractor, CvtForImageClassification
@@ -404,11 +406,11 @@ print("予測クラス：", model.config.id2label[predicted_class_idx])
 
 ## 参考文献
 
-- [画像は16×16の単語に相当する：大規模画像認識のための Transformer](https://arxiv.org/abs/2010.11929) <a id="vision-transformer"></a>
+- [画像は16×16の単語に相当する：大規模画像認識の為の Transformer](https://arxiv.org/abs/2010.11929) <a id="vision-transformer"></a>
 - [CvT：Vision Transformer への畳み込みの導入](https://arxiv.org/abs/2103.15808) <a id="cvt"></a>
 - [データ効率の高い画像 Transformer の学習とアテンションによる蒸留](https://arxiv.org/abs/2012.12877) <a id="deit"></a>
 - [Vision Transformer の条件付き位置エンコーディング](https://arxiv.org/abs/2102.10882) <a id="cpvt"></a>
 - [Transformer の中の Transformer](https://arxiv.org/abs/2103.00112v3)<a id="tnt"></a>
 - [Tokens-to-Token ViT：ImageNet で Vision Transformer をゼロから学習する](https://arxiv.org/abs/2101.11986) <a id="t2t"></a>
-- [Pyramid Vision Transformer：畳み込みを使わない密な予測のための汎用バックボーン](https://arxiv.org/abs/2102.12122) <a id="pvt"></a>
+- [Pyramid Vision Transformer：畳み込みを使わない密な予測の為の汎用バックボーン](https://arxiv.org/abs/2102.12122) <a id="pvt"></a>
 - [CvT の実装](https://github.com/microsoft/CvT/tree/main) <a id="cvt-imp"></a>

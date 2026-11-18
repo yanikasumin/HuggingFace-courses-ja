@@ -3,28 +3,34 @@
 ![DiNAT アーキテクチャ図](https://huggingface.co/datasets/hf-vision/course-assets/resolve/main/dinat_images/dina_comparison.png)
 ## アーキテクチャの概要
 
-Dilated Neighborhood Attention Transformer（DiNAT）は、階層型の Vision Transformer です。深層学習モデルの性能を高めるために設計されており、特に視覚認識タスクを対象としています。従来の Transformer では、モデルが大きくなると計算コストが膨らみやすい self-attention を使います。これに対して DiNAT は、Dilated Neighborhood Attention（DiNA）を導入しました。DiNA は Neighborhood Attention（NA）と呼ばれる局所的な attention の仕組みを拡張したもので、計算コストを増やさずに疎なグローバル attention を取り入れます。これにより、より広い文脈を捉えられるようになり、受容野は指数的に広がり、長距離の依存関係も効率よくモデル化できます。
+Dilated Neighborhood Attention Transformer（DiNAT）は、階層型の Vision Transformer です。深層学習モデルの性能を高める為に設計されており、特に視覚認識タスクを対象としています。
+
+従来の Transformer では、モデルが大きくなると計算コストが膨らみ易い self-attention を使います。これに対して DiNAT は、Dilated Neighborhood Attention（DiNA）を導入しました。DiNA は Neighborhood Attention（NA）と呼ばれる局所的な attention の仕組みを拡張したもので、計算コストを増やさずに疎なグローバル attention を取り入れます。これにより、より広い文脈を捉えられるようになり、受容野は指数的に広がり、長距離の依存関係も効率よくモデル化出来ます。
 
 DiNAT のアーキテクチャは NA と DiNA の両方を組み合わせています。その結果、局所性を保ち、平行移動等変性を維持しながら、下流の視覚タスクで性能を大きく高められる Transformer モデルになっています。実験では、様々な視覚認識タスクで、NAT、Swin、ConvNeXt といった強力なベースラインモデルを DiNAT が上回ることが示されています。
 
 ## DiNAT の中核：Neighborhood Attention
 
-DiNAT の基盤となるのが Neighborhood Attention（NA）です。これはコンピュータビジョン向けに設計されたアテンション機構で、画像内のピクセル同士の関係を効率よく捉えます。たとえば、画像全体の内容を理解するために、各ピクセルが周囲のピクセルの情報を参照する仕組みを考えてみてください。NA の主な特徴を見ていきましょう。
+DiNAT の基盤となるのが Neighborhood Attention（NA）です。これはコンピュータビジョン向けに設計されたアテンション機構で、画像内のピクセル同士の関係を効率よく捉えます。例えば、画像全体の内容を理解する為に、各ピクセルが周囲のピクセルの情報を参照する仕組みを考えてみて下さい。NA の主な特徴を見ていきましょう。
 
-- **局所的な関係**：NA は局所的な関係を捉えます。各ピクセルが、すぐ周囲の情報を参考にできる仕組みです。身の回りの近いものから順に見て場面を理解し、そのあと全体に目を向ける、私たちの見方に似ています。
+- **局所的な関係**：NA は局所的な関係を捉えます。各ピクセルが、すぐ周囲の情報を参考に出来る仕組みです。身の回りの近いものから順に見て場面を理解し、そのあと全体に目を向ける、私たちの見方に似ています。
 
 - **受容野**：NA では、計算量を大きく増やさずに、各ピクセルが周囲への理解を広げられます。必要に応じて対象範囲、つまり「注意を向ける範囲」を動的に広げ、より遠くの近傍まで含められます。
 
-要するに Neighborhood Attention は、画像内のピクセルが周囲に注目できるようにする手法です。局所的な関係を効率よく理解する助けになります。こうした局所的な理解を積み重ねることで、計算リソースを抑えながら、画像全体の詳細な理解につなげます。
+要するに Neighborhood Attention は、画像内のピクセルが周囲に注目出来るようにする手法です。局所的な関係を効率よく理解する助けになります。こうした局所的な理解を積み重ねることで、計算リソースを抑えながら、画像全体の詳細な理解につなげます。
 
 ![DiNAT アーキテクチャ図](https://huggingface.co/datasets/hf-vision/course-assets/resolve/main/dinat_images/dinat_architecture.png)
 
 ## DiNAT の発展
 
-Dilated Neighborhood Attention Transformer の開発は、Vision Transformer における大きな進歩です。既存の attention の仕組みが抱えていた限界に対処しています。当初、Neighborhood Attention は局所性と効率をもたらすために導入されましたが、グローバルな文脈を捉える点では不十分でした。この限界を克服するために考え出されたのが、Dilated Neighborhood Attention（DiNA）という考え方です。DiNA は NA を拡張し、近傍をより大きく疎な領域へ広げます。これにより、よりグローバルな文脈を捉えられるようになり、計算負荷を増やさずに受容野を指数的に広げられます。次の発展が DiNAT です。局所的な NA と、広がったグローバルな文脈を持つ DiNA を組み合わせています。モデル全体を通して dilation を段階的に変えることで受容野を最適化し、特徴学習をシンプルにしています。
+Dilated Neighborhood Attention Transformer の開発は、Vision Transformer における大きな進歩です。既存の attention の仕組みが抱えていた限界に対処しています。当初、Neighborhood Attention は局所性と効率をもたらす為に導入されましたが、グローバルな文脈を捉える点では不十分でした。
+
+この限界を克服する為に考え出されたのが、Dilated Neighborhood Attention（DiNA）という考え方です。DiNA は NA を拡張し、近傍をより大きく疎な領域へ広げます。これにより、よりグローバルな文脈を捉えられるようになり、計算負荷を増やさずに受容野を指数的に広げられます。
+
+次の発展が DiNAT です。局所的な NA と、広がったグローバルな文脈を持つ DiNA を組み合わせています。モデル全体を通して dilation を段階的に変えることで受容野を最適化し、特徴学習をシンプルにしています。
 
 ## DiNAT による画像分類
-🤗 transformers を使うと、[shi-labs/dinat-mini-in1k-224](https://huggingface.co/shi-labs/dinat-small-in1k-224) モデルで ImageNet-1k の画像を分類できます。自分のユースケース向けにファインチューニングすることもできます。
+🤗 transformers を使うと、[shi-labs/dinat-mini-in1k-224](https://huggingface.co/shi-labs/dinat-small-in1k-224) モデルで ImageNet-1k の画像を分類出来ます。自分のユースケース向けにファインチューニングすることも出来ます。
 
 ```python
 from transformers import AutoImageProcessor, DinatForImageClassification
