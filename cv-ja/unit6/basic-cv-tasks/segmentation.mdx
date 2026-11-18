@@ -15,19 +15,19 @@
 
 用途や目的に応じて、適切なセグメンテーション手法は異なります。
 
-最近では、1つのモデルで3種類全てのセグメンテーションに対応出来るものも有ります。例えば、Meta が開発した新しいモデル Mask2Former は、パノプティックセグメンテーション用のデータセットだけを使って、3種類全てに対応出来ます。詳しくはこちらの[記事](https://huggingface.co/blog/mask2former)をご覧下さい。
+最近では、1つのモデルで3種類全てのセグメンテーションに対応出来るものも有ります。例えば、Meta が開発した新しいモデル Mask2Former は、パノプティックセグメンテーション用のデータセットだけを使って、3種類全てに対応出来ます。詳しくはこちらの[記事](https://huggingface.co/blog/mask2former)をご覧ください。
 
 ### 現代的なアプローチ：Vision Transformer を使ったセグメンテーション
 
-画像セグメンテーションでよく使われる U-Net というネットワークを聞いたことがあるかもしれません。U-Net は複数の畳み込み層から構成され、主に2つの段階で処理を行います。先ず、ダウンサンプリングによって画像を圧縮し、特徴を抽出します。次に、アップサンプリングによって画像を元のサイズに戻し、細かな領域まで分割します。
+画像セグメンテーションでよく使われる U-Net というネットワークを聞いたことがあるかもしれません。U-Net は複数の畳み込み層から構成され、主に2つの段階で処理を行います。まず、ダウンサンプリングによって画像を圧縮し、特徴を抽出します。次に、アップサンプリングによって画像を元のサイズに戻し、細かな領域まで分割します。
 
 コンピュータビジョンはかつて畳み込みモデルが主流でしたが、最近では Vision Transformer のアプローチへ移行しつつあります。例えば、*[Segment Anything Model（SAM）](https://arxiv.org/abs/2304.02643)* が有ります。これは、2023年4月に *Meta AI Research（FAIR）* が発表した、プロンプトを使ってセグメンテーションを行う人気のモデルです。Vision Transformer（ViT）を基盤としており、画像内で切り出したい対象を言葉で指定出来るような、プロンプト対応のセグメンテーションモデルを目指して開発されました。新しい画像に対してもゼロショット転移が可能です。
 
 強みの1つは、1,100万枚の画像と10億を超えるマスクを含む、利用可能な中でも最大規模のデータセットで訓練されたことです。
 
-先ずは、いくつかの画像を使って [Meta のデモ](https://segment-anything.com/)を試してみて下さい。更に、Transformers の[モデル](https://huggingface.co/ybelkada/segment-anything)でも試せます。
+まずは、いくつかの画像を使って [Meta のデモ](https://segment-anything.com/)を試してみてください。更に、Transformers の[モデル](https://huggingface.co/ybelkada/segment-anything)でも試せます。
 
-Transformers でこのモデルを使う例を紹介します。先ず `mask-generation` パイプラインを初期化します。次に、画像をパイプラインに渡して推論します。
+Transformers でこのモデルを使う例を紹介します。まず `mask-generation` パイプラインを初期化します。次に、画像をパイプラインに渡して推論します。
 
 ```python
 from transformers import pipeline
@@ -39,7 +39,7 @@ raw_image = Image.open("path/to/image").convert("RGB")
 masks = pipe(raw_image)
 ```
 
-モデルの使い方の詳細は[ドキュメント](https://huggingface.co/docs/transformers/main/en/model_doc/sam)をご覧下さい。
+モデルの使い方の詳細は[ドキュメント](https://huggingface.co/docs/transformers/main/en/model_doc/sam)をご覧ください。
 
 ### セグメンテーションモデルはどう評価する？
 
