@@ -4,11 +4,11 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>QA パイプラインにおける高速トークナイザ | Hugging Face 学習コース日本語版</title>
-<meta name="description" content="QA パイプラインにおける高速トークナイザ｜LLM コース（大規模言語モデルと Transformers を学ぶコース）の日本語訳。{:else} ここでは question-answering パイプライン を詳しく見て、前のセクションでエンティティをグループ化した時のように、オフセットを活用して文脈から手元の質問…">
+<meta name="description" content="QA パイプラインにおける高速トークナイザ｜LLM コース（大規模言語モデルと Transformers を学ぶコース）の日本語訳。{:else} ここでは question-answering パイプライン を取り上げます。">
 <meta name="robots" content="index, follow">
 <link rel="canonical" href="https://yanikasumin.github.io/HuggingFace-courses-ja/llm/chapter6/3b.html">
 <meta property="og:title" content="QA パイプラインにおける高速トークナイザ | Hugging Face 学習コース日本語版">
-<meta property="og:description" content="QA パイプラインにおける高速トークナイザ｜LLM コース（大規模言語モデルと Transformers を学ぶコース）の日本語訳。{:else} ここでは question-answering パイプライン を詳しく見て、前のセクションでエンティティをグループ化した時のように、オフセットを活用して文脈から手元の質問…">
+<meta property="og:description" content="QA パイプラインにおける高速トークナイザ｜LLM コース（大規模言語モデルと Transformers を学ぶコース）の日本語訳。{:else} ここでは question-answering パイプライン を取り上げます。">
 <meta property="og:image" content="https://yanikasumin.github.io/HuggingFace-courses-ja/og-llm.png">
 <meta property="og:image:width" content="1200">
 <meta property="og:image:height" content="630">
@@ -20,7 +20,7 @@
 <meta property="og:locale" content="ja_JP">
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:title" content="QA パイプラインにおける高速トークナイザ | Hugging Face 学習コース日本語版">
-<meta name="twitter:description" content="QA パイプラインにおける高速トークナイザ｜LLM コース（大規模言語モデルと Transformers を学ぶコース）の日本語訳。{:else} ここでは question-answering パイプライン を詳しく見て、前のセクションでエンティティをグループ化した時のように、オフセットを活用して文脈から手元の質問…">
+<meta name="twitter:description" content="QA パイプラインにおける高速トークナイザ｜LLM コース（大規模言語モデルと Transformers を学ぶコース）の日本語訳。{:else} ここでは question-answering パイプライン を取り上げます。">
 <meta name="twitter:image" content="https://yanikasumin.github.io/HuggingFace-courses-ja/og-llm.png">
 <link rel="icon" type="image/svg+xml" href="https://yanikasumin.github.io/HuggingFace-courses-ja/favicon.svg">
 <link rel="icon" type="image/x-icon" href="https://yanikasumin.github.io/HuggingFace-courses-ja/favicon.ico">
@@ -29,7 +29,7 @@
 <link rel="apple-touch-icon" sizes="180x180" href="https://yanikasumin.github.io/HuggingFace-courses-ja/apple-touch-icon.png">
 <link rel="manifest" href="https://yanikasumin.github.io/HuggingFace-courses-ja/site.webmanifest">
 <meta name="theme-color" content="#0B0F19">
-<script type="application/ld+json">{"@context": "https://schema.org", "@graph": [{"@type": "BreadcrumbList", "itemListElement": [{"@type": "ListItem", "position": 1, "name": "Hugging Face 学習コース日本語版", "item": "https://yanikasumin.github.io/HuggingFace-courses-ja/"}, {"@type": "ListItem", "position": 2, "name": "LLM コース", "item": "https://yanikasumin.github.io/HuggingFace-courses-ja/llm/"}, {"@type": "ListItem", "position": 3, "name": "QA パイプラインにおける高速トークナイザ"}]}, {"@type": "LearningResource", "name": "QA パイプラインにおける高速トークナイザ", "description": "QA パイプラインにおける高速トークナイザ｜LLM コース（大規模言語モデルと Transformers を学ぶコース）の日本語訳。{:else} ここでは question-answering パイプライン を詳しく見て、前のセクションでエンティティをグループ化した時のように、オフセットを活用して文脈から手元の質問…", "url": "https://yanikasumin.github.io/HuggingFace-courses-ja/llm/chapter6/3b.html", "inLanguage": "ja", "learningResourceType": "course material", "educationalLevel": "beginner to advanced", "isPartOf": {"@type": "Course", "name": "LLM コース", "url": "https://yanikasumin.github.io/HuggingFace-courses-ja/llm/", "provider": {"@type": "Organization", "name": "Hugging Face", "sameAs": "https://huggingface.co"}}}]}</script>
+<script type="application/ld+json">{"@context": "https://schema.org", "@graph": [{"@type": "BreadcrumbList", "itemListElement": [{"@type": "ListItem", "position": 1, "name": "Hugging Face 学習コース日本語版", "item": "https://yanikasumin.github.io/HuggingFace-courses-ja/"}, {"@type": "ListItem", "position": 2, "name": "LLM コース", "item": "https://yanikasumin.github.io/HuggingFace-courses-ja/llm/"}, {"@type": "ListItem", "position": 3, "name": "QA パイプラインにおける高速トークナイザ"}]}, {"@type": "LearningResource", "name": "QA パイプラインにおける高速トークナイザ", "description": "QA パイプラインにおける高速トークナイザ｜LLM コース（大規模言語モデルと Transformers を学ぶコース）の日本語訳。{:else} ここでは question-answering パイプライン を取り上げます。", "url": "https://yanikasumin.github.io/HuggingFace-courses-ja/llm/chapter6/3b.html", "inLanguage": "ja", "learningResourceType": "course material", "educationalLevel": "beginner to advanced", "isPartOf": {"@type": "Course", "name": "LLM コース", "url": "https://yanikasumin.github.io/HuggingFace-courses-ja/llm/", "provider": {"@type": "Organization", "name": "Hugging Face", "sameAs": "https://huggingface.co"}}}]}</script>
 <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-1676481412757711" crossorigin="anonymous"></script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -54,11 +54,11 @@ window.MathJax = { tex: { inlineMath: [['$', '$'], ['\\(', '\\)']], displayMath:
 <div class="layout">
 <aside class="sidebar">
 <div class="sidebar-course"><a href="../index.html">LLM コース</a><br><span class="side-desc">大規模言語モデルと Transformers を学ぶコース</span><br><a class="side-official" href="https://huggingface.co/learn/llm-course" target="_blank" rel="noopener">公式コース（英語）</a></div>
-<p class="side-group">その他のセクション（chapter0）</p>
+<p class="side-group">第0章 セットアップ</p>
 <ul class="side-list">
 <li><a class="side-link" href="../chapter0/1.html">はじめに</a></li>
 </ul>
-<p class="side-group">その他のセクション（chapter1）</p>
+<p class="side-group">第1章 Transformer モデル</p>
 <ul class="side-list">
 <li><a class="side-link" href="../chapter1/1.html">はじめに</a></li>
 <li><a class="side-link" href="../chapter1/2.html">自然言語処理と大規模言語モデル</a></li>
@@ -70,9 +70,9 @@ window.MathJax = { tex: { inlineMath: [['$', '$'], ['\\(', '\\)']], displayMath:
 <li><a class="side-link" href="../chapter1/8.html">LLM のテキスト生成と推論を深く掘り下げる</a></li>
 <li><a class="side-link" href="../chapter1/9.html">バイアスと限界</a></li>
 <li><a class="side-link" href="../chapter1/10.html">まとめ</a></li>
-<li><a class="side-link" href="../chapter1/11.html">テストの時間です！</a></li>
+<li><a class="side-link" href="../chapter1/11.html">テストの時間です</a></li>
 </ul>
-<p class="side-group">その他のセクション（chapter2）</p>
+<p class="side-group">第2章 🤗 Transformers の使い方</p>
 <ul class="side-list">
 <li><a class="side-link" href="../chapter2/1.html">はじめに</a></li>
 <li><a class="side-link" href="../chapter2/2.html">パイプラインの裏側</a></li>
@@ -80,41 +80,41 @@ window.MathJax = { tex: { inlineMath: [['$', '$'], ['\\(', '\\)']], displayMath:
 <li><a class="side-link" href="../chapter2/4.html">トークナイザ</a></li>
 <li><a class="side-link" href="../chapter2/5.html">複数のシーケンスを扱う</a></li>
 <li><a class="side-link" href="../chapter2/6.html">全てを組み合わせる</a></li>
-<li><a class="side-link" href="../chapter2/7.html">基本的な使い方はこれで完了です！</a></li>
+<li><a class="side-link" href="../chapter2/7.html">基本的な使い方はこれで完了です</a></li>
 <li><a class="side-link" href="../chapter2/8.html">推論デプロイの最適化</a></li>
 <li><a class="side-link" href="../chapter2/9.html">章末クイズ</a></li>
 </ul>
-<p class="side-group">その他のセクション（chapter3）</p>
+<p class="side-group">第3章 事前学習済みモデルのファインチューニング</p>
 <ul class="side-list">
 <li><a class="side-link" href="../chapter3/1.html">はじめに</a></li>
 <li><a class="side-link" href="../chapter3/2.html">データを処理する</a></li>
 <li><a class="side-link" href="../chapter3/3.html">Trainer API でモデルをファインチューニングする</a></li>
 <li><a class="side-link" href="../chapter3/4.html">完全な学習ループ</a></li>
 <li><a class="side-link" href="../chapter3/5.html">学習曲線を理解する</a></li>
-<li><a class="side-link" href="../chapter3/6.html">ファインチューニング、チェック！</a></li>
+<li><a class="side-link" href="../chapter3/6.html">ファインチューニング、チェック</a></li>
 <li><a class="side-link" href="../chapter3/7.html">章末の認定証</a></li>
 </ul>
-<p class="side-group">その他のセクション（chapter4）</p>
+<p class="side-group">第4章 モデルとトークナイザの共有</p>
 <ul class="side-list">
 <li><a class="side-link" href="../chapter4/1.html">Hugging Face Hub</a></li>
 <li><a class="side-link" href="../chapter4/2.html">事前学習済みモデルを使う</a></li>
 <li><a class="side-link" href="../chapter4/3.html">事前学習済みモデルを共有する</a></li>
 <li><a class="side-link" href="../chapter4/4.html">モデルカードを作る</a></li>
-<li><a class="side-link" href="../chapter4/5.html">Part 1 修了！</a></li>
+<li><a class="side-link" href="../chapter4/5.html">Part 1 修了</a></li>
 <li><a class="side-link" href="../chapter4/6.html">章末クイズ</a></li>
 </ul>
-<p class="side-group">その他のセクション（chapter5）</p>
+<p class="side-group">第5章 🤗 Datasets ライブラリ</p>
 <ul class="side-list">
 <li><a class="side-link" href="../chapter5/1.html">はじめに</a></li>
 <li><a class="side-link" href="../chapter5/2.html">データセットが Hub にない場合は？</a></li>
 <li><a class="side-link" href="../chapter5/3.html">データを切り分けて加工しよう</a></li>
-<li><a class="side-link" href="../chapter5/4.html">ビッグデータ？🤗 Datasets にお任せ！</a></li>
+<li><a class="side-link" href="../chapter5/4.html">ビッグデータ？🤗 Datasets にお任せ</a></li>
 <li><a class="side-link" href="../chapter5/5.html">独自のデータセットを作成する</a></li>
 <li><a class="side-link" href="../chapter5/6.html">FAISS によるセマンティック検索</a></li>
-<li><a class="side-link" href="../chapter5/7.html">🤗 Datasets、チェック！</a></li>
+<li><a class="side-link" href="../chapter5/7.html">🤗 Datasets、チェック</a></li>
 <li><a class="side-link" href="../chapter5/8.html">章末クイズ</a></li>
 </ul>
-<p class="side-group">その他のセクション（chapter6）</p>
+<p class="side-group">第6章 🤗 Tokenizers ライブラリ</p>
 <ul class="side-list">
 <li><a class="side-link" href="1.html">はじめに</a></li>
 <li><a class="side-link" href="2.html">既存のトークナイザを基に新しいトークナイザを学習する</a></li>
@@ -125,10 +125,10 @@ window.MathJax = { tex: { inlineMath: [['$', '$'], ['\\(', '\\)']], displayMath:
 <li><a class="side-link" href="6.html">WordPiece によるトークン化</a></li>
 <li><a class="side-link" href="7.html">Unigram によるトークン化</a></li>
 <li><a class="side-link" href="8.html">構成要素を組み合わせてトークナイザを構築する</a></li>
-<li><a class="side-link" href="9.html">トークナイザ、チェック！</a></li>
+<li><a class="side-link" href="9.html">トークナイザ、チェック</a></li>
 <li><a class="side-link" href="10.html">章末クイズ</a></li>
 </ul>
-<p class="side-group">その他のセクション（chapter7）</p>
+<p class="side-group">第7章 古典的な NLP タスク</p>
 <ul class="side-list">
 <li><a class="side-link" href="../chapter7/1.html">はじめに</a></li>
 <li><a class="side-link" href="../chapter7/2.html">トークン分類</a></li>
@@ -140,7 +140,7 @@ window.MathJax = { tex: { inlineMath: [['$', '$'], ['\\(', '\\)']], displayMath:
 <li><a class="side-link" href="../chapter7/8.html">LLM を使いこなす</a></li>
 <li><a class="side-link" href="../chapter7/9.html">章末クイズ</a></li>
 </ul>
-<p class="side-group">その他のセクション（chapter8）</p>
+<p class="side-group">第8章 助けを求める方法</p>
 <ul class="side-list">
 <li><a class="side-link" href="../chapter8/1.html">はじめに</a></li>
 <li><a class="side-link" href="../chapter8/2.html">エラーが出たときにすること</a></li>
@@ -148,10 +148,10 @@ window.MathJax = { tex: { inlineMath: [['$', '$'], ['\\(', '\\)']], displayMath:
 <li><a class="side-link" href="../chapter8/4.html">学習パイプラインをデバッグする</a></li>
 <li><a class="side-link" href="../chapter8/4_tf.html">学習パイプラインをデバッグする</a></li>
 <li><a class="side-link" href="../chapter8/5.html">よい Issue の書き方</a></li>
-<li><a class="side-link" href="../chapter8/6.html">パート2 完了！</a></li>
+<li><a class="side-link" href="../chapter8/6.html">パート2 完了</a></li>
 <li><a class="side-link" href="../chapter8/7.html">章末クイズ</a></li>
 </ul>
-<p class="side-group">その他のセクション（chapter9）</p>
+<p class="side-group">第9章 デモの構築と共有</p>
 <ul class="side-list">
 <li><a class="side-link" href="../chapter9/1.html">Gradio 入門</a></li>
 <li><a class="side-link" href="../chapter9/2.html">最初のデモを作る</a></li>
@@ -160,20 +160,20 @@ window.MathJax = { tex: { inlineMath: [['$', '$'], ['\\(', '\\)']], displayMath:
 <li><a class="side-link" href="../chapter9/5.html">Hugging Face Hub との連携</a></li>
 <li><a class="side-link" href="../chapter9/6.html">`Interface` の高度な機能</a></li>
 <li><a class="side-link" href="../chapter9/7.html">Gradio Blocks 入門</a></li>
-<li><a class="side-link" href="../chapter9/8.html">Gradio、チェック！</a></li>
+<li><a class="side-link" href="../chapter9/8.html">Gradio、チェック</a></li>
 <li><a class="side-link" href="../chapter9/9.html">章末クイズ</a></li>
 </ul>
-<p class="side-group">その他のセクション（chapter10）</p>
+<p class="side-group">第10章 高品質なデータセットのキュレーション</p>
 <ul class="side-list">
 <li><a class="side-link" href="../chapter10/1.html">Argilla 入門</a></li>
 <li><a class="side-link" href="../chapter10/2.html">Argilla インスタンスをセットアップする</a></li>
 <li><a class="side-link" href="../chapter10/3.html">データセットを Argilla に読み込む</a></li>
 <li><a class="side-link" href="../chapter10/4.html">データセットにアノテーションを付ける</a></li>
 <li><a class="side-link" href="../chapter10/5.html">アノテーション済みデータセットを使う</a></li>
-<li><a class="side-link" href="../chapter10/6.html">Argilla、チェック！</a></li>
+<li><a class="side-link" href="../chapter10/6.html">Argilla、チェック</a></li>
 <li><a class="side-link" href="../chapter10/7.html">章末クイズ</a></li>
 </ul>
-<p class="side-group">その他のセクション（chapter11）</p>
+<p class="side-group">第11章 大規模言語モデルのファインチューニング</p>
 <ul class="side-list">
 <li><a class="side-link" href="../chapter11/1.html">教師ありファインチューニング</a></li>
 <li><a class="side-link" href="../chapter11/2.html">チャットテンプレート</a></li>
@@ -181,9 +181,9 @@ window.MathJax = { tex: { inlineMath: [['$', '$'], ['\\(', '\\)']], displayMath:
 <li><a class="side-link" href="../chapter11/4.html">LoRA（低ランク適応）</a></li>
 <li><a class="side-link" href="../chapter11/5.html">評価</a></li>
 <li><a class="side-link" href="../chapter11/6.html">まとめ</a></li>
-<li><a class="side-link" href="../chapter11/7.html">テストの時間です！</a></li>
+<li><a class="side-link" href="../chapter11/7.html">テストの時間です</a></li>
 </ul>
-<p class="side-group">その他のセクション（chapter12）</p>
+<p class="side-group">第12章 推論モデルの構築</p>
 <ul class="side-list">
 <li><a class="side-link" href="../chapter12/1.html">学生のための Open R1</a></li>
 <li><a class="side-link" href="../chapter12/2.html">強化学習と LLM におけるその役割の紹介</a></li>
@@ -194,7 +194,7 @@ window.MathJax = { tex: { inlineMath: [['$', '$'], ['\\(', '\\)']], displayMath:
 <li><a class="side-link" href="../chapter12/6.html">実践演習： Unsloth で GRPO</a></li>
 <li><a class="side-link" href="../chapter12/7.html">近日公開...</a></li>
 </ul>
-<p class="side-group">その他のセクション（events）</p>
+<p class="side-group">コースイベント</p>
 <ul class="side-list">
 <li><a class="side-link" href="../events/1.html">ライブセッションとワークショップ</a></li>
 <li><a class="side-link" href="../events/2.html">パート2公開イベント</a></li>
@@ -210,14 +210,14 @@ window.MathJax = { tex: { inlineMath: [['$', '$'], ['\\(', '\\)']], displayMath:
 <p>{#if fw === 'pt'}</p>
 <p>{:else}</p>
 <p>{/if}</p>
-<p>ここでは <code>question-answering</code> <a class="gloss-link" href="../../glossary/index.html#term-pipeline" data-title="パイプライン（pipeline）" data-def="学習済みモデルを少ない記述で動かすために、Transformersライブラリが備える仕組みをパイプラインという。自分で手順を一つずつ書かなくても、感情の判定や要約といった課題の名前を指定するだけで、入力をモデルに合う形に変換する処理、モデルによる処理、結果を使いやすい形に整える処理をまとめて行ってくれる。そのため、モデルが自分の目的に使えそうかをまず試す際の入口として使われる。" data-def-html="&lt;a class=&quot;gloss-link&quot; href=&quot;../../glossary/index.html#term-training&quot; data-title=&quot;学習（訓練）（Training）&quot; data-def=&quot;学習は、機械学習のモデルにデータを与え、そのデータに合うようにモデル内部の数値を調整していく過程である。モデルは予測と正解のずれを手がかりに数値を少しずつ直し、ずれが小さくなる方向へ進んでいく。この過程を繰り返すことで、個々の例を覚えるだけでなく、見たことのないデータに対しても予測できるようになることが期待される。&quot;&gt;学習&lt;/a&gt;済みモデルを少ない記述で動かすために、&lt;a class=&quot;gloss-link&quot; href=&quot;../../glossary/index.html#term-transformers&quot; data-title=&quot;Transformers&quot; data-def=&quot;文章、画像、音声などを扱う学習済みモデルを、名前を指定するだけで取得して試せるようにしたPythonのライブラリを、Hugging FaceがTransformersとして提供している。モデルごとにばらばらになりがちな読み込み、学習、予測の書き方を共通の形にそろえているため、一つのモデルの使い方を覚えれば他のモデルにも応用しやすい。その手軽さから、新しいモデルを試す際の標準的な入り口として広く使われる。&quot;&gt;Transformers&lt;/a&gt;&lt;a class=&quot;gloss-link&quot; href=&quot;../../glossary/index.html#term-library&quot; data-title=&quot;ライブラリ（Library）&quot; data-def=&quot;プログラムでよく使う機能をあらかじめ部品として用意し、必要なときに呼び出して使えるようにしたものがライブラリだ。自分で一から書く代わりに、検証された部品を組み合わせることで、開発の手間と誤りを減らせる。機械学習では、モデルの学習や推論の仕組みを提供するライブラリが土台になっており、目的に合ったライブラリを選ぶことが開発の出発点になる。&quot;&gt;ライブラリ&lt;/a&gt;が備える仕組みをパイプラインという。自分で手順を一つずつ書かなくても、感情の判定や要約といった課題の名前を指定するだけで、入力をモデルに合う形に変換する処理、モデルによる処理、結果を使いやすい形に整える処理をまとめて行ってくれる。そのため、モデルが自分の目的に使えそうかをまず試す際の入口として使われる。">パイプライン</a>を詳しく見て、前のセクションでエンティティをグループ化した時のように、オフセットを活用して文脈から手元の質問への回答を取り出す方法を見ていきます。次に、切り詰められることになる非常に長い文脈への対処方法を見ます。<a class="gloss-link" href="../../glossary/index.html#term-question-answering" data-title="質問応答（Question Answering）" data-def="自然な言葉で書かれた質問に対して、単に似た文書を探すのではなく、質問が求めている事柄そのものを答えとして返す処理が質問応答だ。資料の中から根拠を探して答える場合と、モデルが持つ知識から答える場合があり、知りたいことを直接得たい場面で役立つ。" data-def-html="自然な言葉で書かれた質問に対して、単に似た文書を探すのではなく、質問が求めている事柄そのものを答えとして返す処理が質問応答だ。資料の中から根拠を探して答える場合と、モデルが持つ知識から答える場合があり、知りたいことを直接得たい場面で役立つ。">質問応答</a>タスクに興味がなければ、このセクションは読み飛ばしても構いません。</p>
+<p>ここでは <code>question-answering</code> <a class="gloss-link" href="../../glossary/index.html#term-pipeline" data-title="パイプライン（pipeline）" data-def="学習済みモデルを少ない記述で動かすために、Transformersライブラリが備える仕組みをパイプラインという。自分で手順を一つずつ書かなくても、感情の判定や要約といった課題の名前を指定するだけで、入力をモデルに合う形に変換する処理、モデルによる処理、結果を使いやすい形に整える処理をまとめて行ってくれる。そのため、モデルが自分の目的に使えそうかをまず試す際の入口として使われる。" data-def-html="&lt;a class=&quot;gloss-link&quot; href=&quot;../../glossary/index.html#term-training&quot; data-title=&quot;学習（訓練）（Training）&quot; data-def=&quot;学習は、機械学習のモデルにデータを与え、そのデータに合うようにモデル内部の数値を調整していく過程である。モデルは予測と正解のずれを手がかりに数値を少しずつ直し、ずれが小さくなる方向へ進んでいく。この過程を繰り返すことで、個々の例を覚えるだけでなく、見たことのないデータに対しても予測できるようになることが期待される。&quot;&gt;学習&lt;/a&gt;済みモデルを少ない記述で動かすために、&lt;a class=&quot;gloss-link&quot; href=&quot;../../glossary/index.html#term-transformers&quot; data-title=&quot;Transformers&quot; data-def=&quot;文章、画像、音声などを扱う学習済みモデルを、名前を指定するだけで取得して試せるようにしたPythonのライブラリを、Hugging FaceがTransformersとして提供している。モデルごとにばらばらになりがちな読み込み、学習、予測の書き方を共通の形にそろえているため、一つのモデルの使い方を覚えれば他のモデルにも応用しやすい。その手軽さから、新しいモデルを試す際の標準的な入り口として広く使われる。&quot;&gt;Transformers&lt;/a&gt;&lt;a class=&quot;gloss-link&quot; href=&quot;../../glossary/index.html#term-library&quot; data-title=&quot;ライブラリ（Library）&quot; data-def=&quot;プログラムでよく使う機能をあらかじめ部品として用意し、必要なときに呼び出して使えるようにしたものがライブラリだ。自分で一から書く代わりに、検証された部品を組み合わせることで、開発の手間と誤りを減らせる。機械学習では、モデルの学習や推論の仕組みを提供するライブラリが土台になっており、目的に合ったライブラリを選ぶことが開発の出発点になる。&quot;&gt;ライブラリ&lt;/a&gt;が備える仕組みをパイプラインという。自分で手順を一つずつ書かなくても、感情の判定や要約といった課題の名前を指定するだけで、入力をモデルに合う形に変換する処理、モデルによる処理、結果を使いやすい形に整える処理をまとめて行ってくれる。そのため、モデルが自分の目的に使えそうかをまず試す際の入口として使われる。">パイプライン</a>を取り上げます。前のセクションでエンティティをグループ化した時と同様に、オフセットを使って、文脈の中から質問への回答を取り出す方法を見ます。続いて、長過ぎて切り詰めが必要になる文脈への対処方法も見ます。<a class="gloss-link" href="../../glossary/index.html#term-question-answering" data-title="質問応答（Question Answering）" data-def="自然な言葉で書かれた質問に対して、単に似た文書を探すのではなく、質問が求めている事柄そのものを答えとして返す処理が質問応答だ。資料の中から根拠を探して答える場合と、モデルが持つ知識から答える場合があり、知りたいことを直接得たい場面で役立つ。" data-def-html="自然な言葉で書かれた質問に対して、単に似た文書を探すのではなく、質問が求めている事柄そのものを答えとして返す処理が質問応答だ。資料の中から根拠を探して答える場合と、モデルが持つ知識から答える場合があり、知りたいことを直接得たい場面で役立つ。">質問応答</a>タスクに興味がなければ、このセクションは読み飛ばして構いません。</p>
 <p>{#if fw === 'pt'}</p>
 <div class="youtube-embed"><iframe src="https://www.youtube-nocookie.com/embed/_wxyB3j3mk4" title="YouTube video" loading="lazy" allowfullscreen referrerpolicy="strict-origin-when-cross-origin"></iframe></div>
 <p>{:else}</p>
 <div class="youtube-embed"><iframe src="https://www.youtube-nocookie.com/embed/b3u8RzBCX9Y" title="YouTube video" loading="lazy" allowfullscreen referrerpolicy="strict-origin-when-cross-origin"></iframe></div>
 <p>{/if}</p>
 <h2><code>question-answering</code> パイプラインの使用</h2>
-<p><a href="../chapter1/1.html">Chapter 1</a> で見たように、<code>question-answering</code> パイプラインを次のように使って質問への回答を得ることが出来ます。</p>
+<p><a href="../chapter1/1.html">Chapter 1</a> で見た通り、<code>question-answering</code> パイプラインは次のように使います。</p>
 <div class="codehilite"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">transformers</span><span class="w"> </span><span class="kn">import</span> <span class="n">pipeline</span>
 
 <span class="n">question_answerer</span> <span class="o">=</span> <span class="n">pipeline</span><span class="p">(</span><span class="s2">"question-answering"</span><span class="p">)</span>
@@ -236,7 +236,7 @@ window.MathJax = { tex: { inlineMath: [['$', '$'], ['\\(', '\\)']], displayMath:
  'start': 78,
  'end': 105,
  'answer': 'Jax, PyTorch and TensorFlow'}</p>
-<div class="codehilite"><pre><span></span><code>他のパイプラインは、モデルが受け付ける最大長よりも長いテキストを切り詰めたり分割したり出来ない為（その結果、文書の末尾の情報を見逃すことがあります）、このパイプラインは非常に長い文脈にも対処出来、回答が末尾にあっても質問への回答を返します。
+<div class="codehilite"><pre><span></span><code>他のパイプラインには、モデルが受け付ける最大長を超えるテキストを切り詰めたり分割したりする仕組みがありません。その為、文書の末尾にある情報を見逃すことがあります。これに対してこのパイプラインは、非常に長い文脈にも対応します。回答が文脈の末尾にあっても、質問への回答を返します。
 
 ```py
 long_context = """
@@ -286,29 +286,37 @@ question_answerer(question=question, context=long_context)
 <p>何故 Transformers を使うべきなのか</p>
 <ol>
 <li>
-<p>使いやすい最先端のモデル：
-- <a class="gloss-link" href="../../glossary/index.html#term-natural-language-understanding-nlu" data-title="自然言語理解（Natural Language Understanding / NLU）" data-def="コンピュータが人の書いたり話したりした言葉の意味や意図を読み取る技術が自然言語理解で、自然言語処理の一分野にあたる。単語の並びをそのまま処理するだけでは、相手が何を求めているかは分からないため、文脈から求めている内容を取り出したり、肯定的か否定的かといった態度を読み取ったりすることが必要になる。この技術は、質問への回答や文章の分類など、入力を理解する側の処理の基盤になっている。" data-def-html="コンピュータが人の書いたり話したりした言葉の意味や意図を読み取る技術が自然言語理解で、&lt;a class=&quot;gloss-link&quot; href=&quot;../../glossary/index.html#term-nlp&quot; data-title=&quot;NLP（自然言語処理）&quot; data-def=&quot;人間が日常で使う言葉をコンピュータに処理させるための技術の総称がNLPで、人工知能と言語学にまたがる分野に位置づけられる。コンピュータは本来、数字しか扱えないため、言葉を計算できる形に置き換え、意味や文脈を取り出す工夫が必要になり、その工夫全体がNLPにあたる。具体的には、文章の意味を読み取ることや、機械翻訳、要約、質問への回答、文章から感情を判定することなどが対象となり、言葉を使うあらゆるソフトウェアの基盤になっている。&quot;&gt;自然言語処理&lt;/a&gt;の一分野にあたる。単語の並びをそのまま処理するだけでは、相手が何を求めているかは分からないため、文脈から求めている内容を取り出したり、肯定的か否定的かといった態度を読み取ったりすることが必要になる。この技術は、質問への回答や文章の&lt;a class=&quot;gloss-link&quot; href=&quot;../../glossary/index.html#term-classification&quot; data-title=&quot;分類（Classification）&quot; data-def=&quot;メールが迷惑メールかどうか、写真に写っているのが犬か猫か――あらかじめ決められた種類のどれに当てはまるかを当てる課題が分類だ。予測する答えが金額のような連続した数値ではなく種類である点が回帰と異なり、教師あり学習の代表的な課題の一つとして、仕分けが必要な場面で広く使われる。&quot;&gt;分類&lt;/a&gt;など、入力を理解する側の処理の基盤になっている。">自然言語理解</a>と<a class="gloss-link" href="../../glossary/index.html#term-natural-language-generation-nlg" data-title="自然言語生成（Natural Language Generation / NLG）" data-def="データや情報をもとに、人が読んで理解できる自然な文章をコンピュータが自動で作る技術を自然言語生成という。数値や項目の集まりはそのままでは読みにくいため、それを文の形に直して伝える役割を担い、自然言語処理のうち出力側を受け持つ。具体的には、報告書の文章化や対話システムの返答文の作成など、情報を言葉に変換して人に届ける場面で用いられる。" data-def-html="データや情報をもとに、人が読んで理解できる自然な文章をコンピュータが自動で作る技術を自然言語生成という。数値や項目の集まりはそのままでは読みにくいため、それを文の形に直して伝える役割を担い、&lt;a class=&quot;gloss-link&quot; href=&quot;../../glossary/index.html#term-nlp&quot; data-title=&quot;NLP（自然言語処理）&quot; data-def=&quot;人間が日常で使う言葉をコンピュータに処理させるための技術の総称がNLPで、人工知能と言語学にまたがる分野に位置づけられる。コンピュータは本来、数字しか扱えないため、言葉を計算できる形に置き換え、意味や文脈を取り出す工夫が必要になり、その工夫全体がNLPにあたる。具体的には、文章の意味を読み取ることや、機械翻訳、要約、質問への回答、文章から感情を判定することなどが対象となり、言葉を使うあらゆるソフトウェアの基盤になっている。&quot;&gt;自然言語処理&lt;/a&gt;のうち出力側を受け持つ。具体的には、報告書の文章化や&lt;a class=&quot;gloss-link&quot; href=&quot;../../glossary/index.html#term-dialog-system&quot; data-title=&quot;対話システム（Dialog System）&quot; data-def=&quot;人と文章や音声でやり取りを重ねながら、質問に答えたり用事を済ませたりする仕組み全体を対話システムと呼ぶ。相手の発言を理解する部分、会話の流れを管理する部分、返事を作る部分が連携することで会話が成り立ち、案内や予約、相談の窓口など、会話の形で用事を進める場面で使われる。&quot;&gt;対話システム&lt;/a&gt;の返答文の作成など、情報を言葉に変換して人に届ける場面で用いられる。">自然言語生成</a>のタスクでの高い性能
-- 教育者と実務家の参入障壁の低さ
-- 学ぶべき<a class="gloss-link" href="../../glossary/index.html#term-class" data-title="クラス（class）" data-def="同じ性質と振る舞いを持つ対象を、その都度ゼロから作るのではなく、設計図をもとに何度も作れるようにした仕組みがクラスである。オブジェクト指向プログラミング（対象を単位としてプログラムを組み立てる考え方）において、データとそれを扱う処理をひとまとめにした設計図として働き、クラスをもとに具体的な対象を作ることで再利用が可能になる。プログラムを部品に分けて整理し、変更や拡張をしやすくするための基本的な仕組みでもある。" data-def-html="同じ性質と振る舞いを持つ対象を、その都度ゼロから作るのではなく、設計図をもとに何度も作れるようにした仕組みがクラスである。オブジェクト指向プログラミング（対象を単位としてプログラムを組み立てる考え方）において、データとそれを扱う処理をひとまとめにした設計図として働き、クラスをもとに具体的な対象を作ることで再利用が可能になる。プログラムを部品に分けて整理し、変更や拡張をしやすくするための基本的な仕組みでもある。">クラス</a>が3つだけで、利用者向けの抽象化が少ないこと
-- 全ての事前学習済みモデルを使う為の統一された API
-- 計算コストの低さと二酸化炭素排出量の少なさ：</p>
+<p>使いやすい最先端のモデル：</p>
+<ul>
+<li><a class="gloss-link" href="../../glossary/index.html#term-natural-language-understanding-nlu" data-title="自然言語理解（Natural Language Understanding / NLU）" data-def="コンピュータが人の書いたり話したりした言葉の意味や意図を読み取る技術が自然言語理解で、自然言語処理の一分野にあたる。単語の並びをそのまま処理するだけでは、相手が何を求めているかは分からないため、文脈から求めている内容を取り出したり、肯定的か否定的かといった態度を読み取ったりすることが必要になる。この技術は、質問への回答や文章の分類など、入力を理解する側の処理の基盤になっている。" data-def-html="コンピュータが人の書いたり話したりした言葉の意味や意図を読み取る技術が自然言語理解で、&lt;a class=&quot;gloss-link&quot; href=&quot;../../glossary/index.html#term-nlp&quot; data-title=&quot;NLP（自然言語処理）&quot; data-def=&quot;人間が日常で使う言葉をコンピュータに処理させるための技術の総称がNLPで、人工知能と言語学にまたがる分野に位置づけられる。コンピュータは本来、数字しか扱えないため、言葉を計算できる形に置き換え、意味や文脈を取り出す工夫が必要になり、その工夫全体がNLPにあたる。具体的には、文章の意味を読み取ることや、機械翻訳、要約、質問への回答、文章から感情を判定することなどが対象となり、言葉を使うあらゆるソフトウェアの基盤になっている。&quot;&gt;自然言語処理&lt;/a&gt;の一分野にあたる。単語の並びをそのまま処理するだけでは、相手が何を求めているかは分からないため、文脈から求めている内容を取り出したり、肯定的か否定的かといった態度を読み取ったりすることが必要になる。この技術は、質問への回答や文章の&lt;a class=&quot;gloss-link&quot; href=&quot;../../glossary/index.html#term-classification&quot; data-title=&quot;分類（Classification）&quot; data-def=&quot;メールが迷惑メールかどうか、写真に写っているのが犬か猫か――あらかじめ決められた種類のどれに当てはまるかを当てる課題が分類だ。予測する答えが金額のような連続した数値ではなく種類である点が回帰と異なり、教師あり学習の代表的な課題の一つとして、仕分けが必要な場面で広く使われる。&quot;&gt;分類&lt;/a&gt;など、入力を理解する側の処理の基盤になっている。">自然言語理解</a>と<a class="gloss-link" href="../../glossary/index.html#term-natural-language-generation-nlg" data-title="自然言語生成（Natural Language Generation / NLG）" data-def="データや情報をもとに、人が読んで理解できる自然な文章をコンピュータが自動で作る技術を自然言語生成という。数値や項目の集まりはそのままでは読みにくいため、それを文の形に直して伝える役割を担い、自然言語処理のうち出力側を受け持つ。具体的には、報告書の文章化や対話システムの返答文の作成など、情報を言葉に変換して人に届ける場面で用いられる。" data-def-html="データや情報をもとに、人が読んで理解できる自然な文章をコンピュータが自動で作る技術を自然言語生成という。数値や項目の集まりはそのままでは読みにくいため、それを文の形に直して伝える役割を担い、&lt;a class=&quot;gloss-link&quot; href=&quot;../../glossary/index.html#term-nlp&quot; data-title=&quot;NLP（自然言語処理）&quot; data-def=&quot;人間が日常で使う言葉をコンピュータに処理させるための技術の総称がNLPで、人工知能と言語学にまたがる分野に位置づけられる。コンピュータは本来、数字しか扱えないため、言葉を計算できる形に置き換え、意味や文脈を取り出す工夫が必要になり、その工夫全体がNLPにあたる。具体的には、文章の意味を読み取ることや、機械翻訳、要約、質問への回答、文章から感情を判定することなどが対象となり、言葉を使うあらゆるソフトウェアの基盤になっている。&quot;&gt;自然言語処理&lt;/a&gt;のうち出力側を受け持つ。具体的には、報告書の文章化や&lt;a class=&quot;gloss-link&quot; href=&quot;../../glossary/index.html#term-dialog-system&quot; data-title=&quot;対話システム（Dialog System）&quot; data-def=&quot;人と文章や音声でやり取りを重ねながら、質問に答えたり用事を済ませたりする仕組み全体を対話システムと呼ぶ。相手の発言を理解する部分、会話の流れを管理する部分、返事を作る部分が連携することで会話が成り立ち、案内や予約、相談の窓口など、会話の形で用事を進める場面で使われる。&quot;&gt;対話システム&lt;/a&gt;の返答文の作成など、情報を言葉に変換して人に届ける場面で用いられる。">自然言語生成</a>のタスクでの高い性能</li>
+<li>教育者と実務家の参入障壁の低さ</li>
+<li>学ぶべき<a class="gloss-link" href="../../glossary/index.html#term-class" data-title="クラス（class）" data-def="同じ性質と振る舞いを持つ対象を、その都度ゼロから作るのではなく、設計図をもとに何度も作れるようにした仕組みがクラスである。オブジェクト指向プログラミング（対象を単位としてプログラムを組み立てる考え方）において、データとそれを扱う処理をひとまとめにした設計図として働き、クラスをもとに具体的な対象を作ることで再利用が可能になる。プログラムを部品に分けて整理し、変更や拡張をしやすくするための基本的な仕組みでもある。" data-def-html="同じ性質と振る舞いを持つ対象を、その都度ゼロから作るのではなく、設計図をもとに何度も作れるようにした仕組みがクラスである。オブジェクト指向プログラミング（対象を単位としてプログラムを組み立てる考え方）において、データとそれを扱う処理をひとまとめにした設計図として働き、クラスをもとに具体的な対象を作ることで再利用が可能になる。プログラムを部品に分けて整理し、変更や拡張をしやすくするための基本的な仕組みでもある。">クラス</a>が3つだけで、利用者向けの抽象化が少ないこと</li>
+<li>全ての事前学習済みモデルを使う為の統一された API</li>
+<li>計算コストの低さと二酸化炭素排出量の少なさ：</li>
+</ul>
 </li>
 <li>
-<p>研究者は、毎回再学習する代わりに学習済みモデルを共有出来ます。
-- 実務家は計算時間と運用コストを削減出来ます
-- 数十のアーキテクチャと10,000を超える事前学習済みモデル（その一部は100を超える言語に対応）</p>
+<p>研究者は、毎回再学習する代わりに学習済みモデルを共有出来ます。</p>
+<ul>
+<li>実務家は計算時間と運用コストを削減出来ます</li>
+<li>数十のアーキテクチャと10,000を超える事前学習済みモデル（その一部は100を超える言語に対応）</li>
+</ul>
 </li>
 <li>
-<p>モデルの一生の各段階に適した<a class="gloss-link" href="../../glossary/index.html#term-framework" data-title="フレームワーク（Framework）" data-def="アプリケーションを作るための土台となる仕組みを、決まった使い方とともに提供するのがフレームワークだ。土台が用意する流れに自分のコードを差し込む形で開発するため、共通する処理を毎回書かずに済み、作り方のばらつきも抑えられる。部品を自由に組み合わせるライブラリとは対照的に、全体の進め方そのものを枠組みとして与える点が特徴で、機械学習では学習や推論の流れを担う基盤として使われる。" data-def-html="アプリケーションを作るための土台となる仕組みを、決まった使い方とともに提供するのがフレームワークだ。土台が用意する流れに自分のコードを差し込む形で開発するため、共通する処理を毎回書かずに済み、作り方のばらつきも抑えられる。部品を自由に組み合わせる&lt;a class=&quot;gloss-link&quot; href=&quot;../../glossary/index.html#term-library&quot; data-title=&quot;ライブラリ（Library）&quot; data-def=&quot;プログラムでよく使う機能をあらかじめ部品として用意し、必要なときに呼び出して使えるようにしたものがライブラリだ。自分で一から書く代わりに、検証された部品を組み合わせることで、開発の手間と誤りを減らせる。機械学習では、モデルの学習や推論の仕組みを提供するライブラリが土台になっており、目的に合ったライブラリを選ぶことが開発の出発点になる。&quot;&gt;ライブラリ&lt;/a&gt;とは対照的に、全体の進め方そのものを枠組みとして与える点が特徴で、&lt;a class=&quot;gloss-link&quot; href=&quot;../../glossary/index.html#term-machine-learning&quot; data-title=&quot;機械学習（Machine Learning）&quot; data-def=&quot;プログラムの手順を人間が一つ一つ書き与える従来の方法では、複雑な判断をすべて書き切ることは難しいため、データから規則性や判断の基準をコンピュータ自身に学ばせる技術を機械学習という。訓練用のデータを用いて学ばせることでモデルはパターンを身に付け、正解の分からない新しいデータに対しても予測や分類ができるようになる。人工知能を実現する主要な方法の一つであり、現在の人工知能の中心的な仕組みになっている。&quot;&gt;機械学習&lt;/a&gt;では&lt;a class=&quot;gloss-link&quot; href=&quot;../../glossary/index.html#term-training&quot; data-title=&quot;学習（訓練）（Training）&quot; data-def=&quot;学習は、機械学習のモデルにデータを与え、そのデータに合うようにモデル内部の数値を調整していく過程である。モデルは予測と正解のずれを手がかりに数値を少しずつ直し、ずれが小さくなる方向へ進んでいく。この過程を繰り返すことで、個々の例を覚えるだけでなく、見たことのないデータに対しても予測できるようになることが期待される。&quot;&gt;学習&lt;/a&gt;や&lt;a class=&quot;gloss-link&quot; href=&quot;../../glossary/index.html#term-t12&quot; data-title=&quot;推論（インファレンス）&quot; data-def=&quot;学習が終わったモデルを実際に使うときに行われるのが推論であり、新しいデータを入力して予測や文章の生成といった答えを取り出す処理を指す。学習のときと違い、この段階ではモデルの中身は書き換えられず、すでに学んだ内容を使って答えを出すだけだ。私たちが翻訳や対話などの形でモデルを利用する場面は、ほとんどがこの推論にあたる。&quot;&gt;推論&lt;/a&gt;の流れを担う基盤として使われる。">フレームワーク</a>を選べます：
-- 最先端のモデルを3行のコードで学習出来ること
-- 1つのモデルを TF2.0 と PyTorch のフレームワーク間で自由に移動出来ること
-- 学習、<a class="gloss-link" href="../../glossary/index.html#term-evaluation" data-title="評価（Evaluation）" data-def="評価は、学習したモデルの性能を、決められた方法で測ることである。学習に使っていないデータに対して予測を行わせ、正解との一致の程度を評価指標で数値化するのが基本の流れであり、その結果はモデルの採用判断や、改善すべき点の特定に使われる。学習に使ったデータで測ると実力より良く見えるため、データの分け方が重要になる。" data-def-html="評価は、&lt;a class=&quot;gloss-link&quot; href=&quot;../../glossary/index.html#term-training&quot; data-title=&quot;学習（訓練）（Training）&quot; data-def=&quot;学習は、機械学習のモデルにデータを与え、そのデータに合うようにモデル内部の数値を調整していく過程である。モデルは予測と正解のずれを手がかりに数値を少しずつ直し、ずれが小さくなる方向へ進んでいく。この過程を繰り返すことで、個々の例を覚えるだけでなく、見たことのないデータに対しても予測できるようになることが期待される。&quot;&gt;学習&lt;/a&gt;したモデルの性能を、決められた方法で測ることである。学習に使っていないデータに対して予測を行わせ、正解との一致の程度を&lt;a class=&quot;gloss-link&quot; href=&quot;../../glossary/index.html#term-evaluation-metric&quot; data-title=&quot;評価指標（Evaluation Metric）&quot; data-def=&quot;モデルの性能を数値で表すためのものさしが評価指標だ。正解率や適合率のように分類の当たり具合を測るものや、平均二乗誤差のように数値予測のずれを測るものなどがあり、問題の種類に応じて使い分ける。どの指標で測るかによって良いモデルの意味が変わるため、目的に合った指標を選ぶことが重要である。&quot;&gt;評価指標&lt;/a&gt;で数値化するのが基本の流れであり、その結果はモデルの採用判断や、改善すべき点の特定に使われる。学習に使ったデータで測ると実力より良く見えるため、データの分け方が重要になる。">評価</a>、運用に適したフレームワークを継ぎ目なく選べること</p>
+<p>モデルの一生の各段階に適した<a class="gloss-link" href="../../glossary/index.html#term-framework" data-title="フレームワーク（Framework）" data-def="アプリケーションを作るための土台となる仕組みを、決まった使い方とともに提供するのがフレームワークだ。土台が用意する流れに自分のコードを差し込む形で開発するため、共通する処理を毎回書かずに済み、作り方のばらつきも抑えられる。部品を自由に組み合わせるライブラリとは対照的に、全体の進め方そのものを枠組みとして与える点が特徴で、機械学習では学習や推論の流れを担う基盤として使われる。" data-def-html="アプリケーションを作るための土台となる仕組みを、決まった使い方とともに提供するのがフレームワークだ。土台が用意する流れに自分のコードを差し込む形で開発するため、共通する処理を毎回書かずに済み、作り方のばらつきも抑えられる。部品を自由に組み合わせる&lt;a class=&quot;gloss-link&quot; href=&quot;../../glossary/index.html#term-library&quot; data-title=&quot;ライブラリ（Library）&quot; data-def=&quot;プログラムでよく使う機能をあらかじめ部品として用意し、必要なときに呼び出して使えるようにしたものがライブラリだ。自分で一から書く代わりに、検証された部品を組み合わせることで、開発の手間と誤りを減らせる。機械学習では、モデルの学習や推論の仕組みを提供するライブラリが土台になっており、目的に合ったライブラリを選ぶことが開発の出発点になる。&quot;&gt;ライブラリ&lt;/a&gt;とは対照的に、全体の進め方そのものを枠組みとして与える点が特徴で、&lt;a class=&quot;gloss-link&quot; href=&quot;../../glossary/index.html#term-machine-learning&quot; data-title=&quot;機械学習（Machine Learning）&quot; data-def=&quot;プログラムの手順を人間が一つ一つ書き与える従来の方法では、複雑な判断をすべて書き切ることは難しいため、データから規則性や判断の基準をコンピュータ自身に学ばせる技術を機械学習という。訓練用のデータを用いて学ばせることでモデルはパターンを身に付け、正解の分からない新しいデータに対しても予測や分類ができるようになる。人工知能を実現する主要な方法の一つであり、現在の人工知能の中心的な仕組みになっている。&quot;&gt;機械学習&lt;/a&gt;では&lt;a class=&quot;gloss-link&quot; href=&quot;../../glossary/index.html#term-training&quot; data-title=&quot;学習（訓練）（Training）&quot; data-def=&quot;学習は、機械学習のモデルにデータを与え、そのデータに合うようにモデル内部の数値を調整していく過程である。モデルは予測と正解のずれを手がかりに数値を少しずつ直し、ずれが小さくなる方向へ進んでいく。この過程を繰り返すことで、個々の例を覚えるだけでなく、見たことのないデータに対しても予測できるようになることが期待される。&quot;&gt;学習&lt;/a&gt;や&lt;a class=&quot;gloss-link&quot; href=&quot;../../glossary/index.html#term-t12&quot; data-title=&quot;推論（インファレンス）&quot; data-def=&quot;学習が終わったモデルを実際に使うときに行われるのが推論であり、新しいデータを入力して予測や文章の生成といった答えを取り出す処理を指す。学習のときと違い、この段階ではモデルの中身は書き換えられず、すでに学んだ内容を使って答えを出すだけだ。私たちが翻訳や対話などの形でモデルを利用する場面は、ほとんどがこの推論にあたる。&quot;&gt;推論&lt;/a&gt;の流れを担う基盤として使われる。">フレームワーク</a>を選べます：</p>
+<ul>
+<li>最先端のモデルを3行のコードで学習出来ること</li>
+<li>1つのモデルを TF2.0 と PyTorch のフレームワーク間で自由に移動出来ること</li>
+<li>学習、<a class="gloss-link" href="../../glossary/index.html#term-evaluation" data-title="評価（Evaluation）" data-def="評価は、学習したモデルの性能を、決められた方法で測ることである。学習に使っていないデータに対して予測を行わせ、正解との一致の程度を評価指標で数値化するのが基本の流れであり、その結果はモデルの採用判断や、改善すべき点の特定に使われる。学習に使ったデータで測ると実力より良く見えるため、データの分け方が重要になる。" data-def-html="評価は、&lt;a class=&quot;gloss-link&quot; href=&quot;../../glossary/index.html#term-training&quot; data-title=&quot;学習（訓練）（Training）&quot; data-def=&quot;学習は、機械学習のモデルにデータを与え、そのデータに合うようにモデル内部の数値を調整していく過程である。モデルは予測と正解のずれを手がかりに数値を少しずつ直し、ずれが小さくなる方向へ進んでいく。この過程を繰り返すことで、個々の例を覚えるだけでなく、見たことのないデータに対しても予測できるようになることが期待される。&quot;&gt;学習&lt;/a&gt;したモデルの性能を、決められた方法で測ることである。学習に使っていないデータに対して予測を行わせ、正解との一致の程度を&lt;a class=&quot;gloss-link&quot; href=&quot;../../glossary/index.html#term-evaluation-metric&quot; data-title=&quot;評価指標（Evaluation Metric）&quot; data-def=&quot;モデルの性能を数値で表すためのものさしが評価指標だ。正解率や適合率のように分類の当たり具合を測るものや、平均二乗誤差のように数値予測のずれを測るものなどがあり、問題の種類に応じて使い分ける。どの指標で測るかによって良いモデルの意味が変わるため、目的に合った指標を選ぶことが重要である。&quot;&gt;評価指標&lt;/a&gt;で数値化するのが基本の流れであり、その結果はモデルの採用判断や、改善すべき点の特定に使われる。学習に使ったデータで測ると実力より良く見えるため、データの分け方が重要になる。">評価</a>、運用に適したフレームワークを継ぎ目なく選べること</li>
+</ul>
 </li>
 <li>
-<p>モデルや例を自分の必要に合わせて簡単にカスタマイズ出来ます：
-- 各アーキテクチャについて、元の著者が発表した結果を再現する為の例を提供しています
-- モデルの内部は可能な限り一貫した形で公開されています
-- モデルファイルはライブラリから独立して素早い実験に使えます</p>
+<p>モデルや例を自分の必要に合わせて簡単にカスタマイズ出来ます：</p>
+<ul>
+<li>各アーキテクチャについて、元の著者が発表した結果を再現する為の例を提供しています</li>
+<li>モデルの内部は可能な限り一貫した形で公開されています</li>
+<li>モデルファイルはライブラリから独立して素早い実験に使えます</li>
+</ul>
 </li>
 </ol>
 <p>🤗 Transformers は、最も人気の高い3つの深層学習ライブラリ、即ち Jax、PyTorch、TensorFlow に支えられており、それらの間の継ぎ目のない統合を備えています。1つのライブラリでモデルを学習し、別のライブラリで読み込んで推論に使うことも簡単です。</p>
@@ -317,11 +325,11 @@ question_answerer(question=question, context=long_context)
  'start': 1892,
  'end': 1919,
  'answer': 'Jax, PyTorch and TensorFlow'}</p>
-<div class="codehilite"><pre><span></span><code>これら全てをどのように実現しているか見てみましょう！
+<div class="codehilite"><pre><span></span><code>この仕組みを、以下で順に確かめます。
 
 ## 質問応答にモデルを使う
 
-他のパイプラインと同様に、まず入力をトークン化してからモデルに通します。`question-answering` パイプラインでデフォルトで使われるチェックポイントは [`distilbert-base-cased-distilled-squad`](https://huggingface.co/distilbert-base-cased-distilled-squad) です（名前の "squad" は、モデルがファインチューニングされたデータセットに由来します。SQuAD データセットについては [Chapter 7](/course/chapter7/7) で詳しく説明します）。
+他のパイプラインと同様に、まず入力をトークン化し、モデルに通します。`question-answering` パイプラインが既定で使うチェックポイントは [`distilbert-base-cased-distilled-squad`](https://huggingface.co/distilbert-base-cased-distilled-squad) です。名前にある "squad" は、このモデルをファインチューニングしたデータセットに由来します。SQuAD データセットについては、[Chapter 7](/course/chapter7/7) で詳しく説明します。
 
 {#if fw === 'pt'}
 
@@ -348,14 +356,14 @@ outputs = model(**inputs)
 </code></pre></div>
 
 <p>{/if}</p>
-<p>質問と文脈をペアとして、質問を先にして<a class="gloss-link has-detail" href="../../glossary/token.html" data-title="トークン（Token）" data-def="トークンは、言語モデルが文章を扱うときに使う最小の単位であり、文章を区切った断片のことである。コンピュータは文章をそのまま計算できないため、まず文章を扱いやすい大きさに分ける必要があり、その分けられた一つひとつがトークンになる。1つのトークンは単語全体のこともあれば、単語の一部や1文字、記号のこともあり、モデルは文章をトークンの並びとして読み取り、答えもトークンの並びとして書き出すことで言葉を処理している。" data-detail="../../glossary/token.html" data-def-html="トークンは、&lt;a class=&quot;gloss-link&quot; href=&quot;../../glossary/index.html#term-language-model&quot; data-title=&quot;言語モデル（Language Model）&quot; data-def=&quot;文章中の単語やトークンの並び方の規則を学習し、ある並びの次に来るものを確率で予測できるようにしたモデルが言語モデルだ。人間の言葉には文法や語の使い方、内容のつながりといった決まりがあり、大量の文章を学習させることで、それらを数値として取り込ませることができる。この予測の力が、文章の生成や分類など、多くの言語処理技術の土台になっている。&quot;&gt;言語モデル&lt;/a&gt;が文章を扱うときに使う最小の単位であり、文章を区切った断片のことである。コンピュータは文章をそのまま計算できないため、まず文章を扱いやすい大きさに分ける必要があり、その分けられた一つひとつがトークンになる。1つのトークンは単語全体のこともあれば、単語の一部や1文字、記号のこともあり、モデルは文章をトークンの並びとして読み取り、答えもトークンの並びとして書き出すことで言葉を処理している。">トークン</a>化することに注意してください。</p>
+<p><a class="gloss-link has-detail" href="../../glossary/token.html" data-title="トークン（Token）" data-def="トークンは、言語モデルが文章を扱うときに使う最小の単位であり、文章を区切った断片のことである。コンピュータは文章をそのまま計算できないため、まず文章を扱いやすい大きさに分ける必要があり、その分けられた一つひとつがトークンになる。1つのトークンは単語全体のこともあれば、単語の一部や1文字、記号のこともあり、モデルは文章をトークンの並びとして読み取り、答えもトークンの並びとして書き出すことで言葉を処理している。" data-detail="../../glossary/token.html" data-def-html="トークンは、&lt;a class=&quot;gloss-link&quot; href=&quot;../../glossary/index.html#term-language-model&quot; data-title=&quot;言語モデル（Language Model）&quot; data-def=&quot;文章中の単語やトークンの並び方の規則を学習し、ある並びの次に来るものを確率で予測できるようにしたモデルが言語モデルだ。人間の言葉には文法や語の使い方、内容のつながりといった決まりがあり、大量の文章を学習させることで、それらを数値として取り込ませることができる。この予測の力が、文章の生成や分類など、多くの言語処理技術の土台になっている。&quot;&gt;言語モデル&lt;/a&gt;が文章を扱うときに使う最小の単位であり、文章を区切った断片のことである。コンピュータは文章をそのまま計算できないため、まず文章を扱いやすい大きさに分ける必要があり、その分けられた一つひとつがトークンになる。1つのトークンは単語全体のこともあれば、単語の一部や1文字、記号のこともあり、モデルは文章をトークンの並びとして読み取り、答えもトークンの並びとして書き出すことで言葉を処理している。">トークン</a>化では、質問と文脈をペアにし、質問を先に置く点に注意してください。</p>
 <div class="flex justify-center">
 <img class="block dark:hidden" src="https://huggingface.co/datasets/huggingface-course/documentation-images/resolve/main/en/chapter6/question_tokens.svg" alt="質問と文脈のトークン化の例"/>
 <img class="hidden dark:block" src="https://huggingface.co/datasets/huggingface-course/documentation-images/resolve/main/en/chapter6/question_tokens-dark.svg" alt="質問と文脈のトークン化の例"/>
 </div>
 
-<p>質問応答用のモデルは、これまで見てきたモデルとは少し異なる仕組みで動作します。上の図を例にすると、モデルは回答の開始トークンの<a class="gloss-link" href="../../glossary/index.html#term-index" data-title="インデックス（index / ステージング）" data-def="コミットする前に、含めたい変更だけを一時的に集めておく場所がGitのインデックスだ。ステージングエリアとも呼ばれ、手元のファイルの変更のうちコミットに含めたいものだけを選んでここへ登録する操作をステージングという。この段階を挟むことで作業中の変更を取捨選択でき、関係する変更だけを意味のまとまった単位でコミットにまとめられる。" data-def-html="&lt;a class=&quot;gloss-link&quot; href=&quot;../../glossary/index.html#term-commit&quot; data-title=&quot;コミット（commit）&quot; data-def=&quot;ファイルを変更したら、その時点の状態を履歴に1件の記録として残す操作がコミットだ。各コミットにはその時点のファイル全体の状態と、変更内容を説明するコミットメッセージ、直前のコミットへの参照が含まれる。コミットを積み重ねることで変更の履歴が形成され、後から過去の任意の時点の状態を確認したり、その状態へ復元したりできるようになる。&quot;&gt;コミット&lt;/a&gt;する前に、含めたい変更だけを一時的に集めておく場所が&lt;a class=&quot;gloss-link&quot; href=&quot;../../glossary/index.html#term-git&quot; data-title=&quot;Git&quot; data-def=&quot;変更を積み重ねたり枝分かれさせて並行して作業したりしながら、プログラムなどの変更履歴を記録して追跡できる分散型のバージョン管理システムがGitだ。各利用者の手元に履歴全体を含む保管場所の複製が作られるため、中央の保管場所に接続できない環境でも作業を続けられる。もとは大規模なソフトウェア開発の管理のために作られ、動作の速さに重点が置かれている。&quot;&gt;Git&lt;/a&gt;のインデックスだ。ステージングエリアとも呼ばれ、手元のファイルの変更のうちコミットに含めたいものだけを選んでここへ登録する操作をステージングという。この段階を挟むことで作業中の変更を取捨選択でき、関係する変更だけを意味のまとまった単位でコミットにまとめられる。">インデックス</a>（ここでは21）と、回答が終わるトークンのインデックス（ここでは24）を予測するよう学習されています。</p>
-<p>その為、これらのモデルは<a class="gloss-link" href="../../glossary/index.html#term-logits" data-title="ロジット（Logits）" data-def="分類の最後で、モデルは候補ごとにまず制限のない得点を出す。この確率に直す前の得点がロジットにあたる。値の範囲に制限はなく、大きいほどその候補が選ばれやすいことを表すが、そのままでは候補同士の比較しかできないため、通常はソフトマックス関数を通して合計が1になる確率に変換して使う。学習の場面では、交差エントロピーの計算にもこのロジットが用いられる。" data-def-html="&lt;a class=&quot;gloss-link&quot; href=&quot;../../glossary/index.html#term-classification&quot; data-title=&quot;分類（Classification）&quot; data-def=&quot;メールが迷惑メールかどうか、写真に写っているのが犬か猫か――あらかじめ決められた種類のどれに当てはまるかを当てる課題が分類だ。予測する答えが金額のような連続した数値ではなく種類である点が回帰と異なり、教師あり学習の代表的な課題の一つとして、仕分けが必要な場面で広く使われる。&quot;&gt;分類&lt;/a&gt;の最後で、モデルは候補ごとにまず制限のない得点を出す。この確率に直す前の得点がロジットにあたる。値の&lt;a class=&quot;gloss-link&quot; href=&quot;../../glossary/index.html#term-range&quot; data-title=&quot;範囲（range）&quot; data-def=&quot;データの広がりを最も単純に表す方法が、最大値から最小値を引いた差である範囲を使うことだ。計算は引き算一つで済む一方、決めるのは両端の二つの値だけなので、極端な値が一つ混じるだけで大きく変わってしまう弱点がある。そのため分布全体の散らばりは分散や四分位範囲などと併せて判断する必要があり、機械学習でもデータを0から1の間にそろえる正規化の計算に現れるものの、外れ値の影響を受けやすい点には注意が要る。&quot;&gt;範囲&lt;/a&gt;に制限はなく、大きいほどその候補が選ばれやすいことを表すが、そのままでは候補同士の比較しかできないため、通常は&lt;a class=&quot;gloss-link&quot; href=&quot;../../glossary/index.html#term-softmax-function&quot; data-title=&quot;ソフトマックス関数（Softmax Function）&quot; data-def=&quot;複数の数値を、合計が1になる0から1の間の値の組に変換することで、各候補の確からしさを割合として読めるようにするのがソフトマックス関数だ。各値は全体の中での割合を表すため、3種類以上の中から1つを選ぶ分類課題の出力層で用いられ、最も大きな値に対応する候補が予測として選ばれる。&quot;&gt;ソフトマックス関数&lt;/a&gt;を通して合計が1になる確率に変換して使う。&lt;a class=&quot;gloss-link&quot; href=&quot;../../glossary/index.html#term-training&quot; data-title=&quot;学習（訓練）（Training）&quot; data-def=&quot;学習は、機械学習のモデルにデータを与え、そのデータに合うようにモデル内部の数値を調整していく過程である。モデルは予測と正解のずれを手がかりに数値を少しずつ直し、ずれが小さくなる方向へ進んでいく。この過程を繰り返すことで、個々の例を覚えるだけでなく、見たことのないデータに対しても予測できるようになることが期待される。&quot;&gt;学習&lt;/a&gt;の場面では、&lt;a class=&quot;gloss-link&quot; href=&quot;../../glossary/index.html#term-cross-entropy&quot; data-title=&quot;交差エントロピー（Cross-Entropy）&quot; data-def=&quot;分類で、正解の候補にモデルがどれだけ自信を持てたかを罰の大きさに変える仕組みが交差エントロピーにあたる。これは正解の確率分布（候補ごとの確率の割り振り）とモデルが予測した確率分布との違いを表す値で、正解の候補に高い確率を付けたときは小さく、低い確率しか付けられなかったときは大きくなる。学習ではこの値を損失として小さくしていくことで、予測の確率の付け方が正解に近づいていく。&quot;&gt;交差エントロピー&lt;/a&gt;の計算にもこのロジットが用いられる。">ロジット</a>の<a class="gloss-link" href="../../glossary/index.html#term-tensor" data-title="テンソル（Tensor）" data-def="テンソルは、数を多方向に並べた配列の総称であり、数一つだけのもの、数を一列に並べたベクトル、数を表に並べた行列をすべて含む、より一般的な形である。並べる方向の数を階数と呼び、階数が大きいほど多くの軸を持つ配列になるが、軸が増えることで、たとえば画像のように縦と横と色といった複数の観点が重なるデータも一つのまとまりとして扱える。深層学習では画像や文章などのデータをテンソルとして扱い、テンソル同士の計算によって学習と推論を行うため、テンソルはその計算の共通の入れ物になっている。" data-def-html="テンソルは、数を多方向に並べた配列の総称であり、数一つだけのもの、数を一列に並べた&lt;a class=&quot;gloss-link&quot; href=&quot;../../glossary/index.html#term-vector&quot; data-title=&quot;ベクトル（Vector）&quot; data-def=&quot;ベクトルは、大きさと向きを併せ持つ量を表すためのもので、一つの数だけでは表せない移動や力を扱うときに必要になる。計算上は数を一列に並べた形で表し、並んだ数の個数がそのベクトルの次元を決めるが、この形のおかげで、ある対象の特徴を複数の数で同時に表すことができる。人工知能では文章や画像の特徴を多数の数からなるベクトルで表し、ベクトル同士の近さを比べることで、もとの文章や画像の意味の近さを測るのに使う。&quot;&gt;ベクトル&lt;/a&gt;、数を表に並べた&lt;a class=&quot;gloss-link&quot; href=&quot;../../glossary/index.html#term-matrix&quot; data-title=&quot;行列（Matrix）&quot; data-def=&quot;行列は、数を縦と横に並べた長方形の表であり、横の並びを行、縦の並びを列と呼ぶ。行列が便利なのは、行列同士の掛け算が定義されていて、複数の数をまとめて別の数の組へ変換する計算を一つの操作として表せるためである。そのため大量のデータを一つずつ処理する代わりに、まとめて一度に変換できる。人工知能の計算の多くは行列の掛け算で表されており、ニューラルネットワークが入力を受け取って出力を作る処理も、この掛け算を土台にしている。&quot;&gt;行列&lt;/a&gt;をすべて含む、より一般的な形である。並べる方向の数を階数と呼び、階数が大きいほど多くの軸を持つ配列になるが、軸が増えることで、たとえば画像のように縦と横と色といった複数の観点が重なるデータも一つのまとまりとして扱える。&lt;a class=&quot;gloss-link&quot; href=&quot;../../glossary/index.html#term-deep-learning&quot; data-title=&quot;深層学習（Deep Learning）&quot; data-def=&quot;隠れ層を何層も重ねたニューラルネットワークに大量のデータを学ばせることで、単純な特徴を組み合わせた複雑な特徴まで段階的に捉えられるようにした機械学習の手法が深層学習だ。従来は人が「どこに注目すればよいか」という特徴を設計する必要があった課題でも高い性能を示すようになったため、画像認識や文章生成をはじめ現在の人工知能技術の中心になっている。&quot;&gt;深層学習&lt;/a&gt;では画像や文章などのデータをテンソルとして扱い、テンソル同士の計算によって&lt;a class=&quot;gloss-link&quot; href=&quot;../../glossary/index.html#term-training&quot; data-title=&quot;学習（訓練）（Training）&quot; data-def=&quot;学習は、機械学習のモデルにデータを与え、そのデータに合うようにモデル内部の数値を調整していく過程である。モデルは予測と正解のずれを手がかりに数値を少しずつ直し、ずれが小さくなる方向へ進んでいく。この過程を繰り返すことで、個々の例を覚えるだけでなく、見たことのないデータに対しても予測できるようになることが期待される。&quot;&gt;学習&lt;/a&gt;と&lt;a class=&quot;gloss-link&quot; href=&quot;../../glossary/index.html#term-t12&quot; data-title=&quot;推論（インファレンス）&quot; data-def=&quot;学習が終わったモデルを実際に使うときに行われるのが推論であり、新しいデータを入力して予測や文章の生成といった答えを取り出す処理を指す。学習のときと違い、この段階ではモデルの中身は書き換えられず、すでに学んだ内容を使って答えを出すだけだ。私たちが翻訳や対話などの形でモデルを利用する場面は、ほとんどがこの推論にあたる。&quot;&gt;推論&lt;/a&gt;を行うため、テンソルはその計算の共通の入れ物になっている。">テンソル</a>を1つではなく2つ返します。1つは回答の開始トークンに対応するロジット用、もう1つは回答の終了トークンに対応するロジット用です。この場合は66トークンを含む入力が1つだけなので、次のようになります。</p>
+<p>質問応答用のモデルは、これまで見てきたモデルとは動作が少し異なります。モデルが学習しているのは、回答が始まるトークンの<a class="gloss-link" href="../../glossary/index.html#term-index" data-title="インデックス（index / ステージング）" data-def="コミットする前に、含めたい変更だけを一時的に集めておく場所がGitのインデックスだ。ステージングエリアとも呼ばれ、手元のファイルの変更のうちコミットに含めたいものだけを選んでここへ登録する操作をステージングという。この段階を挟むことで作業中の変更を取捨選択でき、関係する変更だけを意味のまとまった単位でコミットにまとめられる。" data-def-html="&lt;a class=&quot;gloss-link&quot; href=&quot;../../glossary/index.html#term-commit&quot; data-title=&quot;コミット（commit）&quot; data-def=&quot;ファイルを変更したら、その時点の状態を履歴に1件の記録として残す操作がコミットだ。各コミットにはその時点のファイル全体の状態と、変更内容を説明するコミットメッセージ、直前のコミットへの参照が含まれる。コミットを積み重ねることで変更の履歴が形成され、後から過去の任意の時点の状態を確認したり、その状態へ復元したりできるようになる。&quot;&gt;コミット&lt;/a&gt;する前に、含めたい変更だけを一時的に集めておく場所が&lt;a class=&quot;gloss-link&quot; href=&quot;../../glossary/index.html#term-git&quot; data-title=&quot;Git&quot; data-def=&quot;変更を積み重ねたり枝分かれさせて並行して作業したりしながら、プログラムなどの変更履歴を記録して追跡できる分散型のバージョン管理システムがGitだ。各利用者の手元に履歴全体を含む保管場所の複製が作られるため、中央の保管場所に接続できない環境でも作業を続けられる。もとは大規模なソフトウェア開発の管理のために作られ、動作の速さに重点が置かれている。&quot;&gt;Git&lt;/a&gt;のインデックスだ。ステージングエリアとも呼ばれ、手元のファイルの変更のうちコミットに含めたいものだけを選んでここへ登録する操作をステージングという。この段階を挟むことで作業中の変更を取捨選択でき、関係する変更だけを意味のまとまった単位でコミットにまとめられる。">インデックス</a>と、回答が終わるトークンのインデックスの予測です。上の図の例では、それぞれ21と24です。</p>
+<p>その為、モデルが返す<a class="gloss-link" href="../../glossary/index.html#term-logits" data-title="ロジット（Logits）" data-def="分類の最後で、モデルは候補ごとにまず制限のない得点を出す。この確率に直す前の得点がロジットにあたる。値の範囲に制限はなく、大きいほどその候補が選ばれやすいことを表すが、そのままでは候補同士の比較しかできないため、通常はソフトマックス関数を通して合計が1になる確率に変換して使う。学習の場面では、交差エントロピーの計算にもこのロジットが用いられる。" data-def-html="&lt;a class=&quot;gloss-link&quot; href=&quot;../../glossary/index.html#term-classification&quot; data-title=&quot;分類（Classification）&quot; data-def=&quot;メールが迷惑メールかどうか、写真に写っているのが犬か猫か――あらかじめ決められた種類のどれに当てはまるかを当てる課題が分類だ。予測する答えが金額のような連続した数値ではなく種類である点が回帰と異なり、教師あり学習の代表的な課題の一つとして、仕分けが必要な場面で広く使われる。&quot;&gt;分類&lt;/a&gt;の最後で、モデルは候補ごとにまず制限のない得点を出す。この確率に直す前の得点がロジットにあたる。値の&lt;a class=&quot;gloss-link&quot; href=&quot;../../glossary/index.html#term-range&quot; data-title=&quot;範囲（range）&quot; data-def=&quot;データの広がりを最も単純に表す方法が、最大値から最小値を引いた差である範囲を使うことだ。計算は引き算一つで済む一方、決めるのは両端の二つの値だけなので、極端な値が一つ混じるだけで大きく変わってしまう弱点がある。そのため分布全体の散らばりは分散や四分位範囲などと併せて判断する必要があり、機械学習でもデータを0から1の間にそろえる正規化の計算に現れるものの、外れ値の影響を受けやすい点には注意が要る。&quot;&gt;範囲&lt;/a&gt;に制限はなく、大きいほどその候補が選ばれやすいことを表すが、そのままでは候補同士の比較しかできないため、通常は&lt;a class=&quot;gloss-link&quot; href=&quot;../../glossary/index.html#term-softmax-function&quot; data-title=&quot;ソフトマックス関数（Softmax Function）&quot; data-def=&quot;複数の数値を、合計が1になる0から1の間の値の組に変換することで、各候補の確からしさを割合として読めるようにするのがソフトマックス関数だ。各値は全体の中での割合を表すため、3種類以上の中から1つを選ぶ分類課題の出力層で用いられ、最も大きな値に対応する候補が予測として選ばれる。&quot;&gt;ソフトマックス関数&lt;/a&gt;を通して合計が1になる確率に変換して使う。&lt;a class=&quot;gloss-link&quot; href=&quot;../../glossary/index.html#term-training&quot; data-title=&quot;学習（訓練）（Training）&quot; data-def=&quot;学習は、機械学習のモデルにデータを与え、そのデータに合うようにモデル内部の数値を調整していく過程である。モデルは予測と正解のずれを手がかりに数値を少しずつ直し、ずれが小さくなる方向へ進んでいく。この過程を繰り返すことで、個々の例を覚えるだけでなく、見たことのないデータに対しても予測できるようになることが期待される。&quot;&gt;学習&lt;/a&gt;の場面では、&lt;a class=&quot;gloss-link&quot; href=&quot;../../glossary/index.html#term-cross-entropy&quot; data-title=&quot;交差エントロピー（Cross-Entropy）&quot; data-def=&quot;分類で、正解の候補にモデルがどれだけ自信を持てたかを罰の大きさに変える仕組みが交差エントロピーにあたる。これは正解の確率分布（候補ごとの確率の割り振り）とモデルが予測した確率分布との違いを表す値で、正解の候補に高い確率を付けたときは小さく、低い確率しか付けられなかったときは大きくなる。学習ではこの値を損失として小さくしていくことで、予測の確率の付け方が正解に近づいていく。&quot;&gt;交差エントロピー&lt;/a&gt;の計算にもこのロジットが用いられる。">ロジット</a>の<a class="gloss-link" href="../../glossary/index.html#term-tensor" data-title="テンソル（Tensor）" data-def="テンソルは、数を多方向に並べた配列の総称であり、数一つだけのもの、数を一列に並べたベクトル、数を表に並べた行列をすべて含む、より一般的な形である。並べる方向の数を階数と呼び、階数が大きいほど多くの軸を持つ配列になるが、軸が増えることで、たとえば画像のように縦と横と色といった複数の観点が重なるデータも一つのまとまりとして扱える。深層学習では画像や文章などのデータをテンソルとして扱い、テンソル同士の計算によって学習と推論を行うため、テンソルはその計算の共通の入れ物になっている。" data-def-html="テンソルは、数を多方向に並べた配列の総称であり、数一つだけのもの、数を一列に並べた&lt;a class=&quot;gloss-link&quot; href=&quot;../../glossary/index.html#term-vector&quot; data-title=&quot;ベクトル（Vector）&quot; data-def=&quot;ベクトルは、大きさと向きを併せ持つ量を表すためのもので、一つの数だけでは表せない移動や力を扱うときに必要になる。計算上は数を一列に並べた形で表し、並んだ数の個数がそのベクトルの次元を決めるが、この形のおかげで、ある対象の特徴を複数の数で同時に表すことができる。人工知能では文章や画像の特徴を多数の数からなるベクトルで表し、ベクトル同士の近さを比べることで、もとの文章や画像の意味の近さを測るのに使う。&quot;&gt;ベクトル&lt;/a&gt;、数を表に並べた&lt;a class=&quot;gloss-link&quot; href=&quot;../../glossary/index.html#term-matrix&quot; data-title=&quot;行列（Matrix）&quot; data-def=&quot;行列は、数を縦と横に並べた長方形の表であり、横の並びを行、縦の並びを列と呼ぶ。行列が便利なのは、行列同士の掛け算が定義されていて、複数の数をまとめて別の数の組へ変換する計算を一つの操作として表せるためである。そのため大量のデータを一つずつ処理する代わりに、まとめて一度に変換できる。人工知能の計算の多くは行列の掛け算で表されており、ニューラルネットワークが入力を受け取って出力を作る処理も、この掛け算を土台にしている。&quot;&gt;行列&lt;/a&gt;をすべて含む、より一般的な形である。並べる方向の数を階数と呼び、階数が大きいほど多くの軸を持つ配列になるが、軸が増えることで、たとえば画像のように縦と横と色といった複数の観点が重なるデータも一つのまとまりとして扱える。&lt;a class=&quot;gloss-link&quot; href=&quot;../../glossary/index.html#term-deep-learning&quot; data-title=&quot;深層学習（Deep Learning）&quot; data-def=&quot;隠れ層を何層も重ねたニューラルネットワークに大量のデータを学ばせることで、単純な特徴を組み合わせた複雑な特徴まで段階的に捉えられるようにした機械学習の手法が深層学習だ。従来は人が「どこに注目すればよいか」という特徴を設計する必要があった課題でも高い性能を示すようになったため、画像認識や文章生成をはじめ現在の人工知能技術の中心になっている。&quot;&gt;深層学習&lt;/a&gt;では画像や文章などのデータをテンソルとして扱い、テンソル同士の計算によって&lt;a class=&quot;gloss-link&quot; href=&quot;../../glossary/index.html#term-training&quot; data-title=&quot;学習（訓練）（Training）&quot; data-def=&quot;学習は、機械学習のモデルにデータを与え、そのデータに合うようにモデル内部の数値を調整していく過程である。モデルは予測と正解のずれを手がかりに数値を少しずつ直し、ずれが小さくなる方向へ進んでいく。この過程を繰り返すことで、個々の例を覚えるだけでなく、見たことのないデータに対しても予測できるようになることが期待される。&quot;&gt;学習&lt;/a&gt;と&lt;a class=&quot;gloss-link&quot; href=&quot;../../glossary/index.html#term-t12&quot; data-title=&quot;推論（インファレンス）&quot; data-def=&quot;学習が終わったモデルを実際に使うときに行われるのが推論であり、新しいデータを入力して予測や文章の生成といった答えを取り出す処理を指す。学習のときと違い、この段階ではモデルの中身は書き換えられず、すでに学んだ内容を使って答えを出すだけだ。私たちが翻訳や対話などの形でモデルを利用する場面は、ほとんどがこの推論にあたる。&quot;&gt;推論&lt;/a&gt;を行うため、テンソルはその計算の共通の入れ物になっている。">テンソル</a>は1つではなく2つです。1つは回答の開始トークンに対応するロジット、もう1つは回答の終了トークンに対応するロジットです。今回の入力は、66トークンを含むものが1つだけです。その形状は次の通りです。</p>
 <div class="codehilite"><pre><span></span><code><span class="n">start_logits</span> <span class="o">=</span> <span class="n">outputs</span><span class="o">.</span><span class="n">start_logits</span>
 <span class="n">end_logits</span> <span class="o">=</span> <span class="n">outputs</span><span class="o">.</span><span class="n">end_logits</span>
 <span class="nb">print</span><span class="p">(</span><span class="n">start_logits</span><span class="o">.</span><span class="n">shape</span><span class="p">,</span> <span class="n">end_logits</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span>
@@ -371,8 +379,8 @@ torch.Size([1, 66]) torch.Size([1, 66])</p>
 </code></pre></div>
 
 <p>{/if}</p>
-<p>これらのロジットを確率に変換する為に softmax 関数を適用しますが、その前に、文脈の一部ではないインデックスを確実にマスクする必要があります。入力は <code>[CLS] question [SEP] context [SEP]</code> なので、質問のトークンと <code>[SEP]</code> トークンをマスクする必要があります。但し <code>[CLS]</code> トークンは保持します。一部のモデルは、回答が文脈に含まれていないことを示す為にそれを使う為です。</p>
-<p>後で softmax を適用する為、マスクしたいロジットを大きな負の数に置き換えるだけで済みます。ここでは <code>-10000</code> を使います。</p>
+<p>ロジットを確率に変換するには softmax 関数を適用します。但し、その前に、文脈に属さない位置のインデックスをマスクしておく必要があります。入力は <code>[CLS] question [SEP] context [SEP]</code> という並びです。質問のトークンと <code>[SEP]</code> トークンがマスクの対象です。<code>[CLS]</code> トークンだけは残します。回答が文脈に含まれていないことを、このトークンで示すモデルがある為です。</p>
+<p>この後 softmax を適用するので、マスクしたいロジットは大きな負の数に置き換えるだけで足ります。ここでは <code>-10000</code> を使います。</p>
 <p>{#if fw === 'pt'}</p>
 <div class="codehilite"><pre><span></span><code><span class="kn">import</span><span class="w"> </span><span class="nn">torch</span>
 
@@ -402,7 +410,7 @@ torch.Size([1, 66]) torch.Size([1, 66])</p>
 </code></pre></div>
 
 <p>{/if}</p>
-<p>予測したくない位置に対応するロジットを適切にマスク出来たので、softmax を適用出来ます。</p>
+<p>予測対象から外したい位置のロジットをマスク出来ました。softmax を適用します。</p>
 <p>{#if fw === 'pt'}</p>
 <div class="codehilite"><pre><span></span><code><span class="n">start_probabilities</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">nn</span><span class="o">.</span><span class="n">functional</span><span class="o">.</span><span class="n">softmax</span><span class="p">(</span><span class="n">start_logits</span><span class="p">,</span> <span class="n">dim</span><span class="o">=-</span><span class="mi">1</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span>
 <span class="n">end_probabilities</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">nn</span><span class="o">.</span><span class="n">functional</span><span class="o">.</span><span class="n">softmax</span><span class="p">(</span><span class="n">end_logits</span><span class="p">,</span> <span class="n">dim</span><span class="o">=-</span><span class="mi">1</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span>
@@ -414,44 +422,44 @@ torch.Size([1, 66]) torch.Size([1, 66])</p>
 </code></pre></div>
 
 <p>{/if}</p>
-<p>この段階で、開始確率と終了確率の <a class="gloss-link" href="../../glossary/index.html#term-argmin-argmax" data-title="argmin／argmax（arg min / arg max）" data-def="最小値そのものではなく、それを与える入力の方を知りたい場面で使う記号をargmin、argmaxと書く。argminは関数に最小値を与える入力の値、argmaxは最大値を与える入力の値を表す記号であり、minやmaxが関数の値そのものを返すのに対し、argminとargmaxはその値を実現する変数の方を返す点が異なる。最小値を与える入力が複数ある場合はargminはそれらの集合を表す。最適化問題の解を簡潔に書き表すために広く使われ、機械学習でも損失を最小にするパラメータをargminで表すなど、学習の目標そのものを一行で示す記法として定着している。" data-def-html="最小値そのものではなく、それを与える入力の方を知りたい場面で使う記号をargmin、argmaxと書く。argminは関数に最小値を与える入力の値、argmaxは最大値を与える入力の値を表す記号であり、minやmaxが関数の値そのものを返すのに対し、argminとargmaxはその値を実現する変数の方を返す点が異なる。最小値を与える入力が複数ある場合はargminはそれらの集合を表す。最適化問題の解を簡潔に書き表すために広く使われ、&lt;a class=&quot;gloss-link&quot; href=&quot;../../glossary/index.html#term-machine-learning&quot; data-title=&quot;機械学習（Machine Learning）&quot; data-def=&quot;プログラムの手順を人間が一つ一つ書き与える従来の方法では、複雑な判断をすべて書き切ることは難しいため、データから規則性や判断の基準をコンピュータ自身に学ばせる技術を機械学習という。訓練用のデータを用いて学ばせることでモデルはパターンを身に付け、正解の分からない新しいデータに対しても予測や分類ができるようになる。人工知能を実現する主要な方法の一つであり、現在の人工知能の中心的な仕組みになっている。&quot;&gt;機械学習&lt;/a&gt;でも損失を最小にする&lt;a class=&quot;gloss-link&quot; href=&quot;../../glossary/index.html#term-parameter&quot; data-title=&quot;パラメータ（Parameter）&quot; data-def=&quot;モデルが学習で覚えた内容は、内部の数値の集まりとして蓄えられる。その数値の総称がパラメータで、ニューラルネットワークでは入力への重み付けを決める重みと、結果をずらすバイアスがこれにあたる。パラメータが多いモデルほど複雑な関係を表しやすくなる一方、学習に必要なデータや計算も増える。なお、学習率のように学習を始める前に人が決める設定は、学習で決まる値ではないためパラメータには含めない。&quot;&gt;パラメータ&lt;/a&gt;をargminで表すなど、&lt;a class=&quot;gloss-link&quot; href=&quot;../../glossary/index.html#term-training&quot; data-title=&quot;学習（訓練）（Training）&quot; data-def=&quot;学習は、機械学習のモデルにデータを与え、そのデータに合うようにモデル内部の数値を調整していく過程である。モデルは予測と正解のずれを手がかりに数値を少しずつ直し、ずれが小さくなる方向へ進んでいく。この過程を繰り返すことで、個々の例を覚えるだけでなく、見たことのないデータに対しても予測できるようになることが期待される。&quot;&gt;学習&lt;/a&gt;の目標そのものを一行で示す記法として定着している。">argmax</a> を取ることも出来ますが、終了インデックスより大きい開始インデックスになってしまう可能性がある為、もう少し注意が必要です。<code>start_index &lt;= end_index</code> を満たす各 <code>start_index</code> と <code>end_index</code> の組み合わせの確率を計算し、確率が最も高いタ<a class="gloss-link" href="../../glossary/index.html#term-pull" data-title="プル（pull）" data-def="他人の変更を取り寄せて自分のブランチへの統合まで一気に済ませる操作がプルだ。内部的には取得だけを行うフェッチと、統合を行うマージまたはリベースを続けて実行する動作に相当する。共同作業では自分の変更を共有する前にプルして他者の変更を取り込んでおくことで、履歴の食い違いを抑え、後の統合で困る事態を減らせる。" data-def-html="他人の変更を取り寄せて自分の&lt;a class=&quot;gloss-link&quot; href=&quot;../../glossary/index.html#term-branch&quot; data-title=&quot;ブランチ（branch）&quot; data-def=&quot;元の変更履歴に触れずに新しい作業を試せるよう、履歴の流れを枝分かれさせたものがGitのブランチだ。実体は特定のコミットを指す軽い目印にすぎないため、気軽に作って作業を分けられる。機能の追加や修正をブランチごとに進め、作業が終われば元の流れへ統合するマージを行うのが基本的な使い方であり、作業中の変更が安定した履歴を壊さない点が利点になる。&quot;&gt;ブランチ&lt;/a&gt;への統合まで一気に済ませる操作がプルだ。内部的には取得だけを行う&lt;a class=&quot;gloss-link&quot; href=&quot;../../glossary/index.html#term-fetch&quot; data-title=&quot;フェッチ（fetch）&quot; data-def=&quot;リモートの進捗を取り寄せても、手元の作業ファイルはすぐには変わらないのがフェッチの特徴だ。リモートリポジトリから新しいコミットやブランチの情報を取得して手元の記録を更新する操作であり、取得した変更を作業へ反映するかどうかはその後の判断に委ねられる。まずフェッチで他者の進捗を確認し、その後にマージやリベースで自分の作業へ取り込む手順を踏むことで、作業中の内容を保ったまま安全に共同作業を進められる。&quot;&gt;フェッチ&lt;/a&gt;と、統合を行う&lt;a class=&quot;gloss-link&quot; href=&quot;../../glossary/index.html#term-merge&quot; data-title=&quot;マージ（merge）&quot; data-def=&quot;別々に進んだ2つのブランチの変更を1つに合わせる操作がマージである。両方のブランチで行われた変更を組み合わせ、通常は統合を表す新しいコミットであるマージコミットが作られる。ただし同じ箇所が両方で異なる形に変更されている場合は自動では統合できず、競合として人手による判断が必要になるため、その箇所はどちらの内容を残すかを決めてから統合を完了させる。&quot;&gt;マージ&lt;/a&gt;または&lt;a class=&quot;gloss-link&quot; href=&quot;../../glossary/index.html#term-rebase&quot; data-title=&quot;リベース（rebase）&quot; data-def=&quot;自分のコミット群を別の地点の後ろに並べ直して履歴を作り替える操作がリベースである。分岐後に積み重ねた自分のコミットを取り込み先の最新コミットの後ろへ順に適用し直すことで、新しいコミットとして並べ直す。マージと違って履歴が一直線に保たれる利点がある反面、既存のコミットの作り直しになるため、他者と共有済みの履歴に対しては使うべきでないとされる。&quot;&gt;リベース&lt;/a&gt;を続けて実行する動作に相当する。共同作業では自分の変更を共有する前にプルして他者の変更を取り込んでおくことで、履歴の食い違いを抑え、後の統合で困る事態を減らせる。">プル</a> <code>(start_index, end_index)</code> を取ります。</p>
-<p><a class="gloss-link" href="../../glossary/index.html#term-event" data-title="事象（event）" data-def="「偶数の目が出る」のように、試行の結果について関心のある出来事をまとめたものが事象だ。事象は標本空間の部分集合として表され、実際の試行結果がその集合に含まれていれば、その事象が起こったとみなす。確率とは各事象に0から1の数を割り当てて起こりやすさを表したものであり、機械学習の分類でも「この画像は猫である」といった出来事ごとに確率を割り当て、最も確率の高いものを予測として選ぶ形でこの考え方が使われる。" data-def-html="「偶数の目が出る」のように、試行の結果について関心のある出来事をまとめたものが事象だ。事象は&lt;a class=&quot;gloss-link&quot; href=&quot;../../glossary/index.html#term-sample-space&quot; data-title=&quot;標本空間（sample space）&quot; data-def=&quot;さいころを振る前に、起こり得る結果をすべて漏れなく書き出した集合が標本空間だ。ここでいう試行とは、さいころ振りのように結果が偶然に決まる行為を指し、1から6までの目が標本空間の要素になる。確率の議論はまずこの全体像を定めることから始まり、関心のある結果の集まりである事象は標本空間の部分集合として表されるため、機械学習で確率モデルを作るときも、モデルがどの結果を想定しているかを定める出発点になる。&quot;&gt;標本空間&lt;/a&gt;の部分集合として表され、実際の試行結果がその集合に含まれていれば、その事象が起こったとみなす。確率とは各事象に0から1の数を割り当てて起こりやすさを表したものであり、&lt;a class=&quot;gloss-link&quot; href=&quot;../../glossary/index.html#term-machine-learning&quot; data-title=&quot;機械学習（Machine Learning）&quot; data-def=&quot;プログラムの手順を人間が一つ一つ書き与える従来の方法では、複雑な判断をすべて書き切ることは難しいため、データから規則性や判断の基準をコンピュータ自身に学ばせる技術を機械学習という。訓練用のデータを用いて学ばせることでモデルはパターンを身に付け、正解の分からない新しいデータに対しても予測や分類ができるようになる。人工知能を実現する主要な方法の一つであり、現在の人工知能の中心的な仕組みになっている。&quot;&gt;機械学習&lt;/a&gt;の&lt;a class=&quot;gloss-link&quot; href=&quot;../../glossary/index.html#term-classification&quot; data-title=&quot;分類（Classification）&quot; data-def=&quot;メールが迷惑メールかどうか、写真に写っているのが犬か猫か――あらかじめ決められた種類のどれに当てはまるかを当てる課題が分類だ。予測する答えが金額のような連続した数値ではなく種類である点が回帰と異なり、教師あり学習の代表的な課題の一つとして、仕分けが必要な場面で広く使われる。&quot;&gt;分類&lt;/a&gt;でも「この画像は猫である」といった出来事ごとに確率を割り当て、最も確率の高いものを予測として選ぶ形でこの考え方が使われる。">事象</a>「回答が <code>start_index</code> から始まる」と「回答が <code>end_index</code> で終わる」が独立であると仮定すると、回答が <code>start_index</code> から始まって <code>end_index</code> で終わる確率は次の通りです。</p>
+<p>この段階で開始確率と終了確率の <a class="gloss-link" href="../../glossary/index.html#term-argmin-argmax" data-title="argmin／argmax（arg min / arg max）" data-def="最小値そのものではなく、それを与える入力の方を知りたい場面で使う記号をargmin、argmaxと書く。argminは関数に最小値を与える入力の値、argmaxは最大値を与える入力の値を表す記号であり、minやmaxが関数の値そのものを返すのに対し、argminとargmaxはその値を実現する変数の方を返す点が異なる。最小値を与える入力が複数ある場合はargminはそれらの集合を表す。最適化問題の解を簡潔に書き表すために広く使われ、機械学習でも損失を最小にするパラメータをargminで表すなど、学習の目標そのものを一行で示す記法として定着している。" data-def-html="最小値そのものではなく、それを与える入力の方を知りたい場面で使う記号をargmin、argmaxと書く。argminは関数に最小値を与える入力の値、argmaxは最大値を与える入力の値を表す記号であり、minやmaxが関数の値そのものを返すのに対し、argminとargmaxはその値を実現する変数の方を返す点が異なる。最小値を与える入力が複数ある場合はargminはそれらの集合を表す。最適化問題の解を簡潔に書き表すために広く使われ、&lt;a class=&quot;gloss-link&quot; href=&quot;../../glossary/index.html#term-machine-learning&quot; data-title=&quot;機械学習（Machine Learning）&quot; data-def=&quot;プログラムの手順を人間が一つ一つ書き与える従来の方法では、複雑な判断をすべて書き切ることは難しいため、データから規則性や判断の基準をコンピュータ自身に学ばせる技術を機械学習という。訓練用のデータを用いて学ばせることでモデルはパターンを身に付け、正解の分からない新しいデータに対しても予測や分類ができるようになる。人工知能を実現する主要な方法の一つであり、現在の人工知能の中心的な仕組みになっている。&quot;&gt;機械学習&lt;/a&gt;でも損失を最小にする&lt;a class=&quot;gloss-link&quot; href=&quot;../../glossary/index.html#term-parameter&quot; data-title=&quot;パラメータ（Parameter）&quot; data-def=&quot;モデルが学習で覚えた内容は、内部の数値の集まりとして蓄えられる。その数値の総称がパラメータで、ニューラルネットワークでは入力への重み付けを決める重みと、結果をずらすバイアスがこれにあたる。パラメータが多いモデルほど複雑な関係を表しやすくなる一方、学習に必要なデータや計算も増える。なお、学習率のように学習を始める前に人が決める設定は、学習で決まる値ではないためパラメータには含めない。&quot;&gt;パラメータ&lt;/a&gt;をargminで表すなど、&lt;a class=&quot;gloss-link&quot; href=&quot;../../glossary/index.html#term-training&quot; data-title=&quot;学習（訓練）（Training）&quot; data-def=&quot;学習は、機械学習のモデルにデータを与え、そのデータに合うようにモデル内部の数値を調整していく過程である。モデルは予測と正解のずれを手がかりに数値を少しずつ直し、ずれが小さくなる方向へ進んでいく。この過程を繰り返すことで、個々の例を覚えるだけでなく、見たことのないデータに対しても予測できるようになることが期待される。&quot;&gt;学習&lt;/a&gt;の目標そのものを一行で示す記法として定着している。">argmax</a> を取るだけでは不十分です。開始インデックスが終了インデックスより大きくなる組み合わせが選ばれる恐れがあります。そこで、<code>start_index &lt;= end_index</code> を満たす <code>start_index</code> と <code>end_index</code> の組み合わせについて確率を計算し、最も確率の高いタ<a class="gloss-link" href="../../glossary/index.html#term-pull" data-title="プル（pull）" data-def="他人の変更を取り寄せて自分のブランチへの統合まで一気に済ませる操作がプルだ。内部的には取得だけを行うフェッチと、統合を行うマージまたはリベースを続けて実行する動作に相当する。共同作業では自分の変更を共有する前にプルして他者の変更を取り込んでおくことで、履歴の食い違いを抑え、後の統合で困る事態を減らせる。" data-def-html="他人の変更を取り寄せて自分の&lt;a class=&quot;gloss-link&quot; href=&quot;../../glossary/index.html#term-branch&quot; data-title=&quot;ブランチ（branch）&quot; data-def=&quot;元の変更履歴に触れずに新しい作業を試せるよう、履歴の流れを枝分かれさせたものがGitのブランチだ。実体は特定のコミットを指す軽い目印にすぎないため、気軽に作って作業を分けられる。機能の追加や修正をブランチごとに進め、作業が終われば元の流れへ統合するマージを行うのが基本的な使い方であり、作業中の変更が安定した履歴を壊さない点が利点になる。&quot;&gt;ブランチ&lt;/a&gt;への統合まで一気に済ませる操作がプルだ。内部的には取得だけを行う&lt;a class=&quot;gloss-link&quot; href=&quot;../../glossary/index.html#term-fetch&quot; data-title=&quot;フェッチ（fetch）&quot; data-def=&quot;リモートの進捗を取り寄せても、手元の作業ファイルはすぐには変わらないのがフェッチの特徴だ。リモートリポジトリから新しいコミットやブランチの情報を取得して手元の記録を更新する操作であり、取得した変更を作業へ反映するかどうかはその後の判断に委ねられる。まずフェッチで他者の進捗を確認し、その後にマージやリベースで自分の作業へ取り込む手順を踏むことで、作業中の内容を保ったまま安全に共同作業を進められる。&quot;&gt;フェッチ&lt;/a&gt;と、統合を行う&lt;a class=&quot;gloss-link&quot; href=&quot;../../glossary/index.html#term-merge&quot; data-title=&quot;マージ（merge）&quot; data-def=&quot;別々に進んだ2つのブランチの変更を1つに合わせる操作がマージである。両方のブランチで行われた変更を組み合わせ、通常は統合を表す新しいコミットであるマージコミットが作られる。ただし同じ箇所が両方で異なる形に変更されている場合は自動では統合できず、競合として人手による判断が必要になるため、その箇所はどちらの内容を残すかを決めてから統合を完了させる。&quot;&gt;マージ&lt;/a&gt;または&lt;a class=&quot;gloss-link&quot; href=&quot;../../glossary/index.html#term-rebase&quot; data-title=&quot;リベース（rebase）&quot; data-def=&quot;自分のコミット群を別の地点の後ろに並べ直して履歴を作り替える操作がリベースである。分岐後に積み重ねた自分のコミットを取り込み先の最新コミットの後ろへ順に適用し直すことで、新しいコミットとして並べ直す。マージと違って履歴が一直線に保たれる利点がある反面、既存のコミットの作り直しになるため、他者と共有済みの履歴に対しては使うべきでないとされる。&quot;&gt;リベース&lt;/a&gt;を続けて実行する動作に相当する。共同作業では自分の変更を共有する前にプルして他者の変更を取り込んでおくことで、履歴の食い違いを抑え、後の統合で困る事態を減らせる。">プル</a> <code>(start_index, end_index)</code> を選びます。</p>
+<p>「回答が <code>start_index</code> から始まる」という<a class="gloss-link" href="../../glossary/index.html#term-event" data-title="事象（event）" data-def="「偶数の目が出る」のように、試行の結果について関心のある出来事をまとめたものが事象だ。事象は標本空間の部分集合として表され、実際の試行結果がその集合に含まれていれば、その事象が起こったとみなす。確率とは各事象に0から1の数を割り当てて起こりやすさを表したものであり、機械学習の分類でも「この画像は猫である」といった出来事ごとに確率を割り当て、最も確率の高いものを予測として選ぶ形でこの考え方が使われる。" data-def-html="「偶数の目が出る」のように、試行の結果について関心のある出来事をまとめたものが事象だ。事象は&lt;a class=&quot;gloss-link&quot; href=&quot;../../glossary/index.html#term-sample-space&quot; data-title=&quot;標本空間（sample space）&quot; data-def=&quot;さいころを振る前に、起こり得る結果をすべて漏れなく書き出した集合が標本空間だ。ここでいう試行とは、さいころ振りのように結果が偶然に決まる行為を指し、1から6までの目が標本空間の要素になる。確率の議論はまずこの全体像を定めることから始まり、関心のある結果の集まりである事象は標本空間の部分集合として表されるため、機械学習で確率モデルを作るときも、モデルがどの結果を想定しているかを定める出発点になる。&quot;&gt;標本空間&lt;/a&gt;の部分集合として表され、実際の試行結果がその集合に含まれていれば、その事象が起こったとみなす。確率とは各事象に0から1の数を割り当てて起こりやすさを表したものであり、&lt;a class=&quot;gloss-link&quot; href=&quot;../../glossary/index.html#term-machine-learning&quot; data-title=&quot;機械学習（Machine Learning）&quot; data-def=&quot;プログラムの手順を人間が一つ一つ書き与える従来の方法では、複雑な判断をすべて書き切ることは難しいため、データから規則性や判断の基準をコンピュータ自身に学ばせる技術を機械学習という。訓練用のデータを用いて学ばせることでモデルはパターンを身に付け、正解の分からない新しいデータに対しても予測や分類ができるようになる。人工知能を実現する主要な方法の一つであり、現在の人工知能の中心的な仕組みになっている。&quot;&gt;機械学習&lt;/a&gt;の&lt;a class=&quot;gloss-link&quot; href=&quot;../../glossary/index.html#term-classification&quot; data-title=&quot;分類（Classification）&quot; data-def=&quot;メールが迷惑メールかどうか、写真に写っているのが犬か猫か――あらかじめ決められた種類のどれに当てはまるかを当てる課題が分類だ。予測する答えが金額のような連続した数値ではなく種類である点が回帰と異なり、教師あり学習の代表的な課題の一つとして、仕分けが必要な場面で広く使われる。&quot;&gt;分類&lt;/a&gt;でも「この画像は猫である」といった出来事ごとに確率を割り当て、最も確率の高いものを予測として選ぶ形でこの考え方が使われる。">事象</a>と、「回答が <code>end_index</code> で終わる」という事象が独立であると仮定します。この仮定の下では、回答が <code>start_index</code> から始まって <code>end_index</code> で終わる確率は、次の式で表されます。</p>
 <p>$$\mathrm{start_probabilities}[\mathrm{start_index}] \times \mathrm{end_probabilities}[\mathrm{end_index}]$$ </p>
-<p>従って、全てのスコアを計算するには、<code>start_index &lt;= end_index</code> の<a class="gloss-link" href="../../glossary/index.html#term-range" data-title="範囲（range）" data-def="データの広がりを最も単純に表す方法が、最大値から最小値を引いた差である範囲を使うことだ。計算は引き算一つで済む一方、決めるのは両端の二つの値だけなので、極端な値が一つ混じるだけで大きく変わってしまう弱点がある。そのため分布全体の散らばりは分散や四分位範囲などと併せて判断する必要があり、機械学習でもデータを0から1の間にそろえる正規化の計算に現れるものの、外れ値の影響を受けやすい点には注意が要る。" data-def-html="データの広がりを最も単純に表す方法が、最大値から最小値を引いた差である範囲を使うことだ。計算は引き算一つで済む一方、決めるのは両端の二つの値だけなので、極端な値が一つ混じるだけで大きく変わってしまう弱点がある。そのため分布全体の散らばりは&lt;a class=&quot;gloss-link&quot; href=&quot;../../glossary/index.html#term-variance&quot; data-title=&quot;分散（variance）&quot; data-def=&quot;平均が同じデータでも、値が平均の近くに集まっている場合と大きく散らばっている場合では性質がまったく違うため、その散らばり具合を一つの数で表す必要があり、それが分散だ。各値について平均との差を取り、その差を二乗（同じ数を2回掛けること）してから平均を取ると、平均から遠い値ほど大きく効く形でばらつきを測れる。機械学習では、特徴量ごとに分散を見ることで情報量の乏しい列を見分けたり、学習を安定させるためのデータの整え方を判断したりする際の手がかりになる。&quot;&gt;分散&lt;/a&gt;や&lt;a class=&quot;gloss-link&quot; href=&quot;../../glossary/index.html#term-interquartile-range&quot; data-title=&quot;四分位範囲（interquartile range）&quot; data-def=&quot;極端な値に左右されずに中央付近の散らばりを測りたいときに使う幅が四分位範囲だ。データを大きさの順に並べて四等分したときの第3四分位数から第1四分位数を引いた差として求められ、中央に位置する半数のデータが収まる幅を表す。最大値と最小値だけで決まる範囲とは違い、一つ二つの異常な値では大きく変わらないため、機械学習の前処理ではこの幅をもとに外れ値を検出する方法が広く使われている。&quot;&gt;四分位範囲&lt;/a&gt;などと併せて判断する必要があり、&lt;a class=&quot;gloss-link&quot; href=&quot;../../glossary/index.html#term-machine-learning&quot; data-title=&quot;機械学習（Machine Learning）&quot; data-def=&quot;プログラムの手順を人間が一つ一つ書き与える従来の方法では、複雑な判断をすべて書き切ることは難しいため、データから規則性や判断の基準をコンピュータ自身に学ばせる技術を機械学習という。訓練用のデータを用いて学ばせることでモデルはパターンを身に付け、正解の分からない新しいデータに対しても予測や分類ができるようになる。人工知能を実現する主要な方法の一つであり、現在の人工知能の中心的な仕組みになっている。&quot;&gt;機械学習&lt;/a&gt;でもデータを0から1の間にそろえる&lt;a class=&quot;gloss-link&quot; href=&quot;../../glossary/index.html#term-normalization&quot; data-title=&quot;正規化（Normalization）&quot; data-def=&quot;データの値の範囲や分布の形を、扱いやすい基準にそろえる処理の総称が正規化だ。特徴ごとに単位も大きさもばらばらだと、大きな値を持つ特徴ばかりが計算を支配してしまうため、0から1の範囲に収めたり、平均0・ばらつき1にそろえたりする。ニューラルネットワークの内部でも、層に入る値の分布をそろえるバッチ正規化やレイヤー正規化として使われ、学習を安定させる役割を持つ。そろえ方によって手法が分かれるため、文脈からどの正規化を指しているかを確認する必要がある。&quot;&gt;正規化&lt;/a&gt;の計算に現れるものの、外れ値の影響を受けやすい点には注意が要る。">範囲</a>で積 (\mathrm{start_probabilities}[\mathrm{start_index}] \times \mathrm{end_probabilities}[\mathrm{end_index}]) を全て計算するだけです。</p>
+<p>従って、スコアは、<code>start_index &lt;= end_index</code> を満たす全ての組み合わせについて、この積を計算すれば得られます。</p>
 <p>まず、可能な積を全て計算しましょう。</p>
 <div class="codehilite"><pre><span></span><code><span class="n">scores</span> <span class="o">=</span> <span class="n">start_probabilities</span><span class="p">[:,</span> <span class="kc">None</span><span class="p">]</span> <span class="o">*</span> <span class="n">end_probabilities</span><span class="p">[</span><span class="kc">None</span><span class="p">,</span> <span class="p">:]</span>
 </code></pre></div>
 
 <p>{#if fw === 'pt'}</p>
-<p>次に、<code>start_index &gt; end_index</code> の値を <code>0</code> に設定してマスクします（他の確率は全て正の数です）。<code>torch.triu()</code> 関数は、<a class="gloss-link" href="../../glossary/index.html#term-argument" data-title="引数（argument）" data-def="関数（決められた処理を行うプログラムのまとまり）に仕事を頼むとき、一緒に渡す値が引数である。関数は受け取った引数をもとに処理を行い結果を返すため、引数を変えれば同じ関数でも異なる働きをさせることができる。なお、関数を定義する側で受け取り口として用意される名前と区別して、実際に渡される値そのものを指す場合もある。" data-def-html="関数（決められた処理を行うプログラムのまとまり）に仕事を頼むとき、一緒に渡す値が引数である。関数は受け取った引数をもとに処理を行い結果を返すため、引数を変えれば同じ関数でも異なる働きをさせることができる。なお、関数を定義する側で受け取り口として用意される名前と区別して、実際に渡される値そのものを指す場合もある。">引数</a>として渡された2次元テンソルの上三角部分を返す為、そのマスキングを行ってくれます。</p>
+<p>次に、<code>start_index &gt; end_index</code> となる値を <code>0</code> にしてマスクします。他の確率は全て正の数なので、この処理で不都合はありません。<code>torch.triu()</code> 関数は、<a class="gloss-link" href="../../glossary/index.html#term-argument" data-title="引数（argument）" data-def="関数（決められた処理を行うプログラムのまとまり）に仕事を頼むとき、一緒に渡す値が引数である。関数は受け取った引数をもとに処理を行い結果を返すため、引数を変えれば同じ関数でも異なる働きをさせることができる。なお、関数を定義する側で受け取り口として用意される名前と区別して、実際に渡される値そのものを指す場合もある。" data-def-html="関数（決められた処理を行うプログラムのまとまり）に仕事を頼むとき、一緒に渡す値が引数である。関数は受け取った引数をもとに処理を行い結果を返すため、引数を変えれば同じ関数でも異なる働きをさせることができる。なお、関数を定義する側で受け取り口として用意される名前と区別して、実際に渡される値そのものを指す場合もある。">引数</a>に渡した2次元テンソルの上三角部分を返します。この関数がマスキングを担います。</p>
 <div class="codehilite"><pre><span></span><code><span class="n">scores</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">triu</span><span class="p">(</span><span class="n">scores</span><span class="p">)</span>
 </code></pre></div>
 
 <p>{:else}</p>
-<p>次に、<code>start_index &gt; end_index</code> の値を <code>0</code> に設定してマスクします（他の確率は全て正の数です）。<code>np.triu()</code> 関数は、引数として渡された2次元テンソルの上三角部分を返す為、そのマスキングを行ってくれます。</p>
+<p>次に、<code>start_index &gt; end_index</code> となる値を <code>0</code> にしてマスクします。他の確率は全て正の数なので、この処理で不都合はありません。<code>np.triu()</code> 関数は、引数に渡した2次元テンソルの上三角部分を返します。この関数がマスキングを担います。</p>
 <div class="codehilite"><pre><span></span><code><span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
 
 <span class="n">scores</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">triu</span><span class="p">(</span><span class="n">scores</span><span class="p">)</span>
 </code></pre></div>
 
 <p>{/if}</p>
-<p>あとは最大値のインデックスを取得するだけです。PyTorch は平坦化されたテンソルでのインデックスを返す為、<code>start_index</code> と <code>end_index</code> を得るには床除算 <code>//</code> と剰余 <code>%</code> の演算を使う必要があります。</p>
+<p>残る作業は、最大値のインデックスの取得です。PyTorch が返すのは、平坦化したテンソルにおけるインデックスです。<code>start_index</code> と <code>end_index</code> への換算には、床除算 <code>//</code> と剰余 <code>%</code> を使います。</p>
 <div class="codehilite"><pre><span></span><code><span class="n">max_index</span> <span class="o">=</span> <span class="n">scores</span><span class="o">.</span><span class="n">argmax</span><span class="p">()</span><span class="o">.</span><span class="n">item</span><span class="p">()</span>
 <span class="n">start_index</span> <span class="o">=</span> <span class="n">max_index</span> <span class="o">//</span> <span class="n">scores</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
 <span class="n">end_index</span> <span class="o">=</span> <span class="n">max_index</span> <span class="o">%</span> <span class="n">scores</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
 <span class="nb">print</span><span class="p">(</span><span class="n">scores</span><span class="p">[</span><span class="n">start_index</span><span class="p">,</span> <span class="n">end_index</span><span class="p">])</span>
 </code></pre></div>
 
-<p>まだ完全には終わっていませんが、少なくとも回答の正しいスコアは既に得られています（前のセクションの最初の結果と比較すれば確認出来ます）。</p>
+<p>作業はまだ終わっていませんが、回答のスコア自体は既に正しく得られています。前のセクションの最初の結果と比べれば確認出来ます。</p>
 <p>```python out
 0.97773</p>
 <div class="codehilite"><pre><span></span><code>&lt;div class="callout callout-tip" markdown="block"&gt;
 &lt;p class="callout-title"&gt;💡 ヒント&lt;/p&gt;
-**試してみましょう！** 最も可能性の高い5つの回答について、開始インデックスと終了インデックスを計算してください。
+✏️ **試してみましょう！** 最も可能性の高い5つの回答について、開始インデックスと終了インデックスを計算してください。
 &lt;/div&gt;
 
 
-回答の `start_index` と `end_index` がトークン単位で得られたので、あとは文脈中の文字インデックスに変換するだけです。ここでオフセットが非常に役立ちます。トークン分類タスクで行ったように、それらを取得して使えます。
+回答の `start_index` と `end_index` は、トークン単位の位置です。残るのは、文脈中の文字インデックスへの変換です。ここでオフセットが役立ちます。トークン分類タスクで行ったのと同じ方法で、オフセットを取得して使います。
 
 ```py
 inputs_with_offsets = tokenizer(question, context, return_offsets_mapping=True)
@@ -477,17 +485,17 @@ answer = context[start_char:end_char]
  'start': 78,
  'end': 105,
  'score': 0.97773}</p>
-<div class="codehilite"><pre><span></span><code>素晴らしい！最初の例と同じになりました。
+<div class="codehilite"><pre><span></span><code>最初の例と同じ結果になりました。
 
 &lt;div class="callout callout-tip" markdown="block"&gt;
 &lt;p class="callout-title"&gt;💡 ヒント&lt;/p&gt;
-**試してみましょう！** 先ほど計算した最良のスコアを使って、最も可能性の高い5つの回答を表示してください。結果を確認するには、最初のパイプラインに戻り、呼び出し時に `top_k=5` を渡してください。
+✏️ **試してみましょう！** 先ほど計算した最良のスコアを使って、最も可能性の高い5つの回答を表示してください。結果を確認するには、最初のパイプラインに戻り、呼び出し時に `top_k=5` を渡してください。
 &lt;/div&gt;
 
 
 ## 長い文脈の処理
 
-以前に例として使った質問と長い文脈をトークン化しようとすると、`question-answering` パイプラインで使われる最大長（384）を超えるトークン数が得られます。
+先ほどの例の質問と長い文脈をトークン化すると、トークン数は `question-answering` パイプラインの最大長である384を超えます。
 
 ```py
 inputs = tokenizer(question, long_context)
@@ -496,9 +504,9 @@ print(len(inputs["input_ids"]))
 
 <p>```python out
 461</p>
-<div class="codehilite"><pre><span></span><code>その為、入力をその最大長で切り詰める必要があります。これを行う方法はいくつかありますが、切り詰めたいのは質問ではなく文脈だけです。文脈は2番目の文なので、`"only_second"` の切り詰め戦略を使います。
+<div class="codehilite"><pre><span></span><code>入力は、この最大長に合わせて切り詰める必要があります。切り詰めの方法はいくつかありますが、対象は質問ではなく文脈だけです。文脈はペアの2番目に当たる為、切り詰め戦略には `"only_second"` を使います。
 
-その場合に生じる問題は、質問への回答が切り詰められた文脈に含まれていない可能性があることです。例えば、ここでは回答が文脈の末尾寄りにある質問を選んだ為、切り詰めるとその回答が含まれなくなります。
+但し、切り詰めには問題があります。質問への回答が、切り詰めた後の文脈に残っていない可能性があることです。ここで選んだ質問は、まさにその例です。回答は文脈の末尾寄りにあり、切り詰めると失われます。
 
 ```py
 inputs = tokenizer(question, long_context, max_length=384, truncation="only_second")
@@ -544,9 +552,9 @@ can be modified to enable quick research experiments.</p>
 </ol>
 <div class="codehilite"><pre><span></span><code>（出力の訳：切り詰められた文脈の表示です。内容は前の長い文脈文の訳を参照してください。末尾は途中で切れています）
 
-つまり、モデルは正しい回答を選ぶのが難しくなります。これを解決する為に、`question-answering` パイプラインでは最大長を指定して文脈をより小さいチャンクに分割出来ます。また、回答を含む箇所がチャンクの境界で分断されないように、隣接するチャンクには一部重複する範囲を設けます。
+このままでは、モデルは正しい回答を選びにくくなります。対策として、`question-answering` パイプラインでは、最大長を指定して文脈を小さいチャンクに分割出来ます。チャンク同士には重なりを持たせます。回答を含む箇所が境界で分断され、どちらのチャンクからも回答出来なくなる事態を避ける為です。
 
-`return_overflowing_tokens=True` を追加すれば、トークナイザ（高速・低速を問わず）にこの処理を行わせることが出来、重なりの量は `stride` 引数で指定出来ます。小さい文を使った例を示します。
+この分割は、`return_overflowing_tokens=True` を追加すればトークナイザに任せられます。高速トークナイザでも低速トークナイザでも同じです。重なりの量は `stride` 引数で指定します。短い文を使った例で確認します。
 
 ```py
 sentence = "This sentence is not too long but we are going to split it anyway."
@@ -567,7 +575,7 @@ for ids in inputs["input_ids"]:
 '[CLS] are going to split [SEP]'
 '[CLS] to split it anyway [SEP]'
 '[CLS] it anyway. [SEP]'</p>
-<div class="codehilite"><pre><span></span><code>見ての通り、文はチャンクに分割され、`inputs["input_ids"]` の各エントリは最大6トークンになっています（最後のエントリを他と同じサイズにするにはパディングを追加する必要があります）。また、各エントリ間には2トークンの重なりがあります。
+<div class="codehilite"><pre><span></span><code>文はチャンクに分割されています。`inputs["input_ids"]` の各エントリは最大で6トークンです。最後のエントリだけは短い為、他と大きさを揃えるにはパディングの追加が必要です。各エントリの間には、2トークン分の重なりがあります。
 
 トークン化の結果を詳しく見てみましょう。
 
@@ -577,7 +585,7 @@ print(inputs.keys())
 
 <p>```python out
 dict_keys(['input_ids', 'attention_mask', 'overflow_to_sample_mapping'])</p>
-<div class="codehilite"><pre><span></span><code>予想通り、入力 ID とアテンションマスクが得られます。最後のキー `overflow_to_sample_mapping` は、各結果がどの文に対応するかを示すマップです。ここでは、トークナイザに渡した（唯一の）文に由来する結果が7つあります。
+<div class="codehilite"><pre><span></span><code>予想通り、入力 ID とアテンションマスクが得られています。最後のキー `overflow_to_sample_mapping` は、各結果がどの文に由来するかを示す対応表です。結果は7つあり、全てトークナイザに渡した（唯一の）文に由来します。
 
 ```py
 print(inputs["overflow_to_sample_mapping"])
@@ -585,7 +593,7 @@ print(inputs["overflow_to_sample_mapping"])
 
 <p>```python out
 [0, 0, 0, 0, 0, 0, 0]</p>
-<div class="codehilite"><pre><span></span><code>これは、複数の文をまとめてトークン化する時により役立ちます。例えば、次の場合です。
+<div class="codehilite"><pre><span></span><code>この対応表は、複数の文をまとめてトークン化する時に役立ちます。例えば、次の例です。
 
 ```py
 sentences = [
@@ -603,11 +611,11 @@ print(inputs["overflow_to_sample_mapping"])
 <p>次の結果が得られます。</p>
 <p>```python out
 [0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1]</p>
-<div class="codehilite"><pre><span></span><code>つまり、最初の文は前と同様に7つのチャンクに分割され、次の4つのチャンクは2番目の文に由来します。
+<div class="codehilite"><pre><span></span><code>最初の文は前と同じ7つのチャンクに分割されています。続く4つのチャンクは、2番目の文に由来するものです。
 
-さて、長い文脈に戻りましょう。デフォルトでは、`question-answering` パイプラインは前述の通り最大長384とストライド128を使います。これらはモデルがファインチューニングされた方法に対応しています（パイプラインの呼び出し時に `max_seq_len` と `stride` 引数を渡せば、これらのパラメータを調整出来ます）。
+長い文脈の例に戻ります。`question-answering` パイプラインの既定は、最大長384、ストライド128です。この値は、モデルのファインチューニング時の設定に合わせたものです。パイプラインの呼び出し時に `max_seq_len` と `stride` の引数を渡せば、変更も出来ます。
 
-従って、トークン化の際にもこれらのパラメータを使います。パディング（サンプルを同じ長さにしてテンソルを構築出来るようにする為）も追加し、オフセットも要求します。
+トークン化でも同じパラメータを使います。併せて、パディングも有効にします。サンプルの長さを揃えてテンソルを構築する為です。オフセットも併せて取得します。
 
 ```py
 inputs = tokenizer(
@@ -622,7 +630,7 @@ inputs = tokenizer(
 )
 </code></pre></div>
 
-<p>その <code>inputs</code> には、モデルが想定する入力 ID と<a class="gloss-link" href="../../glossary/index.html#term-attention-mask" data-title="アテンションマスク（Attention Mask）" data-def="入力の中でモデルが注意を向けるべきトークンと、無視すべきトークンを区別するために使う0と1の並びがアテンションマスクだ。長さの異なる文章をまとめて処理するときは、短い文章に埋め草のトークンを付け足して長さをそろえることがあるが、その埋め草まで計算に含めると結果がゆがんでしまうため、埋め草には0が割り当てられて計算に影響しないようになっている。これにより、文章の長さの違いが処理結果をゆがめることを防いでいる。" data-def-html="入力の中でモデルが注意を向けるべき&lt;a class=&quot;gloss-link has-detail&quot; href=&quot;../../glossary/token.html&quot; data-title=&quot;トークン（Token）&quot; data-def=&quot;トークンは、言語モデルが文章を扱うときに使う最小の単位であり、文章を区切った断片のことである。コンピュータは文章をそのまま計算できないため、まず文章を扱いやすい大きさに分ける必要があり、その分けられた一つひとつがトークンになる。1つのトークンは単語全体のこともあれば、単語の一部や1文字、記号のこともあり、モデルは文章をトークンの並びとして読み取り、答えもトークンの並びとして書き出すことで言葉を処理している。&quot; data-detail=&quot;../../glossary/token.html&quot;&gt;トークン&lt;/a&gt;と、無視すべきトークンを区別するために使う0と1の並びがアテンションマスクだ。長さの異なる文章をまとめて処理するときは、短い文章に埋め草のトークンを付け足して長さをそろえることがあるが、その埋め草まで計算に含めると結果がゆがんでしまうため、埋め草には0が割り当てられて計算に影響しないようになっている。これにより、文章の長さの違いが処理結果をゆがめることを防いでいる。">アテンションマスク</a>に加えて、オフセットと先ほど説明した <code>overflow_to_sample_mapping</code> が含まれます。これら2つはモデルが使う<a class="gloss-link" href="../../glossary/index.html#term-parameter" data-title="パラメータ（Parameter）" data-def="モデルが学習で覚えた内容は、内部の数値の集まりとして蓄えられる。その数値の総称がパラメータで、ニューラルネットワークでは入力への重み付けを決める重みと、結果をずらすバイアスがこれにあたる。パラメータが多いモデルほど複雑な関係を表しやすくなる一方、学習に必要なデータや計算も増える。なお、学習率のように学習を始める前に人が決める設定は、学習で決まる値ではないためパラメータには含めない。" data-def-html="モデルが&lt;a class=&quot;gloss-link&quot; href=&quot;../../glossary/index.html#term-training&quot; data-title=&quot;学習（訓練）（Training）&quot; data-def=&quot;学習は、機械学習のモデルにデータを与え、そのデータに合うようにモデル内部の数値を調整していく過程である。モデルは予測と正解のずれを手がかりに数値を少しずつ直し、ずれが小さくなる方向へ進んでいく。この過程を繰り返すことで、個々の例を覚えるだけでなく、見たことのないデータに対しても予測できるようになることが期待される。&quot;&gt;学習&lt;/a&gt;で覚えた内容は、内部の数値の集まりとして蓄えられる。その数値の総称がパラメータで、&lt;a class=&quot;gloss-link&quot; href=&quot;../../glossary/index.html#term-neural-network&quot; data-title=&quot;ニューラルネットワーク（Neural Network）&quot; data-def=&quot;入力された数値を、層状に並んだ小さな計算単位の間を伝わりながら変換し、最後に答えとして出力する仕組みがニューラルネットワークであり、人の脳の神経細胞のつながりをヒントに作られた。単位どうしは重みと呼ばれる数値で結ばれており、学習では出力と正解とのずれが小さくなるように重みを調整することで、データの中の規則を重みの値として覚え込ませる。&quot;&gt;ニューラルネットワーク&lt;/a&gt;では入力への&lt;a class=&quot;gloss-link&quot; href=&quot;../../glossary/index.html#term-weight&quot; data-title=&quot;重み（Weight）&quot; data-def=&quot;重要な入力は強く、そうでない入力は弱く次の計算へ伝えるために、各入力には重みが掛けられる。重みは入力された数値が次の計算にどれだけ強く影響するかを決める数値で、各入力に重みを掛けて合計すると、重視すべき入力ほど結果に大きく反映される仕組みになる。学習ではこの重みが少しずつ調整されていき、モデルがデータから覚えた内容は主に重みの値の中に蓄えられる。&quot;&gt;重み&lt;/a&gt;付けを決める重みと、結果をずらす&lt;a class=&quot;gloss-link&quot; href=&quot;../../glossary/index.html#term-bias&quot; data-title=&quot;バイアス（Bias）&quot; data-def=&quot;入力がすべて0のときでも一定の出力を出せるように、重みを掛けた合計に最後に足し込まれる数値がバイアスにあたる。重みだけでは入力に応じた変化しか表せないが、この項があることで計算結果全体を上や下へずらすことができ、入力の大きさとは独立した調整が可能になる。バイアスも重みと同じく学習によって調整されるパラメータであり、統計や社会問題でいう偏りとは別の用語として区別される。&quot;&gt;バイアス&lt;/a&gt;がこれにあたる。パラメータが多いモデルほど複雑な関係を表しやすくなる一方、学習に必要なデータや計算も増える。なお、&lt;a class=&quot;gloss-link&quot; href=&quot;../../glossary/index.html#term-learning-rate&quot; data-title=&quot;学習率（Learning Rate）&quot; data-def=&quot;勾配降下法でパラメータを1回更新するときにどれだけ大きく動かすかを決める数値が学習率であり、学習の成否を大きく左右する。大きすぎると損失が最小になる位置を通り過ぎて学習が不安定になり、小さすぎると学習に非常に長い時間がかかるため、試行錯誤で調整される代表的なハイパーパラメータ（学習前に人が決める設定値）となっている。&quot;&gt;学習率&lt;/a&gt;のように学習を始める前に人が決める設定は、学習で決まる値ではないためパラメータには含めない。">パラメータ</a>ではない為、テンソルに変換する前に <code>inputs</code> から取り除きます（マップはここでは役に立たない為保存しません）。</p>
+<p><code>inputs</code> には、モデルが想定する入力 ID と<a class="gloss-link" href="../../glossary/index.html#term-attention-mask" data-title="アテンションマスク（Attention Mask）" data-def="入力の中でモデルが注意を向けるべきトークンと、無視すべきトークンを区別するために使う0と1の並びがアテンションマスクだ。長さの異なる文章をまとめて処理するときは、短い文章に埋め草のトークンを付け足して長さをそろえることがあるが、その埋め草まで計算に含めると結果がゆがんでしまうため、埋め草には0が割り当てられて計算に影響しないようになっている。これにより、文章の長さの違いが処理結果をゆがめることを防いでいる。" data-def-html="入力の中でモデルが注意を向けるべき&lt;a class=&quot;gloss-link has-detail&quot; href=&quot;../../glossary/token.html&quot; data-title=&quot;トークン（Token）&quot; data-def=&quot;トークンは、言語モデルが文章を扱うときに使う最小の単位であり、文章を区切った断片のことである。コンピュータは文章をそのまま計算できないため、まず文章を扱いやすい大きさに分ける必要があり、その分けられた一つひとつがトークンになる。1つのトークンは単語全体のこともあれば、単語の一部や1文字、記号のこともあり、モデルは文章をトークンの並びとして読み取り、答えもトークンの並びとして書き出すことで言葉を処理している。&quot; data-detail=&quot;../../glossary/token.html&quot;&gt;トークン&lt;/a&gt;と、無視すべきトークンを区別するために使う0と1の並びがアテンションマスクだ。長さの異なる文章をまとめて処理するときは、短い文章に埋め草のトークンを付け足して長さをそろえることがあるが、その埋め草まで計算に含めると結果がゆがんでしまうため、埋め草には0が割り当てられて計算に影響しないようになっている。これにより、文章の長さの違いが処理結果をゆがめることを防いでいる。">アテンションマスク</a>の他に、オフセットと、先ほど説明した <code>overflow_to_sample_mapping</code> も含まれます。後ろの2つはモデルの引数ではありません。テンソルへの変換前に、<code>inputs</code> から取り除きます。対応表の方は、ここでは使わない為、保存しません。</p>
 <p>{#if fw === 'pt'}</p>
 <div class="codehilite"><pre><span></span><code><span class="n">_</span> <span class="o">=</span> <span class="n">inputs</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s2">"overflow_to_sample_mapping"</span><span class="p">)</span>
 <span class="n">offsets</span> <span class="o">=</span> <span class="n">inputs</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s2">"offset_mapping"</span><span class="p">)</span>
@@ -647,7 +655,7 @@ print(inputs["input_ids"].shape)
 (2, 384)</p>
 <div class="codehilite"><pre><span></span><code>{/if}
 
-長い文脈は2つに分割された為、モデルを通した後は、開始ロジットと終了ロジットが2組得られます。
+長い文脈は2つのチャンクに分割されました。モデルを通すと、開始ロジットと終了ロジットが2組得られます。
 
 ```py
 outputs = model(**inputs)
@@ -667,7 +675,7 @@ torch.Size([2, 384]) torch.Size([2, 384])</p>
 </code></pre></div>
 
 <p>{/if}</p>
-<p>前と同様に、softmax を取る前に、まず文脈の一部ではないトークンをマスクします。全てのパディングトークン（アテンションマスクで示されるもの）もマスクします。</p>
+<p>前と同様に、softmax の前に文脈に属さないトークンをマスクします。今回は、パディングトークン（アテンションマスクで示されるもの）も全てマスクの対象です。</p>
 <p>{#if fw === 'pt'}</p>
 <div class="codehilite"><pre><span></span><code><span class="n">sequence_ids</span> <span class="o">=</span> <span class="n">inputs</span><span class="o">.</span><span class="n">sequence_ids</span><span class="p">()</span>
 <span class="c1"># 文脈のトークン以外をすべてマスクする</span>
@@ -707,7 +715,7 @@ torch.Size([2, 384]) torch.Size([2, 384])</p>
 </code></pre></div>
 
 <p>{/if}</p>
-<p>次のステップは小さい文脈で行ったことと似ていますが、2つのチャンクそれぞれについて繰り返します。回答の可能な全ての範囲にスコアを割り当て、最もスコアの高い範囲を取ります。</p>
+<p>次の手順は、小さい文脈で行った処理とほぼ同じです。違いは、2つのチャンクのそれぞれについて繰り返す点です。各チャンクで、回答になり得る全ての<a class="gloss-link" href="../../glossary/index.html#term-range" data-title="範囲（range）" data-def="データの広がりを最も単純に表す方法が、最大値から最小値を引いた差である範囲を使うことだ。計算は引き算一つで済む一方、決めるのは両端の二つの値だけなので、極端な値が一つ混じるだけで大きく変わってしまう弱点がある。そのため分布全体の散らばりは分散や四分位範囲などと併せて判断する必要があり、機械学習でもデータを0から1の間にそろえる正規化の計算に現れるものの、外れ値の影響を受けやすい点には注意が要る。" data-def-html="データの広がりを最も単純に表す方法が、最大値から最小値を引いた差である範囲を使うことだ。計算は引き算一つで済む一方、決めるのは両端の二つの値だけなので、極端な値が一つ混じるだけで大きく変わってしまう弱点がある。そのため分布全体の散らばりは&lt;a class=&quot;gloss-link&quot; href=&quot;../../glossary/index.html#term-variance&quot; data-title=&quot;分散（variance）&quot; data-def=&quot;平均が同じデータでも、値が平均の近くに集まっている場合と大きく散らばっている場合では性質がまったく違うため、その散らばり具合を一つの数で表す必要があり、それが分散だ。各値について平均との差を取り、その差を二乗（同じ数を2回掛けること）してから平均を取ると、平均から遠い値ほど大きく効く形でばらつきを測れる。機械学習では、特徴量ごとに分散を見ることで情報量の乏しい列を見分けたり、学習を安定させるためのデータの整え方を判断したりする際の手がかりになる。&quot;&gt;分散&lt;/a&gt;や&lt;a class=&quot;gloss-link&quot; href=&quot;../../glossary/index.html#term-interquartile-range&quot; data-title=&quot;四分位範囲（interquartile range）&quot; data-def=&quot;極端な値に左右されずに中央付近の散らばりを測りたいときに使う幅が四分位範囲だ。データを大きさの順に並べて四等分したときの第3四分位数から第1四分位数を引いた差として求められ、中央に位置する半数のデータが収まる幅を表す。最大値と最小値だけで決まる範囲とは違い、一つ二つの異常な値では大きく変わらないため、機械学習の前処理ではこの幅をもとに外れ値を検出する方法が広く使われている。&quot;&gt;四分位範囲&lt;/a&gt;などと併せて判断する必要があり、&lt;a class=&quot;gloss-link&quot; href=&quot;../../glossary/index.html#term-machine-learning&quot; data-title=&quot;機械学習（Machine Learning）&quot; data-def=&quot;プログラムの手順を人間が一つ一つ書き与える従来の方法では、複雑な判断をすべて書き切ることは難しいため、データから規則性や判断の基準をコンピュータ自身に学ばせる技術を機械学習という。訓練用のデータを用いて学ばせることでモデルはパターンを身に付け、正解の分からない新しいデータに対しても予測や分類ができるようになる。人工知能を実現する主要な方法の一つであり、現在の人工知能の中心的な仕組みになっている。&quot;&gt;機械学習&lt;/a&gt;でもデータを0から1の間にそろえる&lt;a class=&quot;gloss-link&quot; href=&quot;../../glossary/index.html#term-normalization&quot; data-title=&quot;正規化（Normalization）&quot; data-def=&quot;データの値の範囲や分布の形を、扱いやすい基準にそろえる処理の総称が正規化だ。特徴ごとに単位も大きさもばらばらだと、大きな値を持つ特徴ばかりが計算を支配してしまうため、0から1の範囲に収めたり、平均0・ばらつき1にそろえたりする。ニューラルネットワークの内部でも、層に入る値の分布をそろえるバッチ正規化やレイヤー正規化として使われ、学習を安定させる役割を持つ。そろえ方によって手法が分かれるため、文脈からどの正規化を指しているかを確認する必要がある。&quot;&gt;正規化&lt;/a&gt;の計算に現れるものの、外れ値の影響を受けやすい点には注意が要る。">範囲</a>にスコアを付け、最もスコアの高い範囲を候補とします。</p>
 <p>{#if fw === 'pt'}</p>
 <div class="codehilite"><pre><span></span><code><span class="n">candidates</span> <span class="o">=</span> <span class="p">[]</span>
 <span class="k">for</span> <span class="n">start_probs</span><span class="p">,</span> <span class="n">end_probs</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="n">start_probabilities</span><span class="p">,</span> <span class="n">end_probabilities</span><span class="p">):</span>
@@ -739,15 +747,15 @@ torch.Size([2, 384]) torch.Size([2, 384])</p>
 <p>{/if}</p>
 <p>```python out
 [(0, 18, 0.33867), (173, 184, 0.97149)]</p>
-<div class="codehilite"><pre><span></span><code>これら2つの候補は、各チャンクでモデルが見つけられた最良の回答に対応します。モデルは、正しい回答が2番目のチャンクに含まれると、1番目よりもはるかに高い確信度で予測しています。これは良い兆候です。あとは、これら2つのトークン範囲を文脈中の文字範囲にマッピングするだけです（回答を得るには2番目のものだけをマッピングすればよいのですが、モデルが最初のチャンクで何を選んだかを見るのも興味深いでしょう）。
+<div class="codehilite"><pre><span></span><code>2つの候補は、各チャンクでモデルが見つけた最良の回答です。モデルは、正しい回答が2番目のチャンクにあると、1番目のチャンクよりもはるかに強く確信しています。残る作業は、この2つのトークン範囲を、文脈中の文字範囲に対応付けることです。回答そのものには2番目の対応付けだけで足りますが、最初のチャンクでモデルが何を選んだかも併せて確認します。
 
 &lt;div class="callout callout-tip" markdown="block"&gt;
 &lt;p class="callout-title"&gt;💡 ヒント&lt;/p&gt;
-**試してみましょう！** 上のコードを改変して、最も可能性の高い5つの回答について（チャンクごとではなく全体で）スコアと範囲を返すようにしてください。
+✏️ **試してみましょう！** 上のコードを改変して、最も可能性の高い5つの回答について（チャンクごとではなく全体で）スコアと範囲を返すようにしてください。
 &lt;/div&gt;
 
 
-先ほど取得した `offsets` は実際にはオフセットのリストであり、テキストのチャンクごとに1つのリストがあります。
+先ほど取得した `offsets` は、テキストのチャンクごとに1つのリストを持つ、リストの集まりです。
 
 ```py
 for candidate, offset in zip(candidates, offsets):
@@ -763,12 +771,12 @@ for candidate, offset in zip(candidates, offsets):
 {'answer': '\n🤗 Transformers: State of the Art NLP', 'start': 0, 'end': 37, 'score': 0.33867}
 {'answer': 'Jax, PyTorch and TensorFlow', 'start': 1892, 'end': 1919, 'score': 0.97149}</code></p>
 <p>（出力の訳：1つ目の回答は「🤗 Transformers：最先端の自然言語処理」です。2つ目の回答は深層学習ライブラリの固有名詞の列挙です）</p>
-<p>最初の結果を無視すれば、この長い文脈に対するパイプラインと同じ結果が得られます。やりました！</p>
+<p>最初の結果を除けば、長い文脈に対するパイプラインの結果と一致します。</p>
 <div class="callout callout-tip">
 <p class="callout-title">💡 ヒント</p>
-<p><strong>試してみましょう！</strong> 先ほど計算した最良のスコアを使って、最も可能性の高い5つの回答を表示してください（各チャンクではなく、文脈全体について）。結果を確認するには、最初のパイプラインに戻り、呼び出し時に <code>top_k=5</code> を渡してください。</p>
+<p>✏️ <strong>試してみましょう！</strong> 先ほど計算した最良のスコアを使って、最も可能性の高い5つの回答を表示してください（各チャンクではなく、文脈全体について）。結果を確認するには、最初のパイプラインに戻り、呼び出し時に <code>top_k=5</code> を渡してください。</p>
 </div>
-<p>これで<a class="gloss-link" href="../../glossary/index.html#term-tokenizer" data-title="トークナイザ（Tokenizer）" data-def="トークナイザは、文章をトークンの並びに分け、各トークンを決められた番号に対応付けるプログラムである。モデルは番号しか扱えないため、人が書いた文章をモデルに入力するにはこの変換が欠かせず、逆にモデルが出した番号の並びを人が読める文章に戻す役割もトークナイザが担う。どの断片を1つのトークンとするかは語彙（そのモデルが扱えるトークンの一覧）としてあらかじめ定められており、トークナイザはその一覧に従って分割と変換を行っている。" data-def-html="トークナイザは、文章を&lt;a class=&quot;gloss-link has-detail&quot; href=&quot;../../glossary/token.html&quot; data-title=&quot;トークン（Token）&quot; data-def=&quot;トークンは、言語モデルが文章を扱うときに使う最小の単位であり、文章を区切った断片のことである。コンピュータは文章をそのまま計算できないため、まず文章を扱いやすい大きさに分ける必要があり、その分けられた一つひとつがトークンになる。1つのトークンは単語全体のこともあれば、単語の一部や1文字、記号のこともあり、モデルは文章をトークンの並びとして読み取り、答えもトークンの並びとして書き出すことで言葉を処理している。&quot; data-detail=&quot;../../glossary/token.html&quot;&gt;トークン&lt;/a&gt;の並びに分け、各トークンを決められた番号に対応付けるプログラムである。モデルは番号しか扱えないため、人が書いた文章をモデルに入力するにはこの変換が欠かせず、逆にモデルが出した番号の並びを人が読める文章に戻す役割もトークナイザが担う。どの断片を1つのトークンとするかは&lt;a class=&quot;gloss-link&quot; href=&quot;../../glossary/index.html#term-t7&quot; data-title=&quot;語彙（ボキャブラリー）&quot; data-def=&quot;語彙は本来、ある範囲で用いられる単語の集まりを指す言葉だが、言語モデルやトークナイザの文脈では、そのモデルが扱えるトークンの一覧全体を意味する。モデルは語彙に含まれるトークンの組み合わせとしてしか文章を表すことができないため、語彙に何が入っているかが、未知の単語や記号をどこまで扱えるかを決めることになる。この一覧はモデルごとに異なるため、同じ文章でもモデルが変わればトークンへの分け方が変わる場合がある。&quot;&gt;語彙&lt;/a&gt;（そのモデルが扱えるトークンの一覧）としてあらかじめ定められており、トークナイザはその一覧に従って分割と変換を行っている。">トークナイザ</a>の能力についての深掘りは終わりです。次の章では、一般的な NLP タスクでモデルをファインチューニングする方法を紹介し、これら全てを再び実践します。</p>
+<p><a class="gloss-link" href="../../glossary/index.html#term-tokenizer" data-title="トークナイザ（Tokenizer）" data-def="トークナイザは、文章をトークンの並びに分け、各トークンを決められた番号に対応付けるプログラムである。モデルは番号しか扱えないため、人が書いた文章をモデルに入力するにはこの変換が欠かせず、逆にモデルが出した番号の並びを人が読める文章に戻す役割もトークナイザが担う。どの断片を1つのトークンとするかは語彙（そのモデルが扱えるトークンの一覧）としてあらかじめ定められており、トークナイザはその一覧に従って分割と変換を行っている。" data-def-html="トークナイザは、文章を&lt;a class=&quot;gloss-link has-detail&quot; href=&quot;../../glossary/token.html&quot; data-title=&quot;トークン（Token）&quot; data-def=&quot;トークンは、言語モデルが文章を扱うときに使う最小の単位であり、文章を区切った断片のことである。コンピュータは文章をそのまま計算できないため、まず文章を扱いやすい大きさに分ける必要があり、その分けられた一つひとつがトークンになる。1つのトークンは単語全体のこともあれば、単語の一部や1文字、記号のこともあり、モデルは文章をトークンの並びとして読み取り、答えもトークンの並びとして書き出すことで言葉を処理している。&quot; data-detail=&quot;../../glossary/token.html&quot;&gt;トークン&lt;/a&gt;の並びに分け、各トークンを決められた番号に対応付けるプログラムである。モデルは番号しか扱えないため、人が書いた文章をモデルに入力するにはこの変換が欠かせず、逆にモデルが出した番号の並びを人が読める文章に戻す役割もトークナイザが担う。どの断片を1つのトークンとするかは&lt;a class=&quot;gloss-link&quot; href=&quot;../../glossary/index.html#term-t7&quot; data-title=&quot;語彙（ボキャブラリー）&quot; data-def=&quot;語彙は本来、ある範囲で用いられる単語の集まりを指す言葉だが、言語モデルやトークナイザの文脈では、そのモデルが扱えるトークンの一覧全体を意味する。モデルは語彙に含まれるトークンの組み合わせとしてしか文章を表すことができないため、語彙に何が入っているかが、未知の単語や記号をどこまで扱えるかを決めることになる。この一覧はモデルごとに異なるため、同じ文章でもモデルが変わればトークンへの分け方が変わる場合がある。&quot;&gt;語彙&lt;/a&gt;（そのモデルが扱えるトークンの一覧）としてあらかじめ定められており、トークナイザはその一覧に従って分割と変換を行っている。">トークナイザ</a>の能力についての解説は以上です。次の章では、一般的な NLP タスクを対象にモデルのファインチューニングを行い、ここで扱った機能を改めて実践します。</p>
 </article>
 
 <nav class="page-nav"><a class="nav-link prev" href="3.html">← 前へ: 高速トークナイザならではの機能</a><a class="nav-link toc-link" href="../index.html">目次へ</a><a class="nav-link next" href="4.html">次へ →: 正規化と事前トークン化</a></nav>
