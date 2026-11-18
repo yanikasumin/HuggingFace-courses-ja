@@ -14,7 +14,7 @@ Gradio は、Python 関数を自動的に MCP ツールに変換することで�
 
 ## プロジェクトのセットアップ
 
-まず、プロジェクト用の新しいディレクトリを作成し、必要な依存関係をセットアップしましょう。
+先ず、プロジェクト用の新しいディレクトリを作成し、必要な依存関係をセットアップしましょう。
 
 ```bash
 mkdir mcp-sentiment
@@ -26,7 +26,7 @@ pip install "gradio[mcp]" textblob
 
 ## サーバーの作成
 
-> Hugging Face Spaces では、Space をビルドするために `app.py` ファイルが必要です。そのため、Python ファイルの名前は `app.py` でなければなりません。
+> Hugging Face Spaces では、Space をビルドする為に `app.py` ファイルが必要です。その為、Python ファイルの名前は `app.py` でなければなりません。
 
 `app.py` という新しいファイルを作成し、次のコードを記述します。
 
@@ -77,7 +77,7 @@ if __name__ == "__main__":
 1. **関数定義：**
    - `sentiment_analysis` 関数はテキスト入力を受け取り、JSON 辞書の文字列表現を返す
    - TextBlob を使って感情を分析する
-   - docstring は、Gradio が MCP ツールのスキーマを生成する際に使うため、重要である
+   - docstring は、Gradio が MCP ツールのスキーマを生成する際に使う為、重要である
    - 型ヒント（`str` と `dict`）は入出力スキーマの定義に役立つ
 
 2. **Gradio インターフェース：**
@@ -89,7 +89,7 @@ if __name__ == "__main__":
 3. **MCP サーバー：**
    - `mcp_server=True` を設定すると MCP サーバーが有効になる
    - サーバーは `http://localhost:7860/gradio_api/mcp/sse` で利用可能になる
-   - 環境変数を使って有効にすることもできる：
+   - 環境変数を使って有効にすることも出来る：
      ```bash
      export GRADIO_MCP_SERVER=True
      ```
@@ -102,11 +102,11 @@ if __name__ == "__main__":
 python app.py
 ```
 
-Web インターフェースと MCP サーバーの両方が動作していることを示す出力が表示されるはずです。Web インターフェースは `http://localhost:7860`、MCP サーバーは `http://localhost:7860/gradio_api/mcp/sse` で利用できます。
+Web インターフェースと MCP サーバーの両方が動作していることを示す出力が表示されるはずです。Web インターフェースは `http://localhost:7860`、MCP サーバーは `http://localhost:7860/gradio_api/mcp/sse` で利用出来ます。
 
 ## サーバーのテスト
 
-サーバーは2つの方法でテストできます。
+サーバーは2つの方法でテスト出来ます。
 
 1. **Web インターフェース：**
    - ブラウザで `http://localhost:7860` を開く
@@ -116,14 +116,14 @@ Web インターフェースと MCP サーバーの両方が動作している�
 2. **MCP スキーマ：**
    - `http://localhost:7860/gradio_api/mcp/schema` にアクセスする
    - クライアントが使う MCP ツールのスキーマが表示される
-   - これは Gradio アプリのフッターにある「View API」リンクからも確認できる
+   - これは Gradio アプリのフッターに在る「View API」リンクからも確認出来る
 
 ## トラブルシューティングのヒント
 
 1. **型ヒントと docstring：**
    - 関数のパラメータと戻り値には必ず型ヒントを付ける
    - 各パラメータについて "Args:" ブロックを含む docstring を記述する
-   - これにより、Gradio が正確な MCP ツールスキーマを生成できる
+   - これにより、Gradio が正確な MCP ツールスキーマを生成出来る
 
 2. **文字列入力：**
    - 迷ったら、入力引数は `str` として受け取る
@@ -154,7 +154,7 @@ Web インターフェースと MCP サーバーの両方が動作している�
 
 ## Hugging Face Spaces へのデプロイ
 
-サーバーを他の人が使えるようにするには、Hugging Face Spaces にデプロイできます。
+サーバーを他の人が使えるようにするには、Hugging Face Spaces にデプロイ出来ます。
 
 1. Hugging Face で新しい Space を作成する：
    - [huggingface.co/spaces](https://huggingface.co/spaces) にアクセスする
