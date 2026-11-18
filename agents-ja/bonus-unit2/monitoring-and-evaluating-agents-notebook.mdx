@@ -7,22 +7,22 @@
 # Bonus Unit 2：エージェントのオブザーバビリティと評価
 
 > [!TIP]
-> コードは、Google Colab で実行できる[このノートブック](https://colab.research.google.com/#fileId=https%3A//huggingface.co/agents-course/notebooks/blob/main/bonus-unit2/monitoring-and-evaluating-agents.ipynb)で確認できます。
+> コードは、Google Colab で実行出来る[このノートブック](https://colab.research.google.com/#fileId=https%3A//huggingface.co/agents-course/notebooks/blob/main/bonus-unit2/monitoring-and-evaluating-agents.ipynb)で確認出来ます。
 
 このノートブックでは、オープンソースのオブザーバビリティツールを使って、**AI エージェントの内部ステップ（トレース）を監視し**、**パフォーマンスを評価する**方法を学びます。
 
-エージェントの振る舞いを観測し、評価できることは、次のために不可欠です。
-- タスクが失敗したり、最適でない結果を出したりしたときの問題のデバッグ
+エージェントの振る舞いを観測し、評価出来ることは、次の為に不可欠です。
+- タスクが失敗したり、最適でない結果を出したりした時の問題のデバッグ
 - コストとパフォーマンスのリアルタイム監視
 - 継続的なフィードバックによる信頼性と安全性の向上
 
-## 演習の前提条件 🏗️
+## 演習の前提条件
 
-このノートブックを実行する前に、次を確認してください。
+このノートブックを実行する前に、次を確認して下さい。
 
-🔲 📚  **[エージェント入門](https://huggingface.co/learn/agents-course/unit1/introduction) を学習済みであること**
+🔲 **[エージェント入門](https://huggingface.co/learn/agents-course/unit1/introduction) を学習済みであること**
 
-🔲 📚  **[smolagents フレームワーク](https://huggingface.co/learn/agents-course/unit2/smolagents/introduction) を学習済みであること**
+🔲 **[smolagents フレームワーク](https://huggingface.co/learn/agents-course/unit2/smolagents/introduction) を学習済みであること**
 
 ## Step 0：必要なライブラリをインストールする
 
@@ -35,11 +35,11 @@
 
 ## Step 1：エージェントを計装する
 
-このノートブックでは、オブザーバビリティツールとして [Langfuse](https://langfuse.com/) を使いますが、**OpenTelemetry 互換の他のサービス**でも構いません。以下のコードでは、Langfuse（又は任意の OTel エンドポイント）に接続するための環境変数の設定方法と、smolagents のエージェントを計装する方法を示します。
+このノートブックでは、オブザーバビリティツールとして [Langfuse](https://langfuse.com/) を使いますが、**OpenTelemetry 互換の他のサービス**でも構いません。以下のコードでは、Langfuse（又は任意の OTel エンドポイント）に接続する為の環境変数の設定方法と、smolagents のエージェントを計装する方法を示します。
 
-**注：** LlamaIndex や LangGraph を使っている場合は、それぞれの計装方法について、[LlamaIndex のドキュメント](https://langfuse.com/docs/integrations/llama-index/workflows)と[LangGraph のドキュメント](https://langfuse.com/docs/integrations/langchain/example-python-langgraph)を参照してください。
+**注：** LlamaIndex や LangGraph を使っている場合は、それぞれの計装方法について、[LlamaIndex のドキュメント](https://langfuse.com/docs/integrations/llama-index/workflows)と[LangGraph のドキュメント](https://langfuse.com/docs/integrations/langchain/example-python-langgraph)を参照して下さい。
 
-まず、Langfuse の認証情報を環境変数に設定します。Langfuse API キーは、[Langfuse Cloud](https://cloud.langfuse.com) にサインアップするか、[Langfuse をセルフホスティング](https://langfuse.com/self-hosting)して取得してください。
+先ず、Langfuse の認証情報を環境変数に設定します。Langfuse API キーは、[Langfuse Cloud](https://cloud.langfuse.com) にサインアップするか、[Langfuse をセルフホスティング](https://langfuse.com/self-hosting)して取得して下さい。
 
 ```python
 import os
@@ -56,7 +56,7 @@ os.environ["LANGFUSE_HOST"] = "https://cloud.langfuse.com" # 🇪🇺 EU リー�
 os.environ["HF_TOKEN"] = "hf_..." 
 ```
 
-環境変数を設定したら、Langfuse クライアントを初期化できます。`get_client()` は、環境変数で指定された認証情報を使って Langfuse クライアントを初期化します。
+環境変数を設定したら、Langfuse クライアントを初期化出来ます。`get_client()` は、環境変数で指定された認証情報を使って Langfuse クライアントを初期化します。
 
 ```python
 from langfuse import get_client
@@ -70,7 +70,7 @@ else:
     print("認証に失敗しました。認証情報と接続先ホストを確認してください。")
 ```
 
-次に、`SmolagentsInstrumentor()` を使って smolagents のエージェントを計装し、トレースを Langfuse に送信できるようにします。
+次に、`SmolagentsInstrumentor()` を使って smolagents のエージェントを計装し、トレースを Langfuse に送信出来るようにします。
 
 ```python
 from openinference.instrumentation.smolagents import SmolagentsInstrumentor
@@ -95,7 +95,7 @@ agent = CodeAgent(
 agent.run("1+1=")
 ```
 
-[Langfuse のトレースダッシュボード](https://cloud.langfuse.com)（又は選択したオブザーバビリティツール）を確認し、スパンとログが記録されていることを確かめてください。
+[Langfuse のトレースダッシュボード](https://cloud.langfuse.com)（又は選択したオブザーバビリティツール）を確認し、スパンとログが記録されていることを確かめて下さい。
 
 Langfuse の表示例：
 
@@ -105,7 +105,7 @@ _[トレースへのリンク](https://cloud.langfuse.com/project/cloramnkj0002j
 
 ## Step 3：より複雑なエージェントを観測し、評価する
 
-計装が動作することを確認できたので、次はより複雑なクエリを試し、高度なメトリクス（トークン使用量、レイテンシ、コストなど）がどう追跡されるか見てみましょう。
+計装が動作することを確認出来たので、次はより複雑なクエリを試し、高度なメトリクス（トークン使用量、レイテンシ、コストなど）がどう追跡されるか見てみましょう。
 
 
 ```python
@@ -116,6 +116,8 @@ agent = CodeAgent(tools=[search_tool], model=InferenceClientModel())
 
 agent.run("How many Rubik's Cubes could you fit inside the Notre Dame Cathedral?")
 ```
+
+（プロンプトの訳：ノートルダム大聖堂の中に、ルービックキューブは何個入りますか？）
 
 ### トレースの構造
 
@@ -135,9 +137,9 @@ _[トレースへのリンク](https://cloud.langfuse.com/project/cloramnkj0002j
 
 ### 本番環境で追跡すべき代表的なメトリクス
 
-1. **コスト：** smolagents の計装はトークン使用量を取得します。トークンあたりの価格を設定することで、おおよそのコストに変換できます。
+1. **コスト：** smolagents の計装はトークン使用量を取得します。トークンあたりの価格を設定することで、大凡のコストに変換出来ます。
 2. **レイテンシ：** 各ステップ、又は実行全体にかかる時間を観測します。
-3. **ユーザーフィードバック：** ユーザーは直接フィードバック（いいね／よくない）を提供でき、エージェントの改善や修正に役立ちます。
+3. **ユーザーフィードバック：** ユーザーは直接フィードバック（いいね／よくない）を提供出来、エージェントの改善や修正に役立ちます。
 4. **LLM-as-a-Judge：** 別の LLM を使って、エージェントの出力をほぼリアルタイムに評価します（毒性や正確さのチェックなど）。
 
 以下で、これらのメトリクスの例を示します。
@@ -152,7 +154,7 @@ _[トレースへのリンク](https://cloud.langfuse.com/project/cloramnkj0002j
 
 #### 2. レイテンシ
 
-各ステップの完了にかかった時間も確認できます。下の例では、会話全体で 32 秒かかっており、ステップごとに分解できます。ボトルネックの特定と、エージェントの最適化に役立ちます。
+各ステップの完了にかかった時間も確認出来ます。下の例では、会話全体で 32 秒掛かっており、ステップごとに分解出来ます。ボトルネックの特定と、エージェントの最適化に役立ちます。
 
 ![レイテンシ](https://huggingface.co/datasets/agents-course/course-images/resolve/main/en/bonus-unit2/smolagents-latency.png)
 
@@ -160,7 +162,7 @@ _[トレースへのリンク](https://cloud.langfuse.com/project/cloramnkj0002j
 
 #### 3. 追加の属性
 
-スパンには、`user_id`、`tags`、`session_id`、カスタムメタデータなどの属性を追加できます。こうした情報をトレースに付け加えることで、ユーザーやセッションごとのアプリケーションの動作を分析したり、問題を調査したり、稼働状況を監視したりしやすくなります。
+スパンには、`user_id`、`tags`、`session_id`、カスタムメタデータなどの属性を追加出来ます。こうした情報をトレースに付け加えることで、ユーザーやセッションごとのアプリケーションの動作を分析したり、問題を調査したり、稼働状況を監視したりし易くなります。
 
 ```python
 from smolagents import (CodeAgent, DuckDuckGoSearchTool, InferenceClientModel)
@@ -192,11 +194,13 @@ with langfuse.start_as_current_span(
 langfuse.flush()
 ```
 
+（プロンプトの訳：ドイツの首都はどこですか？）
+
 ![追加メトリクスによるエージェント実行の強化](https://huggingface.co/datasets/agents-course/course-images/resolve/main/en/bonus-unit2/smolagents-attributes.png)
 
 #### 4. ユーザーフィードバック
 
-エージェントがユーザーインターフェースに組み込まれている場合、チャット画面の「いいね」「よくない」といった、ユーザーからの直接的なフィードバックを記録できます。以下は、[Gradio](https://gradio.app/) を使って、簡単なフィードバック機能付きのチャットを画面に組み込む例です。
+エージェントがユーザーインターフェースに組み込まれている場合、チャット画面の「いいね」「よくない」といった、ユーザーからの直接的なフィードバックを記録出来ます。以下は、[Gradio](https://gradio.app/) を使って、簡単なフィードバック機能付きのチャットを画面に組み込む例です。
 
 以下のコードでは、ユーザーがチャットメッセージを送信すると、トレースを Langfuse に記録します。ユーザーが最後の回答にいいね／よくないを付けると、そのスコアをトレースに紐付けます。
 
@@ -263,10 +267,10 @@ demo.launch()
 
 #### 5. LLM-as-a-Judge
 
-LLM-as-a-Judge は、エージェントの出力を自動的に評価するもう一つの方法です。別の LLM 呼び出しを設定し、出力の正確さ、毒性、スタイルなど、気になる任意の基準で評価させることができます。
+LLM-as-a-Judge は、エージェントの出力を自動的に評価するもう一つの方法です。別の LLM 呼び出しを設定し、出力の正確さ、毒性、スタイルなど、気になる任意の基準で評価させることが出来ます。
 
 **ワークフロー：**
-1. **評価テンプレート**を定義します。たとえば「テキストに毒性があるかチェックする」などです。
+1. **評価テンプレート**を定義します。例えば「テキストに毒性が有るかチェックする」などです。
 2. エージェントが出力を生成するたびに、その出力とテンプレートを「ジャッジ」LLM に渡します。
 3. ジャッジ LLM が評価やラベルを返し、それをオブザーバビリティツールに記録します。
 
@@ -286,19 +290,21 @@ agent = CodeAgent(tools=[search_tool], model=InferenceClientModel())
 agent.run("Can eating carrots improve your vision?")
 ```
 
+（プロンプトの訳：ニンジンを食べると視力が良くなりますか？）
+
 この例の回答は「not toxic（有害でない）」と判定されていることが分かります。
 
 ![LLM-as-a-Judge の評価スコア](https://huggingface.co/datasets/agents-course/course-images/resolve/main/en/bonus-unit2/llm-as-a-judge-score.png)
 
 #### 6. オブザーバビリティメトリクスの概要
 
-これらのメトリクスはすべて、ダッシュボードでまとめて可視化できます。これにより、多くのセッションにわたってエージェントのパフォーマンスを素早く把握し、品質メトリクスの経時変化を追跡できます。
+これらのメトリクスは全て、ダッシュボードでまとめて可視化出来ます。これにより、多くのセッションにわたってエージェントのパフォーマンスを素早く把握し、品質メトリクスの経時変化を追跡出来ます。
 
 ![オブザーバビリティメトリクスの概要](https://huggingface.co/datasets/agents-course/course-images/resolve/main/en/bonus-unit2/langfuse-dashboard.png)
 
 ## オフライン評価
 
-オンライン評価はライブフィードバックに不可欠ですが、**オフライン評価**、つまり開発前や開発中の体系的なチェックも必要です。これにより、変更を本番環境へ投入する前に、品質と信頼性を保つことができます。
+オンライン評価はライブフィードバックに不可欠ですが、**オフライン評価**、つまり開発前や開発中の体系的なチェックも必要です。これにより、変更を本番環境へ投入する前に、品質と信頼性を保つことが出来ます。
 
 ### データセットによる評価
 
@@ -321,7 +327,7 @@ print("GSM8K データセットの最初の数行：")
 print(df.head())
 ```
 
-次に、実行を追跡するために Langfuse にデータセットエンティティを作成し、データセットの各アイテムを追加します。Langfuse を使わない場合は、分析用に自分のデータベースやローカルファイルに保存しても構いません。
+次に、実行を追跡する為に Langfuse にデータセットエンティティを作成し、データセットの各アイテムを追加します。Langfuse を使わない場合は、分析用に自分のデータベースやローカルファイルに保存しても構いません。
 
 
 ```python
@@ -363,7 +369,7 @@ for idx, row in df.iterrows():
 2. プロンプトでエージェントを実行する
 3. Langfuse にトレース ID を記録する
 
-その後、データセットの各アイテムをループしてエージェントを実行し、トレースをデータセットアイテムに紐付けます。必要に応じて、簡易な評価スコアを付けることもできます。
+その後、データセットの各アイテムをループしてエージェントを実行し、トレースをデータセットアイテムに紐付けます。必要に応じて、簡易な評価スコアを付けることも出来ます。
 
 
 ```python
@@ -418,12 +424,12 @@ for item in dataset.items:
         print(item.input)
 ```
 
-次の要素を変えて、同じ手順を繰り返すことができます。
+次の要素を変えて、同じ手順を繰り返すことが出来ます。
 - モデル（OpenAI GPT、ローカル LLM など）
 - ツール（検索ツールあり／なし）
 - プロンプト（異なるシステムメッセージ）
 
-その後、オブザーバビリティツールで並べて比較できます。
+その後、オブザーバビリティツールで並べて比較出来ます。
 
 ![データセット実行の概要](https://huggingface.co/datasets/agents-course/course-images/resolve/main/en/bonus-unit2/dataset_runs.png)
 ![データセット実行の比較](https://huggingface.co/datasets/agents-course/course-images/resolve/main/en/bonus-unit2/dataset-run-comparison.png)

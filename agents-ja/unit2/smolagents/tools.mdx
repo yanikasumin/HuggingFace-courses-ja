@@ -7,23 +7,23 @@ askForHelpUrl="http://hf.co/join/discord" />
 
 # ツール
 
-[Unit 1](https://huggingface.co/learn/agents-course/unit1/tools)で探ったように、エージェントは様々なアクションを実行するためにツールを使います。`smolagents` では、ツールは**エージェントシステムの中で LLM が呼び出せる関数**として扱われます。
+[Unit 1](https://huggingface.co/learn/agents-course/unit1/tools)で探ったように、エージェントは様々なアクションを実行する為にツールを使います。`smolagents` では、ツールは**エージェントシステムの中で LLM が呼び出せる関数**として扱われます。
 
-ツールとやり取りするために、LLM には次の主要な構成要素を持つ**インターフェースの説明**が必要です。
+ツールとやり取りする為に、LLM には次の主要な構成要素を持つ**インターフェースの説明**が必要です。
 
-- **名前**: ツールの呼び名
-- **ツールの説明**: ツールが何をするか
-- **入力の型と説明**: ツールが受け取る引数
-- **出力の型**: ツールが返すもの
+- **名前**：ツールの呼び名
+- **ツールの説明**：ツールが何をするか
+- **入力の型と説明**：ツールが受け取る引数
+- **出力の型**：ツールが返すもの
 
-たとえば、ウェイン邸でのパーティーの準備をしながら、アルフレッドはケータリングサービスの検索からパーティーテーマのアイデア探しまで、情報を集めるための様々なツールを必要とします。シンプルな検索ツールのインターフェースは、次のようになります。
+例えば、ウェイン邸でのパーティーの準備をしながら、アルフレッドはケータリングサービスの検索からパーティーテーマのアイデア探しまで、情報を集める為の様々なツールを必要とします。シンプルな検索ツールのインターフェースは、次のようになります。
 
 - **名前：** `web_search`
 - **ツールの説明：** 特定のクエリで Web を検索する
 - **入力：** `query`（文字列）：検索する語句
 - **出力：** 検索結果を含む文字列
 
-これらのツールを使うことで、アルフレッドは情報に基づいた判断を下し、完璧なパーティーの計画に必要な情報をすべて集めることができます。
+これらのツールを使うことで、アルフレッドは情報に基づいた判断を下し、完璧なパーティーの計画に必要な情報を全て集めることが出来ます。
 
 以下では、ツール呼び出しがどう管理されるかを示すアニメーションが見られます。
 
@@ -31,18 +31,18 @@ askForHelpUrl="http://hf.co/join/discord" />
 
 ## ツールの作成方法
 
-`smolagents` では、ツールは2つの方法で定義できます。
+`smolagents` では、ツールは2つの方法で定義出来ます。
 1. **シンプルな関数ベースのツールには `@tool` デコレータを使う**
 2. **より複雑な機能には `Tool` のサブクラスを作成する**
 
 ### `@tool` デコレータ
 
-`@tool` デコレータは、**シンプルなツールを定義する推奨の方法**です。内部では、smolagents が Python の関数定義から基本情報を読み取ります。そのため、関数に分かりやすい名前を付け、適切な docstring を書いておくと、LLM がその関数を使いやすくなります。
+`@tool` デコレータは、**シンプルなツールを定義する推奨の方法**です。内部では、smolagents が Python の関数定義から基本情報を読み取ります。その為、関数に分かり易い名前を付け、適切な docstring を書いておくと、LLM がその関数を使いやすくなります。
 
 このアプローチでは、次の要素を持つ関数を定義します。
 
-- LLM が関数の目的を理解しやすい、**役割が明確に分かる関数名**
-- 適切な使用を保証するための、**入力と出力の両方に対する型ヒント**
+- LLM が関数の目的を理解し易い、**役割が明確に分かる関数名**
+- 適切な使用を保証する為の、**入力と出力の両方に対する型ヒント**
 - 各引数を明示的に説明する `Args:` セクションを含む、**詳細な説明**。これらの説明は LLM に貴重なコンテキストを提供するので、丁寧に書くことが重要です
 
 #### 評価が最も高いケータリングサービスを見つけるツールを作る
@@ -50,9 +50,9 @@ askForHelpUrl="http://hf.co/join/discord" />
 <img src="https://huggingface.co/datasets/agents-course/course-images/resolve/main/en/unit2/smolagents/alfred-catering.jpg" alt="アルフレッドのケータリング"/>
 
 > [!TIP]
-> コードは、Google Colab で実行できる<a href="https://huggingface.co/agents-course/notebooks/blob/main/unit2/smolagents/tools.ipynb" target="_blank">このノートブック</a>で追うことができます。
+> コードは、Google Colab で実行出来る<a href="https://huggingface.co/agents-course/notebooks/blob/main/unit2/smolagents/tools.ipynb" target="_blank">このノートブック</a>で追うことが出来ます。
 
-アルフレッドは既にパーティーのメニューを決めましたが、今度は大勢のゲストのために料理を用意する手助けが必要です。そのためにケータリングサービスを雇いたいと考えており、利用可能な中で最高評価の選択肢を特定する必要があります。アルフレッドは、自分の地域で最高のケータリングサービスを検索するツールを活用できます。
+アルフレッドは既にパーティーのメニューを決めましたが、今度は大勢のゲストの為に料理を用意する手助けが必要です。その為にケータリングサービスを雇いたいと考えており、利用可能な中で最高評価の選択肢を特定する必要があります。アルフレッドは、自分の地域で最高のケータリングサービスを検索するツールを活用出来ます。
 
 以下は、アルフレッドが `@tool` デコレータを使ってこれを実現する例です。
 
@@ -91,13 +91,15 @@ result = agent.run(
 print(result)   # 出力: Gotham Catering Co.
 ```
 
+（ツール説明と入力文の訳：docstring は「このツールは、ゴッサムシティで最も評価の高いケータリングサービスを返します。引数 query は、ケータリングサービスを探す為の検索語です」です。入力文は「ゴッサムシティで最も評価の高いケータリングサービスの名前を教えて下さい」です。出力は社名の Gotham Catering Co. です）
+
 ### ツールを Python クラスとして定義する
 
-このアプローチでは、[`Tool`](https://huggingface.co/docs/smolagents/v1.8.1/en/reference/tools#smolagents.Tool) のサブクラスを作成します。複雑なツールについては、Python 関数の代わりにクラスを実装できます。このクラスは、LLM が関数を効果的に利用できるように、関数をメタデータとともにラップします。このクラスでは次を定義します。
+このアプローチでは、[`Tool`](https://huggingface.co/docs/smolagents/v1.8.1/en/reference/tools#smolagents.Tool) のサブクラスを作成します。複雑なツールについては、Python 関数の代わりにクラスを実装出来ます。このクラスは、LLM が関数を効果的に利用出来るように、関数をメタデータと共にラップします。このクラスでは次を定義します。
 
 - `name`: ツールの名前。
 - `description`: エージェントのシステムプロンプトに組み込まれる説明。
-- `inputs`: `type` と `description` をキーに持つ辞書で、Python インタープリターが入力を処理するための情報を提供します。
+- `inputs`: `type` と `description` をキーに持つ辞書で、Python インタープリターが入力を処理する為の情報を提供します。
 - `output_type`: 期待される出力の型を指定します。
 - `forward`: 実行する推論ロジックを含むメソッド。
 
@@ -107,7 +109,7 @@ print(result)   # 出力: Gotham Catering Co.
 
 邸宅でのアルフレッドのパーティーは**スーパーヒーローがテーマのイベント**ですが、本当に特別なものにするには独創的なアイデアが必要です。素晴らしいホストとして、彼はユニークなテーマでゲストを驚かせたいと考えています。
 
-そのために、与えられたカテゴリに基づいてスーパーヒーローをテーマにしたパーティーのアイデアを生成するエージェントを使えます。こうすれば、アルフレッドはゲストを感動させる完璧なパーティーテーマを見つけられます。
+その為に、与えられたカテゴリに基づいてスーパーヒーローをテーマにしたパーティーのアイデアを生成するエージェントを使えます。こうすれば、アルフレッドはゲストを感動させる完璧なパーティーテーマを見つけられます。
 
 ```python
 from smolagents import Tool, CodeAgent, InferenceClientModel
@@ -148,7 +150,9 @@ result = agent.run(
 print(result)  # 出力: "Gotham Rogues' Ball: A mysterious masquerade where guests dress as classic Batman villains."
 ```
 
-このツールがあれば、アルフレッドは究極のスーパーホストとなり、忘れられないスーパーヒーローをテーマにしたパーティーでゲストを感動させるでしょう！ 🦸‍♂️🦸‍♀️
+（ツール説明とテーマデータの訳は、Code Agent の例の統合版エージェントの箇所と同じです。入力文は「『悪役の仮面舞踏会』テーマに合う、良いスーパーヒーローパーティーのアイデアは何ですか」で、出力は「ゴッサム・ローグズ・ボール：ゲストが古典的なバットマンの悪役の衣装で来場する、神秘的な仮面舞踏会です」です）
+
+このツールがあれば、アルフレッドは究極のスーパーホストとなり、忘れられないスーパーヒーローをテーマにしたパーティーでゲストを感動させるでしょう！
 
 ## デフォルトのツールボックス
 
@@ -161,23 +165,23 @@ print(result)  # 出力: "Gotham Rogues' Ball: A mysterious masquerade where gue
 - **GoogleSearchTool**
 - **VisitWebpageTool**
 
-アルフレッドは、ウェイン邸での完璧なパーティーのために様々なツールを使えます。
+アルフレッドは、ウェイン邸での完璧なパーティーの為に様々なツールを使えます。
 
-- まず、`DuckDuckGoSearchTool` を使って、独創的なスーパーヒーローをテーマにしたパーティーのアイデアを探せます。
+- 先ず、`DuckDuckGoSearchTool` を使って、独創的なスーパーヒーローをテーマにしたパーティーのアイデアを探せます。
 
 - ケータリングについては、`GoogleSearchTool` を頼りにゴッサムで最高評価のサービスを探せます。
 
-- 座席の配置を管理するために、アルフレッドは `PythonInterpreterTool` で計算を実行できます。
+- 座席の配置を管理する為に、アルフレッドは `PythonInterpreterTool` で計算を実行出来ます。
 
-- すべてが集まったら、`FinalAnswerTool` を使って計画をまとめます。
+- 全てが集まったら、`FinalAnswerTool` を使って計画をまとめます。
 
-これらのツールを活用すれば、アルフレッドは特別なパーティーを滞りなく開催できるようになります。🦇💡
+これらのツールを活用すれば、アルフレッドは特別なパーティーを滞りなく開催出来るようになります。
 
 ## ツールの共有とインポート
 
-**smolagents** の最も強力な機能のひとつは、カスタムツールを Hub で共有し、コミュニティが作成したツールをシームレスに統合できることです。これには **HF Spaces** や **LangChain ツール** との接続も含まれ、ウェイン邸で忘れられないパーティーを演出するアルフレッドの能力を大きく高めます。🎭
+**smolagents** の最も強力な機能のひとつは、カスタムツールを Hub で共有し、コミュニティが作成したツールをシームレスに統合出来ることです。これには **HF Spaces** や **LangChain ツール** との接続も含まれ、ウェイン邸で忘れられないパーティーを演出するアルフレッドの能力を大きく高めます。
 
-これらを連携させることで、アルフレッドは高度なイベント企画ツールを利用できます。たとえば、照明を調整して理想的な雰囲気を作ったり、パーティーに合うプレイリストを選んだり、ゴッサムで評判の良いケータリング業者と連絡を取ったりできます。
+これらを連携させることで、アルフレッドは高度なイベント企画ツールを利用出来ます。例えば、照明を調整して理想的な雰囲気を作ったり、パーティーに合うプレイリストを選んだり、ゴッサムで評判の良いケータリング業者と連絡を取ったり出来ます。
 
 ここでは、これらの機能がパーティー体験をどう引き上げるかを示す例を紹介します。
 
@@ -185,7 +189,7 @@ print(result)  # 出力: "Gotham Rogues' Ball: A mysterious masquerade where gue
 
 カスタムツールをコミュニティと共有するのは簡単です。`push_to_hub()` メソッドを使って、自分の Hugging Face アカウントにアップロードするだけです。
 
-たとえば、アルフレッドは `party_theme_tool` を共有して、他の人がゴッサムで最高のケータリングサービスを見つけられるよう支援できます。方法は次のとおりです。
+例えば、アルフレッドは `party_theme_tool` を共有して、他の人がゴッサムで最高のケータリングサービスを見つけられるよう支援出来ます。方法は次の通りです。
 
 ```python
 party_theme_tool.push_to_hub("{your_username}/party_theme_tool", token="<YOUR_HUGGINGFACEHUB_API_TOKEN>")
@@ -193,7 +197,7 @@ party_theme_tool.push_to_hub("{your_username}/party_theme_tool", token="<YOUR_HU
 
 ### ツールを Hub からインポートする
 
-`load_tool()` 関数を使えば、他のユーザーが作成したツールを簡単にインポートできます。たとえば、アルフレッドが AI を使ってパーティーの宣伝画像を生成したいとします。ツールをゼロから構築する代わりに、コミュニティの事前定義されたツールを利用できます。
+`load_tool()` 関数を使えば、他のユーザーが作成したツールを簡単にインポート出来ます。例えば、アルフレッドが AI を使ってパーティーの宣伝画像を生成したいとします。ツールをゼロから構築する代わりに、コミュニティの事前定義されたツールを利用出来ます。
 
 ```python
 from smolagents import load_tool, CodeAgent, InferenceClientModel
@@ -211,13 +215,15 @@ agent = CodeAgent(
 agent.run("Generate an image of a luxurious superhero-themed party at Wayne Manor with made-up superheros.")
 ```
 
+（入力文の訳：創作のスーパーヒーローが登場する、Wayne 邸での豪華なスーパーヒーローをテーマにしたパーティーの画像を生成して下さい）
+
 ### Hugging Face Space をツールとしてインポートする
 
-`Tool.from_space()` を使えば、HF Space をツールとしてインポートすることもできます。これにより、画像生成からデータ分析まで、様々なタスクに対応する、コミュニティで公開された何千もの Space と連携できるようになります。
+`Tool.from_space()` を使えば、HF Space をツールとしてインポートすることも出来ます。これにより、画像生成からデータ分析まで、様々なタスクに対応する、コミュニティで公開された何千もの Space と連携出来るようになります。
 
-このツールは `gradio_client` を使って Space の Gradio バックエンドに接続するので、まだインストールしていない場合は `pip` でインストールしてください。
+このツールは `gradio_client` を使って Space の Gradio バックエンドに接続するので、まだインストールしていない場合は `pip` でインストールして下さい。
 
-パーティーのために、アルフレッドは既存の HF Space を使って、告知に使う AI 生成画像を生成できます（前に触れた事前構築ツールを使う代わりに）。作ってみましょう！
+パーティーの為に、アルフレッドは既存の HF Space を使って、告知に使う AI 生成画像を生成出来ます（前に触れた事前構築ツールを使う代わりに）。作ってみましょう！
 
 ```python
 from smolagents import CodeAgent, InferenceClientModel, Tool
@@ -238,30 +244,32 @@ agent.run(
 )
 ```
 
+（ツール説明と入力文の訳：説明は「プロンプトから画像を生成します」です。入力文は「このプロンプトを改善し、その画像を生成して下さい」で、追加引数のプロンプトは「Wayne 邸での壮大なスーパーヒーローをテーマにしたパーティーで、Alfred が豪華なガラを見守っています」です）
+
 ### LangChain ツールをインポートする
 
 
-`LangChain` フレームワークについては、今後のセクションで取り上げます。ここでは、smolagents のワークフローで LangChain ツールを再利用できることだけ述べておきます！
+`LangChain` フレームワークについては、今後のセクションで取り上げます。ここでは、smolagents のワークフローで LangChain ツールを再利用出来ることだけ述べておきます。
 
-`Tool.from_langchain()` メソッドを使えば、LangChain ツールを簡単に読み込めます。完璧主義者のアルフレッドは、ウェイン家が留守のあいだウェイン邸で壮大なスーパーヒーローの夜を用意しています。すべての細部が期待を超えるよう、彼は LangChain ツールを利用して一流のエンターテイメントのアイデアを探します。
+`Tool.from_langchain()` メソッドを使えば、LangChain ツールを簡単に読み込めます。完璧主義者のアルフレッドは、ウェイン家が留守のあいだウェイン邸で壮大なスーパーヒーローの夜を用意しています。全ての細部が期待を超えるよう、彼は LangChain ツールを利用して一流のエンターテイメントのアイデアを探します。
 
-`Tool.from_langchain()` を使えば、アルフレッドは高度な検索機能を自分の smolagent に手軽に追加でき、わずかなコマンドで特別なパーティーのアイデアやサービスを見つけられます。
+`Tool.from_langchain()` を使えば、アルフレッドは高度な検索機能を自分の smolagent に手軽に追加出来、わずかなコマンドで特別なパーティーのアイデアやサービスを見つけられます。
 
-方法は次のとおりです。
+方法は次の通りです。
 
-まず、`smolagents` 用の `langchain` 統合をインストールする必要があります。
+先ず、`smolagents` 用の `langchain` 統合をインストールする必要があります。
 
 ```bash
 pip install -U langchain-community
 ```
 
-langchain 統合をインストールしたあと、SerpAPI キーを設定してください。これは `SerpAPITool` のような検索ベースのツールに必要です。
+langchain 統合をインストールしたあと、SerpAPI キーを設定して下さい。これは `SerpAPITool` のような検索ベースのツールに必要です。
 
 ```python
 os.environ['SERPAPI_API_KEY'] = '...'
 ```
 
-SerpAPI キーは[こちら](https://serpapi.com/)で作成できます。
+SerpAPI キーは[こちら](https://serpapi.com/)で作成出来ます。
 
 ```python
 from langchain.agents import load_tools
@@ -274,14 +282,16 @@ agent = CodeAgent(tools=[search_tool], model=model)
 agent.run("Search for luxury entertainment ideas for a superhero-themed event, such as live performances and interactive experiences.")
 ```
 
+（入力文の訳：ライブパフォーマンスや対話型体験のような、スーパーヒーローをテーマにしたイベントの為の豪華なエンターテイメントのアイデアを検索して下さい）
+
 ### あらゆる MCP サーバーからツールコレクションをインポートする
 
-`smolagents` では、[glama.ai](https://glama.ai/mcp/servers) や [smithery.ai](https://smithery.ai) で利用できる何百もの MCP サーバーからツールをインポートすることもできます。MCP についてもっと深く知りたい場合は、[無料の MCP コース](https://huggingface.co/learn/mcp-course/)をご覧ください。
+`smolagents` では、[glama.ai](https://glama.ai/mcp/servers) や [smithery.ai](https://smithery.ai) で利用出来る何百もの MCP サーバーからツールをインポートすることも出来ます。MCP についてもっと深く知りたい場合は、[無料の MCP コース](https://huggingface.co/learn/mcp-course/)をご覧下さい。
 
 <details>
 <summary>MCP クライアントをインストールする</summary>
 
-まず、`smolagents` 用の `mcp` 統合をインストールする必要があります。
+先ず、`smolagents` 用の `mcp` 統合をインストールする必要があります。
 
 ```bash
 pip install "smolagents[mcp]"
@@ -311,11 +321,13 @@ with ToolCollection.from_mcp(server_parameters, trust_remote_code=True) as tool_
     agent.run("Please find a remedy for hangover.")
 ```
 
-このセットアップにより、アルフレッドは豪華なエンターテイメントの選択肢を素早く見つけることができ、ゴッサムの上流階級のゲストに忘れられない体験を保証します。このツールは、ウェイン邸での完璧なスーパーヒーローをテーマにしたイベントの企画を助けてくれます！ 🎉
+（入力文の訳：二日酔いの治療法を見つけて下さい）
+
+このセットアップにより、アルフレッドは豪華なエンターテイメントの選択肢を素早く見つけることが出来、ゴッサムの上流階級のゲストに忘れられない体験を保証します。このツールは、ウェイン邸での完璧なスーパーヒーローをテーマにしたイベントの企画を助けてくれます！
 
 ## リソース
 
 - [Tools Tutorial](https://huggingface.co/docs/smolagents/tutorials/tools) - ツールを効果的に扱う方法を学べるチュートリアル。
 - [Tools Documentation](https://huggingface.co/docs/smolagents/v1.8.1/en/reference/tools) - ツールに関する包括的なリファレンスドキュメント。
-- [Tools Guided Tour](https://huggingface.co/docs/smolagents/v1.8.1/en/guided_tour#tools) - ツールを効率よく構築・活用するためのステップバイステップのガイドツアー。
-- [Building Effective Agents](https://huggingface.co/docs/smolagents/tutorials/building_good_agents) - 信頼性と高性能を備えたカスタム関数エージェントを開発するためのベストプラクティスの詳細なガイド。
+- [Tools Guided Tour](https://huggingface.co/docs/smolagents/v1.8.1/en/guided_tour#tools) - ツールを効率よく構築・活用する為のステップバイステップのガイドツアー。
+- [Building Effective Agents](https://huggingface.co/docs/smolagents/tutorials/building_good_agents) - 信頼性と高性能を備えたカスタム関数エージェントを開発する為のベストプラクティスの詳細なガイド。

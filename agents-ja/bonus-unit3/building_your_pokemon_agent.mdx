@@ -1,62 +1,62 @@
 # 自分だけの Pokémon バトルエージェントを作ろう
 
-ゲームにおけるエージェンティック AI の可能性と限界を探ってきたので、次は実践です。このセクションでは、コースを通じて学んだすべてを使い、**ポケモン風のターン制バトルで戦う、あなた自身の AI エージェントを構築します**。
+ゲームにおけるエージェンティック AI の可能性と限界を探ってきたので、次は実践です。このセクションでは、コースを通じて学んだ全てを使い、**ポケモン風のターン制バトルで戦う、あなた自身の AI エージェントを構築します**。
 
 システムを、4 つの重要な構成要素に分けます。
 
-- **Poke-env：** ルールベース又は強化学習の Pokémon ボットを訓練するために設計された Python ライブラリ。
+- **Poke-env：** ルールベース又は強化学習の Pokémon ボットを訓練する為に設計された Python ライブラリ。
 
 - **Pokémon Showdown：** エージェントが戦う、オンラインバトルシミュレータ。
 
-- **LLMAgentBase：** LLM と Poke-env のバトル環境を接続するために用意した、カスタムの Python クラス。
+- **LLMAgentBase：** LLM と Poke-env のバトル環境を接続する為に用意した、カスタムの Python クラス。
 
-- **TemplateAgent：** 独自のバトルエージェントを作るためのひな型。必要な部分を自分で実装して完成させます。
+- **TemplateAgent：** 独自のバトルエージェントを作る為のひな型。必要な部分を自分で実装して完成させます。
 
 それぞれのコンポーネントを、詳しく見ていきましょう。
 
-## 🧠 Poke-env
+## Poke-env
 
 ![バトルの GIF](https://github.com/hsahovic/poke-env/raw/master/rl-gif.gif)
 
-[Poke-env](https://github.com/hsahovic/poke-env) は、もともと [Haris Sahovic](https://huggingface.co/hsahovic) が強化学習ボットの訓練用に構築した Python インターフェースですが、ここではエージェンティック AI 用に転用します。  
-シンプルな API を通じて、エージェントが Pokémon Showdown とやり取りできるようにします。
+[Poke-env](https://github.com/hsahovic/poke-env) は、元々 [Haris Sahovic](https://huggingface.co/hsahovic) が強化学習ボットの訓練用に構築した Python インターフェースですが、ここではエージェンティック AI 用に転用します。  
+シンプルな API を通じて、エージェントが Pokémon Showdown とやり取り出来るようにします。
 
-グラフィカルインターフェースとの通信に必要なすべてを備えた `Player` クラスを提供しており、エージェントはこれを継承します。
+グラフィカルインターフェースとの通信に必要な全てを備えた `Player` クラスを提供しており、エージェントはこれを継承します。
 
 **ドキュメント**：[poke-env.readthedocs.io](https://poke-env.readthedocs.io/en/stable/)  
 **リポジトリ**：[github.com/hsahovic/poke-env](https://github.com/hsahovic/poke-env)
 
-## ⚔️ Pokémon Showdown
+## Pokémon Showdown
 
 [Pokémon Showdown](https://pokemonshowdown.com/) は、エージェントがオンラインで Pokémon の対戦を行える[オープンソース](https://github.com/smogon/Pokemon-Showdown)のバトルシミュレータです。  
-バトルをリアルタイムにシミュレーションし、表示するための完全なインターフェースを提供します。このチャレンジでは、ボットは人間のプレイヤーとまったく同じように、ターンごとに技を選んで行動します。
+バトルをリアルタイムにシミュレーションし、表示する為の完全なインターフェースを提供します。このチャレンジでは、ボットは人間のプレイヤーとまったく同じように、ターンごとに技を選んで行動します。
 
 参加者全員がバトルに使うサーバーを用意しました。最高の AI バトルエージェントを作るのは誰か、競い合いましょう。
 
 **リポジトリ**：[github.com/smogon/Pokemon-Showdown](https://github.com/smogon/Pokemon-Showdown)  
 **ウェブサイト**：[pokemonshowdown.com](https://pokemonshowdown.com/)
 
-## 🔌 LLMAgentBase
+## LLMAgentBase
 
 `LLMAgentBase` は、**Poke-env** の `Player` クラスを拡張した Python クラスです。  
 **LLM** と **Pokémon バトルシミュレータ**の橋渡し役を務め、入出力の整形とバトルのコンテキストの保持を担当します。
 
-このベースエージェントは、環境とやり取りするためのツール群（`STANDARD_TOOL_SCHEMA` で定義）を提供します。
+このベースエージェントは、環境とやり取りする為のツール群（`STANDARD_TOOL_SCHEMA` で定義）を提供します。
 
 - `choose_move`：バトル中の技の選択用  
 - `choose_switch`：ポケモンの交代用  
 
 LLM は、対戦中の意思決定にこれらのツールを使う必要があります。
 
-### 🧠 コアロジック
+### コアロジック
 
 - `choose_move(battle: Battle)`：毎ターン呼び出されるメインメソッドです。`Battle` オブジェクトを受け取り、LLM の出力に基づいた行動文字列を返します。
 
-### 🔧 主要な内部メソッド
+### 主要な内部メソッド
 
 - `_format_battle_state(battle)`：現在のバトルの状態を文字列に変換し、LLM に送れる形にします。
 
-- `_find_move_by_name(battle, move_name)`：名前を使って技を探します。LLM が `choose_move` を呼び出したときに、その応答から指定された技を特定するために使います。
+- `_find_move_by_name(battle, move_name)`：名前を使って技を探します。LLM が `choose_move` を呼び出した時に、その応答から指定された技を特定する為に使います。
 
 - `_find_pokemon_by_name(battle, pokemon_name)`：LLM の交代コマンドに基づき、交代先のポケモンを特定します。
 
@@ -210,11 +210,13 @@ class LLMAgentBase(Player):
         raise NotImplementedError("Subclasses must implement _get_llm_decision")
 ```
 
+（バトル状態の表示文の訳：「あなたの場のポケモン：{種族名}（タイプ：{タイプ}）HP：{残り HP の割合}％ 状態：{状態異常} 能力変化：{能力変化}」「相手の場のポケモン：{同じ形式}」「使用出来る技：」「交代出来るポケモン：」「天候：」「フィールド：」「自分の場の状態：」「相手の場の状態：」という形式で表示されます。使用出来る技が無い場合は「なし（交代するか、わるあがきをしなければなりません）」と表示されます）
+
 **完全なソースコード**：[agents.py](https://huggingface.co/spaces/Jofthomas/twitch_streaming/blob/main/agents.py)
 
-## 🧪 TemplateAgent
+## TemplateAgent
 
-ここからが面白いところです。LLMAgentBase を土台に、独自の戦略を持つエージェントを実装しましょう。目指すはリーダーボードの上位です。
+ここからが面白い所です。LLMAgentBase を土台に、独自の戦略を持つエージェントを実装しましょう。目指すはリーダーボードの上位です。
 
 このテンプレートを出発点に、独自のロジックを構築します。手引きとして、**OpenAI**、**Mistral**、**Gemini** のモデルを使った [3 つの完全な例](https://huggingface.co/spaces/Jofthomas/twitch_streaming/blob/main/agents.py)も用意しています。
 
@@ -253,8 +255,8 @@ class TemplateAgent(LLMAgentBase):
             return {"error": f"予期しないエラー：{e}"}
 ```
 
-このコードはそのままでは動きません。独自の処理を実装するためのひな型です。
+このコードはそのままでは動きません。独自の処理を実装する為のひな型です。
 
-すべての部品がそろったので、競争力のあるエージェントを作る番です。次のセクションでは、エージェントを私たちのサーバーにデプロイし、リアルタイムで他のエージェントと対戦させる方法を紹介します。
+全ての部品が揃ったので、競争力の有るエージェントを作る番です。次のセクションでは、エージェントを私たちのサーバーにデプロイし、リアルタイムで他のエージェントと対戦させる方法を紹介します。
 
-バトル開始です！🔥
+バトル開始です！

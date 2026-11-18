@@ -8,28 +8,28 @@ askForHelpUrl="http://hf.co/join/discord"
 
 # コードを使うエージェントを作る
 
-Code Agent は `smolagents` のデフォルトのエージェントタイプです。アクションを実行するために Python のツール呼び出しを生成し、効率的で表現力豊か、かつ正確なアクション表現を実現します。
+Code Agent は `smolagents` のデフォルトのエージェントタイプです。アクションを実行する為に Python のツール呼び出しを生成し、効率的で表現力豊か、且つ正確なアクション表現を実現します。
 
-この効率的な方式を使うと、必要なアクションの数を減らし、複雑な操作を簡単に実行できます。また、既存の関数も再利用できます。`smolagents` は、約1,000行のコードで実装された、コードエージェントを構築するための軽量なフレームワークを提供します。
+この効率的な方式を使うと、必要なアクションの数を減らし、複雑な操作を簡単に実行出来ます。また、既存の関数も再利用出来ます。`smolagents` は、約1,000行のコードで実装された、コードエージェントを構築する為の軽量なフレームワークを提供します。
 
 ![コードと JSON のアクション比較](https://huggingface.co/datasets/huggingface/documentation-images/resolve/main/transformers/code_vs_json_actions.png)
 図の出典：[Executable Code Actions Elicit Better LLM Agents](https://huggingface.co/papers/2402.01030)
 
 > [!TIP]
-> コードエージェントが効果的な理由をもっと知りたい場合は、smolagents ドキュメントの<a href="https://huggingface.co/docs/smolagents/en/conceptual_guides/intro_agents#code-agents" target="_blank">このガイド</a>をご覧ください。
+> コードエージェントが効果的な理由をもっと知りたい場合は、smolagents ドキュメントの<a href="https://huggingface.co/docs/smolagents/en/conceptual_guides/intro_agents#code-agents" target="_blank">このガイド</a>をご覧下さい。
 
-## なぜ Code Agent なのか？
+## 何故 Code Agent なのか？
 
-マルチステップエージェントのプロセスでは、LLM がアクションを書いて実行します。通常は外部のツール呼び出しを伴います。従来のアプローチは、ツール名と引数を文字列として指定する JSON 形式を使いますが、**どのツールを実行するかを決めるために、システムがそれをパースしなければなりません**。
+マルチステップエージェントのプロセスでは、LLM がアクションを書いて実行します。通常は外部のツール呼び出しを伴います。従来のアプローチは、ツール名と引数を文字列として指定する JSON 形式を使いますが、**どのツールを実行するかを決める為に、システムがそれをパースしなければなりません**。
 
-しかし研究によれば、**ツール呼び出しを行う LLM は、コードを直接扱うほうが効果的に働きます**。これは `smolagents` の核となる原則であり、上記の論文 [Executable Code Actions Elicit Better LLM Agents](https://huggingface.co/papers/2402.01030) の図が示すとおりです。
+しかし研究によれば、**ツール呼び出しを行う LLM は、コードを直接扱うほうが効果的に働きます**。これは `smolagents` の核となる原則であり、上記の論文 [Executable Code Actions Elicit Better LLM Agents](https://huggingface.co/papers/2402.01030) の図が示す通りです。
 
-アクションを JSON ではなくコードで書くことには、いくつかの重要な利点があります。
+アクションを JSON ではなくコードで書くことには、いくつかの重要な利点が有ります。
 
-* **合成可能性（Composability）**: アクションを簡単に組み合わせ、再利用できる
-* **オブジェクト管理**: 画像のような複雑な構造を直接扱える
-* **汎用性**: 計算可能なあらゆるタスクを表現できる
-* **LLM にとって自然**: 高品質なコードは、既に LLM の訓練データに含まれている
+* **合成可能性（Composability）**：アクションを簡単に組み合わせ、再利用出来る
+* **オブジェクト管理**：画像のような複雑な構造を直接扱える
+* **汎用性**：計算可能なあらゆるタスクを表現出来る
+* **LLM にとって自然**：高品質なコードは、既に LLM の訓練データに含まれている
 
 ## Code Agent の仕組み
 
@@ -58,19 +58,19 @@ Code Agent は `smolagents` のデフォルトのエージェントタイプで�
 ## 例を見てみましょう
 
 > [!TIP]
-> コードは、Google Colab で実行できる<a href="https://huggingface.co/agents-course/notebooks/blob/main/unit2/smolagents/code_agents.ipynb" target="_blank">このノートブック</a>で追うことができます。
+> コードは、Google Colab で実行出来る<a href="https://huggingface.co/agents-course/notebooks/blob/main/unit2/smolagents/code_agents.ipynb" target="_blank">このノートブック</a>で追うことが出来ます。
 
-アルフレッドはウェイン家の邸宅でパーティーを計画していて、すべてが円滑に進むよう手伝いが必要です。彼を助けるために、マルチステップの `CodeAgent` の仕組みについて学んだことを応用しましょう。
+アルフレッドはウェイン家の邸宅でパーティーを計画していて、全てが円滑に進むよう手伝いが必要です。彼を助ける為に、マルチステップの `CodeAgent` の仕組みについて学んだことを応用しましょう。
 
 <img src="https://huggingface.co/datasets/agents-course/course-images/resolve/main/en/unit2/smolagents/alfred-party.jpg" alt="アルフレッドのパーティー"/>
 
-まだ `smolagents` をインストールしていない場合は、次のコマンドでインストールできます。
+まだ `smolagents` をインストールしていない場合は、次のコマンドでインストール出来ます。
 
 ```bash
 pip install smolagents -U
 ```
 
-Serverless Inference API にアクセスするために、Hugging Face Hub にもログインしましょう。
+Serverless Inference API にアクセスする為に、Hugging Face Hub にもログインしましょう。
 
 ```python
 from huggingface_hub import login
@@ -80,11 +80,13 @@ login()
 
 ### `smolagents` を使ってパーティーのプレイリストを選ぶ
 
-音楽はパーティーを成功させるうえで欠かせない要素です。アルフレッドはプレイリスト選びの手伝いが必要です。幸い、`smolagents` が助けてくれます。DuckDuckGo を使って Web を検索できるエージェントを構築できます。このツールへのアクセスをエージェントに与えるには、エージェント作成時にツールリストに含めます。
+音楽はパーティーを成功させる上で欠かせない要素です。アルフレッドはプレイリスト選びの手伝いが必要です。幸い、`smolagents` が助けてくれます。
+
+DuckDuckGo を使って Web を検索出来るエージェントを構築出来ます。このツールへのアクセスをエージェントに与えるには、エージェント作成時にツールリストに含めます。
 
 <img src="https://huggingface.co/datasets/agents-course/course-images/resolve/main/en/unit2/smolagents/alfred-playlist.jpg" alt="アルフレッドのプレイリスト"/>
 
-モデルには、Hugging Face の [Serverless Inference API](https://huggingface.co/docs/api-inference/index) へのアクセスを提供する `InferenceClientModel` を使います。デフォルトのモデルは `"Qwen/Qwen2.5-Coder-32B-Instruct"` で、性能が高く高速な推論が可能ですが、Hub の互換性のあるモデルならどれでも選べます。
+モデルには、Hugging Face の [Serverless Inference API](https://huggingface.co/docs/api-inference/index) へのアクセスを提供する `InferenceClientModel` を使います。デフォルトのモデルは `"Qwen/Qwen2.5-Coder-32B-Instruct"` で、性能が高く高速な推論が可能ですが、Hub の互換性の有るモデルならどれでも選べます。
 
 エージェントの実行はとても簡単です。
 
@@ -96,7 +98,9 @@ agent = CodeAgent(tools=[DuckDuckGoSearchTool()], model=InferenceClientModel())
 agent.run("Search for the best music recommendations for a party at the Wayne's mansion.")
 ```
 
-この例を実行すると、**ワークフローの各ステップの実行履歴（トレース）が表示されます**。また、対応する Python コードも次のメッセージとともに表示されます。
+（入力文の訳：Wayne 邸でのパーティーに最適な音楽のお勧めを検索して下さい）
+
+この例を実行すると、**ワークフローの各ステップの実行履歴（トレース）が表示されます**。また、対応する Python コードも次のメッセージと共に表示されます。
 
 ```python
  ─ Executing parsed code: ──────────────────────────────────────────────────────────────────────────────────────── 
@@ -105,13 +109,17 @@ agent.run("Search for the best music recommendations for a party at the Wayne's 
  ───────────────────────────────────────────────────────────────────────────────────────────────────────────────── 
 ```
 
-数ステップののち、アルフレッドがパーティーで使えるプレイリストが生成されます！ 🎵
+（検索クエリの訳：バットマンのパーティーに最適な音楽）
+
+数ステップののち、アルフレッドがパーティーで使えるプレイリストが生成されます！
 
 ### カスタムツールを使ってメニューを用意する
 
 <img src="https://huggingface.co/datasets/agents-course/course-images/resolve/main/en/unit2/smolagents/alfred-menu.jpg" alt="アルフレッドのメニュー"/>
 
-プレイリストが選べたので、次はゲスト向けのメニューを整える必要があります。ここでもアルフレッドは `smolagents` を活用できます。ここでは `@tool` デコレータを使って、ツールとして機能するカスタム関数を定義します。ツールの作り方は後ほど詳しく扱うので、ここではコードを実行するだけで構いません。
+プレイリストが選べたので、次はゲスト向けのメニューを整える必要があります。ここでもアルフレッドは `smolagents` を活用出来ます。
+
+ここでは `@tool` デコレータを使って、ツールとして機能するカスタム関数を定義します。ツールの作り方は後ほど詳しく扱うので、ここではコードを実行するだけで構いません。
 
 以下の例で分かるように、`@tool` デコレータでツールを作成し、`tools` リストに含めます。
 
@@ -146,21 +154,23 @@ agent = CodeAgent(tools=[suggest_menu], model=InferenceClientModel())
 agent.run("Prepare a formal menu for the party.")
 ```
 
-エージェントは、答えを見つけるまで数ステップにわたって処理を実行します。docstring に指定可能な値を明記しておくと、エージェントが `occasion` に有効な値を指定するよう誘導でき、ハルシネーションを抑えられます。
+（ツール説明・戻り値・入力文の訳：docstring は「場面に応じたメニューを提案します。引数 occasion はパーティーの場面の種類で、指定出来る値は casual（カジュアルなパーティーのメニュー）、formal（正式なパーティーのメニュー）、superhero（スーパーヒーローパーティーのメニュー）、custom（カスタムメニュー）です」です。戻り値は、casual が「ピザ、軽食、飲み物」、formal が「ワインとデザート付きの3コースディナー」、superhero が「高エネルギーで健康的な食べ物のビュッフェ」、その他が「執事の為のカスタムメニュー」です。入力文は「パーティーの正式なメニューを用意して下さい」です）
 
-メニューの準備ができました！ 🥗
+エージェントは、答えを見つけるまで数ステップにわたって処理を実行します。docstring に指定可能な値を明記しておくと、エージェントが `occasion` に有効な値を指定するよう誘導出来、ハルシネーションを抑えられます。
+
+メニューの準備が出来ました！
 
 ### エージェントの中で Python のインポートを使う
 
-プレイリストとメニューは準備できましたが、もうひとつ重要な詳細を確認する必要があります。それは準備にかかる時間です。
+プレイリストとメニューは準備出来ましたが、もうひとつ重要な詳細を確認する必要があります。それは準備にかかる時間です。
 
-アルフレッドは、今から準備を始めると何時にすべての準備が整うのかを計算する必要があります。これは、ほかのスーパーヒーローの助けが必要になった場合に備えるためです。
+アルフレッドは、今から準備を始めると何時に全ての準備が整うのかを計算する必要があります。これは、他のスーパーヒーローの助けが必要になった場合に備える為です。
 
-`smolagents` は、Python コードスニペットを書いて実行するエージェントに特化しており、セキュリティのためにサンドボックス実行を提供します。
+`smolagents` は、Python コードスニペットを書いて実行するエージェントに特化しており、セキュリティの為にサンドボックス実行を提供します。
 
-**コード実行には厳格なセキュリティ対策があります**。事前に定義された安全なリストにないインポートは、デフォルトでブロックされます。但し、`additional_authorized_imports` に文字列として渡すことで、追加のインポートを許可できます。安全なコード実行の詳細については、公式の[ガイド](https://huggingface.co/docs/smolagents/tutorials/secure_code_execution)をご覧ください。
+**コード実行には厳格なセキュリティ対策があります**。事前に定義された安全なリストに無いインポートは、デフォルトでブロックされます。但し、`additional_authorized_imports` に文字列として渡すことで、追加のインポートを許可出来ます。安全なコード実行の詳細については、公式の[ガイド](https://huggingface.co/docs/smolagents/tutorials/secure_code_execution)をご覧下さい。
 
-エージェントを作成するとき、`additional_authorized_imports` を使って `datetime` モジュールのインポートを許可します。
+エージェントを作成する時、`additional_authorized_imports` を使って `datetime` モジュールのインポートを許可します。
 
 ```python
 from smolagents import CodeAgent, InferenceClientModel
@@ -183,16 +193,18 @@ agent.run(
 )
 ```
 
+（入力文の訳：Alfred はパーティーの準備をする必要があります。タスクは次の通りです。1. 飲み物の準備：30分、2. 邸宅の飾り付け：60分、3. メニューの準備：45分、4. 音楽とプレイリストの準備：45分。今すぐ始めたら、パーティーの準備が整うのは何時ですか）
 
-これらの例は、コードエージェントでできることのほんの始まりにすぎませんが、パーティーの準備における有用性は既に見え始めています。コードエージェントの作り方について更に学ぶには、[smolagents のドキュメント](https://huggingface.co/docs/smolagents)をご覧ください。
 
-まとめると、`smolagents` は Python コードスニペットを書いて実行するエージェントに特化し、セキュリティのためのサンドボックス実行を提供します。ローカルモデルと API ベースの言語モデルの両方をサポートしており、様々な開発環境に適応できます。
+これらの例は、コードエージェントで出来ることのほんの始まりに過ぎませんが、パーティーの準備における有用性は既に見え始めています。コードエージェントの作り方について更に学ぶには、[smolagents のドキュメント](https://huggingface.co/docs/smolagents)をご覧下さい。
+
+まとめると、`smolagents` は Python コードスニペットを書いて実行するエージェントに特化し、セキュリティの為のサンドボックス実行を提供します。ローカルモデルと API ベースの言語モデルの両方をサポートしており、様々な開発環境に適応出来ます。
 
 ### カスタムのパーティー準備エージェントを Hub に共有する
 
-**自分たちで作ったアルフレッドのエージェントを、コミュニティにも共有できたら素晴らしい**ですよね。共有すれば、誰でも Hub からエージェントを簡単にダウンロードして使え、ゴッサム究極のパーティープランナーを手元で活用できます。やってみましょう！ 🎉
+**自分たちで作ったアルフレッドのエージェントを、コミュニティにも共有出来たら素晴らしい**ですよね。共有すれば、誰でも Hub からエージェントを簡単にダウンロードして使え、ゴッサム究極のパーティープランナーを手元で活用出来ます。やってみましょう！
 
-`smolagents` ライブラリでは、完全なエージェントをコミュニティと共有したり、他の人のエージェントをダウンロードしてすぐに使ったりできます。次のように簡単です。
+`smolagents` ライブラリでは、完全なエージェントをコミュニティと共有したり、他の人のエージェントをダウンロードして直ぐに使ったり出来ます。次のように簡単です。
 
 ```python
 # 自分のユーザー名とリポジトリ名に変更してください
@@ -208,9 +220,11 @@ alfred_agent = agent.from_hub('sergiopaniego/AlfredAgent', trust_remote_code=Tru
 alfred_agent.run("Give me the best playlist for a party at Wayne's mansion. The party idea is a 'villain masquerade' theme")  
 ```
 
-更に素晴らしいことに、共有されたエージェントは Hugging Face Spaces として直接利用でき、リアルタイムにやり取りできます。他のエージェントは[こちら](https://huggingface.co/spaces/davidberenstein1957/smolagents-and-tools)で探索できます。
+（入力文の訳：Wayne 邸でのパーティーに最適なプレイリストを教えて下さい。パーティーのアイデアは「悪役の仮面舞踏会」というテーマです）
 
-たとえば、_AlfredAgent_ は[こちら](https://huggingface.co/spaces/sergiopaniego/AlfredAgent)で利用できます。以下で直接試すことができます。
+更に素晴らしいことに、共有されたエージェントは Hugging Face Spaces として直接利用出来、リアルタイムにやり取り出来ます。他のエージェントは[こちら](https://huggingface.co/spaces/davidberenstein1957/smolagents-and-tools)で探索出来ます。
+
+例えば、_AlfredAgent_ は[こちら](https://huggingface.co/spaces/sergiopaniego/AlfredAgent)で利用出来ます。以下で直接試すことが出来ます。
 
 <iframe
 	src="https://sergiopaniego-alfredagent.hf.space/"
@@ -303,28 +317,30 @@ agent = CodeAgent(
 agent.run("Give me the best playlist for a party at the Wayne's mansion. The party idea is a 'villain masquerade' theme")
 ```
 
-このように、いくつかのツールでエージェントの機能を強化した `CodeAgent` を作成し、コミュニティと共有できる究極のパーティープランナーに仕上げました！ 🎉
+（ツール説明とデータの訳：`catering_service_tool` の docstring は「このツールは、ゴッサムシティで最も評価の高いケータリングサービスを返します。引数 query は、ケータリングサービスを探す為の検索語です」です。`SuperheroPartyThemeTool` の説明は「カテゴリに基づいて、創造的なスーパーヒーローをテーマにしたパーティーのアイデアを提案するツールで、独自のパーティーテーマのアイデアを返します」です。テーマの候補データは、classic heroes が「ジャスティスリーグ・ガラ：ゲストはお気に入りの DC ヒーローの衣装で来場し、『クリプトナイト・パンチ』のようなテーマカクテルを楽しみます」、villain masquerade が「ゴッサム・ローグズ・ボール：ゲストが古典的なバットマンの悪役の衣装で来場する、神秘的な仮面舞踏会です」、futuristic Gotham が「ネオ・ゴッサム・ナイト：バットマン・ビヨンドに着想を得たサイバーパンク風のパーティーで、ネオンの装飾と未来的なガジェットを使います」で、該当しない場合は「テーマのパーティーのアイデアが見つかりません。'classic heroes'、'villain masquerade'、'futuristic Gotham' を試して下さい」という文が返ります。入力文の訳は、前のプレイリストの例と同じです）
 
-今度はあなたの番です。学んだ知識を使って、自分自身のエージェントを作り、コミュニティと共有しましょう！ 🕵️‍♂️💡
+このように、いくつかのツールでエージェントの機能を強化した `CodeAgent` を作成し、コミュニティと共有出来る究極のパーティープランナーに仕上げました！
+
+今度はあなたの番です。学んだ知識を使って、自分自身のエージェントを作り、コミュニティと共有しましょう！
 
 > [!TIP]
-> エージェントプロジェクトを共有したい場合は、Space を作り、Hugging Face Hub で <a href="https://huggingface.co/agents-course">agents-course</a> をタグ付けしてください。皆さんの作品を楽しみにしています！
+> エージェントプロジェクトを共有したい場合は、Space を作り、Hugging Face Hub で <a href="https://huggingface.co/agents-course">agents-course</a> をタグ付けして下さい。皆さんの作品を楽しみにしています！
 
-### OpenTelemetry と Langfuse でパーティー準備エージェントを検査する 📡
+### OpenTelemetry と Langfuse でパーティー準備エージェントを検査する
 
-アルフレッドは Party Preparator Agent を微調整するなかで、その実行のデバッグに疲れてきています。エージェントは本質的に予測が難しく、検査も困難です。しかし、究極の Party Preparator Agent を構築して本番環境にデプロイすることを目指す以上、将来の監視と分析のために堅牢なトレーサビリティが必要です。
+アルフレッドは Party Preparator Agent を微調整するなかで、その実行のデバッグに疲れてきています。エージェントは本質的に予測が難しく、検査も困難です。しかし、究極の Party Preparator Agent を構築して本番環境にデプロイすることを目指す以上、将来の監視と分析の為に堅牢なトレーサビリティが必要です。
 
-ここでも `smolagents` が助けてくれます。エージェントの実行を計測するための [OpenTelemetry](https://opentelemetry.io/) 標準を取り入れており、シームレスな検査とロギングが可能です。[Langfuse](https://langfuse.com/) と `SmolagentsInstrumentor` の助けを借りて、アルフレッドはエージェントの振る舞いを簡単に追跡・分析できます。
+ここでも `smolagents` が助けてくれます。エージェントの実行を計測する為の [OpenTelemetry](https://opentelemetry.io/) 標準を取り入れており、シームレスな検査とロギングが可能です。[Langfuse](https://langfuse.com/) と `SmolagentsInstrumentor` の助けを借りて、アルフレッドはエージェントの振る舞いを簡単に追跡・分析出来ます。
 
 セットアップは簡単です！
 
-まず、必要な依存関係をインストールします。
+先ず、必要な依存関係をインストールします。
 
 ```bash
 pip install opentelemetry-sdk opentelemetry-exporter-otlp openinference-instrumentation-smolagents langfuse
 ```
 
-次に、アルフレッドは既に Langfuse のアカウントを作成し、API キーの準備ができています。まだの場合は、Langfuse Cloud に[こちら](https://cloud.langfuse.com/)からサインアップするか、[代替手段](https://huggingface.co/docs/smolagents/tutorials/inspect_runs)を探ってください。
+次に、アルフレッドは既に Langfuse のアカウントを作成し、API キーの準備が出来ています。まだの場合は、Langfuse Cloud に[こちら](https://cloud.langfuse.com/)からサインアップするか、[代替手段](https://huggingface.co/docs/smolagents/tutorials/inspect_runs)を探って下さい。
 
 API キーを取得したら、次のように適切に設定する必要があります。
 
@@ -338,7 +354,7 @@ os.environ["LANGFUSE_HOST"] = "https://cloud.langfuse.com" # 🇪🇺 EU リー�
 # os.environ["LANGFUSE_HOST"] = "https://us.cloud.langfuse.com" # 🇺🇸 US リージョン
 ```
 
-環境変数を設定したら、Langfuse クライアントを初期化できます。`get_client()` は、環境変数に設定された認証情報を使って Langfuse クライアントを初期化します。
+環境変数を設定したら、Langfuse クライアントを初期化出来ます。`get_client()` は、環境変数に設定された認証情報を使って Langfuse クライアントを初期化します。
 
 ```python
 from langfuse import get_client
@@ -360,10 +376,10 @@ from openinference.instrumentation.smolagents import SmolagentsInstrumentor
 SmolagentsInstrumentor().instrument()
 ```
 
-アルフレッドが接続できました 🔌！ `smolagents` の実行が Langfuse に記録され、エージェントの振る舞いを完全に把握できます。このセットアップにより、過去の実行を振り返って Party Preparator Agent を更に改良する準備が整いました。
+アルフレッドが接続出来ました！ `smolagents` の実行が Langfuse に記録され、エージェントの振る舞いを完全に把握出来ます。このセットアップにより、過去の実行を振り返って Party Preparator Agent を更に改良する準備が整いました。
 
 > [!TIP]
-> エージェントのトレース方法や、収集したデータでパフォーマンスを評価する方法については、<a href="https://huggingface.co/learn/agents-course/bonus-unit2/introduction">Bonus Unit 2</a> をご覧ください。
+> エージェントのトレース方法や、収集したデータでパフォーマンスを評価する方法については、<a href="https://huggingface.co/learn/agents-course/bonus-unit2/introduction">Bonus Unit 2</a> をご覧下さい。
 
 ```python
 from smolagents import CodeAgent, InferenceClientModel
@@ -373,20 +389,22 @@ alfred_agent = agent.from_hub('sergiopaniego/AlfredAgent', trust_remote_code=Tru
 alfred_agent.run("Give me the best playlist for a party at Wayne's mansion. The party idea is a 'villain masquerade' theme")  
 ```
 
+（入力文の訳は、前のプレイリストの例と同じです）
+
 アルフレッドは[こちら](https://cloud.langfuse.com/project/cm7bq0abj025rad078ak3luwi/traces/995fc019255528e4f48cf6770b0ce27b?timestamp=2025-02-19T10%3A28%3A36.929Z)のログにアクセスして、確認と分析を行えます。
 
 > [!TIP]
-> 実は、実行中に小さなエラーが発生しました。ログの中で見つけられますか？ エージェントがそれをどのように処理し、それでも有効な答えを返すかを追ってみてください。答え合わせをしたい場合は、エラーへの直接リンクが<a href="https://cloud.langfuse.com/project/cm7bq0abj025rad078ak3luwi/traces/995fc019255528e4f48cf6770b0ce27b?timestamp=2025-02-19T10%3A28%3A36.929Z&observation=80ca57ace4f69b52">こちら</a>です。もちろん、そのエラーは既に修正されています。詳細はこちらの <a href="https://github.com/huggingface/smolagents/issues/838">issue</a> をご覧ください。
+> 実は、実行中に小さなエラーが発生しました。ログの中で見つけられますか？ エージェントがそれをどのように処理し、それでも有効な答えを返すかを追ってみて下さい。答え合わせをしたい場合は、エラーへの直接リンクが<a href="https://cloud.langfuse.com/project/cm7bq0abj025rad078ak3luwi/traces/995fc019255528e4f48cf6770b0ce27b?timestamp=2025-02-19T10%3A28%3A36.929Z&observation=80ca57ace4f69b52">こちら</a>です。勿論、そのエラーは既に修正されています。詳細はこちらの <a href="https://github.com/huggingface/smolagents/issues/838">issue</a> をご覧下さい。
 
-一方、[おすすめのプレイリスト](https://open.spotify.com/playlist/0gZMMHjuxMrrybQ7wTMTpw)が、パーティーの準備にぴったりの雰囲気を作ってくれます。素敵ですよね？ 🎶  
+一方、[おすすめのプレイリスト](https://open.spotify.com/playlist/0gZMMHjuxMrrybQ7wTMTpw)が、パーティーの準備にぴったりの雰囲気を作ってくれます。素敵ですよね？  
 
 ---
 
-最初の Code Agent を作成できたので、次は `smolagents` で使える2つ目のエージェントタイプである **Tool Calling Agents の作り方を学びましょう**。
+最初の Code Agent を作成出来たので、次は `smolagents` で使える2つ目のエージェントタイプである **Tool Calling Agents の作り方を学びましょう**。
 
 ## リソース
 
 - [smolagents Blog](https://huggingface.co/blog/smolagents) - smolagents とコードインタラクションの紹介
-- [smolagents: Building Good Agents](https://huggingface.co/docs/smolagents/tutorials/building_good_agents) - 信頼性の高いエージェントのためのベストプラクティス
+- [smolagents: Building Good Agents](https://huggingface.co/docs/smolagents/tutorials/building_good_agents) - 信頼性の高いエージェントの為のベストプラクティス
 - [Building Effective Agents - Anthropic](https://www.anthropic.com/research/building-effective-agents) - エージェントの設計原則
-- [Sharing runs with OpenTelemetry](https://huggingface.co/docs/smolagents/tutorials/inspect_runs) - エージェントの追跡のために OpenTelemetry をセットアップする方法の詳細
+- [Sharing runs with OpenTelemetry](https://huggingface.co/docs/smolagents/tutorials/inspect_runs) - エージェントの追跡の為に OpenTelemetry をセットアップする方法の詳細

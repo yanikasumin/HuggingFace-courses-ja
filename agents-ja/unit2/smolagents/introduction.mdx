@@ -2,25 +2,27 @@
 
 <img src="https://huggingface.co/datasets/agents-course/course-images/resolve/main/en/unit2/smolagents/thumbnail.jpg" alt="Unit 2.1 のサムネイル"/>
 
-このモジュールへようこそ。ここでは、優れた AI エージェントを作るための軽量なフレームワークを提供する [`smolagents`](https://github.com/huggingface/smolagents) ライブラリを使って、**効果的なエージェントの作り方**を学びます。
+このモジュールへようこそ。ここでは、優れた AI エージェントを作る為の軽量なフレームワークを提供する [`smolagents`](https://github.com/huggingface/smolagents) ライブラリを使って、**効果的なエージェントの作り方**を学びます。
 
-`smolagents` は Hugging Face のライブラリです。ぜひ smolagents の[`リポジトリ`](https://github.com/huggingface/smolagents)に**スター**を付けて応援してください。
+`smolagents` は Hugging Face のライブラリです。是非 smolagents の[`リポジトリ`](https://github.com/huggingface/smolagents)に**スター**を付けて応援して下さい。
 <img src="https://huggingface.co/datasets/agents-course/course-images/resolve/main/en/unit2/smolagents/star_smolagents.gif" alt="smolagents にスターを付ける"/>
 
 ## モジュールの概要
 
-このモジュールでは、`smolagents` を使ってインテリジェントなエージェントを構築するための主要な概念と実践的な戦略を、幅広く解説します。
+このモジュールでは、`smolagents` を使ってインテリジェントなエージェントを構築する為の主要な概念と実践的な戦略を、幅広く解説します。
 
-オープンソースのフレームワークは数多くあります。そのため、`smolagents` のどのような構成要素や機能が役立つのか、また、どのような場面では別のソリューションが適しているのかを理解することが大切です。
+オープンソースのフレームワークは数多くあります。その為、`smolagents` のどのような構成要素や機能が役立つのか、また、どのような場面では別のソリューションが適しているのかを理解することが大切です。
 
 ソフトウェア開発タスク向けに設計されたコードエージェント、モジュール化された関数駆動のワークフローを作るツール呼び出しエージェント、情報にアクセスして統合する検索エージェントなど、重要なエージェントの種類を取り上げます。
 
 更に、複数のエージェントのオーケストレーションや、視覚機能と Web ブラウジングの統合についても扱います。これらによって、動的でコンテキストを意識したアプリケーションの新たな可能性が開けます。
 
-この Unit では、Unit 1 に登場したエージェントのアルフレッドが再び登場します。今回は内部の仕組みに `smolagents` フレームワークを使っています。ウェイン家 🦇 が留守のあいだ、アルフレッドはウェイン邸でパーティーを開く準備をしていて、やることが山積みです。このフレームワークの背後にある主要な概念を、アルフレッドが様々なタスクに取り組む様子とともに見ていきましょう。
+この Unit では、Unit 1 に登場したエージェントのアルフレッドが再び登場します。今回は内部の仕組みに `smolagents` フレームワークを使っています。ウェイン家が留守のあいだ、アルフレッドはウェイン邸でパーティーを開く準備をしていて、やることが山積みです。
+
+このフレームワークの背後にある主要な概念を、アルフレッドが様々なタスクに取り組む様子と共に見ていきましょう。
 
 > [!TIP]
-> この Unit では、`smolagents` ライブラリで AI エージェントを作る方法を学びます。作ったエージェントは、データの検索、コードの実行、Web ページとのやり取りができるようになります。複数のエージェントを組み合わせて、より強力なシステムを作る方法も学びます。
+> この Unit では、`smolagents` ライブラリで AI エージェントを作る方法を学びます。作ったエージェントは、データの検索、コードの実行、Web ページとのやり取りが出来るようになります。複数のエージェントを組み合わせて、より強力なシステムを作る方法も学びます。
 
 ![エージェントのアルフレッド](https://huggingface.co/datasets/agents-course/course-images/resolve/main/en/unit1/this-is-alfred.jpg)
 
@@ -30,11 +32,11 @@
 
 ### 1️⃣ [smolagents を使う理由](./why_use_smolagents)
 
-`smolagents` は、アプリケーション開発に使える数多くのオープンソースのエージェントフレームワークのひとつです。このコースの他のモジュールで扱う `LlamaIndex` や `LangGraph` も代替候補です。`smolagents` には、特定のユースケースに適した優れた特徴がいくつかありますが、フレームワークを選ぶときは常にすべての選択肢を検討すべきです。ここでは `smolagents` を使う利点と欠点を確認し、プロジェクトの要件に照らして、必要な情報を踏まえた判断ができるようにします。
+`smolagents` は、アプリケーション開発に使える数多くのオープンソースのエージェントフレームワークのひとつです。このコースの他のモジュールで扱う `LlamaIndex` や `LangGraph` も代替候補です。`smolagents` には、特定のユースケースに適した優れた特徴がいくつか有りますが、フレームワークを選ぶ時は常に全ての選択肢を検討すべきです。ここでは `smolagents` を使う利点と欠点を確認し、プロジェクトの要件に照らして、必要な情報を踏まえた判断が出来るようにします。
 
 ### 2️⃣ [CodeAgents](./code_agents)
 
-`CodeAgents` は `smolagents` の主要なエージェントタイプです。これらのエージェントは、JSON やテキストを生成する代わりに、アクションを実行するための Python コードを生成します。このモジュールでは、その目的や機能、動作の仕組みを解説し、実際に何ができるのかを具体的な例で紹介します。
+`CodeAgents` は `smolagents` の主要なエージェントタイプです。これらのエージェントは、JSON やテキストを生成する代わりに、アクションを実行する為の Python コードを生成します。このモジュールでは、その目的や機能、動作の仕組みを解説し、実際に何が出来るのかを具体的な例で紹介します。
 
 ### 3️⃣ [ToolCallingAgents](./tool_calling_agents)
 
@@ -46,21 +48,21 @@ Unit 1 で見たように、ツールは LLM が agentic システムの中で�
 
 ### 5️⃣ [検索エージェント](./retrieval_agents)
 
-検索エージェントを使うと、モデルがナレッジベースにアクセスし、複数の情報源を検索して必要な情報を取得・統合できます。効率的な検索のためにベクトルストアを活用し、**Retrieval-Augmented Generation (RAG)** のパターンを実装します。これらのエージェントは、メモリシステムで会話のコンテキストを維持しながら、Web 検索とカスタムのナレッジベースを統合するのに特に役立ちます。このモジュールでは、堅牢な情報検索のためのフォールバックの仕組みを含む実装戦略を探ります。
+検索エージェントを使うと、モデルがナレッジベースにアクセスし、複数の情報源を検索して必要な情報を取得・統合出来ます。効率的な検索の為にベクトルストアを活用し、**Retrieval-Augmented Generation (RAG)** のパターンを実装します。これらのエージェントは、メモリシステムで会話のコンテキストを維持しながら、Web 検索とカスタムのナレッジベースを統合するのに特に役立ちます。このモジュールでは、堅牢な情報検索の為のフォールバックの仕組みを含む実装戦略を探ります。
 
 ### 6️⃣ [マルチエージェントシステム](./multi_agent_systems)
 
-複数のエージェントを効果的にオーケストレーションすることは、強力なマルチエージェントシステムを構築するうえで重要です。Web 検索エージェントとコード実行エージェントのように、異なる能力を持つエージェントを組み合わせることで、より高度なソリューションを作れます。このモジュールでは、効率と信頼性を最大化するためのマルチエージェントシステムの設計、実装、管理に焦点を当てます。
+複数のエージェントを効果的にオーケストレーションすることは、強力なマルチエージェントシステムを構築する上で重要です。Web 検索エージェントとコード実行エージェントのように、異なる能力を持つエージェントを組み合わせることで、より高度なソリューションを作れます。このモジュールでは、効率と信頼性を最大化する為のマルチエージェントシステムの設計、実装、管理に焦点を当てます。
 
 ### 7️⃣ [Vision エージェントとブラウザエージェント](./vision_agents)
 
-Vision エージェントは、**Vision-Language Models (VLMs)** を取り入れることで従来のエージェントの能力を拡張し、視覚情報を処理・解釈できるようにします。このモジュールでは、VLM を活用したエージェントの設計と統合の方法を探り、画像ベースの推論、視覚データの分析、マルチモーダルなインタラクションといった高度な機能を実現します。また、Vision エージェントを使って、Web を閲覧して情報を抽出できるブラウザエージェントも構築します。
+Vision エージェントは、**Vision-Language Models (VLMs)** を取り入れることで従来のエージェントの能力を拡張し、視覚情報を処理・解釈出来るようにします。このモジュールでは、VLM を活用したエージェントの設計と統合の方法を探り、画像ベースの推論、視覚データの分析、マルチモーダルなインタラクションといった高度な機能を実現します。また、Vision エージェントを使って、Web を閲覧して情報を抽出出来るブラウザエージェントも構築します。
 
 ## リソース
 
 - [smolagents Documentation](https://huggingface.co/docs/smolagents) - smolagents ライブラリの公式ドキュメント
 - [Building Effective Agents](https://www.anthropic.com/research/building-effective-agents) - エージェントアーキテクチャに関する研究論文
-- [Agent Guidelines](https://huggingface.co/docs/smolagents/tutorials/building_good_agents) - 信頼性の高いエージェントを作るためのベストプラクティス
+- [Agent Guidelines](https://huggingface.co/docs/smolagents/tutorials/building_good_agents) - 信頼性の高いエージェントを作る為のベストプラクティス
 - [LangGraph Agents](https://langchain-ai.github.io/langgraph/) - エージェント実装の追加の例
 - [Function Calling Guide](https://platform.openai.com/docs/guides/function-calling) - LLM における関数呼び出しの理解
-- [RAG Best Practices](https://www.pinecone.io/learn/retrieval-augmented-generation/) - 効果的な RAG を実装するためのガイド
+- [RAG Best Practices](https://www.pinecone.io/learn/retrieval-augmented-generation/) - 効果的な RAG を実装する為のガイド

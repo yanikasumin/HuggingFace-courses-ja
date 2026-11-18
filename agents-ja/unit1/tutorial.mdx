@@ -2,7 +2,7 @@
 
 前回のセクションでは、Python コードを使ってゼロからエージェントを作成する方法を学び、**そのプロセスがいかに面倒かも分かりました**。幸いなことに、多くのエージェントライブラリは、**大変な作業の多くを代わりに処理して** この作業を簡素化してくれます。
 
-このチュートリアルでは、画像生成、Web 検索、タイムゾーンの確認など、様々なアクションを実行できる **初めてのエージェントを作成します**！
+このチュートリアルでは、画像生成、Web 検索、タイムゾーンの確認など、様々なアクションを実行出来る **初めてのエージェントを作成します**！
 
 更に、作成したエージェントを **Hugging Face Space に公開して、友人や同僚と共有する方法** も学びます。
 
@@ -13,11 +13,11 @@
 
 <img src="https://huggingface.co/datasets/agents-course/course-images/resolve/main/en/unit1/smolagents.png" alt="smolagents"/>
 
-このエージェントを作るために、`smolagents` を使います。これは、**エージェントを簡単に開発するためのフレームワークを提供する** ライブラリです。
+このエージェントを作る為に、`smolagents` を使います。これは、**エージェントを簡単に開発する為のフレームワークを提供する** ライブラリです。
 
-この軽量ライブラリは、シンプルで使いやすい設計が特徴です。エージェントの構築に伴う複雑な処理の多くを内部で処理してくれるため、エージェントの振る舞いを設計することに集中できます。
+この軽量ライブラリは、シンプルで使い易い設計が特徴です。エージェントの構築に伴う複雑な処理の多くを内部で処理してくれる為、エージェントの振る舞いを設計することに集中出来ます。
 
-smolagents については、次のユニットで更に深く掘り下げます。その間、こちらの <a href="https://huggingface.co/blog/smolagents" target="_blank">ブログ記事</a> や、ライブラリの <a href="https://github.com/huggingface/smolagents" target="_blank">GitHub リポジトリ</a> もご覧ください。
+smolagents については、次のユニットで更に深く掘り下げます。その間、こちらの <a href="https://huggingface.co/blog/smolagents" target="_blank">ブログ記事</a> や、ライブラリの <a href="https://github.com/huggingface/smolagents" target="_blank">GitHub リポジトリ</a> もご覧下さい。
 
 要するに、`smolagents` は **CodeAgent** を中心とするライブラリです。CodeAgent は、コードブロックを使って **「アクション（Actions）」** を実行し、その実行結果を **「観察（Observation）」** するタイプのエージェントです。
 
@@ -33,22 +33,22 @@ smolagents については、次のユニットで更に深く掘り下げます
 
 ## エージェントを構築しましょう！
 
-まず、この Space を複製してください: <a href="https://huggingface.co/spaces/agents-course/First_agent_template" target="_blank">https://huggingface.co/spaces/agents-course/First_agent_template</a>
-> このテンプレートを提供してくれた <a href="https://huggingface.co/m-ric" target="_blank">Aymeric</a> に感謝します！ 🙌
+先ず、この Space を複製して下さい：<a href="https://huggingface.co/spaces/agents-course/First_agent_template" target="_blank">https://huggingface.co/spaces/agents-course/First_agent_template</a>
+> このテンプレートを提供してくれた <a href="https://huggingface.co/m-ric" target="_blank">Aymeric</a> に感謝します！
 
 
 この Space を複製することは、**自分のプロフィール上にローカルコピーを作成する** ことを意味します。
 <img src="https://huggingface.co/datasets/agents-course/course-images/resolve/main/en/unit1/duplicate-space.gif" alt="複製"/>
 
-Space を複製したあとは、エージェントがモデル API にアクセスできるよう、Hugging Face API トークンを追加する必要があります。
+Space を複製したあとは、エージェントがモデル API にアクセス出来るよう、Hugging Face API トークンを追加する必要が有ります。
 
-1. まず、まだ持っていない場合は、[https://hf.co/settings/tokens](https://hf.co/settings/tokens) から推論の権限を持つ Hugging Face トークンを取得します
+1. 先ず、まだ持っていない場合は、[https://hf.co/settings/tokens](https://hf.co/settings/tokens) から推論の権限を持つ Hugging Face トークンを取得します
 2. 複製した Space に移動し、**Settings** タブをクリックします
 3. **Variables and Secrets** セクションまでスクロールし、**New Secret** をクリックします
 4. `HF_TOKEN` という名前のシークレットを作成し、その値としてトークンを貼り付けます
 5. **Save** をクリックして、トークンを安全に保存します
 
-このレッスンを通じて、変更する必要があるファイルは（現在は不完全な）**"app.py"** だけです。テンプレート内の [元のファイル](https://huggingface.co/spaces/agents-course/First_agent_template/blob/main/app.py) がこちらで確認できます。自分のファイルを見つけるには、Space のコピーに移動し、`Files` タブをクリックして、ディレクトリ一覧の `app.py` をクリックします。
+このレッスンを通じて、変更する必要が有るファイルは（現在は不完全な）**"app.py"** だけです。テンプレート内の [元のファイル](https://huggingface.co/spaces/agents-course/First_agent_template/blob/main/app.py) がこちらで確認出来ます。自分のファイルを見つけるには、Space のコピーに移動し、`Files` タブをクリックして、ディレクトリ一覧の `app.py` をクリックします。
 
 コードを一緒に分解していきましょう。
 
@@ -67,7 +67,7 @@ import yaml
 
 ### ツール
 
-では、ツールに入りましょう！ツールについて復習したい場合は、遠慮なくコースの [ツール](tools) セクションに戻ってください。
+では、ツールに入りましょう！ツールについて復習したい場合は、遠慮なくコースの [ツール](tools) セクションに戻って下さい。
 
 ```python
 @tool
@@ -96,16 +96,18 @@ def get_current_time_in_timezone(timezone: str) -> str:
         return f"Error fetching time for timezone '{timezone}': {str(e)}"
 ```
 
+（ツールの説明の訳：1つ目のツールは「まだ何もしないツール」です。引数は「第1引数」「第2引数」で、戻り値の文は「どんな魔法を作りますか？」という意味です。2つ目のツールは「指定されたタイムゾーンの現在の現地時刻を取得するツール」です。引数 timezone は「有効なタイムゾーンを表す文字列（例：'America/New_York'）」で、出力の文は「{timezone} の現在の現地時刻は：{local_time} です」という形式です）
 
-このセクションでは、皆さんにも実際にツールを作成してもらいます！まずは2つの例を示します。
 
-1. 変更して有用なものにできる、**動作しないダミーツール**。
+このセクションでは、皆さんにも実際にツールを作成してもらいます！先ずは2つの例を示します。
+
+1. 変更して有用なものに出来る、**動作しないダミーツール**。
 2. 世界のどこかの現在時刻を取得する、**実際に動作するツール**。
 
 ツールを定義する際は、次が重要です。
 
 1. `get_current_time_in_timezone(timezone: str) -> str:` のように、関数の入力と出力の型を提供すること
-2. **適切に整形された docstring**。`smolagents` は、すべての引数が **docstring 内にテキストによる説明** を持つことを期待しています。
+2. **適切に整形された docstring**。`smolagents` は、全ての引数が **docstring 内にテキストによる説明** を持つことを期待しています。
 
 ### エージェント
 
@@ -141,21 +143,21 @@ GradioUI(agent).launch()
 
 このエージェントでも、前のセクションで紹介した `InferenceClient` が、**InferenceClientModel** クラスの内部で使われています！
 
-フレームワークを紹介するユニット2では、より詳細な例を示します。今のところは、エージェントの `tools` パラメータを使って **ツールのリストに新しいツールを追加する** ことに集中してください。
+フレームワークを紹介するユニット2では、より詳細な例を示します。今の所は、エージェントの `tools` パラメータを使って **ツールのリストに新しいツールを追加する** ことに集中して下さい。
 
-たとえば、コードの1行目でインポートされた `DuckDuckGoSearchTool` を使ったり、コードの後半で Hub から読み込まれる `image_generation_tool` を調べたりできます。
+例えば、コードの1行目でインポートされた `DuckDuckGoSearchTool` を使ったり、コードの後半で Hub から読み込まれる `image_generation_tool` を調べたり出来ます。
 
-**ツールを追加することで、エージェントに新しい能力を持たせられます**。ぜひ自由に工夫してみてください！
+**ツールを追加することで、エージェントに新しい能力を持たせられます**。是非自由に工夫してみて下さい！
 
 ### システムプロンプト
 
 エージェントのシステムプロンプトは、別の `prompts.yaml` ファイルに保存されています。このファイルには、エージェントの振る舞いを導く事前定義された指示が含まれています。
 
-プロンプトを YAML ファイルに保存すると、異なるエージェントやユースケース間で簡単にカスタマイズや再利用ができます。
+プロンプトを YAML ファイルに保存すると、異なるエージェントやユースケース間で簡単にカスタマイズや再利用が出来ます。
 
 [Space のファイル構造](https://huggingface.co/spaces/agents-course/First_agent_template/tree/main) を確認すると、`prompts.yaml` ファイルの場所と、プロジェクト内での構成が分かります。
 
-完全な "app.py" は次のとおりです。
+完全な "app.py" は次の通りです。
 
 ```python
 from smolagents import CodeAgent, DuckDuckGoSearchTool, InferenceClientModel, load_tool, tool
@@ -228,16 +230,16 @@ GradioUI(agent).launch()
 
 あなたの **目標** は、Space とエージェントに慣れることです。
 
-現在のテンプレートでは、エージェントはまだ **ツールを使っていません。用意されているツールをいくつか追加したり、自分で新しいツールを作成したりしてみてください！**
+現在のテンプレートでは、エージェントはまだ **ツールを使っていません。用意されているツールをいくつか追加したり、自分で新しいツールを作成したりしてみて下さい！**
 
 Discord チャンネル **#agents-course-showcase** で、皆さんの素晴らしいエージェントの出力を心待ちにしています！
 
 
 ---
-おめでとうございます。初めてのエージェントを構築しました！遠慮なく友人や同僚と共有してください。
+おめでとうございます。初めてのエージェントを構築しました！遠慮なく友人や同僚と共有して下さい。
 
 初めて作ったエージェントですから、多少バグがあったり動作が遅かったりしても珍しくありません。今後のユニットでは、更に高性能なエージェントを構築する方法を学びます。
 
-学ぶ最良の方法は試すことです。遠慮なく更新したり、ツールを追加したり、別のモデルで試したりしてください。
+学ぶ最良の方法は試すことです。遠慮なく更新したり、ツールを追加したり、別のモデルで試したりして下さい。
 
 次のセクションでは、最終クイズに答えて認定証を取得します！
