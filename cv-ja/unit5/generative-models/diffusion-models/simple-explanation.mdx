@@ -2,23 +2,25 @@
 
 ## DreamBooth
 
-拡散モデルや GAN は多様な画像を生成できますが、欲しい画像をいつでも正確に生成できるわけではありません。そのため、モデルをファインチューニングすることがあります。但し、通常のファインチューニングには大量のデータと計算資源が必要です。一方、少数の画像だけでモデルを特定の用途に合わせられる技術もあります。
+拡散モデルや GAN は多様な画像を生成出来ますが、欲しい画像をいつでも正確に生成出来る訳ではありません。その為、モデルをファインチューニングすることがあります。但し、通常のファインチューニングには大量のデータと計算資源が必要です。一方、少数の画像だけでモデルを特定の用途に合わせられる技術もあります。
 
 1つの例が Google Research の DreamBooth です。これは、被写体やスタイルの数枚の画像だけで学習して拡散モデル全体を更新する学習技術です。プロンプト中の特殊な単語を例の画像と関連付けることで動作します。DreamBooth の詳細は[論文](https://dreambooth.github.io/)と [Hugging Face の DreamBooth 学習ドキュメント](https://huggingface.co/docs/diffusers/training/dreambooth)にあります。
 
-以下では、犬の4枚の画像で学習した DreamBooth の結果と、推論の例を見ることができます。
+以下では、犬の4枚の画像で学習した DreamBooth の結果と、推論の例を見ることが出来ます。
 ![DreamBooth の犬の例](https://huggingface.co/datasets/hf-vision/course-assets/resolve/main/teaser_static.jpg)
-上の Hugging Face ドキュメントに従えば、この結果を再現できます。
+上の Hugging Face ドキュメントに従えば、この結果を再現出来ます。
 
-この例から、モデルが特定の犬の特徴を学習し、その犬を様々なポーズや背景で描いた新しい画像を生成できることが分かります。DreamBooth は計算量、必要なデータ量、学習時間の面で進歩をもたらしましたが、その後、更に効率よくモデルをカスタマイズする方法も開発されました。
+この例から、モデルが特定の犬の特徴を学習し、その犬を様々なポーズや背景で描いた新しい画像を生成出来ることが分かります。DreamBooth は計算量、必要なデータ量、学習時間の面で進歩をもたらしましたが、その後、更に効率よくモデルをカスタマイズする方法も開発されました。
 
-そこで登場するのが、現在広く使われている Low Rank Adaptation（LoRA）です。LoRA はもともと、大規模言語モデルを効率よくファインチューニングするために Microsoft が開発し、[この論文](https://arxiv.org/abs/2106.09685)で発表した手法です。モデルの重みを更新するための行列を2つの低ランク行列に分解し、元のモデルの重みは固定したまま、この2つの行列だけを学習します。詳しい仕組みは、[Hugging Face の解説](https://huggingface.co/docs/peft/conceptual_guides/lora)で確認できます。
+そこで登場するのが、現在広く使われている Low Rank Adaptation（LoRA）です。LoRA は元々、大規模言語モデルを効率よくファインチューニングする為に Microsoft が開発し、[この論文](https://arxiv.org/abs/2106.09685)で発表した手法です。モデルの重みを更新する為の行列を2つの低ランク行列に分解し、元のモデルの重みは固定したまま、この2つの行列だけを学習します。詳しい仕組みは、[Hugging Face の解説](https://huggingface.co/docs/peft/conceptual_guides/lora)で確認出来ます。
 
-DreamBooth と LoRA を組み合わせれば、少数の画像を使って拡散モデルを効率よくファインチューニングできます。具体的な手順は、[こちら](https://colab.research.google.com/github/huggingface/notebooks/blob/main/diffusers/SDXL_DreamBooth_LoRA_.ipynb)の Google Colab ノートブックで紹介されています。
+DreamBooth と LoRA を組み合わせれば、少数の画像を使って拡散モデルを効率よくファインチューニング出来ます。具体的な手順は、[こちら](https://colab.research.google.com/github/huggingface/notebooks/blob/main/diffusers/SDXL_DreamBooth_LoRA_.ipynb)の Google Colab ノートブックで紹介されています。
 
-この方法は生成画像の品質と学習効率に優れているため、多くの人が独自の LoRA パラメータを作成しています。公開されているパラメータの多くは、[Civitai](https://civitai.com/models) や [Hugging Face](https://huggingface.co/collections/multimodalart/awesome-sdxl-loras-64f9af6d5cce4f4e8f351466) で見つけることができます。Civitai では、通常 50〜500MB 程度の LoRA の重みファイルをダウンロードできます。一方、Hugging Face に公開されている場合は、モデルハブから直接読み込むことができます。以下は、両方のケースで LoRA の重みを読み込み、モデルと融合する例です。
+この方法は生成画像の品質と学習効率に優れている為、多くの人が独自の LoRA パラメータを作成しています。公開されているパラメータの多くは、[Civitai](https://civitai.com/models) や [Hugging Face](https://huggingface.co/collections/multimodalart/awesome-sdxl-loras-64f9af6d5cce4f4e8f351466) で見つけることが出来ます。Civitai では、通常 50〜500MB 程度の LoRA の重みファイルをダウンロード出来ます。一方、Hugging Face に公開されている場合は、モデルハブから直接読み込むことが出来ます。
 
-まず、diffusers ライブラリをインストールします。
+以下は、両方のケースで LoRA の重みを読み込み、モデルと融合する例です。
+
+先ず、diffusers ライブラリをインストールします。
 ```bash
 pip install diffusers
 ````
@@ -38,9 +40,11 @@ pipe.load_lora_weights(
 pipe.fuse_lora(lora_scale=0.8)
 ```
 
-この方法を使えば、多くのモデルから好みのものを選び、カスタマイズした拡散モデルをすばやく読み込んで推論に利用できます。LoRA の重みを取り除いて元の状態に戻すには、`pipe.unfuse_lora()` を呼び出します。`lora_scale` は、推論時に LoRA の重みをどの程度反映するかを制御するハイパーパラメータです。1.0 では LoRA の重みを完全に反映し、0.0 ではまったく反映しません。多くの場合、0.7〜1.0 の範囲で良い結果が得られますが、用途に合わせて異なる値を試してみるとよいでしょう。
+この方法を使えば、多くのモデルから好みのものを選び、カスタマイズした拡散モデルをすばやく読み込んで推論に利用出来ます。LoRA の重みを取り除いて元の状態に戻すには、`pipe.unfuse_lora()` を呼び出します。
 
-Hugging Face の LoRA モデルのいくつかは、この Gradio デモで試すことができます。
+`lora_scale` は、推論時に LoRA の重みをどの程度反映するかを制御するハイパーパラメータです。1.0 では LoRA の重みを完全に反映し、0.0 ではまったく反映しません。多くの場合、0.7〜1.0 の範囲で良い結果が得られますが、用途に合わせて異なる値を試してみるとよいでしょう。
+
+Hugging Face の LoRA モデルのいくつかは、この Gradio デモで試すことが出来ます。
 <iframe
 	src="https://multimodalart-LoraTheExplorer.hf.space"
 	frameborder="0"
@@ -50,12 +54,12 @@ Hugging Face の LoRA モデルのいくつかは、この Gradio デモで試�
 
 ## ControlNet によるガイド付き拡散
 
-拡散モデルで目的の画像を生成するには、プロンプト、ネガティブプロンプト、ガイダンススケール、インペインティングなど、様々な方法で生成結果を制御できます。ここでは、その中でも多くの種類があり、ほかの方法とも組み合わせられる ControlNet を取り上げます。ControlNet は、スタンフォード大学の研究者らが[この論文](https://arxiv.org/abs/2302.05543)で提案した手法です。深度、ポーズ、輪郭などの具体的な情報を含む画像を使って、生成する画像を制御できます。これにより、拡散モデルで課題となることが多い、生成画像の一貫性を高められます。
+拡散モデルで目的の画像を生成するには、プロンプト、ネガティブプロンプト、ガイダンススケール、インペインティングなど、様々な方法で生成結果を制御出来ます。ここでは、その中でも多くの種類があり、他の方法とも組み合わせられる ControlNet を取り上げます。ControlNet は、スタンフォード大学の研究者らが[この論文](https://arxiv.org/abs/2302.05543)で提案した手法です。深度、ポーズ、輪郭などの具体的な情報を含む画像を使って、生成する画像を制御出来ます。これにより、拡散モデルで課題となることが多い、生成画像の一貫性を高められます。
 
-ControlNet は、テキストから画像を生成する場合にも、画像から別の画像を生成する場合にも使えます。以下は、エッジ（輪郭）情報を条件として学習した ControlNet を使う、テキストから画像への生成例です。左上の画像を入力として使っています。生成された画像すべてが非常に似た形をしていて、色だけが異なることが分かります。これは、ControlNet が入力画像と同じ形の画像を作るよう拡散モデルをガイドしているためです。
+ControlNet は、テキストから画像を生成する場合にも、画像から別の画像を生成する場合にも使えます。以下は、エッジ（輪郭）情報を条件として学習した ControlNet を使う、テキストから画像への生成例です。左上の画像を入力として使っています。生成された画像全てが非常に似た形をしていて、色だけが異なることが分かります。これは、ControlNet が入力画像と同じ形の画像を作るよう拡散モデルをガイドしている為です。
  ![鳥](https://github.com/lllyasviel/ControlNet/raw/main/github_page/p1.png)
 
-Stable Diffusion XL で ControlNet を動かすコードは、[公式ドキュメント](https://huggingface.co/docs/diffusers/api/pipelines/controlnet_sdxl#diffusers.StableDiffusionXLControlNetPipeline)を参照してください。まず動作を試したい場合は、様々な種類の ControlNet を実行できる、以下の Gradio デモが便利です。
+Stable Diffusion XL で ControlNet を動かすコードは、[公式ドキュメント](https://huggingface.co/docs/diffusers/api/pipelines/controlnet_sdxl#diffusers.StableDiffusionXLControlNetPipeline)を参照して下さい。先ず動作を試したい場合は、様々な種類の ControlNet を実行出来る、以下の Gradio デモが便利です。
 <iframe
 	src="https://hysts-ControlNet-v1-1.hf.space"
 	frameborder="0"
