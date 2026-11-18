@@ -4,11 +4,11 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>QA パイプラインにおける高速トークナイザ | Hugging Face 学習コース日本語版</title>
-<meta name="description" content="QA パイプラインにおける高速トークナイザ｜LLM コース（大規模言語モデルと Transformers を学ぶコース）の日本語訳。{:else} ここでは question-answering パイプラインを詳しく見て、前のセクションでエンティティをグループ化したときのように、オフセットを活用して文脈から手元の質問…">
+<meta name="description" content="QA パイプラインにおける高速トークナイザ｜LLM コース（大規模言語モデルと Transformers を学ぶコース）の日本語訳。{:else} ここでは question-answering パイプラインを詳しく見て、前のセクションでエンティティをグループ化した時のように、オフセットを活用して文脈から手元の質問へ…">
 <meta name="robots" content="index, follow">
 <link rel="canonical" href="https://yanikasumin.github.io/HuggingFace-courses-ja/llm/chapter6/3b.html">
 <meta property="og:title" content="QA パイプラインにおける高速トークナイザ | Hugging Face 学習コース日本語版">
-<meta property="og:description" content="QA パイプラインにおける高速トークナイザ｜LLM コース（大規模言語モデルと Transformers を学ぶコース）の日本語訳。{:else} ここでは question-answering パイプラインを詳しく見て、前のセクションでエンティティをグループ化したときのように、オフセットを活用して文脈から手元の質問…">
+<meta property="og:description" content="QA パイプラインにおける高速トークナイザ｜LLM コース（大規模言語モデルと Transformers を学ぶコース）の日本語訳。{:else} ここでは question-answering パイプラインを詳しく見て、前のセクションでエンティティをグループ化した時のように、オフセットを活用して文脈から手元の質問へ…">
 <meta property="og:image" content="https://yanikasumin.github.io/HuggingFace-courses-ja/og-llm.png">
 <meta property="og:image:width" content="1200">
 <meta property="og:image:height" content="630">
@@ -20,7 +20,7 @@
 <meta property="og:locale" content="ja_JP">
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:title" content="QA パイプラインにおける高速トークナイザ | Hugging Face 学習コース日本語版">
-<meta name="twitter:description" content="QA パイプラインにおける高速トークナイザ｜LLM コース（大規模言語モデルと Transformers を学ぶコース）の日本語訳。{:else} ここでは question-answering パイプラインを詳しく見て、前のセクションでエンティティをグループ化したときのように、オフセットを活用して文脈から手元の質問…">
+<meta name="twitter:description" content="QA パイプラインにおける高速トークナイザ｜LLM コース（大規模言語モデルと Transformers を学ぶコース）の日本語訳。{:else} ここでは question-answering パイプラインを詳しく見て、前のセクションでエンティティをグループ化した時のように、オフセットを活用して文脈から手元の質問へ…">
 <meta name="twitter:image" content="https://yanikasumin.github.io/HuggingFace-courses-ja/og-llm.png">
 <link rel="icon" type="image/svg+xml" href="https://yanikasumin.github.io/HuggingFace-courses-ja/favicon.svg">
 <link rel="icon" type="image/x-icon" href="https://yanikasumin.github.io/HuggingFace-courses-ja/favicon.ico">
@@ -29,7 +29,7 @@
 <link rel="apple-touch-icon" sizes="180x180" href="https://yanikasumin.github.io/HuggingFace-courses-ja/apple-touch-icon.png">
 <link rel="manifest" href="https://yanikasumin.github.io/HuggingFace-courses-ja/site.webmanifest">
 <meta name="theme-color" content="#0B0F19">
-<script type="application/ld+json">{"@context": "https://schema.org", "@graph": [{"@type": "BreadcrumbList", "itemListElement": [{"@type": "ListItem", "position": 1, "name": "Hugging Face 学習コース日本語版", "item": "https://yanikasumin.github.io/HuggingFace-courses-ja/"}, {"@type": "ListItem", "position": 2, "name": "LLM コース", "item": "https://yanikasumin.github.io/HuggingFace-courses-ja/llm/"}, {"@type": "ListItem", "position": 3, "name": "QA パイプラインにおける高速トークナイザ"}]}, {"@type": "LearningResource", "name": "QA パイプラインにおける高速トークナイザ", "description": "QA パイプラインにおける高速トークナイザ｜LLM コース（大規模言語モデルと Transformers を学ぶコース）の日本語訳。{:else} ここでは question-answering パイプラインを詳しく見て、前のセクションでエンティティをグループ化したときのように、オフセットを活用して文脈から手元の質問…", "url": "https://yanikasumin.github.io/HuggingFace-courses-ja/llm/chapter6/3b.html", "inLanguage": "ja", "learningResourceType": "course material", "educationalLevel": "beginner to advanced", "isPartOf": {"@type": "Course", "name": "LLM コース", "url": "https://yanikasumin.github.io/HuggingFace-courses-ja/llm/", "provider": {"@type": "Organization", "name": "Hugging Face", "sameAs": "https://huggingface.co"}}}]}</script>
+<script type="application/ld+json">{"@context": "https://schema.org", "@graph": [{"@type": "BreadcrumbList", "itemListElement": [{"@type": "ListItem", "position": 1, "name": "Hugging Face 学習コース日本語版", "item": "https://yanikasumin.github.io/HuggingFace-courses-ja/"}, {"@type": "ListItem", "position": 2, "name": "LLM コース", "item": "https://yanikasumin.github.io/HuggingFace-courses-ja/llm/"}, {"@type": "ListItem", "position": 3, "name": "QA パイプラインにおける高速トークナイザ"}]}, {"@type": "LearningResource", "name": "QA パイプラインにおける高速トークナイザ", "description": "QA パイプラインにおける高速トークナイザ｜LLM コース（大規模言語モデルと Transformers を学ぶコース）の日本語訳。{:else} ここでは question-answering パイプラインを詳しく見て、前のセクションでエンティティをグループ化した時のように、オフセットを活用して文脈から手元の質問へ…", "url": "https://yanikasumin.github.io/HuggingFace-courses-ja/llm/chapter6/3b.html", "inLanguage": "ja", "learningResourceType": "course material", "educationalLevel": "beginner to advanced", "isPartOf": {"@type": "Course", "name": "LLM コース", "url": "https://yanikasumin.github.io/HuggingFace-courses-ja/llm/", "provider": {"@type": "Organization", "name": "Hugging Face", "sameAs": "https://huggingface.co"}}}]}</script>
 <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-1676481412757711" crossorigin="anonymous"></script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -54,15 +54,15 @@ window.MathJax = { tex: { inlineMath: [['$', '$'], ['\\(', '\\)']], displayMath:
 <div class="layout">
 <aside class="sidebar">
 <div class="sidebar-course"><a href="../index.html">LLM コース</a><br><span class="side-desc">大規模言語モデルと Transformers を学ぶコース</span><br><a class="side-official" href="https://huggingface.co/learn/llm-course" target="_blank" rel="noopener">公式コース（英語）</a></div>
-<p class="side-group">第0章 セットアップ</p>
+<p class="side-group">その他のセクション（chapter0）</p>
 <ul class="side-list">
 <li><a class="side-link" href="../chapter0/1.html">はじめに</a></li>
 </ul>
-<p class="side-group">第1章 Transformer モデル</p>
+<p class="side-group">その他のセクション（chapter1）</p>
 <ul class="side-list">
 <li><a class="side-link" href="../chapter1/1.html">はじめに</a></li>
 <li><a class="side-link" href="../chapter1/2.html">自然言語処理と大規模言語モデル</a></li>
-<li><a class="side-link" href="../chapter1/3.html">Transformer は何ができるのか？</a></li>
+<li><a class="side-link" href="../chapter1/3.html">Transformer は何が出来るのか？</a></li>
 <li><a class="side-link" href="../chapter1/4.html">Transformer はどのように動作するのか？</a></li>
 <li><a class="side-link" href="../chapter1/5.html">🤗 Transformers がタスクを解く仕組み</a></li>
 <li><a class="side-link" href="../chapter1/6.html">Transformer のアーキテクチャ</a></li>
@@ -72,19 +72,19 @@ window.MathJax = { tex: { inlineMath: [['$', '$'], ['\\(', '\\)']], displayMath:
 <li><a class="side-link" href="../chapter1/10.html">まとめ</a></li>
 <li><a class="side-link" href="../chapter1/11.html">テストの時間です！</a></li>
 </ul>
-<p class="side-group">第2章 🤗 Transformers の使い方</p>
+<p class="side-group">その他のセクション（chapter2）</p>
 <ul class="side-list">
 <li><a class="side-link" href="../chapter2/1.html">はじめに</a></li>
 <li><a class="side-link" href="../chapter2/2.html">パイプラインの裏側</a></li>
 <li><a class="side-link" href="../chapter2/3.html">モデル</a></li>
 <li><a class="side-link" href="../chapter2/4.html">トークナイザ</a></li>
 <li><a class="side-link" href="../chapter2/5.html">複数のシーケンスを扱う</a></li>
-<li><a class="side-link" href="../chapter2/6.html">すべてを組み合わせる</a></li>
+<li><a class="side-link" href="../chapter2/6.html">全てを組み合わせる</a></li>
 <li><a class="side-link" href="../chapter2/7.html">基本的な使い方はこれで完了です！</a></li>
 <li><a class="side-link" href="../chapter2/8.html">推論デプロイの最適化</a></li>
 <li><a class="side-link" href="../chapter2/9.html">章末クイズ</a></li>
 </ul>
-<p class="side-group">第3章 事前学習済みモデルのファインチューニング</p>
+<p class="side-group">その他のセクション（chapter3）</p>
 <ul class="side-list">
 <li><a class="side-link" href="../chapter3/1.html">はじめに</a></li>
 <li><a class="side-link" href="../chapter3/2.html">データを処理する</a></li>
@@ -94,7 +94,7 @@ window.MathJax = { tex: { inlineMath: [['$', '$'], ['\\(', '\\)']], displayMath:
 <li><a class="side-link" href="../chapter3/6.html">ファインチューニング、チェック！</a></li>
 <li><a class="side-link" href="../chapter3/7.html">章末の認定証</a></li>
 </ul>
-<p class="side-group">第4章 モデルとトークナイザの共有</p>
+<p class="side-group">その他のセクション（chapter4）</p>
 <ul class="side-list">
 <li><a class="side-link" href="../chapter4/1.html">Hugging Face Hub</a></li>
 <li><a class="side-link" href="../chapter4/2.html">事前学習済みモデルを使う</a></li>
@@ -103,7 +103,7 @@ window.MathJax = { tex: { inlineMath: [['$', '$'], ['\\(', '\\)']], displayMath:
 <li><a class="side-link" href="../chapter4/5.html">Part 1 修了！</a></li>
 <li><a class="side-link" href="../chapter4/6.html">章末クイズ</a></li>
 </ul>
-<p class="side-group">第5章 🤗 Datasets ライブラリ</p>
+<p class="side-group">その他のセクション（chapter5）</p>
 <ul class="side-list">
 <li><a class="side-link" href="../chapter5/1.html">はじめに</a></li>
 <li><a class="side-link" href="../chapter5/2.html">データセットが Hub にない場合は？</a></li>
@@ -114,7 +114,7 @@ window.MathJax = { tex: { inlineMath: [['$', '$'], ['\\(', '\\)']], displayMath:
 <li><a class="side-link" href="../chapter5/7.html">🤗 Datasets、チェック！</a></li>
 <li><a class="side-link" href="../chapter5/8.html">章末クイズ</a></li>
 </ul>
-<p class="side-group">第6章 🤗 Tokenizers ライブラリ</p>
+<p class="side-group">その他のセクション（chapter6）</p>
 <ul class="side-list">
 <li><a class="side-link" href="1.html">はじめに</a></li>
 <li><a class="side-link" href="2.html">既存のトークナイザを基に新しいトークナイザを学習する</a></li>
@@ -128,7 +128,7 @@ window.MathJax = { tex: { inlineMath: [['$', '$'], ['\\(', '\\)']], displayMath:
 <li><a class="side-link" href="9.html">トークナイザ、チェック！</a></li>
 <li><a class="side-link" href="10.html">章末クイズ</a></li>
 </ul>
-<p class="side-group">第7章 古典的な NLP タスク</p>
+<p class="side-group">その他のセクション（chapter7）</p>
 <ul class="side-list">
 <li><a class="side-link" href="../chapter7/1.html">はじめに</a></li>
 <li><a class="side-link" href="../chapter7/2.html">トークン分類</a></li>
@@ -140,7 +140,7 @@ window.MathJax = { tex: { inlineMath: [['$', '$'], ['\\(', '\\)']], displayMath:
 <li><a class="side-link" href="../chapter7/8.html">LLM を使いこなす</a></li>
 <li><a class="side-link" href="../chapter7/9.html">章末クイズ</a></li>
 </ul>
-<p class="side-group">第8章 助けを求める方法</p>
+<p class="side-group">その他のセクション（chapter8）</p>
 <ul class="side-list">
 <li><a class="side-link" href="../chapter8/1.html">はじめに</a></li>
 <li><a class="side-link" href="../chapter8/2.html">エラーが出たときにすること</a></li>
@@ -151,7 +151,7 @@ window.MathJax = { tex: { inlineMath: [['$', '$'], ['\\(', '\\)']], displayMath:
 <li><a class="side-link" href="../chapter8/6.html">パート2 完了！</a></li>
 <li><a class="side-link" href="../chapter8/7.html">章末クイズ</a></li>
 </ul>
-<p class="side-group">第9章 デモの構築と共有</p>
+<p class="side-group">その他のセクション（chapter9）</p>
 <ul class="side-list">
 <li><a class="side-link" href="../chapter9/1.html">Gradio 入門</a></li>
 <li><a class="side-link" href="../chapter9/2.html">最初のデモを作る</a></li>
@@ -163,7 +163,7 @@ window.MathJax = { tex: { inlineMath: [['$', '$'], ['\\(', '\\)']], displayMath:
 <li><a class="side-link" href="../chapter9/8.html">Gradio、チェック！</a></li>
 <li><a class="side-link" href="../chapter9/9.html">章末クイズ</a></li>
 </ul>
-<p class="side-group">第10章 高品質なデータセットのキュレーション</p>
+<p class="side-group">その他のセクション（chapter10）</p>
 <ul class="side-list">
 <li><a class="side-link" href="../chapter10/1.html">Argilla 入門</a></li>
 <li><a class="side-link" href="../chapter10/2.html">Argilla インスタンスをセットアップする</a></li>
@@ -173,7 +173,7 @@ window.MathJax = { tex: { inlineMath: [['$', '$'], ['\\(', '\\)']], displayMath:
 <li><a class="side-link" href="../chapter10/6.html">Argilla、チェック！</a></li>
 <li><a class="side-link" href="../chapter10/7.html">章末クイズ</a></li>
 </ul>
-<p class="side-group">第11章 大規模言語モデルのファインチューニング</p>
+<p class="side-group">その他のセクション（chapter11）</p>
 <ul class="side-list">
 <li><a class="side-link" href="../chapter11/1.html">教師ありファインチューニング</a></li>
 <li><a class="side-link" href="../chapter11/2.html">チャットテンプレート</a></li>
@@ -183,7 +183,7 @@ window.MathJax = { tex: { inlineMath: [['$', '$'], ['\\(', '\\)']], displayMath:
 <li><a class="side-link" href="../chapter11/6.html">まとめ</a></li>
 <li><a class="side-link" href="../chapter11/7.html">テストの時間です！</a></li>
 </ul>
-<p class="side-group">第12章 推論モデルの構築</p>
+<p class="side-group">その他のセクション（chapter12）</p>
 <ul class="side-list">
 <li><a class="side-link" href="../chapter12/1.html">学生のための Open R1</a></li>
 <li><a class="side-link" href="../chapter12/2.html">強化学習と LLM におけるその役割の紹介</a></li>
@@ -194,7 +194,7 @@ window.MathJax = { tex: { inlineMath: [['$', '$'], ['\\(', '\\)']], displayMath:
 <li><a class="side-link" href="../chapter12/6.html">実践演習： Unsloth で GRPO</a></li>
 <li><a class="side-link" href="../chapter12/7.html">近日公開...</a></li>
 </ul>
-<p class="side-group">コースイベント</p>
+<p class="side-group">その他のセクション（events）</p>
 <ul class="side-list">
 <li><a class="side-link" href="../events/1.html">ライブセッションとワークショップ</a></li>
 <li><a class="side-link" href="../events/2.html">パート2公開イベント</a></li>
@@ -210,14 +210,14 @@ window.MathJax = { tex: { inlineMath: [['$', '$'], ['\\(', '\\)']], displayMath:
 <p>{#if fw === 'pt'}</p>
 <p>{:else}</p>
 <p>{/if}</p>
-<p>ここでは <code>question-answering</code> パイプラインを詳しく見て、前のセクションでエンティティをグループ化したときのように、オフセットを活用して文脈から手元の質問への回答を取り出す方法を見ていきます。次に、切り詰められることになる非常に長い文脈への対処方法を見ます。質問応答タスクに興味がなければ、このセクションは読み飛ばしても構いません。</p>
+<p>ここでは <code>question-answering</code> パイプラインを詳しく見て、前のセクションでエンティティをグループ化した時のように、オフセットを活用して文脈から手元の質問への回答を取り出す方法を見ていきます。次に、切り詰められることになる非常に長い文脈への対処方法を見ます。質問応答タスクに興味がなければ、このセクションは読み飛ばしても構いません。</p>
 <p>{#if fw === 'pt'}</p>
 <div class="youtube-embed"><iframe src="https://www.youtube-nocookie.com/embed/_wxyB3j3mk4" title="YouTube video" loading="lazy" allowfullscreen referrerpolicy="strict-origin-when-cross-origin"></iframe></div>
 <p>{:else}</p>
 <div class="youtube-embed"><iframe src="https://www.youtube-nocookie.com/embed/b3u8RzBCX9Y" title="YouTube video" loading="lazy" allowfullscreen referrerpolicy="strict-origin-when-cross-origin"></iframe></div>
 <p>{/if}</p>
 <h2><code>question-answering</code> パイプラインの使用</h2>
-<p><a href="../chapter1/1.html">Chapter 1</a> で見たように、<code>question-answering</code> パイプラインを次のように使って質問への回答を得ることができます。</p>
+<p><a href="../chapter1/1.html">Chapter 1</a> で見たように、<code>question-answering</code> パイプラインを次のように使って質問への回答を得ることが出来ます。</p>
 <div class="codehilite"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">transformers</span><span class="w"> </span><span class="kn">import</span> <span class="n">pipeline</span>
 
 <span class="n">question_answerer</span> <span class="o">=</span> <span class="n">pipeline</span><span class="p">(</span><span class="s2">"question-answering"</span><span class="p">)</span>
@@ -229,12 +229,14 @@ window.MathJax = { tex: { inlineMath: [['$', '$'], ['\\(', '\\)']], displayMath:
 <span class="n">question_answerer</span><span class="p">(</span><span class="n">question</span><span class="o">=</span><span class="n">question</span><span class="p">,</span> <span class="n">context</span><span class="o">=</span><span class="n">context</span><span class="p">)</span>
 </code></pre></div>
 
+<p>（文脈文の訳：🤗 Transformers は、最も人気の高い3つの深層学習ライブラリ、即ち Jax、PyTorch、TensorFlow に支えられており、それらの間の継ぎ目のない統合を備えています。1つのライブラリでモデルを学習し、別のライブラリで読み込んで推論に使うことも簡単です）</p>
+<p>（質問文の訳：🤗 Transformers を支えている深層学習ライブラリはどれですか）</p>
 <p>```python out
 {'score': 0.97773,
  'start': 78,
  'end': 105,
  'answer': 'Jax, PyTorch and TensorFlow'}</p>
-<div class="codehilite"><pre><span></span><code>他のパイプラインは、モデルが受け付ける最大長よりも長いテキストを切り詰めたり分割したりできないため（その結果、文書の末尾の情報を見逃すことがあります）、このパイプラインは非常に長い文脈にも対処でき、回答が末尾にあっても質問への回答を返します。
+<div class="codehilite"><pre><span></span><code>他のパイプラインは、モデルが受け付ける最大長よりも長いテキストを切り詰めたり分割したり出来ない為（その結果、文書の末尾の情報を見逃すことがあります）、このパイプラインは非常に長い文脈にも対処出来、回答が末尾にあっても質問への回答を返します。
 
 ```py
 long_context = """
@@ -277,16 +279,49 @@ between them. It's straightforward to train your models with one before loading 
 question_answerer(question=question, context=long_context)
 </code></pre></div>
 
+<p>（長い文脈文の訳）</p>
+<p>🤗 Transformers：最先端の自然言語処理</p>
+<p>🤗 Transformers は、分類、情報抽出、質問応答、要約、翻訳、テキスト生成など、テキストに対するタスクを、100を超える言語で実行する為の事前学習済みモデルを数千も提供しています。その狙いは、最先端の自然言語処理を誰もが使いやすくすることです。</p>
+<p>🤗 Transformers は、与えられたテキストに対してそれらの事前学習済みモデルを素早くダウンロードして使う為、自分のデータセットでファインチューニングする為、更にモデルハブでコミュニティと共有する為の API を提供しています。同時に、アーキテクチャを定義する各 Python モジュールは完全に独立しており、素早い研究実験を可能にする為に変更出来ます。</p>
+<p>何故 Transformers を使うべきなのか</p>
+<ol>
+<li>
+<p>使いやすい最先端のモデル：
+- 自然言語理解と自然言語生成のタスクでの高い性能
+- 教育者と実務家の参入障壁の低さ
+- 学ぶべきクラスが3つだけで、利用者向けの抽象化が少ないこと
+- 全ての事前学習済みモデルを使う為の統一された API
+- 計算コストの低さと二酸化炭素排出量の少なさ：</p>
+</li>
+<li>
+<p>研究者は、毎回再学習する代わりに学習済みモデルを共有出来ます。
+- 実務家は計算時間と運用コストを削減出来ます
+- 数十のアーキテクチャと10,000を超える事前学習済みモデル（その一部は100を超える言語に対応）</p>
+</li>
+<li>
+<p>モデルの一生の各段階に適したフレームワークを選べます：
+- 最先端のモデルを3行のコードで学習出来ること
+- 1つのモデルを TF2.0 と PyTorch のフレームワーク間で自由に移動出来ること
+- 学習、評価、運用に適したフレームワークを継ぎ目なく選べること</p>
+</li>
+<li>
+<p>モデルや例を自分の必要に合わせて簡単にカスタマイズ出来ます：
+- 各アーキテクチャについて、元の著者が発表した結果を再現する為の例を提供しています
+- モデルの内部は可能な限り一貫した形で公開されています
+- モデルファイルはライブラリから独立して素早い実験に使えます</p>
+</li>
+</ol>
+<p>🤗 Transformers は、最も人気の高い3つの深層学習ライブラリ、即ち Jax、PyTorch、TensorFlow に支えられており、それらの間の継ぎ目のない統合を備えています。1つのライブラリでモデルを学習し、別のライブラリで読み込んで推論に使うことも簡単です。</p>
 <p>```python out
 {'score': 0.97149,
  'start': 1892,
  'end': 1919,
  'answer': 'Jax, PyTorch and TensorFlow'}</p>
-<div class="codehilite"><pre><span></span><code>これらすべてをどのように実現しているか見てみましょう！
+<div class="codehilite"><pre><span></span><code>これら全てをどのように実現しているか見てみましょう！
 
 ## 質問応答にモデルを使う
 
-他のパイプラインと同様に、まず入力をトークン化してからモデルに通します。`question-answering` パイプラインでデフォルトで使われるチェックポイントは [`distilbert-base-cased-distilled-squad`](https://huggingface.co/distilbert-base-cased-distilled-squad) です（名前の "squad" は、モデルがファインチューニングされたデータセットに由来します。SQuAD データセットについては [Chapter 7](/course/chapter7/7) で詳しく説明します）。
+他のパイプラインと同様に、先ず入力をトークン化してからモデルに通します。`question-answering` パイプラインでデフォルトで使われるチェックポイントは [`distilbert-base-cased-distilled-squad`](https://huggingface.co/distilbert-base-cased-distilled-squad) です（名前の "squad" は、モデルがファインチューニングされたデータセットに由来します。SQuAD データセットについては [Chapter 7](/course/chapter7/7) で詳しく説明します）。
 
 {#if fw === 'pt'}
 
@@ -313,13 +348,14 @@ outputs = model(**inputs)
 </code></pre></div>
 
 <p>{/if}</p>
-<p>質問と文脈をペアとして、質問を先にしてトークン化することに注意してください。</p>
+<p>質問と文脈をペアとして、質問を先にしてトークン化することに注意して下さい。</p>
 <div class="flex justify-center">
 <img class="block dark:hidden" src="https://huggingface.co/datasets/huggingface-course/documentation-images/resolve/main/en/chapter6/question_tokens.svg" alt="質問と文脈のトークン化の例"/>
 <img class="hidden dark:block" src="https://huggingface.co/datasets/huggingface-course/documentation-images/resolve/main/en/chapter6/question_tokens-dark.svg" alt="質問と文脈のトークン化の例"/>
 </div>
 
-<p>質問応答用のモデルは、これまで見てきたモデルとは少し異なる仕組みで動作します。上の図を例にすると、モデルは回答の開始トークンのインデックス（ここでは21）と、回答が終わるトークンのインデックス（ここでは24）を予測するよう学習されています。そのため、これらのモデルはロジットのテンソルを1つではなく2つ返します。1つは回答の開始トークンに対応するロジット用、もう1つは回答の終了トークンに対応するロジット用です。この場合は66トークンを含む入力が1つだけなので、次のようになります。</p>
+<p>質問応答用のモデルは、これまで見てきたモデルとは少し異なる仕組みで動作します。上の図を例にすると、モデルは回答の開始トークンのインデックス（ここでは21）と、回答が終わるトークンのインデックス（ここでは24）を予測するよう学習されています。</p>
+<p>その為、これらのモデルはロジットのテンソルを1つではなく2つ返します。1つは回答の開始トークンに対応するロジット用、もう1つは回答の終了トークンに対応するロジット用です。この場合は66トークンを含む入力が1つだけなので、次のようになります。</p>
 <div class="codehilite"><pre><span></span><code><span class="n">start_logits</span> <span class="o">=</span> <span class="n">outputs</span><span class="o">.</span><span class="n">start_logits</span>
 <span class="n">end_logits</span> <span class="o">=</span> <span class="n">outputs</span><span class="o">.</span><span class="n">end_logits</span>
 <span class="nb">print</span><span class="p">(</span><span class="n">start_logits</span><span class="o">.</span><span class="n">shape</span><span class="p">,</span> <span class="n">end_logits</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span>
@@ -335,8 +371,8 @@ torch.Size([1, 66]) torch.Size([1, 66])</p>
 </code></pre></div>
 
 <p>{/if}</p>
-<p>これらのロジットを確率に変換するために softmax 関数を適用しますが、その前に、文脈の一部ではないインデックスを確実にマスクする必要があります。入力は <code>[CLS] question [SEP] context [SEP]</code> なので、質問のトークンと <code>[SEP]</code> トークンをマスクする必要があります。但し <code>[CLS]</code> トークンは保持します。一部のモデルは、回答が文脈に含まれていないことを示すためにそれを使うためです。</p>
-<p>後で softmax を適用するため、マスクしたいロジットを大きな負の数に置き換えるだけで済みます。ここでは <code>-10000</code> を使います。</p>
+<p>これらのロジットを確率に変換する為に softmax 関数を適用しますが、その前に、文脈の一部ではないインデックスを確実にマスクする必要があります。入力は <code>[CLS] question [SEP] context [SEP]</code> なので、質問のトークンと <code>[SEP]</code> トークンをマスクする必要があります。但し <code>[CLS]</code> トークンは保持します。一部のモデルは、回答が文脈に含まれていないことを示す為にそれを使う為です。</p>
+<p>後で softmax を適用する為、マスクしたいロジットを大きな負の数に置き換えるだけで済みます。ここでは <code>-10000</code> を使います。</p>
 <p>{#if fw === 'pt'}</p>
 <div class="codehilite"><pre><span></span><code><span class="kn">import</span><span class="w"> </span><span class="nn">torch</span>
 
@@ -366,7 +402,7 @@ torch.Size([1, 66]) torch.Size([1, 66])</p>
 </code></pre></div>
 
 <p>{/if}</p>
-<p>予測したくない位置に対応するロジットを適切にマスクできたので、softmax を適用できます。</p>
+<p>予測したくない位置に対応するロジットを適切にマスク出来たので、softmax を適用出来ます。</p>
 <p>{#if fw === 'pt'}</p>
 <div class="codehilite"><pre><span></span><code><span class="n">start_probabilities</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">nn</span><span class="o">.</span><span class="n">functional</span><span class="o">.</span><span class="n">softmax</span><span class="p">(</span><span class="n">start_logits</span><span class="p">,</span> <span class="n">dim</span><span class="o">=-</span><span class="mi">1</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span>
 <span class="n">end_probabilities</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">nn</span><span class="o">.</span><span class="n">functional</span><span class="o">.</span><span class="n">softmax</span><span class="p">(</span><span class="n">end_logits</span><span class="p">,</span> <span class="n">dim</span><span class="o">=-</span><span class="mi">1</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span>
@@ -378,40 +414,40 @@ torch.Size([1, 66]) torch.Size([1, 66])</p>
 </code></pre></div>
 
 <p>{/if}</p>
-<p>この段階で、開始確率と終了確率の argmax を取ることもできますが、終了インデックスより大きい開始インデックスになってしまう可能性があるため、もう少し注意が必要です。<code>start_index &lt;= end_index</code> を満たす各 <code>start_index</code> と <code>end_index</code> の組み合わせの確率を計算し、確率が最も高いタプル <code>(start_index, end_index)</code> を取ります。</p>
-<p>事象「回答が <code>start_index</code> から始まる」と「回答が <code>end_index</code> で終わる」が独立であると仮定すると、回答が <code>start_index</code> から始まって <code>end_index</code> で終わる確率は次のとおりです。</p>
+<p>この段階で、開始確率と終了確率の argmax を取ることも出来ますが、終了インデックスより大きい開始インデックスになってしまう可能性がある為、もう少し注意が必要です。<code>start_index &lt;= end_index</code> を満たす各 <code>start_index</code> と <code>end_index</code> の組み合わせの確率を計算し、確率が最も高いタプル <code>(start_index, end_index)</code> を取ります。</p>
+<p>事象「回答が <code>start_index</code> から始まる」と「回答が <code>end_index</code> で終わる」が独立であると仮定すると、回答が <code>start_index</code> から始まって <code>end_index</code> で終わる確率は次の通りです。</p>
 <p>$$\mathrm{start_probabilities}[\mathrm{start_index}] \times \mathrm{end_probabilities}[\mathrm{end_index}]$$ </p>
-<p>従って、すべてのスコアを計算するには、<code>start_index &lt;= end_index</code> の範囲で積 (\mathrm{start_probabilities}[\mathrm{start_index}] \times \mathrm{end_probabilities}[\mathrm{end_index}]) をすべて計算するだけです。</p>
-<p>まず、可能な積をすべて計算しましょう。</p>
+<p>従って、全てのスコアを計算するには、<code>start_index &lt;= end_index</code> の範囲で積 (\mathrm{start_probabilities}[\mathrm{start_index}] \times \mathrm{end_probabilities}[\mathrm{end_index}]) を全て計算するだけです。</p>
+<p>先ず、可能な積を全て計算しましょう。</p>
 <div class="codehilite"><pre><span></span><code><span class="n">scores</span> <span class="o">=</span> <span class="n">start_probabilities</span><span class="p">[:,</span> <span class="kc">None</span><span class="p">]</span> <span class="o">*</span> <span class="n">end_probabilities</span><span class="p">[</span><span class="kc">None</span><span class="p">,</span> <span class="p">:]</span>
 </code></pre></div>
 
 <p>{#if fw === 'pt'}</p>
-<p>次に、<code>start_index &gt; end_index</code> の値を <code>0</code> に設定してマスクします（他の確率はすべて正の数です）。<code>torch.triu()</code> 関数は、引数として渡された2次元テンソルの上三角部分を返すため、そのマスキングを行ってくれます。</p>
+<p>次に、<code>start_index &gt; end_index</code> の値を <code>0</code> に設定してマスクします（他の確率は全て正の数です）。<code>torch.triu()</code> 関数は、引数として渡された2次元テンソルの上三角部分を返す為、そのマスキングを行ってくれます。</p>
 <div class="codehilite"><pre><span></span><code><span class="n">scores</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">triu</span><span class="p">(</span><span class="n">scores</span><span class="p">)</span>
 </code></pre></div>
 
 <p>{:else}</p>
-<p>次に、<code>start_index &gt; end_index</code> の値を <code>0</code> に設定してマスクします（他の確率はすべて正の数です）。<code>np.triu()</code> 関数は、引数として渡された2次元テンソルの上三角部分を返すため、そのマスキングを行ってくれます。</p>
+<p>次に、<code>start_index &gt; end_index</code> の値を <code>0</code> に設定してマスクします（他の確率は全て正の数です）。<code>np.triu()</code> 関数は、引数として渡された2次元テンソルの上三角部分を返す為、そのマスキングを行ってくれます。</p>
 <div class="codehilite"><pre><span></span><code><span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
 
 <span class="n">scores</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">triu</span><span class="p">(</span><span class="n">scores</span><span class="p">)</span>
 </code></pre></div>
 
 <p>{/if}</p>
-<p>あとは最大値のインデックスを取得するだけです。PyTorch は平坦化されたテンソルでのインデックスを返すため、<code>start_index</code> と <code>end_index</code> を得るには床除算 <code>//</code> と剰余 <code>%</code> の演算を使う必要があります。</p>
+<p>あとは最大値のインデックスを取得するだけです。PyTorch は平坦化されたテンソルでのインデックスを返す為、<code>start_index</code> と <code>end_index</code> を得るには床除算 <code>//</code> と剰余 <code>%</code> の演算を使う必要があります。</p>
 <div class="codehilite"><pre><span></span><code><span class="n">max_index</span> <span class="o">=</span> <span class="n">scores</span><span class="o">.</span><span class="n">argmax</span><span class="p">()</span><span class="o">.</span><span class="n">item</span><span class="p">()</span>
 <span class="n">start_index</span> <span class="o">=</span> <span class="n">max_index</span> <span class="o">//</span> <span class="n">scores</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
 <span class="n">end_index</span> <span class="o">=</span> <span class="n">max_index</span> <span class="o">%</span> <span class="n">scores</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
 <span class="nb">print</span><span class="p">(</span><span class="n">scores</span><span class="p">[</span><span class="n">start_index</span><span class="p">,</span> <span class="n">end_index</span><span class="p">])</span>
 </code></pre></div>
 
-<p>まだ完全には終わっていませんが、少なくとも回答の正しいスコアは既に得られています（前のセクションの最初の結果と比較すれば確認できます）。</p>
+<p>まだ完全には終わっていませんが、少なくとも回答の正しいスコアは既に得られています（前のセクションの最初の結果と比較すれば確認出来ます）。</p>
 <p>```python out
 0.97773</p>
 <div class="codehilite"><pre><span></span><code>&lt;div class="callout callout-tip" markdown="block"&gt;
 &lt;p class="callout-title"&gt;💡 ヒント&lt;/p&gt;
-✏️ **試してみましょう！** 最も可能性の高い5つの回答について、開始インデックスと終了インデックスを計算してください。
+**試してみましょう！** 最も可能性の高い5つの回答について、開始インデックスと終了インデックスを計算して下さい。
 &lt;/div&gt;
 
 
@@ -426,7 +462,7 @@ _, end_char = offsets[end_index]
 answer = context[start_char:end_char]
 </code></pre></div>
 
-<p>あとは、結果を得るためにすべてを整形するだけです。</p>
+<p>あとは、結果を得る為に全てを整形するだけです。</p>
 <div class="codehilite"><pre><span></span><code><span class="n">result</span> <span class="o">=</span> <span class="p">{</span>
     <span class="s2">"answer"</span><span class="p">:</span> <span class="n">answer</span><span class="p">,</span>
     <span class="s2">"start"</span><span class="p">:</span> <span class="n">start_char</span><span class="p">,</span>
@@ -441,11 +477,11 @@ answer = context[start_char:end_char]
  'start': 78,
  'end': 105,
  'score': 0.97773}</p>
-<div class="codehilite"><pre><span></span><code>素晴らしい！最初の例と同じになりました！
+<div class="codehilite"><pre><span></span><code>素晴らしい！最初の例と同じになりました。
 
 &lt;div class="callout callout-tip" markdown="block"&gt;
 &lt;p class="callout-title"&gt;💡 ヒント&lt;/p&gt;
-✏️ **試してみましょう！** 先ほど計算した最良のスコアを使って、最も可能性の高い5つの回答を表示してください。結果を確認するには、最初のパイプラインに戻り、呼び出し時に `top_k=5` を渡してください。
+**試してみましょう！** 先ほど計算した最良のスコアを使って、最も可能性の高い5つの回答を表示して下さい。結果を確認するには、最初のパイプラインに戻り、呼び出し時に `top_k=5` を渡して下さい。
 &lt;/div&gt;
 
 
@@ -460,7 +496,9 @@ print(len(inputs["input_ids"]))
 
 <p>```python out
 461</p>
-<div class="codehilite"><pre><span></span><code>そのため、入力をその最大長で切り詰める必要があります。これを行う方法はいくつかありますが、切り詰めたいのは質問ではなく文脈だけです。文脈は2番目の文なので、`"only_second"` の切り詰め戦略を使います。その場合に生じる問題は、質問への回答が切り詰められた文脈に含まれていない可能性があることです。たとえば、ここでは回答が文脈の末尾寄りにある質問を選んだため、切り詰めるとその回答が含まれなくなります。
+<div class="codehilite"><pre><span></span><code>その為、入力をその最大長で切り詰める必要があります。これを行う方法はいくつかありますが、切り詰めたいのは質問ではなく文脈だけです。文脈は2番目の文なので、`"only_second"` の切り詰め戦略を使います。
+
+その場合に生じる問題は、質問への回答が切り詰められた文脈に含まれていない可能性があることです。例えば、ここでは回答が文脈の末尾寄りにある質問を選んだ為、切り詰めるとその回答が含まれなくなります。
 
 ```py
 inputs = tokenizer(question, long_context, max_length=384, truncation="only_second")
@@ -504,9 +542,11 @@ can be modified to enable quick research experiments.</p>
 """</p>
 </li>
 </ol>
-<div class="codehilite"><pre><span></span><code>つまり、モデルは正しい回答を選ぶのが難しくなります。これを解決するために、`question-answering` パイプラインでは最大長を指定して文脈をより小さいチャンクに分割できます。また、回答を含む箇所がチャンクの境界で分断されないように、隣接するチャンクには一部重複する範囲を設けます。
+<div class="codehilite"><pre><span></span><code>（出力の訳：切り詰められた文脈の表示です。内容は前の長い文脈文の訳を参照して下さい。末尾は途中で切れています）
 
-`return_overflowing_tokens=True` を追加すれば、トークナイザ（高速・低速を問わず）にこの処理を行わせることができ、重なりの量は `stride` 引数で指定できます。小さい文を使った例を示します。
+つまり、モデルは正しい回答を選ぶのが難しくなります。これを解決する為に、`question-answering` パイプラインでは最大長を指定して文脈をより小さいチャンクに分割出来ます。また、回答を含む箇所がチャンクの境界で分断されないように、隣接するチャンクには一部重複する範囲を設けます。
+
+`return_overflowing_tokens=True` を追加すれば、トークナイザ（高速・低速を問わず）にこの処理を行わせることが出来、重なりの量は `stride` 引数で指定出来ます。小さい文を使った例を示します。
 
 ```py
 sentence = "This sentence is not too long but we are going to split it anyway."
@@ -518,6 +558,7 @@ for ids in inputs["input_ids"]:
     print(tokenizer.decode(ids))
 </code></pre></div>
 
+<p>（入力文の訳：この文はそれ程長くありませんが、それでも分割します）</p>
 <p>```python out
 '[CLS] This sentence is not [SEP]'
 '[CLS] is not too long [SEP]'
@@ -526,7 +567,7 @@ for ids in inputs["input_ids"]:
 '[CLS] are going to split [SEP]'
 '[CLS] to split it anyway [SEP]'
 '[CLS] it anyway. [SEP]'</p>
-<div class="codehilite"><pre><span></span><code>見てのとおり、文はチャンクに分割され、`inputs["input_ids"]` の各エントリは最大6トークンになっています（最後のエントリを他と同じサイズにするにはパディングを追加する必要があります）。また、各エントリ間には2トークンの重なりがあります。
+<div class="codehilite"><pre><span></span><code>見ての通り、文はチャンクに分割され、`inputs["input_ids"]` の各エントリは最大6トークンになっています（最後のエントリを他と同じサイズにするにはパディングを追加する必要があります）。また、各エントリ間には2トークンの重なりがあります。
 
 トークン化の結果を詳しく見てみましょう。
 
@@ -544,7 +585,7 @@ print(inputs["overflow_to_sample_mapping"])
 
 <p>```python out
 [0, 0, 0, 0, 0, 0, 0]</p>
-<div class="codehilite"><pre><span></span><code>これは、複数の文をまとめてトークン化するときにより役立ちます。たとえば、次の場合です。
+<div class="codehilite"><pre><span></span><code>これは、複数の文をまとめてトークン化する時により役立ちます。例えば、次の場合です。
 
 ```py
 sentences = [
@@ -558,12 +599,15 @@ inputs = tokenizer(
 print(inputs["overflow_to_sample_mapping"])
 </code></pre></div>
 
+<p>（2文目の訳：この文はより短いですが、それでも分割されます。1文目の訳は前の例と同じです）</p>
 <p>次の結果が得られます。</p>
 <p>```python out
 [0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1]</p>
 <div class="codehilite"><pre><span></span><code>つまり、最初の文は前と同様に7つのチャンクに分割され、次の4つのチャンクは2番目の文に由来します。
 
-さて、長い文脈に戻りましょう。デフォルトでは、`question-answering` パイプラインは前述のとおり最大長384とストライド128を使います。これらはモデルがファインチューニングされた方法に対応しています（パイプラインの呼び出し時に `max_seq_len` と `stride` 引数を渡せば、これらのパラメータを調整できます）。従って、トークン化の際にもこれらのパラメータを使います。パディング（サンプルを同じ長さにしてテンソルを構築できるようにするため）も追加し、オフセットも要求します。
+さて、長い文脈に戻りましょう。デフォルトでは、`question-answering` パイプラインは前述の通り最大長384とストライド128を使います。これらはモデルがファインチューニングされた方法に対応しています（パイプラインの呼び出し時に `max_seq_len` と `stride` 引数を渡せば、これらのパラメータを調整出来ます）。
+
+従って、トークン化の際にもこれらのパラメータを使います。パディング（サンプルを同じ長さにしてテンソルを構築出来るようにする為）も追加し、オフセットも要求します。
 
 ```py
 inputs = tokenizer(
@@ -578,7 +622,7 @@ inputs = tokenizer(
 )
 </code></pre></div>
 
-<p>その <code>inputs</code> には、モデルが想定する入力 ID とアテンションマスクに加えて、オフセットと先ほど説明した <code>overflow_to_sample_mapping</code> が含まれます。これら2つはモデルが使うパラメータではないため、テンソルに変換する前に <code>inputs</code> から取り除きます（マップはここでは役に立たないため保存しません）。</p>
+<p>その <code>inputs</code> には、モデルが想定する入力 ID とアテンションマスクに加えて、オフセットと先ほど説明した <code>overflow_to_sample_mapping</code> が含まれます。これら2つはモデルが使うパラメータではない為、テンソルに変換する前に <code>inputs</code> から取り除きます（マップはここでは役に立たない為保存しません）。</p>
 <p>{#if fw === 'pt'}</p>
 <div class="codehilite"><pre><span></span><code><span class="n">_</span> <span class="o">=</span> <span class="n">inputs</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s2">"overflow_to_sample_mapping"</span><span class="p">)</span>
 <span class="n">offsets</span> <span class="o">=</span> <span class="n">inputs</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s2">"offset_mapping"</span><span class="p">)</span>
@@ -603,7 +647,7 @@ print(inputs["input_ids"].shape)
 (2, 384)</p>
 <div class="codehilite"><pre><span></span><code>{/if}
 
-長い文脈は2つに分割されたため、モデルを通した後は、開始ロジットと終了ロジットが2組得られます。
+長い文脈は2つに分割された為、モデルを通した後は、開始ロジットと終了ロジットが2組得られます。
 
 ```py
 outputs = model(**inputs)
@@ -623,7 +667,7 @@ torch.Size([2, 384]) torch.Size([2, 384])</p>
 </code></pre></div>
 
 <p>{/if}</p>
-<p>前と同様に、softmax を取る前に、まず文脈の一部ではないトークンをマスクします。すべてのパディングトークン（アテンションマスクで示されるもの）もマスクします。</p>
+<p>前と同様に、softmax を取る前に、先ず文脈の一部ではないトークンをマスクします。全てのパディングトークン（アテンションマスクで示されるもの）もマスクします。</p>
 <p>{#if fw === 'pt'}</p>
 <div class="codehilite"><pre><span></span><code><span class="n">sequence_ids</span> <span class="o">=</span> <span class="n">inputs</span><span class="o">.</span><span class="n">sequence_ids</span><span class="p">()</span>
 <span class="c1"># 文脈のトークン以外をすべてマスクする</span>
@@ -651,7 +695,7 @@ torch.Size([2, 384]) torch.Size([2, 384])</p>
 </code></pre></div>
 
 <p>{/if}</p>
-<p>次に、softmax を使ってロジットを確率に変換できます。</p>
+<p>次に、softmax を使ってロジットを確率に変換出来ます。</p>
 <p>{#if fw === 'pt'}</p>
 <div class="codehilite"><pre><span></span><code><span class="n">start_probabilities</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">nn</span><span class="o">.</span><span class="n">functional</span><span class="o">.</span><span class="n">softmax</span><span class="p">(</span><span class="n">start_logits</span><span class="p">,</span> <span class="n">dim</span><span class="o">=-</span><span class="mi">1</span><span class="p">)</span>
 <span class="n">end_probabilities</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">nn</span><span class="o">.</span><span class="n">functional</span><span class="o">.</span><span class="n">softmax</span><span class="p">(</span><span class="n">end_logits</span><span class="p">,</span> <span class="n">dim</span><span class="o">=-</span><span class="mi">1</span><span class="p">)</span>
@@ -663,7 +707,7 @@ torch.Size([2, 384]) torch.Size([2, 384])</p>
 </code></pre></div>
 
 <p>{/if}</p>
-<p>次のステップは小さい文脈で行ったことと似ていますが、2つのチャンクそれぞれについて繰り返します。回答の可能なすべての範囲にスコアを割り当て、最もスコアの高い範囲を取ります。</p>
+<p>次のステップは小さい文脈で行ったことと似ていますが、2つのチャンクそれぞれについて繰り返します。回答の可能な全ての範囲にスコアを割り当て、最もスコアの高い範囲を取ります。</p>
 <p>{#if fw === 'pt'}</p>
 <div class="codehilite"><pre><span></span><code><span class="n">candidates</span> <span class="o">=</span> <span class="p">[]</span>
 <span class="k">for</span> <span class="n">start_probs</span><span class="p">,</span> <span class="n">end_probs</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="n">start_probabilities</span><span class="p">,</span> <span class="n">end_probabilities</span><span class="p">):</span>
@@ -699,7 +743,7 @@ torch.Size([2, 384]) torch.Size([2, 384])</p>
 
 &lt;div class="callout callout-tip" markdown="block"&gt;
 &lt;p class="callout-title"&gt;💡 ヒント&lt;/p&gt;
-✏️ **試してみましょう！** 上のコードを改変して、最も可能性の高い5つの回答について（チャンクごとではなく全体で）スコアと範囲を返すようにしてください。
+**試してみましょう！** 上のコードを改変して、最も可能性の高い5つの回答について（チャンクごとではなく全体で）スコアと範囲を返すようにして下さい。
 &lt;/div&gt;
 
 
@@ -718,12 +762,13 @@ for candidate, offset in zip(candidates, offsets):
 <p><code>python out
 {'answer': '\n🤗 Transformers: State of the Art NLP', 'start': 0, 'end': 37, 'score': 0.33867}
 {'answer': 'Jax, PyTorch and TensorFlow', 'start': 1892, 'end': 1919, 'score': 0.97149}</code></p>
+<p>（出力の訳：1つ目の回答は「🤗 Transformers：最先端の自然言語処理」です。2つ目の回答は深層学習ライブラリの固有名詞の列挙です）</p>
 <p>最初の結果を無視すれば、この長い文脈に対するパイプラインと同じ結果が得られます。やりました！</p>
 <div class="callout callout-tip">
 <p class="callout-title">💡 ヒント</p>
-<p>✏️ <strong>試してみましょう！</strong> 先ほど計算した最良のスコアを使って、最も可能性の高い5つの回答を表示してください（各チャンクではなく、文脈全体について）。結果を確認するには、最初のパイプラインに戻り、呼び出し時に <code>top_k=5</code> を渡してください。</p>
+<p><strong>試してみましょう！</strong> 先ほど計算した最良のスコアを使って、最も可能性の高い5つの回答を表示して下さい（各チャンクではなく、文脈全体について）。結果を確認するには、最初のパイプラインに戻り、呼び出し時に <code>top_k=5</code> を渡して下さい。</p>
 </div>
-<p>これでトークナイザの能力についての深掘りは終わりです。次の章では、一般的な NLP タスクでモデルをファインチューニングする方法を紹介し、これらすべてを再び実践します。</p>
+<p>これでトークナイザの能力についての深掘りは終わりです。次の章では、一般的な NLP タスクでモデルをファインチューニングする方法を紹介し、これら全てを再び実践します。</p>
 </article>
 
 <nav class="page-nav"><a class="nav-link prev" href="3.html">← 前へ: 高速トークナイザならではの機能</a><a class="nav-link toc-link" href="../index.html">目次へ</a><a class="nav-link next" href="4.html">次へ →: 正規化と事前トークン化</a></nav>
