@@ -1,6 +1,6 @@
 <FrameworkSwitchCourse {fw} />
 
-# すべてを組み合わせる[[putting-it-all-together]]
+# 全てを組み合わせる[[putting-it-all-together]]
 
 <CourseFloatingBanner chapter={2}
   classNames="absolute z-10 right-0 top-0"
@@ -9,9 +9,9 @@
     {label: "Aws Studio", value: "https://studiolab.sagemaker.aws/import/github/huggingface/notebooks/blob/master/course/en/chapter2/section6_pt.ipynb"},
 ]} />
 
-ここ数セクションでは、ほとんどの作業を手作業で行ってきました。トークナイザの仕組みを探り、トークン化、入力 ID への変換、パディング、切り捨て、アテンションマスクを見てきました。
+ここ数セクションでは、殆どの作業を手作業で行ってきました。トークナイザの仕組みを探り、トークン化、入力 ID への変換、パディング、切り捨て、アテンションマスクを見てきました。
 
-しかし、セクション2で見たように、🤗 Transformers API にはこれらすべてを処理できる高レベルな関数があり、ここで詳しく見ていきます。文に対して直接 `tokenizer` を呼び出すと、モデルにそのまま渡せる入力が返ってきます。
+しかし、セクション2で見たように、🤗 Transformers API にはこれら全てを処理出来る高レベルな関数があり、ここで詳しく見ていきます。文に対して直接 `tokenizer` を呼び出すと、モデルにそのまま渡せる入力が返ってきます。
 
 ```py
 from transformers import AutoTokenizer
@@ -24,9 +24,11 @@ sequence = "I've been waiting for a HuggingFace course my whole life."
 model_inputs = tokenizer(sequence)
 ```
 
-ここでは、`model_inputs` 変数に、モデルがうまく動作するために必要なものがすべて含まれています。DistilBERT の場合、それは入力 ID とアテンションマスクです。追加の入力を受け取る他のモデルでは、それらも `tokenizer` オブジェクトによって出力されます。
+（入力文の訳：ずっと Hugging Face のコースを待ち望んでいました）
 
-以下の例でわかるように、この方法は非常に強力です。まず、単一のシーケンスをトークン化できます。
+ここでは、`model_inputs` 変数に、モデルがうまく動作する為に必要なものが全て含まれています。DistilBERT の場合、それは入力 ID とアテンションマスクです。追加の入力を受け取る他のモデルでは、それらも `tokenizer` オブジェクトによって出力されます。
+
+以下の例で分かるように、この方法は非常に強力です。先ず、単一のシーケンスをトークン化出来ます。
 
 ```py
 sequence = "I've been waiting for a HuggingFace course my whole life."
@@ -34,7 +36,7 @@ sequence = "I've been waiting for a HuggingFace course my whole life."
 model_inputs = tokenizer(sequence)
 ```
 
-API を変更することなく、複数のシーケンスを一度に処理することもできます。
+API を変更することなく、複数のシーケンスを一度に処理することも出来ます。
 
 ```py
 sequences = ["I've been waiting for a HuggingFace course my whole life.", "So have I!"]
@@ -42,7 +44,9 @@ sequences = ["I've been waiting for a HuggingFace course my whole life.", "So ha
 model_inputs = tokenizer(sequences)
 ```
 
-パディングの方法は、目的に応じて次のように指定できます。
+（追加された文の訳：私もです）
+
+パディングの方法は、目的に応じて次のように指定出来ます。
 
 ```py
 # シーケンスを最大のシーケンス長までパディングします
@@ -56,7 +60,7 @@ model_inputs = tokenizer(sequences, padding="max_length")
 model_inputs = tokenizer(sequences, padding="max_length", max_length=8)
 ```
 
-シーケンスを切り捨てることもできます。
+シーケンスを切り捨てることも出来ます。
 
 ```py
 sequences = ["I've been waiting for a HuggingFace course my whole life.", "So have I!"]
@@ -69,7 +73,7 @@ model_inputs = tokenizer(sequences, truncation=True)
 model_inputs = tokenizer(sequences, max_length=8, truncation=True)
 ```
 
-`tokenizer` オブジェクトは、指定したフレームワークのテンソルへの変換にも対応しています。生成したテンソルは、そのままモデルに渡せます。たとえば、次のコードサンプルでは、トークナイザに様々なフレームワークのテンソルを返すよう指示しています。`"pt"` は PyTorch テンソルを返し、`"np"` は NumPy 配列を返します。
+`tokenizer` オブジェクトは、指定したフレームワークのテンソルへの変換にも対応しています。生成したテンソルは、そのままモデルに渡せます。例えば、次のコードサンプルでは、トークナイザに様々なフレームワークのテンソルを返すよう指示しています。`"pt"` は PyTorch テンソルを返し、`"np"` は NumPy 配列を返します。
 
 ```py
 sequences = ["I've been waiting for a HuggingFace course my whole life.", "So have I!"]
@@ -83,7 +87,7 @@ model_inputs = tokenizer(sequences, padding=True, return_tensors="np")
 
 ## 特殊トークン[[special-tokens]]
 
-トークナイザが返した入力 ID を見ると、前に得たものとはわずかに異なることがわかります。
+トークナイザが返した入力 ID を見ると、前に得たものとはわずかに異なることが分かります。
 
 ```py
 sequence = "I've been waiting for a HuggingFace course my whole life."
@@ -113,11 +117,11 @@ print(tokenizer.decode(ids))
 "i've been waiting for a huggingface course my whole life."
 ```
 
-トークナイザは、先頭に特殊トークン `[CLS]` を、末尾に特殊トークン `[SEP]` を追加しました。これらの特殊トークンは事前学習時にも使われているため、推論時にも同じように追加する必要があります。モデルによっては特殊トークンを追加しないものもあれば、異なる特殊トークンを追加するものもあります。また、先頭だけ、あるいは末尾だけに追加するモデルもあります。いずれにしても、トークナイザはモデルがどの特殊トークンを必要とするかを知っており、自動的に処理してくれます。
+トークナイザは、先頭に特殊トークン `[CLS]` を、末尾に特殊トークン `[SEP]` を追加しました。これらの特殊トークンは事前学習時にも使われている為、推論時にも同じように追加する必要があります。モデルによっては特殊トークンを追加しないものもあれば、異なる特殊トークンを追加するものもあります。また、先頭だけ、あるいは末尾だけに追加するモデルもあります。いずれにしても、トークナイザはモデルがどの特殊トークンを必要とするかを知っており、自動的に処理してくれます。
 
 ## まとめ: トークナイザからモデルへ[[wrapping-up-from-tokenizer-to-model]]
 
-ここまで、`tokenizer` オブジェクトがテキストを処理する各ステップを見てきました。最後に、高レベルな API の使い方をまとめて確認しましょう。この API では、複数のシーケンスへのパディング、非常に長いシーケンスの切り捨て、様々な種類のテンソルへの変換を一度に処理できます。
+ここまで、`tokenizer` オブジェクトがテキストを処理する各ステップを見てきました。最後に、高レベルな API の使い方をまとめて確認しましょう。この API では、複数のシーケンスへのパディング、非常に長いシーケンスの切り捨て、様々な種類のテンソルへの変換を一度に処理出来ます。
 
 ```py
 import torch
