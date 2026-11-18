@@ -546,6 +546,235 @@ pre:not(.codehilite pre) {
   color: var(--body);
   line-height: 1.75;
 }
+.glossary dt { scroll-margin-top: calc(var(--header-h) + 14px); }
+.glossary dt:target { color: var(--yellow); }
+.glossary dt:target + dd {
+  border-left-color: var(--yellow);
+  background: rgba(255, 210, 30, .06);
+}
+
+/* ---------- 用語リンクとプレビュー ----------
+   本文・用語集の定義文・詳細ページなど、置かれる場所を問わず同じ見た目にする */
+a.gloss-link {
+  color: inherit;
+  text-decoration: underline dotted rgba(255, 210, 30, .75);
+  text-underline-offset: 3px;
+  cursor: pointer;
+  -webkit-touch-callout: none; /* 長押し時のブラウザ標準コールアウトを抑止 */
+}
+a.gloss-link:hover {
+  color: var(--yellow-soft);
+  text-decoration: underline dotted var(--yellow);
+  text-underline-offset: 3px;
+}
+/* 専用解説ページがある用語は、無い用語と色で区別する（Wiki 式） */
+a.gloss-link.has-detail {
+  color: var(--yellow-soft);
+  text-decoration: underline dotted var(--yellow);
+  text-underline-offset: 3px;
+}
+a.gloss-link.has-detail:hover { color: var(--yellow); }
+.gloss-pop {
+  position: absolute;
+  z-index: 200;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: 0 12px 32px rgba(0, 0, 0, .5);
+  padding: .8rem .95rem .7rem;
+  font-size: .9rem;
+  line-height: 1.65;
+  animation: gloss-pop-in .15s ease-out;
+}
+@keyframes gloss-pop-in {
+  from { opacity: 0; transform: translateY(-3px); }
+  to { opacity: 1; transform: none; }
+}
+.gloss-pop[hidden] { display: none; }
+.gloss-pop-title {
+  margin: 0 0 .3em;
+  color: var(--text);
+  font-weight: 700;
+  font-size: .95rem;
+}
+.gloss-pop.has-detail .gloss-pop-title { color: var(--yellow-soft); }
+.gloss-pop-def { margin: 0; color: var(--body); }
+.gloss-pop-foot {
+  margin: .55em 0 0;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+.gloss-pop-more { font-size: .85rem; }
+.gloss-pop-close {
+  background: transparent;
+  border: none;
+  color: var(--muted);
+  font-size: 1.05rem;
+  line-height: 1;
+  cursor: pointer;
+  padding: .1em .3em;
+}
+.gloss-pop-close:hover { color: var(--text); }
+
+/* ---------- 用語詳細ページ ---------- */
+.glossary dt a {
+  color: inherit;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+.glossary dt a:hover { color: var(--yellow); }
+.glossary dt a.gloss-has-detail { color: var(--yellow-soft); }
+.glossary dt a.gloss-has-detail:hover { color: var(--yellow); }
+.gloss-detail-def {
+  padding: .7em 1em;
+  border-left: 3px solid var(--yellow);
+  background: var(--surface);
+  border-radius: 0 var(--radius) var(--radius) 0;
+  line-height: 1.75;
+}
+.gloss-related ul, .gloss-prereq ul, .gloss-next ul, .gloss-refs ul {
+  list-style: none;
+  padding: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: .5rem;
+}
+.gloss-related li a, .gloss-prereq li a, .gloss-next li a, .gloss-refs li a {
+  display: inline-block;
+  padding: .3em .8em;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: var(--surface);
+  font-size: .92rem;
+}
+.gloss-related li a:hover, .gloss-prereq li a:hover, .gloss-next li a:hover,
+.gloss-refs li a:hover {
+  border-color: var(--yellow);
+  text-decoration: none;
+}
+/* 定義文の下に置く外部リンクの参照行 */
+.gloss-links {
+  margin: .3em 0 0;
+  font-size: .85rem;
+  color: var(--muted);
+}
+.gloss-links a { margin-left: .7em; }
+.gloss-back { margin-top: 2rem; }
+.gloss-categories {
+  margin-top: 2rem;
+  padding: .55em .9em;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--surface);
+  font-size: .9rem;
+}
+.gloss-categories a { white-space: nowrap; }
+.gloss-course-tag {
+  display: block;
+  margin-top: .2em;
+  color: var(--muted);
+  font-size: .82rem;
+}
+.gloss-term-list {
+  list-style: none;
+  padding: 0;
+  margin: .4rem 0 1.2rem;
+  display: flex;
+  flex-wrap: wrap;
+  gap: .45rem;
+}
+.gloss-term-list li a {
+  display: inline-block;
+  padding: .28em .75em;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: var(--surface);
+  font-size: .9rem;
+  color: var(--body);
+}
+.gloss-term-list li a:hover {
+  border-color: var(--yellow);
+  color: var(--yellow-soft);
+  text-decoration: none;
+}
+.gloss-course { margin-bottom: .2rem; }
+.gloss-course[id] { scroll-margin-top: calc(var(--header-h) + 14px); }
+.gloss-courses { color: var(--muted); font-size: .92rem; }
+
+/* ---------- 用語集ホーム: カテゴリ開閉（アコーディオン） ---------- */
+/* カテゴリ見出しは帯状のボタンにして、用語の見出しと階層を明確に分ける */
+.gloss-cat { margin-top: 1.1rem; scroll-margin-top: calc(var(--header-h) + 14px); }
+.gloss-cat-head { margin: 0; font-size: 1.32rem; }
+.gloss-cat-toggle {
+  display: flex;
+  align-items: center;
+  gap: .65rem;
+  width: 100%;
+  font: inherit;
+  font-weight: 800;
+  letter-spacing: .01em;
+  text-align: left;
+  color: var(--text);
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-left: 6px solid var(--yellow);
+  border-radius: var(--radius);
+  padding: .5em .75em;
+  cursor: pointer;
+}
+.gloss-cat-toggle:hover { border-color: var(--yellow); }
+.gloss-cat-toggle:focus-visible { outline: 2px solid var(--yellow); outline-offset: 2px; }
+.gloss-cat-marker {
+  flex: none;
+  width: 1em;
+  text-align: center;
+  color: var(--yellow);
+  font-size: .85em;
+}
+.gloss-cat-marker::before { content: "▸"; }
+.gloss-cat.open .gloss-cat-marker::before { content: "▾"; }
+.gloss-cat-count {
+  margin-left: auto;
+  flex: none;
+  font-size: .8rem;
+  font-weight: 700;
+  line-height: 1.5;
+  color: var(--bg);
+  background: var(--yellow);
+  border-radius: 999px;
+  padding: .05em .7em;
+}
+.gloss-cat-body { padding: .2rem .2rem 0 1rem; }
+.gloss-cat-body[hidden] { display: none; }
+.gloss-cat-body .glossary { margin-top: .4rem; }
+/* カテゴリの概説（節を開いたときに最初に読む、その分野の説明） */
+.gloss-cat-intro {
+  margin: .7rem 0 .2rem;
+  padding: .7em .95em;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  color: var(--body);
+  line-height: 1.85;
+}
+/* レベルの小見出し（カテゴリ見出しと用語見出しの中間の階層） */
+.gloss-level {
+  margin: 1.25rem 0 .1rem;
+  padding-left: .55rem;
+  border-left: 4px solid var(--yellow);
+  font-size: 1.08rem;
+  font-weight: 700;
+  color: var(--text);
+}
+.gloss-level-desc {
+  margin-left: .6em;
+  font-size: .85rem;
+  font-weight: 400;
+  color: var(--muted);
+}
+.gloss-cat-body .gloss-level + .glossary { margin-top: 0; }
+.gloss-cat-body .gloss-level + .glossary dt:first-child { margin-top: .55em; }
 
 /* ---------- ヘッダーの狭幅対応（検索欄を2段目へ） ---------- */
 @media (max-width: 900px) {
