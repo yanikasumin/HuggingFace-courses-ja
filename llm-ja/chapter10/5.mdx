@@ -7,11 +7,11 @@
     {label: "Aws Studio", value: "https://studiolab.sagemaker.aws/import/github/huggingface/notebooks/blob/master/course/en/chapter10/section5.ipynb"},
 ]} />
 
-ここでは、Argilla に在るアノテーション済みデータをエクスポートして使う方法を学びます。 
+ここでは、Argilla にあるアノテーション済みデータをエクスポートし、活用する方法を学びます。
 
 ## データセットを読み込む
 
-まず、これまでのステップと同様に Argilla インスタンスに接続していることを確認します。
+まず、これまでと同様に Argilla インスタンスに接続していることを確認します。
 
 ```python
 import argilla as rg
@@ -31,11 +31,11 @@ client = rg.Argilla(
 dataset = client.datasets(name="ag_news")
 ```
 
-データセットを読み込み、`dataset.records` でレコードを取得すれば、そのデータを独自の処理やパイプラインで利用出来ます。但しここでは、レコードのフィルタリングや、データセットの Hugging Face Hub へのエクスポートといった任意の操作もいくつか学びます。
+データセットを読み込み、`dataset.records` でレコードを取得すれば、データセットとレコードを自分の用途やパイプラインでそのまま使えます。このセクションでは、それに加えて、レコードのフィルタリングや Hugging Face Hub へのエクスポートといった任意の操作も扱います。
 
 ## データセットをフィルタリングする
 
-完了したレコードだけを使いたい場合もあります。そこでまず、ステータスに基づいてデータセット内のレコードをフィルタリングします。
+完了したレコードだけを使いたい場合もあります。まず、ステータスを基準にデータセット内のレコードを絞り込みます。
 
 ```python
 status_filter = rg.Query(filter=rg.Filter([("status", "==", "completed")]))
@@ -44,13 +44,13 @@ filtered_records = dataset.records(status_filter)
 ```
 
 >[!TIP]
->⚠️ `completed` ステータスのレコード（タスクの割り当て設定で設定した送信済みレスポンスの最小数を満たしたレコード）は複数のレスポンスを持つことがあり、各レスポンスのステータスは `submitted`、`draft`、`discarded` のいずれかになり得る点に注意してください。
+>⚠️ `completed` ステータスのレコード（割り当て設定で定めた送信済みレスポンスの最小数を満たしたレコード）には、複数のレスポンスが含まれる場合があります。各レスポンスのステータスは `submitted`、`draft`、`discarded` のいずれかです。
 
 レコードのクエリとフィルタリングについて詳しくは、[Argilla のドキュメント](https://docs.argilla.io/latest/how_to_guides/query/) を参照してください。
 
 ## Hub にエクスポートする
 
-アノテーションを Hugging Face Hub にエクスポートすれば、他の人と共有出来ます。その為には、レコードを 🤗 Dataset に変換してから Hub にプッシュします。
+アノテーションは Hugging Face Hub にエクスポートして、他の人と共有出来ます。その為には、レコードを 🤗 Dataset に変換してから Hub にプッシュします。
 
 ```python
 filtered_records.to_datasets().push_to_hub("argilla/ag_news_annotated")
@@ -62,7 +62,7 @@ filtered_records.to_datasets().push_to_hub("argilla/ag_news_annotated")
 dataset.to_hub(repo_id="argilla/ag_news_annotated")
 ```
 
-データセット全体をエクスポートしておくと、他の人も各自の Argilla インスタンスに取り込めます。設定が自動的に保存される為、1行のコードでデータセット全体をインポート出来ます。
+データセット全体をエクスポートしておくと、他の人が自分の Argilla インスタンスでそのまま開ける為、便利です。設定も自動的に保存されるので、データセット全体のインポートはコード1行で済みます。
 
 ```python
 dataset = rg.Dataset.from_hub(repo_id="argilla/ag_news_annotated")
