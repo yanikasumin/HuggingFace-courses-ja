@@ -6,16 +6,16 @@
 
 # 実践演習： Unsloth で GRPO
 
-この演習では、モデルの推論能力を改善する為に、Unsloth を使って GRPO（Group Relative Policy Optimization）でモデルをファインチューニングします。GRPO は [第3章](/course/chapter3/3) で扱いました。
+この演習では、Unsloth を使って GRPO（Group Relative Policy Optimization）でモデルをファインチューニングし、モデルの推論能力を高めます。GRPO については、[第3章](/course/chapter3/3)で説明しました。
 
-Unsloth は LLM のファインチューニングを高速化するライブラリであり、より高速に、より少ない計算リソースでモデルを学習出来るようにします。Unsloth は TRL と連携して動作する為、前のセクションで学んだ内容を活用出来ます。ここでは、Unsloth を利用する際に必要な設定や実装上の違いを中心に説明します。
+Unsloth は、LLM のファインチューニングを高速化するライブラリです。学習を速くし、必要な計算リソースも少なくできます。Unsloth は TRL に組み込んで使うため、前のセクションで学んだ内容を土台にできます。この演習では、その内容を Unsloth 固有の設定に合わせて進めます。
 
 > [!TIP]
-> この演習は、無料の Google Colab T4 GPU で実行出来ます。最良の体験の為には、上記リンクのノートブックに沿って進め、自分でも試してみてください。
+> この演習は、無料の Google Colab（T4 GPU）で実行できます。上のリンク先のノートブックに沿って、自分で試しながら進めるのがおすすめです。
 
 ## 依存関係をインストールする
 
-まず、必要なライブラリをインストールしましょう。高速化されたファインチューニングの為の Unsloth と、高速な推論の為の vLLM が必要です。
+まず、必要なライブラリをインストールします。使うのは、ファインチューニングを高速化する Unsloth と、高速な推論を行う vLLM です。
 
 ```bash
 pip install unsloth vllm
@@ -24,13 +24,13 @@ pip install --upgrade pillow
 
 ## Unsloth をセットアップする
 
-Unsloth は、Transformers と Unsloth の最適化を統合するクラス（`FastLanguageModel`）を提供します。インポートしましょう。
+Unsloth には、Transformers に Unsloth の最適化を組み合わせるクラス `FastLanguageModel` があります。まず、これをインポートします。
 
 ```python
 from unsloth import FastLanguageModel
 ```
 
-次に、Google の Gemma 3 1B Instruct モデルを読み込み、ファインチューニングの為に設定します。
+次に、Google の Gemma 3 1B Instruct モデルを読み込み、ファインチューニング用に設定します。
 
 ```python
 from unsloth import FastLanguageModel
@@ -66,14 +66,14 @@ model = FastLanguageModel.get_peft_model(
 )
 ```
 
-このコードは、メモリを節約する為にモデルを4ビット量子化で読み込み、効率的なファインチューニングの為に LoRA（Low-Rank Adaptation）を適用します。`target_modules` パラメータは、モデルのどの層をファインチューニングするかを指定し、`use_gradient_checkpointing` により、より長いコンテキストでの学習が可能になります。
+このコードでは、メモリを節約するためにモデルを4ビット量子化で読み込みます。併せて、効率よくファインチューニングするために LoRA（Low-Rank Adaptation）を適用します。`target_modules` は、ファインチューニングの対象とする層を指定するパラメータです。`use_gradient_checkpointing` を有効にすると、より長いコンテキストでも学習できます。
 
 > [!TIP]
-> この章では LoRA の詳細は扱いませんが、[第11章](/course/chapter11/3)で詳細を学ぶことが出来ます。
+> この章では LoRA の詳細には触れません。詳しくは、[第11章](/course/chapter11/3)を参照してください。
 
 ## データの準備
 
-この演習では、小学校レベルの数学の問題を含む GSM8K データセットを使います。モデルが答えを出す前に推論を示すよう促す形に、データを整形します。
+この演習では、小学校レベルの数学の問題を集めた GSM8K データセットを使います。データは、モデルが答えを出す前に推論を示すよう促す形式に整形します。
 
 まず、プロンプトと答えの形式を定義します。
 
@@ -101,7 +101,7 @@ XML_COT_FORMAT = """\
 
 （プロンプトの訳：次の形式で応答してください）
 
-次に、データセットを準備しましょう。
+次に、データセットを準備します。
 
 ```python
 import re
@@ -139,13 +139,13 @@ def get_gsm8k_questions(split="train") -> Dataset:
 dataset = get_gsm8k_questions()
 ```
 
-GSM8K の回答から正答部分を抽出し、文字列として整形してデータセットを準備します。
+このように、GSM8K の回答から答えを取り出し、文字列として整形してデータセットを用意します。
 
 ## 報酬関数を定義する
 
-[前のページ](/course/chapter13/4)で議論した通り、GRPO は報酬関数を使って、長さや形式といった検証可能な基準に基づいて、モデルの学習を導くことが出来ます。
+[前のページ](/course/chapter13/4)で説明したように、GRPO は報酬関数を使ってモデルの学習を導くことができます。基準には、長さや形式といった検証可能なものを使います。
 
-この演習では、良い推論の様々な側面を促す、いくつかの報酬関数を定義します。例えば、整数の答えを出すことや、厳密な形式に従うことに対して、モデルに報酬を与えます。
+この演習では、良い推論の様々な面を促す報酬関数をいくつか定義します。たとえば、整数の答えを出すことや、厳密な形式に従うことに対して報酬を与えます。
 
 ```python
 # 答えが正しいかをチェックする報酬関数
@@ -207,18 +207,18 @@ def xmlcount_reward_func(completions, **kwargs) -> list[float]:
     return [count_xml(c) for c in contents]
 ```
 
-これらの報酬関数は、それぞれ異なる目的を果たします。
+各報酬関数の目的は、次のとおりです。
 
 | 報酬関数 | 目的 |
 |-----------------|---------|
-| `correctness_reward_func` | モデルの答えが正解と一致した時に報酬を与える |
-| `int_reward_func` | 数値の答えを出した時にモデルに報酬を与える |
-| `strict_format_reward_func` と `soft_format_reward_func` | 指定された形式に従った時にモデルに報酬を与える |
-| `xmlcount_reward_func` | 適切な XML タグの使用に報酬を与え、閉じタグの後の余分な内容にペナルティを与える |
+| `correctness_reward_func` | モデルの答えが正解と一致したときに報酬を与えます |
+| `int_reward_func` | 数値の答えを出したときにモデルに報酬を与えます |
+| `strict_format_reward_func` と `soft_format_reward_func` | 指定された形式に従ったときにモデルに報酬を与えます |
+| `xmlcount_reward_func` | XML タグを適切に使った場合に報酬を与え、閉じタグの後にある余分な内容にはペナルティを与えます |
 
 ## GRPO で学習する
 
-では、モデル、トークナイザ、報酬関数を使って GRPO トレーナーをセットアップしましょう。この部分は、[前の演習](/course/chapter12/5)と同じアプローチに従います。
+次に、モデル、トークナイザー、報酬関数を使って GRPO トレーナーを設定します。進め方は、[前の演習](/course/chapter12/5)と同じです。
 
 ```python
 from trl import GRPOConfig, GRPOTrainer
@@ -262,11 +262,12 @@ trainer = GRPOTrainer(
 )
 ```
 
-`GRPOConfig` は、学習の為の様々なハイパーパラメータを設定します。
-- `use_vllm`： vLLM による高速な推論を有効にします
-- `learning_rate`： モデルがどれだけ速く学ぶかを制御します
-- `num_generations`： 各プロンプトに対して生成する補完の数
-- `max_steps`： 実行する学習ステップの総数
+`GRPOConfig` では、学習に関する様々なハイパーパラメータを設定します。
+
+- `use_vllm`：vLLM による高速推論を有効にします
+- `learning_rate`：モデルが学習する速さを制御します
+- `num_generations`：各プロンプトに対して生成する補完の数です
+- `max_steps`：実行する学習ステップの総数です
 
 では、学習を開始しましょう。
 
@@ -275,17 +276,17 @@ trainer.train()
 ```
 
 > [!WARNING]
-> 学習にはしばらく時間が掛かる場合があります。報酬が直ぐに増加し始めないこともあります。改善が見られるまで150〜200ステップ掛かることもあります。辛抱強く待ちましょう！
+> 学習には時間がかかる場合があります。報酬はすぐには増えないこともあります。改善が見られるまで150〜200ステップかかることもあるので、気長に待ってください。
 
 ## モデルをテストする
 
-学習の後、モデルがどのように機能するかをテストしましょう。まず、LoRA の重みを保存します。
+学習が終わったら、モデルがどのように動作するかテストします。まず、LoRA の重みを保存します。
 
 ```python
 model.save_lora("grpo_saved_lora")
 ```
 
-次に、新しい質問でモデルをテストしましょう。
+次に、新しい質問でモデルをテストします。
 
 ```python
 from vllm import SamplingParams
@@ -317,11 +318,11 @@ output = (
 print(output)
 ```
 
-学習後のモデルが、指定された形式に従い、答えを出す前に推論過程を示すようになったか確認してください。
+モデルが指定した形式に従い、答えの前に推論を示すようになっているはずです。出力で確認してください。
 
 ## モデルを保存する
 
-Unsloth は、ファインチューニングしたモデルを保存する為のいくつかの選択肢を提供していますが、ここでは最も一般的なものに焦点を当てます。
+Unsloth には、ファインチューニングしたモデルを保存する方法がいくつかあります。ここでは、最も一般的な方法を取り上げます。
 
 ```python
 # 16ビット精度で保存する
@@ -330,7 +331,7 @@ model.save_pretrained_merged("model", tokenizer, save_method="merged_16bit")
 
 ## Hugging Face Hub にプッシュする
 
-`push_to_hub_merged` メソッドを使って、モデルを Hugging Face Hub にプッシュします。このメソッドにより、モデルを複数の量子化形式でプッシュ出来ます。
+`push_to_hub_merged` メソッドを使うと、モデルを Hugging Face Hub にプッシュできます。このメソッドでは、複数の量子化形式でプッシュできます。
 ```python
 # Hugging Face Hub にプッシュする（トークンが必要）
 model.push_to_hub_merged(
@@ -338,7 +339,7 @@ model.push_to_hub_merged(
 )
 ```
 
-Unsloth は、llama.cpp で使う為の GGUF 形式での保存もサポートしています。
+Unsloth は、llama.cpp で使う GGUF 形式での保存にも対応しています。
 
 ```python
 model.push_to_hub_gguf(
@@ -349,21 +350,23 @@ model.push_to_hub_gguf(
 )
 ```
 
-GGUF ファイルは、llama.cpp や、Jan、Open WebUI のような UI ベースのシステムで使うことが出来ます。
+GGUF ファイルは、llama.cpp や、Jan、Open WebUI のような UI ベースのシステムで使えます。
 
 ## 結論
 
 この演習では、次の方法を学びました。
-1. 高速化されたファインチューニングの為に Unsloth をセットアップする
-2. GRPO 学習の為にデータを準備する
+
+1. 高速なファインチューニングのために Unsloth をセットアップする
+2. GRPO 学習のためにデータを準備する
 3. モデルの学習を導くカスタム報酬関数を定義する
 4. GRPO を使ってモデルを学習する
 5. ファインチューニングしたモデルをテストする
 6. モデルを様々な形式で保存する
 
-GRPO は、言語モデルを特定の振る舞いにアラインする為の強力な手法であり、Unsloth により、限られたハードウェアでも利用出来るようになります。複数の報酬関数を組み合わせることで、モデルが特定の形式に従うよう導くと同時に、その推論能力を改善出来ます。
+GRPO は、言語モデルを特定の振る舞いに合わせるための強力な手法です。Unsloth を使えば、限られたハードウェアでも GRPO を利用できます。複数の報酬関数を組み合わせると、モデルが特定の形式に従うよう導きながら、推論能力も高められます。
 
-詳細とリソースについては、次をチェックしてください。
+詳しい情報やリソースは、次を参照してください。
+
 - [Unsloth ドキュメント](https://docs.unsloth.ai/)
 - [Unsloth Discord](https://discord.gg/unsloth)
 - [Unsloth GitHub](https://github.com/unslothai/unsloth)
