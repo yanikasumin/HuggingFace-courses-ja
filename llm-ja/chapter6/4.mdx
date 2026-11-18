@@ -7,22 +7,22 @@
     {label: "Aws Studio", value: "https://studiolab.sagemaker.aws/import/github/huggingface/notebooks/blob/master/course/en/chapter6/section4.ipynb"},
 ]} />
 
-Transformer モデルで使われる最も一般的な3つのサブワードトークン化アルゴリズム（Byte-Pair Encoding [BPE]、WordPiece、Unigram）を詳しく見る前に、まず各トークナイザがテキストに適用する前処理を見ていきます。トークン化パイプラインのステップの概要は次の通りです。
+Transformer モデルで使われる最も一般的な3つのサブワードトークン化アルゴリズム（Byte-Pair Encoding [BPE]、WordPiece、Unigram）を詳しく見る前に、各トークナイザがテキストに適用する前処理を確認します。トークン化パイプラインのステップの概要は、次の通りです。
 
 <div class="flex justify-center">
 <img class="block dark:hidden" src="https://huggingface.co/datasets/huggingface-course/documentation-images/resolve/main/en/chapter6/tokenization_pipeline.svg" alt="トークン化パイプライン。">
 <img class="hidden dark:block" src="https://huggingface.co/datasets/huggingface-course/documentation-images/resolve/main/en/chapter6/tokenization_pipeline-dark.svg" alt="トークン化パイプライン。">
 </div>
 
-トークナイザは、テキストを（そのモデルに応じて）サブトークンに分割する前に、_正規化_ と _事前トークン化_ という2つのステップを実行します。
+トークナイザは、テキストをサブトークンに分割する前に、2つのステップを実行します。_正規化_ と _事前トークン化_ です。サブトークンへの分割方法は、モデルによって異なります。
 
 ## 正規化[[normalization]]
 
 <Youtube id="4IIC2jI9CaU"/>
 
-正規化ステップでは、不要な空白の除去、小文字化、アクセント記号の除去など、一般的なクリーンアップを行います。[Unicode 正規化](http://www.unicode.org/reports/tr15/)（NFC や NFKC など）に馴染みがある方もいるかもしれませんが、これもトークナイザが適用する場合があります。
+正規化ステップでは、一般的なクリーンアップを行います。例えば、不要な空白の除去、小文字化、アクセント記号の除去です。[Unicode 正規化](http://www.unicode.org/reports/tr15/)（NFC や NFKC など）を適用する場合もあります。
 
-🤗 Transformers の `tokenizer` には `backend_tokenizer` という属性があり、背後にある Tokenizers ライブラリのトークナイザにアクセス出来ます。
+🤗 Transformers の `tokenizer` には、`backend_tokenizer` という属性があります。この属性を使うと、背後にある Tokenizers ライブラリのトークナイザにアクセス出来ます。
 
 ```py
 from transformers import AutoTokenizer
@@ -35,7 +35,7 @@ print(type(tokenizer.backend_tokenizer))
 <class 'tokenizers.Tokenizer'>
 ```
 
-`tokenizer` オブジェクトの `normalizer` 属性には `normalize_str()` メソッドがあり、正規化がどのように行われるかを確認出来ます。
+`tokenizer` オブジェクトの `normalizer` 属性には、`normalize_str()` メソッドがあります。このメソッドを使うと、正規化がどのように行われるかを確認出来ます。
 
 ```py
 print(tokenizer.backend_tokenizer.normalizer.normalize_str("Héllò hôw are ü?"))
@@ -47,7 +47,7 @@ print(tokenizer.backend_tokenizer.normalizer.normalize_str("Héllò hôw are ü?
 
 （入力文の訳：こんにちは、お元気ですか。アクセント記号の付いた文字で書かれています。出力の訳：こんにちは、お元気ですか）
 
-この例では `bert-base-uncased` チェックポイントを選んだ為、正規化では小文字化が行われ、アクセント記号が除去されました。
+この例では、`bert-base-uncased` チェックポイントを選んでいます。その為、正規化では小文字化が行われ、アクセント記号が除去されました。
 
 > [!TIP]
 > **試してみましょう！** `bert-base-cased` チェックポイントからトークナイザを読み込み、同じ例を渡してみてください。cased 版と uncased 版のトークナイザの主な違いは何でしょうか。
@@ -56,11 +56,11 @@ print(tokenizer.backend_tokenizer.normalizer.normalize_str("Héllò hôw are ü?
 
 <Youtube id="grlLV8AIXug"/>
 
-次のセクションで見る通り、トークナイザは生のテキストだけでは学習出来ません。まず、テキストを単語のような小さな単位に分割する必要があります。そこで事前トークン化ステップの出番です。
+次のセクションで見る通り、トークナイザは生のテキストだけでは学習出来ません。まず、テキストを単語のような小さな単位に分割する必要があります。この分割を行うのが、事前トークン化ステップです。
 
-[Chapter 2](/course/chapter2) で見たように、単語ベースのトークナイザは、生のテキストを空白と句読点で単に単語に分割出来ます。それらの単語が、トークナイザが学習中に学べるサブトークンの境界となります。
+[Chapter 2](/course/chapter2) で見たように、単語ベースのトークナイザは、生のテキストを空白と句読点で単語に分割します。分割された単語は、トークナイザが学習中に学べるサブトークンの境界となります。
 
-高速トークナイザが事前トークン化をどのように行うかを見るには、`tokenizer` オブジェクトの `pre_tokenizer` 属性の `pre_tokenize_str()` メソッドを使えます。
+高速トークナイザの事前トークン化は、`tokenizer` オブジェクトの `pre_tokenizer` 属性にある `pre_tokenize_str()` メソッドで確認出来ます。
 
 ```py
 tokenizer.backend_tokenizer.pre_tokenizer.pre_tokenize_str("Hello, how are  you?")
@@ -72,16 +72,16 @@ tokenizer.backend_tokenizer.pre_tokenizer.pre_tokenize_str("Hello, how are  you?
 
 （入力文の訳：こんにちは、お元気ですか。文中に二重の空白が含まれています）
 
-トークナイザが既にオフセットを追跡していることに注目してください。これにより、前のセクションで使ったオフセットマッピングが得られます。ここでは、トークナイザは2つの空白を無視して1つに置き換えていますが、それを反映して `are` と `you` の間でオフセットがジャンプしています。
+トークナイザは、この段階で既にオフセットを追跡しています。前のセクションで使ったオフセットマッピングが得られるのは、この為です。ここでは、2つの空白が無視され、1つに置き換えられています。`are` と `you` の間でオフセットの値が大きく開いているのは、この置き換えを反映したものです。
 
-BERT トークナイザを使っている為、事前トークン化では空白と句読点で分割します。他のトークナイザでは、このステップのルールが異なる場合があります。例えば、GPT-2 トークナイザを使うと次のようになります。
+ここで使っているのは BERT トークナイザであり、事前トークン化では空白と句読点で分割します。他のトークナイザでは、このステップのルールが異なる場合があります。例えば、GPT-2 トークナイザでは次のようになります。
 
 ```py
 tokenizer = AutoTokenizer.from_pretrained("gpt2")
 tokenizer.backend_tokenizer.pre_tokenizer.pre_tokenize_str("Hello, how are  you?")
 ```
 
-こちらも空白と句読点で分割しますが、空白を保持して `Ġ` 記号に置き換える為、トークンをデコードすれば元の空白を復元出来ます。
+こちらも空白と句読点で分割します。但し、空白は保持され、`Ġ` 記号に置き換えられます。その為、トークンをデコードすれば、元の空白を復元出来ます。
 
 ```python out
 [('Hello', (0, 5)), (',', (5, 6)), ('Ġhow', (6, 10)), ('Ġare', (10, 14)), ('Ġ', (14, 15)), ('Ġyou', (15, 19)),
@@ -90,9 +90,9 @@ tokenizer.backend_tokenizer.pre_tokenizer.pre_tokenize_str("Hello, how are  you?
 
 （入力文の訳は、前の BERT トークナイザの例と同じです）
 
-また、BERT トークナイザとは異なり、このトークナイザは二重の空白を無視しないことにも注意してください。
+BERT トークナイザとの違いは、他にもあります。このトークナイザは、二重の空白を無視しません。
 
-最後の例として、SentencePiece アルゴリズムに基づく T5 トークナイザを見てみましょう。
+最後の例は、SentencePiece アルゴリズムに基づく T5 トークナイザです。
 
 ```py
 tokenizer = AutoTokenizer.from_pretrained("t5-small")
@@ -105,23 +105,23 @@ tokenizer.backend_tokenizer.pre_tokenizer.pre_tokenize_str("Hello, how are  you?
 
 （入力文の訳は、前の BERT トークナイザの例と同じです）
 
-GPT-2 トークナイザと同様に、このトークナイザも空白を保持して特定のトークン（`_`）に置き換えますが、T5 トークナイザは空白でのみ分割し、句読点では分割しません。また、文の先頭（`Hello` の前）にデフォルトで空白が追加され、`are` と `you` の間の二重の空白が無視されていることにも注意してください。
+このトークナイザも、GPT-2 トークナイザと同様に空白を保持し、特定のトークン（`_`）に置き換えます。但し、T5 トークナイザが分割するのは空白だけであり、句読点では分割しません。他にも特徴があります。文の先頭（`Hello` の前）には、デフォルトで空白が追加されます。`are` と `you` の間の二重の空白は、無視されます。
 
-いくつかの異なるトークナイザがテキストをどう処理するかを見てきたので、次は背後にあるアルゴリズム自体を探っていきます。まず、幅広く適用出来る SentencePiece を簡単に見てから、次の3つのセクションで、サブワードトークン化に使われる3つの主要なアルゴリズムの仕組みを調べます。
+異なるトークナイザがテキストをどう処理するかを確認しました。次は、背後にあるアルゴリズム自体を説明します。まず、幅広く適用出来る SentencePiece を簡単に見ます。その後、次の3つのセクションで、サブワードトークン化に使われる3つの主要なアルゴリズムの仕組みを調べます。
 
 ## SentencePiece[[sentencepiece]]
 
-[SentencePiece](https://github.com/google/sentencepiece) はテキストの前処理の為のトークン化アルゴリズムで、次の3つのセクションで見るどのモデルとも併用出来ます。テキストを Unicode 文字のシーケンスとして扱い、空白を特殊文字 `▁` に置き換えます。Unigram アルゴリズムと組み合わせて使う場合（[第7節](/course/chapter6/7) を参照）、事前トークン化ステップすら不要であり、空白文字を使わない言語（中国語や日本語など）でとても役立ちます。
+[SentencePiece](https://github.com/google/sentencepiece) は、テキストの前処理に使うトークン化アルゴリズムです。次の3つのセクションで見る、どのモデルとも併用出来ます。テキストは Unicode 文字のシーケンスとして扱われ、空白は特殊文字 `▁` に置き換えられます。Unigram アルゴリズムと組み合わせて使う場合（[第7節](/course/chapter6/7) を参照）は、事前トークン化ステップも不要です。空白文字を使わない言語（中国語や日本語など）で、とても役立ちます。
 
-SentencePiece のもう1つの主な特徴は、*可逆なトークン化*（reversible tokenization）です。空白に特別な処理をしない為、トークンのデコードは、単にトークンを連結し、`_` を空白に置き換えるだけで行えます。その結果、正規化されたテキストが得られます。先に見た通り、BERT トークナイザは繰り返しの空白を除去する為、そのトークン化は可逆ではありません。
+SentencePiece のもう1つの主な特徴は、*可逆なトークン化*（reversible tokenization）です。空白には特別な処理を行いません。その為、トークンのデコードは、トークンを連結し、`_` を空白に置き換えるだけで行えます。結果として、正規化されたテキストが得られます。先に見た通り、BERT トークナイザは繰り返しの空白を除去します。そのトークン化は、可逆ではありません。
 
 ## アルゴリズムの概要[[algorithm-overview]]
 
-以降のセクションでは、3つの主要なサブワードトークン化アルゴリズム、即ち BPE（GPT-2 などで使用）、WordPiece（BERT などで使用）、Unigram（T5 などで使用）を詳しく見ていきます。始める前に、それぞれの仕組みの簡単な概要を示します。今は意味が分からなくても、次の各セクションを読んだ後にこの表に戻ってきてください。
+以降のセクションでは、3つの主要なサブワードトークン化アルゴリズムを詳しく見ていきます。BPE（GPT-2 などで使用）、WordPiece（BERT などで使用）、Unigram（T5 などで使用）です。始める前に、それぞれの仕組みの簡単な概要を表で示します。今は意味が分からなくても問題ありません。次の各セクションを読んだ後に、この表に戻ってきてください。
 
 
 モデル | BPE | WordPiece | Unigram
 :----:|:---:|:---------:|:------:
 学習 | 小さな語彙から始めて、トークンをマージするルールを学習する | 小さな語彙から始めて、トークンをマージするルールを学習する | 大きな語彙から始めて、トークンを除去するルールを学習する学習ステップ | 最も一般的なペアに対応するトークンをマージする | ペアの頻度に基づく最良のスコアを持つペアに対応するトークンをマージし、個々のトークンの頻度が低いペアを優先する | コーパス全体で計算した損失を最小化するようなトークンを語彙から全て除去する学習するもの | マージルールと語彙 | 語彙のみ | 各トークンのスコアを伴う語彙エンコーディング | 単語を文字に分割し、学習で得たマージを適用する | 先頭から始まる、語彙に含まれる最長のサブワードを見つけ、単語の残りについても同様に行う | 学習で得たスコアを使い、最も可能性の高いトークンへの分割を見つける
 
-では、BPE に入っていきましょう！
+では、BPE の説明に入ります。
