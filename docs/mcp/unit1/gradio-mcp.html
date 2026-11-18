@@ -115,17 +115,17 @@ window.MathJax = { tex: { inlineMath: [['$', '$'], ['\\(', '\\)']], displayMath:
 <p>ここまでで、MCP プロトコルの基本概念と、MCP サーバー及びクライアントの実装方法を学びました。この節では、Gradio を使って MCP サーバーをもっと簡単に作成する方法を紹介します。</p>
 <div class="callout callout-tip">
 <p class="callout-title">💡 ヒント</p>
-<p>Gradio は、機械学習モデル用のカスタマイズ可能な Web インターフェースを素早く作成できる人気の Python ライブラリです。</p>
+<p>Gradio は、機械学習モデル用のカスタマイズ可能な Web インターフェースを素早く作成出来る人気の Python ライブラリです。</p>
 </div>
 <h2>Gradio 入門</h2>
-<p>Gradio を使うと、わずか数行の Python コードでモデルの UI を作成できます。特に次の用途で役立ちます。</p>
+<p>Gradio を使うと、わずか数行の Python コードでモデルの UI を作成出来ます。特に次の用途で役立ちます。</p>
 <ul>
 <li>デモやプロトタイプの作成</li>
 <li>非技術系ユーザーへのモデルの共有</li>
 <li>モデルの振る舞いのテストとデバッグ</li>
 </ul>
 <p>MCP サポートの追加により、Gradio は標準化された MCP プロトコルを通じて AI モデルの機能を公開する簡単な方法を提供するようになりました。</p>
-<p>Gradio と MCP を組み合わせると、人が操作しやすいインターフェースと、AI が利用できるツールの両方を、少ないコードで作成できます。また、Gradio は AI コミュニティで広く使われているため、作成した MCP サーバーをほかの人と共有する際にも便利です。</p>
+<p>Gradio と MCP を組み合わせると、人が操作し易いインターフェースと、AI が利用出来るツールの両方を、少ないコードで作成出来ます。また、Gradio は AI コミュニティで広く使われている為、作成した MCP サーバーを他の人と共有する際にも便利です。</p>
 <h2>前提条件</h2>
 <p>Gradio で MCP 機能を使うには、MCP 用の追加依存パッケージ（extra）も含めて Gradio をインストールする必要があります。</p>
 <div class="codehilite"><pre><span></span><code>uv<span class="w"> </span>pip<span class="w"> </span>install<span class="w"> </span><span class="s2">"gradio[mcp]"</span>
@@ -166,16 +166,16 @@ window.MathJax = { tex: { inlineMath: [['$', '$'], ['\\(', '\\)']], displayMath:
     <span class="n">demo</span><span class="o">.</span><span class="n">launch</span><span class="p">(</span><span class="n">mcp_server</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
 </code></pre></div>
 
-<p>このセットアップにより、文字カウント関数には次の2つの方法でアクセスできるようになります。</p>
+<p>このセットアップにより、文字カウント関数には次の2つの方法でアクセス出来るようになります。</p>
 <ol>
-<li>人間が直接操作するための従来型の Gradio Web インターフェース</li>
-<li>互換性のあるクライアントに接続できる MCP サーバー</li>
+<li>人間が直接操作する為の従来型の Gradio Web インターフェース</li>
+<li>互換性の有るクライアントに接続出来る MCP サーバー</li>
 </ol>
-<p>MCP サーバーには次のアドレスでアクセスできます。</p>
+<p>MCP サーバーには次のアドレスでアクセス出来ます。</p>
 <div class="codehilite"><pre><span></span><code>http://your-server:port/gradio_api/mcp/sse
 </code></pre></div>
 
-<p>アプリケーション自体にも引き続きアクセスでき、次のような見た目になります。</p>
+<p>アプリケーション自体にも引き続きアクセス出来、次のような見た目になります。</p>
 <p><img alt="Gradio MCP サーバー" src="https://huggingface.co/datasets/mcp-course/images/resolve/main/unit1/7.png" /></p>
 <h2>裏側の仕組み</h2>
 <p><code>launch()</code> で <code>mcp_server=True</code> を設定すると、いくつかのことが起こります。</p>
@@ -184,12 +184,12 @@ window.MathJax = { tex: { inlineMath: [['$', '$'], ['\\(', '\\)']], displayMath:
 <li>入力コンポーネントがツールの引数スキーマに対応します</li>
 <li>出力コンポーネントがレスポンスの形式を決定します</li>
 <li>Gradio サーバーが MCP プロトコルのメッセージも待ち受けるようになります</li>
-<li>クライアント・サーバー通信のために HTTP+SSE 上の JSON-RPC がセットアップされます</li>
+<li>クライアント・サーバー通信の為に HTTP+SSE 上の JSON-RPC がセットアップされます</li>
 </ol>
 <h2>Gradio と MCP の統合で利用できる主な機能</h2>
 <ol>
 <li>
-<p><strong>ツール変換</strong>：Gradio アプリの各 API エンドポイントは、対応する名前、説明、入力スキーマを持つ MCP ツールに自動的に変換されます。ツールとスキーマを確認するには、<code>http://your-server:port/gradio_api/mcp/schema</code> にアクセスするか、Gradio アプリのフッターにある「View API」（API を表示）リンクを開き、「MCP」をクリックしてください。</p>
+<p><strong>ツール変換</strong>：Gradio アプリの各 API エンドポイントは、対応する名前、説明、入力スキーマを持つ MCP ツールに自動的に変換されます。ツールとスキーマを確認するには、<code>http://your-server:port/gradio_api/mcp/schema</code> にアクセスするか、Gradio アプリのフッターに在る「View API」（API を表示）リンクを開き、「MCP」をクリックして下さい。</p>
 </li>
 <li>
 <p><strong>環境変数のサポート</strong>：MCP サーバー機能を有効化する方法は2つあります。
@@ -207,18 +207,18 @@ window.MathJax = { tex: { inlineMath: [['$', '$'], ['\\(', '\\)']], displayMath:
    - 一時ファイルストレージの管理</p>
 </li>
 </ol>
-<p>MCP クライアントはローカルファイルを常に正しく処理できるとは限らないため、入力画像やファイルは完全な URL（「http://...」又は「https://...」）として渡すことが<strong>強く</strong>推奨されます。</p>
+<p>MCP クライアントはローカルファイルを常に正しく処理出来るとは限らない為、入力画像やファイルは完全な URL（「http://...」又は「https://...」）として渡すことが<strong>強く</strong>推奨されます。</p>
 <ol start="4">
-<li><strong>🤗 Spaces 上のホスト型 MCP サーバー</strong>：Gradio アプリケーションを Hugging Face Spaces に無料で公開でき、無料のホスト型 MCP サーバーを持つことができます。そのような Space の例はこちらです：https://huggingface.co/spaces/abidlabs/mcp-tools</li>
+<li><strong>🤗 Spaces 上のホスト型 MCP サーバー</strong>：Gradio アプリケーションを Hugging Face Spaces に無料で公開出来、無料のホスト型 MCP サーバーを持つことが出来ます。そのような Space の例はこちらです：https://huggingface.co/spaces/abidlabs/mcp-tools</li>
 </ol>
 <h2>クライアントから MCP 対応 Space を使う</h2>
-<p>Hugging Face の MCP 設定を通じて、MCP 対応の Space をアシスタントに接続できます。</p>
+<p>Hugging Face の MCP 設定を通じて、MCP 対応の Space をアシスタントに接続出来ます。</p>
 <ol>
 <li>MCP 対応の Space を探索する：https://huggingface.co/spaces?search=mcp</li>
 <li>https://huggingface.co/settings/mcp を開き（ログイン状態で）、Space を追加する。</li>
 <li>MCP クライアントを再起動又は更新し、新しいツールを発見させる。</li>
 </ol>
-<p>これらの Space は、その関数を引数と説明を持つツールとして公開します。そのため、アシスタントが直接呼び出すことができます。</p>
+<p>これらの Space は、その関数を引数と説明を持つツールとして公開します。その為、アシスタントが直接呼び出すことが出来ます。</p>
 <h2>トラブルシューティングのヒント</h2>
 <ol>
 <li>
@@ -243,16 +243,16 @@ window.MathJax = { tex: { inlineMath: [['$', '$'], ['\\(', '\\)']], displayMath:
    }</code></p>
 </li>
 <li>
-<p><strong>再起動</strong>：接続の問題が発生した場合は、MCP クライアントと MCP サーバーの両方を再起動してみてください。</p>
+<p><strong>再起動</strong>：接続の問題が発生した場合は、MCP クライアントと MCP サーバーの両方を再起動してみて下さい。</p>
 </li>
 </ol>
 <h2>MCP サーバーを共有する</h2>
-<p>Gradio アプリを Hugging Face Spaces に公開することで、MCP サーバーを共有できます。下の動画では、Hugging Face Space の作成方法を紹介しています。</p>
+<p>Gradio アプリを Hugging Face Spaces に公開することで、MCP サーバーを共有出来ます。下の動画では、Hugging Face Space の作成方法を紹介しています。</p>
 <div class="youtube-embed"><iframe src="https://www.youtube-nocookie.com/embed/3bSVKNKb_PY" title="YouTube video" loading="lazy" allowfullscreen referrerpolicy="strict-origin-when-cross-origin"></iframe></div>
-<p>これで、Hugging Face Space を共有することで、自分の MCP サーバーを他の人に共有できます。</p>
+<p>これで、Hugging Face Space を共有することで、自分の MCP サーバーを他の人に共有出来ます。</p>
 <h2>まとめ</h2>
-<p>Gradio と MCP の統合は、MCP を使い始めるための手軽な方法です。Gradio の使いやすさと MCP の標準化された仕組みを活用すれば、人が操作しやすいインターフェースと AI が利用できるツールの両方を、少ないコードで素早く作成できます。</p>
-<p>コースを進めるにつれて、より高度な MCP の実装を探っていきますが、Gradio はプロトコルを理解し実験するための優れた出発点となります。</p>
+<p>Gradio と MCP の統合は、MCP を使い始める為の手軽な方法です。Gradio の使い易さと MCP の標準化された仕組みを活用すれば、人が操作し易いインターフェースと AI が利用出来るツールの両方を、少ないコードで素早く作成出来ます。</p>
+<p>コースを進めるにつれて、より高度な MCP の実装を探っていきますが、Gradio はプロトコルを理解し実験する為の優れた出発点となります。</p>
 <p>次のユニットでは、開発環境のセットアップ、SDK の探索、より高度な MCP サーバーとクライアントの実装に焦点を当て、MCP アプリケーションの構築を更に深く掘り下げていきます。 </p>
 </article>
 

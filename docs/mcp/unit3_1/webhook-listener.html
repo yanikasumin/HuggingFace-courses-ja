@@ -112,19 +112,19 @@ window.MathJax = { tex: { inlineMath: [['$', '$'], ['\\(', '\\)']], displayMath:
 <nav class="page-nav"><a class="nav-link prev" href="mcp-client.html">← 前へ: MCP クライアント</a><a class="nav-link toc-link" href="../index.html">目次へ</a><a class="nav-link next" href="quiz2.html">次へ →: クイズ2：プルリクエストエージェントの統合</a></nav>
 <article class="content">
 <h1>Webhook リスナー</h1>
-<p>Webhook リスナーは、プルリクエストエージェントの入口です。ディスカッションが作成・更新されたときに Hugging Face Hub からリアルタイムイベントを受け取り、MCP ベースのタグ付けワークフローを起動します。このセクションでは、FastAPI を使って Webhook ハンドラーを実装します。</p>
+<p>Webhook リスナーは、プルリクエストエージェントの入口です。ディスカッションが作成・更新された時に Hugging Face Hub からリアルタイムイベントを受け取り、MCP ベースのタグ付けワークフローを起動します。このセクションでは、FastAPI を使って Webhook ハンドラーを実装します。</p>
 <h2>Webhook 連携を理解する</h2>
 <p><a href="https://raw.githubusercontent.com/huggingface/hub-docs/refs/heads/main/docs/hub/webhooks-guide-discussion-bot.md">Hugging Face の Webhook ガイド</a>に沿って、この Webhook リスナーは届いたリクエストを検証し、ディスカッションイベントをリアルタイムで処理します。</p>
 <p><img alt="Webhook の作成" src="https://huggingface.co/datasets/huggingface/documentation-images/resolve/main/hub/webhooks-guides/001-discussion-bot/webhook-creation.png" /></p>
 <h3>Webhook のイベントフロー</h3>
-<p>信頼できるリスナーを作るには、Webhook のフローを理解することが重要です。</p>
+<p>信頼出来るリスナーを作るには、Webhook のフローを理解することが重要です。</p>
 <ol>
 <li><strong>ユーザーアクション</strong>：誰かがモデルリポジトリのディスカッションにコメントを作成する</li>
 <li><strong>Hub イベント</strong>：Hugging Face が Webhook イベントを生成する</li>
 <li><strong>Webhook の配信</strong>：Hub がエンドポイントに POST リクエストを送る</li>
 <li><strong>認証</strong>：Webhook シークレットを検証する</li>
 <li><strong>処理</strong>：コメントの内容からタグを抽出する</li>
-<li><strong>アクション</strong>：MCP ツールを使って、新しいタグのためのプルリクエストを作成する</li>
+<li><strong>アクション</strong>：MCP ツールを使って、新しいタグの為のプルリクエストを作成する</li>
 </ol>
 <div class="callout callout-tip">
 <p class="callout-title">💡 ヒント</p>
@@ -133,7 +133,7 @@ window.MathJax = { tex: { inlineMath: [['$', '$'], ['\\(', '\\)']], displayMath:
 <h2>FastAPI の Webhook アプリケーション</h2>
 <p>土台から始めて完全な処理ロジックまで、Webhook リスナーを一歩ずつ構築していきましょう。</p>
 <h3>1. アプリケーションのセットアップ</h3>
-<p>まず、必要なインポートと設定をすべて備えた基本的な FastAPI アプリケーションを用意します。</p>
+<p>先ず、必要なインポートと設定を全て備えた基本的な FastAPI アプリケーションを用意します。</p>
 <div class="codehilite"><pre><span></span><code><span class="kn">import</span><span class="w"> </span><span class="nn">os</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">json</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">datetime</span><span class="w"> </span><span class="kn">import</span> <span class="n">datetime</span>
@@ -144,7 +144,7 @@ window.MathJax = { tex: { inlineMath: [['$', '$'], ['\\(', '\\)']], displayMath:
 <span class="kn">from</span><span class="w"> </span><span class="nn">pydantic</span><span class="w"> </span><span class="kn">import</span> <span class="n">BaseModel</span>
 </code></pre></div>
 
-<p>これらのインポートで、堅牢な Webhook ハンドラーを構築するために必要なものがすべて揃います。<code>FastAPI</code> は Web フレームワークを提供し、<code>BackgroundTasks</code> は非同期処理を可能にし、typing のインポートはデータ検証に役立ちます。</p>
+<p>これらのインポートで、堅牢な Webhook ハンドラーを構築する為に必要なものが全て揃います。<code>FastAPI</code> は Web フレームワークを提供し、<code>BackgroundTasks</code> は非同期処理を可能にし、typing のインポートはデータ検証に役立ちます。</p>
 <p>次に、アプリケーションを設定します。</p>
 <div class="codehilite"><pre><span></span><code><span class="c1"># 設定</span>
 <span class="n">WEBHOOK_SECRET</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">getenv</span><span class="p">(</span><span class="s2">"WEBHOOK_SECRET"</span><span class="p">)</span>
@@ -159,9 +159,9 @@ window.MathJax = { tex: { inlineMath: [['$', '$'], ['\\(', '\\)']], displayMath:
 
 <p>この設定では次を用意します。</p>
 <ul>
-<li><strong>Webhook シークレット</strong>：届いた Webhook を検証するため</li>
-<li><strong>HF トークン</strong>：Hub API の認証のため</li>
-<li><strong>操作ストア</strong>：処理した操作を監視するためのインメモリストレージ</li>
+<li><strong>Webhook シークレット</strong>：届いた Webhook を検証する為</li>
+<li><strong>HF トークン</strong>：Hub API の認証の為</li>
+<li><strong>操作ストア</strong>：処理した操作を監視する為のインメモリストレージ</li>
 <li><strong>CORS ミドルウェア</strong>：Web インターフェース向けにクロスオリジンリクエストを許可する</li>
 </ul>
 <div class="callout callout-tip">
@@ -169,7 +169,7 @@ window.MathJax = { tex: { inlineMath: [['$', '$'], ['\\(', '\\)']], displayMath:
 <p><code>tag_operations_store</code> リストは、最近の Webhook 処理操作を記録します。デバッグや監視に役立ちますが、本番環境ではデータベースを使うか、このリストのサイズに上限を設けたほうがよいでしょう。</p>
 </div>
 <h3>2. Webhook のデータモデル</h3>
-<p><a href="https://raw.githubusercontent.com/huggingface/hub-docs/refs/heads/main/docs/hub/webhooks-guide-discussion-bot.md">Hugging Face の Webhook ドキュメント</a>をもとに、Webhook のデータ構造を理解する必要があります。</p>
+<p><a href="https://raw.githubusercontent.com/huggingface/hub-docs/refs/heads/main/docs/hub/webhooks-guide-discussion-bot.md">Hugging Face の Webhook ドキュメント</a>を基に、Webhook のデータ構造を理解する必要があります。</p>
 <div class="codehilite"><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">WebhookEvent</span><span class="p">(</span><span class="n">BaseModel</span><span class="p">):</span>
     <span class="n">event</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">]</span>          <span class="c1"># アクションとスコープの情報を含む</span>
     <span class="n">comment</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]</span>        <span class="c1"># コメントの内容とメタデータ</span>
@@ -178,7 +178,7 @@ window.MathJax = { tex: { inlineMath: [['$', '$'], ['\\(', '\\)']], displayMath:
 </code></pre></div>
 
 <p>この Pydantic モデルは、Webhook の構造を理解する助けになります。</p>
-<p>注目すべき主要フィールドは次のとおりです。</p>
+<p>注目すべき主要フィールドは次の通りです。</p>
 <ul>
 <li><code>event.action</code>：新しいコメントの場合は通常 "create"</li>
 <li><code>event.scope</code>：コメントイベントの場合は通常 "discussion.comment"</li>
@@ -186,7 +186,7 @@ window.MathJax = { tex: { inlineMath: [['$', '$'], ['\\(', '\\)']], displayMath:
 <li><code>repo.name</code>：コメントが行われたリポジトリ</li>
 </ul>
 <h3>3. Webhook ハンドラーの本体</h3>
-<p>次は Webhook ハンドラーの本体です。重要な部分なので、理解しやすいように処理を分けて確認しましょう。</p>
+<p>次は Webhook ハンドラーの本体です。重要な部分なので、理解し易いように処理を分けて確認しましょう。</p>
 <div class="codehilite"><pre><span></span><code><span class="nd">@app</span><span class="o">.</span><span class="n">post</span><span class="p">(</span><span class="s2">"/webhook"</span><span class="p">)</span>
 <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">webhook_handler</span><span class="p">(</span><span class="n">request</span><span class="p">:</span> <span class="n">Request</span><span class="p">,</span> <span class="n">background_tasks</span><span class="p">:</span> <span class="n">BackgroundTasks</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">"""</span>
@@ -205,7 +205,7 @@ window.MathJax = { tex: { inlineMath: [['$', '$'], ['\\(', '\\)']], displayMath:
 <p>最初のステップはセキュリティ検証です。<code>X-Webhook-Secret</code> ヘッダーを設定したシークレットと照合し、Webhook が正当なものであることを確認します。</p>
 <div class="callout callout-tip">
 <p class="callout-title">💡 ヒント</p>
-<p>Webhook シークレットは必ず検証してください。このチェックがなければ、誰でも偽の Webhook リクエストをアプリケーションに送れてしまいます。シークレットは、Hugging Face とアプリケーションの間で共有されるパスワードの役割を果たします。</p>
+<p>Webhook シークレットは必ず検証して下さい。このチェックがなければ、誰でも偽の Webhook リクエストをアプリケーションに送れてしまいます。シークレットは、Hugging Face とアプリケーションの間で共有されるパスワードの役割を果たします。</p>
 </div>
 <p>次に、Webhook データをパースして検証します。</p>
 <div class="codehilite"><pre><span></span><code>    <span class="c1"># ステップ2: Webhook データをパース</span>
@@ -249,7 +249,7 @@ window.MathJax = { tex: { inlineMath: [['$', '$'], ['\\(', '\\)']], displayMath:
         <span class="p">}</span>
 </code></pre></div>
 
-<p>このフィルタリングにより、関心のあるイベント、つまり新しいディスカッションコメントだけを処理します。リポジトリの作成やモデルのアップロードなど、他のイベントは無視します。</p>
+<p>このフィルタリングにより、関心の有るイベント、つまり新しいディスカッションコメントだけを処理します。リポジトリの作成やモデルのアップロードなど、他のイベントは無視します。</p>
 <p>FastAPI の <code>background_tasks.add_task()</code> を使って Webhook を非同期に処理します。これにより、実際のタグ処理をバックグラウンドで行いながら、応答を素早く（数秒以内に）返せます。</p>
 <div class="callout callout-tip">
 <p class="callout-title">💡 ヒント</p>
@@ -277,7 +277,7 @@ window.MathJax = { tex: { inlineMath: [['$', '$'], ['\\(', '\\)']], displayMath:
         <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"📦 リポジトリ：</span><span class="si">{</span><span class="n">repo_name</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
 </code></pre></div>
 
-<p>この冒頭のセクションでは、Webhook データから関連情報をすべて抽出します。タグはコメントの内容とディスカッションのタイトルのどちらに言及されるか分からないため、両方を取得します。</p>
+<p>この冒頭のセクションでは、Webhook データから関連情報を全て抽出します。タグはコメントの内容とディスカッションのタイトルのどちらに言及されるか分からない為、両方を取得します。</p>
 <p>次に、タグを抽出して処理します。</p>
 <div class="codehilite"><pre><span></span><code>        <span class="c1"># コメントとタイトルからタグ候補を抽出</span>
         <span class="n">comment_tags</span> <span class="o">=</span> <span class="n">extract_tags_from_text</span><span class="p">(</span><span class="n">comment_content</span><span class="p">)</span>
@@ -302,7 +302,7 @@ window.MathJax = { tex: { inlineMath: [['$', '$'], ['\\(', '\\)']], displayMath:
 <p>両方のソースからタグをまとめ、監視用に操作レコードを作成します。このレコードは、各 Webhook 処理操作の進捗を追跡します。</p>
 <div class="callout callout-tip">
 <p class="callout-title">💡 ヒント</p>
-<p>操作レコードを保存することは、デバッグと監視に欠かせません。何か問題が起きたとき、最近の操作を見れば、何が、なぜ起きたのかを把握できます。</p>
+<p>操作レコードを保存することは、デバッグと監視に欠かせません。何か問題が起きた時、最近の操作を見れば、何が、何故起きたのかを把握出来ます。</p>
 </div>
 <p>次は MCP エージェントとの統合です。</p>
 <div class="codehilite"><pre><span></span><code>        <span class="k">if</span> <span class="ow">not</span> <span class="n">all_tags</span><span class="p">:</span>
@@ -362,16 +362,17 @@ window.MathJax = { tex: { inlineMath: [['$', '$'], ['\\(', '\\)']], displayMath:
         <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"✅ </span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">all_tags</span><span class="p">)</span><span class="si">}</span><span class="s2"> 個のタグの処理が完了しました"</span><span class="p">)</span>
 </code></pre></div>
 
+<p>（プロンプトの訳：リポジトリ '{repo_name}' を分析し、タグ '{tag}' を追加すべきかどうかを判断すること。先ず現在のタグを <code>get_current_tags</code> で確認し、'{tag}' がまだ無く有効なタグであれば、<code>add_new_tag</code> で追加すること。リポジトリ：{repo_name}、処理するタグ：{tag}。行ったことを明確に要約すること）</p>
 <p>この部分が、アプリケーションの主要な処理を担います。</p>
 <ol>
-<li><strong>検証</strong>：処理するタグと、利用可能なエージェントがあることを確認する</li>
+<li><strong>検証</strong>：処理するタグと、利用可能なエージェントが有ることを確認する</li>
 <li><strong>処理</strong>：タグごとに、エージェント向けの自然言語プロンプトを作成する</li>
-<li><strong>記録</strong>：監視とデバッグのため、すべての結果を保存する</li>
+<li><strong>記録</strong>：監視とデバッグの為、全ての結果を保存する</li>
 <li><strong>エラーハンドリング</strong>：個別のタグのエラーを適切に処理する</li>
 </ol>
-<p>エージェントへのプロンプトは、AI に取るべき手順を正確に指示するよう慎重に作られています。まず現在のタグを確認し、適切であれば新しいタグを追加する、という手順です。</p>
+<p>エージェントへのプロンプトは、AI に取るべき手順を正確に指示するよう慎重に作られています。先ず現在のタグを確認し、適切であれば新しいタグを追加する、という手順です。</p>
 <h3>5. ヘルスチェックと監視のエンドポイント</h3>
-<p>Webhook ハンドラーのほかにも、監視とデバッグのためのエンドポイントが必要です。これらの必須エンドポイントを追加しましょう。</p>
+<p>Webhook ハンドラーの他にも、監視とデバッグの為のエンドポイントが必要です。これらの必須エンドポイントを追加しましょう。</p>
 <div class="codehilite"><pre><span></span><code><span class="nd">@app</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"/"</span><span class="p">)</span>
 <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">root</span><span class="p">():</span>
 <span class="w">    </span><span class="sd">"""Root endpoint with basic information"""</span>
@@ -404,7 +405,7 @@ window.MathJax = { tex: { inlineMath: [['$', '$'], ['\\(', '\\)']], displayMath:
     <span class="p">}</span>
 </code></pre></div>
 
-<p>ヘルスチェックエンドポイントは、すべてのコンポーネントが正しく設定されているかを検証します。本番環境の監視に不可欠です。</p>
+<p>ヘルスチェックエンドポイントは、全てのコンポーネントが正しく設定されているかを検証します。本番環境の監視に不可欠です。</p>
 <div class="codehilite"><pre><span></span><code><span class="nd">@app</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"/operations"</span><span class="p">)</span>
 <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">get_operations</span><span class="p">():</span>
 <span class="w">    </span><span class="sd">"""Get recent tag operations for monitoring"""</span>
@@ -416,13 +417,13 @@ window.MathJax = { tex: { inlineMath: [['$', '$'], ['\\(', '\\)']], displayMath:
     <span class="p">}</span>
 </code></pre></div>
 
-<p>操作エンドポイントでは、直近の Webhook 処理状況を確認できます。デバッグや監視にとても役立ちます。</p>
+<p>操作エンドポイントでは、直近の Webhook 処理状況を確認出来ます。デバッグや監視にとても役立ちます。</p>
 <div class="callout callout-tip">
 <p class="callout-title">💡 ヒント</p>
-<p>ヘルスチェックと監視のエンドポイントは、本番デプロイに欠かせません。ログを掘り返さなくても、設定の問題を素早く特定し、アプリケーションの活動を監視できます。</p>
+<p>ヘルスチェックと監視のエンドポイントは、本番デプロイに欠かせません。ログを掘り返さなくても、設定の問題を素早く特定し、アプリケーションの活動を監視出来ます。</p>
 </div>
 <h2>Hugging Face Hub での Webhook の設定</h2>
-<p>Webhook リスナーの準備ができたので、Hugging Face Hub 側で設定しましょう。ここでアプリケーションを実際のリポジトリイベントに接続します。</p>
+<p>Webhook リスナーの準備が出来たので、Hugging Face Hub 側で設定しましょう。ここでアプリケーションを実際のリポジトリイベントに接続します。</p>
 <h3>1. 設定で Webhook を作成する</h3>
 <p><a href="https://huggingface.co/docs/hub/webhooks-guide-discussion-bot">Webhook の設定ガイド</a>に沿って進めます。</p>
 <p><img alt="Webhook の設定" src="https://huggingface.co/datasets/huggingface/documentation-images/resolve/main/hub/webhooks-guides/001-discussion-bot/webhook-creation.png" /></p>
@@ -435,24 +436,24 @@ window.MathJax = { tex: { inlineMath: [['$', '$'], ['\\(', '\\)']], displayMath:
 </ol>
 <div class="callout callout-tip">
 <p class="callout-title">💡 ヒント</p>
-<p>多くのリポジトリに Webhook を設定する前に、まずテスト用リポジトリ1〜2件から始めてください。規模を広げる前に、アプリケーションが正しく動作するかを検証できます。</p>
+<p>多くのリポジトリに Webhook を設定する前に、先ずテスト用リポジトリ1〜2件から始めて下さい。規模を広げる前に、アプリケーションが正しく動作するかを検証出来ます。</p>
 </div>
 <h3>2. Space の URL 設定</h3>
 <p>Hugging Face Spaces にデプロイする場合は、直接 URL を取得する必要があります。</p>
 <p><img alt="直接 URL" src="https://huggingface.co/datasets/huggingface/documentation-images/resolve/main/hub/webhooks-guides/001-discussion-bot/direct-url.png" /></p>
-<p>手順は次のとおりです。</p>
+<p>手順は次の通りです。</p>
 <ol>
 <li>Space の設定で「Embed this Space」（この Space を埋め込む）をクリックする</li>
 <li>「Direct URL」（直接 URL）をコピーする</li>
 <li><code>/webhook</code> を付け足して Webhook エンドポイントを作成する</li>
 <li>この URL で Webhook の設定を更新する</li>
 </ol>
-<p>たとえば、Space の URL が <code>https://username-space-name.hf.space</code> の場合、Webhook エンドポイントは <code>https://username-space-name.hf.space/webhook</code> になります。</p>
+<p>例えば、Space の URL が <code>https://username-space-name.hf.space</code> の場合、Webhook エンドポイントは <code>https://username-space-name.hf.space/webhook</code> になります。</p>
 <p><img alt="Space の URL" src="https://huggingface.co/datasets/huggingface/documentation-images/resolve/main/hub/webhooks-guides/001-discussion-bot/direct-url.png" /></p>
 <h2>Webhook リスナーのテスト</h2>
 <p>本番にデプロイする前のテストは重要です。様々なテスト方法を見ていきましょう。</p>
 <h3>1. ローカルテスト</h3>
-<p>簡単なスクリプトで、Webhook ハンドラーをローカルでテストできます。</p>
+<p>簡単なスクリプトで、Webhook ハンドラーをローカルでテスト出来ます。</p>
 <div class="codehilite"><pre><span></span><code><span class="c1"># test_webhook_local.py</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">requests</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">json</span>
@@ -487,7 +488,8 @@ window.MathJax = { tex: { inlineMath: [['$', '$'], ['\\(', '\\)']], displayMath:
 <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"レスポンス：</span><span class="si">{</span><span class="n">response</span><span class="o">.</span><span class="n">json</span><span class="p">()</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
 </code></pre></div>
 
-<p>このスクリプトは実際の Webhook リクエストをシミュレートするので、本物のイベントを待たずにハンドラーをテストできます。</p>
+<p>（テストデータの訳：コメントの内容は「このモデルにはタグが必要です：pytorch、transformers」、ディスカッションのタイトルは「タグが不足しています」）</p>
+<p>このスクリプトは実際の Webhook リクエストをシミュレートするので、本物のイベントを待たずにハンドラーをテスト出来ます。</p>
 <h3>2. 開発用シミュレーションエンドポイント</h3>
 <p>FastAPI アプリケーションにシミュレーションエンドポイントを追加すると、テストが更に楽になります。</p>
 <div class="codehilite"><pre><span></span><code><span class="nd">@app</span><span class="o">.</span><span class="n">post</span><span class="p">(</span><span class="s2">"/simulate_webhook"</span><span class="p">)</span>
@@ -523,13 +525,13 @@ window.MathJax = { tex: { inlineMath: [['$', '$'], ['\\(', '\\)']], displayMath:
     <span class="k">return</span> <span class="sa">f</span><span class="s2">"リポジトリ </span><span class="si">{</span><span class="n">repo_name</span><span class="si">}</span><span class="s2"> の模擬 Webhook を処理しました"</span>
 </code></pre></div>
 
-<p>このエンドポイントを使えば、アプリケーションのインターフェースから様々なシナリオを簡単にテストできます。</p>
+<p>このエンドポイントを使えば、アプリケーションのインターフェースから様々なシナリオを簡単にテスト出来ます。</p>
 <div class="callout callout-tip">
 <p class="callout-title">💡 ヒント</p>
-<p>シミュレーションエンドポイントは開発中に非常に役立ちます。実際のリポジトリディスカッションを作らずに、様々なタグの組み合わせやエッジケースをテストできます。</p>
+<p>シミュレーションエンドポイントは開発中に非常に役立ちます。実際のリポジトリディスカッションを作らずに、様々なタグの組み合わせやエッジケースをテスト出来ます。</p>
 </div>
 <h2>期待される Webhook の結果</h2>
-<p>すべてが正しく動作していれば、ディスカッションボットの例のような結果が見られるはずです。</p>
+<p>全てが正しく動作していれば、ディスカッションボットの例のような結果が見られるはずです。</p>
 <p><img alt="ディスカッションの結果" src="https://huggingface.co/datasets/huggingface/documentation-images/resolve/main/hub/webhooks-guides/001-discussion-bot/discussion-result.png" /></p>
 <p>このスクリーンショットは、ボットがディスカッションのコメントに応答してプルリクエストを作成した、Webhook 処理の成功例を示しています。</p>
 <h2>次のステップ</h2>
@@ -537,13 +539,13 @@ window.MathJax = { tex: { inlineMath: [['$', '$'], ['\\(', '\\)']], displayMath:
 <ol>
 <li>Hugging Face のベストプラクティスに従った<strong>安全な Webhook 検証</strong></li>
 <li>バックグラウンドタスク処理を備えた<strong>リアルタイムイベント処理</strong></li>
-<li>インテリジェントなタグ管理のための <strong>MCP 統合</strong></li>
+<li>インテリジェントなタグ管理の為の <strong>MCP 統合</strong></li>
 <li><strong>監視とデバッグ</strong>の機能</li>
 </ol>
-<p>次のセクションでは、すべてを統合して、Webhook から PR 作成までの完全なワークフローを示すプルリクエストエージェントを完成させます。</p>
+<p>次のセクションでは、全てを統合して、Webhook から PR 作成までの完全なワークフローを示すプルリクエストエージェントを完成させます。</p>
 <div class="callout callout-tip">
 <p class="callout-title">💡 ヒント</p>
-<p>タイムアウトを避けるため、Webhook の応答は常に素早く（10秒以内に）返してください。MCP ツールの実行やプルリクエストの作成など、時間のかかる処理にはバックグラウンドタスクを使ってください。</p>
+<p>タイムアウトを避ける為、Webhook の応答は常に素早く（10秒以内に）返して下さい。MCP ツールの実行やプルリクエストの作成など、時間のかかる処理にはバックグラウンドタスクを使って下さい。</p>
 </div>
 </article>
 

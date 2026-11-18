@@ -113,7 +113,7 @@ window.MathJax = { tex: { inlineMath: [['$', '$'], ['\\(', '\\)']], displayMath:
 <article class="content">
 <h1>Unit 3 ソリューション解説：MCP でプルリクエストエージェントを構築する</h1>
 <h2>概要</h2>
-<p>この解説では、Unit 3 のプルリクエストエージェントの完全なソリューションを案内します。これは、コード変更の分析、CI/CD パイプラインの監視、チームコミュニケーションの自動化により、開発者がより良いプルリクエストを作成できるよう支援する MCP サーバーです。このソリューションは、3つの MCP プリミティブ（Tools、Resources、Prompts）が実世界のワークフローで連携する様子を示します。</p>
+<p>この解説では、Unit 3 のプルリクエストエージェントの完全なソリューションを案内します。これは、コード変更の分析、CI/CD パイプラインの監視、チームコミュニケーションの自動化により、開発者がより良いプルリクエストを作成出来るよう支援する MCP サーバーです。このソリューションは、3つの MCP プリミティブ（Tools、Resources、Prompts）が実世界のワークフローで連携する様子を示します。</p>
 <h2>アーキテクチャ概要</h2>
 <p>PR Agent は、完全な自動化システムを段階的に構築する、相互接続されたモジュールで構成されています。</p>
 <ol>
@@ -141,7 +141,7 @@ window.MathJax = { tex: { inlineMath: [['$', '$'], ['\\(', '\\)']], displayMath:
 - 変更されたファイルの数
 - 追加／削除された行数
 - よくあるパターン（テスト、設定、ドキュメント）</p>
-<p>この構造化データにより、Claude は判断ロジックをハードコードすることなく、変更の性質を理解できます。</p>
+<p>この構造化データにより、Claude は判断ロジックをハードコードすることなく、変更の性質を理解出来ます。</p>
 <h4>3. テンプレート管理</h4>
 <p>テンプレートは <code>templates/</code> ディレクトリに Markdown ファイルとして保存されます。
 - <code>bug.md</code> - バグ修正用
@@ -155,7 +155,7 @@ window.MathJax = { tex: { inlineMath: [['$', '$'], ['\\(', '\\)']], displayMath:
 <li><code>get_pr_templates</code> で利用可能な選択肢を確認する</li>
 <li>分析データを渡して <code>suggest_template</code> を呼び出す</li>
 <li>理由付きの推奨を受け取る</li>
-<li>具体的な変更に基づいてテンプレートをカスタマイズできる</li>
+<li>具体的な変更に基づいてテンプレートをカスタマイズ出来る</li>
 </ol>
 <h3>学習成果</h3>
 <ul>
@@ -165,7 +165,7 @@ window.MathJax = { tex: { inlineMath: [['$', '$'], ['\\(', '\\)']], displayMath:
 </ul>
 <h2>Module 2：スマートなファイル分析</h2>
 <h3>構築するもの</h3>
-<p>MCP Resources を使い、プロジェクトの情報やチームのガイドラインを参照できるようにしたファイル分析機能です。</p>
+<p>MCP Resources を使い、プロジェクトの情報やチームのガイドラインを参照出来るようにしたファイル分析機能です。</p>
 <h3>主要コンポーネント</h3>
 <h4>1. リソースの登録</h4>
 <p>サーバーは4種類のリソースを公開します。</p>
@@ -182,23 +182,23 @@ window.MathJax = { tex: { inlineMath: [['$', '$'], ['\\(', '\\)']], displayMath:
 - <code>review-guidelines.md</code> - レビュアーが注目するポイント
 - <code>architecture.md</code> - システム設計パターン
 - <code>dependencies.md</code> - サードパーティライブラリの方針</p>
-<p>Claude はこれらを読んで、プロジェクト固有の要件を理解できます。</p>
+<p>Claude はこれらを読んで、プロジェクト固有の要件を理解出来ます。</p>
 <h4>3. Git 履歴分析</h4>
 <p><code>git://recent-changes/</code> リソースは以下を提供します。
 - 最近のコミットメッセージとパターン
 - よくある PR のタイトルと説明
 - チームメンバーの貢献パターン
 - 過去のテンプレート使用状況</p>
-<p>これにより、Claude はチームの慣行に沿ったテンプレートを提案できます。</p>
+<p>これにより、Claude はチームの慣行に沿ったテンプレートを提案出来ます。</p>
 <h3>Claude がリソースを使う方法</h3>
 <ol>
 <li><code>team://guidelines/review-process.md</code> を読み、PR の要件を理解する</li>
-<li>コーディング規約を確認するため、<code>file://project-context/coding-standards.md</code> にアクセスする</li>
+<li>コーディング規約を確認する為、<code>file://project-context/coding-standards.md</code> にアクセスする</li>
 <li><code>git://recent-changes/</code> を分析し、チームのパターンに合わせる</li>
 <li>この文脈とファイル分析を組み合わせ、より良い提案を行う</li>
 </ol>
 <h3>強化された意思決定</h3>
-<p>リソースにより、Claude は次のことができるようになります。
+<p>リソースにより、Claude は次のことが出来るようになります。
 - チームの慣習に合ったテンプレートを提案する
 - プロジェクト固有の要件を PR に含める
 - 説明の中でコーディング規約に言及する
@@ -206,7 +206,7 @@ window.MathJax = { tex: { inlineMath: [['$', '$'], ['\\(', '\\)']], displayMath:
 <h3>学習成果</h3>
 <ul>
 <li>リソース URI の設計とスキーマ</li>
-<li>プロジェクトの情報に AI がアクセスできるようにすること</li>
+<li>プロジェクトの情報に AI がアクセス出来るようにすること</li>
 <li>文脈を意識した意思決定</li>
 <li>自動化とチーム基準のバランス</li>
 </ul>
@@ -226,7 +226,7 @@ window.MathJax = { tex: { inlineMath: [['$', '$'], ['\\(', '\\)']], displayMath:
 <h4>2. プロンプトテンプレート</h4>
 <p>4つの標準化されたプロンプトが一貫性を保証します。
 - <strong>「Analyze CI Results」</strong>：テストの失敗とビルドエラーを処理する
-- <strong>「Generate Status Summary」</strong>：人が読みやすい形式でステータスの更新情報を作成する
+- <strong>「Generate Status Summary」</strong>：人が読み易い形式でステータスの更新情報を作成する
 - <strong>「Create Follow-up Tasks」</strong>：結果に基づいて次のステップを提案する
 - <strong>「Draft Team Notification」</strong>：対象読者ごとに更新を整形する</p>
 <h4>3. イベント処理パイプライン</h4>
@@ -264,13 +264,13 @@ window.MathJax = { tex: { inlineMath: [['$', '$'], ['\\(', '\\)']], displayMath:
 <h3>学習成果</h3>
 <ul>
 <li>webhook 連携パターン</li>
-<li>一貫性のためのプロンプトエンジニアリング</li>
+<li>一貫性の為のプロンプトエンジニアリング</li>
 <li>イベント駆動アーキテクチャ</li>
 <li>チームワークフローの標準化</li>
 </ul>
 <h2>Module 4：Hugging Face Hub 連携</h2>
 <h3>構築するもの</h3>
-<p>LLM とデータセットの PR のための Hugging Face Hub 連携です。言語モデルを扱うチーム向けの専用ワークフローを追加します。</p>
+<p>LLM とデータセットの PR の為の Hugging Face Hub 連携です。言語モデルを扱うチーム向けの専用ワークフローを追加します。</p>
 <h3>主要コンポーネント</h3>
 <h4>1. Hub 固有のツール</h4>
 <div class="codehilite"><pre><span></span><code><span class="c1"># Hugging Face ワークフロー用ツール：</span>
@@ -363,7 +363,7 @@ window.MathJax = { tex: { inlineMath: [['$', '$'], ['\\(', '\\)']], displayMath:
 <li>本番対応のエラーハンドリング</li>
 </ul>
 <h2>完全なワークフローの例</h2>
-<p>典型的な PR に対して、すべてのコンポーネントがどのように連携するかを見てみましょう。</p>
+<p>典型的な PR に対して、全てのコンポーネントがどのように連携するかを見てみましょう。</p>
 <ol>
 <li>
 <p><strong>開発者が PR を作成する</strong>
@@ -398,7 +398,7 @@ window.MathJax = { tex: { inlineMath: [['$', '$'], ['\\(', '\\)']], displayMath:
    - Prompt：「Create Follow-up Tasks」が次のステップを生成する
    - Tool：必要に応じて GitHub の Issue を作成する
    - Resource：ドキュメントへのリンク
-   - すべてのプリミティブがシームレスに連携する</p>
+   - 全てのプリミティブがシームレスに連携する</p>
 </li>
 </ol>
 <h2>テスト戦略</h2>
@@ -440,16 +440,16 @@ window.MathJax = { tex: { inlineMath: [['$', '$'], ['\\(', '\\)']], displayMath:
 <li><strong>ワークフローをテストする</strong>：PR を作成し、自動化の動作を見る</li>
 </ol>
 <h3>設定</h3>
-<p>設定にはファイルベースのシンプルな方式を採用しているため、簡単にセットアップできます。
+<p>設定にはファイルベースのシンプルな方式を採用している為、簡単にセットアップ出来ます。
 - GitHub トークンは <code>.env</code> ファイルに
 - Slack の webhook は設定ファイルに
 - テンプレートのカスタマイズは <code>templates/</code> に
-- すべての設定を1か所に</p>
+- 全ての設定を1か所に</p>
 <h2>よくあるパターンとベストプラクティス</h2>
 <h3>ツールの設計</h3>
 <ul>
 <li>ツールごとに役割を絞り、単一の目的を持たせる</li>
-<li>AI が解釈できるよう構造化データを返す</li>
+<li>AI が解釈出来るよう構造化データを返す</li>
 <li>包括的なエラーメッセージを含める</li>
 <li>ツールスキーマをバージョン管理する</li>
 </ul>
@@ -458,7 +458,7 @@ window.MathJax = { tex: { inlineMath: [['$', '$'], ['\\(', '\\)']], displayMath:
 <li>明確な URI 階層を使う</li>
 <li>リソース検出を実装する</li>
 <li>頻繁にアクセスされるリソースをキャッシュする</li>
-<li>すべてのリソースをバージョン管理する</li>
+<li>全てのリソースをバージョン管理する</li>
 </ul>
 <h3>プロンプトエンジニアリング</h3>
 <ul>
@@ -469,10 +469,10 @@ window.MathJax = { tex: { inlineMath: [['$', '$'], ['\\(', '\\)']], displayMath:
 </ul>
 <h3>連携パターン</h3>
 <ul>
-<li>コンポーネント間を疎結合にするため、イベントを使う</li>
+<li>コンポーネント間を疎結合にする為、イベントを使う</li>
 <li>サーキットブレーカーを実装する</li>
 <li>バックオフ付きのリトライを追加する</li>
-<li>すべての外部呼び出しを監視する</li>
+<li>全ての外部呼び出しを監視する</li>
 </ul>
 <h2>トラブルシューティングガイド</h2>
 <h3>よくある問題</h3>
@@ -490,7 +490,7 @@ window.MathJax = { tex: { inlineMath: [['$', '$'], ['\\(', '\\)']], displayMath:
    - MCP 接続を見直す</p>
 </li>
 <li>
-<p><strong>リソースにアクセスできない</strong>
+<p><strong>リソースにアクセス出来ない</strong>
    - ファイルの権限を確認する
    - URI の形式を確認する
    - リソースの登録を確認する</p>
@@ -518,7 +518,7 @@ window.MathJax = { tex: { inlineMath: [['$', '$'], ['\\(', '\\)']], displayMath:
 </ul>
 <h2>まとめ</h2>
 <p>この PR Agent は、MCP の3つのプリミティブが連携する力を示しています。Tools が機能を提供し、Resources が文脈を提供し、Prompts が一貫性を保証します。これらが組み合わさることで、チームの基準を維持しながら開発者の生産性を高める、インテリジェントな自動化システムが生まれます。</p>
-<p>モジュール式のアーキテクチャにより、各コンポーネントを独立して理解・テスト・拡張できます。また、コンポーネント同士の連携を通して、実際の本番環境で MCP サーバーを構築する際に役立つパターンを学べます。</p>
+<p>モジュール式のアーキテクチャにより、各コンポーネントを独立して理解・テスト・拡張出来ます。また、コンポーネント同士の連携を通して、実際の本番環境で MCP サーバーを構築する際に役立つパターンを学べます。</p>
 </article>
 
 <nav class="page-nav"><a class="nav-link prev" href="slack-notification.html">← 前へ: Module 3：Slack 通知</a><a class="nav-link toc-link" href="../index.html">目次へ</a><a class="nav-link next" href="certificate.html">次へ →: 修了証を取得しましょう！</a></nav>

@@ -120,55 +120,55 @@ window.MathJax = { tex: { inlineMath: [['$', '$'], ['\\(', '\\)']], displayMath:
 <li>"fix"</li>
 <li>"update things"</li>
 </ul>
-<p>その結果、レビュアーは何がなぜ変更されたのかを理解できず、コードレビューの未処理案件が増え続けています。バックエンドチームの Sarah は「various improvements」が具体的に何を意味するのか調べるのに30分を費やし、フロントエンドの Mike は「small fix」の内容を理解するために47ファイルも調べなければなりませんでした。</p>
+<p>その結果、レビュアーは何が何故変更されたのかを理解出来ず、コードレビューの未処理案件が増え続けています。バックエンドチームの Sarah は「various improvements」が具体的に何を意味するのか調べるのに30分を費やし、フロントエンドの Mike は「small fix」の内容を理解する為に47ファイルも調べなければなりませんでした。</p>
 <p>チームは、より良い PR の説明が必要だと分かっています。しかし、全員が機能のリリースで忙しく、詳細な説明を書く暇がありません。速度を落とさずに助けてくれるソリューションが必要です。</p>
 <p><strong>あなたのミッション</strong>：コード変更を分析し、役立つ説明を自動で提案するインテリジェントな PR Agent を構築することです。</p>
-<h3>スクリーンキャスト：実際の PR の問題 😬</h3>
+<h3>スクリーンキャスト：実際の PR の問題</h3>
 <div class="youtube-embed"><iframe src="https://www.youtube-nocookie.com/embed/tskAUPWFPP0" title="YouTube video" loading="lazy" allowfullscreen referrerpolicy="strict-origin-when-cross-origin"></iframe></div>
 <p><strong>内容</strong>：CodeCraft Studios の実際の PR で、タイトルは「various improvements」、説明はただ「Fixed some stuff and made updates」とだけ書かれています。よくある光景ですよね？</p>
-<p><strong>混乱ぶり</strong>：チームメイトが苦労する様子をご覧ください。
+<p><strong>混乱ぶり</strong>：チームメイトが苦労する様子をご覧下さい。
 - <strong>Sarah</strong>（3時間前）：「何が修正されたの？User モデルへの変更は見えるけど、バグ対応なのか機能追加なのか分からない」
-- <strong>Jamie</strong>（3時間前）：「4つのサービスにまたがって8ファイルもある…これらの変更は関連しているの？レビューではどこに注目すべき？」</p>
+- <strong>Jamie</strong>（3時間前）：「4つのサービスにまたがって8ファイルも有る…これらの変更は関連しているの？レビューではどこに注目すべき？」</p>
 <p><strong>問題点</strong>：スクリーンキャストには実際の diff が映っています。複数のサービスに散らばった8ファイル、文脈はゼロ。レビュアーは自分で経緯を組み立てなければならず、貴重な時間を浪費し、重大な問題を見逃す可能性もあります。</p>
-<p><strong>なぜ重要か</strong>：これはまさに、これから作る MCP サーバーが解決する問題です。このモジュールを終える頃には、内容が分かりにくい PR に対して、誰もが理解しやすく、次の作業にも役立つ説明を作成できるようになります。</p>
+<p><strong>何故重要か</strong>：これはまさに、これから作る MCP サーバーが解決する問題です。このモジュールを終える頃には、内容が分かり難い PR に対して、誰もが理解し易く、次の作業にも役立つ説明を作成出来るようになります。</p>
 <h2>構築するもの</h2>
 <p>この最初のモジュールでは、CodeCraft Studios の自動化システムの基盤、つまりチームのプルリクエストの書き方を変える MCP サーバーを作成します。このモジュールでは、Module 2 と Module 3 の土台となる MCP の中核概念に焦点を当てます。</p>
-<h3>スクリーンキャスト：PR Agent の活躍！ 🚀</h3>
+<h3>スクリーンキャスト：PR Agent の活躍！</h3>
 <div class="youtube-embed"><iframe src="https://www.youtube-nocookie.com/embed/OaAWJLvnlqc" title="YouTube video" loading="lazy" allowfullscreen referrerpolicy="strict-origin-when-cross-origin"></iframe></div>
-<p><strong>ソリューションの実演</strong>：MCP サーバーを使って、分かりにくい PR を明確で理解しやすいものに改善する様子をご覧ください。
-1. <strong><code>analyze_file_changes</code></strong>：すべての変更を取得する（8ファイル、453行！）
+<p><strong>ソリューションの実演</strong>：MCP サーバーを使って、分かり難い PR を明確で理解し易いものに改善する様子をご覧下さい。
+1. <strong><code>analyze_file_changes</code></strong>：全ての変更を取得する（8ファイル、453行！）
 2. <strong><code>get_pr_templates</code></strong>：選択肢となる7つのテンプレートを Claude に提示する
 3. <strong><code>suggest_template</code></strong>：Claude が「Feature」を選ぶ（賢い選択！）</p>
 <p><strong>見どころ</strong>：Claude は単にテンプレートを選ぶだけではありません。
 - 実際に何が変更されたかの明確な要約を書く
 - セキュリティ問題に気づく（なんと、ハッシュ化されていないパスワード！）
-- フォローアップ作業の見やすい ToDo リストを作る
+- フォローアップ作業の見易い ToDo リストを作る
 - 何を先に修正すべきかの優先順位まで付ける</p>
-<p><strong>驚きの瞬間</strong> ✨：わずか数秒で、MCP サーバーの支援を受けた Claude が、同じブランチの変更内容を明確に説明する PR を作成します。レビュアーが混乱したり、「これは何をする変更？」と質問したりする必要もなくなります。</p>
+<p><strong>驚きの瞬間</strong>：わずか数秒で、MCP サーバーの支援を受けた Claude が、同じブランチの変更内容を明確に説明する PR を作成します。レビュアーが混乱したり、「これは何をする変更？」と質問したりする必要もなくなります。</p>
 <p><strong>これが構築するものです</strong>：PR の憂鬱を PR の喜びに変えるツールです。さあ、始めましょう！</p>
 <h2>学ぶこと</h2>
 <p>この基礎モジュールでは、以下をマスターします。
 - <strong>FastMCP を使った基本的な MCP サーバーの作り方</strong>：Module 2 と Module 3 の土台
-- <strong>データ取得と分析のための MCP Tools の実装</strong>：Unit 3 全体を通して使う中核プリミティブ<br />
-- <strong>生データに基づいて Claude に賢い判断をさせること</strong>：すべての MCP 開発における重要な原則
-- <strong>MCP サーバーのテストと検証</strong>：信頼できるツールを作るための必須スキル</p>
+- <strong>データ取得と分析の為の MCP Tools の実装</strong>：Unit 3 全体を通して使う中核プリミティブ<br />
+- <strong>生データに基づいて Claude に賢い判断をさせること</strong>：全ての MCP 開発における重要な原則
+- <strong>MCP サーバーのテストと検証</strong>：信頼出来るツールを作る為の必須スキル</p>
 <h2>概要</h2>
 <p>PR Agent は、MCP 開発の重要な原則を使って CodeCraft Studios の問題を解決します。良い PR とは何かという硬直したルールをハードコードする代わりに、Claude に生の git データを提供し、適切な説明を賢く提案させます。</p>
 <p>このアプローチが有効な理由：
-- <strong>柔軟な分析</strong>：単純なルールでは見逃す文脈を Claude が理解できる
-- <strong>自然言語</strong>：機械的ではなく、人が書いたような自然な提案ができる
+- <strong>柔軟な分析</strong>：単純なルールでは見逃す文脈を Claude が理解出来る
+- <strong>自然言語</strong>：機械的ではなく、人が書いたような自然な提案が出来る
 - <strong>適応性</strong>：あらゆるコードベースやコーディングスタイルで機能する</p>
 <p>自動化システム全体のパターンを確立する、3つの必須ツールを実装します。</p>
 <ol>
 <li><strong>analyze_file_changes</strong>：git の diff 情報と変更ファイルを取得する（データ収集）</li>
 <li><strong>get_pr_templates</strong>：利用可能な PR テンプレートを一覧表示する（リソース管理）  </li>
-<li><strong>suggest_template</strong>：Claude が最適なテンプレートを推奨できるようにする（インテリジェントな意思決定）</li>
+<li><strong>suggest_template</strong>：Claude が最適なテンプレートを推奨出来るようにする（インテリジェントな意思決定）</li>
 </ol>
 <h2>はじめに</h2>
 <h3>前提条件</h3>
 <ul>
 <li>Python 3.10 以上</li>
-<li>Git がインストールされていることと、テスト用の Git リポジトリがあること</li>
+<li>Git がインストールされていることと、テスト用の Git リポジトリが有ること</li>
 <li>uv パッケージマネージャ（<a href="https://docs.astral.sh/uv/getting-started/installation/">インストールガイド</a>）</li>
 </ul>
 <h3>スターターコード</h3>
@@ -193,17 +193,17 @@ window.MathJax = { tex: { inlineMath: [['$', '$'], ['\\(', '\\)']], displayMath:
 </code></pre></div>
 
 <h3>あなたのタスク</h3>
-<p>初めての MCP 開発のハンズオンです！<code>server.py</code> を開き、TODO コメントに従って3つのツールを実装してください。スターターコードには基本構造が用意されています。行うことは次のとおりです。</p>
+<p>初めての MCP 開発のハンズオンです。<code>server.py</code> を開き、TODO コメントに従って3つのツールを実装して下さい。スターターコードには基本構造が用意されています。行うことは次の通りです。</p>
 <ol>
 <li><strong><code>analyze_file_changes</code> を実装する</strong>：git コマンドを実行し、diff データを返す
    - ⚠️ <strong>重要</strong>：おそらくトークン上限エラーに遭遇します（レスポンスあたり最大25,000トークン）
    - これは実際の開発でも遭遇する制約であり、適切な出力管理を学ぶ機会になります
-   - 解決策は下の「大きな出力の扱い方」のセクションを見てください
-   - ⚠️ <strong>注意</strong>：git コマンドはデフォルトでは MCP サーバーのディレクトリで実行されます。詳しくは下の「作業ディレクトリに関する注意点」を見てください</li>
+   - 解決策は下の「大きな出力の扱い方」のセクションを見て下さい
+   - ⚠️ <strong>注意</strong>：git コマンドはデフォルトでは MCP サーバーのディレクトリで実行されます。詳しくは下の「作業ディレクトリに関する注意点」を見て下さい</li>
 <li><strong><code>get_pr_templates</code> を実装する</strong>：PR テンプレートを管理し、返す  </li>
 <li><strong><code>suggest_template</code> を実装する</strong>：変更タイプをテンプレートに対応づける</li>
 </ol>
-<p>すべてを完璧にしようとしなくて大丈夫です。これらのスキルはユニットを進める中で磨かれていきます。</p>
+<p>全てを完璧にしようとしなくて大丈夫です。これらのスキルはユニットを進める中で磨かれていきます。</p>
 <h3>設計哲学</h3>
 <p>ファイル拡張子や硬直したパターンに基づいて変更を分類する従来のシステムとは異なり、実装では次のようにします。</p>
 <ul>
@@ -242,7 +242,7 @@ claude<span class="w"> </span>mcp<span class="w"> </span>list
 3. Claude があなたのツールを使って賢い提案をする様子を見る</p>
 <div class="callout callout-warning">
 <p class="callout-title">⚠️ 注意</p>
-<p><strong>よくある最初のエラー</strong>：「MCP tool response exceeds maximum allowed tokens (25000)」というエラーが出ても、想定内です！大きなリポジトリでは巨大な diff が生成されることがあります。これは貴重な学びの瞬間です。解決策は「大きな出力の扱い方」のセクションを見てください。</p>
+<p><strong>よくある最初のエラー</strong>：「MCP tool response exceeds maximum allowed tokens (25000)」というエラーが出ても、想定内です！大きなリポジトリでは巨大な diff が生成されることがあります。これは貴重な学びの瞬間です。解決策は「大きな出力の扱い方」のセクションを見て下さい。</p>
 </div>
 <h2>よくあるパターン</h2>
 <h3>ツール実装パターン</h3>
@@ -260,7 +260,7 @@ claude<span class="w"> </span>mcp<span class="w"> </span>list
 </code></pre></div>
 
 <h3>エラーハンドリング</h3>
-<p>発生する可能性のあるエラーには、常に適切に対処しましょう。</p>
+<p>発生する可能性の有るエラーには、常に適切に対処しましょう。</p>
 <div class="codehilite"><pre><span></span><code><span class="k">try</span><span class="p">:</span>
     <span class="n">result</span> <span class="o">=</span> <span class="n">subprocess</span><span class="o">.</span><span class="n">run</span><span class="p">([</span><span class="s2">"git"</span><span class="p">,</span> <span class="s2">"diff"</span><span class="p">],</span> <span class="n">capture_output</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">text</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
     <span class="k">return</span> <span class="n">json</span><span class="o">.</span><span class="n">dumps</span><span class="p">({</span><span class="s2">"output"</span><span class="p">:</span> <span class="n">result</span><span class="o">.</span><span class="n">stdout</span><span class="p">})</span>
@@ -270,7 +270,7 @@ claude<span class="w"> </span>mcp<span class="w"> </span>list
 
 <div class="callout callout-warning">
 <p class="callout-title">⚠️ 注意</p>
-<p><strong>エラーハンドリング</strong>：エラー時でも、ツールからは常に有効な JSON を返してください。Claude は、何が問題だったかを理解し、ユーザーに役立つ回答をするために構造化データを必要とします。</p>
+<p><strong>エラーハンドリング</strong>：エラー時でも、ツールからは常に有効な JSON を返して下さい。Claude は、何が問題だったかを理解し、ユーザーに役立つ回答をする為に構造化データを必要とします。</p>
 </div>
 <h3>大きな出力の扱い方（重要な学びの瞬間！）</h3>
 <div class="callout callout-warning">
@@ -281,12 +281,12 @@ claude<span class="w"> </span>mcp<span class="w"> </span>list
 <div class="codehilite"><pre><span></span><code>Error: MCP tool response (262521 tokens) exceeds maximum allowed tokens (25000)
 </code></pre></div>
 
-<p><strong>なぜこうなるのか：</strong>
-- 1つのファイルの変更が数千行になることがある
-- エンタープライズのリポジトリでは大規模なリファクタリングが頻繁にある
+<p><strong>何故こうなるのか：</strong>
+- 1つのファイルの変更が数千行になることが有る
+- エンタープライズのリポジトリでは大規模なリファクタリングが頻繁に有る
 - git diff はデフォルトで完全な文脈を含む
 - JSON エンコーディングでオーバーヘッドが増える</p>
-<p>ここから重要な原則が学べます：<strong>ツールは常に出力上限を意識して設計すること</strong>。解決策は次のとおりです。</p>
+<p>ここから重要な原則が学べます：<strong>ツールは常に出力上限を意識して設計すること</strong>。解決策は次の通りです。</p>
 <div class="codehilite"><pre><span></span><code><span class="nd">@mcp</span><span class="o">.</span><span class="n">tool</span><span class="p">()</span>
 <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">analyze_file_changes</span><span class="p">(</span><span class="n">base_branch</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">"main"</span><span class="p">,</span> 
                               <span class="n">include_diff</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
@@ -335,14 +335,14 @@ claude<span class="w"> </span>mcp<span class="w"> </span>list
 
 <p><strong>大きな出力のベストプラクティス：</strong>
 1. <strong>ページネーションを実装する</strong>：大きな結果をページに分割する
-2. <strong>フィルタリングオプションを追加する</strong>：ユーザーが特定のファイルやディレクトリを要求できるようにする
-3. <strong>まず要約を提供する</strong>：完全な内容の前に統計を返す
-4. <strong>情報を段階的に表示する</strong>：まず概要を示し、必要に応じて詳しい情報を確認できるようにする
-5. <strong>妥当なデフォルトを設定する</strong>：ほとんどのケースで機能する合理的な上限をデフォルトにする</p>
+2. <strong>フィルタリングオプションを追加する</strong>：ユーザーが特定のファイルやディレクトリを要求出来るようにする
+3. <strong>先ず要約を提供する</strong>：完全な内容の前に統計を返す
+4. <strong>情報を段階的に表示する</strong>：先ず概要を示し、必要に応じて詳しい情報を確認出来るようにする
+5. <strong>妥当なデフォルトを設定する</strong>：殆どのケースで機能する合理的な上限をデフォルトにする</p>
 <h2>作業ディレクトリに関する注意点</h2>
-<p>デフォルトでは、MCP サーバーは Claude の現在の作業ディレクトリではなく、インストールディレクトリでコマンドを実行します。つまり、git コマンドが間違ったリポジトリを分析してしまう可能性があるのです！</p>
-<p>この問題を解決するため、MCP は <a href="https://modelcontextprotocol.io/docs/concepts/roots">roots</a> を提供しています。これは、クライアントがサーバーに関連ディレクトリを知らせる仕組みです。Claude Code は作業ディレクトリを自動的に root として提供します。</p>
-<p>ツールからアクセスする方法は次のとおりです。</p>
+<p>デフォルトでは、MCP サーバーは Claude の現在の作業ディレクトリではなく、インストールディレクトリでコマンドを実行します。つまり、git コマンドが間違ったリポジトリを分析してしまう可能性が有るのです。</p>
+<p>この問題を解決する為、MCP は <a href="https://modelcontextprotocol.io/docs/concepts/roots">roots</a> を提供しています。これは、クライアントがサーバーに関連ディレクトリを知らせる仕組みです。Claude Code は作業ディレクトリを自動的に root として提供します。</p>
+<p>ツールからアクセスする方法は次の通りです。</p>
 <div class="codehilite"><pre><span></span><code><span class="nd">@mcp</span><span class="o">.</span><span class="n">tool</span><span class="p">()</span>
 <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">analyze_file_changes</span><span class="p">(</span><span class="o">...</span><span class="p">):</span>
     <span class="c1"># roots から Claude の作業ディレクトリを取得</span>
@@ -366,8 +366,8 @@ claude<span class="w"> </span>mcp<span class="w"> </span>list
 <ul>
 <li><strong>インポートエラー</strong>：<code>uv sync</code> を実行したか確認する</li>
 <li><strong>Git エラー</strong>：git リポジトリ内にいるか確認する</li>
-<li><strong>出力がない</strong>：MCP サーバーは stdio で通信するため、Claude Desktop から接続して動作を確認する</li>
-<li><strong>JSON エラー</strong>：すべてのツールは有効な JSON 文字列を返さなければならない</li>
+<li><strong>出力が無い</strong>：MCP サーバーは stdio で通信する為、Claude Desktop から接続して動作を確認する</li>
+<li><strong>JSON エラー</strong>：全てのツールは有効な JSON 文字列を返さなければならない</li>
 <li><strong>トークン上限超過</strong>：大きな diff では想定内です！上記のように出力制限を実装する</li>
 <li><strong>「Response too large」エラー</strong>：<code>max_diff_lines</code> パラメータを追加するか、<code>include_diff=false</code> を設定する</li>
 <li><strong>Git コマンドが間違ったディレクトリで実行される</strong>：MCP サーバーはデフォルトでインストールディレクトリで実行され、Claude の作業ディレクトリでは実行されません。修正するには、<a href="https://modelcontextprotocol.io/docs/concepts/roots">MCP の roots</a> を使って Claude の現在のディレクトリにアクセスします。
@@ -380,35 +380,36 @@ claude<span class="w"> </span>mcp<span class="w"> </span>list
 <p># subprocess の呼び出しで使う
   subprocess.run(["git", "diff"], cwd=working_dir)
   ```
-  Claude Code は作業ディレクトリを自動的に root として提供するため、MCP サーバーは正しい場所で動作できます。</p>
+  Claude Code は作業ディレクトリを自動的に root として提供する為、MCP サーバーは正しい場所で動作出来ます。</p>
 <h2>次のステップ</h2>
-<p>おめでとうございます！Tools を備えた最初の MCP サーバーを構築しました。これは Unit 3 の今後のすべての基礎となります。</p>
+<p>おめでとうございます！Tools を備えた最初の MCP サーバーを構築しました。これは Unit 3 の今後の全ての基礎となります。</p>
 <h3>Module 1 で達成したこと：</h3>
 <ul>
 <li>Claude に構造化データを提供する <strong>MCP Tools を作成した</strong></li>
 <li><strong>MCP の中核哲学を実装した</strong>：生データから Claude に賢い判断をさせる</li>
-<li>コード変更を分析し、テンプレートを提案できる<strong>実用的な PR Agent を構築した</strong></li>
+<li>コード変更を分析し、テンプレートを提案出来る<strong>実用的な PR Agent を構築した</strong></li>
 <li><strong>実世界の制約について学んだ</strong>：25,000トークンの上限とその対処法</li>
 <li>検証スクリプトとユニットテストによる<strong>テストパターンを確立した</strong></li>
 </ul>
-<h3>再利用できる主要パターン：</h3>
+<h3>再利用出来る主要パターン：</h3>
 <ul>
 <li>外部ソースから情報を集める<strong>データ収集ツール</strong></li>
 <li>Claude が生データを処理して判断する<strong>インテリジェントな分析</strong></li>
 <li><strong>出力管理</strong>：有用性を保ちながら大きなレスポンスを切り詰める</li>
 <li>構造化された JSON レスポンスを返す<strong>エラーハンドリング</strong></li>
-<li>MCP サーバー開発のための<strong>テスト戦略</strong></li>
+<li>MCP サーバー開発の為の<strong>テスト戦略</strong></li>
 </ul>
 <h3>次にやること：</h3>
 <ol>
 <li><code>/projects/unit3/build-mcp-server/solution/</code> の<strong>ソリューションを確認し</strong>、異なる実装アプローチを見る</li>
-<li><strong>自分の実装を用意されたソリューションと比較する</strong>：問題の解き方に唯一の「正解」はない</li>
+<li><strong>自分の実装を用意されたソリューションと比較する</strong>：問題の解き方に唯一の「正解」は無い</li>
 <li><strong>ツールを徹底的にテストする</strong>：様々な種類のコード変更で試し、Claude がどう適応するかを見る</li>
-<li><strong>Module 2 へ進む</strong>：リアルタイム webhook 機能を追加し、ワークフロー標準化のための MCP Prompts を学ぶ</li>
+<li><strong>Module 2 へ進む</strong>：リアルタイム webhook 機能を追加し、ワークフロー標準化の為の MCP Prompts を学ぶ</li>
 </ol>
-<p>Module 2 では、ここで作成したサーバーを直接土台にし、静的なファイル分析ツールを補完する動的なイベント処理を追加します！</p>
+<p>Module 2 では、ここで作成したサーバーを直接土台にし、静的なファイル分析ツールを補完する動的なイベント処理を追加します。</p>
 <h3>物語は続きます…</h3>
-<p>PR Agent が稼働し、CodeCraft Studios の開発者は既により良いプルリクエストを書くようになりました。しかし来週、新たな課題に直面します。重大な CI/CD の失敗が、誰にも気づかれないまま見過ごされているのです。Module 2 では、こうした問題が本番環境に影響する前に検知できるよう、リアルタイムの監視機能を追加します。</p>
+<p>PR Agent が稼働し、CodeCraft Studios の開発者は既により良いプルリクエストを書くようになりました。</p>
+<p>しかし来週、新たな課題に直面します。重大な CI/CD の失敗が、誰にも気づかれないまま見過ごされているのです。Module 2 では、こうした問題が本番環境に影響する前に検知出来るよう、リアルタイムの監視機能を追加します。</p>
 <h2>追加リソース</h2>
 <ul>
 <li><a href="https://modelcontextprotocol.io/">MCP ドキュメント</a></li>

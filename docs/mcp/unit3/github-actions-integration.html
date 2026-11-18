@@ -113,11 +113,11 @@ window.MathJax = { tex: { inlineMath: [['$', '$'], ['\\(', '\\)']], displayMath:
 <article class="content">
 <h1>Module 2：GitHub Actions 連携</h1>
 <h2>静かな失敗の襲来</h2>
-<p>CodeCraft Studios での2週目。Module 1 の PR Agent は、既に開発者がより良いプルリクエストを書く手助けをしています。Sarah の最新の PR は明確な説明のおかげで、Mike の調査時間を20分節約しました。チームは大喜びです！</p>
-<p>しかし、そのとき災難が襲います。</p>
+<p>CodeCraft Studios での2週目。Module 1 の PR Agent は、既に開発者がより良いプルリクエストを書く手助けをしています。Sarah の最新の PR は明確な説明のお陰で、Mike の調査時間を20分節約しました。チームは大喜びです。</p>
+<p>しかし、その時災難が襲います。</p>
 <p>金曜の午後、重大なバグが本番環境に到達しました。決済システムがダウンし、顧客から苦情が寄せられ、チームは慌てて調査に乗り出します。緊張の続く2時間の調査を経て、根本原因が判明しました。火曜日の CI 実行でテストが失敗していたことに、誰も気づいていなかったのです。</p>
-<p>「どうして見逃したんだ？」チームリーダーは GitHub Actions をスクロールしながら尋ねます。「テストが失敗していたのは明らかだ。でも47ものリポジトリと毎日数十のコミットがある中で、すべてのビルドを確認する時間なんて誰にある？」</p>
-<p>チームは、CI/CD パイプラインの状態をリアルタイムで把握する必要があると気づきます。しかし、すべてのプロジェクトの GitHub Actions を手動で確認する方法では、プロジェクト数が増えると対応しきれません。問題を監視し、即座に知らせてくれる自動化が必要です。</p>
+<p>「どうして見逃したんだ？」チームリーダーは GitHub Actions をスクロールしながら尋ねます。「テストが失敗していたのは明らかだ。でも47ものリポジトリと毎日数十のコミットが有る中で、全てのビルドを確認する時間なんて誰に有る？」</p>
+<p>チームは、CI/CD パイプラインの状態をリアルタイムで把握する必要が有ると気づきます。しかし、全てのプロジェクトの GitHub Actions を手動で確認する方法では、プロジェクト数が増えると対応しきれません。問題を監視し、即座に知らせてくれる自動化が必要です。</p>
 <p><strong>あなたのミッション</strong>：MCP サーバーに webhook 機能を追加して GitHub Actions を監視し、二度と失敗を見逃さないようにすることです。</p>
 <h2>構築するもの</h2>
 <p>このモジュールは、静的なファイル分析（Module 1）と動的なチーム通知（Module 3）の橋渡しをします。PR Agent を包括的な開発モニタリングシステムへと変える、リアルタイム機能を追加します。</p>
@@ -126,33 +126,34 @@ window.MathJax = { tex: { inlineMath: [['$', '$'], ['\\(', '\\)']], displayMath:
 - CI/CD ステータスを監視する<strong>新しいツール</strong>
 - 一貫したワークフローパターンを提供する <strong>MCP Prompts</strong>
 - GitHub リポジトリとの<strong>リアルタイム連携</strong></p>
-<h3>スクリーンキャスト：リアルタイム CI/CD モニタリングの実演！ 🎯</h3>
+<h3>スクリーンキャスト：リアルタイム CI/CD モニタリングの実演！</h3>
 <div class="youtube-embed"><iframe src="https://www.youtube-nocookie.com/embed/XIEnmCicFXk" title="YouTube video" loading="lazy" allowfullscreen referrerpolicy="strict-origin-when-cross-origin"></iframe></div>
-<p><strong>セットアップ</strong>：CodeCraft Studios の新しいシステムが、本番環境に到達する前に失敗を捕える様子をご覧ください。
+<p><strong>セットアップ</strong>：CodeCraft Studios の新しいシステムが、本番環境に到達する前に失敗を捕える様子をご覧下さい。
 1. <strong>GitHub Webhooks</strong>：サーバーへイベントを送る実際の webhook 設定を見る
 2. <strong>失敗したテスト</strong>：以前は見逃されていた赤い X も、もう見逃さない！
 3. <strong>ローカル開発</strong>：webhook サーバーと Cloudflare トンネルが連携して動作する</p>
 <p><strong>リアルタイムな MCP の魔法</strong>：Claude は3つの重要なリクエストに応答します。
 - <strong>"What GitHub Actions events have we received?"</strong>：Claude が新しいツールを使って最近のアクティビティを確認する
 - <strong>"Analyze CI Results"</strong>：Claude がテストの失敗を掘り下げ、実用的な洞察を提供する様子を見る
-- <strong>"Create Deployment Summary"</strong>：MCP Prompts が、チーム向けの分かりやすい更新の作成を Claude に案内する様子を見る</p>
-<p><strong>静かな失敗はもう終わり</strong> 🚨：火曜日の失敗したテストにあった、あの重大なバグを覚えていますか？このシステムがあれば、Claude は即座に捕えていたはずです。スクリーンキャストでは、MCP サーバーが GitHub の生の webhook データを、明確で実用的なアラートに変換する様子をまさに示しています。</p>
-<p><strong>何が特別なのか</strong>：Module 1 の PR Agent は静的な仕組みで、依頼されたときにだけコードを分析していました。一方、Module 2 で追加する機能は動的です。CI/CD パイプラインを24時間体制で監視し、Claude がリアルタイムで状況を分析できるようにします。金曜の午後になって突然、重大な問題が発覚するような事態も防げます！</p>
+- <strong>"Create Deployment Summary"</strong>：MCP Prompts が、チーム向けの分かり易い更新の作成を Claude に案内する様子を見る</p>
+<p><strong>静かな失敗はもう終わり</strong>：火曜日の失敗したテストにあった、あの重大なバグを覚えていますか？このシステムがあれば、Claude は即座に捕えていたはずです。スクリーンキャストでは、MCP サーバーが GitHub の生の webhook データを、明確で実用的なアラートに変換する様子をまさに示しています。</p>
+<p><strong>何が特別なのか</strong>：Module 1 の PR Agent は静的な仕組みで、依頼された時にだけコードを分析していました。</p>
+<p>一方、Module 2 で追加する機能は動的です。CI/CD パイプラインを24時間体制で監視し、Claude がリアルタイムで状況を分析出来るようにします。金曜の午後になって突然、重大な問題が発覚するような事態も防げます。</p>
 <h2>学習目標</h2>
-<p>このモジュールの終わりには、以下を理解できるようになります。
+<p>このモジュールの終わりには、以下を理解出来るようになります。
 1. MCP サーバーと並行して webhook サーバーを実行する方法
 2. GitHub の webhook を受信し、処理する方法
-3. 標準化されたワークフローのための MCP Prompts の作り方
+3. 標準化されたワークフローの為の MCP Prompts の作り方
 4. ローカルの webhook テストに Cloudflare Tunnel を使う方法</p>
 <h2>前提条件</h2>
-<p>Module 1 で作成したものをそのまま引き継いで開発するため、以下を用意してください。
+<p>Module 1 で作成したものをそのまま引き継いで開発する為、以下を用意して下さい。
 - <strong>Module 1：MCP サーバーの構築を完了していること</strong>：同じコードベースを拡張します
 - <strong>GitHub Actions の基本的な理解</strong>：CI/CD ワークフローとは何かを知っておく必要があります
 - <strong>Actions が有効な GitHub リポジトリ</strong>：シンプルなワークフローファイルでも問題ありません
 - <strong>Cloudflare Tunnel（cloudflared）がインストールされていること</strong>：ローカルの webhook サーバーを GitHub に公開します</p>
 <h2>主要概念</h2>
 <h3>MCP Prompts</h3>
-<p>Prompts は、Claude が複雑なワークフローに沿って作業できるようにする、再利用可能なテンプレートです。Tools（Claude が自動的に呼び出す）とは異なり、Prompts はユーザーが呼び出すもので、作業を進めるための構造化された指示を提供します。</p>
+<p>Prompts は、Claude が複雑なワークフローに沿って作業出来るようにする、再利用可能なテンプレートです。Tools（Claude が自動的に呼び出す）とは異なり、Prompts はユーザーが呼び出すもので、作業を進める為の構造化された指示を提供します。</p>
 <p>使用例：
 - CI/CD の結果を一貫して分析する
 - 標準化されたデプロイ要約を作成する
@@ -161,10 +162,10 @@ window.MathJax = { tex: { inlineMath: [['$', '$'], ['\\(', '\\)']], displayMath:
 <p>MCP サーバーでは2つのサービスを実行します。
 1. MCP サーバー（Claude と通信する）
 2. ポート 8080 の webhook サーバー（GitHub イベントを受信する）</p>
-<p>これにより、Claude はリアルタイムの CI/CD イベントに反応できます！</p>
+<p>これにより、Claude はリアルタイムの CI/CD イベントに反応出来ます。</p>
 <div class="callout callout-tip">
 <p class="callout-title">💡 ヒント</p>
-<p><strong>アーキテクチャの洞察</strong>：MCP 通信と webhook 処理を別々のサービスに分けることで、それぞれの責務を明確に分離できます。webhook サーバーが複雑な HTTP 処理を担当し、MCP サーバーはデータ分析と Claude との連携に集中します。</p>
+<p><strong>アーキテクチャの洞察</strong>：MCP 通信と webhook 処理を別々のサービスに分けることで、それぞれの責務を明確に分離出来ます。webhook サーバーが複雑な HTTP 処理を担当し、MCP サーバーはデータ分析と Claude との連携に集中します。</p>
 </div>
 <h2>プロジェクト構成</h2>
 <div class="codehilite"><pre><span></span><code>github-actions-integration/
@@ -181,8 +182,8 @@ window.MathJax = { tex: { inlineMath: [['$', '$'], ['\\(', '\\)']], displayMath:
 <h2>実装ステップ</h2>
 <h3>ステップ1：Webhook サーバーをセットアップして実行する</h3>
 <p>既存のファイルを扱った Module 1 とは異なり、このモジュールではリアルタイムのイベント処理を導入します。スターターコードには以下が含まれています。
-- <strong>あなたの Module 1 の実装</strong>：既存の PR 分析ツールすべて
-- <strong>完全な webhook サーバー</strong>（<code>webhook_server.py</code>）：GitHub イベントを受信する準備ができている</p>
+- <strong>あなたの Module 1 の実装</strong>：既存の PR 分析ツール全て
+- <strong>完全な webhook サーバー</strong>（<code>webhook_server.py</code>）：GitHub イベントを受信する準備が出来ている</p>
 <ol>
 <li>
 <p>依存関係をインストールする（Module 1 と同じ）：
@@ -198,26 +199,26 @@ window.MathJax = { tex: { inlineMath: [['$', '$'], ['\\(', '\\)']], displayMath:
 <p>このサーバーは GitHub の webhook を受信し、<code>github_events.json</code> に保存します。</p>
 <p><strong>webhook イベントの保存の仕組み：</strong>
 - 受信した各 GitHub webhook（push、pull request、ワークフロー完了など）は JSON ファイルに追加される
-- イベントはタイムスタンプ付きで保存され、最近のアクティビティを見つけやすい
-- ファイルは、MCP ツールが読み取って分析できるシンプルなイベントログとして機能する
-- データベースは不要で、すべてのイベントをシンプルで読みやすい JSON 形式で保存する</p>
+- イベントはタイムスタンプ付きで保存され、最近のアクティビティを見つけ易い
+- ファイルは、MCP ツールが読み取って分析出来るシンプルなイベントログとして機能する
+- データベースは不要で、全てのイベントをシンプルで読み易い JSON 形式で保存する</p>
 <h3>ステップ2：イベントストレージに接続する</h3>
-<p>次に、MCP サーバー（Module 1 のもの）を webhook データに接続します。これは HTTP リクエストを直接処理するよりもはるかに簡単です。webhook サーバーが面倒な処理をすべて担い、イベントを JSON ファイルに保存してくれるからです。</p>
-<p>webhook イベントを読み取るためのパスを追加します。</p>
+<p>次に、MCP サーバー（Module 1 のもの）を webhook データに接続します。これは HTTP リクエストを直接処理するよりもはるかに簡単です。webhook サーバーが面倒な処理を全て担い、イベントを JSON ファイルに保存してくれるからです。</p>
+<p>webhook イベントを読み取る為のパスを追加します。</p>
 <div class="codehilite"><pre><span></span><code><span class="c1"># webhook サーバーがイベントを保存するファイル</span>
 <span class="n">EVENTS_FILE</span> <span class="o">=</span> <span class="n">Path</span><span class="p">(</span><span class="vm">__file__</span><span class="p">)</span><span class="o">.</span><span class="n">parent</span> <span class="o">/</span> <span class="s2">"github_events.json"</span>
 </code></pre></div>
 
-<p>webhook サーバーが HTTP の詳細をすべて処理します。あなたは JSON ファイルを読むだけです！この関心の分離により、MCP サーバーは最も得意なことに集中できます。</p>
+<p>webhook サーバーが HTTP の詳細を全て処理します。あなたは JSON ファイルを読むだけです。この関心の分離により、MCP サーバーは最も得意なことに集中出来ます。</p>
 <div class="callout callout-tip">
 <p class="callout-title">💡 ヒント</p>
-<p><strong>開発のヒント</strong>：HTTP リクエストの代わりにファイルを使うと、テストがはるかに簡単になります。webhook をセットアップしなくても、<code>github_events.json</code> に手動でイベントを追加してツールをテストできます。</p>
+<p><strong>開発のヒント</strong>：HTTP リクエストの代わりにファイルを使うと、テストがはるかに簡単になります。webhook をセットアップしなくても、<code>github_events.json</code> に手動でイベントを追加してツールをテスト出来ます。</p>
 </div>
 <h3>ステップ3：GitHub Actions ツールを追加する</h3>
-<p>Module 1 ではファイル分析用のツールを作りましたが、今度は CI/CD 分析用のツールを作ります。これらのツールは既存の PR 分析ツールと連携して動作し、Claude がコードの変更内容とビルドの状態をまとめて把握できるようにします。</p>
+<p>Module 1 ではファイル分析用のツールを作りましたが、今度は CI/CD 分析用のツールを作ります。これらのツールは既存の PR 分析ツールと連携して動作し、Claude がコードの変更内容とビルドの状態をまとめて把握出来るようにします。</p>
 <div class="callout callout-tip">
 <p class="callout-title">💡 ヒント</p>
-<p><strong>注意</strong>：スターターコードには Module 1 の出力制限の修正が既に含まれているため、トークン上限エラーには遭遇しません。このモジュールの新しい概念に集中してください！</p>
+<p><strong>注意</strong>：スターターコードには Module 1 の出力制限の修正が既に含まれている為、トークン上限エラーには遭遇しません。このモジュールの新しい概念に集中して下さい！</p>
 </div>
 <p>2つの新しいツールを実装します。</p>
 <ol>
@@ -229,25 +230,25 @@ window.MathJax = { tex: { inlineMath: [['$', '$'], ['\\(', '\\)']], displayMath:
 </li>
 <li>
 <p><strong><code>get_workflow_status</code></strong>： 
-   - ファイルからすべてのイベントを読み取る
+   - ファイルから全てのイベントを読み取る
    - <code>workflow_run</code> イベントでフィルタする
    - ワークフロー名でグループ化し、最新のステータスを表示する</p>
 </li>
 </ol>
-<p>これらのツールにより、Claude は CI/CD パイプラインを分析できます。</p>
+<p>これらのツールにより、Claude は CI/CD パイプラインを分析出来ます。</p>
 <h3>ステップ4：MCP Prompts を作成する</h3>
-<p>次に、初めての MCP Prompts を追加します！Tools（Claude が自動的に呼び出す）とは異なり、Prompts はユーザーが Claude と一貫してやり取りするためのテンプレートです。複雑なワークフローを Claude に案内する「会話のきっかけ」と考えてください。</p>
-<p>Module 1 がデータアクセスのための Tools に焦点を当てたのに対し、このモジュールではワークフローガイダンスのための Prompts を導入します。</p>
+<p>次に、初めての MCP Prompts を追加します。Tools（Claude が自動的に呼び出す）とは異なり、Prompts はユーザーが Claude と一貫してやり取りする為のテンプレートです。複雑なワークフローを Claude に案内する「会話のきっかけ」と考えて下さい。</p>
+<p>Module 1 がデータアクセスの為の Tools に焦点を当てたのに対し、このモジュールではワークフローガイダンスの為の Prompts を導入します。</p>
 <p>異なるワークフローパターンを示す、4つのプロンプトを実装します。</p>
 <ol>
 <li><strong><code>analyze_ci_results</code></strong>：包括的な CI/CD 分析</li>
-<li><strong><code>create_deployment_summary</code></strong>：チーム向けの分かりやすい更新</li>
+<li><strong><code>create_deployment_summary</code></strong>：チーム向けの分かり易い更新</li>
 <li><strong><code>generate_pr_status_report</code></strong>：コードと CI を組み合わせたレポート</li>
 <li><strong><code>troubleshoot_workflow_failure</code></strong>：体系的なデバッグ</li>
 </ol>
 <p>各プロンプトは、Claude が従うべき明確な指示を含む文字列を返すようにします。</p>
 <h3>ステップ5：Cloudflare Tunnel でテストする</h3>
-<p>いよいよ楽しい部分です。拡張した MCP サーバーを、実際の GitHub イベントでテストします！実際の開発環境と同じように、複数のサービスを同時に実行します。</p>
+<p>いよいよ楽しい部分です。拡張した MCP サーバーを、実際の GitHub イベントでテストします。実際の開発環境と同じように、複数のサービスを同時に実行します。</p>
 <ol>
 <li>
 <p>MCP サーバーを起動する（Module 1 と同じコマンド）：
@@ -268,17 +269,17 @@ window.MathJax = { tex: { inlineMath: [['$', '$'], ['\\(', '\\)']], displayMath:
 </ol>
 <h2>演習</h2>
 <h3>演習1：カスタムワークフロープロンプト</h3>
-<p>以下を組み合わせて、PR レビューを助ける新しいプロンプトを作成してください。
+<p>以下を組み合わせて、PR レビューを助ける新しいプロンプトを作成して下さい。
 - Module 1 のツールによるコード変更
 - Module 2 のツールによる CI/CD ステータス
 - レビュアー向けのチェックリスト形式</p>
 <h3>演習2：イベントフィルタリング</h3>
-<p><code>get_workflow_status</code> を拡張して、以下を行ってください。
+<p><code>get_workflow_status</code> を拡張して、以下を行って下さい。
 - ワークフローの結果（成功／失敗）でフィルタする
 - リポジトリでグループ化する
 - 前回の実行からの経過時間を表示する</p>
 <h3>演習3：通知システム</h3>
-<p>以下を行うツールを追加してください。
+<p>以下を行うツールを追加して下さい。
 - どのイベントが「閲覧済み」かを追跡する
 - 新しい失敗を強調表示する
 - どのチームメンバーに通知すべきかを提案する</p>
@@ -298,10 +299,10 @@ window.MathJax = { tex: { inlineMath: [['$', '$'], ['\\(', '\\)']], displayMath:
 <ul>
 <li>webhook_server.py が別のターミナルで動いているか確認する</li>
 <li>ポート 8080 が空いているか確認する：<code>lsof -i :8080</code></li>
-<li>イベントファイルは、最初のイベントを受信したときに自動で作成される</li>
+<li>イベントファイルは、最初のイベントを受信した時に自動で作成される</li>
 </ul>
 <h2>次のステップ</h2>
-<p>素晴らしい仕事です！MCP サーバーにリアルタイム機能を追加することに成功しました。今や、あなたのシステムは次のことができます。</p>
+<p>素晴らしい仕事です！MCP サーバーにリアルタイム機能を追加することに成功しました。今や、あなたのシステムは次のことが出来ます。</p>
 <ul>
 <li><strong>コード変更を分析する</strong>（Module 1 で実装した機能） </li>
 <li><strong>CI/CD イベントをリアルタイムで監視する</strong>（このモジュールで追加した機能）</li>
@@ -311,7 +312,7 @@ window.MathJax = { tex: { inlineMath: [['$', '$'], ['\\(', '\\)']], displayMath:
 <h3>Module 2 の主な成果：</h3>
 <ul>
 <li>初めての webhook 連携を構築した</li>
-<li>ワークフロー標準化のための MCP Prompts を学んだ  </li>
+<li>ワークフロー標準化の為の MCP Prompts を学んだ  </li>
 <li>リアルタイムデータで動作するツールを作成した</li>
 <li>イベント駆動の自動化のパターンを確立した</li>
 </ul>
@@ -322,9 +323,11 @@ window.MathJax = { tex: { inlineMath: [['$', '$'], ['\\(', '\\)']], displayMath:
 <li><strong>連携をテストする</strong>：Module 1 のファイル分析ツールと Module 2 のイベントモニタリングを、Claude との1回の会話で組み合わせる</li>
 <li><strong>Module 3 へ進む</strong>：Slack 連携によるチーム通知を追加して、自動化パイプラインを完成させる</li>
 </ol>
-<p>Module 3 では、すべてを統合し、チームが実際に使える完全なワークフローに仕上げます！</p>
+<p>Module 3 では、全てを統合し、チームが実際に使える完全なワークフローに仕上げます。</p>
 <h3>物語は続きます…</h3>
-<p>モニタリングシステムが稼働しています！CodeCraft Studios では CI/CD の失敗をリアルタイムで検知できるようになり、チームも以前より安心してデプロイできるようになりました。しかし来週、新たな課題が生じます。チーム間で情報が共有されていないために、作業の重複や機会損失が発生しているのです。Module 3 では、重要な情報をチーム全員に届けるスマートな通知機能を追加し、自動化システムを完成させます。</p>
+<p>モニタリングシステムが稼働しています。CodeCraft Studios では CI/CD の失敗をリアルタイムで検知出来るようになり、チームも以前より安心してデプロイ出来るようになりました。</p>
+<p>しかし来週、新たな課題が生じます。チーム間で情報が共有されていない為に、作業の重複や機会損失が発生しているのです。</p>
+<p>Module 3 では、重要な情報をチーム全員に届けるスマートな通知機能を追加し、自動化システムを完成させます。</p>
 <h2>追加リソース</h2>
 <ul>
 <li><a href="https://modelcontextprotocol.io/docs/concepts/prompts">MCP Prompts ドキュメント</a></li>

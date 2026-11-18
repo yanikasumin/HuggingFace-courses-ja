@@ -117,47 +117,48 @@ window.MathJax = { tex: { inlineMath: [['$', '$'], ['\\(', '\\)']], displayMath:
 - <strong>PR Agent</strong>（Module 1）：開発者が明確で役立つプルリクエストの説明を書くようになった
 - <strong>CI/CD Monitor</strong>（Module 2）：チームがテストの失敗を即座に捕え、バグが本番環境に到達するのを防いでいる</p>
 <p>チームはすっかり自信をつけていました…月曜の朝、新たな危機が訪れるまでは。</p>
-<p>フロントエンドチーム（Emma と Jake）は、厄介な API 連携の問題のデバッグに週末を丸ごと費やしました。ネットワーク呼び出しの確認、リクエスト形式の検証、エラーハンドリングの書き直しまで、あらゆることを試しました。そして日曜の午前2時、ついに原因が判明します。バックエンドチームが金曜日にまさにこの問題を修正し、修正したコードをステージング環境にデプロイしていたのに、そのことを知らせるのを忘れていたのです。</p>
+<p>フロントエンドチーム（Emma と Jake）は、厄介な API 連携の問題のデバッグに週末を丸ごと費やしました。ネットワーク呼び出しの確認、リクエスト形式の検証、エラーハンドリングの書き直しまで、あらゆることを試しました。</p>
+<p>そして日曜の午前2時、ついに原因が判明します。バックエンドチームが金曜日にまさにこの問題を修正し、修正したコードをステージング環境にデプロイしていたのに、そのことを知らせるのを忘れていたのです。</p>
 <p>「既に修正済みの問題の解決に12時間も無駄にした！」Emma は苛立って言います。</p>
-<p>一方、デザインチームは先週、新しいユーザーオンボーディングフローのイラストを完成させていましたが、フロントエンドチームは準備ができていることを知りませんでした。その美しいアセットは使われないまま置かれ、チームは暫定的なデザインをリリースしています。</p>
+<p>一方、デザインチームは先週、新しいユーザーオンボーディングフローのイラストを完成させていましたが、フロントエンドチームは準備が出来ていることを知りませんでした。その美しいアセットは使われないまま置かれ、チームは暫定的なデザインをリリースしています。</p>
 <p>チームは、情報のサイロ問題を抱えていることに気づきます。全員が一生懸命働いているのに、いつ何が起きているのかを効果的に伝え合えていないのです。</p>
 <p><strong>あなたのミッション</strong>：重要な進展をチーム全員に自動で知らせる、インテリジェントな Slack 通知で自動化システムを完成させることです。</p>
 <h2>構築するもの</h2>
-<p>この最終モジュールで、CodeCraft Studios の変革が完結します。Tools と Prompts を組み合わせ、CI/CD イベントの情報を整理して Slack に送信する通知システムを作成します。これを通して、実際の開発現場で MCP のすべてのプリミティブがどのように連携するかを学びます。</p>
+<p>この最終モジュールで、CodeCraft Studios の変革が完結します。Tools と Prompts を組み合わせ、CI/CD イベントの情報を整理して Slack に送信する通知システムを作成します。これを通して、実際の開発現場で MCP の全てのプリミティブがどのように連携するかを学びます。</p>
 <p>Module 1 と Module 2 の基盤の上に、パズルの最後のピースを追加します。
 - チームチャンネルへメッセージを送る <strong>Slack webhook ツール</strong>
 - CI イベントを賢く整形する<strong>2つの通知プロンプト</strong>
 - 全 MCP プリミティブの連携を示す<strong>完全な統合</strong></p>
-<h3>スクリーンキャスト：完全な自動化システム！ 🎉</h3>
+<h3>スクリーンキャスト：完全な自動化システム！</h3>
 <div class="youtube-embed"><iframe src="https://www.youtube-nocookie.com/embed/sX5qrbDG-oY" title="YouTube video" loading="lazy" allowfullscreen referrerpolicy="strict-origin-when-cross-origin"></iframe></div>
-<p><strong>最後のピース</strong>：完成した自動化システムが、Emma と Jake を悩ませたような月曜朝の突然のトラブルをどう防ぐかをご覧ください！</p>
+<p><strong>最後のピース</strong>：完成した自動化システムが、Emma と Jake を悩ませたような月曜朝の突然のトラブルをどう防ぐかをご覧下さい！</p>
 <p><strong>見どころ</strong>： 
 - <strong>Claude のインテリジェントなワークフロー</strong>：Claude がタスクを分解する様子に注目： ☐ イベントを確認 → ☐ 通知を送信
 - <strong>リアルタイム MCP ツールの実演</strong>：<code>get_recent_actions_events</code> が最新の CI データを取得し、<code>send_slack_notification</code> がアラートを送信する
 - <strong>並行デモンストレーション</strong>：Slack チャンネルを並べて開き、Claude が送信した整形済みメッセージが表示される様子を示す</p>
-<p><strong>スマートな通知</strong>：Claude はチームに通知をむやみに送りつけるのではなく、必要な情報を整理した分かりやすいアラートを作成します。
+<p><strong>スマートな通知</strong>：Claude はチームに通知をむやみに送りつけるのではなく、必要な情報を整理した分かり易いアラートを作成します。
 - 🚨 明確な緊急性の指標と絵文字
 - <strong>失敗の詳細な内訳</strong>（test-auth-service ❌、test-api ❌、test-frontend ⏳）
 - パイプラインの実行とプルリクエストへの<strong>実用的なリンク</strong>
 - <strong>全員が必要とする文脈</strong>：リポジトリ、PR #1「various improvements」、コミットハッシュ</p>
-<p><strong>なぜ重要か</strong>：コミュニケーションの溝の危機を覚えていますか？もう終わりです！このシステムにより、<code>demo-bad-pr</code> ブランチで CI が失敗すれば、チーム全員が即座に知ることができます。修正済みの問題に対する週末のデバッグ作業は、もうありません！</p>
-<p><strong>取り組みの完了</strong>：Module 1 で取り組んだ PR の混乱から、Module 3 のスマートなチーム通知まで、CodeCraft Studios のチームワークを変えるシステムを構築しました。週末まで問題対応に追われていたメンバーも、これからは必要な情報を共有しながら仕事を進められます！ 🚀</p>
+<p><strong>何故重要か</strong>：コミュニケーションの溝の危機を覚えていますか？もう終わりです！このシステムにより、<code>demo-bad-pr</code> ブランチで CI が失敗すれば、チーム全員が即座に知ることが出来ます。修正済みの問題に対する週末のデバッグ作業は、もうありません！</p>
+<p><strong>取り組みの完了</strong>：Module 1 で取り組んだ PR の混乱から、Module 3 のスマートなチーム通知まで、CodeCraft Studios のチームワークを変えるシステムを構築しました。週末まで問題対応に追われていたメンバーも、これからは必要な情報を共有しながら仕事を進められます。</p>
 <h2>学習目標</h2>
-<p>このモジュールの終わりには、以下を理解できるようになります。
+<p>このモジュールの終わりには、以下を理解出来るようになります。
 1. MCP Tools を使って外部 API と連携する方法
-2. 完全なワークフローのために Tools と Prompts を組み合わせる方法<br />
+2. 完全なワークフローの為に Tools と Prompts を組み合わせる方法<br />
 3. Slack の Markdown 書式を使って、装飾付きのメッセージを作成する方法
 4. 全 MCP プリミティブが実際にどう連携するか</p>
 <h2>前提条件</h2>
-<p>これまでのモジュールのすべてに加えて、以下が必要です。
+<p>これまでのモジュールの全てに加えて、以下が必要です。
 - <strong>Module 1 と Module 2 の完了</strong>：このモジュールは既存の MCP サーバーを直接拡張します
-- <strong>Slack ワークスペース</strong>：着信 webhook を作成できるもの（個人のワークスペースで可）
+- <strong>Slack ワークスペース</strong>：着信 webhook を作成出来るもの（個人のワークスペースで可）
 - <strong>REST API の基本的な理解</strong>：Slack の webhook エンドポイントへ HTTP リクエストを送信します</p>
 <h2>主要概念</h2>
 <h3>MCP 連携パターン</h3>
 <p>このモジュールでは、完全なワークフローを示します。
 1. <strong>Events</strong> → GitHub Actions の webhook（Module 2 より）
-2. <strong>Prompts</strong> → イベントを読みやすいメッセージに整形する
+2. <strong>Prompts</strong> → イベントを読み易いメッセージに整形する
 3. <strong>Tools</strong> → 整形したメッセージを Slack へ送信する
 4. <strong>Result</strong> → プロフェッショナルなチーム通知</p>
 <h3>Slack の Markdown 書式</h3>
@@ -209,19 +210,19 @@ window.MathJax = { tex: { inlineMath: [['$', '$'], ['\\(', '\\)']], displayMath:
    export SLACK_WEBHOOK_URL="https://hooks.slack.com/services/YOUR/WEBHOOK/URL"</code></p>
 </li>
 </ol>
-<p><strong>⚠️ セキュリティに関する注意</strong>：webhook URL は、Slack チャンネルへのメッセージ投稿権限を与える機密情報です。必ず次のようにしてください。
+<p><strong>⚠️ セキュリティに関する注意</strong>：webhook URL は、Slack チャンネルへのメッセージ投稿権限を与える機密情報です。必ず次のようにして下さい。
    - 環境変数として保存し、コードにハードコードしない
    - webhook URL をバージョン管理にコミットしない（<code>.gitignore</code> に追加する）
-   - パスワードと同じように厳重に扱う。この URL を知る人は誰でもチャンネルにメッセージを送信できる</p>
+   - パスワードと同じように厳重に扱う。この URL を知る人は誰でもチャンネルにメッセージを送信出来る</p>
 <div class="callout callout-warning">
 <p class="callout-title">⚠️ 注意</p>
-<p><strong>セキュリティ警告</strong>：webhook URL は機密性の高い認証情報です！webhook URL を知る人は誰でも、あなたの Slack チャンネルにメッセージを送信できます。必ず環境変数として保存し、バージョン管理には決してコミットしないでください。</p>
+<p><strong>セキュリティ警告</strong>：webhook URL は機密性の高い認証情報です！webhook URL を知る人は誰でも、あなたの Slack チャンネルにメッセージを送信出来ます。必ず環境変数として保存し、バージョン管理には決してコミットしないで下さい。</p>
 </div>
 <h3>ステップ2：Slack ツールを追加する（15分）</h3>
-<p>動作する webhook が用意できたので、Module 2 の既存の server.py に新しい MCP ツールを追加します。このツールは、webhook URL へ HTTP リクエストを送信して、Slack への通知を処理します。</p>
+<p>動作する webhook が用意出来たので、Module 2 の既存の server.py に新しい MCP ツールを追加します。このツールは、webhook URL へ HTTP リクエストを送信して、Slack への通知を処理します。</p>
 <div class="callout callout-tip">
 <p class="callout-title">💡 ヒント</p>
-<p><strong>注意</strong>：スターターコードには Module 1 と Module 2 の改善（出力制限、webhook 処理）がすべて含まれています。新しい Slack 連携に集中してください！</p>
+<p><strong>注意</strong>：スターターコードには Module 1 と Module 2 の改善（出力制限、webhook 処理）が全て含まれています。新しい Slack 連携に集中して下さい！</p>
 </div>
 <p><code>server.py</code> にこのツールを追加します。</p>
 <p><strong><code>send_slack_notification</code></strong>：
@@ -251,7 +252,8 @@ window.MathJax = { tex: { inlineMath: [['$', '$'], ['\\(', '\\)']], displayMath:
 </code></pre></div>
 
 <h3>ステップ3：整形プロンプトを作成する（15分）</h3>
-<p>次に、サーバーへ MCP Prompts を追加します。ここからが重要な部分です！これらのプロンプトを Claude と組み合わせることで、GitHub の webhook データを、情報が整理された Slack メッセージに自動で変換できます。Module 1 で学んだように、Prompts は Claude が一貫して使える再利用可能な指示を提供します。</p>
+<p>次に、サーバーへ MCP Prompts を追加します。ここからが重要な部分です。これらのプロンプトを Claude と組み合わせることで、GitHub の webhook データを、情報が整理された Slack メッセージに自動で変換出来ます。</p>
+<p>Module 1 で学んだように、Prompts は Claude が一貫して使える再利用可能な指示を提供します。</p>
 <p>Slack 形式のメッセージを生成する、2つのプロンプトを実装します。</p>
 <ol>
 <li><strong><code>format_ci_failure_alert</code></strong>：
@@ -290,9 +292,9 @@ window.MathJax = { tex: { inlineMath: [['$', '$'], ['\\(', '\\)']], displayMath:
 <p>Keep it celebratory but informative. Use Slack markdown formatting."""
    ```</p>
 <h3>ステップ4：完全なワークフローをテストする（10分）</h3>
-<p>いよいよ楽しい部分です。完全な MCP ワークフローをテストします！Module 2 の webhook 捕捉、このモジュールのプロンプト整形、そして Slack 通知という、3つのコンポーネントすべてが連携して動作します。</p>
+<p>いよいよ楽しい部分です。完全な MCP ワークフローをテストします。Module 2 の webhook 捕捉、このモジュールのプロンプト整形、そして Slack 通知という、3つのコンポーネント全てが連携して動作します。</p>
 <ol>
-<li>すべてのサービスを起動する（Module 2 と同じだが、今度は Slack 連携付き）：
+<li>全てのサービスを起動する（Module 2 と同じだが、今度は Slack 連携付き）：
    ```bash
    # ターミナル1：webhook サーバーを起動
    python webhook_server.py</li>
@@ -311,19 +313,19 @@ window.MathJax = { tex: { inlineMath: [['$', '$'], ['\\(', '\\)']], displayMath:
    - <strong>確認する</strong>：Slack チャンネルに通知が表示されること</li>
 </ol>
 <h3>ステップ5：連携を確認する（5分）</h3>
-<p>実際の GitHub リポジトリをセットアップしなくても、実装をテストできます！GitHub の webhook イベントをシミュレートする curl コマンドは <code>manual_test.md</code> を見てください。</p>
+<p>実際の GitHub リポジトリをセットアップしなくても、実装をテスト出来ます。GitHub の webhook イベントをシミュレートする curl コマンドは <code>manual_test.md</code> を見て下さい。</p>
 <p><strong>webhook イベントの流れの理解：</strong>
 - webhook サーバー（Module 2 より）が GitHub イベントを捕捉し、<code>github_events.json</code> に保存する
 - MCP ツールがこのファイルから最近の CI/CD アクティビティを取得する<br />
-- Claude が整形プロンプトを使って読みやすいメッセージを作成する
+- Claude が整形プロンプトを使って読み易いメッセージを作成する
 - Slack ツールが整形済みメッセージをチームチャンネルへ送信する
 - これにより、次の一連の処理が完成します：GitHub → ローカルストレージ → Claude の分析 → Slack 通知</p>
 <p><strong>クイックテストのワークフロー：</strong>
 1. curl でテスト用の模擬 GitHub イベントを webhook サーバーへ送信する
 2. Claude に最近のイベントの確認と整形を依頼する
 3. 整形済みメッセージを Slack へ送信する
-4. すべてがエンドツーエンドで動作することを確認する</p>
-<p><strong>手動テストの代替手段：</strong> GitHub をセットアップせずに一連の動作をすべてテストしたい場合は、<code>manual_test.md</code> に記載された curl コマンドを順番に実行してください。</p>
+4. 全てがエンドツーエンドで動作することを確認する</p>
+<p><strong>手動テストの代替手段：</strong> GitHub をセットアップせずに一連の動作を全てテストしたい場合は、<code>manual_test.md</code> に記載された curl コマンドを順番に実行して下さい。</p>
 <h2>Claude Code でのワークフローの例</h2>
 <div class="codehilite"><pre><span></span><code>User: "Check recent CI events and notify the team about any failures"
 
@@ -335,6 +337,7 @@ Claude:
 5. Reports back: "Sent failure alert to #dev-team channel"
 </code></pre></div>
 
+<p>（プロンプトの訳：「最近の CI イベントを確認し、失敗があればチームに通知して下さい」。続く Claude の手順の訳：1.（Module 2 の）<code>get_recent_actions_events</code> を使う、2. ワークフローの失敗を見つける、3. <code>format_ci_failure_alert</code> プロンプトを使ってメッセージを作成する、4. <code>send_slack_notification</code> ツールを使って送信する、5.「失敗アラートを #dev-team チャンネルに送信しました」と報告する）</p>
 <h2>期待される Slack メッセージの出力</h2>
 <p><strong>失敗アラート：</strong></p>
 <div class="codehilite"><pre><span></span><code>🚨 *CI Failure Alert* 🚨
@@ -348,6 +351,7 @@ A CI workflow has failed:
 Please check the logs and address any issues.
 </code></pre></div>
 
+<p>（出力の訳：🚨「CI 失敗アラート」🚨 CI ワークフローが失敗しました。ワークフロー：CI（実行 #42）、ブランチ：feature/slack-integration、ステータス：失敗、詳細を見る：ログへのリンク。ログを確認し、問題があれば対処して下さい）</p>
 <p><strong>成功サマリー：</strong></p>
 <div class="codehilite"><pre><span></span><code>✅ *Deployment Successful* ✅
 
@@ -361,37 +365,38 @@ Deployment completed successfully for mcp-course
 &lt;https://github.com/user/mcp-course/pull/42|View Changes&gt;
 </code></pre></div>
 
+<p>（出力の訳：✅「デプロイ成功」✅ mcp-course へのデプロイが正常に完了しました。変更点：チーム通知システムを追加したこと、MCP Tools と Prompts を連携させたこと。リンク：変更を表示するリンク）</p>
 <h2>よくある問題</h2>
 <h3>Webhook URL の問題</h3>
 <ul>
 <li>環境変数が正しく設定されているか確認する</li>
 <li>連携前に、curl で webhook を直接テストする</li>
-<li>Slack アプリに適切な権限があるか確認する</li>
+<li>Slack アプリに適切な権限が有るか確認する</li>
 </ul>
 <h3>メッセージの書式</h3>
 <ul>
 <li><a href="https://api.slack.com/reference/surfaces/formatting">Slack の Markdown</a> は GitHub の Markdown とは異なる</li>
 <li><strong>重要</strong>：太字には <code>*text*</code> を使う（<code>**text**</code> ではない）</li>
-<li>適切な書式のため、webhook ペイロードに <code>"mrkdwn": true</code> を含める</li>
+<li>適切な書式の為、webhook ペイロードに <code>"mrkdwn": true</code> を含める</li>
 <li>自動化の前に、メッセージの書式を手動でテストする</li>
 <li>コミットメッセージ内の特殊文字を適切に処理する（<a href="https://api.slack.com/reference/surfaces/formatting#escaping">書式リファレンス</a>）</li>
 </ul>
 <h3>ネットワークエラー</h3>
 <ul>
 <li>webhook リクエストに基本的なタイムアウト処理を追加する（<a href="https://api.slack.com/messaging/webhooks#handling_errors">webhook のエラーハンドリング</a>）</li>
-<li>ツールから意味のあるエラーメッセージを返す</li>
+<li>ツールから意味の有るエラーメッセージを返す</li>
 <li>リクエストが失敗する場合はインターネット接続を確認する</li>
 </ul>
 <h2>重要なポイント</h2>
 <p>これで、以下を示す完全な MCP ワークフローを構築しました。
-- 外部 API 連携のための <strong>Tools</strong>（Slack の webhook）
-- インテリジェントなメッセージ整形のための <strong>Prompts</strong>
+- 外部 API 連携の為の <strong>Tools</strong>（Slack の webhook）
+- インテリジェントなメッセージ整形の為の <strong>Prompts</strong>
 - 連携して動作する全 MCP プリミティブの<strong>統合</strong>
 - チームが実際に使える<strong>実世界のアプリケーション</strong></p>
-<p>これにより、MCP を使って実用的な開発自動化ツールを構築できることが分かります！</p>
+<p>これにより、MCP を使って実用的な開発自動化ツールを構築出来ることが分かります。</p>
 <div class="callout callout-tip">
 <p class="callout-title">💡 ヒント</p>
-<p><strong>重要な学び</strong>：Tools（外部 API 呼び出し用）と Prompts（一貫した整形用）を組み合わせた、完全な MCP ワークフローを構築しました。この Tools + Prompts のパターンは、高度な MCP 開発の基礎であり、他の多くの自動化シナリオにも応用できます。</p>
+<p><strong>重要な学び</strong>：Tools（外部 API 呼び出し用）と Prompts（一貫した整形用）を組み合わせた、完全な MCP ワークフローを構築しました。この Tools + Prompts のパターンは、高度な MCP 開発の基礎であり、他の多くの自動化シナリオにも応用出来ます。</p>
 </div>
 <h2>次のステップ</h2>
 <p>おめでとうございます！Unit 3 の最終モジュールを完了し、完全なエンドツーエンドの自動化システムを構築しました。3つのモジュールを通じた旅で、以下のハンズオン経験が得られました。</p>
@@ -404,16 +409,16 @@ Deployment completed successfully for mcp-course
 <ol>
 <li><strong>完全なシステムをテストする</strong>：実際の GitHub イベントをトリガーし、パイプライン全体の動作を見る</li>
 <li><strong>カスタマイズを実験する</strong>：Slack メッセージの形式を変更したり、新しい通知タイプを追加したりする</li>
-<li><strong>Unit 3 のまとめを確認する</strong>：学んだすべてを振り返り、次のステップを探る</li>
-<li><strong>成功を共有する</strong>：MCP が開発ワークフローをどう自動化できるかをチームメイトに示す</li>
+<li><strong>Unit 3 のまとめを確認する</strong>：学んだ全てを振り返り、次のステップを探る</li>
+<li><strong>成功を共有する</strong>：MCP が開発ワークフローをどう自動化出来るかをチームメイトに示す</li>
 </ol>
-<p>これで、MCP でインテリジェントな自動化システムを構築するための確かな基盤ができました！</p>
+<p>これで、MCP でインテリジェントな自動化システムを構築する為の確かな基盤が出来ました。</p>
 <h3>変革が完了しました！</h3>
-<p>CodeCraft Studios は、開発現場が混乱した状態から、チームが円滑に連携できる組織へと変わりました。あなたが構築した自動化システムには、次の機能があります。
+<p>CodeCraft Studios は、開発現場が混乱した状態から、チームが円滑に連携出来る組織へと変わりました。あなたが構築した自動化システムには、次の機能があります。
 - レビュアーが変更を理解するのに役立つ<strong>スマートな PR の説明</strong>
 - 本番環境に到達する前に失敗を捕える<strong>リアルタイム CI/CD モニタリング</strong><br />
 - 全員に自動で情報を届ける<strong>インテリジェントなチーム通知</strong></p>
-<p>チームは今や、プロセスの問題と戦うのではなく、優れたプロダクトの構築に集中できます。そしてあなたは、あらゆる自動化課題に応用できる高度な MCP パターンを学びました！</p>
+<p>チームは今や、プロセスの問題と戦うのではなく、優れたプロダクトの構築に集中出来ます。そしてあなたは、あらゆる自動化課題に応用出来る高度な MCP パターンを学びました。</p>
 <h2>追加リソース</h2>
 <ul>
 <li><a href="https://api.slack.com/messaging/webhooks">Slack Incoming Webhooks ドキュメント</a></li>

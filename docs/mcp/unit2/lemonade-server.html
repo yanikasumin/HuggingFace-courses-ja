@@ -112,11 +112,11 @@ window.MathJax = { tex: { inlineMath: [['$', '$'], ['\\(', '\\)']], displayMath:
 <nav class="page-nav"><a class="nav-link prev" href="tiny-agents.html">← 前へ: Hugging Face Hub と MCP で Tiny Agents を構築する</a><a class="nav-link toc-link" href="../index.html">目次へ</a><a class="nav-link next" href="../unit3/introduction.html">次へ →: MCP 開発応用編：Claude Code 向けカスタムワークフローサーバーの構築</a></nav>
 <article class="content">
 <h1>AMD NPU と iGPU アクセラレーションによるローカル Tiny Agents</h1>
-<p>このセクションでは、AMD のニューラルプロセッシングユニット（NPU）と統合 GPU（iGPU）を使い、エンドツーエンドの Tiny Agents アプリケーションを高速化する方法を紹介します。更に、ローカルファイルを操作し、機密情報をデバイス内で処理できるアシスタントを作成します。これにより、アプリケーションの機能を広げながら、プライバシーを最大限に保護します。</p>
-<p>そのために、NPU と iGPU による高速化に対応し、モデルをローカルで実行できる Lemonade Server を使います。</p>
+<p>このセクションでは、AMD のニューラルプロセッシングユニット（NPU）と統合 GPU（iGPU）を使い、エンドツーエンドの Tiny Agents アプリケーションを高速化する方法を紹介します。更に、ローカルファイルを操作し、機密情報をデバイス内で処理出来るアシスタントを作成します。これにより、アプリケーションの機能を広げながら、プライバシーを最大限に保護します。</p>
+<p>その為に、NPU と iGPU による高速化に対応し、モデルをローカルで実行出来る Lemonade Server を使います。</p>
 <h2>セットアップ</h2>
 <h3>Lemonade Server のセットアップ</h3>
-<p>Lemonade Server は Windows と Linux の両方にインストールできます。追加のドキュメントは <a href="https://lemonade-server.ai/">lemonade-server.ai</a> で確認できます。</p>
+<p>Lemonade Server は Windows と Linux の両方にインストール出来ます。追加のドキュメントは <a href="https://lemonade-server.ai/">lemonade-server.ai</a> で確認出来ます。</p>
 <div class="hfoptions">
 <section class="hfoption" markdown="block">
 <p class="hfoption-label">windows</p>
@@ -124,20 +124,20 @@ window.MathJax = { tex: { inlineMath: [['$', '$'], ['\\(', '\\)']], displayMath:
 
 Windows に Lemonade Server をインストールするには、最新のインストーラーを[ダウンロード](https://github.com/lemonade-sdk/lemonade/releases/latest/download/Lemonade_Server_Installer.exe)して実行するだけです。
 
-Lemonade Server は、Windows の x86/x64 環境で、すべての実行エンジンによる CPU 推論に対応しています。GPU による高速化には、Vulkan を利用する llamacpp エンジンを使用し、主に AMD Ryzen™ AI 7000/8000/300 シリーズと AMD Radeon™ 7000/9000 シリーズを対象としています。NPU による高速化では、ONNX Runtime GenAI（OGA）エンジンを使い、AMD Ryzen™ AI 300 シリーズのデバイスに対応します。
+Lemonade Server は、Windows の x86/x64 環境で、全ての実行エンジンによる CPU 推論に対応しています。GPU による高速化には、Vulkan を利用する llamacpp エンジンを使用し、主に AMD Ryzen™ AI 7000/8000/300 シリーズと AMD Radeon™ 7000/9000 シリーズを対象としています。NPU による高速化では、ONNX Runtime GenAI（OGA）エンジンを使い、AMD Ryzen™ AI 300 シリーズのデバイスに対応します。
 
-Lemonade Server をインストールしたら、デスクトップに追加された `Lemonade` アイコンをクリックして起動できます。
+Lemonade Server をインストールしたら、デスクトップに追加された `Lemonade` アイコンをクリックして起動出来ます。
 
 </section>
 <section class="hfoption" markdown="block">
 <p class="hfoption-label">linux</p>
 
 
-Linux に Lemonade をインストールするには、まず venv を作成して有効化します。
+Linux に Lemonade をインストールするには、先ず venv を作成して有効化します。
 
 <div class="callout callout-tip" markdown="block">
 <p class="callout-title">💡 ヒント</p>
-`uv` がインストールされていない場合は、[こちら](https://docs.astral.sh/uv/getting-started/installation/) の手順に従ってインストールできます。
+`uv` がインストールされていない場合は、[こちら](https://docs.astral.sh/uv/getting-started/installation/) の手順に従ってインストール出来ます。
 </div>
 
 
@@ -155,7 +155,7 @@ Linux に Lemonade をインストールするには、まず venv を作成し�
 
 
 
-あるいは、リポジトリをクローンしてパッケージをビルドすることで、ソースからインストールすることもできます。
+あるいは、リポジトリをクローンしてパッケージをビルドすることで、ソースからインストールすることも出来ます。
 
 <div class="codehilite"><pre><span></span><code>git<span class="w"> </span>clone<span class="w"> </span>https://github.com/lemonade-sdk/lemonade-sdk.git
 <span class="nb">cd</span><span class="w"> </span>lemonade-sdk
@@ -164,7 +164,7 @@ pip<span class="w"> </span>install<span class="w"> </span>-e<span class="w"> </s
 
 
 
-インストールが完了したら、次のコマンドを実行して Lemonade を起動できます。
+インストールが完了したら、次のコマンドを実行して Lemonade を起動出来ます。
 
 
 <div class="codehilite"><pre><span></span><code>lemonade-server-dev<span class="w"> </span>serve
@@ -172,11 +172,11 @@ pip<span class="w"> </span>install<span class="w"> </span>-e<span class="w"> </s
 
 
 
-Lemonade Server は、Windows x86/x64 上のすべてのプラットフォームとエンジンで CPU 推論をサポートします。GPU アクセラレーションは llamacpp エンジン（Vulkan）を通じて有効化され、AMD Ryzen™ AI 7000/8000/300 シリーズと Radeon™ 7000/9000 シリーズに重点が置かれています。
+Lemonade Server は、Windows x86/x64 上の全てのプラットフォームとエンジンで CPU 推論をサポートします。GPU アクセラレーションは llamacpp エンジン（Vulkan）を通じて有効化され、AMD Ryzen™ AI 7000/8000/300 シリーズと Radeon™ 7000/9000 シリーズに重点が置かれています。
 
 <div class="callout callout-tip" markdown="block">
 <p class="callout-title">💡 ヒント</p>
-*NPU アクセラレーションは、Windows 上の AMD Ryzen™ AI 300 シリーズでのみ利用できます。*
+*NPU アクセラレーションは、Windows 上の AMD Ryzen™ AI 300 シリーズでのみ利用出来ます。*
 </div>
 
 
@@ -184,7 +184,7 @@ Lemonade Server は、Windows x86/x64 上のすべてのプラットフォーム
 </div>
 
 <h3>Tiny Agents と npx のセットアップ</h3>
-<p>このセクションでは、<code>npx</code> と Tiny Agents が既にインストールされていることを前提とします。まだインストールしていない場合は、このコースの <a href="https://huggingface.co/learn/mcp-course/en/unit2/tiny-agents">Tiny Agents</a> のセクションを参照してください。また、<code>huggingface_hub[mcp]==0.33.2</code> を使用してください。</p>
+<p>このセクションでは、<code>npx</code> と Tiny Agents が既にインストールされていることを前提とします。未だインストールしていない場合は、このコースの <a href="https://huggingface.co/learn/mcp-course/en/unit2/tiny-agents">Tiny Agents</a> のセクションを参照して下さい。また、<code>huggingface_hub[mcp]==0.33.2</code> を使用して下さい。</p>
 <h2>AMD NPU と iGPU で Tiny Agents アプリケーションを実行する</h2>
 <p>AMD NPU と iGPU で Tiny Agents アプリケーションを実行するには、<a href="https://huggingface.co/learn/mcp-course/en/unit2/tiny-agents">前のセクション</a> で作成した MCP サーバーを、次に示すように Lemonade Server に向けるだけです。</p>
 <div class="hfoptions">
@@ -238,11 +238,11 @@ Lemonade Server は、Windows x86/x64 上のすべてのプラットフォーム
 </section>
 </div>
 
-<p>続いて、ローカルで実行するモデルを選びます。利用できるモデルには様々な種類がありますが、ここでは Vulkan を使って AMD GPU 上で効率よく動作する <a href="https://huggingface.co/Qwen/Qwen3-8B-GGUF"><code>Qwen3-8B-GGUF</code></a> を使用しました。対応モデルの一覧を確認したり、自分のモデルを追加したりするには、http://localhost:8000/#model-management にアクセスしてください。</p>
+<p>続いて、ローカルで実行するモデルを選びます。利用出来るモデルには様々な種類がありますが、ここでは Vulkan を使って AMD GPU 上で効率よく動作する <a href="https://huggingface.co/Qwen/Qwen3-8B-GGUF"><code>Qwen3-8B-GGUF</code></a> を使用しました。対応モデルの一覧を確認したり、自分のモデルを追加したりするには、http://localhost:8000/#model-management にアクセスして下さい。</p>
 <h2>機密情報をローカルで処理するアシスタントを作成する</h2>
 <p><img alt="Lemonade Server のインターフェース" src="https://raw.githubusercontent.com/lemonade-sdk/assets/refs/heads/main/huggingface_course/hf_lemonade.png" /></p>
-<p>次は、ローカルファイルにアクセスでき、機密情報をすべてデバイス内で処理するアシスタントを追加して、アプリケーションの機能を広げましょう。このアシスタントは、採用候補者の履歴書を評価し、採用時の意思決定を支援します。データを外部に送らず、プライバシーと安全性を保ちながら処理することを目指します。</p>
-<p>そのために、<a href="https://github.com/wonderwhy-er/DesktopCommanderMCP">Desktop Commander</a> MCP サーバーを使います。Desktop Commander を使うと、ローカルマシン上でコマンドを実行できるほか、ファイルシステムの幅広い操作、ターミナルの制御、コードの編集も行えます。</p>
+<p>次は、ローカルファイルにアクセス出来、機密情報を総てデバイス内で処理するアシスタントを追加して、アプリケーションの機能を広げましょう。このアシスタントは、採用候補者の履歴書を評価し、採用時の意思決定を支援します。データを外部に送らず、プライバシーと安全性を保ちながら処理することを目指します。</p>
+<p>その為に、<a href="https://github.com/wonderwhy-er/DesktopCommanderMCP">Desktop Commander</a> MCP サーバーを使います。Desktop Commander を使うと、ローカルマシン上でコマンドを実行出来るほか、ファイルシステムの幅広い操作、ターミナルの制御、コードの編集も行えます。</p>
 <p>基本的な Tiny Agent を使ったプロジェクトをセットアップしましょう。</p>
 <div class="codehilite"><pre><span></span><code>mkdir<span class="w"> </span>file-assistant
 <span class="nb">cd</span><span class="w"> </span>file-assistant
@@ -300,7 +300,7 @@ Lemonade Server は、Windows x86/x64 上のすべてのプラットフォーム
 </section>
 </div>
 
-<p>最後に、<code>Jan Nano</code> モデルをダウンロードします。http://localhost:8000/#model-management にアクセスしてモデル管理ページを開き、「Add a Model」をクリックしてください。次の情報を入力すると、モデルを追加できます。</p>
+<p>最後に、<code>Jan Nano</code> モデルをダウンロードします。http://localhost:8000/#model-management にアクセスしてモデル管理ページを開き、「Add a Model」をクリックして下さい。次の情報を入力すると、モデルを追加出来ます。</p>
 <div class="codehilite"><pre><span></span><code>Model Name: user.jan-nano
 Checkpoint: Menlo/Jan-nano-gguf:jan-nano-4b-Q4_0.gguf
 Recipe: llamacpp
@@ -310,7 +310,7 @@ Recipe: llamacpp
 <p>これで準備完了です！ では、試してみましょう。</p>
 <h3>実際に動かしてみる</h3>
 <p><img alt="動作の録画" src="https://raw.githubusercontent.com/lemonade-sdk/assets/refs/heads/main/huggingface_course/recording.gif" /></p>
-<p>ここでは、機密情報をローカルで処理できるアシスタントを作成します。まず、アシスタントが参照する求人票のファイルを用意しましょう。</p>
+<p>ここでは、機密情報をローカルで処理出来るアシスタントを作成します。先ず、アシスタントが参照する求人票のファイルを用意しましょう。</p>
 <p><code>file-assistant</code> フォルダ内に <code>job_description.md</code> というファイルを作成します。</p>
 <div class="codehilite"><pre><span></span><code><span class="gh"># Senior Food Technology Engineer</span>
 
@@ -342,7 +342,7 @@ We're seeking a culinary innovator to transform cooking processes into precise a
 touch<span class="w"> </span>candidates/john_resume.md
 </code></pre></div>
 
-<p>次のサンプル履歴書を追加するか、自分の履歴書を使ってください。</p>
+<p>次のサンプル履歴書を追加するか、自分の履歴書を使って下さい。</p>
 <div class="codehilite"><pre><span></span><code><span class="gh"># John Doe</span>
 
 <span class="gs">**Contact Information**</span>
@@ -403,7 +403,7 @@ touch<span class="w"> </span>candidates/john_resume.md
 <span class="k">-</span><span class="w"> </span>Authors: Haha Ha, San Zhang, Si Li, Wu Wang
 </code></pre></div>
 
-<p>その後、次のコマンドでエージェントを実行できます。</p>
+<p>その後、次のコマンドでエージェントを実行出来ます。</p>
 <div class="codehilite"><pre><span></span><code>tiny-agents<span class="w"> </span>run<span class="w"> </span>agent.json
 </code></pre></div>
 
@@ -430,11 +430,13 @@ touch<span class="w"> </span>candidates/john_resume.md
  »
  ```
 
-では、開始するためにアシスタントへ情報を提供しましょう。
+では、開始する為にアシスタントへ情報を提供しましょう。
 </code></pre></div>
 
 <p>» Read the contents of C:\Users\your_username\file-assistant\job_description.md</p>
-<div class="codehilite"><pre><span></span><code>次のような出力が表示されるはずです。
+<div class="codehilite"><pre><span></span><code>（指示文の訳：C:\Users\your_username\file-assistant\job_description.md の内容を読み取って下さい）
+
+次のような出力が表示されるはずです。
 </code></pre></div>
 
 <p>&lt;Tool iNtxGmOuXHqZVBWmKnfxsc61xsJbsoAM&gt;read_file {"path":"C:\Users\your_username\file-assistant\job_description.md","length":23}</p>
@@ -442,14 +444,18 @@ touch<span class="w"> </span>candidates/john_resume.md
 [Reading 23 lines from start]</p>
 <p>(...)</p>
 <p>The job description for the Senior Food Technology Engineer position emphasizes the need for a candidate who can bridge the gap between food science and artificial intelligence (...). Candidates are also expected to attend conferences and publish research on algorithmic cooking optimization.</p>
-<div class="codehilite"><pre><span></span><code>&gt; [!TIP]
-&gt; デフォルトのシステムプロンプトを使っているため、アシスタントが一部のツールを複数回呼び出すことがあります。より積極的なアシスタントを作成するには、`agent.json` と同じディレクトリにカスタムの `PROMPT.md` ファイルを用意できます。
+<div class="codehilite"><pre><span></span><code>（出力の訳：Senior Food Technology Engineer のポジションの求人票では、食品科学と人工知能の橋渡しが出来る候補者が必要であることが強調されています（…）。候補者には、アルゴリズムによる調理の最適化に関する会議に出席し、研究を発表することも求められます）
 
-すばらしい！ 次に、候補者の履歴書を読み取りましょう。
+&gt; [!TIP]
+&gt; デフォルトのシステムプロンプトを使っている為、アシスタントが一部のツールを複数回呼び出すことがあります。より積極的なアシスタントを作成するには、`agent.json` と同じディレクトリにカスタムの `PROMPT.md` ファイルを用意出来ます。
+
+すばらしい。 次に、候補者の履歴書を読み取りましょう。
 </code></pre></div>
 
 <p>» Inside the same folder you can find a candidates folder. Check for john_resume.md and let me know if he is a good fit for the job.</p>
-<div class="codehilite"><pre><span></span><code>次のような出力が表示されるはずです。
+<div class="codehilite"><pre><span></span><code>（指示文の訳：同じフォルダの中に candidates フォルダが有ります。john_resume.md を確認して、彼がその仕事に適しているかどうかを教えて下さい）
+
+次のような出力が表示されるはずです。
 </code></pre></div>
 
 <p>&lt;Tool ll2oWo73YeGIft5VbOIpF9GNf0kevjEy&gt;read_file {"path":"C:\Users\your_username\file-assistant\candidates\john_resume.md"}</p>
@@ -457,11 +463,15 @@ touch<span class="w"> </span>candidates/john_resume.md
 [Reading 58 lines from start]</p>
 <p>(...)
 John Wayne is a <strong>strong fit</strong> for the Senior Food Technology Engineer role. His technical expertise in AI and machine learning, combined with his experience in food-related research and publications, makes him an excellent candidate. He also has the soft skills and cultural fit needed to thrive in a collaborative, innovative environment.</p>
-<div class="codehilite"><pre><span></span><code>見事です！ これで、候補者を面接に招待する段階に進めます。
+<div class="codehilite"><pre><span></span><code>（出力の訳：John Wayne は、Senior Food Technology Engineer の役割に**強く適しています**。AI と機械学習における技術的な専門知識と、食品関連の研究・発表の経験を併せ持つ、優れた候補者です。協力的で革新的な環境で活躍する為に必要なソフトスキルと文化的な適合性も備えています）
+
+見事です。 これで、候補者を面接に招待する段階に進めます。
 </code></pre></div>
 
 <p>» Create a file called "invitation.md" in the "file-assistant" folder and write a short invitation to John to come in for an interview.</p>
-<div class="codehilite"><pre><span></span><code>`invitation.md` ファイルには、次のような内容が書き込まれるはずです。
+<div class="codehilite"><pre><span></span><code>（指示文の訳：「file-assistant」フォルダに「invitation.md」というファイルを作成し、John を面接に招く短い招待状を書いて下さい）
+
+`invitation.md` ファイルには、次のような内容が書き込まれるはずです。
 
 ```markdown
 # Interview Invitation
@@ -477,13 +487,14 @@ Best regards,
 [Your Contact Information]
 </code></pre></div>
 
-<p>やりました！ 機密情報をローカルで処理するのに役立つアシスタントの作成に成功しました。</p>
+<p>（招待状の訳：面接への招待。John 様。Senior Food Technology Engineer のポジションの面接に、ご招待します。面接は［日時を挿入］に、［場所又はオンライン会議の詳細を挿入］で実施します。ご都合をお知らせ下さい。追加の情報が必要な場合は、ご連絡下さい。敬具。［あなたの名前］［あなたの連絡先］）</p>
+<p>やりました。 機密情報をローカルで処理するのに役立つアシスタントの作成に成功しました。</p>
 <h3>他のモデルとアクセラレーションオプションを探る</h3>
 <p>上記の例では、Jan-Nano モデルが Vulkan アクセラレーションを活用し、AMD GPU 上で効率的なローカル LLM 推論を行いました。http://localhost:8000/#model-management にアクセスするか、<a href="https://lemonade-server.ai/docs/server/server_models/">モデルのドキュメント</a> を確認することで、他のモデルやアクセラレーションオプションも試せます。</p>
-<p>比較的短いコンテキストで動作し、NPU と iGPU による高速化を活用できる Windows アプリケーションには、Lemonade Server の Hybrid モデルを試せます。これらのモデルは AMD Ryzen AI 300 シリーズの PC 向けに最適化されています。たとえば、<code>Llama-xLAM-2-8b-fc-r-Hybrid</code> はツール呼び出し用に特別にファインチューニングされており、高速で応答性のよい動作が期待できます。</p>
+<p>比較的短いコンテキストで動作し、NPU と iGPU による高速化を活用出来る Windows アプリケーションには、Lemonade Server の Hybrid モデルを試せます。これらのモデルは AMD Ryzen AI 300 シリーズの PC 向けに最適化されています。例えば、<code>Llama-xLAM-2-8b-fc-r-Hybrid</code> はツール呼び出し用に特別にファインチューニングされており、高速で応答性のよい動作が期待出来ます。</p>
 <h2>まとめ</h2>
 <p>このユニットでは、AMD NPU と iGPU を使ってエンドツーエンドの Tiny Agents アプリケーションを高速化する方法を紹介しました。また、機密情報をローカルで処理するアシスタントを作成する方法も紹介しました。</p>
-<p>Lemonade Server をローカルモデルの高速化やプライバシー重視のアプリケーションに活用する方法を学んだので、<a href="https://github.com/lemonade-sdk/lemonade">Lemonade の GitHub リポジトリ</a> で更に多くの例や機能を探ることができます。このリポジトリには追加のドキュメントや実装例が含まれており、コミュニティによって活発にメンテナンスされています。</p>
+<p>Lemonade Server をローカルモデルの高速化やプライバシー重視のアプリケーションに活用する方法を学んだので、<a href="https://github.com/lemonade-sdk/lemonade">Lemonade の GitHub リポジトリ</a> で更に多くの例や機能を探ることが出来ます。このリポジトリには追加のドキュメントや実装例が含まれており、コミュニティによって活発にメンテナンスされています。</p>
 </article>
 
 <nav class="page-nav"><a class="nav-link prev" href="tiny-agents.html">← 前へ: Hugging Face Hub と MCP で Tiny Agents を構築する</a><a class="nav-link toc-link" href="../index.html">目次へ</a><a class="nav-link next" href="../unit3/introduction.html">次へ →: MCP 開発応用編：Claude Code 向けカスタムワークフローサーバーの構築</a></nav>
