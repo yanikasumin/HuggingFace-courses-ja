@@ -68,7 +68,7 @@ window.MathJax = { tex: { inlineMath: [['$', '$'], ['\\(', '\\)']], displayMath:
 <li><a class="side-link" href="../unit1/chapter1/definition.html">コンピュータビジョンとは</a></li>
 <li><a class="side-link" href="../unit1/chapter1/applications.html">コンピュータビジョンの応用</a></li>
 <li><a class="side-link" href="../unit1/image_and_imaging/examples-preprocess.html">コンピュータビジョンタスクのための前処理</a></li>
-<li><a class="side-link" href="../unit1/feature-extraction/feature_description.html">Feature Description</a></li>
+<li><a class="side-link" href="../unit1/feature-extraction/feature_description.html">特徴記述（Feature Description）</a></li>
 <li><a class="side-link" href="../unit1/feature-extraction/feature-matching.html">特徴マッチング（Feature Matching）</a></li>
 <li><a class="side-link" href="../unit1/feature-extraction/real-world-applications.html">コンピュータビジョンにおける特徴抽出の実社会での応用</a></li>
 </ul>
@@ -80,7 +80,7 @@ window.MathJax = { tex: { inlineMath: [['$', '$'], ['\\(', '\\)']], displayMath:
 <li><a class="side-link" href="../unit2/cnns/mobilenet.html">MobileNet</a></li>
 <li><a class="side-link" href="../unit2/cnns/convnext.html">ConvNeXt - 2020年代に向けた ConvNet（2022）</a></li>
 <li><a class="side-link" href="../unit2/cnns/intro-transfer-learning.html">転移学習</a></li>
-<li><a class="side-link" href="../unit2/cnns/mobilenetextra.html">事前学習済みの MobileNet モデルを読み込む</a></li>
+<li><a class="side-link" href="../unit2/cnns/mobilenetextra.html">MobileNet を更に深く掘り下げる</a></li>
 <li><a class="side-link" href="../unit2/cnns/resnet.html">ResNet（残差ネットワーク）</a></li>
 <li><a class="side-link" href="../unit2/cnns/yolo.html">YOLO</a></li>
 </ul>
@@ -266,13 +266,15 @@ window.MathJax = { tex: { inlineMath: [['$', '$'], ['\\(', '\\)']], displayMath:
 </ol>
 </li>
 </ol>
-<p>上記の方程式で使われる様々な記号は、以下で定義されます。
-*  \(u_left\)、\(v_left\) は、左画像における点 P の画素座標を指します。
-*  \(u_right\)、\(v_right\) は、右画像における点 P の画素座標を指します。
-*  \(f_x\) と \(f_y\) は、それぞれ x 方向と y 方向の焦点距離をピクセル単位で表したものです。カメラの物理的な焦点距離は、ピンホール（レンズの光学中心）から画像平面までの距離で、1つの値として定まります。但し、画素が必ずしも正方形とは限らない為、ピクセル単位に換算すると x 方向と y 方向で値が異なる場合が有ります。
-*  x、y、z は点 P の3D座標です（cm、フィートなど、任意の単位が使えます）。
-*  \(O_x\) と \(O_y\) は、主点の画素座標を指します。
-*  b はベースラインと呼ばれ、左カメラと右カメラの間の距離を指します。b と x,y,z 座標には同じ単位が使われます（cm、フィートなど、任意の単位が使えます）。</p>
+<p>上記の方程式で使われる様々な記号は、以下で定義されます。</p>
+<ul>
+<li>\(u_left\)、\(v_left\) は、左画像における点 P の画素座標を指します。</li>
+<li>\(u_right\)、\(v_right\) は、右画像における点 P の画素座標を指します。</li>
+<li>\(f_x\) と \(f_y\) は、それぞれ x 方向と y 方向の焦点距離をピクセル単位で表したものです。カメラの物理的な焦点距離は、ピンホール（レンズの光学中心）から画像平面までの距離で、1つの値として定まります。但し、画素が必ずしも正方形とは限らない為、ピクセル単位に換算すると x 方向と y 方向で値が異なる場合が有ります。</li>
+<li>x、y、z は点 P の3D座標です（cm、フィートなど、任意の単位が使えます）。</li>
+<li>\(O_x\) と \(O_y\) は、主点の画素座標を指します。</li>
+<li>b はベースラインと呼ばれ、左カメラと右カメラの間の距離を指します。b と x,y,z 座標には同じ単位が使われます（cm、フィートなど、任意の単位が使えます）。</li>
+</ul>
 <p>ここまでに4つの方程式が得られました。一方、未知数は点 P の3D座標 x、y、z の3つです。焦点距離や主点の位置といったカメラの内部パラメータは、既知であると仮定します。方程式1.2と2.2から、左右の画像で v 座標が同じになることが分かります。</p>
 <ol start="3">
 <li>\(v_left = v_right\)</li>
