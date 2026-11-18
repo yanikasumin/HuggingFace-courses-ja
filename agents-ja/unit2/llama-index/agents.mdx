@@ -22,7 +22,7 @@ LlamaIndex は、**推論を行うエージェントを主に次の 3 種類**�
 > [!TIP]
 > コードは Google Colab で実行出来る <a href="https://huggingface.co/agents-course/notebooks/blob/main/unit2/llama-index/agents.ipynb" target="_blank">このノートブック</a> で確認出来ます。
 
-エージェントを作成するには、先ず**その能力を定義する関数やツールのセット**を与えます。基本的なツールを使ったエージェントの作成方法を見ていきましょう。この記事の執筆時点では、エージェントは function calling API を利用出来る場合には自動的に使い、利用出来ない場合には標準的な ReAct エージェントのループを使います。
+エージェントを作成するには、まず**その能力を定義する関数やツールのセット**を与えます。基本的なツールを使ったエージェントの作成方法を見ていきましょう。この記事の執筆時点では、エージェントは function calling API を利用出来る場合には自動的に使い、利用出来ない場合には標準的な ReAct エージェントのループを使います。
 
 ツールや関数を呼び出す API に対応した LLM は、比較的新しいものです。しかし、ツール呼び出しの為に特別なプロンプトを用意する必要がなく、与えられたスキーマに基づいて LLM にツール呼び出しを生成させられる為、強力なツール実行の仕組みとなっています。
 
@@ -67,7 +67,7 @@ response = await agent.run("What was my name again?", ctx=ctx)
 
 （入力文の訳：「2 かける 2 はいくつですか」／「私の名前は Bob です」／「私の名前は何でしたか」）
 
-LlamaIndex のエージェントが非同期で動作することにお気づきでしょうか。上のコードで Python の `await` 演算子を使っていることからも分かります。Python の非同期コードに慣れていない場合や復習したい場合は、[非同期処理の分かり易いガイド](https://docs.llamaindex.ai/en/stable/getting_started/async_python/)を参考にして下さい。
+LlamaIndex のエージェントが非同期で動作することにお気づきでしょうか。上のコードで Python の `await` 演算子を使っていることからも分かります。Python の非同期コードに慣れていない場合や復習したい場合は、[非同期処理の分かり易いガイド](https://docs.llamaindex.ai/en/stable/getting_started/async_python/)を参考にしてください。
 
 基本を押さえたので、次はエージェントでより複雑なツールを使う方法を見ていきましょう。
 
@@ -156,7 +156,7 @@ agent = AgentWorkflow(
 response = await agent.run(user_msg="Can you add 5 and 3?")
 ```
 
-（エージェント設定と入力文の訳：calculator の説明は「基本的な算術演算を行います」、システムプロンプトは「あなたは計算アシスタントです。数学の演算にはツールを使って下さい」です。info_lookup の説明は「XYZ についての情報を調べます」、システムプロンプトは「ツールを使って RAG システムに問い合わせ、XYZ についての情報に答えて下さい」です。ツールの docstring は「2つの数を足します」「2つの数を引きます」です。入力文は「5 と 3 を足せますか」です）
+（エージェント設定と入力文の訳：calculator の説明は「基本的な算術演算を行います」、システムプロンプトは「あなたは計算アシスタントです。数学の演算にはツールを使ってください」です。info_lookup の説明は「XYZ についての情報を調べます」、システムプロンプトは「ツールを使って RAG システムに問い合わせ、XYZ についての情報に答えてください」です。ツールの docstring は「2つの数を足します」「2つの数を引きます」です。入力文は「5 と 3 を足せますか」です）
 
 > [!TIP]
 > エージェントやツールについて、更に学びたいですか？<a href="https://docs.llamaindex.ai/en/stable/examples/agent/agent_workflow_basic/">AgentWorkflow Basic Introduction</a> や <a href="https://docs.llamaindex.ai/en/stable/understanding/agent/">Agent Learning Guide</a> では、ストリーミング、コンテキストのシリアライズ、human-in-the-loop などについて、更に詳しく学べます。

@@ -91,7 +91,7 @@ result = agent.run(
 print(result)   # 出力: Gotham Catering Co.
 ```
 
-（ツール説明と入力文の訳：docstring は「このツールは、ゴッサムシティで最も評価の高いケータリングサービスを返します。引数 query は、ケータリングサービスを探す為の検索語です」です。入力文は「ゴッサムシティで最も評価の高いケータリングサービスの名前を教えて下さい」です。出力は社名の Gotham Catering Co. です）
+（ツール説明と入力文の訳：docstring は「このツールは、ゴッサムシティで最も評価の高いケータリングサービスを返します。引数 query は、ケータリングサービスを探す為の検索語です」です。入力文は「ゴッサムシティで最も評価の高いケータリングサービスの名前を教えてください」です。出力は社名の Gotham Catering Co. です）
 
 ### ツールを Python クラスとして定義する
 
@@ -167,7 +167,7 @@ print(result)  # 出力: "Gotham Rogues' Ball: A mysterious masquerade where gue
 
 アルフレッドは、ウェイン邸での完璧なパーティーの為に様々なツールを使えます。
 
-- 先ず、`DuckDuckGoSearchTool` を使って、独創的なスーパーヒーローをテーマにしたパーティーのアイデアを探せます。
+- まず、`DuckDuckGoSearchTool` を使って、独創的なスーパーヒーローをテーマにしたパーティーのアイデアを探せます。
 
 - ケータリングについては、`GoogleSearchTool` を頼りにゴッサムで最高評価のサービスを探せます。
 
@@ -215,13 +215,13 @@ agent = CodeAgent(
 agent.run("Generate an image of a luxurious superhero-themed party at Wayne Manor with made-up superheros.")
 ```
 
-（入力文の訳：創作のスーパーヒーローが登場する、Wayne 邸での豪華なスーパーヒーローをテーマにしたパーティーの画像を生成して下さい）
+（入力文の訳：創作のスーパーヒーローが登場する、Wayne 邸での豪華なスーパーヒーローをテーマにしたパーティーの画像を生成してください）
 
 ### Hugging Face Space をツールとしてインポートする
 
 `Tool.from_space()` を使えば、HF Space をツールとしてインポートすることも出来ます。これにより、画像生成からデータ分析まで、様々なタスクに対応する、コミュニティで公開された何千もの Space と連携出来るようになります。
 
-このツールは `gradio_client` を使って Space の Gradio バックエンドに接続するので、まだインストールしていない場合は `pip` でインストールして下さい。
+このツールは `gradio_client` を使って Space の Gradio バックエンドに接続するので、まだインストールしていない場合は `pip` でインストールしてください。
 
 パーティーの為に、アルフレッドは既存の HF Space を使って、告知に使う AI 生成画像を生成出来ます（前に触れた事前構築ツールを使う代わりに）。作ってみましょう！
 
@@ -244,7 +244,7 @@ agent.run(
 )
 ```
 
-（ツール説明と入力文の訳：説明は「プロンプトから画像を生成します」です。入力文は「このプロンプトを改善し、その画像を生成して下さい」で、追加引数のプロンプトは「Wayne 邸での壮大なスーパーヒーローをテーマにしたパーティーで、Alfred が豪華なガラを見守っています」です）
+（ツール説明と入力文の訳：説明は「プロンプトから画像を生成します」です。入力文は「このプロンプトを改善し、その画像を生成してください」で、追加引数のプロンプトは「Wayne 邸での壮大なスーパーヒーローをテーマにしたパーティーで、Alfred が豪華なガラを見守っています」です）
 
 ### LangChain ツールをインポートする
 
@@ -257,13 +257,13 @@ agent.run(
 
 方法は次の通りです。
 
-先ず、`smolagents` 用の `langchain` 統合をインストールする必要があります。
+まず、`smolagents` 用の `langchain` 統合をインストールする必要があります。
 
 ```bash
 pip install -U langchain-community
 ```
 
-langchain 統合をインストールしたあと、SerpAPI キーを設定して下さい。これは `SerpAPITool` のような検索ベースのツールに必要です。
+langchain 統合をインストールしたあと、SerpAPI キーを設定してください。これは `SerpAPITool` のような検索ベースのツールに必要です。
 
 ```python
 os.environ['SERPAPI_API_KEY'] = '...'
@@ -282,16 +282,16 @@ agent = CodeAgent(tools=[search_tool], model=model)
 agent.run("Search for luxury entertainment ideas for a superhero-themed event, such as live performances and interactive experiences.")
 ```
 
-（入力文の訳：ライブパフォーマンスや対話型体験のような、スーパーヒーローをテーマにしたイベントの為の豪華なエンターテイメントのアイデアを検索して下さい）
+（入力文の訳：ライブパフォーマンスや対話型体験のような、スーパーヒーローをテーマにしたイベントの為の豪華なエンターテイメントのアイデアを検索してください）
 
 ### あらゆる MCP サーバーからツールコレクションをインポートする
 
-`smolagents` では、[glama.ai](https://glama.ai/mcp/servers) や [smithery.ai](https://smithery.ai) で利用出来る何百もの MCP サーバーからツールをインポートすることも出来ます。MCP についてもっと深く知りたい場合は、[無料の MCP コース](https://huggingface.co/learn/mcp-course/)をご覧下さい。
+`smolagents` では、[glama.ai](https://glama.ai/mcp/servers) や [smithery.ai](https://smithery.ai) で利用出来る何百もの MCP サーバーからツールをインポートすることも出来ます。MCP についてもっと深く知りたい場合は、[無料の MCP コース](https://huggingface.co/learn/mcp-course/)をご覧ください。
 
 <details>
 <summary>MCP クライアントをインストールする</summary>
 
-先ず、`smolagents` 用の `mcp` 統合をインストールする必要があります。
+まず、`smolagents` 用の `mcp` 統合をインストールする必要があります。
 
 ```bash
 pip install "smolagents[mcp]"
@@ -321,7 +321,7 @@ with ToolCollection.from_mcp(server_parameters, trust_remote_code=True) as tool_
     agent.run("Please find a remedy for hangover.")
 ```
 
-（入力文の訳：二日酔いの治療法を見つけて下さい）
+（入力文の訳：二日酔いの治療法を見つけてください）
 
 このセットアップにより、アルフレッドは豪華なエンターテイメントの選択肢を素早く見つけることが出来、ゴッサムの上流階級のゲストに忘れられない体験を保証します。このツールは、ウェイン邸での完璧なスーパーヒーローをテーマにしたイベントの企画を助けてくれます！
 
