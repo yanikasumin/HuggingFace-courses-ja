@@ -7,38 +7,38 @@
     {label: "Aws Studio", value: "https://studiolab.sagemaker.aws/import/github/huggingface/notebooks/blob/master/course/en/chapter6/section8.ipynb"},
 ]} />
 
-前の節で見たとおり、トークン化はいくつかのステップから構成されます。
+前の節で見た通り、トークン化はいくつかのステップから構成されます。
 
 - 正規化（スペースやアクセントの除去、Unicode 正規化など、必要と見なされるテキストのクリーンアップ全般）
 - 事前トークン化（入力を単語に分割すること）
 - トークナイザモデルによる処理（事前トークン化された単語をトークン列に変換すること）
 - 後処理（トークナイザの特殊トークンの追加、アテンションマスクとトークンタイプ ID の生成）
 
-思い出していただくために、全体のプロセスをもう一度示します。
+思い出して頂く為に、全体のプロセスをもう一度示します。
 
 <div class="flex justify-center">
 <img class="block dark:hidden" src="https://huggingface.co/datasets/huggingface-course/documentation-images/resolve/main/en/chapter6/tokenization_pipeline.svg" alt="トークン化のパイプライン">
 <img class="hidden dark:block" src="https://huggingface.co/datasets/huggingface-course/documentation-images/resolve/main/en/chapter6/tokenization_pipeline-dark.svg" alt="トークン化のパイプライン">
 </div>
 
-🤗 Tokenizers ライブラリは、これらの各ステップに複数の選択肢を用意し、自由に組み合わせられるように作られています。この節では、[第2節](/course/chapter6/2) で行ったように既存のトークナイザを基に新しいトークナイザを学習するのではなく、トークナイザを一から構築する方法を見ていきます。これで、思いつく限りのあらゆる種類のトークナイザを構築できるようになります！
+🤗 Tokenizers ライブラリは、これらの各ステップに複数の選択肢を用意し、自由に組み合わせられるように作られています。この節では、[第2節](/course/chapter6/2) で行ったように既存のトークナイザを基に新しいトークナイザを学習するのではなく、トークナイザを一から構築する方法を見ていきます。これで、思いつく限りのあらゆる種類のトークナイザを構築出来るようになります！
 
 <Youtube id="MR8tZm5ViWU"/>
 
 より正確に言えば、このライブラリは中心となる `Tokenizer` クラスを軸に構築されており、構成要素はサブモジュールにまとめられています。
 
-- `normalizers` には、使用できるあらゆる種類の `Normalizer` が含まれています（完全なリストは[こちら](https://huggingface.co/docs/tokenizers/api/normalizers)）。
-- `pre_tokenizers` には、使用できるあらゆる種類の `PreTokenizer` が含まれています（完全なリストは[こちら](https://huggingface.co/docs/tokenizers/api/pre-tokenizers)）。
-- `models` には、`BPE`、`WordPiece`、`Unigram` など、使用できる様々な種類の `Model` が含まれています（完全なリストは[こちら](https://huggingface.co/docs/tokenizers/api/models)）。
-- `trainers` には、コーパスでモデルを学習するために使用できる様々な種類の `Trainer` が含まれています（モデルの種類ごとに1つ。完全なリストは[こちら](https://huggingface.co/docs/tokenizers/api/trainers)）。
-- `post_processors` には、使用できる様々な種類の `PostProcessor` が含まれています（完全なリストは[こちら](https://huggingface.co/docs/tokenizers/api/post-processors)）。
-- `decoders` には、トークン化の出力をデコードするために使用できる様々な種類の `Decoder` が含まれています（完全なリストは[こちら](https://huggingface.co/docs/tokenizers/components#decoders)）。
+- `normalizers` には、使用出来るあらゆる種類の `Normalizer` が含まれています（完全なリストは[こちら](https://huggingface.co/docs/tokenizers/api/normalizers)）。
+- `pre_tokenizers` には、使用出来るあらゆる種類の `PreTokenizer` が含まれています（完全なリストは[こちら](https://huggingface.co/docs/tokenizers/api/pre-tokenizers)）。
+- `models` には、`BPE`、`WordPiece`、`Unigram` など、使用出来る様々な種類の `Model` が含まれています（完全なリストは[こちら](https://huggingface.co/docs/tokenizers/api/models)）。
+- `trainers` には、コーパスでモデルを学習する為に使用出来る様々な種類の `Trainer` が含まれています（モデルの種類ごとに1つ。完全なリストは[こちら](https://huggingface.co/docs/tokenizers/api/trainers)）。
+- `post_processors` には、使用出来る様々な種類の `PostProcessor` が含まれています（完全なリストは[こちら](https://huggingface.co/docs/tokenizers/api/post-processors)）。
+- `decoders` には、トークン化の出力をデコードする為に使用出来る様々な種類の `Decoder` が含まれています（完全なリストは[こちら](https://huggingface.co/docs/tokenizers/components#decoders)）。
 
-構成要素の全体のリストは[こちら](https://huggingface.co/docs/tokenizers/components)で確認できます。
+構成要素の全体のリストは[こちら](https://huggingface.co/docs/tokenizers/components)で確認出来ます。
 
 ## コーパスの取得[[acquiring-a-corpus]]
 
-新しいトークナイザを学習するために、小さなテキストコーパスを使います（例が速く実行できるようにするためです）。コーパスの取得手順は[この章の冒頭](/course/chapter6/2)で行ったものと似ていますが、今回は [WikiText-2](https://huggingface.co/datasets/wikitext) データセットを使います。
+新しいトークナイザを学習する為に、小さなテキストコーパスを使います（例が速く実行出来るようにする為です）。コーパスの取得手順は[この章の冒頭](/course/chapter6/2)で行ったものと似ていますが、今回は [WikiText-2](https://huggingface.co/datasets/wikitext) データセットを使います。
 
 ```python
 from datasets import load_dataset
@@ -53,7 +53,7 @@ def get_training_corpus():
 
 `get_training_corpus()` 関数は、1,000件のテキストのバッチを順に返すジェネレータで、トークナイザの学習に使います。
 
-🤗 Tokenizers はテキストファイルから直接学習することもできます。WikiText-2 のすべてのテキストを含むテキストファイルを生成し、ローカルで使えるようにする方法は次のとおりです。
+Tokenizers はテキストファイルから直接学習することも出来ます。WikiText-2 の全てのテキストを含むテキストファイルを生成し、ローカルで使えるようにする方法は次の通りです。
 
 ```python
 with open("wikitext-2.txt", "w", encoding="utf-8") as f:
@@ -61,11 +61,11 @@ with open("wikitext-2.txt", "w", encoding="utf-8") as f:
         f.write(dataset[i]["text"] + "\n")
 ```
 
-次に、BERT、GPT-2、XLNet のトークナイザをブロックごとに構築する方法を紹介します。これにより、WordPiece、BPE、Unigram という3つの主要なトークン化アルゴリズムの例がそれぞれ得られます。まずは BERT から始めましょう！
+次に、BERT、GPT-2、XLNet のトークナイザをブロックごとに構築する方法を紹介します。これにより、WordPiece、BPE、Unigram という3つの主要なトークン化アルゴリズムの例がそれぞれ得られます。先ずは BERT から始めましょう！
 
 ## WordPiece トークナイザを一から構築する[[building-a-wordpiece-tokenizer-from-scratch]]
 
-🤗 Tokenizers ライブラリでトークナイザを構築するには、まず `model` を指定して `Tokenizer` オブジェクトをインスタンス化し、次に `normalizer`、`pre_tokenizer`、`post_processor`、`decoder` の各属性に希望の値を設定します。
+Tokenizers ライブラリでトークナイザを構築するには、先ず `model` を指定して `Tokenizer` オブジェクトをインスタンス化し、次に `normalizer`、`pre_tokenizer`、`post_processor`、`decoder` の各属性に希望の値を設定します。
 
 この例では、WordPiece モデルを使った `Tokenizer` を作成します。
 
@@ -83,15 +83,17 @@ from tokenizers import (
 tokenizer = Tokenizer(models.WordPiece(unk_token="[UNK]"))
 ```
 
-`unk_token` を指定する必要があります。これにより、モデルは、見たことのない文字に遭遇したときに何を返すべきかを知ることができます。ここで設定できる他の引数には、モデルの `vocab`（モデルを学習するので設定する必要はありません）や、各単語の最大長を指定する `max_input_chars_per_word`（渡した値より長い単語は分割されます）があります。
+`unk_token` を指定する必要があります。これにより、モデルは、見たことの無い文字に遭遇した時に何を返すべきかを知ることが出来ます。ここで設定出来る他の引数には、モデルの `vocab`（モデルを学習するので設定する必要はありません）や、各単語の最大長を指定する `max_input_chars_per_word`（渡した値より長い単語は分割されます）があります。
 
-トークン化の最初のステップは正規化なので、そこから始めましょう。BERT は広く使われているため、BERT 向けに設定できる定番のオプションを備えた `BertNormalizer` があります。`lowercase` と `strip_accents` は名前のとおりです。`clean_text` はすべての制御文字を取り除き、連続するスペースを1つに置き換えます。`handle_chinese_chars` は中国語の文字の周りにスペースを配置します。`bert-base-uncased` トークナイザを再現するには、このノーマライザを設定するだけで済みます。
+トークン化の最初のステップは正規化なので、そこから始めましょう。BERT は広く使われている為、BERT 向けに設定出来る定番のオプションを備えた `BertNormalizer` があります。`lowercase` と `strip_accents` は名前の通りです。`clean_text` は全ての制御文字を取り除き、連続するスペースを1つに置き換えます。`handle_chinese_chars` は中国語の文字の周りにスペースを配置します。
+
+`bert-base-uncased` トークナイザを再現するには、このノーマライザを設定するだけで済みます。
 
 ```python
 tokenizer.normalizer = normalizers.BertNormalizer(lowercase=True)
 ```
 
-但し一般論として、新しいトークナイザを構築する際には、🤗 Tokenizers ライブラリに実装済みのこのような便利なノーマライザが使えるとは限りません。そこで、BERT ノーマライザを手作業で作る方法を見てみましょう。このライブラリには `Lowercase` ノーマライザと `StripAccents` ノーマライザがあり、`Sequence` を使って複数のノーマライザを組み合わせることができます。
+但し一般論として、新しいトークナイザを構築する際には、Tokenizers ライブラリに実装済みのこのような便利なノーマライザが使えるとは限りません。そこで、BERT ノーマライザを手作業で作る方法を見てみましょう。このライブラリには `Lowercase` ノーマライザと `StripAccents` ノーマライザがあり、`Sequence` を使って複数のノーマライザを組み合わせることが出来ます。
 
 ```python
 tokenizer.normalizer = normalizers.Sequence(
@@ -99,9 +101,9 @@ tokenizer.normalizer = normalizers.Sequence(
 )
 ```
 
-更に Unicode ノーマライザの `NFD` も使っています。そうしないと `StripAccents` ノーマライザがアクセント付き文字を正しく認識できず、取り除けないためです。
+更に Unicode ノーマライザの `NFD` も使っています。そうしないと `StripAccents` ノーマライザがアクセント付き文字を正しく認識出来ず、取り除けない為です。
 
-前に見たとおり、`normalizer` の `normalize_str()` メソッドを使って、与えられたテキストにどんな効果があるかを確認できます。
+前に見た通り、`normalizer` の `normalize_str()` メソッドを使って、与えられたテキストにどんな効果があるかを確認出来ます。
 
 ```python
 print(tokenizer.normalizer.normalize_str("Héllò hôw are ü?"))
@@ -111,23 +113,27 @@ print(tokenizer.normalizer.normalize_str("Héllò hôw are ü?"))
 hello how are u?
 ```
 
+（入力文の訳は、第4節の例と同じです）
+
 > [!TIP]
 > **更に深く知るには** Unicode 文字 `u"\u0085"` を含む文字列で、先ほどの2つのバージョンのノーマライザを試すと、両者が完全には等価でないことに気づくでしょう。
-> `normalizers.Sequence` を使ったバージョンを過度に複雑にしないため、`clean_text` 引数が `True`（デフォルトの動作）のときに `BertNormalizer` が必要とする正規表現による置換は含めていません。但し心配はいりません。便利な `BertNormalizer` を使わなくても、ノーマライザの列に `normalizers.Replace` を2つ追加すれば、まったく同じ正規化が可能です。
+> `normalizers.Sequence` を使ったバージョンを過度に複雑にしない為、`clean_text` 引数が `True`（デフォルトの動作）の時に `BertNormalizer` が必要とする正規表現による置換は含めていません。但し心配はいりません。便利な `BertNormalizer` を使わなくても、ノーマライザの列に `normalizers.Replace` を2つ追加すれば、まったく同じ正規化が可能です。
 
-次は事前トークン化のステップです。こちらも、組み立て済みの `BertPreTokenizer` を使うことができます。
+次は事前トークン化のステップです。こちらも、組み立て済みの `BertPreTokenizer` を使うことが出来ます。
 
 ```python
 tokenizer.pre_tokenizer = pre_tokenizers.BertPreTokenizer()
 ```
 
-あるいは、一から構築することもできます。
+あるいは、一から構築することも出来ます。
 
 ```python
 tokenizer.pre_tokenizer = pre_tokenizers.Whitespace()
 ```
 
-`Whitespace` 事前トークナイザは、空白と、文字・数字・アンダースコア以外のすべての文字で分割する点に注意してください。そのため技術的には、空白と句読点で分割することになります。
+（入力文の訳：私の事前トークナイザをテストしましょう）
+
+`Whitespace` 事前トークナイザは、空白と、文字・数字・アンダースコア以外の全ての文字で分割する点に注意して下さい。その為技術的には、空白と句読点で分割することになります。
 
 ```python
 tokenizer.pre_tokenizer.pre_tokenize_str("Let's test my pre-tokenizer.")
@@ -145,11 +151,13 @@ pre_tokenizer = pre_tokenizers.WhitespaceSplit()
 pre_tokenizer.pre_tokenize_str("Let's test my pre-tokenizer.")
 ```
 
+（入力文の訳は、前の例と同じです）
+
 ```python out
 [("Let's", (0, 5)), ('test', (6, 10)), ('my', (11, 13)), ('pre-tokenizer.', (14, 28))]
 ```
 
-ノーマライザと同様に、`Sequence` を使って複数の事前トークナイザを組み合わせることができます。
+ノーマライザと同様に、`Sequence` を使って複数の事前トークナイザを組み合わせることが出来ます。
 
 ```python
 pre_tokenizer = pre_tokenizers.Sequence(
@@ -158,19 +166,21 @@ pre_tokenizer = pre_tokenizers.Sequence(
 pre_tokenizer.pre_tokenize_str("Let's test my pre-tokenizer.")
 ```
 
+（入力文の訳は、前の例と同じです）
+
 ```python out
 [('Let', (0, 3)), ("'", (3, 4)), ('s', (4, 5)), ('test', (6, 10)), ('my', (11, 13)), ('pre', (14, 17)),
  ('-', (17, 18)), ('tokenizer', (18, 27)), ('.', (27, 28))]
 ```
 
-トークン化パイプラインの次のステップは、入力をモデルに通すことです。モデルの初期化は既に済んでいますが、まだ学習が必要です。そのためには `WordPieceTrainer` が必要です。🤗 Tokenizers でトレーナーをインスタンス化する際に覚えておくべき主なポイントは、使用する予定の特殊トークンをすべて渡す必要があることです。そうしないと、学習コーパスに含まれていないため、語彙に追加されません。
+トークン化パイプラインの次のステップは、入力をモデルに通すことです。モデルの初期化は既に済んでいますが、まだ学習が必要です。その為には `WordPieceTrainer` が必要です。Tokenizers でトレーナーをインスタンス化する際に覚えておくべき主なポイントは、使用する予定の特殊トークンを全て渡す必要があることです。そうしないと、学習コーパスに含まれていない為、語彙に追加されません。
 
 ```python
 special_tokens = ["[UNK]", "[PAD]", "[CLS]", "[SEP]", "[MASK]"]
 trainer = trainers.WordPieceTrainer(vocab_size=25000, special_tokens=special_tokens)
 ```
 
-`vocab_size` と `special_tokens` の指定に加えて、`min_frequency`（語彙に含めるためにトークンが現れなければならない回数）を設定したり、`continuing_subword_prefix` を変更したり（`##` 以外のものを使いたい場合）できます。
+`vocab_size` と `special_tokens` の指定に加えて、`min_frequency`（語彙に含める為にトークンが現れなければならない回数）を設定したり、`continuing_subword_prefix` を変更したり（`##` 以外のものを使いたい場合）出来ます。
 
 前に定義したイテレータを使ってモデルを学習するには、次のコマンドを実行するだけです。
 
@@ -178,27 +188,29 @@ trainer = trainers.WordPieceTrainer(vocab_size=25000, special_tokens=special_tok
 tokenizer.train_from_iterator(get_training_corpus(), trainer=trainer)
 ```
 
-テキストファイルを使ってトークナイザを学習することもできます。その場合は次のようになります（事前に空の `WordPiece` でモデルを再初期化しています）。
+テキストファイルを使ってトークナイザを学習することも出来ます。その場合は次のようになります（事前に空の `WordPiece` でモデルを再初期化しています）。
 
 ```python
 tokenizer.model = models.WordPiece(unk_token="[UNK]")
 tokenizer.train(["wikitext-2.txt"], trainer=trainer)
 ```
 
-どちらの場合も、`encode()` メソッドを呼び出してテキストに対するトークナイザの動作をテストできます。
+どちらの場合も、`encode()` メソッドを呼び出してテキストに対するトークナイザの動作をテスト出来ます。
 
 ```python
 encoding = tokenizer.encode("Let's test this tokenizer.")
 print(encoding.tokens)
 ```
 
+（入力文の訳：このトークナイザをテストしましょう）
+
 ```python out
 ['let', "'", 's', 'test', 'this', 'tok', '##eni', '##zer', '.']
 ```
 
-得られた `encoding` は `Encoding` で、その様々な属性にトークナイザの必要な出力がすべて含まれています。`ids`、`type_ids`、`tokens`、`offsets`、`attention_mask`、`special_tokens_mask`、`overflowing` です。
+得られた `encoding` は `Encoding` で、その様々な属性にトークナイザの必要な出力が全て含まれています。`ids`、`type_ids`、`tokens`、`offsets`、`attention_mask`、`special_tokens_mask`、`overflowing` です。
 
-トークン化パイプラインの最後のステップは後処理です。先頭に `[CLS]` トークンを、末尾（文のペアの場合は各文の後）に `[SEP]` トークンを追加する必要があります。そのために `TemplateProcessor` を使いますが、まず語彙における `[CLS]` と `[SEP]` トークンの ID を知る必要があります。
+トークン化パイプラインの最後のステップは後処理です。先頭に `[CLS]` トークンを、末尾（文のペアの場合は各文の後）に `[SEP]` トークンを追加する必要があります。その為に `TemplateProcessor` を使いますが、先ず語彙における `[CLS]` と `[SEP]` トークンの ID を知る必要があります。
 
 ```python
 cls_token_id = tokenizer.token_to_id("[CLS]")
@@ -222,9 +234,9 @@ tokenizer.post_processor = processors.TemplateProcessing(
 )
 ```
 
-特殊トークンの ID も渡す必要がある点に注意してください。トークナイザがそれらを ID に正しく変換できるようにするためです。
+特殊トークンの ID も渡す必要がある点に注意して下さい。トークナイザがそれらを ID に正しく変換出来るようにする為です。
 
-これを追加すると、先ほどの例に戻ったときに次のようになります。
+これを追加すると、先ほどの例に戻った時に次のようになります。
 
 ```python
 encoding = tokenizer.encode("Let's test this tokenizer.")
@@ -242,6 +254,8 @@ encoding = tokenizer.encode("Let's test this tokenizer...", "on a pair of senten
 print(encoding.tokens)
 print(encoding.type_ids)
 ```
+
+（文ペアの訳：1文目は「このトークナイザをテストしましょう…」、2文目は「文のペアで」です）
 
 ```python out
 ['[CLS]', 'let', "'", 's', 'test', 'this', 'tok', '##eni', '##zer', '...', '[SEP]', 'on', 'a', 'pair', 'of', 'sentences', '.', '[SEP]']
@@ -264,21 +278,21 @@ tokenizer.decode(encoding.ids)
 "let's test this tokenizer... on a pair of sentences."
 ```
 
-素晴らしい！トークナイザは次のように1つの JSON ファイルに保存できます。
+素晴らしい。トークナイザは次のように1つの JSON ファイルに保存出来ます。
 
 ```python
 tokenizer.save("tokenizer.json")
 ```
 
-そのファイルは、`from_file()` メソッドを使って `Tokenizer` オブジェクトに再読み込みできます。
+そのファイルは、`from_file()` メソッドを使って `Tokenizer` オブジェクトに再読み込み出来ます。
 
 ```python
 new_tokenizer = Tokenizer.from_file("tokenizer.json")
 ```
 
-このトークナイザを 🤗 Transformers で使うには、`PreTrainedTokenizerFast` でラップする必要があります。汎用クラスを使うことも、トークナイザが既存のモデルに対応する場合はそのクラス（ここでは `BertTokenizerFast`）を使うこともできます。このレッスンを応用して完全に新しいトークナイザを構築する場合は、前者の方法を使うことになります。
+このトークナイザを Transformers で使うには、`PreTrainedTokenizerFast` でラップする必要があります。汎用クラスを使うことも、トークナイザが既存のモデルに対応する場合はそのクラス（ここでは `BertTokenizerFast`）を使うことも出来ます。このレッスンを応用して完全に新しいトークナイザを構築する場合は、前者の方法を使うことになります。
 
-トークナイザを `PreTrainedTokenizerFast` でラップするには、構築したトークナイザを `tokenizer_object` として渡すか、保存したトークナイザファイルを `tokenizer_file` として渡します。覚えておくべき重要なポイントは、特殊トークンをすべて手動で設定しなければならないことです。そのクラスは `tokenizer` オブジェクトから、どのトークンがマスクトークンや `[CLS]` トークンなのかなどを推測できないためです。
+トークナイザを `PreTrainedTokenizerFast` でラップするには、構築したトークナイザを `tokenizer_object` として渡すか、保存したトークナイザファイルを `tokenizer_file` として渡します。覚えておくべき重要なポイントは、特殊トークンを全て手動で設定しなければならないことです。そのクラスは `tokenizer` オブジェクトから、どのトークンがマスクトークンや `[CLS]` トークンなのかなどを推測出来ない為です。
 
 ```python
 from transformers import PreTrainedTokenizerFast
@@ -302,19 +316,19 @@ from transformers import BertTokenizerFast
 wrapped_tokenizer = BertTokenizerFast(tokenizer_object=tokenizer)
 ```
 
-このトークナイザは、他の 🤗 Transformers トークナイザと同様に使えます。`save_pretrained()` メソッドで保存したり、`push_to_hub()` メソッドで Hub にアップロードしたりできます。
+このトークナイザは、他の Transformers トークナイザと同様に使えます。`save_pretrained()` メソッドで保存したり、`push_to_hub()` メソッドで Hub にアップロードしたり出来ます。
 
-WordPiece トークナイザの構築方法を見たので、次は BPE トークナイザでも同じことをやってみましょう。手順はすべてご存じなので少し速く進め、違いだけを強調します。
+WordPiece トークナイザの構築方法を見たので、次は BPE トークナイザでも同じことをやってみましょう。手順は全てご存じなので少し速く進め、違いだけを強調します。
 
 ## BPE トークナイザを一から構築する[[building-a-bpe-tokenizer-from-scratch]]
 
-GPT-2 トークナイザを構築しましょう。BERT トークナイザのときと同様に、BPE モデルで `Tokenizer` を初期化することから始めます。
+GPT-2 トークナイザを構築しましょう。BERT トークナイザの時と同様に、BPE モデルで `Tokenizer` を初期化することから始めます。
 
 ```python
 tokenizer = Tokenizer(models.BPE())
 ```
 
-こちらも BERT のときと同様、語彙があればモデルをそれで初期化できます（その場合は `vocab` と `merges` を渡す必要があります）。しかし一から学習するので、その必要はありません。また、GPT-2 はバイトレベル BPE を使うため、`unk_token` を指定する必要もありません。
+こちらも BERT の時と同様、語彙があればモデルをそれで初期化出来ます（その場合は `vocab` と `merges` を渡す必要があります）。しかし一から学習するので、その必要はありません。また、GPT-2 はバイトレベル BPE を使う為、`unk_token` を指定する必要もありません。
 
 GPT-2 はノーマライザを使わないので、そのステップは飛ばして直接事前トークン化に進みます。
 
@@ -328,6 +342,8 @@ tokenizer.pre_tokenizer = pre_tokenizers.ByteLevel(add_prefix_space=False)
 tokenizer.pre_tokenizer.pre_tokenize_str("Let's test pre-tokenization!")
 ```
 
+（入力文の訳：事前トークン化をテストしましょう）
+
 ```python out
 [('Let', (0, 3)), ("'s", (3, 5)), ('Ġtest', (5, 10)), ('Ġpre', (10, 14)), ('-', (14, 15)),
  ('tokenization', (15, 27)), ('!', (27, 28))]
@@ -340,9 +356,9 @@ trainer = trainers.BpeTrainer(vocab_size=25000, special_tokens=["<|endoftext|>"]
 tokenizer.train_from_iterator(get_training_corpus(), trainer=trainer)
 ```
 
-`WordPieceTrainer` と同様に、`vocab_size` と `special_tokens` のほか、必要であれば `min_frequency` を指定できます。また、単語末尾のサフィックス（`</w>` のようなもの）がある場合は、`end_of_word_suffix` で設定できます。
+`WordPieceTrainer` と同様に、`vocab_size` と `special_tokens` のほか、必要であれば `min_frequency` を指定出来ます。また、単語末尾のサフィックス（`</w>` のようなもの）が有る場合は、`end_of_word_suffix` で設定出来ます。
 
-このトークナイザもテキストファイルで学習できます。
+このトークナイザもテキストファイルで学習出来ます。
 
 ```python
 tokenizer.model = models.BPE()
@@ -356,6 +372,8 @@ encoding = tokenizer.encode("Let's test this tokenizer.")
 print(encoding.tokens)
 ```
 
+（入力文の訳は、WordPiece の例と同じです）
+
 ```python out
 ['L', 'et', "'", 's', 'Ġtest', 'Ġthis', 'Ġto', 'ken', 'izer', '.']
 ```
@@ -366,7 +384,7 @@ GPT-2 トークナイザ向けのバイトレベルの後処理は次のよう�
 tokenizer.post_processor = processors.ByteLevel(trim_offsets=False)
 ```
 
-`trim_offsets = False` オプションは、'Ġ' で始まるトークンのオフセットをそのままにするよう後処理に指示します。こうすると、オフセットの開始位置は単語の最初の文字ではなく、単語の前のスペースを指すようになります（スペースは技術的にはトークンの一部であるためです）。先ほどエンコードしたテキストで結果を見てみましょう。`'Ġtest'` はインデックス4のトークンです。
+`trim_offsets = False` オプションは、'Ġ' で始まるトークンのオフセットをそのままにするよう後処理に指示します。こうすると、オフセットの開始位置は単語の最初の文字ではなく、単語の前のスペースを指すようになります（スペースは技術的にはトークンの一部である為です）。先ほどエンコードしたテキストで結果を見てみましょう。`'Ġtest'` はインデックス4のトークンです。
 
 ```python
 sentence = "Let's test this tokenizer."
@@ -385,7 +403,7 @@ sentence[start:end]
 tokenizer.decoder = decoders.ByteLevel()
 ```
 
-正しく動作するか再確認できます。
+正しく動作するか再確認出来ます。
 
 ```python
 tokenizer.decode(encoding.ids)
@@ -395,7 +413,7 @@ tokenizer.decode(encoding.ids)
 "Let's test this tokenizer."
 ```
 
-素晴らしい！これで完成したので、前のようにトークナイザを保存できます。🤗 Transformers で使いたい場合は、`PreTrainedTokenizerFast` 又は `GPT2TokenizerFast` でラップします。
+素晴らしい。これで完成したので、前のようにトークナイザを保存出来ます。Transformers で使いたい場合は、`PreTrainedTokenizerFast` 又は `GPT2TokenizerFast` でラップします。
 
 ```python
 from transformers import PreTrainedTokenizerFast
@@ -407,7 +425,7 @@ wrapped_tokenizer = PreTrainedTokenizerFast(
 )
 ```
 
-又は次のとおりです。
+又は次の通りです。
 
 ```python
 from transformers import GPT2TokenizerFast
@@ -419,13 +437,13 @@ wrapped_tokenizer = GPT2TokenizerFast(tokenizer_object=tokenizer)
 
 ## Unigram トークナイザを一から構築する[[building-a-unigram-tokenizer-from-scratch]]
 
-XLNet トークナイザを構築しましょう。前のトークナイザのときと同様に、Unigram モデルで `Tokenizer` を初期化することから始めます。
+XLNet トークナイザを構築しましょう。前のトークナイザの時と同様に、Unigram モデルで `Tokenizer` を初期化することから始めます。
 
 ```python
 tokenizer = Tokenizer(models.Unigram())
 ```
 
-こちらも、語彙があればモデルをそれで初期化できます。
+こちらも、語彙があればモデルをそれで初期化出来ます。
 
 正規化については、XLNet はいくつかの置換（SentencePiece 由来のもの）を使います。
 
@@ -457,6 +475,8 @@ tokenizer.pre_tokenizer = pre_tokenizers.Metaspace()
 tokenizer.pre_tokenizer.pre_tokenize_str("Let's test the pre-tokenizer!")
 ```
 
+（入力文の訳：事前トークナイザをテストしましょう）
+
 ```python out
 [("▁Let's", (0, 5)), ('▁test', (5, 10)), ('▁the', (10, 14)), ('▁pre-tokenizer!', (14, 29))]
 ```
@@ -471,9 +491,9 @@ trainer = trainers.UnigramTrainer(
 tokenizer.train_from_iterator(get_training_corpus(), trainer=trainer)
 ```
 
-`UnigramTrainer` で忘れてはならない重要な引数が `unk_token` です。Unigram アルゴリズム固有の他の引数も渡せます。たとえば、トークンを取り除く各ステップでの `shrinking_factor`（デフォルトは 0.75）や、個々のトークンの最大長を指定する `max_piece_length`（デフォルトは 16）などです。
+`UnigramTrainer` で忘れてはならない重要な引数が `unk_token` です。Unigram アルゴリズム固有の他の引数も渡せます。例えば、トークンを取り除く各ステップでの `shrinking_factor`（デフォルトは 0.75）や、個々のトークンの最大長を指定する `max_piece_length`（デフォルトは 16）などです。
 
-このトークナイザもテキストファイルで学習できます。
+このトークナイザもテキストファイルで学習出来ます。
 
 ```python
 tokenizer.model = models.Unigram()
@@ -487,11 +507,13 @@ encoding = tokenizer.encode("Let's test this tokenizer.")
 print(encoding.tokens)
 ```
 
+（入力文の訳は、WordPiece の例と同じです）
+
 ```python out
 ['▁Let', "'", 's', '▁test', '▁this', '▁to', 'ken', 'izer', '.']
 ```
 
-XLNet の特徴は、`<cls>` トークンを文の末尾に置き、タイプ ID を 2 にする（他のトークンと区別するため）ことです。また、左側にパディングを行います。BERT のときのようにテンプレートですべての特殊トークンとトークンタイプ ID を処理できますが、まず `<cls>` と `<sep>` トークンの ID を取得する必要があります。
+XLNet の特徴は、`<cls>` トークンを文の末尾に置き、タイプ ID を 2 にする（他のトークンと区別する為）ことです。また、左側にパディングを行います。BERT の時のようにテンプレートで全ての特殊トークンとトークンタイプ ID を処理出来ますが、先ず `<cls>` と `<sep>` トークンの ID を取得する必要があります。
 
 ```python
 cls_token_id = tokenizer.token_to_id("<cls>")
@@ -513,13 +535,15 @@ tokenizer.post_processor = processors.TemplateProcessing(
 )
 ```
 
-文のペアをエンコードして、動作をテストできます。
+文のペアをエンコードして、動作をテスト出来ます。
 
 ```python
 encoding = tokenizer.encode("Let's test this tokenizer...", "on a pair of sentences!")
 print(encoding.tokens)
 print(encoding.type_ids)
 ```
+
+（文ペアの訳は、WordPiece の文ペアの例とほぼ同じです）
 
 ```python out
 ['▁Let', "'", 's', '▁test', '▁this', '▁to', 'ken', 'izer', '.', '.', '.', '<sep>', '▁', 'on', '▁', 'a', '▁pair', 
@@ -533,7 +557,7 @@ print(encoding.type_ids)
 tokenizer.decoder = decoders.Metaspace()
 ```
 
-これでこのトークナイザは完成です！前のようにトークナイザを保存でき、🤗 Transformers で使いたい場合は `PreTrainedTokenizerFast` 又は `XLNetTokenizerFast` でラップします。`PreTrainedTokenizerFast` を使う際に注意すべき点として、特殊トークンに加えて、左側にパディングするよう 🤗 Transformers ライブラリに指示する必要があります。
+これでこのトークナイザは完成です！前のようにトークナイザを保存出来、Transformers で使いたい場合は `PreTrainedTokenizerFast` 又は `XLNetTokenizerFast` でラップします。`PreTrainedTokenizerFast` を使う際に注意すべき点として、特殊トークンに加えて、左側にパディングするよう Transformers ライブラリに指示する必要があります。
 
 ```python
 from transformers import PreTrainedTokenizerFast
@@ -551,7 +575,7 @@ wrapped_tokenizer = PreTrainedTokenizerFast(
 )
 ```
 
-あるいは次のとおりです。
+あるいは次の通りです。
 
 ```python
 from transformers import XLNetTokenizerFast
@@ -559,4 +583,4 @@ from transformers import XLNetTokenizerFast
 wrapped_tokenizer = XLNetTokenizerFast(tokenizer_object=tokenizer)
 ```
 
-様々な構成要素を使って既存のトークナイザを構築する方法を見てきたので、🤗 Tokenizers ライブラリで好きなトークナイザを書けるようになり、🤗 Transformers で使えるようになっているはずです。
+様々な構成要素を使って既存のトークナイザを構築する方法を見てきたので、Tokenizers ライブラリで好きなトークナイザを書けるようになり、Transformers で使えるようになっているはずです。
