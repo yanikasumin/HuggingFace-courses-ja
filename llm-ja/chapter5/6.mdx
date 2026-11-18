@@ -39,7 +39,7 @@
 
 ## データセットの読み込みと準備[[loading-and-preparing-the-dataset]]
 
-先ず、GitHub の issue をまとめたデータセットをダウンロードします。いつものように `load_dataset()` 関数を使いましょう。
+まず、GitHub の issue をまとめたデータセットをダウンロードします。いつものように `load_dataset()` 関数を使いましょう。
 
 ```py
 from datasets import load_dataset
@@ -55,7 +55,7 @@ Dataset({
 })
 ```
 
-ここでは `load_dataset()` でデフォルトの `train` 分割を指定した為、`DatasetDict` ではなく `Dataset` が返ります。先ず、プルリクエストを除外しましょう。プルリクエストはユーザーの質問に答える際にはあまり役立たず、検索結果にノイズが混じる原因にもなる為です。これまでにも使った `Dataset.filter()` 関数で、該当する行を除外出来ます。ついでに、コメントのない行も除外しましょう。コメントがなければ、ユーザーの質問への答えも得られない為です。
+ここでは `load_dataset()` でデフォルトの `train` 分割を指定した為、`DatasetDict` ではなく `Dataset` が返ります。まず、プルリクエストを除外しましょう。プルリクエストはユーザーの質問に答える際にはあまり役立たず、検索結果にノイズが混じる原因にもなる為です。これまでにも使った `Dataset.filter()` 関数で、該当する行を除外出来ます。ついでに、コメントのない行も除外しましょう。コメントがなければ、ユーザーの質問への答えも得られない為です。
 
 ```py
 issues_dataset = issues_dataset.filter(
@@ -90,7 +90,7 @@ Dataset({
 
 埋め込みを作成する際には、各コメントに issue のタイトルと本文を付け加えます。これらには、コメントを理解する上で役立つ文脈情報が含まれていることが多い為です。現在、`comments` 列には各 issue のコメントがリストとして格納されています。
 
-そこで、この列を展開（explode）し、1行に1件のコメントが入るようにします。これにより、各行が `(html_url, title, body, comment)` の組に対応する形になります。Pandas の [`DataFrame.explode()` 関数](https://pandas.pydata.org/pandas-docs/stable/reference/api/pandas.DataFrame.explode.html)を使えば、リスト形式の列の各要素を別々の行に展開し、他の列の値はそのまま複製出来ます。実際に試す為、先ず Pandas の `DataFrame` 形式でデータを取り出しましょう。
+そこで、この列を展開（explode）し、1行に1件のコメントが入るようにします。これにより、各行が `(html_url, title, body, comment)` の組に対応する形になります。Pandas の [`DataFrame.explode()` 関数](https://pandas.pydata.org/pandas-docs/stable/reference/api/pandas.DataFrame.explode.html)を使えば、リスト形式の列の各要素を別々の行に展開し、他の列の値はそのまま複製出来ます。実際に試す為、まず Pandas の `DataFrame` 形式でデータを取り出しましょう。
 
 ```py
 issues_dataset.set_format("pandas")
@@ -191,7 +191,7 @@ comments_dataset = comments_dataset.map(
 )
 ```
 
-この新しい列を使えば、短いコメントを除外出来ます。短いコメントには、"cc @lewtun" や "Thanks!" のように、検索には役立たないものが多くあります。何語以下のコメントを除外するかに決まった基準はありませんが、先ずは15語程度を目安にするとよさそうです。
+この新しい列を使えば、短いコメントを除外出来ます。短いコメントには、"cc @lewtun" や "Thanks!" のように、検索には役立たないものが多くあります。何語以下のコメントを除外するかに決まった基準はありませんが、まずは15語程度を目安にするとよさそうです。
 
 ```py
 comments_dataset = comments_dataset.filter(lambda x: x["comment_length"] > 15)
@@ -258,7 +258,7 @@ tokenizer = AutoTokenizer.from_pretrained(model_ckpt)
 model = TFAutoModel.from_pretrained(model_ckpt, from_pt=True)
 ```
 
-`from_pretrained()` メソッドの引数として `from_pt=True` を設定していることに注目して下さい。これは、`multi-qa-mpnet-base-dot-v1` チェックポイントには PyTorch の重みしか無い為で、`from_pt=True` を設定すれば自動的に TensorFlow 形式に変換してくれます。見ての通り、Transformers ではフレームワーク間の切り替えが非常に簡単です！
+`from_pretrained()` メソッドの引数として `from_pt=True` を設定していることに注目してください。これは、`multi-qa-mpnet-base-dot-v1` チェックポイントには PyTorch の重みしか無い為で、`from_pt=True` を設定すれば自動的に TensorFlow 形式に変換してくれます。見ての通り、Transformers ではフレームワーク間の切り替えが非常に簡単です！
 
 {/if}
 
@@ -335,7 +335,7 @@ embeddings_dataset = comments_dataset.map(
 
 {/if}
 
-埋め込みを NumPy 配列に変換していることに注目して下さい。これは、次に行う FAISS によるインデックス化の際に、Datasets がこの形式を要求する為です。
+埋め込みを NumPy 配列に変換していることに注目してください。これは、次に行う FAISS によるインデックス化の際に、Datasets がこの形式を要求する為です。
 
 
 ## FAISS による効率的な類似検索[[using-faiss-for-efficient-similarity-search]]
@@ -348,7 +348,7 @@ FAISS の基本的な考え方は、インデックスと呼ばれる特殊な�
 embeddings_dataset.add_faiss_index(column="embeddings")
 ```
 
-これで、`Dataset.get_nearest_examples()` 関数を使って、インデックスから近いベクトルを探す最近傍検索が出来るようになりました。先ず、質問文を埋め込みベクトルに変換して試してみましょう。
+これで、`Dataset.get_nearest_examples()` 関数を使って、インデックスから近いベクトルを探す最近傍検索が出来るようになりました。まず、質問文を埋め込みベクトルに変換して試してみましょう。
 
 {#if fw === 'pt'}
 

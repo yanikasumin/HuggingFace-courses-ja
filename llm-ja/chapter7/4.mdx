@@ -46,7 +46,7 @@
 
 ## データの準備[[preparing-the-data]]
 
-翻訳モデルをファインチューニングしたりゼロから学習したりするには、タスクに適したデータセットが必要です。前述の通り、このセクションでは [KDE4 データセット](https://huggingface.co/datasets/kde4) を使いますが、翻訳元と翻訳先の2言語の文ペアさえあれば、自分のデータに合わせるのも簡単です。自前のデータを `Dataset` に読み込む方法を思い出したい場合は、[Chapter 5](/course/chapter5) を参照して下さい。
+翻訳モデルをファインチューニングしたりゼロから学習したりするには、タスクに適したデータセットが必要です。前述の通り、このセクションでは [KDE4 データセット](https://huggingface.co/datasets/kde4) を使いますが、翻訳元と翻訳先の2言語の文ペアさえあれば、自分のデータに合わせるのも簡単です。自前のデータを `Dataset` に読み込む方法を思い出したい場合は、[Chapter 5](/course/chapter5) を参照してください。
 
 ### KDE4 データセット[[the-kde4-dataset]]
 
@@ -166,7 +166,7 @@ translator(
 <Youtube id="0Oxphw4Q9fo"/>
 
 > [!TIP]
-> **試してみましょう！** フランス語でよく使われる英語の単語に "email" があります。学習データセットでこの単語を使っている最初のサンプルを探して下さい。そのサンプルではどう翻訳されていますか？事前学習済みモデルは同じ英語の文をどう翻訳しますか？
+> **試してみましょう！** フランス語でよく使われる英語の単語に "email" があります。学習データセットでこの単語を使っている最初のサンプルを探してください。そのサンプルではどう翻訳されていますか？事前学習済みモデルは同じ英語の文をどう翻訳しますか？
 
 ### データの処理[[processing-the-data]]
 
@@ -174,7 +174,7 @@ translator(
 
 もう手順はお分かりでしょう。モデルが理解出来るよう、テキストは全てトークン ID の集合に変換する必要があります。このタスクでは、入力とターゲットの両方をトークン化しなければなりません。
 
-先ず `tokenizer` オブジェクトを作成します。前述の通り、英語からフランス語への Marian 事前学習モデルを使います。別の言語ペアでこのコードを試す場合は、モデルのチェックポイントをそれに合わせて変更して下さい。[Helsinki-NLP](https://huggingface.co/Helsinki-NLP) 組織は、複数言語で1,000を超えるモデルを提供しています。
+まず `tokenizer` オブジェクトを作成します。前述の通り、英語からフランス語への Marian 事前学習モデルを使います。別の言語ペアでこのコードを試す場合は、モデルのチェックポイントをそれに合わせて変更してください。[Helsinki-NLP](https://huggingface.co/Helsinki-NLP) 組織は、複数言語で1,000を超えるモデルを提供しています。
 
 ```python
 from transformers import AutoTokenizer
@@ -234,13 +234,13 @@ def preprocess_function(examples):
     return model_inputs
 ```
 
-入力と出力に同じ最大長を設定していることに注意して下さい。扱うテキストはかなり短いようなので、128 を使います。
+入力と出力に同じ最大長を設定していることに注意してください。扱うテキストはかなり短いようなので、128 を使います。
 
 > [!TIP]
 > 💡 T5 モデル（具体的には `t5-xxx` チェックポイントのいずれか）を使う場合、モデルはテキスト入力に `translate: English to French:` のような、タスクを示す接頭辞が付いていることを想定します。
 
 > [!WARNING]
-> ⚠️ ターゲットのアテンションマスクには注意を払いません。モデルはそれを想定していない為です。その代わり、パディングトークンに対応するラベルは、損失の計算で無視されるよう `-100` に設定すべきです。ここでは動的パディングを適用するので、この処理は後でデータコレータが行います。但し、ここでパディングを行う場合は、パディングトークンに対応するラベルを全て `-100` に設定するよう前処理関数を適応させて下さい。
+> ⚠️ ターゲットのアテンションマスクには注意を払いません。モデルはそれを想定していない為です。その代わり、パディングトークンに対応するラベルは、損失の計算で無視されるよう `-100` に設定すべきです。ここでは動的パディングを適用するので、この処理は後でデータコレータが行います。但し、ここでパディングを行う場合は、パディングトークンに対応するラベルを全て `-100` に設定するよう前処理関数を適応させてください。
 
 これで、データセットの全てのスプリットに前処理を一括で適用出来ます。
 
@@ -260,7 +260,7 @@ tokenized_datasets = split_datasets.map(
 
 `Trainer` を使う実際のコードはこれまでと同じで、変更は1つだけです。ここでは [`Seq2SeqTrainer`](https://huggingface.co/transformers/main_classes/trainer.html#seq2seqtrainer) を使います。これは `Trainer` のサブクラスで、`generate()` メソッドを使って入力から出力を予測し、評価を適切に扱えるようにします。詳しくは、指標の計算について説明する時に見ていきます。
 
-何よりも先ず、ファインチューニングする実物のモデルが必要です。いつもの `AutoModel` API を使います。
+何よりもまず、ファインチューニングする実物のモデルが必要です。いつもの `AutoModel` API を使います。
 
 ```py
 from transformers import AutoModelForSeq2SeqLM
@@ -272,7 +272,7 @@ model = AutoModelForSeq2SeqLM.from_pretrained(model_checkpoint)
 
 ## Keras でモデルをファインチューニングする[[fine-tuning-the-model-with-keras]]
 
-何よりも先ず、ファインチューニングする実物のモデルが必要です。いつもの `AutoModel` API を使います。
+何よりもまず、ファインチューニングする実物のモデルが必要です。いつもの `AutoModel` API を使います。
 
 ```py
 from transformers import TFAutoModelForSeq2SeqLM
@@ -289,7 +289,7 @@ model = TFAutoModelForSeq2SeqLM.from_pretrained(model_checkpoint, from_pt=True)
 
 {/if}
 
-今回は、翻訳タスクで学習され、既にそのまま使えるモデルを使っていることに注意して下さい。その為、重みが不足していたり新しく初期化されたりする警告は出ません。
+今回は、翻訳タスクで学習され、既にそのまま使えるモデルを使っていることに注意してください。その為、重みが不足していたり新しく初期化されたりする警告は出ません。
 
 ### データコレータ[[data-collation]]
 
@@ -404,7 +404,7 @@ tf_eval_dataset = model.prepare_tf_dataset(
 
 翻訳で伝統的に使われる指標は、Kishore Papineni らによる [2002年の論文](https://aclanthology.org/P02-1040.pdf) で導入された [BLEU スコア](https://en.wikipedia.org/wiki/BLEU) です。BLEU スコアは、翻訳がラベルにどれだけ近いかを評価します。モデルが生成した出力の分かりやすさや文法的な正しさは測りません。その代わり、統計的な規則を用いて、生成された出力に含まれる単語が全てターゲットにも現れることを保証します。更に、ターゲットでも繰り返されていないのに同じ単語が繰り返される場合（モデルが `"the the the the the"` のような文を出力するのを避けるため）と、ターゲットより短い文を出力する場合（モデルが `"the"` のような文を出力するのを避けるため）にペナルティを与える規則もあります。
 
-BLEU の弱点の1つは、テキストが既にトークン化されていることを前提とする点です。その為、異なるトークナイザを使うモデル同士でスコアを比較するのが難しくなります。そこで、今日の翻訳モデルのベンチマークで最もよく使われる指標は [SacreBLEU](https://github.com/mjpost/sacrebleu) です。これは、トークン化のステップを標準化することで、この弱点（や他の弱点）に対処しています。この指標を使うには、先ず SacreBLEU ライブラリをインストールする必要があります。
+BLEU の弱点の1つは、テキストが既にトークン化されていることを前提とする点です。その為、異なるトークナイザを使うモデル同士でスコアを比較するのが難しくなります。そこで、今日の翻訳モデルのベンチマークで最もよく使われる指標は [SacreBLEU](https://github.com/mjpost/sacrebleu) です。これは、トークン化のステップを標準化することで、この弱点（や他の弱点）に対処しています。この指標を使うには、まず SacreBLEU ライブラリをインストールする必要があります。
 
 ```py
 !pip install sacrebleu
@@ -446,7 +446,7 @@ metric.compute(predictions=predictions, references=references)
 
 （入力文の訳：予測文は「このプラグインを使うと、幾つかの言語の間で Web ページを自動で翻訳出来ます。」、参照文は「このプラグインを使うと、Web ページを自動で幾つかの言語の間で翻訳出来ます。」という意味です。語順の違いだけがスコアを下げています。）
 
-これは BLEU スコア 46.75 で、かなり良い結果です。参考までに、["Attention Is All You Need" 論文](https://arxiv.org/pdf/1706.03762.pdf) のオリジナルの Transformer モデルは、英語とフランス語の間の同様の翻訳タスクで BLEU スコア 41.8 を達成しました。（`counts` や `bp` のような個別の指標の詳細は、[SacreBLEU リポジトリ](https://github.com/mjpost/sacrebleu/blob/078c440168c6adc89ba75fe6d63f0d922d42bcfe/sacrebleu/metrics/bleu.py#L74) を参照して下さい。）一方、翻訳モデルからよく出てくる2つの悪いタイプの予測（繰り返しが多い、又は短過ぎる）を試すと、かなり悪い BLEU スコアになります。
+これは BLEU スコア 46.75 で、かなり良い結果です。参考までに、["Attention Is All You Need" 論文](https://arxiv.org/pdf/1706.03762.pdf) のオリジナルの Transformer モデルは、英語とフランス語の間の同様の翻訳タスクで BLEU スコア 41.8 を達成しました。（`counts` や `bp` のような個別の指標の詳細は、[SacreBLEU リポジトリ](https://github.com/mjpost/sacrebleu/blob/078c440168c6adc89ba75fe6d63f0d922d42bcfe/sacrebleu/metrics/bleu.py#L74) を参照してください。）一方、翻訳モデルからよく出てくる2つの悪いタイプの予測（繰り返しが多い、又は短過ぎる）を試すと、かなり悪い BLEU スコアになります。
 
 ```py
 predictions = ["This This This This"]
@@ -604,7 +604,7 @@ print(compute_metrics())
 {'bleu': 33.26983701454733}
 ```
 
-これが終わったら、モデルをコンパイルして学習する為に必要なものを全て準備出来ます。`tf.keras.mixed_precision.set_global_policy("mixed_float16")` の使用に注意して下さい。これは Keras に float16 で学習するよう指示し、対応する GPU（Nvidia 20xx/V100 以降）では大幅な高速化が得られます。
+これが終わったら、モデルをコンパイルして学習する為に必要なものを全て準備出来ます。`tf.keras.mixed_precision.set_global_policy("mixed_float16")` の使用に注意してください。これは Keras に float16 で学習するよう指示し、対応する GPU（Nvidia 20xx/V100 以降）では大幅な高速化が得られます。
 
 ```python
 from transformers import create_optimizer
@@ -646,7 +646,7 @@ model.fit(
 )
 ```
 
-プッシュ先のリポジトリ名は `hub_model_id` 引数で指定出来ることに注意して下さい（特に、組織にプッシュする場合はこの引数を使う必要があります）。例えば、モデルを [`huggingface-course` 組織](https://huggingface.co/huggingface-course) にプッシュした際には、`Seq2SeqTrainingArguments` に `hub_model_id="huggingface-course/marian-finetuned-kde4-en-to-fr"` を追加しました。デフォルトでは、使用されるリポジトリは自分の名前空間内にあり、設定した出力ディレクトリにちなんだ名前になる為、ここでは `"sgugger/marian-finetuned-kde4-en-to-fr"` になります（これは、このセクションの冒頭でリンクしたモデルです）。
+プッシュ先のリポジトリ名は `hub_model_id` 引数で指定出来ることに注意してください（特に、組織にプッシュする場合はこの引数を使う必要があります）。例えば、モデルを [`huggingface-course` 組織](https://huggingface.co/huggingface-course) にプッシュした際には、`Seq2SeqTrainingArguments` に `hub_model_id="huggingface-course/marian-finetuned-kde4-en-to-fr"` を追加しました。デフォルトでは、使用されるリポジトリは自分の名前空間内にあり、設定した出力ディレクトリにちなんだ名前になる為、ここでは `"sgugger/marian-finetuned-kde4-en-to-fr"` になります（これは、このセクションの冒頭でリンクしたモデルです）。
 
 > [!TIP]
 > 💡 使っている出力ディレクトリが既に存在する場合、それはプッシュ先リポジトリのローカルクローンでなければなりません。そうでない場合は、`model.fit()` を呼び出す時にエラーになり、新しい名前を設定する必要があります。
@@ -693,7 +693,7 @@ args = Seq2SeqTrainingArguments(
 - 前述の通り、`predict_with_generate=True` と設定します。
 - `push_to_hub=True` を使い、各エポックの終わりにモデルを Hub にアップロードします。
 
-プッシュ先リポジトリの完全な名前は `hub_model_id` 引数で指定出来ることに注意して下さい（特に、組織にプッシュする場合はこの引数を使う必要があります）。例えば、モデルを [`huggingface-course` 組織](https://huggingface.co/huggingface-course) にプッシュした際には、`Seq2SeqTrainingArguments` に `hub_model_id="huggingface-course/marian-finetuned-kde4-en-to-fr"` を追加しました。デフォルトでは、使用されるリポジトリは自分の名前空間内にあり、設定した出力ディレクトリにちなんだ名前になる為、私たちの場合 `"sgugger/marian-finetuned-kde4-en-to-fr"` になります（これは、このセクションの冒頭でリンクしたモデルです）。
+プッシュ先リポジトリの完全な名前は `hub_model_id` 引数で指定出来ることに注意してください（特に、組織にプッシュする場合はこの引数を使う必要があります）。例えば、モデルを [`huggingface-course` 組織](https://huggingface.co/huggingface-course) にプッシュした際には、`Seq2SeqTrainingArguments` に `hub_model_id="huggingface-course/marian-finetuned-kde4-en-to-fr"` を追加しました。デフォルトでは、使用されるリポジトリは自分の名前空間内にあり、設定した出力ディレクトリにちなんだ名前になる為、私たちの場合 `"sgugger/marian-finetuned-kde4-en-to-fr"` になります（これは、このセクションの冒頭でリンクしたモデルです）。
 
 > [!TIP]
 > 💡 使っている出力ディレクトリが既に存在する場合、それはプッシュ先リポジトリのローカルクローンでなければなりません。そうでない場合は、`Seq2SeqTrainer` を定義する時にエラーになり、新しい名前を設定する必要があります。
@@ -715,7 +715,7 @@ trainer = Seq2SeqTrainer(
 )
 ```
 
-学習の前に、先ずモデルが得るスコアを見て、ファインチューニングで悪化させていないか再確認します。このコマンドの実行には少し時間がかかるので、その間にコーヒーでもどうぞ。
+学習の前に、まずモデルが得るスコアを見て、ファインチューニングで悪化させていないか再確認します。このコマンドの実行には少し時間がかかるので、その間にコーヒーでもどうぞ。
 
 ```python
 trainer.evaluate(max_length=max_length)
@@ -737,7 +737,7 @@ BLEU スコア39は悪くなく、私たちのモデルが既に英語の文を�
 trainer.train()
 ```
 
-学習が行われている間、モデルが保存されるたびに（ここではエポックごと）、バックグラウンドで Hub にアップロードされることに注意して下さい。この方法なら、必要に応じて別のマシンで学習を再開することも出来ます。
+学習が行われている間、モデルが保存されるたびに（ここではエポックごと）、バックグラウンドで Hub にアップロードされることに注意してください。この方法なら、必要に応じて別のマシンで学習を再開することも出来ます。
 
 学習が終わったら、モデルをもう一度評価します。今度は BLEU スコアが改善していることを期待しましょう！
 
@@ -782,7 +782,7 @@ trainer.push_to_hub(tags="translation", commit_message="Training complete")
 
 ### 学習に必要なものをすべて準備する[[preparing-everything-for-training]]
 
-これらは何度も見てきたので、コードはかなり速く進めていきます。先ず、データセットを `"torch"` 形式に設定して PyTorch テンソルが得られるようにし、データセットから `DataLoader` を構築します。
+これらは何度も見てきたので、コードはかなり速く進めていきます。まず、データセットを `"torch"` 形式に設定して PyTorch テンソルが得られるようにし、データセットから `DataLoader` を構築します。
 
 ```py
 from torch.utils.data import DataLoader
@@ -813,7 +813,7 @@ from torch.optim import AdamW
 optimizer = AdamW(model.parameters(), lr=2e-5)
 ```
 
-これらのオブジェクトが全てそろったら、`accelerator.prepare()` メソッドに渡すことが出来ます。Colab ノートブックで TPU 上で学習したい場合は、このコードを全て学習関数の中に移動する必要があること、そして `Accelerator` をインスタンス化するセルは実行すべきでないことを覚えておいて下さい。
+これらのオブジェクトが全てそろったら、`accelerator.prepare()` メソッドに渡すことが出来ます。Colab ノートブックで TPU 上で学習したい場合は、このコードを全て学習関数の中に移動する必要があること、そして `Accelerator` をインスタンス化するセルは実行すべきでないことを覚えておいてください。
 
 ```py
 from accelerate import Accelerator
@@ -824,7 +824,7 @@ model, optimizer, train_dataloader, eval_dataloader = accelerator.prepare(
 )
 ```
 
-`train_dataloader` を `accelerator.prepare()` に渡したので、その長さを使って学習ステップ数を計算出来ます。このメソッドは `DataLoader` の長さを変更する為、必ず準備の後にこれを行うべきであることを覚えておいて下さい。学習率から0までの古典的な線形スケジュールを使います。
+`train_dataloader` を `accelerator.prepare()` に渡したので、その長さを使って学習ステップ数を計算出来ます。このメソッドは `DataLoader` の長さを変更する為、必ず準備の後にこれを行うべきであることを覚えておいてください。学習率から0までの古典的な線形スケジュールを使います。
 
 ```py
 from transformers import get_scheduler
@@ -841,7 +841,7 @@ lr_scheduler = get_scheduler(
 )
 ```
 
-最後に、モデルを Hub にプッシュするには、作業フォルダ内に `Repository` オブジェクトを作成する必要があります。先ず、まだログインしていない場合は Hugging Face Hub にログインして下さい。リポジトリ名は、モデルに付けたいモデル ID から決定します（`repo_name` は自由に自分の選択に置き換えて構いません。ユーザー名を含む必要があるだけで、それは `get_full_repo_name()` 関数が行います）。
+最後に、モデルを Hub にプッシュするには、作業フォルダ内に `Repository` オブジェクトを作成する必要があります。まず、まだログインしていない場合は Hugging Face Hub にログインしてください。リポジトリ名は、モデルに付けたいモデル ID から決定します（`repo_name` は自由に自分の選択に置き換えて構いません。ユーザー名を含む必要があるだけで、それは `get_full_repo_name()` 関数が行います）。
 
 ```py
 from huggingface_hub import Repository, get_full_repo_name
@@ -887,7 +887,7 @@ def postprocess(predictions, labels):
 
 学習ループは、[セクション2](/course/chapter7/2) や [Chapter 3](/course/chapter3) のものによく似ていますが、評価部分にいくつかの違いがあります。そこに焦点を当てましょう！
 
-先ず注意すべき点は、予測の計算に `generate()` メソッドを使いますが、これは `prepare()` メソッドで Accelerate が作成したラップされたモデルではなく、ベースモデルのメソッドであることです。その為、先ずモデルをアンラップしてから、このメソッドを呼び出します。
+まず注意すべき点は、予測の計算に `generate()` メソッドを使いますが、これは `prepare()` メソッドで Accelerate が作成したラップされたモデルではなく、ベースモデルのメソッドであることです。その為、まずモデルをアンラップしてから、このメソッドを呼び出します。
 
 2つ目は、[トークン分類](/course/chapter7/2) の場合と同様に、2つのプロセスが入力とラベルを異なる形状にパディングしている可能性があることです。その為、`gather()` メソッドを呼び出す前に、`accelerator.pad_across_processes()` を使って予測とラベルを同じ形状にします。これを行わないと、評価でエラーになるか、永遠にハングします。
 

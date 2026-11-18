@@ -17,7 +17,7 @@ Pandas と同様に、Datasets には `Dataset` オブジェクトや `DatasetDi
 
 この例では、[UC Irvine Machine Learning Repository](https://archive.ics.uci.edu/ml/index.php) で公開されている [Drug Review Dataset](https://archive.ics.uci.edu/ml/datasets/Drug+Review+Dataset+%28Drugs.com%29) を使います。これは、様々な薬に対する患者のレビューと、治療対象の症状、患者の満足度を示す10点満点の星評価を収めたデータセットです。
 
-先ず、`wget` コマンドと `unzip` コマンドでデータをダウンロードして展開する必要があります。
+まず、`wget` コマンドと `unzip` コマンドでデータをダウンロードして展開する必要があります。
 
 ```py
 !wget "https://archive.ics.uci.edu/ml/machine-learning-databases/00462/drugsCom_raw.zip"
@@ -34,7 +34,7 @@ data_files = {"train": "drugsComTrain_raw.tsv", "test": "drugsComTest_raw.tsv"}
 drug_dataset = load_dataset("csv", data_files=data_files, delimiter="\t")
 ```
 
-データ分析では、先ず小さなランダムサンプルを取り出して、扱っているデータの傾向を手早く把握するのが一般的です。Datasets では、`Dataset.shuffle()` 関数と `Dataset.select()` 関数をつなげることでランダムサンプルを作れます。
+データ分析では、まず小さなランダムサンプルを取り出して、扱っているデータの傾向を手早く把握するのが一般的です。Datasets では、`Dataset.shuffle()` 関数と `Dataset.select()` 関数をつなげることでランダムサンプルを作れます。
 
 ```py
 drug_sample = drug_dataset["train"].shuffle(seed=42).select(range(1000))
@@ -173,7 +173,7 @@ drug_dataset["train"]["condition"][:3]
 
 ## 新しい列の作成[[creating-new-columns]]
 
-顧客レビューを扱う時は、先ず各レビューの単語数を調べておくとよいでしょう。レビューには \"Great!\" のように1語だけのものもあれば、数千語に及ぶ長文もあります。こうした極端に短いレビューや長いレビューへの対処方法は、用途によって異なります。ここでは、テキストを空白文字で区切り、おおよその単語数を数える簡単な方法を使います。
+顧客レビューを扱う時は、まず各レビューの単語数を調べておくとよいでしょう。レビューには \"Great!\" のように1語だけのものもあれば、数千語に及ぶ長文もあります。こうした極端に短いレビューや長いレビューへの対処方法は、用途によって異なります。ここでは、テキストを空白文字で区切り、おおよその単語数を数える簡単な方法を使います。
 
 各レビューの単語数を数える単純な関数を定義しましょう。
 
@@ -241,7 +241,7 @@ print(drug_dataset.num_rows)
 見ての通り、元の訓練セットとテストセットからレビューの約15%が取り除かれました。
 
 > [!TIP]
-> **やってみよう！** `Dataset.sort()` 関数を使って、単語数が最も多いレビューを確認してみましょう。レビューを単語数の降順に並べ替える為に必要な引数は、[ドキュメント](https://huggingface.co/docs/datasets/package_reference/main_classes#datasets.Dataset.sort)で確認して下さい。
+> **やってみよう！** `Dataset.sort()` 関数を使って、単語数が最も多いレビューを確認してみましょう。レビューを単語数の降順に並べ替える為に必要な引数は、[ドキュメント](https://huggingface.co/docs/datasets/package_reference/main_classes#datasets.Dataset.sort)で確認してください。
 
 最後に、レビューに含まれる HTML 文字参照を処理しましょう。Python の `html` モジュールを使えば、次のように HTML 文字参照を元の文字に変換出来ます。
 
@@ -671,7 +671,7 @@ drug-reviews/
     └── state.json
 ```
 
-各分割には、それぞれ専用の *dataset.arrow* テーブルと、*dataset_info.json* や *state.json* のメタデータが対応していることが分かります。Arrow 形式は、行と列からなる表形式のデータを保持し、大規模なデータセットの処理や転送を行う高性能なアプリケーション向けに最適化された形式だと考えて下さい。
+各分割には、それぞれ専用の *dataset.arrow* テーブルと、*dataset_info.json* や *state.json* のメタデータが対応していることが分かります。Arrow 形式は、行と列からなる表形式のデータを保持し、大規模なデータセットの処理や転送を行う高性能なアプリケーション向けに最適化された形式だと考えてください。
 
 データセットが保存出来たら、次のように `load_from_disk()` 関数を使って読み込むことが出来ます。
 

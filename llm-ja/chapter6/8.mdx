@@ -61,11 +61,11 @@ with open("wikitext-2.txt", "w", encoding="utf-8") as f:
         f.write(dataset[i]["text"] + "\n")
 ```
 
-次に、BERT、GPT-2、XLNet のトークナイザをブロックごとに構築する方法を紹介します。これにより、WordPiece、BPE、Unigram という3つの主要なトークン化アルゴリズムの例がそれぞれ得られます。先ずは BERT から始めましょう！
+次に、BERT、GPT-2、XLNet のトークナイザをブロックごとに構築する方法を紹介します。これにより、WordPiece、BPE、Unigram という3つの主要なトークン化アルゴリズムの例がそれぞれ得られます。まずは BERT から始めましょう！
 
 ## WordPiece トークナイザを一から構築する[[building-a-wordpiece-tokenizer-from-scratch]]
 
-Tokenizers ライブラリでトークナイザを構築するには、先ず `model` を指定して `Tokenizer` オブジェクトをインスタンス化し、次に `normalizer`、`pre_tokenizer`、`post_processor`、`decoder` の各属性に希望の値を設定します。
+Tokenizers ライブラリでトークナイザを構築するには、まず `model` を指定して `Tokenizer` オブジェクトをインスタンス化し、次に `normalizer`、`pre_tokenizer`、`post_processor`、`decoder` の各属性に希望の値を設定します。
 
 この例では、WordPiece モデルを使った `Tokenizer` を作成します。
 
@@ -133,7 +133,7 @@ tokenizer.pre_tokenizer = pre_tokenizers.Whitespace()
 
 （入力文の訳：私の事前トークナイザをテストしましょう）
 
-`Whitespace` 事前トークナイザは、空白と、文字・数字・アンダースコア以外の全ての文字で分割する点に注意して下さい。その為技術的には、空白と句読点で分割することになります。
+`Whitespace` 事前トークナイザは、空白と、文字・数字・アンダースコア以外の全ての文字で分割する点に注意してください。その為技術的には、空白と句読点で分割することになります。
 
 ```python
 tokenizer.pre_tokenizer.pre_tokenize_str("Let's test my pre-tokenizer.")
@@ -210,7 +210,7 @@ print(encoding.tokens)
 
 得られた `encoding` は `Encoding` で、その様々な属性にトークナイザの必要な出力が全て含まれています。`ids`、`type_ids`、`tokens`、`offsets`、`attention_mask`、`special_tokens_mask`、`overflowing` です。
 
-トークン化パイプラインの最後のステップは後処理です。先頭に `[CLS]` トークンを、末尾（文のペアの場合は各文の後）に `[SEP]` トークンを追加する必要があります。その為に `TemplateProcessor` を使いますが、先ず語彙における `[CLS]` と `[SEP]` トークンの ID を知る必要があります。
+トークン化パイプラインの最後のステップは後処理です。先頭に `[CLS]` トークンを、末尾（文のペアの場合は各文の後）に `[SEP]` トークンを追加する必要があります。その為に `TemplateProcessor` を使いますが、まず語彙における `[CLS]` と `[SEP]` トークンの ID を知る必要があります。
 
 ```python
 cls_token_id = tokenizer.token_to_id("[CLS]")
@@ -234,7 +234,7 @@ tokenizer.post_processor = processors.TemplateProcessing(
 )
 ```
 
-特殊トークンの ID も渡す必要がある点に注意して下さい。トークナイザがそれらを ID に正しく変換出来るようにする為です。
+特殊トークンの ID も渡す必要がある点に注意してください。トークナイザがそれらを ID に正しく変換出来るようにする為です。
 
 これを追加すると、先ほどの例に戻った時に次のようになります。
 
@@ -513,7 +513,7 @@ print(encoding.tokens)
 ['▁Let', "'", 's', '▁test', '▁this', '▁to', 'ken', 'izer', '.']
 ```
 
-XLNet の特徴は、`<cls>` トークンを文の末尾に置き、タイプ ID を 2 にする（他のトークンと区別する為）ことです。また、左側にパディングを行います。BERT の時のようにテンプレートで全ての特殊トークンとトークンタイプ ID を処理出来ますが、先ず `<cls>` と `<sep>` トークンの ID を取得する必要があります。
+XLNet の特徴は、`<cls>` トークンを文の末尾に置き、タイプ ID を 2 にする（他のトークンと区別する為）ことです。また、左側にパディングを行います。BERT の時のようにテンプレートで全ての特殊トークンとトークンタイプ ID を処理出来ますが、まず `<cls>` と `<sep>` トークンの ID を取得する必要があります。
 
 ```python
 cls_token_id = tokenizer.token_to_id("<cls>")
