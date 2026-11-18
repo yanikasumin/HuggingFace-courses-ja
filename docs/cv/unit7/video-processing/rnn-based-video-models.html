@@ -86,7 +86,7 @@ window.MathJax = { tex: { inlineMath: [['$', '$'], ['\\(', '\\)']], displayMath:
 </ul>
 <p class="side-group">Unit 3 - Vision Transformer</p>
 <ul class="side-list">
-<li><a class="side-link" href="../../unit3/vision-transformers/vision-transformers-for-image-classification.html">画像分類のための Vision Transformer の転移学習とファインチューニング</a></li>
+<li><a class="side-link" href="../../unit3/vision-transformers/vision-transformers-for-image-classification.html">画像分類の為の Vision Transformer の転移学習とファインチューニング</a></li>
 <li><a class="side-link" href="../../unit3/vision-transformers/swin-transformer.html">Swin Transformer</a></li>
 <li><a class="side-link" href="../../unit3/vision-transformers/cvt.html">Convolutional Vision Transformer (CvT)</a></li>
 <li><a class="side-link" href="../../unit3/vision-transformers/dinat.html">Dilated Neighborhood Attention Transformer（DiNAT）</a></li>
@@ -146,7 +146,7 @@ window.MathJax = { tex: { inlineMath: [['$', '$'], ['\\(', '\\)']], displayMath:
 <li><a class="side-link" href="../../unit8/terminologies/camera-models.html">カメラモデル</a></li>
 <li><a class="side-link" href="../../unit8/terminologies/linear-algebra.html">3Dデータのための線形代数の基礎</a></li>
 <li><a class="side-link" href="../../unit8/terminologies/representations.html">3Dデータの表現方法</a></li>
-<li><a class="side-link" href="../../unit8/monocular_depth_estimation.html">単眼深度推定の概要：メトリック深度と相対深度、Depth Anything V2 のファインチューニング 👐 📚</a></li>
+<li><a class="side-link" href="../../unit8/monocular_depth_estimation.html">単眼深度推定の概要：メトリック深度と相対深度、Depth Anything V2 のファインチューニング</a></li>
 <li><a class="side-link" href="../../unit8/3d-vision/nvs.html">新規視点合成（Novel View Synthesis）</a></li>
 <li><a class="side-link" href="../../unit8/3d_measurements_stereo_vision.html">はじめに</a></li>
 <li><a class="side-link" href="../../unit8/nerf.html">Neural Radiance Fields（NeRF）</a></li>
@@ -176,9 +176,9 @@ window.MathJax = { tex: { inlineMath: [['$', '$'], ['\\(', '\\)']], displayMath:
 <ul class="side-list">
 <li><a class="side-link" href="../../unit12/pre-intro.html">CV モデルにおける倫理的基盤を探る</a></li>
 <li><a class="side-link" href="../../unit12/introduction.html">導入</a></li>
-<li><a class="side-link" href="../../unit12/ethics-bias-ai.html">AI における倫理とバイアス 🧑‍🤝‍🧑</a></li>
-<li><a class="side-link" href="../../unit12/conclusion.html">Hugging Face の取り組み：倫理と社会 🤗🌎</a></li>
-<li><a class="side-link" href="../../unit12/supplementary-material.html">参考文献とリソース 🤗🌎</a></li>
+<li><a class="side-link" href="../../unit12/ethics-bias-ai.html">AI における倫理とバイアス</a></li>
+<li><a class="side-link" href="../../unit12/conclusion.html">Hugging Face の取り組み：倫理と社会 🤗</a></li>
+<li><a class="side-link" href="../../unit12/supplementary-material.html">参考文献とリソース 🤗</a></li>
 </ul>
 <p class="side-group">Unit 13 - 展望</p>
 <ul class="side-list">
@@ -195,14 +195,17 @@ window.MathJax = { tex: { inlineMath: [['$', '$'], ['\\(', '\\)']], displayMath:
 <article class="content">
 <h1>はじめに</h1>
 <h2>系列データとしてのビデオ</h2>
-<p>ビデオは、フレームと呼ばれる画像を連続して再生することで、動きを表現します。各フレームには、物体やシーンなどの空間情報が含まれています。これらを順番に表示すると、物体が時間とともにどう変化し、どう動くかという時間情報も読み取れます。この空間と時間の組み合わせにより、ビデオは単一の画像よりも複雑な情報を含んでいます。ビデオを効果的に分析するには、空間的な側面と時間的な側面の両方を理解できるモデルが必要です。</p>
+<p>ビデオは、フレームと呼ばれる画像を連続して再生することで、動きを表現します。各フレームには、物体やシーンなどの空間情報が含まれています。これらを順番に表示すると、物体が時間と共にどう変化し、どう動くかという時間情報も読み取れます。この空間と時間の組み合わせにより、ビデオは単一の画像よりも複雑な情報を含んでいます。</p>
+<p>ビデオを効果的に分析するには、空間的な側面と時間的な側面の両方を理解出来るモデルが必要です。</p>
 <h2>ビデオ処理における RNN の役割と必要性</h2>
 <div class="flex justify-center">
     <img src="https://huggingface.co/datasets/hf-vision/course-assets/resolve/main/rnn_video_models/rnn.png" alt="RNN のアーキテクチャ">
 </div>
-<p>畳み込みニューラルネットワーク（CNN）は、画像の空間的特徴の分析に優れています。しかし、時間的な関係が重要になる系列を扱うようには設計されていません。ここでリカレントニューラルネットワーク（RNN）の出番です。RNN は、過去のステップからの情報を捉える「メモリ」を持っているため、系列データの処理に特化しています。そのため、ビデオフレームどうしが時間とともにどう関係するかを理解するのに適しています。</p>
+<p>畳み込みニューラルネットワーク（CNN）は、画像の空間的特徴の分析に優れています。しかし、時間的な関係が重要になる系列を扱うようには設計されていません。</p>
+<p>ここでリカレントニューラルネットワーク（RNN）の出番です。RNN は、過去のステップからの情報を捉える「メモリ」を持っている為、系列データの処理に特化しています。その為、ビデオフレームどうしが時間と共にどう関係するかを理解するのに適しています。</p>
 <h2>時空間モデリングを理解する</h2>
-<p>ビデオ分析では、空間的な特徴と時間的な特徴を組み合わせて考えることが重要です。これを時空間モデリングと呼びます。空間モデリングでは、各フレームに映る物体や人物などを分析します。一方、時間モデリングでは、それらがフレームごとにどう変化するかを分析します。空間情報と時間情報を組み合わせることで、ビデオ全体の状況や流れを理解できます。そのために、CNN と RNN を組み合わせたり、空間情報と時間情報を同時に捉える特殊な畳み込みを使ったりする方法が研究されています。</p>
+<p>ビデオ分析では、空間的な特徴と時間的な特徴を組み合わせて考えることが重要です。これを時空間モデリングと呼びます。空間モデリングでは、各フレームに映る物体や人物などを分析します。一方、時間モデリングでは、それらがフレームごとにどう変化するかを分析します。空間情報と時間情報を組み合わせることで、ビデオ全体の状況や流れを理解出来ます。</p>
+<p>その為に、CNN と RNN を組み合わせたり、空間情報と時間情報を同時に捉える特殊な畳み込みを使ったりする方法が研究されています。</p>
 <h1>RNN ベースのビデオモデリングアーキテクチャ</h1>
 <h2>Long-term Recurrent Convolutional Networks（LRCN）</h2>
 <div class="flex justify-center">
@@ -210,11 +213,11 @@ window.MathJax = { tex: { inlineMath: [['$', '$'], ['\\(', '\\)']], displayMath:
 </div>
 
 <p><strong>概要</strong>
-Long-term Recurrent Convolutional Networks（LRCN）は、2015年に Donahue らが発表したモデルです。CNN と、RNN の一種である Long Short-Term Memory ネットワーク（LSTM）を組み合わせ、ビデオの空間的特徴と時間的特徴の両方から学習します。CNN が各フレームを処理して空間的特徴を抽出し、LSTM がこれらの特徴を順番に受け取り、時間とともにどう変化するかを学習します。</p>
+Long-term Recurrent Convolutional Networks（LRCN）は、2015年に Donahue らが発表したモデルです。CNN と、RNN の一種である Long Short-Term Memory ネットワーク（LSTM）を組み合わせ、ビデオの空間的特徴と時間的特徴の両方から学習します。CNN が各フレームを処理して空間的特徴を抽出し、LSTM がこれらの特徴を順番に受け取り、時間と共にどう変化するかを学習します。</p>
 <p><strong>主な特徴</strong>
 - <strong>CNN と LSTM の組み合わせ：</strong> 各フレームの空間的特徴を LSTM に入力し、時間的な関係をモデル化します。
 - <strong>幅広い応用：</strong> LRCN は、行動認識（ビデオ内の行動を識別する）やビデオキャプション生成（ビデオの説明文を生成する）といったタスクで成功を収めています。</p>
-<p><strong>なぜ重要か</strong>
+<p><strong>何故重要か</strong>
 LRCN は、ビデオデータの空間的な側面と時間的な側面の両方を効果的に扱った最初のモデルの1つでした。CNN と RNN の組み合わせがビデオ分析に強力であることを示し、その後の研究の道を切り開きました。</p>
 <h2>畳み込み LSTM ネットワーク：降水ナウキャスティングのための機械学習手法（ConvLSTM）</h2>
 <div class="flex justify-center">
@@ -225,28 +228,28 @@ LRCN は、ビデオデータの空間的な側面と時間的な側面の両方
 <p>Convolutional LSTM Network（ConvLSTM）は、2015年に Shi らが提案しました。従来の LSTM を改良し、LSTM の構造の中に畳み込み演算を取り入れたものです。つまり、1次元の系列を処理する代わりに、ConvLSTM は2次元の空間データ（画像など）を時間にわたって扱えます。</p>
 <p><strong>主な特徴</strong>
 - <strong>空間構造の保持：</strong> 畳み込みを使うことで、ConvLSTM は時間系列を処理しながらデータの空間的なレイアウトを保持します。
-- <strong>時空間予測に効果的：</strong> 気象予報やビデオフレーム予測など、空間データが時間とともにどう変化するかを予測する必要があるタスクに特に役立ちます。</p>
-<p><strong>なぜ重要か</strong>
+- <strong>時空間予測に効果的：</strong> 気象予報やビデオフレーム予測など、空間データが時間と共にどう変化するかを予測する必要があるタスクに特に役立ちます。</p>
+<p><strong>何故重要か</strong>
 ConvLSTM は、畳み込みを LSTM アーキテクチャに直接統合することで、時空間データを処理する新しい方法を導入しました。これは、空間的・時間的パターンに基づいて将来の状態を予測する必要がある分野に影響を与えています。</p>
 <h2>LSTM を使ったビデオ表現の教師なし学習</h2>
 <p><strong>概要</strong>
-2015年、Srivastava らは、ラベルのないデータからビデオの特徴表現を学習する「教師なし学習」の手法を発表しました。この手法では、多層 LSTM モデルを使ってビデオ表現を学習します。モデルは、エンコーダ LSTM とデコーダ LSTM の2つの主要部分で構成されます。エンコーダは、フレーム数が異なる任意の長さのビデオ系列を、固定サイズの表現に変換します。デコーダは、その表現を使って元のビデオ系列を再構成するか、続くビデオ系列を予測します。</p>
+2015年、Srivastava らは、ラベルの無いデータからビデオの特徴表現を学習する「教師なし学習」の手法を発表しました。この手法では、多層 LSTM モデルを使ってビデオ表現を学習します。モデルは、エンコーダ LSTM とデコーダ LSTM の2つの主要部分で構成されます。エンコーダは、フレーム数が異なる任意の長さのビデオ系列を、固定サイズの表現に変換します。デコーダは、その表現を使って元のビデオ系列を再構成するか、続くビデオ系列を予測します。</p>
 <p><strong>主な特徴</strong>
-- <strong>教師なし学習：</strong> ラベル付きデータを必要としないため、大量のビデオを扱いやすくなります。</p>
-<p><strong>なぜ重要か</strong>
-このアプローチは、時間とコストのかかる大規模なラベル付けを必要とせずに、有用なビデオ表現を学習できることを示しました。教師なし手法によるビデオ分析と生成の新しい可能性を切り開きました。</p>
+- <strong>教師なし学習：</strong> ラベル付きデータを必要としない為、大量のビデオを扱い易くなります。</p>
+<p><strong>何故重要か</strong>
+このアプローチは、時間とコストのかかる大規模なラベル付けを必要とせずに、有用なビデオ表現を学習出来ることを示しました。教師なし手法によるビデオ分析と生成の新しい可能性を切り開きました。</p>
 <h2>時間構造を活用したビデオの記述</h2>
 <div class="flex justify-center">
     <img src="https://huggingface.co/datasets/hf-vision/course-assets/resolve/main/rnn_video_models/attention_model.png">
 </div>
 
 <p><strong>概要</strong>
-2015年、Yao らは、特にビデオキャプション生成を目的として、ビデオモデルに注意機構を導入しました。この手法では、注意機構を使ってビデオ内の重要な時間的・空間的特徴に選択的に注目し、より正確で状況に合った説明文を生成できるようにします。</p>
+2015年、Yao らは、特にビデオキャプション生成を目的として、ビデオモデルに注意機構を導入しました。この手法では、注意機構を使ってビデオ内の重要な時間的・空間的特徴に選択的に注目し、より正確で状況に合った説明文を生成出来るようにします。</p>
 <p><strong>主な特徴</strong>
 - <strong>時間的注意と空間的注意：</strong> 注意機構は、ビデオの中で最も関連性の高いフレームや領域を動的に特定し、局所的な行動（特定の動きなど）と大域的な文脈（全体の活動など）の両方が考慮されるようにします。
 - <strong>表現の強化：</strong> 重要な特徴に注目することで、モデルは局所的・大域的な時間構造を組み合わせ、ビデオ表現の改善と、より正確なキャプション生成につなげます。</p>
-<p><strong>なぜ重要か</strong>
-ビデオモデルに注意機構を取り入れることは、時間データの処理方法を一変させました。この方法は、ビデオ系列における複雑な相互作用を扱うモデルの能力を高め、ビデオ分析と生成のための現代のニューラルネットワークアーキテクチャに不可欠なコンポーネントとなっています。</p>
+<p><strong>何故重要か</strong>
+ビデオモデルに注意機構を取り入れることは、時間データの処理方法を一変させました。この方法は、ビデオ系列における複雑な相互作用を扱うモデルの能力を高め、ビデオ分析と生成の為の現代のニューラルネットワークアーキテクチャに不可欠なコンポーネントとなっています。</p>
 <h1>RNN ベースモデルの限界</h1>
 <ul>
 <li>
@@ -255,11 +258,11 @@ ConvLSTM は、畳み込みを LSTM アーキテクチャに直接統合する�
 </li>
 <li>
 <p><strong>計算の複雑さと処理時間</strong></p>
-<p>RNN はデータを逐次的に、つまり一度に1ステップずつ処理するため、特にビデオのような長い系列では遅くなりがちです。この逐次処理では並列計算リソースを活かすのが難しく、訓練と推論の時間が長くなります。</p>
+<p>RNN はデータを逐次的に、つまり一度に1ステップずつ処理する為、特にビデオのような長い系列では遅くなりがちです。この逐次処理では並列計算リソースを活かすのが難しく、訓練と推論の時間が長くなります。</p>
 </li>
 <li>
 <p><strong>代替モデルの登場</strong></p>
-<p>RNN の限界の一部に対処するため、Transformer のような新しいモデルが開発されました。Transformer は注意機構を使って系列を扱い、データを並列に処理できるため、より高速で、長期依存関係の捕捉にも効果的です。</p>
+<p>RNN の限界の一部に対処する為、Transformer のような新しいモデルが開発されました。Transformer は注意機構を使って系列を扱い、データを並列に処理出来る為、より高速で、長期依存関係の捕捉にも効果的です。</p>
 </li>
 </ul>
 <h1>まとめ</h1>

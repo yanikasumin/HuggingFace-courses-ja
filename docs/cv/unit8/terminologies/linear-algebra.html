@@ -86,7 +86,7 @@ window.MathJax = { tex: { inlineMath: [['$', '$'], ['\\(', '\\)']], displayMath:
 </ul>
 <p class="side-group">Unit 3 - Vision Transformer</p>
 <ul class="side-list">
-<li><a class="side-link" href="../../unit3/vision-transformers/vision-transformers-for-image-classification.html">画像分類のための Vision Transformer の転移学習とファインチューニング</a></li>
+<li><a class="side-link" href="../../unit3/vision-transformers/vision-transformers-for-image-classification.html">画像分類の為の Vision Transformer の転移学習とファインチューニング</a></li>
 <li><a class="side-link" href="../../unit3/vision-transformers/swin-transformer.html">Swin Transformer</a></li>
 <li><a class="side-link" href="../../unit3/vision-transformers/cvt.html">Convolutional Vision Transformer (CvT)</a></li>
 <li><a class="side-link" href="../../unit3/vision-transformers/dinat.html">Dilated Neighborhood Attention Transformer（DiNAT）</a></li>
@@ -146,7 +146,7 @@ window.MathJax = { tex: { inlineMath: [['$', '$'], ['\\(', '\\)']], displayMath:
 <li><a class="side-link" href="camera-models.html">カメラモデル</a></li>
 <li><a class="side-link active" href="linear-algebra.html">3Dデータのための線形代数の基礎</a></li>
 <li><a class="side-link" href="representations.html">3Dデータの表現方法</a></li>
-<li><a class="side-link" href="../monocular_depth_estimation.html">単眼深度推定の概要：メトリック深度と相対深度、Depth Anything V2 のファインチューニング 👐 📚</a></li>
+<li><a class="side-link" href="../monocular_depth_estimation.html">単眼深度推定の概要：メトリック深度と相対深度、Depth Anything V2 のファインチューニング</a></li>
 <li><a class="side-link" href="../3d-vision/nvs.html">新規視点合成（Novel View Synthesis）</a></li>
 <li><a class="side-link" href="../3d_measurements_stereo_vision.html">はじめに</a></li>
 <li><a class="side-link" href="../nerf.html">Neural Radiance Fields（NeRF）</a></li>
@@ -176,9 +176,9 @@ window.MathJax = { tex: { inlineMath: [['$', '$'], ['\\(', '\\)']], displayMath:
 <ul class="side-list">
 <li><a class="side-link" href="../../unit12/pre-intro.html">CV モデルにおける倫理的基盤を探る</a></li>
 <li><a class="side-link" href="../../unit12/introduction.html">導入</a></li>
-<li><a class="side-link" href="../../unit12/ethics-bias-ai.html">AI における倫理とバイアス 🧑‍🤝‍🧑</a></li>
-<li><a class="side-link" href="../../unit12/conclusion.html">Hugging Face の取り組み：倫理と社会 🤗🌎</a></li>
-<li><a class="side-link" href="../../unit12/supplementary-material.html">参考文献とリソース 🤗🌎</a></li>
+<li><a class="side-link" href="../../unit12/ethics-bias-ai.html">AI における倫理とバイアス</a></li>
+<li><a class="side-link" href="../../unit12/conclusion.html">Hugging Face の取り組み：倫理と社会 🤗</a></li>
+<li><a class="side-link" href="../../unit12/supplementary-material.html">参考文献とリソース 🤗</a></li>
 </ul>
 <p class="side-group">Unit 13 - 展望</p>
 <ul class="side-list">
@@ -197,18 +197,20 @@ window.MathJax = { tex: { inlineMath: [['$', '$'], ['\\(', '\\)']], displayMath:
 <h2>座標系</h2>
 <p>3次元データの多くは、空間内に定まった位置を持つ点のような対象から構成され、しばしば3つのデカルト座標 \([X, Y, Z]\) で表されます。</p>
 <p><img alt="軸の右手系・左手系" src="https://huggingface.co/datasets/hf-vision/course-assets/resolve/main/axes_handedness.png" /></p>
-<p>但し、座標軸の向きの決め方は、システムによって異なります。特に重要なのが、X、Y、Z 軸の相対的な向きによって決まる「右手系」と「左手系」の違いです。覚えるには、親指、人差し指、中指がほぼ直角になるように手を広げ、中指を手のひら側に向けてみてください。左手の親指を X 軸、人差し指を Y 軸、中指を Z 軸に対応させると、左手系になります。同じように右手の指を対応させると、右手系になります。</p>
-<p>数学や物理学では通常、右手系が使われます。しかしコンピュータグラフィックスでは、ライブラリや環境によって規約が異なります。特に、Blender、PyTorch3D、OpenGL は（ほとんどの場合）右手系の座標を使い、DirectX は左手系の座標を使います。ここでは Blender と NerfStudio に従い、右手系の規約を使います。</p>
+<p>但し、座標軸の向きの決め方は、システムによって異なります。特に重要なのが、X、Y、Z 軸の相対的な向きによって決まる「右手系」と「左手系」の違いです。覚えるには、親指、人差し指、中指がほぼ直角になるように手を広げ、中指を手のひら側に向けてみて下さい。左手の親指を X 軸、人差し指を Y 軸、中指を Z 軸に対応させると、左手系になります。同じように右手の指を対応させると、右手系になります。</p>
+<p>数学や物理学では通常、右手系が使われます。しかしコンピュータグラフィックスでは、ライブラリや環境によって規約が異なります。特に、Blender、PyTorch3D、OpenGL は（殆どの場合）右手系の座標を使い、DirectX は左手系の座標を使います。ここでは Blender と NerfStudio に従い、右手系の規約を使います。</p>
 <h2>変換</h2>
-<p>空間内の点の座標を回転、拡大縮小、平行移動できると便利です。たとえば、物体の動きを表したい場合や、固定された座標軸を基準とするワールド座標を、カメラを基準とする座標に変換したい場合に役立ちます。</p>
-<p>これらの変換は行列で表すことができます。ここでは行列の乗算を <code>@</code> で表記します。平行移動、回転、拡大縮小を一貫した方法で表せるようにするために、3次元座標 \([x,y,z]\) に追加の座標 \(w=1\) を加えます。これは同次座標として知られています。より一般的には、\(w\) は任意の値を取ることができ、4次元の直線 \([wx, wy, wz, w]\) 上のすべての点は、3次元空間内の同じ点 \([x,y,z]\) に対応します。但し、ここでは \(w\) は常に1とします。</p>
-<p><a href="https://pytorch3d.org/">PyTorch3D</a> のようなライブラリには、変換を生成し操作するための様々な関数が用意されています。</p>
-<p>もう1つ注意すべき規約があります。OpenGL は位置を列ベクトル <code>x</code>（形状 4x1）として扱い、ベクトルに行列を前から掛けること（<code>M @ x</code>）で変換 <code>M</code> を適用します。一方、DirectX と PyTorch3D は位置を形状 (1x4) の行ベクトルと考え、ベクトルに行列を後ろから掛けること（<code>x @ M</code>）で変換を適用します。2つの規約の間で変換するには、行列 <code>M.T</code> の転置を取る必要があります。いくつかのコードスニペットで、立方体が異なる変換行列のもとでどのように変換されるかを示します。これらのコードスニペットでは、OpenGL の規約を使います。</p>
+<p>空間内の点の座標を回転、拡大縮小、平行移動出来ると便利です。例えば、物体の動きを表したい場合や、固定された座標軸を基準とするワールド座標を、カメラを基準とする座標に変換したい場合に役立ちます。</p>
+<p>これらの変換は行列で表すことが出来ます。ここでは行列の乗算を <code>@</code> で表記します。平行移動、回転、拡大縮小を一貫した方法で表せるようにする為に、3次元座標 \([x,y,z]\) に追加の座標 \(w=1\) を加えます。これは同次座標として知られています。</p>
+<p>より一般的には、\(w\) は任意の値を取ることが出来、4次元の直線 \([wx, wy, wz, w]\) 上の全ての点は、3次元空間内の同じ点 \([x,y,z]\) に対応します。但し、ここでは \(w\) は常に1とします。</p>
+<p><a href="https://pytorch3d.org/">PyTorch3D</a> のようなライブラリには、変換を生成し操作する為の様々な関数が用意されています。</p>
+<p>もう1つ注意すべき規約が有ります。OpenGL は位置を列ベクトル <code>x</code>（形状 4x1）として扱い、ベクトルに行列を前から掛けること（<code>M @ x</code>）で変換 <code>M</code> を適用します。一方、DirectX と PyTorch3D は位置を形状 (1x4) の行ベクトルと考え、ベクトルに行列を後ろから掛けること（<code>x @ M</code>）で変換を適用します。2つの規約の間で変換するには、行列 <code>M.T</code> の転置を取る必要があります。</p>
+<p>いくつかのコードスニペットで、立方体が異なる変換行列のもとでどのように変換されるかを示します。これらのコードスニペットでは、OpenGL の規約を使います。</p>
 <h3>平行移動</h3>
-<p>平行移動、つまり空間内のすべての点を同じ距離・同じ方向に動かすことは、次のように表すことができます</p>
+<p>平行移動、つまり空間内の全ての点を同じ距離・同じ方向に動かすことは、次のように表すことが出来ます</p>
 <p>$$T = \begin{pmatrix} 1 &amp; 0 &amp; 0 &amp; t_x \ 0 &amp; 1 &amp; 0 &amp; t_y \ 0 &amp; 0 &amp; 1 &amp; t_z \ 0 &amp; 0 &amp; 0 &amp; 1 \end{pmatrix}$$</p>
-<p>ここで \(t = [t_x,t_y,t_z]\) は、すべての点を平行移動させる方向ベクトルです。</p>
-<p>平行移動を自分で試すために、まず立方体を可視化する小さなヘルパー関数を書いてみましょう。</p>
+<p>ここで \(t = [t_x,t_y,t_z]\) は、全ての点を平行移動させる方向ベクトルです。</p>
+<p>平行移動を自分で試す為に、先ず立方体を可視化する小さなヘルパー関数を書いてみましょう。</p>
 <div class="codehilite"><pre><span></span><code><span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">matplotlib.pyplot</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">plt</span>
 
@@ -304,7 +306,7 @@ window.MathJax = { tex: { inlineMath: [['$', '$'], ['\\(', '\\)']], displayMath:
 </div>
 
 <h3>回転</h3>
-<p>軸の周りの回転も、よく使われる変換の1つです。回転の表現方法には、オイラー角やクォータニオンなど様々なものがあり、応用によっては非常に役立ちます。ここでも、PyTorch3D のようなライブラリには回転を行うための幅広い機能が含まれています。但し、簡単な例として、3つの軸それぞれの周りの回転を構成する方法だけを示します。</p>
+<p>軸の周りの回転も、よく使われる変換の1つです。回転の表現方法には、オイラー角やクォータニオンなど様々なものが有り、応用によっては非常に役立ちます。ここでも、PyTorch3D のようなライブラリには回転を行う為の幅広い機能が含まれています。但し、簡単な例として、3つの軸それぞれの周りの回転を構成する方法だけを示します。</p>
 <ul>
 <li>X 軸の周りの回転：</li>
 </ul>
@@ -343,15 +345,15 @@ window.MathJax = { tex: { inlineMath: [['$', '$'], ['\\(', '\\)']], displayMath:
 <li>Y 軸の周りの回転：</li>
 </ul>
 <p>$$ R_y(\beta) = \begin{pmatrix} \cos \beta &amp; 0 &amp; \sin \beta &amp; 0 \ 0 &amp; 1 &amp; 0 &amp; 0 \ -\sin \beta &amp; 0 &amp; \cos \beta &amp; 0 \ 0 &amp; 0 &amp; 0 &amp; 1 \end{pmatrix} $$</p>
-<p>上のスニペットを使えば、Y 軸の周りの回転をどう実装するか分かるはずです。😎😎</p>
+<p>上のスニペットを使えば、Y 軸の周りの回転をどう実装するか分かるはずです。</p>
 <ul>
 <li>Z 軸の周りの回転：</li>
 </ul>
 <p>$$ R_z(\beta) = \begin{pmatrix} \cos \beta &amp; -\sin \beta &amp; 0 &amp; 0 \ \sin \beta &amp; \cos \beta &amp; 0 &amp; 0 \ 0 &amp; 0 &amp; 1 &amp; 0 \ 0 &amp; 0 &amp; 0 &amp; 1 \end{pmatrix} $$</p>
-<p>同じように、直前のコードスニペットを使って Z 軸の周りの回転を実装できますか❓</p>
-<p>標準的な規約では、正の回転角は、回転軸が見る人の方向を向いているときに反時計回りの回転に対応することに注意してください。また、ほとんどのライブラリでは、余弦関数（cosine）は角度をラジアンで要求することにも注意してください。度からラジアンへの変換は、\( pi/180\) を掛けて行います。</p>
+<p>同じように、直前のコードスニペットを使って Z 軸の周りの回転を実装出来ますか❓</p>
+<p>標準的な規約では、正の回転角は、回転軸が見る人の方向を向いている時に反時計回りの回転に対応することに注意して下さい。また、殆どのライブラリでは、余弦関数（cosine）は角度をラジアンで要求することにも注意して下さい。度からラジアンへの変換は、\( pi/180\) を掛けて行います。</p>
 <h3>変換の組み合わせ</h3>
-<p>複数の変換は、それらの行列を掛け合わせることで組み合わせることができます。行列を掛ける順序が重要であることに注意してください。行列は右から左へ適用されます。変換 P、Q、R をその順序で適用する行列を作るには、合成変換は \( X = R @ Q @ P\) で与えられます。</p>
+<p>複数の変換は、それらの行列を掛け合わせることで組み合わせることが出来ます。行列を掛ける順序が重要であることに注意して下さい。行列は右から左へ適用されます。変換 P、Q、R をその順序で適用する行列を作るには、合成変換は \( X = R @ Q @ P\) で与えられます。</p>
 <p>上で行った平行移動、次に回転、次に拡大縮小を1回の操作で行いたい場合は、次のようになります。</p>
 <div class="codehilite"><pre><span></span><code><span class="c1"># 図を準備する</span>
 <span class="n">fig</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">figure</span><span class="p">()</span>

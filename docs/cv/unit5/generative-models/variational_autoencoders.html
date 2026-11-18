@@ -86,7 +86,7 @@ window.MathJax = { tex: { inlineMath: [['$', '$'], ['\\(', '\\)']], displayMath:
 </ul>
 <p class="side-group">Unit 3 - Vision Transformer</p>
 <ul class="side-list">
-<li><a class="side-link" href="../../unit3/vision-transformers/vision-transformers-for-image-classification.html">画像分類のための Vision Transformer の転移学習とファインチューニング</a></li>
+<li><a class="side-link" href="../../unit3/vision-transformers/vision-transformers-for-image-classification.html">画像分類の為の Vision Transformer の転移学習とファインチューニング</a></li>
 <li><a class="side-link" href="../../unit3/vision-transformers/swin-transformer.html">Swin Transformer</a></li>
 <li><a class="side-link" href="../../unit3/vision-transformers/cvt.html">Convolutional Vision Transformer (CvT)</a></li>
 <li><a class="side-link" href="../../unit3/vision-transformers/dinat.html">Dilated Neighborhood Attention Transformer（DiNAT）</a></li>
@@ -146,7 +146,7 @@ window.MathJax = { tex: { inlineMath: [['$', '$'], ['\\(', '\\)']], displayMath:
 <li><a class="side-link" href="../../unit8/terminologies/camera-models.html">カメラモデル</a></li>
 <li><a class="side-link" href="../../unit8/terminologies/linear-algebra.html">3Dデータのための線形代数の基礎</a></li>
 <li><a class="side-link" href="../../unit8/terminologies/representations.html">3Dデータの表現方法</a></li>
-<li><a class="side-link" href="../../unit8/monocular_depth_estimation.html">単眼深度推定の概要：メトリック深度と相対深度、Depth Anything V2 のファインチューニング 👐 📚</a></li>
+<li><a class="side-link" href="../../unit8/monocular_depth_estimation.html">単眼深度推定の概要：メトリック深度と相対深度、Depth Anything V2 のファインチューニング</a></li>
 <li><a class="side-link" href="../../unit8/3d-vision/nvs.html">新規視点合成（Novel View Synthesis）</a></li>
 <li><a class="side-link" href="../../unit8/3d_measurements_stereo_vision.html">はじめに</a></li>
 <li><a class="side-link" href="../../unit8/nerf.html">Neural Radiance Fields（NeRF）</a></li>
@@ -176,9 +176,9 @@ window.MathJax = { tex: { inlineMath: [['$', '$'], ['\\(', '\\)']], displayMath:
 <ul class="side-list">
 <li><a class="side-link" href="../../unit12/pre-intro.html">CV モデルにおける倫理的基盤を探る</a></li>
 <li><a class="side-link" href="../../unit12/introduction.html">導入</a></li>
-<li><a class="side-link" href="../../unit12/ethics-bias-ai.html">AI における倫理とバイアス 🧑‍🤝‍🧑</a></li>
-<li><a class="side-link" href="../../unit12/conclusion.html">Hugging Face の取り組み：倫理と社会 🤗🌎</a></li>
-<li><a class="side-link" href="../../unit12/supplementary-material.html">参考文献とリソース 🤗🌎</a></li>
+<li><a class="side-link" href="../../unit12/ethics-bias-ai.html">AI における倫理とバイアス</a></li>
+<li><a class="side-link" href="../../unit12/conclusion.html">Hugging Face の取り組み：倫理と社会 🤗</a></li>
+<li><a class="side-link" href="../../unit12/supplementary-material.html">参考文献とリソース 🤗</a></li>
 </ul>
 <p class="side-group">Unit 13 - 展望</p>
 <ul class="side-list">
@@ -196,30 +196,30 @@ window.MathJax = { tex: { inlineMath: [['$', '$'], ['\\(', '\\)']], displayMath:
 <h1>変分オートエンコーダ</h1>
 <h2>オートエンコーダ入門</h2>
 <p>オートエンコーダは、主に教師なし学習や次元削減に使われるニューラルネットワークです。入力データを低次元の表現に圧縮（エンコード）し、そこから元のデータを復元（デコード）することで、復元したデータと元のデータの誤差を小さくするよう学習します。基本的には、<code>エンコーダ（encoder）</code> と <code>デコーダ（decoder）</code> の2つの部分で構成されます。
-* <strong>エンコーダ：</strong> エンコーダは、入力データを圧縮された表現、すなわち潜在表現に変換する役割を担います。通常、入力の次元を段階的に削減していく1つ以上のニューロン層で構成されます。
+* <strong>エンコーダ：</strong> エンコーダは、入力データを圧縮された表現、即ち潜在表現に変換する役割を担います。通常、入力の次元を段階的に削減していく1つ以上のニューロン層で構成されます。
 * <strong>デコーダ：</strong> 一方、デコーダはエンコーダが作った圧縮表現を受け取り、元の入力データを復元しようとします。通常はエンコーダと同様に1つ以上の層で構成されますが、エンコーダとは逆に、各層でデータの次元を段階的に増やしていきます。</p>
 <p><img alt="バニラオートエンコーダの画像 - Lilian Weng のブログ" src="https://huggingface.co/datasets/hf-vision/course-assets/resolve/main/generative_models/autoencoder.png" /></p>
 <p>このオートエンコーダモデルは、エンコーダネットワーク（$g_\phi$ と表されます）とデコーダネットワーク（$f_\theta$ と表されます）で構成されます。低次元表現はボトルネック層で $z$ として学習され、再構成された出力は $x' = f_\theta(g_\phi(x))$ と表され、$x \approx x'$ を目指します。</p>
 <p>このようなバニラオートエンコーダでよく使われる損失関数は</p>
 <p>$$L(\theta, \phi) = \frac{1}{n}\sum_{i=1}^n (\mathbf{x}^{(i)} - f_\theta(g_\phi(\mathbf{x}^{(i)})))^2$$ </p>
 <p>で、元の画像と再構成された画像の誤差を最小化しようとします。これは再構成損失（reconstruction loss）とも呼ばれます。</p>
-<p>オートエンコーダは、ノイズ除去、特徴学習、データ圧縮などに役立ちます。しかし、従来のオートエンコーダには、VAE の大きな特徴である確率的な仕組みがありません。この仕組みによって、VAE は新しいデータの生成にも利用できます。</p>
+<p>オートエンコーダは、ノイズ除去、特徴学習、データ圧縮などに役立ちます。しかし、従来のオートエンコーダには、VAE の大きな特徴である確率的な仕組みがありません。この仕組みによって、VAE は新しいデータの生成にも利用出来ます。</p>
 <h2>変分オートエンコーダ（VAE）の概要</h2>
-<p>変分オートエンコーダ（VAE）は、エンコードとデコードに <code>確率的なアプローチ</code> を取り入れることで、従来のオートエンコーダの限界の一部を克服します。VAE の特徴は、学習した潜在空間の確率分布から値をサンプリングし、新しいデータを生成できることです。従来のオートエンコーダでは潜在ベクトルを直接使いますが、VAE は確率分布からサンプリングするため、データ生成に適しています。
-* <strong>確率的な性質：</strong> 従来の決定論的なオートエンコーダとは異なり、VAE は潜在空間を確率分布として扱います。そのため、入力データを1つの固定ベクトルに変換するのではなく、確率分布として表現します。これにより、データに含まれる不確実性をより細かく表せます。デコーダは、この確率分布からサンプリングした値を使います。
-* <strong>潜在空間の役割：</strong> VAE の潜在空間は、入力データを連続的かつ構造的に表現します。連続した空間として設計されているため、2つの点の間を補間しやすいのが特徴です。潜在空間の各点は生成できる出力に対応しており、点を滑らかに移動させることで、生成結果も滑らかに変化させられます。また、この設計では、潜在空間で近い点から似た結果が得られることも目指しています。</p>
-<p>次の例で考えてみましょう。エンコーダは入力画像の特徴を取り出し、ベクトルとして表します。このベクトルには、笑顔、髪の色、性別、年齢など、被写体の様々な特徴が含まれます。例えば、[0.4, 0.03, 0.032, ...] のような数値の並びです。ここでは説明を簡単にするため、潜在表現のうち「笑顔」という特徴だけに注目します。
+<p>変分オートエンコーダ（VAE）は、エンコードとデコードに <code>確率的なアプローチ</code> を取り入れることで、従来のオートエンコーダの限界の一部を克服します。VAE の特徴は、学習した潜在空間の確率分布から値をサンプリングし、新しいデータを生成出来ることです。従来のオートエンコーダでは潜在ベクトルを直接使いますが、VAE は確率分布からサンプリングする為、データ生成に適しています。
+* <strong>確率的な性質：</strong> 従来の決定論的なオートエンコーダとは異なり、VAE は潜在空間を確率分布として扱います。その為、入力データを1つの固定ベクトルに変換するのではなく、確率分布として表現します。これにより、データに含まれる不確実性をより細かく表せます。デコーダは、この確率分布からサンプリングした値を使います。
+* <strong>潜在空間の役割：</strong> VAE の潜在空間は、入力データを連続的且つ構造的に表現します。連続した空間として設計されている為、2つの点の間を補間し易いのが特徴です。潜在空間の各点は生成出来る出力に対応しており、点を滑らかに移動させることで、生成結果も滑らかに変化させられます。また、この設計では、潜在空間で近い点から似た結果が得られることも目指しています。</p>
+<p>次の例で考えてみましょう。エンコーダは入力画像の特徴を取り出し、ベクトルとして表します。このベクトルには、笑顔、髪の色、性別、年齢など、被写体の様々な特徴が含まれます。例えば、[0.4, 0.03, 0.032, ...] のような数値の並びです。ここでは説明を簡単にする為、潜在表現の内「笑顔」という特徴だけに注目します。
 <img alt="オートエンコーダと VAE の比較 - Sciforce の Medium" src="https://huggingface.co/datasets/hf-vision/course-assets/resolve/main/generative_models/comparison.png" />
-バニラオートエンコーダ（AE）の場合、笑顔の特徴は固定された決定論的な値として表現されます。対照的に、変分オートエンコーダ（VAE）は、この特徴を確率分布として表現するよう意図的に設計されています。この設計上の選択により、指定された確率分布から値をサンプリングできるため、生成画像に多様性を持たせることができます。</p>
+バニラオートエンコーダ（AE）の場合、笑顔の特徴は固定された決定論的な値として表現されます。対照的に、変分オートエンコーダ（VAE）は、この特徴を確率分布として表現するよう意図的に設計されています。この設計上の選択により、指定された確率分布から値をサンプリング出来る為、生成画像に多様性を持たせることが出来ます。</p>
 <h2>VAE の背後にある数学</h2>
-<p>VAE の背後にある数学的な概念を理解するには、確率的モデリングと変分推論の原理をつかむ必要があります。
+<p>VAE の背後に在る数学的な概念を理解するには、確率的モデリングと変分推論の原理をつかむ必要があります。
 <img alt="変分オートエンコーダ - Lilian Weng のブログ" src="https://huggingface.co/datasets/hf-vision/course-assets/resolve/main/generative_models/vae.png" />
 * <strong>確率的モデリング：</strong> VAE では、潜在空間は確率分布としてモデル化され、多変量ガウス分布が仮定されることが多いです。この分布は平均ベクトルと標準偏差ベクトルによってパラメータ化され、これらは確率的エンコーダ \( q_\phi(z|x) \) の出力です。これは学習された表現 z から構成され、更にデコーダとして \(p_\theta(x|z) \) からのサンプリングに使われます。
-* <strong>損失関数：</strong> VAE の損失関数は2つの要素から構成されます。バニラオートエンコーダと同様の再構成損失（モデルが入力をどれだけうまく再構成できるかを測るもの）と、KL ダイバージェンス（学習された分布が、通常はガウス分布である選ばれた事前分布にどれだけ近いかを測るもの）です。これらの要素の組み合わせにより、モデルはデータ分布と指定された事前分布の両方を捉えた潜在表現を学習するよう促されます。
-* <strong>意味のある潜在表現の学習：</strong> 損失関数に KL ダイバージェンスを加えることで、VAE は似たデータが潜在空間でも近くに配置されるように学習し、意味のある構造を持つ表現を得ようとします。</p>
-<p>VAE の損失関数では、再構成損失と潜在損失の両方を小さくすることを目指します。潜在損失を小さくしようとすると、画像を正確に再構成するために使える情報が制限されます。そのため、VAE では再構成損失と潜在損失のバランスを取ることが重要です。</p>
-<p>原典では、<code>潜在損失が小さい</code> 場合、学習データに似た画像は生成できても、視覚的な品質が低くなる傾向があると説明しています。一方、<code>再構成損失が小さい</code> 場合は、学習時の画像を正確に復元できても、学習データから大きく異なる新しい画像を生成しにくくなると説明しています。画像の再構成と新しい画像の生成の両方で良い結果を得るには、この2つの損失のバランスが重要です。</p>
-<p>まとめると、VAE はデータを再構成するだけでなく、新しいデータを生成したり、潜在表現を分析したりするための確率的な仕組みを提供します。従来のオートエンコーダとの大きな違いは、モデルに確率的な要素を取り入れていることです。これにより、データの分布をより詳しく捉えられるため、VAE は生成タスクに適しています。</p>
+* <strong>損失関数：</strong> VAE の損失関数は2つの要素から構成されます。バニラオートエンコーダと同様の再構成損失（モデルが入力をどれだけうまく再構成出来るかを測るもの）と、KL ダイバージェンス（学習された分布が、通常はガウス分布である選ばれた事前分布にどれだけ近いかを測るもの）です。これらの要素の組み合わせにより、モデルはデータ分布と指定された事前分布の両方を捉えた潜在表現を学習するよう促されます。
+* <strong>意味の有る潜在表現の学習：</strong> 損失関数に KL ダイバージェンスを加えることで、VAE は似たデータが潜在空間でも近くに配置されるように学習し、意味のある構造を持つ表現を得ようとします。</p>
+<p>VAE の損失関数では、再構成損失と潜在損失の両方を小さくすることを目指します。潜在損失を小さくしようとすると、画像を正確に再構成する為に使える情報が制限されます。その為、VAE では再構成損失と潜在損失のバランスを取ることが重要です。</p>
+<p>原典では、<code>潜在損失が小さい</code> 場合、学習データに似た画像は生成出来ても、視覚的な品質が低くなる傾向があると説明しています。一方、<code>再構成損失が小さい</code> 場合は、学習時の画像を正確に復元出来ても、学習データから大きく異なる新しい画像を生成し難くなると説明しています。画像の再構成と新しい画像の生成の両方で良い結果を得るには、この2つの損失のバランスが重要です。</p>
+<p>まとめると、VAE はデータを再構成するだけでなく、新しいデータを生成したり、潜在表現を分析したりする為の確率的な仕組みを提供します。従来のオートエンコーダとの大きな違いは、モデルに確率的な要素を取り入れていることです。これにより、データの分布をより詳しく捉えられる為、VAE は生成タスクに適しています。</p>
 <h2>参考文献</h2>
 <ol>
 <li><a href="https://lilianweng.github.io/posts/2018-08-12-vae/">Lilian Weng's Awesome Blog on Autoencoders</a></li>

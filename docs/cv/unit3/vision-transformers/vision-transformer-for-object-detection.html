@@ -86,7 +86,7 @@ window.MathJax = { tex: { inlineMath: [['$', '$'], ['\\(', '\\)']], displayMath:
 </ul>
 <p class="side-group">Unit 3 - Vision Transformer</p>
 <ul class="side-list">
-<li><a class="side-link" href="vision-transformers-for-image-classification.html">画像分類のための Vision Transformer の転移学習とファインチューニング</a></li>
+<li><a class="side-link" href="vision-transformers-for-image-classification.html">画像分類の為の Vision Transformer の転移学習とファインチューニング</a></li>
 <li><a class="side-link" href="swin-transformer.html">Swin Transformer</a></li>
 <li><a class="side-link" href="cvt.html">Convolutional Vision Transformer (CvT)</a></li>
 <li><a class="side-link" href="dinat.html">Dilated Neighborhood Attention Transformer（DiNAT）</a></li>
@@ -146,7 +146,7 @@ window.MathJax = { tex: { inlineMath: [['$', '$'], ['\\(', '\\)']], displayMath:
 <li><a class="side-link" href="../../unit8/terminologies/camera-models.html">カメラモデル</a></li>
 <li><a class="side-link" href="../../unit8/terminologies/linear-algebra.html">3Dデータのための線形代数の基礎</a></li>
 <li><a class="side-link" href="../../unit8/terminologies/representations.html">3Dデータの表現方法</a></li>
-<li><a class="side-link" href="../../unit8/monocular_depth_estimation.html">単眼深度推定の概要：メトリック深度と相対深度、Depth Anything V2 のファインチューニング 👐 📚</a></li>
+<li><a class="side-link" href="../../unit8/monocular_depth_estimation.html">単眼深度推定の概要：メトリック深度と相対深度、Depth Anything V2 のファインチューニング</a></li>
 <li><a class="side-link" href="../../unit8/3d-vision/nvs.html">新規視点合成（Novel View Synthesis）</a></li>
 <li><a class="side-link" href="../../unit8/3d_measurements_stereo_vision.html">はじめに</a></li>
 <li><a class="side-link" href="../../unit8/nerf.html">Neural Radiance Fields（NeRF）</a></li>
@@ -176,9 +176,9 @@ window.MathJax = { tex: { inlineMath: [['$', '$'], ['\\(', '\\)']], displayMath:
 <ul class="side-list">
 <li><a class="side-link" href="../../unit12/pre-intro.html">CV モデルにおける倫理的基盤を探る</a></li>
 <li><a class="side-link" href="../../unit12/introduction.html">導入</a></li>
-<li><a class="side-link" href="../../unit12/ethics-bias-ai.html">AI における倫理とバイアス 🧑‍🤝‍🧑</a></li>
-<li><a class="side-link" href="../../unit12/conclusion.html">Hugging Face の取り組み：倫理と社会 🤗🌎</a></li>
-<li><a class="side-link" href="../../unit12/supplementary-material.html">参考文献とリソース 🤗🌎</a></li>
+<li><a class="side-link" href="../../unit12/ethics-bias-ai.html">AI における倫理とバイアス</a></li>
+<li><a class="side-link" href="../../unit12/conclusion.html">Hugging Face の取り組み：倫理と社会 🤗</a></li>
+<li><a class="side-link" href="../../unit12/supplementary-material.html">参考文献とリソース 🤗</a></li>
 </ul>
 <p class="side-group">Unit 13 - 展望</p>
 <ul class="side-list">
@@ -194,7 +194,7 @@ window.MathJax = { tex: { inlineMath: [['$', '$'], ['\\(', '\\)']], displayMath:
 <nav class="page-nav"><a class="nav-link prev" href="mobilevit.html">← 前へ: MobileViT v2</a><a class="nav-link toc-link" href="../../index.html">目次へ</a><a class="nav-link next" href="detr.html">次へ →: DEtection TRansformer (DETR)</a></nav>
 <article class="content">
 <h1>Vision Transformers を使った物体検出</h1>
-<p>このセクションでは、Vision Transformers を使って物体検出タスクを行う方法を説明します。事前学習済みの物体検出モデルを、自分のユースケースに合わせてファインチューニングする方法を理解していきます。始める前に、最終的な出力結果を試せるこちらの Hugging Face Space も確認してみてください。</p>
+<p>このセクションでは、Vision Transformers を使って物体検出タスクを行う方法を説明します。事前学習済みの物体検出モデルを、自分のユースケースに合わせてファインチューニングする方法を理解していきます。始める前に、最終的な出力結果を試せるこちらの Hugging Face Space も確認してみて下さい。</p>
 <p><iframe
     src="https://hf-vision-finetuning-demo-for-object-detection.hf.space/"
     frameborder="0"
@@ -204,36 +204,36 @@ window.MathJax = { tex: { inlineMath: [['$', '$'], ['\\(', '\\)']], displayMath:
 </p>
 <h2>はじめに</h2>
 <p><img alt="物体検出の例" src="https://huggingface.co/datasets/hf-vision/course-assets/resolve/main/object_detection_wiki.png" /></p>
-<p>物体検出は、画像や動画の中にある物体を識別し、その位置を特定するコンピュータビジョンのタスクです。主に次の2つのステップで構成されます。</p>
+<p>物体検出は、画像や動画の中に在る物体を識別し、その位置を特定するコンピュータビジョンのタスクです。主に次の2つのステップで構成されます。</p>
 <ul>
-<li>1つ目は、車や人、動物など、どんな種類の物体があるかを認識することです。</li>
+<li>1つ目は、車や人、動物など、どんな種類の物体が在るかを認識することです。</li>
 <li>2つ目は、バウンディングボックスで囲んで、その正確な位置を求めることです。</li>
 </ul>
-<p>これらのモデルは通常、画像（静止画や動画のフレーム）を入力として受け取り、各画像には複数の物体が含まれています。たとえば、車や人、自転車など複数の物体を含む画像を考えてみてください。入力を処理すると、モデルは次の情報を表す数値の集合を出力します。</p>
+<p>これらのモデルは通常、画像（静止画や動画のフレーム）を入力として受け取り、各画像には複数の物体が含まれています。例えば、車や人、自転車など複数の物体を含む画像を考えてみて下さい。入力を処理すると、モデルは次の情報を表す数値の集合を出力します。</p>
 <ul>
 <li>物体の位置（バウンディングボックスの XY 座標）</li>
 <li>物体のクラス</li>
 </ul>
-<p>物体検出には多くの応用があります。代表的な例が自動運転の分野です。物体検出を使って車の周囲にある歩行者や道路標識、信号機などの物体を検出し、それを意思決定の入力の1つとして使います。</p>
-<p>物体検出の仕組みをより深く理解するには、物体検出に関する<a href="https://huggingface.co/learn/computer-vision-course/unit6/basic-cv-tasks/object_detection">専用の章</a>も確認してみてください 🤗。</p>
-<h3>物体検出でモデルをファインチューニングする必要性 🤔</h3>
+<p>物体検出には多くの応用があります。代表的な例が自動運転の分野です。物体検出を使って車の周囲に在る歩行者や道路標識、信号機などの物体を検出し、それを意思決定の入力の1つとして使います。</p>
+<p>物体検出の仕組みをより深く理解するには、物体検出に関する<a href="https://huggingface.co/learn/computer-vision-course/unit6/basic-cv-tasks/object_detection">専用の章</a>も確認してみて下さい。</p>
+<h3>物体検出でモデルをファインチューニングする必要性</h3>
 <p>新しいモデルを作るべきか、それとも既存のモデルを改変すべきか。これはとても良い問いです。物体検出モデルをゼロから学習させるということは、次のようなことを意味します。</p>
 <ul>
 <li>既に終わっている研究を、何度もやり直すことになります。</li>
 <li>モデルのコードを繰り返し書いて学習させ、ユースケースごとに別々のリポジトリを維持することになります。</li>
 <li>多くの実験が必要になり、リソースも無駄になります。</li>
 </ul>
-<p>こうした作業をする代わりに、性能の良い事前学習済みモデル（一般的な特徴の認識が得意なモデル）を用意し、その重み（又は重みの一部）を調整して、自分のユースケースに適応させます。事前学習済みモデルは、画像の中から物体の位置特定と分類に役立つ重要な特徴を抽出する方法を、既に十分に学習していると考えられます。そのため、新しい物体が加わっても、既に学習した特徴と新しい特徴を使って、短時間の学習と少ない計算でその物体を検出できるようになります。</p>
+<p>こうした作業をする代わりに、性能の良い事前学習済みモデル（一般的な特徴の認識が得意なモデル）を用意し、その重み（又は重みの一部）を調整して、自分のユースケースに適応させます。事前学習済みモデルは、画像の中から物体の位置特定と分類に役立つ重要な特徴を抽出する方法を、既に十分に学習していると考えられます。その為、新しい物体が加わっても、既に学習した特徴と新しい特徴を使って、短時間の学習と少ない計算でその物体を検出出来るようになります。</p>
 <p>このチュートリアルが終わる頃には、物体検出のユースケースについて、データセットの読み込みからモデルのファインチューニング、推論までを行う一連の pipeline を作れるようになります。</p>
 <h2>必要なライブラリのインストール</h2>
-<p>まずはインストールから始めます。以下のセルを実行して、必要なパッケージをインストールしてください。このチュートリアルでは Hugging Face Transformers と PyTorch を使います。</p>
+<p>先ずはインストールから始めます。以下のセルを実行して、必要なパッケージをインストールして下さい。このチュートリアルでは Hugging Face Transformers と PyTorch を使います。</p>
 <div class="codehilite"><pre><span></span><code>!pip<span class="w"> </span>install<span class="w"> </span>-U<span class="w"> </span>-q<span class="w"> </span>datasets<span class="w"> </span>transformers<span class="o">[</span>torch<span class="o">]</span><span class="w"> </span>evaluate<span class="w"> </span>timm<span class="w"> </span>albumentations<span class="w"> </span>accelerate
 </code></pre></div>
 
 <h2>シナリオ</h2>
-<p>このチュートリアルを面白くするために、実世界の例を考えてみましょう。次のようなシナリオです。建設作業員は、建設現場で作業する際に最大限の安全が求められます。基本的な安全ルールでは、常にヘルメットを着用することになっています。しかし、建設作業員は大勢いるため、全員を常に見守るのは困難です。</p>
-<p>ですが、人物と、その人物がヘルメットを着用しているかどうかをリアルタイムで検出できるカメラシステムがあれば、素晴らしいと思いませんか？</p>
-<p>そこで、まさにそのための軽量な物体検出モデルをファインチューニングしていきます。さっそく始めましょう。</p>
+<p>このチュートリアルを面白くする為に、実世界の例を考えてみましょう。次のようなシナリオです。建設作業員は、建設現場で作業する際に最大限の安全が求められます。基本的な安全ルールでは、常にヘルメットを着用することになっています。しかし、建設作業員は大勢いる為、全員を常に見守るのは困難です。</p>
+<p>ですが、人物と、その人物がヘルメットを着用しているかどうかをリアルタイムで検出出来るカメラシステムがあれば、素晴らしいと思いませんか？</p>
+<p>そこで、まさにその為の軽量な物体検出モデルをファインチューニングしていきます。早速始めましょう。</p>
 <h3>データセット</h3>
 <p>上記のシナリオでは、<a href="https://dataverse.harvard.edu/dataset.xhtml?persistentId=doi:10.7910/DVN/7CBGOS">Northeastern University China</a> が提供する <a href="https://huggingface.co/datasets/hf-vision/hardhat">hardhat</a> データセットを使います。このデータセットは 🤗 <code>datasets</code> でダウンロードして読み込めます。</p>
 <div class="codehilite"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">datasets</span><span class="w"> </span><span class="kn">import</span> <span class="n">load_dataset</span>
@@ -255,7 +255,8 @@ window.MathJax = { tex: { inlineMath: [['$', '$'], ['\\(', '\\)']], displayMath:
 })
 </code></pre></div>
 
-<p>上記は <a href="https://huggingface.co/docs/datasets/v2.17.1/en/package_reference/main_classes#datasets.DatasetDict">DatasetDict</a> です。辞書のように扱える構造で、データセット全体を train スプリットと test スプリットに分けて保持します。各スプリットには <code>features</code> と <code>num_rows</code> が含まれています。<code>features</code> には、<a href="https://realpython.com/image-processing-with-the-python-pillow-library/">Pillow</a> の画像オブジェクトである <code>image</code>、画像IDの <code>image_id</code>、画像の幅と高さを示す <code>width</code> と <code>height</code>、物体の情報を持つ <code>objects</code> が定義されています。次に、（train/test セット内の）各データ点がどのようなものかを見てみましょう。そのためには、次の行を実行します。</p>
+<p>上記は <a href="https://huggingface.co/docs/datasets/v2.17.1/en/package_reference/main_classes#datasets.DatasetDict">DatasetDict</a> です。辞書のように扱える構造で、データセット全体を train スプリットと test スプリットに分けて保持します。各スプリットには <code>features</code> と <code>num_rows</code> が含まれています。<code>features</code> には、<a href="https://realpython.com/image-processing-with-the-python-pillow-library/">Pillow</a> の画像オブジェクトである <code>image</code>、画像IDの <code>image_id</code>、画像の幅と高さを示す <code>width</code> と <code>height</code>、物体の情報を持つ <code>objects</code> が定義されています。</p>
+<p>次に、（train/test セット内の）各データ点がどのようなものかを見てみましょう。その為には、次の行を実行します。</p>
 <div class="codehilite"><pre><span></span><code><span class="n">dataset</span><span class="p">[</span><span class="s2">"train"</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span>
 </code></pre></div>
 
@@ -270,9 +271,9 @@ window.MathJax = { tex: { inlineMath: [['$', '$'], ['\\(', '\\)']], displayMath:
   'category': ['helmet', 'helmet']}}
 </code></pre></div>
 
-<p>見てのとおり、<code>objects</code> はもう1つの辞書で、物体の id（ここではクラス id）、物体の面積、バウンディングボックスの座標（<code>bbox</code>）、そしてカテゴリ（ラベル）を含んでいます。データ要素の各キーと値について、より詳しく説明します。</p>
+<p>見ての通り、<code>objects</code> はもう1つの辞書で、物体の id（ここではクラス id）、物体の面積、バウンディングボックスの座標（<code>bbox</code>）、そしてカテゴリ（ラベル）を含んでいます。データ要素の各キーと値について、より詳しく説明します。</p>
 <ul>
-<li><code>image</code>：Pillow の Image オブジェクトです。パスから読み込む前でも、画像を直接確認できます。</li>
+<li><code>image</code>：Pillow の Image オブジェクトです。パスから読み込む前でも、画像を直接確認出来ます。</li>
 <li><code>image_id</code>：train ファイルの中で何番目の画像かを示します。</li>
 <li><code>width</code>：画像の幅です。</li>
 <li><code>height</code>：画像の高さです。</li>
@@ -291,8 +292,8 @@ window.MathJax = { tex: { inlineMath: [['$', '$'], ['\\(', '\\)']], displayMath:
 <span class="n">test_dataset</span> <span class="o">=</span> <span class="n">dataset</span><span class="p">[</span><span class="s2">"test"</span><span class="p">]</span>
 </code></pre></div>
 
-<p>1つのデータ点に何が含まれているかが分かったので、まずはそのサンプルを描画してみましょう。ここでは、最初に画像を描き、次に対応するバウンディングボックスも描きます。</p>
-<p>行うことは次のとおりです。</p>
+<p>1つのデータ点に何が含まれているかが分かったので、先ずはそのサンプルを描画してみましょう。ここでは、最初に画像を描き、次に対応するバウンディングボックスも描きます。</p>
+<p>行うことは次の通りです。</p>
 <ol>
 <li>画像と、それに対応する高さと幅を取得します。</li>
 <li>画像上にテキストや線を簡単に描ける描画オブジェクトを作ります。</li>
@@ -333,7 +334,7 @@ window.MathJax = { tex: { inlineMath: [['$', '$'], ['\\(', '\\)']], displayMath:
 <span class="n">draw_image_from_idx</span><span class="p">(</span><span class="n">dataset</span><span class="o">=</span><span class="n">train_dataset</span><span class="p">,</span> <span class="n">idx</span><span class="o">=</span><span class="mi">10</span><span class="p">)</span>
 </code></pre></div>
 
-<p>1枚の画像を描画する関数ができたので、上記の関数を使って複数の画像を描画する簡単な関数を書きましょう。分析に役立ちます。</p>
+<p>1枚の画像を描画する関数が出来たので、上記の関数を使って複数の画像を描画する簡単な関数を書きましょう。分析に役立ちます。</p>
 <div class="codehilite"><pre><span></span><code><span class="kn">import</span><span class="w"> </span><span class="nn">matplotlib.pyplot</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">plt</span>
 
 
@@ -378,7 +379,7 @@ window.MathJax = { tex: { inlineMath: [['$', '$'], ['\\(', '\\)']], displayMath:
 
 <h2>データセットの前処理</h2>
 <p>画像を <code>image_processor</code> に渡す前に、画像とそれに対応するバウンディングボックスに対して、様々な種類のデータ拡張も適用しましょう。</p>
-<p>簡単に言うと、データ拡張とは、回転やリサイズなどのランダムな変換の集合です。これらを適用することでサンプル数を増やし、ビジョンモデルを画像の様々な条件に対して頑健にします。これには <a href="https://github.com/albumentations-team/albumentations">albumentations</a> ライブラリを使います。画像にランダムな変換を作成できるため、学習用のサンプルサイズを増やせます。</p>
+<p>簡単に言うと、データ拡張とは、回転やリサイズなどのランダムな変換の集合です。これらを適用することでサンプル数を増やし、ビジョンモデルを画像の様々な条件に対して頑健にします。これには <a href="https://github.com/albumentations-team/albumentations">albumentations</a> ライブラリを使います。画像にランダムな変換を作成出来る為、学習用のサンプルサイズを増やせます。</p>
 <div class="codehilite"><pre><span></span><code><span class="kn">import</span><span class="w"> </span><span class="nn">albumentations</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">torch</span>
@@ -393,7 +394,7 @@ window.MathJax = { tex: { inlineMath: [['$', '$'], ['\\(', '\\)']], displayMath:
 <span class="p">)</span>
 </code></pre></div>
 
-<p>すべての変換を初期化したら、アノテーションを決められた形式に整え、そのリストを返す関数を作ります。</p>
+<p>全ての変換を初期化したら、アノテーションを決められた形式に整え、そのリストを返す関数を作ります。</p>
 <p>これは、<code>image_processor</code> がアノテーションを次の形式で受け取ることを想定しているためです。<code>{'image_id': int, 'annotations': List[Dict]}</code> という形式で、各辞書が COCO の物体アノテーションです。</p>
 <div class="codehilite"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">formatted_anns</span><span class="p">(</span><span class="n">image_id</span><span class="p">,</span> <span class="n">category</span><span class="p">,</span> <span class="n">area</span><span class="p">,</span> <span class="n">bbox</span><span class="p">):</span>
     <span class="n">annotations</span> <span class="o">=</span> <span class="p">[]</span>
@@ -411,7 +412,7 @@ window.MathJax = { tex: { inlineMath: [['$', '$'], ['\\(', '\\)']], displayMath:
 </code></pre></div>
 
 <p>最後に、画像の変換とアノテーションの変換を組み合わせて、データセットのバッチ全体に対して変換を行います。</p>
-<p>そのための最終的なコードは次のとおりです。</p>
+<p>その為の最終的なコードは次の通りです。</p>
 <div class="codehilite"><pre><span></span><code><span class="c1"># バッチを変換する</span>
 
 
@@ -435,7 +436,7 @@ window.MathJax = { tex: { inlineMath: [['$', '$'], ['\\(', '\\)']], displayMath:
     <span class="k">return</span> <span class="n">image_processor</span><span class="p">(</span><span class="n">images</span><span class="o">=</span><span class="n">images</span><span class="p">,</span> <span class="n">annotations</span><span class="o">=</span><span class="n">targets</span><span class="p">,</span> <span class="n">return_tensors</span><span class="o">=</span><span class="s2">"pt"</span><span class="p">)</span>
 </code></pre></div>
 
-<p>最後に、この前処理関数をデータセット全体に適用します。Hugging Face の Datasets ライブラリにある <a href="https://huggingface.co/docs/datasets/v2.15.0/en/package_reference/main_classes#datasets.Dataset.with_transform"><code>with_transform</code> メソッド</a> を使えば実現できます。</p>
+<p>最後に、この前処理関数をデータセット全体に適用します。Hugging Face の Datasets ライブラリに在る <a href="https://huggingface.co/docs/datasets/v2.15.0/en/package_reference/main_classes#datasets.Dataset.with_transform"><code>with_transform</code> メソッド</a> を使えば実現出来ます。</p>
 <div class="codehilite"><pre><span></span><code><span class="c1"># train データセットと test データセットの両方に変換を適用する</span>
 
 <span class="n">train_dataset_transformed</span> <span class="o">=</span> <span class="n">train_dataset</span><span class="o">.</span><span class="n">with_transform</span><span class="p">(</span><span class="n">transform_aug_ann</span><span class="p">)</span>
@@ -481,7 +482,7 @@ window.MathJax = { tex: { inlineMath: [['$', '$'], ['\\(', '\\)']], displayMath:
          [0.7550, 0.4240, 0.0460, 0.0800]]), 'area': tensor([8522.2217, 1916.6666]), 'iscrowd': tensor([0, 0]), 'orig_size': tensor([480, 480])}}
 </code></pre></div>
 
-<p>あと少しです 🚀。最後の前処理ステップとして、カスタムの <code>collate_fn</code> を書く必要があります。では、<code>collate_fn</code> とは何でしょうか？</p>
+<p>あと少しです。最後の前処理ステップとして、カスタムの <code>collate_fn</code> を書く必要があります。では、<code>collate_fn</code> とは何でしょうか？</p>
 <p><code>collate_fn</code> は、データセットからサンプルのリストを受け取り、モデルの入力形式に適したバッチへ変換する役割を担います。</p>
 <p>一般に、<code>DataCollator</code> はパディングや切り捨てなどの処理を行います。カスタムの <code>collate</code> 関数では、データをどのようにバッチにまとめ、各バッチをどのような形式で表すかを定義します。</p>
 <p>データコレーターは主にデータをまとめ、その後の前処理も担います。では、<code>collate</code> 関数を作りましょう。</p>
@@ -504,17 +505,17 @@ window.MathJax = { tex: { inlineMath: [['$', '$'], ['\\(', '\\)']], displayMath:
 <p>前処理で使ったのと同じチェックポイントを使って、<a href="https://huggingface.co/docs/transformers/v4.36.0/en/model_doc/auto#transformers.AutoModelForObjectDetection">AutoModelForObjectDetection</a> でベースの（事前学習済みの）モデルを読み込みます。</p>
 </li>
 <li>
-<p><a href="https://huggingface.co/docs/transformers/v4.36.0/en/main_classes/trainer#transformers.TrainingArguments">TrainingArguments</a> の中で、すべてのハイパーパラメータと追加の引数を定義します。</p>
+<p><a href="https://huggingface.co/docs/transformers/v4.36.0/en/main_classes/trainer#transformers.TrainingArguments">TrainingArguments</a> の中で、全てのハイパーパラメータと追加の引数を定義します。</p>
 </li>
 <li>
-<p>学習用の引数を、モデル、データセット、画像とともに <a href="https://huggingface.co/docs/transformers/v4.36.0/en/main_classes/trainer#transformers.Trainer">Hugging Face Trainer</a> に渡します。</p>
+<p>学習用の引数を、モデル、データセット、画像と共に <a href="https://huggingface.co/docs/transformers/v4.36.0/en/main_classes/trainer#transformers.Trainer">Hugging Face Trainer</a> に渡します。</p>
 </li>
 <li>
 <p><code>train()</code> メソッドを呼び出して、モデルをファインチューニングします。</p>
 </li>
 </ol>
 <blockquote>
-<p>前処理で使ったのと同じチェックポイントからモデルを読み込む際は、データセットのメタデータから先に作成した <code>label2id</code> と <code>id2label</code> のマップを渡すのを忘れないでください。更に、<code>ignore_mismatched_sizes=True</code> を指定して、既存の分類ヘッドを新しいものに置き換えます。</p>
+<p>前処理で使ったのと同じチェックポイントからモデルを読み込む際は、データセットのメタデータから先に作成した <code>label2id</code> と <code>id2label</code> のマップを渡すのを忘れないで下さい。更に、<code>ignore_mismatched_sizes=True</code> を指定して、既存の分類ヘッドを新しいものに置き換えます。</p>
 </blockquote>
 <div class="codehilite"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">transformers</span><span class="w"> </span><span class="kn">import</span> <span class="n">AutoModelForObjectDetection</span>
 
@@ -530,13 +531,13 @@ window.MathJax = { tex: { inlineMath: [['$', '$'], ['\\(', '\\)']], displayMath:
 <span class="p">)</span>
 </code></pre></div>
 
-<p>次に進む前に、Hugging Face Hub にログインして、学習中にモデルをその場でアップロードできるようにしましょう。こうすれば、チェックポイントを扱ったり、どこかに保存したりする必要がなくなります。</p>
+<p>次に進む前に、Hugging Face Hub にログインして、学習中にモデルをその場でアップロード出来るようにしましょう。こうすれば、チェックポイントを扱ったり、どこかに保存したりする必要がなくなります。</p>
 <div class="codehilite"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">huggingface_hub</span><span class="w"> </span><span class="kn">import</span> <span class="n">notebook_login</span>
 
 <span class="n">notebook_login</span><span class="p">()</span>
 </code></pre></div>
 
-<p>完了したら、モデルの学習を始めましょう。まず学習用の引数を定義し、それらの引数を使って学習を行う trainer オブジェクトを定義します。次に示すとおりです。</p>
+<p>完了したら、モデルの学習を始めましょう。先ず学習用の引数を定義し、それらの引数を使って学習を行う trainer オブジェクトを定義します。次に示す通りです。</p>
 <div class="codehilite"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">transformers</span><span class="w"> </span><span class="kn">import</span> <span class="n">TrainingArguments</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">transformers</span><span class="w"> </span><span class="kn">import</span> <span class="n">Trainer</span>
 
@@ -571,7 +572,7 @@ window.MathJax = { tex: { inlineMath: [['$', '$'], ['\\(', '\\)']], displayMath:
 <span class="n">trainer</span><span class="o">.</span><span class="n">train</span><span class="p">()</span>
 </code></pre></div>
 
-<p>学習が終わったら、チェックポイントは既に Hugging Face Hub にアップロードされているため、モデルを削除できます。</p>
+<p>学習が終わったら、チェックポイントは既に Hugging Face Hub にアップロードされている為、モデルを削除出来ます。</p>
 <div class="codehilite"><pre><span></span><code><span class="k">del</span> <span class="n">model</span>
 <span class="n">torch</span><span class="o">.</span><span class="n">cuda</span><span class="o">.</span><span class="n">synchronize</span><span class="p">()</span>
 </code></pre></div>
@@ -579,7 +580,7 @@ window.MathJax = { tex: { inlineMath: [['$', '$'], ['\\(', '\\)']], displayMath:
 <h3>テストと推論</h3>
 <p>次に、新しくファインチューニングしたモデルで推論を試します。このチュートリアルでは、次の画像でテストします。</p>
 <p><img alt="物体検出のテストに使う入力画像" src="https://huggingface.co/datasets/hf-vision/course-assets/resolve/main/test_input_for_od.png" /></p>
-<p>ここではまず、新しい画像に対して物体検出の推論を行う非常に簡単なコードを書きます。最初は1枚の画像について推論し、その後すべてをまとめて関数にします。</p>
+<p>ここでは先ず、新しい画像に対して物体検出の推論を行う非常に簡単なコードを書きます。最初は1枚の画像について推論し、その後総てをまとめて関数にします。</p>
 <div class="codehilite"><pre><span></span><code><span class="kn">import</span><span class="w"> </span><span class="nn">requests</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">transformers</span><span class="w"> </span><span class="kn">import</span> <span class="n">pipeline</span>
 
@@ -625,7 +626,7 @@ plot_results(image, results)
 
 <p>これにより、以下の出力が描画されます。</p>
 <p><img alt="物体検出の結果を描画した画像" src="https://huggingface.co/datasets/hf-vision/course-assets/resolve/main/test_output_for_od.png" /></p>
-<p>では、すべてをまとめて簡単な関数にしましょう。</p>
+<p>では、総てをまとめて簡単な関数にしましょう。</p>
 <div class="codehilite"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">predict</span><span class="p">(</span><span class="n">image</span><span class="p">,</span> <span class="n">pipeline</span><span class="p">,</span> <span class="n">threshold</span><span class="o">=</span><span class="mf">0.7</span><span class="p">):</span>
     <span class="n">results</span> <span class="o">=</span> <span class="n">pipeline</span><span class="p">(</span><span class="n">image</span><span class="p">)</span>
     <span class="k">return</span> <span class="n">plot_results</span><span class="p">(</span><span class="n">image</span><span class="p">,</span> <span class="n">results</span><span class="p">,</span> <span class="n">threshold</span><span class="p">)</span>
@@ -669,7 +670,7 @@ plot_results(image, results)
 
 <p>この関数を実行すると、次のような出力が得られます。</p>
 <p><img alt="テストデータの複数画像に対する物体検出結果" src="https://huggingface.co/datasets/hf-vision/course-assets/resolve/main/sample_od_test_set_inference_output.png" /></p>
-<p>悪くない結果です。更にファインチューニングすれば、結果を改善できます。ファインチューニング済みのこのチェックポイントは<a href="hf-vision/detr-resnet-50-dc5-harhat-finetuned">こちら</a>で確認できます。</p>
+<p>悪くない結果です。更にファインチューニングすれば、結果を改善出来ます。ファインチューニング済みのこのチェックポイントは<a href="hf-vision/detr-resnet-50-dc5-harhat-finetuned">こちら</a>で確認出来ます。</p>
 </article>
 
 <nav class="page-nav"><a class="nav-link prev" href="mobilevit.html">← 前へ: MobileViT v2</a><a class="nav-link toc-link" href="../../index.html">目次へ</a><a class="nav-link next" href="detr.html">次へ →: DEtection TRansformer (DETR)</a></nav>

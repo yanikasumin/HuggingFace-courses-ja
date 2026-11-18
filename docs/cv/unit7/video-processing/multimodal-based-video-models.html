@@ -86,7 +86,7 @@ window.MathJax = { tex: { inlineMath: [['$', '$'], ['\\(', '\\)']], displayMath:
 </ul>
 <p class="side-group">Unit 3 - Vision Transformer</p>
 <ul class="side-list">
-<li><a class="side-link" href="../../unit3/vision-transformers/vision-transformers-for-image-classification.html">画像分類のための Vision Transformer の転移学習とファインチューニング</a></li>
+<li><a class="side-link" href="../../unit3/vision-transformers/vision-transformers-for-image-classification.html">画像分類の為の Vision Transformer の転移学習とファインチューニング</a></li>
 <li><a class="side-link" href="../../unit3/vision-transformers/swin-transformer.html">Swin Transformer</a></li>
 <li><a class="side-link" href="../../unit3/vision-transformers/cvt.html">Convolutional Vision Transformer (CvT)</a></li>
 <li><a class="side-link" href="../../unit3/vision-transformers/dinat.html">Dilated Neighborhood Attention Transformer（DiNAT）</a></li>
@@ -146,7 +146,7 @@ window.MathJax = { tex: { inlineMath: [['$', '$'], ['\\(', '\\)']], displayMath:
 <li><a class="side-link" href="../../unit8/terminologies/camera-models.html">カメラモデル</a></li>
 <li><a class="side-link" href="../../unit8/terminologies/linear-algebra.html">3Dデータのための線形代数の基礎</a></li>
 <li><a class="side-link" href="../../unit8/terminologies/representations.html">3Dデータの表現方法</a></li>
-<li><a class="side-link" href="../../unit8/monocular_depth_estimation.html">単眼深度推定の概要：メトリック深度と相対深度、Depth Anything V2 のファインチューニング 👐 📚</a></li>
+<li><a class="side-link" href="../../unit8/monocular_depth_estimation.html">単眼深度推定の概要：メトリック深度と相対深度、Depth Anything V2 のファインチューニング</a></li>
 <li><a class="side-link" href="../../unit8/3d-vision/nvs.html">新規視点合成（Novel View Synthesis）</a></li>
 <li><a class="side-link" href="../../unit8/3d_measurements_stereo_vision.html">はじめに</a></li>
 <li><a class="side-link" href="../../unit8/nerf.html">Neural Radiance Fields（NeRF）</a></li>
@@ -176,9 +176,9 @@ window.MathJax = { tex: { inlineMath: [['$', '$'], ['\\(', '\\)']], displayMath:
 <ul class="side-list">
 <li><a class="side-link" href="../../unit12/pre-intro.html">CV モデルにおける倫理的基盤を探る</a></li>
 <li><a class="side-link" href="../../unit12/introduction.html">導入</a></li>
-<li><a class="side-link" href="../../unit12/ethics-bias-ai.html">AI における倫理とバイアス 🧑‍🤝‍🧑</a></li>
-<li><a class="side-link" href="../../unit12/conclusion.html">Hugging Face の取り組み：倫理と社会 🤗🌎</a></li>
-<li><a class="side-link" href="../../unit12/supplementary-material.html">参考文献とリソース 🤗🌎</a></li>
+<li><a class="side-link" href="../../unit12/ethics-bias-ai.html">AI における倫理とバイアス</a></li>
+<li><a class="side-link" href="../../unit12/conclusion.html">Hugging Face の取り組み：倫理と社会 🤗</a></li>
+<li><a class="side-link" href="../../unit12/supplementary-material.html">参考文献とリソース 🤗</a></li>
 </ul>
 <p class="side-group">Unit 13 - 展望</p>
 <ul class="side-list">
@@ -194,12 +194,13 @@ window.MathJax = { tex: { inlineMath: [['$', '$'], ['\\(', '\\)']], displayMath:
 <nav class="page-nav"><a class="nav-link prev" href="video-processing-basics.html">← 前へ: ビデオ処理の基礎</a><a class="nav-link toc-link" href="../../index.html">目次へ</a><a class="nav-link next" href="cnn-based-video-model.html">次へ →: CNN ベースのビデオモデル</a></nav>
 <article class="content">
 <h1>マルチモーダルベースのビデオモデル</h1>
-<p>前の章で説明したように、ビデオは画像が連続したものと考えられます。但し、静止画像とは異なり、ビデオには音声、テキスト、動きなど、様々な種類の情報（モダリティ）が含まれます。そのため、ビデオを正しく理解するには、複数のモダリティを同時に考慮する必要があります。この章では、まずビデオに含まれるモダリティの種類を説明します。その後、ビデオとほかのモダリティの対応関係を学習できるモデルのアーキテクチャを紹介します。</p>
+<p>前の章で説明したように、ビデオは画像が連続したものと考えられます。但し、静止画像とは異なり、ビデオには音声、テキスト、動きなど、様々な種類の情報（モダリティ）が含まれます。その為、ビデオを正しく理解するには、複数のモダリティを同時に考慮する必要があります。</p>
+<p>この章では、先ずビデオに含まれるモダリティの種類を説明します。その後、ビデオと他のモダリティの対応関係を学習出来るモデルのアーキテクチャを紹介します。</p>
 <h2>ビデオにはどんなモダリティがあるか？</h2>
 <p>ビデオには、画像の列だけでなく、様々なモダリティが含まれています。ビデオを幅広い観点から分析・処理するには、それぞれのモダリティを理解することが重要です。主なモダリティには、次のものがあります。</p>
 <ol>
 <li>視覚モダリティ（フレーム・画像）：最も一般的なモダリティで、ビデオの視覚情報を提供する画像の列で構成されます。</li>
-<li>音声モダリティ（音）：対話、背景音楽、環境音などを含み、ビデオに関する文脈情報を伝えることができます。</li>
+<li>音声モダリティ（音）：対話、背景音楽、環境音などを含み、ビデオに関する文脈情報を伝えることが出来ます。</li>
 <li>テキストモダリティ（キャプション・字幕）：字幕、キャプション、画面上のテキストとして現れ、ビデオの文脈に関連する明示的な情報を提供します。</li>
 <li>動きモダリティ（動きの変化）：ビデオフレーム間の時間的な変化を捉え、動きや遷移を反映します。</li>
 <li>深度モダリティ：ビデオの3D空間情報を表します。</li>
@@ -209,7 +210,7 @@ window.MathJax = { tex: { inlineMath: [['$', '$'], ['\\(', '\\)']], displayMath:
     <img src="https://huggingface.co/datasets/hf-vision/course-assets/resolve/main/Multimodal_Based_Video_Models/Modality_example.jpg" alt="モダリティの例。画像は元の LanguageBind 論文より">
 </div>
 
-<p>ここで紹介した以外にも、ビデオと組み合わせて扱えるモダリティは数多くあります。自分の作業やプロジェクトでは、どのモダリティが必要になるかを考えてみてください。次のセクションでは、複数のモダリティの対応関係を学習し、それらをまとめて表現できるビデオモデルのアーキテクチャを紹介します。</p>
+<p>ここで紹介した以外にも、ビデオと組み合わせて扱えるモダリティは数多くあります。自分の作業やプロジェクトでは、どのモダリティが必要になるかを考えてみて下さい。次のセクションでは、複数のモダリティの対応関係を学習し、それらをまとめて表現出来るビデオモデルのアーキテクチャを紹介します。</p>
 <h2>ビデオとテキスト</h2>
 <h3>VideoBERT</h3>
 <p><strong>概要</strong></p>
@@ -224,8 +225,8 @@ window.MathJax = { tex: { inlineMath: [['$', '$'], ['\\(', '\\)']], displayMath:
 <li><strong>マスク言語モデリング（Masked Language Modeling）：</strong> テキスト内のマスクされたトークンを予測します（BERT と同じです）。</li>
 <li><strong>マスクフレームモデリング（Masked Frame Modeling）：</strong> マスクされたビデオフレームを予測します（MLM がテキストのマスクされたトークンを予測するのと同様です）。</li>
 </ol>
-<p><strong>なぜ重要か</strong></p>
-<p>VideoBERT は、ビデオと言語に共通する表現を学習することで、両方の情報を統合して理解できるようにした初期のモデルの1つです。従来の手法とは異なり、VideoBERT は画像とテキストのラベル付けに検出モデルを使いません。代わりに <em>クラスタリングアルゴリズム</em> を使ってマスクフレームモデリングを可能にし、明示的なラベル付きデータを必要とせずに、モデルがマスクされたフレームを予測できるようにします。</p>
+<p><strong>何故重要か</strong></p>
+<p>VideoBERT は、ビデオと言語に共通する表現を学習することで、両方の情報を統合して理解出来るようにした初期のモデルの1つです。従来の手法とは異なり、VideoBERT は画像とテキストのラベル付けに検出モデルを使いません。代わりに <em>クラスタリングアルゴリズム</em> を使ってマスクフレームモデリングを可能にし、明示的なラベル付きデータを必要とせずに、モデルがマスクされたフレームを予測出来るようにします。</p>
 <h3>MERLOT</h3>
 <p><strong>概要</strong></p>
 <p><a href="https://arxiv.org/abs/2106.02636">MERLOT</a> は、大規模なビデオ・テキストデータセットから学習することで、マルチモーダルな推論を改善するよう設計されています。ラベル付きデータを使わずに、視覚情報とテキスト情報の相互作用を理解することに焦点を当てています。大規模なラベルなしデータセット <strong>YT-Temporal-180M</strong> を活用することで、<strong>MERLOT</strong> は視覚的な教師信号に大きく頼ることなく、視覚的常識推論で強い性能を示します。</p>
@@ -235,9 +236,9 @@ window.MathJax = { tex: { inlineMath: [['$', '$'], ['\\(', '\\)']], displayMath:
 <li>フレームとキャプションの対応付けタスク（Frame-Caption Matching Task、<a href="https://arxiv.org/pdf/1906.05743">CBT</a> 及び <a href="https://aclanthology.org/2020.emnlp-main.161.pdf">HAMMER</a> より）</li>
 <li>マスク言語モデリング（Masked Language Modeling）</li>
 </ol>
-<p>なぜ重要か</p>
-<p>MERLOT のアーキテクチャや訓練方法は、まったく新しいものというわけではありません。しかし、大規模な視覚・テキストデータセット <strong>YT-Temporal-180M</strong> を使って訓練することで、性能を向上させています。大量のデータから、時間に伴う変化や複数のモダリティの関係をよりよく学習できるため、ビデオと言語を使うタスクでの推論能力や予測能力が高まります。</p>
-<p><u>注</u>：MERLOT の詳細な訓練プロセスを理解したい場合は、MERLOT の論文に加えて、<a href="https://aclanthology.org/2020.emnlp-main.161.pdf">HERO</a>、<a href="https://arxiv.org/pdf/1906.05743">CBT</a>、<a href="https://aclanthology.org/2020.emnlp-main.161.pdf">HAMMER</a> といった先行研究も必ず参照してください。</p>
+<p>何故重要か</p>
+<p>MERLOT のアーキテクチャや訓練方法は、まったく新しいものという訳ではありません。しかし、大規模な視覚・テキストデータセット <strong>YT-Temporal-180M</strong> を使って訓練することで、性能を向上させています。大量のデータから、時間に伴う変化や複数のモダリティの関係をよりよく学習出来る為、ビデオと言語を使うタスクでの推論能力や予測能力が高まります。</p>
+<p><u>注</u>：MERLOT の詳細な訓練プロセスを理解したい場合は、MERLOT の論文に加えて、<a href="https://aclanthology.org/2020.emnlp-main.161.pdf">HERO</a>、<a href="https://arxiv.org/pdf/1906.05743">CBT</a>、<a href="https://aclanthology.org/2020.emnlp-main.161.pdf">HAMMER</a> といった先行研究も必ず参照して下さい。</p>
 <h2>ビデオと音声、テキスト</h2>
 <h3>VATT（Visual-Audio-Text Transformer）</h3>
 <p><strong>概要</strong></p>
@@ -248,15 +249,15 @@ window.MathJax = { tex: { inlineMath: [['$', '$'], ['\\(', '\\)']], displayMath:
 <p><a href="https://arxiv.org/abs/2104.11178">VATT</a> は、生のビデオ、音声、テキストから自己教師あり学習を行うよう設計されたモデルです。各モダリティには異なるトークン化と位置エンコーディングの方法が適用され、VATT は Transformer Encoder を使って、生のマルチモーダルデータからの表現を効果的に統合しました。その結果、行動認識やテキストからビデオへの検索といった様々な下流タスクで強い性能を達成しました。</p>
 <p><strong>主な特徴</strong></p>
 <ol>
-<li>モダリティ固有（Modality-Specific）とモダリティ非依存（Modality-Agnostic）：<strong>モダリティ固有</strong>版は各モダリティに個別の Transformer エンコーダを使い、モダリティ非依存版は単一の Transformer エンコーダですべてのモダリティを統合します。モダリティ固有の方が優れた性能を示しましたが、<strong>モダリティ非依存</strong>版も、より少ないパラメータで下流タスクにおいて強い性能を示しました。</li>
-<li>Droptoken：ビデオ（音声とテキストデータを含む）には冗長性があるため、トークンの一部だけをサンプリングすることで、より効率的な訓練が可能になります。</li>
+<li>モダリティ固有（Modality-Specific）とモダリティ非依存（Modality-Agnostic）：<strong>モダリティ固有</strong>版は各モダリティに個別の Transformer エンコーダを使い、モダリティ非依存版は単一の Transformer エンコーダで全てのモダリティを統合します。モダリティ固有の方が優れた性能を示しましたが、<strong>モダリティ非依存</strong>版も、より少ないパラメータで下流タスクにおいて強い性能を示しました。</li>
+<li>Droptoken：ビデオ（音声とテキストデータを含む）には冗長性が有る為、トークンの一部だけをサンプリングすることで、より効率的な訓練が可能になります。</li>
 <li>マルチモーダル対照学習（Multimodal Contrastive Learning）：ビデオと音声のペアには Noise Contrastive Estimation（NCE）が使われ、ビデオとテキストのペアには Multiple Instance Learning NCE（MIL-NCE）が適用されました。</li>
 </ol>
-<p><strong>なぜ重要か</strong></p>
+<p><strong>何故重要か</strong></p>
 <p>従来の Transformer ベースのビデオ向けマルチモーダルモデルは、視覚データへの依存度が高く、訓練に長い時間がかかり、計算量も大きくなる傾向がありました。一方、VATT は <strong>Droptoken</strong> と <strong>重みの共有（weight sharing）</strong> を使い、計算量を比較的少なく抑えながら、加工前の視覚・音声・テキストデータから高性能なマルチモーダル表現を学習します。</p>
 <h3>Video-Llama</h3>
 <p><strong>概要</strong></p>
-<p><a href="https://arxiv.org/abs/2306.02858">Video-LLaMA</a> は、大規模言語モデル（LLM）を拡張し、ビデオの映像と音声の両方を理解できるようにしたマルチモーダルフレームワークです。ビデオ、音声、テキストを組み合わせることで、視聴覚情報に基づいて応答を理解・生成できるようにします。Video-LLaMA は、映像の時間的な変化を捉えることと、映像・音声の情報を1つのシステムで扱うことという、2つの重要な課題に取り組んでいます。</p>
+<p><a href="https://arxiv.org/abs/2306.02858">Video-LLaMA</a> は、大規模言語モデル（LLM）を拡張し、ビデオの映像と音声の両方を理解出来るようにしたマルチモーダルフレームワークです。ビデオ、音声、テキストを組み合わせることで、視聴覚情報に基づいて応答を理解・生成出来るようにします。Video-LLaMA は、映像の時間的な変化を捉えることと、映像・音声の情報を1つのシステムで扱うことという、2つの重要な課題に取り組んでいます。</p>
 <p><strong>主な特徴</strong></p>
 <p>Video-LLaMA には2つのブランチがあります。</p>
 <ol>
@@ -264,9 +265,9 @@ window.MathJax = { tex: { inlineMath: [['$', '$'], ['\\(', '\\)']], displayMath:
 <li><u>音声・言語ブランチ（Audio-Language）</u>：音声信号の処理用</li>
 </ol>
 <p>これらのブランチは個別に訓練され、事前学習とファインチューニングの両フェーズを経ます。事前学習フェーズでは、モデルは異なるモダリティの統合方法を学習し、ファインチューニングフェーズでは、指示に正確に従う能力の向上に焦点を当てます。</p>
-<p>視覚・言語ブランチについては、視覚・テキストデータが豊富に存在します。しかし、音声・言語ブランチについては、十分な音声・テキストデータが不足しています。これに対処するため、このモデルは <strong>ImageBind</strong> を利用し、音声・言語ブランチを代わりに視覚・テキストデータで訓練できるようにしています。</p>
-<p><strong>なぜ重要か</strong></p>
-<p>従来のモデルでは、映像と音声を同時に扱うことが難しいという課題がありました。Video-LLaMA は、複数のモダリティを1つのフレームワークに統合し、映像の時間的な変化を捉えながら、視覚情報と音声情報の対応関係を学習することで、この課題に取り組んでいます。モダリティをまたぐ事前学習と指示に従うためのファインチューニングにより、従来の研究の限界を克服し、映像についての対話などのマルチモーダルタスクでも、別々のモデルを使わずに高い性能を発揮します。</p>
+<p>視覚・言語ブランチについては、視覚・テキストデータが豊富に存在します。しかし、音声・言語ブランチについては、十分な音声・テキストデータが不足しています。これに対処する為、このモデルは <strong>ImageBind</strong> を利用し、音声・言語ブランチを代わりに視覚・テキストデータで訓練出来るようにしています。</p>
+<p><strong>何故重要か</strong></p>
+<p>従来のモデルでは、映像と音声を同時に扱うことが難しいという課題がありました。Video-LLaMA は、複数のモダリティを1つのフレームワークに統合し、映像の時間的な変化を捉えながら、視覚情報と音声情報の対応関係を学習することで、この課題に取り組んでいます。モダリティをまたぐ事前学習と指示に従う為のファインチューニングにより、従来の研究の限界を克服し、映像についての対話などのマルチモーダルタスクでも、別々のモデルを使わずに高い性能を発揮します。</p>
 <h2>ビデオと複数のモダリティ</h2>
 <h3>ImageBind</h3>
 <p><strong>概要</strong></p>
@@ -276,12 +277,13 @@ window.MathJax = { tex: { inlineMath: [['$', '$'], ['\\(', '\\)']], displayMath:
 
 <p>ImageBind は、画像と他のモダリティのペアデータを利用し、画像データを中心に、多様なモダリティの表現を統合します。</p>
 <p><strong>主な特徴</strong></p>
-<p>ImageBind は、画像と他のモダリティのペアを利用することで、多くの種類のモダリティを統一します。損失関数として <em>InfoNCE</em> を活用することで、このモデルは様々な入力間の表現を整合させます。画像以外のモダリティ同士のペアデータが存在しない場合でも、ImageBind はクロスモーダル検索やゼロショットタスクを効果的に実行できます。更に、ImageBind の訓練プロセスは他のモデルと比べて比較的単純で、様々な方法で実装できます。</p>
-<p><strong>なぜ重要か</strong></p>
-<p>ImageBind の大きな特徴は、モダリティの組み合わせごとに専用のペアデータセットを用意しなくても、様々なモダリティを統合できることです。画像を基準として、音声、テキスト、深度など最大6種類のモダリティを、共通の表現空間に対応付けて組み合わせます。各モダリティ間で直接対応するデータがなくても、複数のモダリティを同時に対応付けられるため、効率的にマルチモーダル学習を行えます。</p>
+<p>ImageBind は、画像と他のモダリティのペアを利用することで、多くの種類のモダリティを統一します。損失関数として <em>InfoNCE</em> を活用することで、このモデルは様々な入力間の表現を整合させます。画像以外のモダリティ同士のペアデータが存在しない場合でも、ImageBind はクロスモーダル検索やゼロショットタスクを効果的に実行出来ます。</p>
+<p>更に、ImageBind の訓練プロセスは他のモデルと比べて比較的単純で、様々な方法で実装出来ます。</p>
+<p><strong>何故重要か</strong></p>
+<p>ImageBind の大きな特徴は、モダリティの組み合わせごとに専用のペアデータセットを用意しなくても、様々なモダリティを統合出来ることです。画像を基準として、音声、テキスト、深度など最大6種類のモダリティを、共通の表現空間に対応付けて組み合わせます。各モダリティ間で直接対応するデータがなくても、複数のモダリティを同時に対応付けられる為、効率的にマルチモーダル学習を行えます。</p>
 <h2>まとめ</h2>
-<p>ビデオに存在する様々なモダリティを簡単に見たうえで、視覚情報をその他の様々なモダリティと統合するモデルを探究しました。時間の経過とともに、多種多様なモダリティを一度に統合することに焦点を当てた研究が増えています。</p>
-<p>今後、ビデオに含まれる更に多様なモダリティを統合するモデルが登場するのが楽しみです。ビデオを使ったマルチモーダル表現学習には、まだまだ大きな可能性が広がっています！</p>
+<p>ビデオに存在する様々なモダリティを簡単に見た上で、視覚情報をその他の様々なモダリティと統合するモデルを探究しました。時間の経過と共に、多種多様なモダリティを一度に統合することに焦点を当てた研究が増えています。</p>
+<p>今後、ビデオに含まれる更に多様なモダリティを統合するモデルが登場するのが楽しみです。ビデオを使ったマルチモーダル表現学習には、まだまだ大きな可能性が広がっています。</p>
 </article>
 
 <nav class="page-nav"><a class="nav-link prev" href="video-processing-basics.html">← 前へ: ビデオ処理の基礎</a><a class="nav-link toc-link" href="../../index.html">目次へ</a><a class="nav-link next" href="cnn-based-video-model.html">次へ →: CNN ベースのビデオモデル</a></nav>

@@ -86,7 +86,7 @@ window.MathJax = { tex: { inlineMath: [['$', '$'], ['\\(', '\\)']], displayMath:
 </ul>
 <p class="side-group">Unit 3 - Vision Transformer</p>
 <ul class="side-list">
-<li><a class="side-link" href="../unit3/vision-transformers/vision-transformers-for-image-classification.html">画像分類のための Vision Transformer の転移学習とファインチューニング</a></li>
+<li><a class="side-link" href="../unit3/vision-transformers/vision-transformers-for-image-classification.html">画像分類の為の Vision Transformer の転移学習とファインチューニング</a></li>
 <li><a class="side-link" href="../unit3/vision-transformers/swin-transformer.html">Swin Transformer</a></li>
 <li><a class="side-link" href="../unit3/vision-transformers/cvt.html">Convolutional Vision Transformer (CvT)</a></li>
 <li><a class="side-link" href="../unit3/vision-transformers/dinat.html">Dilated Neighborhood Attention Transformer（DiNAT）</a></li>
@@ -146,7 +146,7 @@ window.MathJax = { tex: { inlineMath: [['$', '$'], ['\\(', '\\)']], displayMath:
 <li><a class="side-link" href="terminologies/camera-models.html">カメラモデル</a></li>
 <li><a class="side-link" href="terminologies/linear-algebra.html">3Dデータのための線形代数の基礎</a></li>
 <li><a class="side-link" href="terminologies/representations.html">3Dデータの表現方法</a></li>
-<li><a class="side-link" href="monocular_depth_estimation.html">単眼深度推定の概要：メトリック深度と相対深度、Depth Anything V2 のファインチューニング 👐 📚</a></li>
+<li><a class="side-link" href="monocular_depth_estimation.html">単眼深度推定の概要：メトリック深度と相対深度、Depth Anything V2 のファインチューニング</a></li>
 <li><a class="side-link" href="3d-vision/nvs.html">新規視点合成（Novel View Synthesis）</a></li>
 <li><a class="side-link" href="3d_measurements_stereo_vision.html">はじめに</a></li>
 <li><a class="side-link active" href="nerf.html">Neural Radiance Fields（NeRF）</a></li>
@@ -176,9 +176,9 @@ window.MathJax = { tex: { inlineMath: [['$', '$'], ['\\(', '\\)']], displayMath:
 <ul class="side-list">
 <li><a class="side-link" href="../unit12/pre-intro.html">CV モデルにおける倫理的基盤を探る</a></li>
 <li><a class="side-link" href="../unit12/introduction.html">導入</a></li>
-<li><a class="side-link" href="../unit12/ethics-bias-ai.html">AI における倫理とバイアス 🧑‍🤝‍🧑</a></li>
-<li><a class="side-link" href="../unit12/conclusion.html">Hugging Face の取り組み：倫理と社会 🤗🌎</a></li>
-<li><a class="side-link" href="../unit12/supplementary-material.html">参考文献とリソース 🤗🌎</a></li>
+<li><a class="side-link" href="../unit12/ethics-bias-ai.html">AI における倫理とバイアス</a></li>
+<li><a class="side-link" href="../unit12/conclusion.html">Hugging Face の取り組み：倫理と社会 🤗</a></li>
+<li><a class="side-link" href="../unit12/supplementary-material.html">参考文献とリソース 🤗</a></li>
 </ul>
 <p class="side-group">Unit 13 - 展望</p>
 <ul class="side-list">
@@ -194,14 +194,17 @@ window.MathJax = { tex: { inlineMath: [['$', '$'], ['\\(', '\\)']], displayMath:
 <nav class="page-nav"><a class="nav-link prev" href="3d_measurements_stereo_vision.html">← 前へ: はじめに</a><a class="nav-link toc-link" href="../index.html">目次へ</a><a class="nav-link next" href="../unit9/intro_to_model_optimization.html">次へ →: デプロイのためのモデル最適化入門</a></nav>
 <article class="content">
 <h1>Neural Radiance Fields（NeRF）</h1>
-<p>Neural Radiance Fields（NeRF）は、3Dシーンをニューラルネットワークで表現する手法です。シーンの情報を多層パーセプトロン（MLP）によってすべて表現するため、この方法は「陰的表現（implicit representation）」と呼ばれます。これは、色や密度といったシーンのパラメータをボクセルグリッドに直接格納する「明示的な表現」とは対照的です。この新しいシーンの表現方法は、訓練データにないカメラ視点からの画像を補間・生成する<a href="https://en.wikipedia.org/wiki/View_synthesis">新規視点合成</a>で、非常に優れた結果を示しました。更に、NeRF は明示的な表現よりも少ないメモリで大規模なシーンを保存できます。ボクセルグリッドでは、各方向の解像度を高くすると必要なメモリ量がその3乗に比例して増えます。一方、NeRF ではニューラルネットワークの重みを保存するだけで済みます。</p>
-<h2>簡単な歴史 📖</h2>
-<p>NeRF の分野は比較的若く、最初の論文である <a href="https://www.matthewtancik.com/nerf">Mildenhall et al.</a> は2020年に発表されました。それ以来、膨大な数の論文が発表され、急速な進歩が遂げられてきました。2020年以降、620を超えるプレプリントと論文が公開され、GitHub には250を超えるリポジトリがあります（2023年12月時点、<a href="https://paperswithcode.com/method/nerf">paperswithcode.com</a> の統計より）。</p>
-<p>NeRF の最初の定式化は長い訓練時間（高性能な GPU でも数日に及ぶ）を必要としたため、訓練と推論の高速化に向けた進歩が数多くなされてきました。重要な飛躍は、2022年に発表された NVIDIA の <a href="https://nvlabs.github.io/instant-ngp/">Instant-ngp</a> でした。このアプローチで使われるモデルアーキテクチャは既存のものと似ていますが、著者らは訓練可能なハッシュテーブルを使う新しいエンコーディング手法を導入しました。この種のエンコーディングのおかげで、再構成の品質を損なうことなく MLP を大幅に小型化できます。この新しいアプローチは、当時の最先端手法と同等の品質を保ちながら、訓練もクエリも高速でした。同じく2022年に発表された <a href="https://jonbarron.info/mipnerf360/">Mipnerf-360</a> も言及に値します。モデルアーキテクチャはほかの多くの NeRF とほぼ同じですが、著者らはシーンの縮約（scene contraction）という新しい手法を導入しました。これにより、あらゆる方向に境界なく広がるシーンを表現できるようになりました。これは実世界での応用に重要です。2023年に発表された <a href="https://jonbarron.info/zipnerf/">Zip-NeRF</a> は、<a href="https://nvlabs.github.io/instant-ngp/">Instant-ngp</a> のエンコーディングや <a href="https://jonbarron.info/mipnerf360/">Mipnerf-360</a> のシーンの縮約といった近年の技術を組み合わせ、実世界のシーンに対応しながら訓練時間を1時間未満に短縮しました。但し、この結果も高性能な GPU で測定したものであることには注意してください。</p>
-<p>NeRF の分野は急速に進化しているため、最後に最新の研究と今後の研究の方向性を簡単に紹介するセクションを設けました。</p>
-<p>歴史の話はこのくらいにして、NeRF の本質に踏み込みましょう！ 🚀🚀</p>
-<h2>基本的なアプローチ（Vanilla NeRF） 📘🔍</h2>
-<p>NeRF の背後にある基本的な考え方は、シーンを、位置 \( \mathbf{x} \in \mathbb{R}^{3} \) と視方向 \( \boldsymbol{\theta} \in \mathbb{R}^{2} \) を色 \( \mathbf{c} \in \mathbb{R}^{3} \) と体積密度 \( \sigma \in \mathbb{R}^{1}\) に写像する連続関数として表現することです。ニューラルネットワークは万能関数近似器として機能するため、シーンを表すこの連続関数を、単純な多層パーセプトロン（MLP）\( F_{\mathrm{\Theta}} : (\mathbf{x}, \boldsymbol{\theta}) \to (\mathbf{c},\sigma) \) で近似できます。</p>
+<p>Neural Radiance Fields（NeRF）は、3Dシーンをニューラルネットワークで表現する手法です。シーンの情報を多層パーセプトロン（MLP）によって全て表現する為、この方法は「陰的表現（implicit representation）」と呼ばれます。これは、色や密度といったシーンのパラメータをボクセルグリッドに直接格納する「明示的な表現」とは対照的です。この新しいシーンの表現方法は、訓練データに無いカメラ視点からの画像を補間・生成する<a href="https://en.wikipedia.org/wiki/View_synthesis">新規視点合成</a>で、非常に優れた結果を示しました。</p>
+<p>更に、NeRF は明示的な表現よりも少ないメモリで大規模なシーンを保存出来ます。ボクセルグリッドでは、各方向の解像度を高くすると必要なメモリ量がその3乗に比例して増えます。一方、NeRF ではニューラルネットワークの重みを保存するだけで済みます。</p>
+<h2>簡単な歴史</h2>
+<p>NeRF の分野は比較的若く、最初の論文である <a href="https://www.matthewtancik.com/nerf">Mildenhall et al.</a> は2020年に発表されました。それ以来、膨大な数の論文が発表され、急速な進歩が遂げられてきました。2020年以降、620を超えるプレプリントと論文が公開され、GitHub には250を超えるリポジトリが有ります（2023年12月時点、<a href="https://paperswithcode.com/method/nerf">paperswithcode.com</a> の統計より）。</p>
+<p>NeRF の最初の定式化は長い訓練時間（高性能な GPU でも数日に及ぶ）を必要とした為、訓練と推論の高速化に向けた進歩が数多くなされてきました。重要な飛躍は、2022年に発表された NVIDIA の <a href="https://nvlabs.github.io/instant-ngp/">Instant-ngp</a> でした。このアプローチで使われるモデルアーキテクチャは既存のものと似ていますが、著者らは訓練可能なハッシュテーブルを使う新しいエンコーディング手法を導入しました。この種のエンコーディングのお陰で、再構成の品質を損なうことなく MLP を大幅に小型化出来ます。この新しいアプローチは、当時の最先端手法と同等の品質を保ちながら、訓練もクエリも高速でした。</p>
+<p>同じく2022年に発表された <a href="https://jonbarron.info/mipnerf360/">Mipnerf-360</a> も言及に値します。モデルアーキテクチャは他の多くの NeRF とほぼ同じですが、著者らはシーンの縮約（scene contraction）という新しい手法を導入しました。これにより、あらゆる方向に境界なく広がるシーンを表現出来るようになりました。これは実世界での応用に重要です。</p>
+<p>2023年に発表された <a href="https://jonbarron.info/zipnerf/">Zip-NeRF</a> は、<a href="https://nvlabs.github.io/instant-ngp/">Instant-ngp</a> のエンコーディングや <a href="https://jonbarron.info/mipnerf360/">Mipnerf-360</a> のシーンの縮約といった近年の技術を組み合わせ、実世界のシーンに対応しながら訓練時間を1時間未満に短縮しました。但し、この結果も高性能な GPU で測定したものであることには注意して下さい。</p>
+<p>NeRF の分野は急速に進化している為、最後に最新の研究と今後の研究の方向性を簡単に紹介するセクションを設けました。</p>
+<p>歴史の話はこのくらいにして、NeRF の本質に踏み込みましょう！</p>
+<h2>基本的なアプローチ（Vanilla NeRF）</h2>
+<p>NeRF の背後に在る基本的な考え方は、シーンを、位置 \( \mathbf{x} \in \mathbb{R}^{3} \) と視方向 \( \boldsymbol{\theta} \in \mathbb{R}^{2} \) を色 \( \mathbf{c} \in \mathbb{R}^{3} \) と体積密度 \( \sigma \in \mathbb{R}^{1}\) に写像する連続関数として表現することです。ニューラルネットワークは万能関数近似器として機能する為、シーンを表すこの連続関数を、単純な多層パーセプトロン（MLP）\( F_{\mathrm{\Theta}} : (\mathbf{x}, \boldsymbol{\theta}) \to (\mathbf{c},\sigma) \) で近似出来ます。</p>
 <p>単純な NeRF のパイプラインは、次の図にまとめられます。</p>
 <div style="display: flex; flex-direction: column; align-items: center;">
   <img src="https://huggingface.co/datasets/hf-vision/course-assets/resolve/main/nerf_pipeline.png" alt="NeRF のパイプライン" />
@@ -212,24 +215,24 @@ window.MathJax = { tex: { inlineMath: [['$', '$'], ['\\(', '\\)']], displayMath:
 <p><strong>(b)</strong> ネットワークは、各サンプルについて色ベクトルと密度値を出力します。</p>
 <p><strong>(c)</strong> ネットワークの出力をボリュームレンダリングで組み合わせ、3D空間内の離散的なサンプルから2D画像を得ます。</p>
 <p><strong>(d)</strong> 損失を計算し、バックプロパゲーションによってネットワークの勾配を更新してシーンを表現します。</p>
-<p>ここまでは大まかな説明でした。更に理解を深めるために、ボリュームレンダリングと損失関数の仕組みを詳しく見ていきましょう。</p>
+<p>ここまでは大まかな説明でした。更に理解を深める為に、ボリュームレンダリングと損失関数の仕組みを詳しく見ていきましょう。</p>
 <p><strong>ボリュームレンダリング</strong></p>
-<p>ボリュームレンダリングの基本原理は、従来のコンピュータグラフィックスで既に確立されており、NeRF で新しく考案されたものではありません。NeRF の用途で重要なのは、バックプロパゲーションを可能にするために、このステップが<strong>微分可能</strong>であることです。NeRF における最も単純な形のボリュームレンダリングは、次のように定式化できます。</p>
+<p>ボリュームレンダリングの基本原理は、従来のコンピュータグラフィックスで既に確立されており、NeRF で新しく考案されたものではありません。NeRF の用途で重要なのは、バックプロパゲーションを可能にする為に、このステップが<strong>微分可能</strong>であることです。NeRF における最も単純な形のボリュームレンダリングは、次のように定式化出来ます。</p>
 <p>$$\mathbf{C}(\mathbf{r}) = \int_{t_n}^{t_f}T(t)\sigma(\mathbf{r}(t))\mathbf{c}(\mathbf{r}(t),\mathbf{d})dt$$</p>
 <p>上の方程式において、\( \mathbf{C}(\mathbf{r}) \) はカメラの光線 \( \mathbf{r}(t)=\mathbf{o}+t\mathbf{d} \) の期待される色です。ここで \( \mathbf{o} \in \mathbb{R}^{3} \) はカメラの原点、\( \boldsymbol{d} \in \mathbb{R}^{3} \) は3D単位ベクトルとしての視方向、\( t \in \mathbb{R}_+ \) は光線に沿った距離です。
 \( t_n \) と \( t_f \) はそれぞれ、光線の手前側（near）と奥側（far）の境界を表します。
 \( T(t) \) は、光線 \( \mathbf{r}(t) \) に沿って \( t_n \) から \( t \) までの累積透過率を表します。</p>
-<p>離散化すると、上の方程式は次の和として計算できます。</p>
+<p>離散化すると、上の方程式は次の和として計算出来ます。</p>
 <p>$$\boldsymbol{\hat{C}}(\mathbf{r})=\sum_{i=1}^{N}T_i (1-\exp(-\sigma_i \delta_i)) \mathbf{c}<em j="1">i\,, \textrm{ where }T_i=\exp \bigg(-\sum</em> \sigma_j \delta_j \bigg)$$}^{i-1</p>
 <p>各変数が何を表しているのか、次の離散化されたカメラ光線の模式図で確認してみましょう。</p>
 <p><img alt="光線の図" src="https://huggingface.co/datasets/hf-vision/course-assets/resolve/main/nerf_ray_visualisation.png" /></p>
 <p><strong>損失の定式化</strong></p>
-<p>離散化されたボリュームレンダリングの方程式は完全に微分可能なので、土台となるニューラルネットワークの重みは、レンダリングされたピクセルに対する再構成損失を使って訓練できます。多くの NeRF のアプローチは、次のように書けるピクセルごとの誤差項を使います。</p>
+<p>離散化されたボリュームレンダリングの方程式は完全に微分可能なので、土台となるニューラルネットワークの重みは、レンダリングされたピクセルに対する再構成損失を使って訓練出来ます。多くの NeRF のアプローチは、次のように書けるピクセルごとの誤差項を使います。</p>
 <p>$$\mathcal{L}_{\rm recon}(\boldsymbol{\hat{C}},\boldsymbol{C^<em>}) = \left|\boldsymbol{\hat{C}}-\boldsymbol{C^</em>}\right|^2$$</p>
 <p>ここで \( \boldsymbol{\hat{C}} \) はレンダリングされたピクセルの色、\( \boldsymbol{C}^* \) は正解（ground truth）のピクセルの色です。</p>
 <p><strong>補足</strong></p>
-<p>NeRF のパイプライン全体を1つの章で詳細に説明するのは非常に困難です。ここまでの説明は基本概念を理解するうえで重要です。こうした仕組みは、どの NeRF モデルでもよく似ており、ほとんど同じ場合もあります。但し、性能の良いモデルを得るには、いくつかの追加の工夫が必要です。</p>
-<p>まず、色や形状の高周波な変化を捉えるために、入力信号をエンコードする必要があります。入力をニューラルネットワークに通す前にエンコードする手法は、NeRF の分野に固有のものではなく、自然言語処理（NLP）のような他の ML 分野でも広く採用されています。入力をより高次元の空間に写像し、シーンのパラメータの高周波な変化を捉えられるようにする非常に単純なエンコーディングは、次のようになります。</p>
+<p>NeRF のパイプライン全体を1つの章で詳細に説明するのは非常に困難です。ここまでの説明は基本概念を理解する上で重要です。こうした仕組みは、どの NeRF モデルでもよく似ており、殆ど同じ場合も有ります。但し、性能の良いモデルを得るには、いくつかの追加の工夫が必要です。</p>
+<p>先ず、色や形状の高周波な変化を捉える為に、入力信号をエンコードする必要があります。入力をニューラルネットワークに通す前にエンコードする手法は、NeRF の分野に固有のものではなく、自然言語処理（NLP）のような他の ML 分野でも広く採用されています。入力をより高次元の空間に写像し、シーンのパラメータの高周波な変化を捉えられるようにする非常に単純なエンコーディングは、次のようになります。</p>
 <div class="codehilite"><pre><span></span><code><span class="kn">import</span><span class="w"> </span><span class="nn">torch</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">mediapy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">media</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
@@ -291,11 +294,12 @@ window.MathJax = { tex: { inlineMath: [['$', '$'], ['\\(', '\\)']], displayMath:
 
 <p>出力は、以下の画像のようになるはずです。</p>
 <p><img alt="エンコーディング結果" src="https://huggingface.co/datasets/hf-vision/course-assets/resolve/main/nerf_encodings.png" /></p>
-<p>もう1つ重要な工夫は、空間内の点を効率よくサンプリングすることです。ほとんどの手法では、このために何らかの工夫をしています。要するに、シーン内で何も存在しない領域からは、できるだけサンプリングしないようにしたいのです。最終画像への寄与が大きい領域にサンプリングを集中させる方法はいくつかあります。その中でも代表的なのが、<em>proposal network</em> と呼ばれる別のネットワークを使い、無駄な計算を減らす方法です。そのような <em>proposal network</em> の内部の仕組みと最適化に興味があれば、それが初めて提案された <a href="https://jonbarron.info/mipnerf360/">Mipnerf-360</a> の論文を掘り下げてみてください。</p>
+<p>もう1つ重要な工夫は、空間内の点を効率よくサンプリングすることです。殆どの手法では、この為に何らかの工夫をしています。要するに、シーン内で何も存在しない領域からは、出来るだけサンプリングしないようにしたいのです。最終画像への寄与が大きい領域にサンプリングを集中させる方法はいくつか有ります。その中でも代表的なのが、<em>proposal network</em> と呼ばれる別のネットワークを使い、無駄な計算を減らす方法です。そのような <em>proposal network</em> の内部の仕組みと最適化に興味があれば、それが初めて提案された <a href="https://jonbarron.info/mipnerf360/">Mipnerf-360</a> の論文を掘り下げてみて下さい。</p>
 <h2>自分で NeRF を訓練する</h2>
-<p>NeRF の訓練を初めて体験するなら、nerfstudio チームが公開している <a href="https://colab.research.google.com/github/nerfstudio-project/nerfstudio/blob/main/colab/demo.ipynb">Google Colab ノートブック</a> がおすすめです。実際に訓練の流れを一通り試せます。このノートブックでは、好きなシーンの画像をアップロードして NeRF を訓練できます。たとえば、自分のリビングルームを3Dで表現するようにモデルを学習させることもできます。🎉🎉</p>
+<p>NeRF の訓練を初めて体験するなら、nerfstudio チームが公開している <a href="https://colab.research.google.com/github/nerfstudio-project/nerfstudio/blob/main/colab/demo.ipynb">Google Colab ノートブック</a> がお勧めです。実際に訓練の流れを一通り試せます。このノートブックでは、好きなシーンの画像をアップロードして NeRF を訓練出来ます。例えば、自分のリビングルームを3Dで表現するようにモデルを学習させることも出来ます。</p>
 <h2>この分野の現在の進歩</h2>
-<p>この分野は急速に進化しており、新しい論文の数は爆発的と言ってよいほどです。訓練とレンダリングの速度に関しては、<a href="https://vr-nerf.github.io">VR-NeRF</a> と <a href="https://smerf-3d.github.io">SMERF</a> が非常に有望な結果を示しています。私たちは、近いうちに実世界のシーンをエッジデバイス上でリアルタイムにストリーミングできるようになると信じています。これは、現実的な<em>メタバース</em>に向けた大きな飛躍です。但し、NeRF 分野の研究は訓練と推論の速度だけに焦点を当てているわけではなく、Generative NeRFs、Pose Estimation、Deformable NeRFs、Compositionality など、様々な方向を含んでいます。NeRF の関連論文を厳選してまとめた一覧に興味があれば、<a href="https://github.com/awesome-NeRF/awesome-NeRF">Awesome-NeRF</a> をご覧ください。</p>
+<p>この分野は急速に進化しており、新しい論文の数は爆発的と言って良い程です。訓練とレンダリングの速度に関しては、<a href="https://vr-nerf.github.io">VR-NeRF</a> と <a href="https://smerf-3d.github.io">SMERF</a> が非常に有望な結果を示しています。私たちは、近いうちに実世界のシーンをエッジデバイス上でリアルタイムにストリーミング出来るようになると信じています。これは、現実的な<em>メタバース</em>に向けた大きな飛躍です。</p>
+<p>但し、NeRF 分野の研究は訓練と推論の速度だけに焦点を当てている訳ではなく、Generative NeRFs、Pose Estimation、Deformable NeRFs、Compositionality など、様々な方向を含んでいます。NeRF の関連論文を厳選してまとめた一覧に興味があれば、<a href="https://github.com/awesome-NeRF/awesome-NeRF">Awesome-NeRF</a> をご覧下さい。</p>
 </article>
 
 <nav class="page-nav"><a class="nav-link prev" href="3d_measurements_stereo_vision.html">← 前へ: はじめに</a><a class="nav-link toc-link" href="../index.html">目次へ</a><a class="nav-link next" href="../unit9/intro_to_model_optimization.html">次へ →: デプロイのためのモデル最適化入門</a></nav>

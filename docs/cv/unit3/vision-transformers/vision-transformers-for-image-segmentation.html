@@ -86,7 +86,7 @@ window.MathJax = { tex: { inlineMath: [['$', '$'], ['\\(', '\\)']], displayMath:
 </ul>
 <p class="side-group">Unit 3 - Vision Transformer</p>
 <ul class="side-list">
-<li><a class="side-link" href="vision-transformers-for-image-classification.html">画像分類のための Vision Transformer の転移学習とファインチューニング</a></li>
+<li><a class="side-link" href="vision-transformers-for-image-classification.html">画像分類の為の Vision Transformer の転移学習とファインチューニング</a></li>
 <li><a class="side-link" href="swin-transformer.html">Swin Transformer</a></li>
 <li><a class="side-link" href="cvt.html">Convolutional Vision Transformer (CvT)</a></li>
 <li><a class="side-link" href="dinat.html">Dilated Neighborhood Attention Transformer（DiNAT）</a></li>
@@ -146,7 +146,7 @@ window.MathJax = { tex: { inlineMath: [['$', '$'], ['\\(', '\\)']], displayMath:
 <li><a class="side-link" href="../../unit8/terminologies/camera-models.html">カメラモデル</a></li>
 <li><a class="side-link" href="../../unit8/terminologies/linear-algebra.html">3Dデータのための線形代数の基礎</a></li>
 <li><a class="side-link" href="../../unit8/terminologies/representations.html">3Dデータの表現方法</a></li>
-<li><a class="side-link" href="../../unit8/monocular_depth_estimation.html">単眼深度推定の概要：メトリック深度と相対深度、Depth Anything V2 のファインチューニング 👐 📚</a></li>
+<li><a class="side-link" href="../../unit8/monocular_depth_estimation.html">単眼深度推定の概要：メトリック深度と相対深度、Depth Anything V2 のファインチューニング</a></li>
 <li><a class="side-link" href="../../unit8/3d-vision/nvs.html">新規視点合成（Novel View Synthesis）</a></li>
 <li><a class="side-link" href="../../unit8/3d_measurements_stereo_vision.html">はじめに</a></li>
 <li><a class="side-link" href="../../unit8/nerf.html">Neural Radiance Fields（NeRF）</a></li>
@@ -176,9 +176,9 @@ window.MathJax = { tex: { inlineMath: [['$', '$'], ['\\(', '\\)']], displayMath:
 <ul class="side-list">
 <li><a class="side-link" href="../../unit12/pre-intro.html">CV モデルにおける倫理的基盤を探る</a></li>
 <li><a class="side-link" href="../../unit12/introduction.html">導入</a></li>
-<li><a class="side-link" href="../../unit12/ethics-bias-ai.html">AI における倫理とバイアス 🧑‍🤝‍🧑</a></li>
-<li><a class="side-link" href="../../unit12/conclusion.html">Hugging Face の取り組み：倫理と社会 🤗🌎</a></li>
-<li><a class="side-link" href="../../unit12/supplementary-material.html">参考文献とリソース 🤗🌎</a></li>
+<li><a class="side-link" href="../../unit12/ethics-bias-ai.html">AI における倫理とバイアス</a></li>
+<li><a class="side-link" href="../../unit12/conclusion.html">Hugging Face の取り組み：倫理と社会 🤗</a></li>
+<li><a class="side-link" href="../../unit12/supplementary-material.html">参考文献とリソース 🤗</a></li>
 </ul>
 <p class="side-group">Unit 13 - 展望</p>
 <ul class="side-list">
@@ -196,15 +196,15 @@ window.MathJax = { tex: { inlineMath: [['$', '$'], ['\\(', '\\)']], displayMath:
 <h1>Transformer ベースの画像セグメンテーション</h1>
 <p>このセクションでは、画像セグメンテーションにおいて Vision Transformer と畳み込みニューラルネットワーク（CNN）がどう違うかを探ります。あわせて、Vision Transformer ベースのセグメンテーションモデルを例に、そのアーキテクチャを詳しく説明します。</p>
 <div class="callout callout-warning">
-<p>このセクションでは、画像セグメンテーション、畳み込みニューラルネットワーク（CNN）、Vision Transformer の基礎を理解していることを前提としています。これらの概念にまだ慣れていない場合は、先にコース内の関連資料を確認することをおすすめします。</p>
+<p>このセクションでは、画像セグメンテーション、畳み込みニューラルネットワーク（CNN）、Vision Transformer の基礎を理解していることを前提としています。これらの概念にまだ慣れていない場合は、先にコース内の関連資料を確認することをお勧めします。</p>
 </div>
 <h2>セグメンテーションにおける CNN と Transformer の比較</h2>
-<p>Vision Transformer が登場する前は、CNN（畳み込みニューラルネットワーク）が画像セグメンテーションの定番でした。<a href="https://arxiv.org/abs/1505.04597">U-Net</a> や <a href="https://arxiv.org/abs/1703.06870">Mask R-CNN</a> のようなモデルは、画像内の異なる物体を区別するために必要な詳細を捉え、セグメンテーションタスクで最先端の性能を達成しました。</p>
+<p>Vision Transformer が登場する前は、CNN（畳み込みニューラルネットワーク）が画像セグメンテーションの定番でした。<a href="https://arxiv.org/abs/1505.04597">U-Net</a> や <a href="https://arxiv.org/abs/1703.06870">Mask R-CNN</a> のようなモデルは、画像内の異なる物体を区別する為に必要な詳細を捉え、セグメンテーションタスクで最先端の性能を達成しました。</p>
 <p>過去10年間で優れた成果を上げてきた一方で、CNN ベースのモデルにはいくつかの限界があります。Transformer はその解決を目指しています。</p>
 <ul>
-<li><strong>空間的な制約</strong>：CNN は、小さな受容野を使って局所的なパターンを学習します。しかし、近くの情報を中心に処理するため、画像内で遠く離れていても関連している特徴同士を結びつけることが難しくなります。その結果、複雑な場面や物体の領域を正確に分割しにくくなります。一方、ViT はアテンション機構を使って、画像全体にわたる依存関係を捉えるように設計されています。画像全体を一度に考慮できるため、離れた部分同士の複雑な関係も学習できます。セグメンテーションでは、こうした画像全体の情報を利用することで、物体の領域をより正確に切り分けられるようになります。</li>
-<li><strong>タスク固有のコンポーネント</strong>：Mask R-CNN のような手法は、セグメンテーションタスクに関する事前知識を符号化するために、手作業で設計されたコンポーネント（非最大値抑制や空間アンカーなど）を取り入れています。これらのコンポーネントは複雑さを増し、手作業での調整も必要になります。これに対して、ViT ベースのセグメンテーション手法は、手作業で設計されたコンポーネントを不要にすることでセグメンテーションのプロセスを簡素化し、最適化をより容易にします。</li>
-<li><strong>セグメンテーションタスクへの特化</strong>：CNN ベースのセグメンテーションモデルは、セマンティックセグメンテーション、インスタンスセグメンテーション、パノプティックセグメンテーションの各タスクに個別に取り組んできました。そのため、タスクごとに特化したアーキテクチャが生まれ、研究の取り組みも分かれていました。最近の ViT ベースのモデル、たとえば <a href="https://arxiv.org/abs/2107.06278">MaskFormer</a>、<a href="https://arxiv.org/abs/2105.15203">SegFormer</a>、<a href="https://arxiv.org/abs/2304.02643">SAM</a> は、単一のフレームワークの中でセマンティック、インスタンス、パノプティックの各セグメンテーションタスクに取り組む統一的なアプローチを提供します。</li>
+<li><strong>空間的な制約</strong>：CNN は、小さな受容野を使って局所的なパターンを学習します。しかし、近くの情報を中心に処理する為、画像内で遠く離れていても関連している特徴同士を結びつけることが難しくなります。その結果、複雑な場面や物体の領域を正確に分割し難くなります。一方、ViT はアテンション機構を使って、画像全体にわたる依存関係を捉えるように設計されています。画像全体を一度に考慮出来る為、離れた部分同士の複雑な関係も学習出来ます。セグメンテーションでは、こうした画像全体の情報を利用することで、物体の領域をより正確に切り分けられるようになります。</li>
+<li><strong>タスク固有のコンポーネント</strong>：Mask R-CNN のような手法は、セグメンテーションタスクに関する事前知識を符号化する為に、手作業で設計されたコンポーネント（非最大値抑制や空間アンカーなど）を取り入れています。これらのコンポーネントは複雑さを増し、手作業での調整も必要になります。これに対して、ViT ベースのセグメンテーション手法は、手作業で設計されたコンポーネントを不要にすることでセグメンテーションのプロセスを簡素化し、最適化をより容易にします。</li>
+<li><strong>セグメンテーションタスクへの特化</strong>：CNN ベースのセグメンテーションモデルは、セマンティックセグメンテーション、インスタンスセグメンテーション、パノプティックセグメンテーションの各タスクに個別に取り組んできました。その為、タスクごとに特化したアーキテクチャが生まれ、研究の取り組みも分かれていました。最近の ViT ベースのモデル、例えば <a href="https://arxiv.org/abs/2107.06278">MaskFormer</a>、<a href="https://arxiv.org/abs/2105.15203">SegFormer</a>、<a href="https://arxiv.org/abs/2304.02643">SAM</a> は、単一のフレームワークの中でセマンティック、インスタンス、パノプティックの各セグメンテーションタスクに取り組む統一的なアプローチを提供します。</li>
 </ul>
 <h2>MaskFormer に注目：画像セグメンテーションにおける ViT の例</h2>
 <p>MaskFormer（<a href="https://arxiv.org/abs/2107.06278">論文</a>、<a href="https://huggingface.co/docs/transformers/en/model_doc/maskformer">Hugging Face Transformers ドキュメント</a>）は、論文「MaskFormer: Per-Pixel Classification is Not All You Need for Semantic Segmentation」で発表されたモデルです。画像内に存在する各クラスについてセグメンテーションマスクを予測し、セマンティックセグメンテーションとインスタンスセグメンテーションを1つのアーキテクチャに統合します。</p>
@@ -220,7 +220,7 @@ window.MathJax = { tex: { inlineMath: [['$', '$'], ['\\(', '\\)']], displayMath:
 <p><strong>セグメンテーションモジュール</strong>：線形分類器と多層パーセプトロン（MLP）をそれぞれ使い、各セグメントについてクラスの確率予測とマスク埋め込みを生成します。マスク埋め込みは、ピクセルごとの埋め込みと組み合わせて使われ、各セグメントのバイナリマスクを予測します。</p>
 <p>このモデルは、<a href="https://huggingface.co/learn/computer-vision-course/unit3/vision-transformers/detr">DETR</a> と同じバイナリマスク損失と、予測されたセグメントごとの交差エントロピー分類損失で学習します。</p>
 <h3>Hugging Face Transformers を使ったパノプティックセグメンテーションの推論例</h3>
-<p>パノプティックセグメンテーションは、画像のすべてのピクセルにカテゴリのラベルを付け、それらのカテゴリの中で異なる物体を識別するタスクです。セマンティックセグメンテーションとインスタンスセグメンテーションを組み合わせたものです。</p>
+<p>パノプティックセグメンテーションは、画像の全てのピクセルにカテゴリのラベルを付け、それらのカテゴリの中で異なる物体を識別するタスクです。セマンティックセグメンテーションとインスタンスセグメンテーションを組み合わせたものです。</p>
 <div class="codehilite"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">transformers</span><span class="w"> </span><span class="kn">import</span> <span class="n">pipeline</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">PIL</span><span class="w"> </span><span class="kn">import</span> <span class="n">Image</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">requests</span>
@@ -260,7 +260,8 @@ window.MathJax = { tex: { inlineMath: [['$', '$'], ['\\(', '\\)']], displayMath:
 </code></pre></div>
 
 <h2>Vision Transformer ベースのセグメンテーションモデルのファインチューニング</h2>
-<p>事前学習済みのセグメンテーションモデルは数多く公開されています。そのため、特定のユースケースにこれらのモデルを適応させるために、転移学習とファインチューニングがよく使われます。特に、MaskFormer のような Transformer ベースのセグメンテーションモデルは大量のデータを必要とし、ゼロから学習するのは難しいためです。これらの手法は、事前学習で得られた表現を活用し、新しいデータへ効率的にモデルを適応させます。通常、MaskFormer では、学習済みの汎用的な特徴を活用するために、バックボーン、ピクセルデコーダ、Transformer デコーダを凍結したままにします。一方で、Transformer モジュールはファインチューニングし、クラス予測とマスク生成の能力を新しいセグメンテーションタスクに適応させます。</p>
+<p>事前学習済みのセグメンテーションモデルは数多く公開されています。その為、特定のユースケースにこれらのモデルを適応させる為に、転移学習とファインチューニングがよく使われます。特に、MaskFormer のような Transformer ベースのセグメンテーションモデルは大量のデータを必要とし、ゼロから学習するのは難しいためです。これらの手法は、事前学習で得られた表現を活用し、新しいデータへ効率的にモデルを適応させます。</p>
+<p>通常、MaskFormer では、学習済みの汎用的な特徴を活用する為に、バックボーン、ピクセルデコーダ、Transformer デコーダを凍結したままにします。一方で、Transformer モジュールはファインチューニングし、クラス予測とマスク生成の能力を新しいセグメンテーションタスクに適応させます。</p>
 <p><a href="https://colab.research.google.com/github/huggingface/computer-vision-course/blob/main/notebooks/Unit%203%20-%20Vision%20Transformers/transfer-learning-segmentation.ipynb">このノートブック</a> では、MaskFormer を使った画像セグメンテーションの転移学習チュートリアルを進めます。</p>
 <h2>参考文献</h2>
 <ul>
