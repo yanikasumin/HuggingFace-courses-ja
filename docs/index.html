@@ -289,6 +289,129 @@ window.MathJax = { tex: { inlineMath: [['$', '$'], ['\\(', '\\)']], displayMath:
 .guide-home .reference-book .book-body{flex:1 1 auto;min-width:0}
 .guide-home .reference-book .book-body h4{margin-top:0}
 @media(max-width:560px){.guide-home .reference-book{gap:13px}.guide-home .reference-book .book-cover img{width:56px}}
+
+/* Start page: collapsible section bands (2026-11-18 redesign).
+   Section headings become full-width navy bands with a gold edge, a toggle
+   marker and a count badge, so the category level is unmistakable next to
+   the plain titles inside a section (course names, item titles). Same
+   accordion pattern as the glossary home. */
+.guide-home > section{padding:22px 0 10px}
+.guide-home .home-acc-head{margin:0}
+.guide-home > section > h2.home-acc-head::before,.guide-home .about-author h2.home-acc-head::before{display:none;content:none;background:none}
+.guide-home .home-acc-toggle,.guide-home .home-acc-static{
+  display:flex;align-items:center;gap:.65rem;width:100%;
+  font:inherit;font-size:1.3rem;font-weight:800;letter-spacing:.01em;
+  text-align:left;color:var(--text);
+  background:var(--surface-2);
+  border:1px solid var(--border);border-left:6px solid var(--yellow);
+  border-radius:var(--radius);
+  padding:.5em .75em;cursor:pointer;
+}
+.guide-home .home-acc-static{cursor:default}
+.guide-home .home-acc-toggle:hover{border-color:var(--yellow)}
+.guide-home .home-acc-toggle:focus-visible{outline:2px solid var(--yellow);outline-offset:2px}
+.guide-home .home-acc-marker{flex:none;width:1em;text-align:center;color:var(--yellow);font-size:.85em}
+.guide-home .home-acc-marker::before{content:"\25B8"}
+.guide-home section.open .home-acc-marker::before{content:"\25BE"}
+.guide-home .home-acc-name{flex:1 1 auto}
+.guide-home .home-acc-count{
+  margin-left:auto;flex:none;
+  font-size:.8rem;font-weight:700;line-height:1.5;
+  color:var(--bg);background:var(--yellow);
+  border-radius:999px;padding:.05em .7em;
+}
+.guide-home .home-acc-body{padding:1.1rem .2rem .4rem 1rem}
+.guide-home .home-acc-body[hidden]{display:none}
+@media(max-width:620px){
+  .guide-home > section{padding:16px 0 6px}
+  .guide-home .home-acc-toggle,.guide-home .home-acc-static{font-size:1.18rem}
+  .guide-home .home-acc-body{padding-left:.4rem}
+}
+/* Start page: the two buttons in each course card share the row equally,
+   so their widths match within every card (2026-11-18). */
+.guide-home .card-actions{flex-wrap:nowrap}
+.guide-home .card-actions .btn{flex:1 1 0;text-align:center}
+@media(max-width:480px){
+  .guide-home .card-actions{flex-direction:column}
+}
+
+/* Start page: spacing unification (2026-11-18).
+   The layered styles above had drifted into near-miss values (10, 13, 14,
+   15, 17, 18, 19, 21, 22, 23, 25px...). This block fixes every margin,
+   padding and gap of the repeated elements to a 4px scale (4/8/12/16/20/
+   24/32), so bands, cards, buttons and lists share one rhythm. Colours,
+   typefaces and font sizes are untouched. */
+.guide-home p{margin:0 0 16px}
+.guide-home > section{padding:16px 0}
+.guide-home .home-acc-toggle,.guide-home .home-acc-static{padding:12px 16px;gap:12px}
+.guide-home .home-acc-count{padding:2px 12px}
+.guide-home .home-acc-body{padding:16px 8px 8px 16px}
+.guide-home .card-actions{display:grid;grid-template-columns:1fr 1fr;gap:12px;padding-top:16px}
+.guide-home .card-actions .btn{box-sizing:border-box;padding:8px 16px;line-height:1.5}
+.guide-home .card-actions .btn:not(.btn-ghost){border:1px solid var(--yellow)}
+.guide-home > section.about-author{padding:16px 0}
+.guide-home #courses .course-grid{gap:16px;margin-top:8px}
+.guide-home #courses .course-card{padding:20px}
+.guide-home .course-card h3{margin:0 0 4px}
+.guide-home .course-en{margin:0 0 8px}
+.guide-home .points{margin:8px 0 12px}
+.guide-home .points li{margin-bottom:4px}
+.guide-home .steps{margin:16px 0}
+.guide-home .steps li{margin:0 0 16px}
+.guide-home .steps p{margin:4px 0 0}
+.guide-home .code-sample{padding:12px 16px;margin:12px 0 16px}
+.guide-home .flow{margin:24px 0 24px 8px;padding:0 0 0 24px}
+.guide-home .flow li{padding:0 0 20px}
+.guide-home .flow strong{margin-bottom:4px}
+.guide-home .process{margin:24px 0 16px}
+.guide-home .process li{padding:0 0 20px 40px;min-height:52px}
+.guide-home .process p{margin:4px 0 0}
+.guide-home .process-loop{padding:12px 16px;margin:8px 0 24px}
+.guide-home .process-loop span{margin-top:4px}
+.guide-home .resources{margin:16px 0}
+.guide-home .resources li{margin:0 0 12px}
+.guide-home .home-example{padding:20px;margin:24px 0}
+.guide-home .diagram-title{margin:0 0 16px}
+.guide-home .example-step{padding:12px 16px}
+.guide-home .example-step span{margin-top:4px}
+.guide-home .example-arrow{padding:4px 0}
+.guide-home .route-choices{padding:20px;margin:8px 0 24px}
+.guide-home .route-choices>div{gap:12px}
+.guide-home .route-choices a{padding:12px 16px}
+.guide-home .route-choices span{margin-top:4px}
+.guide-home .learning-resources{margin:24px 0 32px}
+.guide-home .learning-resource{padding:16px 0;gap:0 16px}
+.guide-home .learning-resource h4,.guide-home .reference-book h4{margin:0 0 8px}
+.guide-home .learning-resource p:not(.learning-stage),.guide-home .reference-book p:not(.book-meta){margin:0 0 8px}
+.guide-home .books-title{margin:24px 0 12px}
+.guide-home .reference-book{padding:20px 0 12px;gap:16px}
+.guide-home .reference-book .book-meta{margin:0 0 8px}
+.guide-home .reference-note{margin:16px 0 0}
+.guide-home .home-masthead{margin:0 0 24px;padding:0 0 16px;gap:16px}
+.guide-home .home-maker{gap:12px}
+.guide-home .home-intro{padding:0 0 32px;margin:0 0 8px}
+.guide-home .home-intro h1{margin:0 0 20px}
+.guide-home .bio-identity{gap:16px;margin:0 0 24px}
+.guide-home .bio-identity h3{margin:0 0 4px}
+.guide-home .bio-links{gap:8px 24px;margin-top:20px}
+.guide-home .faq-item{padding:12px 0;border-bottom:1px solid var(--border-soft)}
+.guide-home .faq-item:last-child{border-bottom:0;padding-bottom:4px}
+.guide-home .faq-item summary{font-weight:700;cursor:pointer}
+.guide-home .faq-item p{margin:8px 0 0}
+@media(max-width:480px){
+  .guide-home .card-actions{grid-template-columns:1fr}
+}
+@media(max-width:620px){
+  .guide-home > section{padding:12px 0}
+  .guide-home > section.about-author{padding:12px 0}
+  .guide-home .home-acc-body{padding:12px 4px 4px 12px}
+  .guide-home .home-acc-toggle,.guide-home .home-acc-static{padding:12px}
+  .guide-home .home-intro{padding-bottom:28px}
+  .guide-home .home-masthead{margin:0 0 20px;padding:0 0 12px}
+  .guide-home .learning-resource{padding:16px 0}
+  .guide-home .reference-book{gap:12px}
+  .guide-home .bio-identity{gap:12px}
+}
 </style>
 </head>
 <body>
@@ -314,21 +437,22 @@ window.MathJax = { tex: { inlineMath: [['$', '$'], ['\\(', '\\)']], displayMath:
   </a>
 </div>
 <h1>Hugging Face 学習コース日本語版</h1>
-<p class="home-summary">このサイトでは、Hugging Face が無料で公開しているAI・機械学習の学習コースを、日本語で読むことができます。文章を扱うAIや画像を認識するAIなどについて、仕組みを学び、実際にプログラムを動かしながら理解を深めるための教材です。</p>
+<p class="home-summary">このサイトでは、Hugging Face が無料で公開しているAI・機械学習の学習コースを、日本語で読むことが出来ます。文章を扱うAIや画像を認識するAIなどについて、仕組みを学び、実際にプログラムを動かしながら理解を深める為の教材です。</p>
 <p>大規模言語モデル（LLM）、AI エージェント、MCP、コンピュータビジョン、ロボット工学の5コース、全316セクションを収録しています。教材は登録せずに読めます。原文を確認したい場合は、各ページから英語の公式サイトを開けます。</p>
-<p>機械学習を初めて学ぶ方は、<a href="#about">Hugging Face の説明</a>を読んでから、<a href="#start">学習の始め方</a>へ進んでください。すでに学びたい分野が決まっている方は、<a href="#courses">収録コース</a>から選べます。</p>
+<p>機械学習を初めて学ぶ方は、<a href="#about">Hugging Face の説明</a>を読んでから、<a href="#start">学習の始め方</a>へ進んで下さい。既に学びたい分野が決まっている方は、<a href="#courses">収録コース</a>から選べます。</p>
 
 </div>
 
 <section id="about" aria-labelledby="about-title">
-<h2 id="about-title">Hugging Face とは</h2>
-<p>Hugging Face は、AI の開発に使うプログラムやデータを公開・共有できるサービスを運営している企業です。研究者や開発者が作ったAIを、ほかの人も利用できるようにしています。</p>
-<p>例えば、商品のレビューが好意的か否定的かを判定するAIを作りたいとします。最初から自分でAIを学習させる方法もありますが、Hugging Face で公開されているものを使えば、すでに学習を終えたAIを試すことができます。</p>
+<h2 id="about-title" class="home-acc-head"><span class="home-acc-static"><span class="home-acc-name">Hugging Face とは</span></span></h2>
+<div class="home-acc-body" id="about-body">
+<p>Hugging Face は、AI の開発に使うプログラムやデータを公開・共有出来るサービスを運営している企業です。研究者や開発者が作ったAIを、他の人も利用出来るようにしています。</p>
+<p>例えば、商品のレビューが好意的か否定的かを判定するAIを作りたいとします。最初から自分でAIを学習させる方法もありますが、Hugging Face で公開されているものを使えば、既に学習を終えたAIを試すことが出来ます。</p>
 <p>このような、データを使って学習したAIを「学習済みモデル」と呼びます。また、AIの学習や性能の確認に使う文章・画像などをまとめたものが「データセット」です。Hugging Face の「Hub」には、モデルとデータセットが多数公開されています。</p>
-<p>公開されているモデルは、Python というプログラミング言語から利用できます。その際によく使われるのが、Hugging Face の「Transformers」というライブラリです。ライブラリとは、必要な処理をまとめて、ほかのプログラムから利用できるようにしたものです。</p>
+<p>公開されているモデルは、Python というプログラミング言語から利用出来ます。その際によく使われるのが、Hugging Face の「Transformers」というライブラリです。ライブラリとは、必要な処理をまとめて、他のプログラムから利用出来るようにしたものです。</p>
 <div class="home-example" role="group" aria-label="Hugging Face に公開されたモデルを利用する流れ">
 <p class="diagram-title">例：文章を判定するAIを試す場合</p>
-<div class="example-step"><strong>Hugging Face Hub でモデルを探す</strong><span>文章の内容を判定できる学習済みモデルを選ぶ</span></div>
+<div class="example-step"><strong>Hugging Face Hub でモデルを探す</strong><span>文章の内容を判定出来る学習済みモデルを選ぶ</span></div>
 <div class="example-arrow" aria-hidden="true">↓</div>
 <div class="example-step"><strong>Python からモデルを使う</strong><span>Transformers でモデルを読み込み、文章を入力する</span></div>
 <div class="example-arrow" aria-hidden="true">↓</div>
@@ -336,17 +460,19 @@ window.MathJax = { tex: { inlineMath: [['$', '$'], ['\\(', '\\)']], displayMath:
 </div>
 <p>Hugging Face の学習コースでは、こうしたプログラムの使い方に加え、AIが文章を処理する仕組みや、モデルを追加学習させる方法まで学べます。</p>
 <p>このサイトは、私自身が機械学習を独学する際、日本語で読める教材が欲しいと考えて制作しました。英語原典の内容を維持しながら、日本語として自然に読める文章になるよう翻訳しています。</p>
+</div>
 </section>
 
 <section id="courses" aria-labelledby="courses-title">
-<h2 id="courses-title">学べるコース</h2>
+<h2 id="courses-title" class="home-acc-head"><span class="home-acc-static"><span class="home-acc-name">学べるコース</span><span class="home-acc-count">5コース</span></span></h2>
+<div class="home-acc-body" id="courses-body">
 <p>コースは5つあります。いずれも無料で、登録なしで読めます。多くのセクションには理解度を確認するクイズと、実際に動かせるコード例が含まれています。</p>
 <div class="course-grid">
 <section class="course-card">
   <h3><a href="llm/index.html">LLM コース</a></h3>
   <p class="course-en">LLM Course</p>
-  <p class="course-desc">大規模言語モデル（LLM）の仕組みを基礎から学ぶコースです。Transformer の動作原理から、Hugging Face Transformers の使い方、ファインチューニング、データセットやトークナイザの扱い、音声処理、独自モデルの構築まで学べます。</p>
-  <ul class="points"><li>Transformer の仕組みと、モデルができること</li><li>Transformers ライブラリの実践的な使い方</li><li>事前学習モデルのファインチューニングと共有</li><li>データセットとトークナイザの扱い</li><li>LLM のファインチューニングと思考モデルの構築</li></ul>
+  <p class="course-desc">大規模言語モデル（LLM）の仕組みを基礎から学ぶコースです。Transformer の動作原理から、Hugging Face Transformers の使い方、ファインチューニング（追加学習）、データセットやトークナイザの扱い、音声処理、独自モデルの構築まで学べます。</p>
+  <ul class="points"><li>Transformer の仕組みと、モデルが出来ること</li><li>Transformers ライブラリの実践的な使い方</li><li>事前学習モデルのファインチューニングと共有</li><li>データセットとトークナイザの扱い</li><li>LLM のファインチューニングと思考モデルの構築</li></ul>
   <p class="course-meta">全 104 セクション（無料）</p>
   <p class="card-actions"><a class="btn" href="llm/index.html">目次を開く</a>
   <a class="btn btn-ghost" href="https://huggingface.co/learn/llm-course" target="_blank" rel="noopener">公式コース（英語）</a></p>
@@ -384,37 +510,42 @@ window.MathJax = { tex: { inlineMath: [['$', '$'], ['\\(', '\\)']], displayMath:
   <a class="btn btn-ghost" href="https://huggingface.co/learn/computer-vision-course" target="_blank" rel="noopener">公式コース（英語）</a></p>
 </section>
 </div>
+</div>
 </section>
 
 <section id="start" aria-labelledby="start-title">
-<h2 id="start-title">学習の始め方</h2>
-<p>各コースには、説明文だけでなく、実際に動かせるプログラムやクイズもあります。AIの仕組みを理解するには、コードを動かして結果を確かめながら読むのがおすすめです。</p>
-<p>多くの教材では Python（パイソン）というプログラミング言語を使用します。プログラミングを初めて学ぶ場合は、次の順番で準備してください。</p>
+<h2 id="start-title" class="home-acc-head"><button type="button" class="home-acc-toggle" aria-expanded="false" aria-controls="start-body"><span class="home-acc-marker" aria-hidden="true"></span><span class="home-acc-name">学習の始め方</span><span class="home-acc-count">3ステップ</span></button></h2>
+<div class="home-acc-body" id="start-body" hidden>
+<p>各コースには、説明文だけでなく、実際に動かせるプログラムやクイズもあります。AIの仕組みを理解するには、コードを動かして結果を確かめながら読むのがお勧めです。</p>
+<p>多くの教材では Python（パイソン）というプログラミング言語を使用します。プログラミングを初めて学ぶ場合は、次の順番で準備して下さい。</p>
 <ol class="steps">
 <li><strong>Python の基本を学ぶ</strong><p>変数、関数、繰り返し処理などの基本を覚えます。まだ分からない方は、無料の日本語教材である<a href="https://www.python.jp/train/index.html" target="_blank" rel="noopener noreferrer">「ゼロからの Python 入門講座」</a>から始められます。</p></li>
 <li><strong>Google Colab を開く</strong><p><a href="https://colab.research.google.com/" target="_blank" rel="noopener noreferrer">Google Colab</a>は、ブラウザ上で Python を動かせるサービスです。Google アカウントでログインし、「新しいノートブック」を作成します。最初は自分のパソコンに Python をインストールする必要はありません。</p></li>
-<li><strong>プログラムを実行する</strong><p>画面にある入力欄（コードセル）に次の1行を入力し、左側の実行ボタンを押してください。</p></li>
+<li><strong>プログラムを実行する</strong><p>画面にある入力欄（コードセル）に次の1行を入力し、左側の実行ボタンを押して下さい。</p></li>
 </ol>
 <pre class="code-sample"><code>print("こんにちは")</code></pre>
 <p>入力欄の下に「こんにちは」と表示されれば、Python が動いています。</p>
-<p>次に、機械学習のモデルを扱うためのライブラリをインストールします。新しいコードセルに次の内容を入力して実行してください。</p>
+<p>次に、機械学習のモデルを扱う為のライブラリをインストールします。新しいコードセルに次の内容を入力して実行して下さい。</p>
 <pre class="code-sample"><code>!pip install transformers datasets
 
 import transformers
 print(transformers.__version__)</code></pre>
 <p>最初の行は Transformers と Datasets をインストールする命令です。最後の行でバージョン番号が表示されれば、Transformers を読み込めています。</p>
-<p>より詳しい設定方法は、<a href="llm/chapter0/1.html">LLM コース第0章「はじめに」</a>で説明しています。パソコンに Python の実行環境を作る方法も掲載されています。演習によって必要なライブラリが異なる場合は、教材に書かれた手順に従ってください。</p>
+<p>より詳しい設定方法は、<a href="llm/chapter0/1.html">LLM コース第0章「はじめに」</a>で説明しています。パソコンに Python の実行環境を作る方法も掲載されています。演習によって必要なライブラリが異なる場合は、教材に書かれた手順に従って下さい。</p>
 <h3>このサイトでの学習方法</h3>
-<p>収録コースの目次から章を選び、説明を読みながら進めてください。コードは Colab などにコピーして実行します。このサイトの画面上でコードを実行することはできませんが、クイズはその場で答え合わせができます。</p>
-<p>各ページには前後の節へ進むリンクと英語原典へのリンクがあります。専門用語が分からない場合は、サイト内検索や各コースの用語集も利用できます。</p>
-<p>教材を読むだけなら Hugging Face のアカウントは不要です。モデルの公開など一部の作業では登録が必要になります。<a href="agents/unit0/onboarding.html">Agents コースの準備ページ</a>にはアカウント作成やローカル実行の説明があり、<a href="robotics/unit0/2.html">Robotics コースの導入ページ</a>では LeRobot のインストール方法を確認できます。</p>
+<p>収録コースの目次から章を選び、説明を読みながら進めて下さい。コードは Colab などにコピーして実行します。このサイトの画面上でコードを実行することは出来ませんが、クイズはその場で答え合わせが出来ます。</p>
+<p>各ページには前後の節へ進むリンクと英語原典へのリンクがあります。専門用語が分からない場合は、サイト内検索や各コースの用語集も利用出来ます。</p>
+<p>教材を読むだけなら Hugging Face のアカウントは不要です。モデルの公開など一部の作業では登録が必要になります。</p>
+<p><a href="agents/unit0/onboarding.html">Agents コースの準備ページ</a>にはアカウント作成やローカル実行の説明があり、<a href="robotics/unit0/2.html">Robotics コースの導入ページ</a>では LeRobot のインストール方法を確認出来ます。</p>
+</div>
 </section>
 
 <section id="roadmap" aria-labelledby="roadmap-title">
-<h2 id="roadmap-title">何から学べばよいか</h2>
-<p>機械学習を初めて学ぶ方には、Python の基本を覚えた後、LLM コースでモデルを動かし、興味のある専門分野へ進む方法をおすすめします。すべてのコースを決まった順番で終える必要はありません。</p>
+<h2 id="roadmap-title" class="home-acc-head"><button type="button" class="home-acc-toggle" aria-expanded="false" aria-controls="roadmap-body"><span class="home-acc-marker" aria-hidden="true"></span><span class="home-acc-name">何から学べばよいか</span><span class="home-acc-count">4ステップ</span></button></h2>
+<div class="home-acc-body" id="roadmap-body" hidden>
+<p>機械学習を初めて学ぶ方には、Python の基本を覚えた後、LLM コースでモデルを動かし、興味のある専門分野へ進む方法をお勧めします。全てのコースを決まった順番で終える必要はありません。</p>
 <ol class="flow" aria-label="初心者向けの学習ロードマップ">
-<li><strong>Python の基本を学ぶ</strong><p>簡単なプログラムを読んだり書いたりできるようにします。<a href="https://www.python.jp/train/index.html" target="_blank" rel="noopener noreferrer">Python Japan の無料教材</a>や<a href="https://utokyo-ipp.github.io/" target="_blank" rel="noopener noreferrer">東京大学の Python 教材</a>が参考になります。</p></li>
+<li><strong>Python の基本を学ぶ</strong><p>簡単なプログラムを読んだり書いたり出来るようにします。<a href="https://www.python.jp/train/index.html" target="_blank" rel="noopener noreferrer">Python Japan の無料教材</a>や<a href="https://utokyo-ipp.github.io/" target="_blank" rel="noopener noreferrer">東京大学の Python 教材</a>が参考になります。</p></li>
 <li><strong>LLM コースでAIを動かす</strong><p>文章を分類したり、質問に答えたりする学習済みモデルを使ってみます。モデルが文章を処理する仕組みも学びます。</p></li>
 <li><strong>自分のデータでモデルを調整する</strong><p>既存のモデルを追加学習させる「ファインチューニング」などに取り組み、作成したモデルを公開する方法も学びます。</p></li>
 <li><strong>作りたいものに合わせて進む</strong><p>文章以外のデータを扱いたい場合や、AIに複数の作業をさせたい場合は、専門コースへ進みます。</p></li>
@@ -426,13 +557,15 @@ print(transformers.__version__)</code></pre>
 <a href="cv/index.html"><strong>Community CV</strong><span>画像の分類・検出・生成</span></a>
 <a href="robotics/index.html"><strong>Robotics</strong><span>ロボットの制御と学習</span></a></div>
 </div>
-<p>数学の知識が必要になった場合は、線形代数や確率・統計を学び直すと理解しやすくなります。各段階で利用できる無料教材と参考書は、次の「参考になる学習サイト・参考書」にまとめています。</p>
+<p>数学の知識が必要になった場合は、線形代数や確率・統計を学び直すと理解しやすくなります。各段階で利用出来る無料教材と参考書は、次の「参考になる学習サイト・参考書」にまとめています。</p>
+</div>
 </section>
 
 <section id="translation" aria-labelledby="translation-title">
-<h2 id="translation-title">翻訳方法と品質管理</h2>
+<h2 id="translation-title" class="home-acc-head"><button type="button" class="home-acc-toggle" aria-expanded="false" aria-controls="translation-body"><span class="home-acc-marker" aria-hidden="true"></span><span class="home-acc-name">翻訳方法と品質管理</span><span class="home-acc-count">6工程</span></button></h2>
+<div class="home-acc-body" id="translation-body" hidden>
 <p>本サイトは、翻訳作業を担当する Muse、訳文のレビューを担当する ChatGPT、翻訳方針と最終判断を担当する制作者の3者で制作しました。AIが出力した訳文をそのまま公開するのではなく、英語原典と照合し、日本語として不自然な箇所を修正しています。</p>
-<p>翻訳対象は、各コースの英語原典を特定の Git コミット（更新履歴上の特定の時点）に固定しています。原典が更新されても、どの版を翻訳したのか確認できるようにするためです。</p>
+<p>翻訳対象は、各コースの英語原典を特定の Git コミット（更新履歴上の特定の時点）に固定しています。原典が更新されても、どの版を翻訳したのか確認出来るようにする為です。</p>
 <ol class="process" aria-label="翻訳とレビューの工程">
 <li><strong>原典の取得と翻訳 <span>担当：Muse</span></strong><p>章や節ごとに英語本文を翻訳します。プログラムのコード、数式、リンク先、見出しの識別子など、変更すべきでない部分はそのまま残します。</p></li>
 <li><strong>訳文のレビュー <span>担当：ChatGPT</span></strong><p>英語原典と同じ意味になっているか、日本語として自然か、専門用語の表記が統一されているか、改行や記号の位置が適切かを確認します。指摘にはファイル名、行番号、現在の文、問題点、修正案を添えます。</p></li>
@@ -442,20 +575,22 @@ print(transformers.__version__)</code></pre>
 <li><strong>最終判断と公開 <span>担当：霞ヶ関京</span></strong><p>文体や用語の扱いなど、方針に関わる判断を行い、確認が済んだ翻訳をサイトに反映します。</p></li>
 </ol>
 <div class="process-loop"><strong>再確認の流れ</strong><span>翻訳 → レビュー → 原典との照合・修正 → 機械検証 → 再レビュー</span><span>問題が残っている場合は「照合・修正」に戻ります。</span></div>
-<p>文章の参考にしているのは、『とほほのWWW入門』のような、初学者でも読みやすい日本語の技術解説です。英文の語順に引きずられず、意味が伝わるように文章を組み立てます。ただし、ライブラリ名や一般的な専門用語は、ほかの技術資料でも使われている表記を尊重しています。</p>
-<p>原典自体に誤りや重複がある場合も、翻訳者の判断で黙って内容を変更することは避けています。翻訳に使用した原典の版は<a href="https://github.com/yanikasumin/HuggingFace-courses-ja/blob/main/README.md">README</a>で、確認・修正の記録は<a href="https://github.com/yanikasumin/HuggingFace-courses-ja/blob/main/PROGRESS.md">進捗記録</a>で確認できます。</p>
+<p>文章の参考にしているのは、『とほほのWWW入門』のような、初学者でも読みやすい日本語の技術解説です。英文の語順に引きずられず、意味が伝わるように文章を組み立てます。ただし、ライブラリ名や一般的な専門用語は、他の技術資料でも使われている表記を尊重しています。</p>
+<p>原典自体に誤りや重複がある場合も、翻訳者の判断で黙って内容を変更することは避けています。翻訳に使用した原典の版は<a href="https://github.com/yanikasumin/HuggingFace-courses-ja/blob/main/README.md">README</a>で、確認・修正の記録は<a href="https://github.com/yanikasumin/HuggingFace-courses-ja/blob/main/PROGRESS.md">進捗記録</a>で確認出来ます。</p>
+</div>
 </section>
 
 
 <section id="resources" aria-labelledby="resources-title">
-<h2 id="resources-title">参考になる学習サイト・参考書</h2>
-<p>このサイトではAIの仕組みと使い方を学べますが、プログラミングや数学の基礎まで、すべてを説明しているわけではありません。分からない部分が出てきたら、次の教材を併用してください。</p>
+<h2 id="resources-title" class="home-acc-head"><button type="button" class="home-acc-toggle" aria-expanded="false" aria-controls="resources-body"><span class="home-acc-marker" aria-hidden="true"></span><span class="home-acc-name">参考になる学習サイト・参考書</span><span class="home-acc-count">9件</span></button></h2>
+<div class="home-acc-body" id="resources-body" hidden>
+<p>このサイトではAIの仕組みと使い方を学べますが、プログラミングや数学の基礎まで、全てを説明している訳ではありません。分からない部分が出てきたら、次の教材を併用して下さい。</p>
 <h3>無料で学べるサイト・サービス</h3>
 <div class="learning-resources" aria-label="学習段階別の無料教材">
 <article class="learning-resource">
 <p class="learning-stage">Pythonの入門</p>
 <h4><a href="https://www.python.jp/train/index.html" target="_blank" rel="noopener noreferrer">ゼロからのPython入門講座（Python Japan）</a></h4>
-<p>初めてプログラミングを学ぶ方向け。Google Colabの操作方法から、変数、関数、繰り返し処理まで日本語で学べます。</p>
+<p>初めてプログラミングを学ぶ方向け。Google Colab の操作方法から、変数、関数、繰り返し処理まで日本語で学べます。</p>
 </article>
 <article class="learning-resource">
 <p class="learning-stage">Pythonの基礎固め</p>
@@ -470,7 +605,7 @@ print(transformers.__version__)</code></pre>
 <article class="learning-resource">
 <p class="learning-stage">実際にコードを動かす</p>
 <h4><a href="https://colab.research.google.com/" target="_blank" rel="noopener noreferrer">Google Colab</a></h4>
-<p>ブラウザ上でPythonを実行できるサービスです。本サイトのプログラムを試す際に使います。無料枠には利用制限があります。</p>
+<p>ブラウザ上でPythonを実行出来るサービスです。本サイトのプログラムを試す際に使います。無料枠には利用制限があります。</p>
 </article>
 <article class="learning-resource">
 <p class="learning-stage">演習・応用</p>
@@ -480,18 +615,18 @@ print(transformers.__version__)</code></pre>
 <article class="learning-resource">
 <p class="learning-stage">実装を詳しく学ぶ</p>
 <h4><a href="https://pytorch.org/tutorials/" target="_blank" rel="noopener noreferrer">PyTorch公式チュートリアル</a></h4>
-<p>モデルを学習させる処理など、深層学習のプログラムを詳しく確認できます。英語の教材で、やや発展的な内容です。</p>
+<p>モデルを学習させる処理など、深層学習のプログラムを詳しく確認出来ます。英語の教材で、やや発展的な内容です。</p>
 </article>
 </div>
 <h3 class="books-title">日本語の参考書</h3>
-<p>本の購入は必須ではありません。プログラムを動かしてみて、仕組みをさらに詳しく知りたくなった段階で選ぶとよいでしょう。</p>
+<p>本の購入は必須ではありません。プログラムを動かしてみて、仕組みを更に詳しく知りたくなった段階で選ぶとよいでしょう。</p>
 <div class="reference-books">
 <article class="reference-book">
 <a class="book-cover" href="https://www.amazon.co.jp/dp/4873117585?tag=lieberalism-22" target="_blank" rel="nofollow sponsored noopener noreferrer"><img src="https://images-na.ssl-images-amazon.com/images/P/4873117585.09.MZZZZZZZ.jpg" alt="『ゼロから作るDeep Learning』の表紙" loading="lazy" decoding="async"></a>
 <div class="book-body">
 <h4><a href="https://www.amazon.co.jp/dp/4873117585?tag=lieberalism-22" target="_blank" rel="nofollow sponsored noopener noreferrer">『ゼロから作るDeep Learning』</a></h4>
 <p class="book-meta">斎藤康毅 著 ／ オライリー・ジャパン</p>
-<p>ニューラルネットワークがどのように計算し、学習するのかを、Pythonで実装しながら学べます。LLMコースやCVコースで仕組みの説明が難しく感じられたときに役立ちます。</p>
+<p>ニューラルネットワークがどのように計算し、学習するのかを、Pythonで実装しながら学べます。LLMコースやCVコースで仕組みの説明が難しく感じられた時に役立ちます。</p>
 </div>
 </article>
 <article class="reference-book">
@@ -512,18 +647,22 @@ print(transformers.__version__)</code></pre>
 </article>
 </div>
 <p class="reference-note">書籍のリンクは Amazon.co.jp の商品ページへのリンクで、Amazon アソシエイトのアフィリエイトリンクを使用しています。表紙画像は Amazon の商品画像です。</p>
+</div>
 </section>
 
 <section id="site-info" aria-labelledby="site-info-title">
-<h2 id="site-info-title">本サイトの課題と今後の予定</h2>
-<p>このサイトは Hugging Face の公式日本語版ではなく、個人による非公式翻訳です。英語原典の更新が直ちに反映されるわけではありません。実際にプログラムを開発する際は、<a href="https://huggingface.co/docs" target="_blank" rel="noopener noreferrer">公式ドキュメント</a>で最新の使い方を確認してください。</p>
-<p>また、翻訳の見直しは続けていますが、誤訳や読みにくい文章が残る可能性があります。気付いた箇所があれば、<a href="https://github.com/yanikasumin/HuggingFace-courses-ja/issues">GitHub Issues</a>で報告できます。</p>
+<h2 id="site-info-title" class="home-acc-head"><button type="button" class="home-acc-toggle" aria-expanded="false" aria-controls="site-info-body"><span class="home-acc-marker" aria-hidden="true"></span><span class="home-acc-name">本サイトの課題と今後の予定</span></button></h2>
+<div class="home-acc-body" id="site-info-body" hidden>
+<p>このサイトは Hugging Face の公式日本語版ではなく、個人による非公式翻訳です。英語原典の更新が直ちに反映される訳ではありません。実際にプログラムを開発する際は、<a href="https://huggingface.co/docs" target="_blank" rel="noopener noreferrer">公式ドキュメント</a>で最新の使い方を確認して下さい。</p>
+<p>また、翻訳の見直しは続けていますが、誤訳や読みにくい文章が残る可能性があります。気付いた箇所があれば、<a href="https://github.com/yanikasumin/HuggingFace-courses-ja/issues">GitHub Issues</a>で報告出来ます。</p>
 <p>今後は、学習内容に合った日本語の参考書・無料教材、重要な論文やモデルの更新情報、実際のサービスでの利用例などを各セクションに追加する予定です。書籍の紹介にアフィリエイトリンクを使用する場合は、その旨を明記します。</p>
 
+</div>
 </section>
 
 <section class="about-author">
-<h2>制作者について</h2>
+<h2 class="home-acc-head"><button type="button" class="home-acc-toggle" aria-expanded="false" aria-controls="author-body"><span class="home-acc-marker" aria-hidden="true"></span><span class="home-acc-name">制作者について</span></button></h2>
+<div class="home-acc-body" id="author-body" hidden>
 <div class="bio-identity">
   <a href="https://github.com/yanikasumin" target="_blank" rel="noopener noreferrer" aria-label="霞ヶ関京のGitHubプロフィール"><img src="https://avatars.githubusercontent.com/u/208273052?v=4" alt="霞ヶ関京のプロフィール画像" width="66" height="66" loading="lazy" decoding="async"></a>
   <div><h3>霞ヶ関京</h3><p>官僚志望の大学生</p></div>
@@ -531,15 +670,18 @@ print(transformers.__version__)</code></pre>
 <p>2004年生まれ、愛知県出身。都内の法学部で政治学を学ぶ大学生です。中高一貫校を中退後、北予備プリズンで浪人。歌舞伎町でホストを経験し、学生起業にも挑戦しました（失敗）。</p>
 <p>趣味は政策立案と読書。YouTubeで歴史替え歌やゆっくり解説を投稿するほか、プログラミングや機械学習も独学中。モスクワ留学を準備しています。</p>
 <p class="bio-links"><a href="https://github.com/yanikasumin" target="_blank" rel="noopener noreferrer">GitHub</a><a href="https://www.youtube.com/@KASUMI_MOF" target="_blank" rel="noopener noreferrer">YouTube</a><a href="https://x.com/lieberalism" target="_blank" rel="noopener noreferrer">X（凍結中）</a></p>
+</div>
 </section>
 
 <section id="faq" aria-labelledby="faq-title">
-<h2 id="faq-title">よくある質問</h2>
+<h2 id="faq-title" class="home-acc-head"><button type="button" class="home-acc-toggle" aria-expanded="false" aria-controls="faq-body"><span class="home-acc-marker" aria-hidden="true"></span><span class="home-acc-name">よくある質問</span><span class="home-acc-count">5問</span></button></h2>
+<div class="home-acc-body" id="faq-body" hidden>
 <details class="faq-item"><summary>Hugging Face のコースを日本語で学べますか？</summary><p>はい。このサイトでは、Hugging Face 公式の無料学習コース（英語）を日本語に翻訳し、全5コース・316セクションを公開しています。登録は不要で、すべてのページを無料で読めます。</p></details>
 <details class="faq-item"><summary>このサイトは Hugging Face の公式サイトですか？</summary><p>いいえ。個人による非公式の日本語訳です。原典は Hugging Face の公式コース（英語）で、各ページには公式ページへのリンクがあります。最新の仕様を確認する際は、公式ドキュメントもあわせてご覧ください。</p></details>
 <details class="faq-item"><summary>どのコースがありますか？ どこから始めるのがおすすめですか？</summary><p>LLM コース、Agents コース、MCP コース、Computer Vision コース、Robotics コースの5コースがあります。初めての方は、中心コースである LLM コースから始めるのがおすすめです。</p></details>
 <details class="faq-item"><summary>修了証はもらえますか？</summary><p>この日本語版サイトでは修了証を発行していません。修了証が必要な場合は、公式コース（英語）を受講してください。なお、日本語版でも章末クイズにはその場で答え合わせができます。</p></details>
 <details class="faq-item"><summary>読むのにプログラムの実行環境は必要ですか？</summary><p>読むだけならブラウザだけで十分です。コードを実際に動かしたい場合は、Google Colab のような無料の実行環境が使えます。</p></details>
+</div>
 </section>
 
 </main>
@@ -550,5 +692,51 @@ print(transformers.__version__)</code></pre>
   <p>このサイトは Hugging Face 公式コースの非公式の日本語訳です。原典（英語）は各ページの公式リンクから読めます。</p>
 </footer>
 <script src="site.js"></script>
+<script>
+/* Start page: section accordion (same behaviour as the glossary home).
+   Sections start closed; a section opens when its toggle is clicked, or
+   when the URL hash points at the section or at something inside it. */
+(function () {
+  var secs = document.querySelectorAll(".guide-home > section");
+  if (!secs.length) return;
+  function setOpen(sec, open) {
+    var btn = sec.querySelector(".home-acc-toggle");
+    var body = sec.querySelector(".home-acc-body");
+    if (!btn || !body) return;
+    sec.classList.toggle("open", open);
+    body.hidden = !open;
+    btn.setAttribute("aria-expanded", open ? "true" : "false");
+  }
+  secs.forEach(function (sec) {
+    var btn = sec.querySelector(".home-acc-toggle");
+    if (!btn) return;
+    btn.addEventListener("click", function () {
+      setOpen(sec, !sec.classList.contains("open"));
+    });
+  });
+  function sectionOf(el) {
+    var n = el;
+    while (n && n !== document.body) {
+      if (n.tagName === "SECTION" && n.parentElement && n.parentElement.classList.contains("guide-home")) return n;
+      n = n.parentElement;
+    }
+    return null;
+  }
+  function openForHash() {
+    var id = (location.hash || "").replace(/^#/, "");
+    if (!id) return;
+    var target = null;
+    try { target = document.getElementById(decodeURIComponent(id)); }
+    catch (e) { target = document.getElementById(id); }
+    if (!target) return;
+    var sec = sectionOf(target);
+    if (!sec || !sec.querySelector(".home-acc-toggle")) return;
+    setOpen(sec, true);
+    setTimeout(function () { target.scrollIntoView(); }, 0);
+  }
+  window.addEventListener("hashchange", openForHash);
+  openForHash();
+})();
+</script>
 </body>
 </html>
