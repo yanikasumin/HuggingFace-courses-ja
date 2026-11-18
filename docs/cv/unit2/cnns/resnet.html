@@ -68,7 +68,7 @@ window.MathJax = { tex: { inlineMath: [['$', '$'], ['\\(', '\\)']], displayMath:
 <li><a class="side-link" href="../../unit1/chapter1/definition.html">コンピュータビジョンとは</a></li>
 <li><a class="side-link" href="../../unit1/chapter1/applications.html">コンピュータビジョンの応用</a></li>
 <li><a class="side-link" href="../../unit1/image_and_imaging/examples-preprocess.html">コンピュータビジョンタスクのための前処理</a></li>
-<li><a class="side-link" href="../../unit1/feature-extraction/feature_description.html">Feature Description</a></li>
+<li><a class="side-link" href="../../unit1/feature-extraction/feature_description.html">特徴記述（Feature Description）</a></li>
 <li><a class="side-link" href="../../unit1/feature-extraction/feature-matching.html">特徴マッチング（Feature Matching）</a></li>
 <li><a class="side-link" href="../../unit1/feature-extraction/real-world-applications.html">コンピュータビジョンにおける特徴抽出の実社会での応用</a></li>
 </ul>
@@ -80,7 +80,7 @@ window.MathJax = { tex: { inlineMath: [['$', '$'], ['\\(', '\\)']], displayMath:
 <li><a class="side-link" href="mobilenet.html">MobileNet</a></li>
 <li><a class="side-link" href="convnext.html">ConvNeXt - 2020年代に向けた ConvNet（2022）</a></li>
 <li><a class="side-link" href="intro-transfer-learning.html">転移学習</a></li>
-<li><a class="side-link" href="mobilenetextra.html">事前学習済みの MobileNet モデルを読み込む</a></li>
+<li><a class="side-link" href="mobilenetextra.html">MobileNet を更に深く掘り下げる</a></li>
 <li><a class="side-link active" href="resnet.html">ResNet（残差ネットワーク）</a></li>
 <li><a class="side-link" href="yolo.html">YOLO</a></li>
 </ul>
@@ -191,7 +191,7 @@ window.MathJax = { tex: { inlineMath: [['$', '$'], ['\\(', '\\)']], displayMath:
 <main class="container">
 <p class="course-crumb"><a href="../../index.html">Community CV コース</a></p>
 <p class="official-link"><a class="btn btn-official" href="https://huggingface.co/learn/computer-vision-course/unit2/cnns/resnet" target="_blank" rel="noopener">🤗 Hugging Face 公式ページでこの節を読む（英語）</a></p>
-<nav class="page-nav"><a class="nav-link prev" href="mobilenetextra.html">← 前へ: 事前学習済みの MobileNet モデルを読み込む</a><a class="nav-link toc-link" href="../../index.html">目次へ</a><a class="nav-link next" href="yolo.html">次へ →: YOLO</a></nav>
+<nav class="page-nav"><a class="nav-link prev" href="mobilenetextra.html">← 前へ: MobileNet を更に深く掘り下げる</a><a class="nav-link toc-link" href="../../index.html">目次へ</a><a class="nav-link next" href="yolo.html">次へ →: YOLO</a></nav>
 <article class="content">
 <h1>ResNet（残差ネットワーク）</h1>
 <p>層の多い<a class="gloss-link" href="../../../glossary/index.html#term-neural-network" data-title="ニューラルネットワーク（Neural Network）" data-def="入力された数値を、層状に並んだ小さな計算単位の間を伝わりながら変換し、最後に答えとして出力する仕組みがニューラルネットワークであり、人の脳の神経細胞のつながりをヒントに作られた。単位どうしは重みと呼ばれる数値で結ばれており、学習では出力と正解とのずれが小さくなるように重みを調整することで、データの中の規則を重みの値として覚え込ませる。" data-def-html="入力された数値を、層状に並んだ小さな計算単位の間を伝わりながら変換し、最後に答えとして出力する仕組みがニューラルネットワークであり、人の脳の神経細胞のつながりをヒントに作られた。単位どうしは&lt;a class=&quot;gloss-link&quot; href=&quot;../../../glossary/index.html#term-weight&quot; data-title=&quot;重み（Weight）&quot; data-def=&quot;重要な入力は強く、そうでない入力は弱く次の計算へ伝えるために、各入力には重みが掛けられる。重みは入力された数値が次の計算にどれだけ強く影響するかを決める数値で、各入力に重みを掛けて合計すると、重視すべき入力ほど結果に大きく反映される仕組みになる。学習ではこの重みが少しずつ調整されていき、モデルがデータから覚えた内容は主に重みの値の中に蓄えられる。&quot;&gt;重み&lt;/a&gt;と呼ばれる数値で結ばれており、&lt;a class=&quot;gloss-link&quot; href=&quot;../../../glossary/index.html#term-training&quot; data-title=&quot;学習（訓練）（Training）&quot; data-def=&quot;学習は、機械学習のモデルにデータを与え、そのデータに合うようにモデル内部の数値を調整していく過程である。モデルは予測と正解のずれを手がかりに数値を少しずつ直し、ずれが小さくなる方向へ進んでいく。この過程を繰り返すことで、個々の例を覚えるだけでなく、見たことのないデータに対しても予測できるようになることが期待される。&quot;&gt;学習&lt;/a&gt;では出力と正解とのずれが小さくなるように重みを調整することで、データの中の規則を重みの値として覚え込ませる。">ニューラルネットワーク</a>は、層を増やすことでモデルの性能が向上する為、より効果的だと考えられていました。</p>
@@ -203,9 +203,9 @@ window.MathJax = { tex: { inlineMath: [['$', '$'], ['\\(', '\\)']], displayMath:
 <p><a class="gloss-link" href="../../../glossary/index.html#term-resnet" data-title="ResNet" data-def="層を非常に深く重ねても学習が進むように工夫された、画像認識向けのニューラルネットワークの構造。各部分の入力を出力側へそのまま伝える近道を用意し、その部分では入力との差だけを学ばせることで、層を深くしても精度が下がりにくくなる。この工夫により深いネットワークが実用的になり、画像分類などの土台として広く使われている。" data-def-html="層を非常に深く重ねても&lt;a class=&quot;gloss-link&quot; href=&quot;../../../glossary/index.html#term-training&quot; data-title=&quot;学習（訓練）（Training）&quot; data-def=&quot;学習は、機械学習のモデルにデータを与え、そのデータに合うようにモデル内部の数値を調整していく過程である。モデルは予測と正解のずれを手がかりに数値を少しずつ直し、ずれが小さくなる方向へ進んでいく。この過程を繰り返すことで、個々の例を覚えるだけでなく、見たことのないデータに対しても予測できるようになることが期待される。&quot;&gt;学習&lt;/a&gt;が進むように工夫された、&lt;a class=&quot;gloss-link&quot; href=&quot;../../../glossary/index.html#term-image-recognition&quot; data-title=&quot;画像認識（Image Recognition）&quot; data-def=&quot;画像に何が写っているかを答える分類から、物の位置を求める検出、領域を切り分ける分割まで、コンピュータが画像の内容を理解する技術をまとめて画像認識と呼ぶ。いずれも入力は画像で、そこから何が写っているか、どこにあるか、どの領域を占めるかといった情報を取り出すことが目的になる。そのため写真の整理や工場での検査、自動運転での周囲の把握など、幅広い用途で使われている。&quot;&gt;画像認識&lt;/a&gt;向けの&lt;a class=&quot;gloss-link&quot; href=&quot;../../../glossary/index.html#term-neural-network&quot; data-title=&quot;ニューラルネットワーク（Neural Network）&quot; data-def=&quot;入力された数値を、層状に並んだ小さな計算単位の間を伝わりながら変換し、最後に答えとして出力する仕組みがニューラルネットワークであり、人の脳の神経細胞のつながりをヒントに作られた。単位どうしは重みと呼ばれる数値で結ばれており、学習では出力と正解とのずれが小さくなるように重みを調整することで、データの中の規則を重みの値として覚え込ませる。&quot;&gt;ニューラルネットワーク&lt;/a&gt;の構造。各部分の入力を出力側へそのまま伝える近道を用意し、その部分では入力との差だけを学ばせることで、層を深くしても精度が下がりにくくなる。この工夫により深いネットワークが実用的になり、画像&lt;a class=&quot;gloss-link&quot; href=&quot;../../../glossary/index.html#term-classification&quot; data-title=&quot;分類（Classification）&quot; data-def=&quot;メールが迷惑メールかどうか、写真に写っているのが犬か猫か――あらかじめ決められた種類のどれに当てはまるかを当てる課題が分類だ。予測する答えが金額のような連続した数値ではなく種類である点が回帰と異なり、教師あり学習の代表的な課題の一つとして、仕分けが必要な場面で広く使われる。&quot;&gt;分類&lt;/a&gt;などの土台として広く使われている。">ResNet</a> の残差接続は、極端な深さの可能性を解き放ち、従来のアーキテクチャと比べて精度を押し上げました。</p>
 <h2>ResNet のアーキテクチャ</h2>
 <ul>
-<li>残差ブロック。出典： ResNet 論文
-<img alt="残差ブロック" src="https://huggingface.co/datasets/hf-vision/course-assets/blob/main/ResnetBlock.png" /></li>
+<li>残差ブロック。出典： ResNet 論文</li>
 </ul>
+<p><img alt="残差ブロック" src="https://huggingface.co/datasets/hf-vision/course-assets/blob/main/ResnetBlock.png" /></p>
 <p>ResNet は残差学習（residual learning）と呼ばれる概念を導入します。これにより、ネットワークは入力から出力への直接の<a class="gloss-link" href="../../../glossary/index.html#term-mapping" data-title="写像（Mapping）" data-def="ある集合の要素それぞれに、別の集合の要素を一つ対応させる規則が写像だ。関数とほぼ同じ意味で使われ、入力を出力へ移す働きを、集合の言葉で表したものといえる。機械学習では、入力データを特徴の並びへ移す処理や、各層が行う変換を写像として捉える場面が多い。線形写像のように対応の仕方に条件が付いたものは、その条件を満たす写像だけを指す。" data-def-html="ある集合の要素それぞれに、別の集合の要素を一つ対応させる規則が写像だ。関数とほぼ同じ意味で使われ、入力を出力へ移す働きを、集合の言葉で表したものといえる。&lt;a class=&quot;gloss-link&quot; href=&quot;../../../glossary/index.html#term-machine-learning&quot; data-title=&quot;機械学習（Machine Learning）&quot; data-def=&quot;プログラムの手順を人間が一つ一つ書き与える従来の方法では、複雑な判断をすべて書き切ることは難しいため、データから規則性や判断の基準をコンピュータ自身に学ばせる技術を機械学習という。訓練用のデータを用いて学ばせることでモデルはパターンを身に付け、正解の分からない新しいデータに対しても予測や分類ができるようになる。人工知能を実現する主要な方法の一つであり、現在の人工知能の中心的な仕組みになっている。&quot;&gt;機械学習&lt;/a&gt;では、入力データを特徴の並びへ移す処理や、各層が行う変換を写像として捉える場面が多い。&lt;a class=&quot;gloss-link&quot; href=&quot;../../../glossary/index.html#term-linear-map&quot; data-title=&quot;線形写像（linear map）&quot; data-def=&quot;ベクトル同士の和と数倍という構造を壊さずに、あるベクトル空間から別のベクトル空間へ移す対応が線形写像だ。ベクトル同士の和は和へ、ベクトルの数倍は数倍へ移されるという二つの性質を満たすものだけが線形写像と呼ばれ、有限次元の空間では基底を定めれば行列の積として表すことができる。機械学習ではニューラルネットワークの各層における重み行列による変換や、次元を変える埋め込み変換が線形写像として表され、その後に非線形な活性化関数を組み合わせることで複雑な表現が作られる。&quot;&gt;線形写像&lt;/a&gt;のように対応の仕方に条件が付いたものは、その条件を満たす写像だけを指す。">写像</a>を学習しようとする代わりに、残差（学習した表現と入力との差）を学習出来ます。これはスキップ接続（ショートカット接続とも呼ばれます）によって実現されます。</p>
 <p>詳しく見ていきましょう。</p>
 <h4>1. 基本的な構成ブロック：残差ブロック</h4>
@@ -281,7 +281,7 @@ window.MathJax = { tex: { inlineMath: [['$', '$'], ['\\(', '\\)']], displayMath:
 </ul>
 </article>
 
-<nav class="page-nav"><a class="nav-link prev" href="mobilenetextra.html">← 前へ: 事前学習済みの MobileNet モデルを読み込む</a><a class="nav-link toc-link" href="../../index.html">目次へ</a><a class="nav-link next" href="yolo.html">次へ →: YOLO</a></nav>
+<nav class="page-nav"><a class="nav-link prev" href="mobilenetextra.html">← 前へ: MobileNet を更に深く掘り下げる</a><a class="nav-link toc-link" href="../../index.html">目次へ</a><a class="nav-link next" href="yolo.html">次へ →: YOLO</a></nav>
 </main>
 </div>
 <footer class="site-footer">

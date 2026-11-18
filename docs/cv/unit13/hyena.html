@@ -68,7 +68,7 @@ window.MathJax = { tex: { inlineMath: [['$', '$'], ['\\(', '\\)']], displayMath:
 <li><a class="side-link" href="../unit1/chapter1/definition.html">コンピュータビジョンとは</a></li>
 <li><a class="side-link" href="../unit1/chapter1/applications.html">コンピュータビジョンの応用</a></li>
 <li><a class="side-link" href="../unit1/image_and_imaging/examples-preprocess.html">コンピュータビジョンタスクのための前処理</a></li>
-<li><a class="side-link" href="../unit1/feature-extraction/feature_description.html">Feature Description</a></li>
+<li><a class="side-link" href="../unit1/feature-extraction/feature_description.html">特徴記述（Feature Description）</a></li>
 <li><a class="side-link" href="../unit1/feature-extraction/feature-matching.html">特徴マッチング（Feature Matching）</a></li>
 <li><a class="side-link" href="../unit1/feature-extraction/real-world-applications.html">コンピュータビジョンにおける特徴抽出の実社会での応用</a></li>
 </ul>
@@ -80,7 +80,7 @@ window.MathJax = { tex: { inlineMath: [['$', '$'], ['\\(', '\\)']], displayMath:
 <li><a class="side-link" href="../unit2/cnns/mobilenet.html">MobileNet</a></li>
 <li><a class="side-link" href="../unit2/cnns/convnext.html">ConvNeXt - 2020年代に向けた ConvNet（2022）</a></li>
 <li><a class="side-link" href="../unit2/cnns/intro-transfer-learning.html">転移学習</a></li>
-<li><a class="side-link" href="../unit2/cnns/mobilenetextra.html">事前学習済みの MobileNet モデルを読み込む</a></li>
+<li><a class="side-link" href="../unit2/cnns/mobilenetextra.html">MobileNet を更に深く掘り下げる</a></li>
 <li><a class="side-link" href="../unit2/cnns/resnet.html">ResNet（残差ネットワーク）</a></li>
 <li><a class="side-link" href="../unit2/cnns/yolo.html">YOLO</a></li>
 </ul>
@@ -209,15 +209,19 @@ Hyena 演算子は、<a class="gloss-link" href="../../glossary/index.html#term-
 <p>Hyena は、H3 層を任意の数の射影に対応出来るように一般化したものとも考えられます。Hyena 層では、長い畳み込みのパラメータ化の方法を変更し、H3 を再帰的に拡張しています。
 <img alt="Hyena 演算子の再帰構造" src="https://huggingface.co/datasets/hf-vision/course-assets/resolve/main/outlook_hyena_images/hyena_recurence.png" /></p>
 <h3>アテンションから Hyena 演算子へ</h3>
-<p>アテンション機構は、2つの基本的な性質を特徴とします。
-1. 系列全体の文脈を捉え、系列内の視覚トークン同士の相互作用を<a class="gloss-link" href="../../glossary/index.html#term-evaluation" data-title="評価（Evaluation）" data-def="評価は、学習したモデルの性能を、決められた方法で測ることである。学習に使っていないデータに対して予測を行わせ、正解との一致の程度を評価指標で数値化するのが基本の流れであり、その結果はモデルの採用判断や、改善すべき点の特定に使われる。学習に使ったデータで測ると実力より良く見えるため、データの分け方が重要になる。" data-def-html="評価は、&lt;a class=&quot;gloss-link&quot; href=&quot;../../glossary/index.html#term-training&quot; data-title=&quot;学習（訓練）（Training）&quot; data-def=&quot;学習は、機械学習のモデルにデータを与え、そのデータに合うようにモデル内部の数値を調整していく過程である。モデルは予測と正解のずれを手がかりに数値を少しずつ直し、ずれが小さくなる方向へ進んでいく。この過程を繰り返すことで、個々の例を覚えるだけでなく、見たことのないデータに対しても予測できるようになることが期待される。&quot;&gt;学習&lt;/a&gt;したモデルの性能を、決められた方法で測ることである。学習に使っていないデータに対して予測を行わせ、正解との一致の程度を&lt;a class=&quot;gloss-link&quot; href=&quot;../../glossary/index.html#term-evaluation-metric&quot; data-title=&quot;評価指標（Evaluation Metric）&quot; data-def=&quot;モデルの性能を数値で表すためのものさしが評価指標だ。正解率や適合率のように分類の当たり具合を測るものや、平均二乗誤差のように数値予測のずれを測るものなどがあり、問題の種類に応じて使い分ける。どの指標で測るかによって良いモデルの意味が変わるため、目的に合った指標を選ぶことが重要である。&quot;&gt;評価指標&lt;/a&gt;で数値化するのが基本の流れであり、その結果はモデルの採用判断や、改善すべき点の特定に使われる。学習に使ったデータで測ると実力より良く見えるため、データの分け方が重要になる。">評価</a>出来ます。
-2. 入力データに応じて計算が変化します。具体的には、入力から得られる射影 \(q\)、\(k\)、\(v\) によってアテンションの計算が変わります。</p>
+<p>アテンション機構は、2つの基本的な性質を特徴とします。</p>
+<ol>
+<li>系列全体の文脈を捉え、系列内の視覚トークン同士の相互作用を<a class="gloss-link" href="../../glossary/index.html#term-evaluation" data-title="評価（Evaluation）" data-def="評価は、学習したモデルの性能を、決められた方法で測ることである。学習に使っていないデータに対して予測を行わせ、正解との一致の程度を評価指標で数値化するのが基本の流れであり、その結果はモデルの採用判断や、改善すべき点の特定に使われる。学習に使ったデータで測ると実力より良く見えるため、データの分け方が重要になる。" data-def-html="評価は、&lt;a class=&quot;gloss-link&quot; href=&quot;../../glossary/index.html#term-training&quot; data-title=&quot;学習（訓練）（Training）&quot; data-def=&quot;学習は、機械学習のモデルにデータを与え、そのデータに合うようにモデル内部の数値を調整していく過程である。モデルは予測と正解のずれを手がかりに数値を少しずつ直し、ずれが小さくなる方向へ進んでいく。この過程を繰り返すことで、個々の例を覚えるだけでなく、見たことのないデータに対しても予測できるようになることが期待される。&quot;&gt;学習&lt;/a&gt;したモデルの性能を、決められた方法で測ることである。学習に使っていないデータに対して予測を行わせ、正解との一致の程度を&lt;a class=&quot;gloss-link&quot; href=&quot;../../glossary/index.html#term-evaluation-metric&quot; data-title=&quot;評価指標（Evaluation Metric）&quot; data-def=&quot;モデルの性能を数値で表すためのものさしが評価指標だ。正解率や適合率のように分類の当たり具合を測るものや、平均二乗誤差のように数値予測のずれを測るものなどがあり、問題の種類に応じて使い分ける。どの指標で測るかによって良いモデルの意味が変わるため、目的に合った指標を選ぶことが重要である。&quot;&gt;評価指標&lt;/a&gt;で数値化するのが基本の流れであり、その結果はモデルの採用判断や、改善すべき点の特定に使われる。学習に使ったデータで測ると実力より良く見えるため、データの分け方が重要になる。">評価</a>出来ます。</li>
+<li>入力データに応じて計算が変化します。具体的には、入力から得られる射影 \(q\)、\(k\)、\(v\) によってアテンションの計算が変わります。</li>
+</ol>
 <p><img alt="セルフアテンション機構の構造図" src="https://huggingface.co/datasets/hf-vision/course-assets/resolve/main/outlook_hyena_images/self-attention-schema.png" /></p>
 <p>アテンション機構は、クエリ（query）\(q\)、キー（key）\(k\)、バリュー（value）\(v\) という3つの射影によって定義されます。これらは、入力の視覚トークンに、訓練中に学習される3つの<a class="gloss-link" href="../../glossary/index.html#term-matrix" data-title="行列（Matrix）" data-def="行列は、数を縦と横に並べた長方形の表であり、横の並びを行、縦の並びを列と呼ぶ。行列が便利なのは、行列同士の掛け算が定義されていて、複数の数をまとめて別の数の組へ変換する計算を一つの操作として表せるためである。そのため大量のデータを一つずつ処理する代わりに、まとめて一度に変換できる。人工知能の計算の多くは行列の掛け算で表されており、ニューラルネットワークが入力を受け取って出力を作る処理も、この掛け算を土台にしている。" data-def-html="行列は、数を縦と横に並べた長方形の表であり、横の並びを行、縦の並びを列と呼ぶ。行列が便利なのは、行列同士の掛け算が定義されていて、複数の数をまとめて別の数の組へ変換する計算を一つの操作として表せるためである。そのため大量のデータを一つずつ処理する代わりに、まとめて一度に変換できる。&lt;a class=&quot;gloss-link&quot; href=&quot;../../glossary/index.html#term-artificial-intelligence-ai&quot; data-title=&quot;人工知能（Artificial Intelligence / AI）&quot; data-def=&quot;人間の知的な働きをコンピュータで実現しようとする技術全体を指す言葉が人工知能である。人間が行ってきた学習や推論（手がかりから結論を導くこと）、物事の認識、言葉の理解といった判断や作業を機械にも行わせることを目指しており、その実現方法の中核を占めるのが、データから学ぶ機械学習である。現在使われている人工知能は特定の作業に特化したものが中心であり、人間のように何でもこなせるわけではない。&quot;&gt;人工知能&lt;/a&gt;の計算の多くは行列の掛け算で表されており、&lt;a class=&quot;gloss-link&quot; href=&quot;../../glossary/index.html#term-neural-network&quot; data-title=&quot;ニューラルネットワーク（Neural Network）&quot; data-def=&quot;入力された数値を、層状に並んだ小さな計算単位の間を伝わりながら変換し、最後に答えとして出力する仕組みがニューラルネットワークであり、人の脳の神経細胞のつながりをヒントに作られた。単位どうしは重みと呼ばれる数値で結ばれており、学習では出力と正解とのずれが小さくなるように重みを調整することで、データの中の規則を重みの値として覚え込ませる。&quot;&gt;ニューラルネットワーク&lt;/a&gt;が入力を受け取って出力を作る処理も、この掛け算を土台にしている。">行列</a> \(W_q\)、\(W_k\)、\(W_v\) を掛けることで生成されます。</p>
 <p>与えられた視覚トークンについて、これらの射影を使ってアテンションスコアを計算出来ます。アテンションスコアは、入力画像の他の部分にどれだけ注目すべきかを決めます。アテンションについての分かり易い詳細な解説は、この<a href="https://jalammar.github.io/illustrated-transformer/">図解ブログ記事</a>を参照してください。</p>
-<p>これらの特性を再現しようとして、Hyena 演算子は2つの重要な要素を取り入れています。
-1. 長い畳み込みを使って系列全体の文脈を捉えます。これは、アテンション機構の1つ目の性質に対応します。
-2. 入力データに応じて処理を変える為に、要素ごとのゲーティングを使います。具体的には、入力の射影同士を要素ごとに掛け合わせることで、従来のアテンションと同様に入力データに依存する処理を実現します。</p>
+<p>これらの特性を再現しようとして、Hyena 演算子は2つの重要な要素を取り入れています。</p>
+<ol>
+<li>長い畳み込みを使って系列全体の文脈を捉えます。これは、アテンション機構の1つ目の性質に対応します。</li>
+<li>入力データに応じて処理を変える為に、要素ごとのゲーティングを使います。具体的には、入力の射影同士を要素ごとに掛け合わせることで、従来のアテンションと同様に入力データに依存する処理を実現します。</li>
+</ol>
 <p>計算効率の面では、Hyena 演算子は \(O(L \times \log_2 L)\) の時間計算量で評価出来、処理速度を大きく向上させています。</p>
 <h3>Hyena 演算子</h3>
 <p>Hyena 演算子の仕組みを理解する為に、簡単な例として2次の再帰構造を見ていきましょう。
@@ -239,9 +243,11 @@ Hyena 演算子は、<a class="gloss-link" href="../../glossary/index.html#term-
 <p>実際には、Cooley-Tukey の高速フーリエ変換（FFT）アルゴリズムを使うことで畳み込みを高速化し、計算量の増加を系列長の二乗よりも遅く抑えられます。FastFFTConv のように、Monarch 分解に基づいてこの計算を高速化する研究も行われています。</p>
 <h3>すべてをまとめる</h3>
 <p><img alt="多次元 Hyena 演算子の構造図" src="https://huggingface.co/datasets/hf-vision/course-assets/resolve/main/outlook_hyena_images/nd_hyena.png" />
-本質的に、Hyena は2つのステップで実行出来ます。
-1. アテンションと同様に、N+1 個の線形射影の集合を計算します（3つより多くの射影も可能です）。
-2. 射影を混ぜ合わせます。行列 \(H(u)\) は行列乗算の組み合わせによって定義されます。</p>
+本質的に、Hyena は2つのステップで実行出来ます。</p>
+<ol>
+<li>アテンションと同様に、N+1 個の線形射影の集合を計算します（3つより多くの射影も可能です）。</li>
+<li>射影を混ぜ合わせます。行列 \(H(u)\) は行列乗算の組み合わせによって定義されます。</li>
+</ol>
 <h2>Hyena が重要な理由</h2>
 <p>H3 機構を使うモデルのパープレキシティは、マルチ<a class="gloss-link" href="../../glossary/index.html#term-head" data-title="ヘッド（Head）" data-def="バックボーンが取り出した特徴は、まだ答えそのものではない。それを最終的な出力へ変換するのがモデルの末尾に置かれたヘッドで、分類なら候補ごとの得点、物体検出なら位置と種類といった、課題に応じた答えの形を作り出す。課題が変わるときは、特徴を取り出すバックボーンを保ったままヘッドだけを取り替えて学習し直すことがあり、使い回しの利く境目になっている。" data-def-html="&lt;a class=&quot;gloss-link&quot; href=&quot;../../glossary/index.html#term-backbone&quot; data-title=&quot;バックボーン（Backbone）&quot; data-def=&quot;モデルが受け取る生のデータは、そのままでは目的の判断に使いにくい。そこで前半の部分が、画像なら形や色のまとまり、文章なら言葉の並びといった基本的な特徴を取り出して数値で表し、後段へ渡す役割を担い、この中心部分をバックボーンと呼ぶ。後段は渡された特徴を使って分類や検出などの目的の処理を行うため、特徴の取り出し方が全体の出来を左右し、学習済みのバックボーンを別の課題に流用することも多い。&quot;&gt;バックボーン&lt;/a&gt;が取り出した特徴は、まだ答えそのものではない。それを最終的な出力へ変換するのがモデルの末尾に置かれたヘッドで、&lt;a class=&quot;gloss-link&quot; href=&quot;../../glossary/index.html#term-classification&quot; data-title=&quot;分類（Classification）&quot; data-def=&quot;メールが迷惑メールかどうか、写真に写っているのが犬か猫か――あらかじめ決められた種類のどれに当てはまるかを当てる課題が分類だ。予測する答えが金額のような連続した数値ではなく種類である点が回帰と異なり、教師あり学習の代表的な課題の一つとして、仕分けが必要な場面で広く使われる。&quot;&gt;分類&lt;/a&gt;なら候補ごとの得点、&lt;a class=&quot;gloss-link&quot; href=&quot;../../glossary/index.html#term-object-detection&quot; data-title=&quot;物体検出（Object Detection）&quot; data-def=&quot;写真の中から探したい物を見つけ、その種類と位置を同時に答えるのが物体検出の役割だ。入力は画像で、出力は物の名前だけにとどまらない。物を取り囲む四角い枠（矩形）の位置までが一緒に示されるため、画像分類のように何が写っているかだけを答える処理とは異なり、何が、どこにあるかまでが分かる。&quot;&gt;物体検出&lt;/a&gt;なら位置と種類といった、課題に応じた答えの形を作り出す。課題が変わるときは、特徴を取り出すバックボーンを保ったままヘッドだけを取り替えて&lt;a class=&quot;gloss-link&quot; href=&quot;../../glossary/index.html#term-training&quot; data-title=&quot;学習（訓練）（Training）&quot; data-def=&quot;学習は、機械学習のモデルにデータを与え、そのデータに合うようにモデル内部の数値を調整していく過程である。モデルは予測と正解のずれを手がかりに数値を少しずつ直し、ずれが小さくなる方向へ進んでいく。この過程を繰り返すことで、個々の例を覚えるだけでなく、見たことのないデータに対しても予測できるようになることが期待される。&quot;&gt;学習&lt;/a&gt;し直すことがあり、使い回しの利く境目になっている。">ヘッド</a>アテンション機構を使うモデルの値に近づきました。しかし、まだわずかな差が残っていました。</p>
 <p>過去数年にわたり、アテンションの代替案は数多く提案されてきましたが、探索フェーズにおける新しいアーキテクチャの品質評価は依然として困難です。優れた表現力を保ちながら、深層ニューラルネットワークで N 次元データを効率よく処理出来る汎用的な層の開発は、現在も重要な研究課題です。</p>

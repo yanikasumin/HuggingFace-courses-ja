@@ -68,7 +68,7 @@ window.MathJax = { tex: { inlineMath: [['$', '$'], ['\\(', '\\)']], displayMath:
 <li><a class="side-link" href="../../unit1/chapter1/definition.html">コンピュータビジョンとは</a></li>
 <li><a class="side-link" href="../../unit1/chapter1/applications.html">コンピュータビジョンの応用</a></li>
 <li><a class="side-link" href="../../unit1/image_and_imaging/examples-preprocess.html">コンピュータビジョンタスクのための前処理</a></li>
-<li><a class="side-link" href="../../unit1/feature-extraction/feature_description.html">Feature Description</a></li>
+<li><a class="side-link" href="../../unit1/feature-extraction/feature_description.html">特徴記述（Feature Description）</a></li>
 <li><a class="side-link" href="../../unit1/feature-extraction/feature-matching.html">特徴マッチング（Feature Matching）</a></li>
 <li><a class="side-link" href="../../unit1/feature-extraction/real-world-applications.html">コンピュータビジョンにおける特徴抽出の実社会での応用</a></li>
 </ul>
@@ -80,7 +80,7 @@ window.MathJax = { tex: { inlineMath: [['$', '$'], ['\\(', '\\)']], displayMath:
 <li><a class="side-link" href="mobilenet.html">MobileNet</a></li>
 <li><a class="side-link" href="convnext.html">ConvNeXt - 2020年代に向けた ConvNet（2022）</a></li>
 <li><a class="side-link active" href="intro-transfer-learning.html">転移学習</a></li>
-<li><a class="side-link" href="mobilenetextra.html">事前学習済みの MobileNet モデルを読み込む</a></li>
+<li><a class="side-link" href="mobilenetextra.html">MobileNet を更に深く掘り下げる</a></li>
 <li><a class="side-link" href="resnet.html">ResNet（残差ネットワーク）</a></li>
 <li><a class="side-link" href="yolo.html">YOLO</a></li>
 </ul>
@@ -191,7 +191,7 @@ window.MathJax = { tex: { inlineMath: [['$', '$'], ['\\(', '\\)']], displayMath:
 <main class="container">
 <p class="course-crumb"><a href="../../index.html">Community CV コース</a></p>
 <p class="official-link"><a class="btn btn-official" href="https://huggingface.co/learn/computer-vision-course/unit2/cnns/intro-transfer-learning" target="_blank" rel="noopener">🤗 Hugging Face 公式ページでこの節を読む（英語）</a></p>
-<nav class="page-nav"><a class="nav-link prev" href="convnext.html">← 前へ: ConvNeXt - 2020年代に向けた ConvNet（2022）</a><a class="nav-link toc-link" href="../../index.html">目次へ</a><a class="nav-link next" href="mobilenetextra.html">次へ →: 事前学習済みの MobileNet モデルを読み込む</a></nav>
+<nav class="page-nav"><a class="nav-link prev" href="convnext.html">← 前へ: ConvNeXt - 2020年代に向けた ConvNet（2022）</a><a class="nav-link toc-link" href="../../index.html">目次へ</a><a class="nav-link next" href="mobilenetextra.html">次へ →: MobileNet を更に深く掘り下げる</a></nav>
 <article class="content">
 <h1>転移学習</h1>
 <p><a class="gloss-link" href="../../../glossary/index.html#term-transfer-learning" data-title="転移学習（Transfer Learning）" data-def="ある課題のために集めたデータや学んだ知識を、似た別の課題にも活かせれば、少ないデータでも学習が成り立つのではないかという考え方を転移学習という。代表的な進め方では、大規模なデータで学習済みのモデルを用意し、それを対象の課題のデータで追加学習させる。基礎がすでに身に付いている状態から始めるため、対象のデータが少ない場合でも一から学ぶより性能が出やすくなる。" data-def-html="ある課題のために集めたデータや学んだ知識を、似た別の課題にも活かせれば、少ないデータでも&lt;a class=&quot;gloss-link&quot; href=&quot;../../../glossary/index.html#term-training&quot; data-title=&quot;学習（訓練）（Training）&quot; data-def=&quot;学習は、機械学習のモデルにデータを与え、そのデータに合うようにモデル内部の数値を調整していく過程である。モデルは予測と正解のずれを手がかりに数値を少しずつ直し、ずれが小さくなる方向へ進んでいく。この過程を繰り返すことで、個々の例を覚えるだけでなく、見たことのないデータに対しても予測できるようになることが期待される。&quot;&gt;学習&lt;/a&gt;が成り立つのではないかという考え方を転移学習という。代表的な進め方では、大規模なデータで学習済みのモデルを用意し、それを対象の課題のデータで追加学習させる。基礎がすでに身に付いている状態から始めるため、対象のデータが少ない場合でも一から学ぶより性能が出やすくなる。">転移学習</a>とファインチューニングが<a class="gloss-link" href="../../../glossary/index.html#term-neural-network" data-title="ニューラルネットワーク（Neural Network）" data-def="入力された数値を、層状に並んだ小さな計算単位の間を伝わりながら変換し、最後に答えとして出力する仕組みがニューラルネットワークであり、人の脳の神経細胞のつながりをヒントに作られた。単位どうしは重みと呼ばれる数値で結ばれており、学習では出力と正解とのずれが小さくなるように重みを調整することで、データの中の規則を重みの値として覚え込ませる。" data-def-html="入力された数値を、層状に並んだ小さな計算単位の間を伝わりながら変換し、最後に答えとして出力する仕組みがニューラルネットワークであり、人の脳の神経細胞のつながりをヒントに作られた。単位どうしは&lt;a class=&quot;gloss-link&quot; href=&quot;../../../glossary/index.html#term-weight&quot; data-title=&quot;重み（Weight）&quot; data-def=&quot;重要な入力は強く、そうでない入力は弱く次の計算へ伝えるために、各入力には重みが掛けられる。重みは入力された数値が次の計算にどれだけ強く影響するかを決める数値で、各入力に重みを掛けて合計すると、重視すべき入力ほど結果に大きく反映される仕組みになる。学習ではこの重みが少しずつ調整されていき、モデルがデータから覚えた内容は主に重みの値の中に蓄えられる。&quot;&gt;重み&lt;/a&gt;と呼ばれる数値で結ばれており、&lt;a class=&quot;gloss-link&quot; href=&quot;../../../glossary/index.html#term-training&quot; data-title=&quot;学習（訓練）（Training）&quot; data-def=&quot;学習は、機械学習のモデルにデータを与え、そのデータに合うようにモデル内部の数値を調整していく過程である。モデルは予測と正解のずれを手がかりに数値を少しずつ直し、ずれが小さくなる方向へ進んでいく。この過程を繰り返すことで、個々の例を覚えるだけでなく、見たことのないデータに対しても予測できるようになることが期待される。&quot;&gt;学習&lt;/a&gt;では出力と正解とのずれが小さくなるように重みを調整することで、データの中の規則を重みの値として覚え込ませる。">ニューラルネットワーク</a>にとって何を意味するのかを詳しく見る前に、楽器を例に取りましょう。テルミンは、不気味な音を出す電子楽器で、スリラー映画やホラー映画によく結び付けられます。2本のアンテナの間で両手を空中に動かして音程と音量を制御する必要が有る為、演奏は非常に困難です。あまりに難しいので、同じような音を出しながらも演奏し易いタナリン（スライドテルミン、エレクトリック・テルミンとも呼ばれます）という楽器が発明されました。演奏者は箱の側面に在るスライドを動かして周波数を調整し、音程を変えます。タナリンにも習熟には時間がかかりますが、トロンボーンを演奏出来る人は例外です。トロンボーンを演奏する人は、タナリンのスライドの使い方を既に知っています。トロンボーンの伸縮式スライド機構と同じだからです。下の図は左から右へ、テルミン、タナリン、トロンボーンです。</p>
@@ -223,7 +223,7 @@ window.MathJax = { tex: { inlineMath: [['$', '$'], ['\\(', '\\)']], displayMath:
 </ul>
 </article>
 
-<nav class="page-nav"><a class="nav-link prev" href="convnext.html">← 前へ: ConvNeXt - 2020年代に向けた ConvNet（2022）</a><a class="nav-link toc-link" href="../../index.html">目次へ</a><a class="nav-link next" href="mobilenetextra.html">次へ →: 事前学習済みの MobileNet モデルを読み込む</a></nav>
+<nav class="page-nav"><a class="nav-link prev" href="convnext.html">← 前へ: ConvNeXt - 2020年代に向けた ConvNet（2022）</a><a class="nav-link toc-link" href="../../index.html">目次へ</a><a class="nav-link next" href="mobilenetextra.html">次へ →: MobileNet を更に深く掘り下げる</a></nav>
 </main>
 </div>
 <footer class="site-footer">
