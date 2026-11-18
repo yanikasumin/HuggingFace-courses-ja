@@ -7,12 +7,12 @@
     {label: "Aws Studio", value: "https://studiolab.sagemaker.aws/import/github/huggingface/notebooks/blob/master/course/en/chapter9/section5.ipynb"},
 ]} />
 
-作業を更に楽にするために、Gradio は Hugging Face Hub 及び Hugging Face Spaces と直接連携しています。Hub や Spaces のデモは、*わずか1行のコード* で読み込めます。
+作業を更に楽にする為に、Gradio は Hugging Face Hub 及び Hugging Face Spaces と直接連携しています。Hub や Spaces のデモは、*わずか1行のコード* で読み込めます。
 
 ### Hugging Face Hub からモデルを読み込む[[loading-models-from-the-hugging-face-hub]]
-まず、[Chapter 4](/course/chapter4/2) で説明したように、Hugging Face が Hub を通じて提供する何千ものモデルから1つを選びます。
+先ず、[Chapter 4](/course/chapter4/2) で説明したように、Hugging Face が Hub を通じて提供する何千ものモデルから1つを選びます。
 
-特別な `Interface.load()` メソッドでは、`"model/"`（又は等価な `"huggingface/"`）の後にモデル名を続けます。たとえば、大規模言語モデル [GPT-J](https://huggingface.co/EleutherAI/gpt-j-6B) のデモを作り、入力例をいくつか加えるコードは次のとおりです:
+特別な `Interface.load()` メソッドでは、`"model/"`（又は等価な `"huggingface/"`）の後にモデル名を続けます。例えば、大規模言語モデル [GPT-J](https://huggingface.co/EleutherAI/gpt-j-6B) のデモを作り、入力例をいくつか加えるコードは次の通りです:
 
 ```py
 import gradio as gr
@@ -30,6 +30,8 @@ gr.Interface.load(
 ).launch()
 ```
     
+（説明文の訳：GPT-J 6B の Gradio デモです。Ben Wang の Mesh Transformer JAX を使って訓練された Transformer モデルです。「GPT-J」はモデルのクラスを指し、「6B」は訓練可能なパラメータの数を表します。使うには、テキストを入力するか、例の1つをクリックして読み込むだけです。詳しくは下のリンクをご覧下さい／記事リンクの訳：GPT-J-6B：60億パラメータの自己回帰言語モデル）
+
 上のコードを実行すると、下のインターフェースが生成されます:
 
 <iframe src="https://course-demos-gpt-j-6B.hf.space" frameBorder="0" height="750" title="Gradio アプリ" class="container p-0 flex-grow space-iframe" allow="accelerometer; ambient-light-sensor; autoplay; battery; camera; document-domain; encrypted-media; fullscreen; geolocation; gyroscope; layout-animations; legacy-image-formats; magnetometer; microphone; midi; oversized-images; payment; picture-in-picture; publickey-credentials-get; sync-xhr; usb; vr ; wake-lock; xr-spatial-tracking" sandbox="allow-forms allow-modals allow-popups allow-popups-to-escape-sandbox allow-same-origin allow-scripts allow-downloads"></iframe>
@@ -47,13 +49,15 @@ gr.Interface.load("spaces/abidlabs/remove-bg").launch()
 
 <iframe src="https://course-demos-remove-bg-original.hf.space" frameBorder="0" height="650" title="Gradio アプリ" class="container p-0 flex-grow space-iframe" allow="accelerometer; ambient-light-sensor; autoplay; battery; camera; document-domain; encrypted-media; fullscreen; geolocation; gyroscope; layout-animations; legacy-image-formats; magnetometer; microphone; midi; oversized-images; payment; picture-in-picture; publickey-credentials-get; sync-xhr; usb; vr ; wake-lock; xr-spatial-tracking" sandbox="allow-forms allow-modals allow-popups allow-popups-to-escape-sandbox allow-same-origin allow-scripts allow-downloads"></iframe>
 
-Hub や Spaces からデモを読み込む便利な点の1つは、パラメータを上書きしてカスタマイズできることです。ここではタイトルを追加し、代わりに Web カメラで動作するようにしてみます:
+Hub や Spaces からデモを読み込む便利な点の1つは、パラメータを上書きしてカスタマイズ出来ることです。ここではタイトルを追加し、代わりに Web カメラで動作するようにしてみます:
 
 ```py
 gr.Interface.load(
     "spaces/abidlabs/remove-bg", inputs="webcam", title="Remove your webcam background!"
 ).launch()
 ```
+
+（タイトルの訳：Web カメラの背景を除去しよう！）
 
 <iframe src="https://course-demos-Remove-bg.hf.space" frameBorder="0" height="550" title="Gradio アプリ" class="container p-0 flex-grow space-iframe" allow="accelerometer; ambient-light-sensor; autoplay; battery; camera; document-domain; encrypted-media; fullscreen; geolocation; gyroscope; layout-animations; legacy-image-formats; magnetometer; microphone; midi; oversized-images; payment; picture-in-picture; publickey-credentials-get; sync-xhr; usb; vr ; wake-lock; xr-spatial-tracking" sandbox="allow-forms allow-modals allow-popups allow-popups-to-escape-sandbox allow-same-origin allow-scripts allow-downloads"></iframe>
 

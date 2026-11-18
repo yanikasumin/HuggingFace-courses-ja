@@ -7,11 +7,11 @@
     {label: "Aws Studio", value: "https://studiolab.sagemaker.aws/import/github/huggingface/notebooks/blob/master/course/en/chapter8/section2.ipynb"},
 ]} />
 
-このセクションでは、ファインチューニングを終えたばかりの Transformer モデルで予測を生成しようとしたときに起こりうる、よくあるエラーを見ていきます。これは、学習フェーズ自体のデバッグ方法を探る[セクション4](/course/chapter8/section4)への準備になります。
+このセクションでは、ファインチューニングを終えたばかりの Transformer モデルで予測を生成しようとした時に起こりうる、よくあるエラーを見ていきます。これは、学習フェーズ自体のデバッグ方法を探る[セクション4](/course/chapter8/section4)への準備になります。
 
 <Youtube id="DQ-CpJn6Rc4"/>
 
-このセクション用に[テンプレートのモデルリポジトリ](https://huggingface.co/lewtun/distilbert-base-uncased-finetuned-squad-d5716d28)を用意しました。この章のコードを実行したい場合は、まずモデルを [Hugging Face Hub](https://huggingface.co) 上の自分のアカウントにコピーする必要があります。そのためには、まず Jupyter ノートブックで次を実行するか、
+このセクション用に[テンプレートのモデルリポジトリ](https://huggingface.co/lewtun/distilbert-base-uncased-finetuned-squad-d5716d28)を用意しました。この章のコードを実行したい場合は、先ずモデルを [Hugging Face Hub](https://huggingface.co) 上の自分のアカウントにコピーする必要があります。その為には、先ず Jupyter ノートブックで次を実行するか、
 
 ```python
 from huggingface_hub import notebook_login
@@ -25,7 +25,7 @@ notebook_login()
 huggingface-cli login
 ```
 
-するとユーザー名とパスワードの入力を求められ、トークンが *~/.cache/huggingface/* の下に保存されます。ログインしたら、次の関数でテンプレートリポジトリをコピーできます。
+するとユーザー名とパスワードの入力を求められ、トークンが *~/.cache/huggingface/* の下に保存されます。ログインしたら、次の関数でテンプレートリポジトリをコピー出来ます。
 
 ```python
 from distutils.dir_util import copy_tree
@@ -56,9 +56,9 @@ def copy_repository_template():
 
 Transformer モデルのデバッグを学ぶ第一歩として、次のような場面を考えてみましょう。あなたは同僚と、eコマースサイトの顧客が消費財についての答えを見つけられるよう支援する、質問応答プロジェクトに取り組んでいます。同僚から次のようなメッセージが届きます。
 
-> やあ！Hugging Face コースの [Chapter 7](/course/chapter7/7) のテクニックを使って実験してみたら、SQuAD でかなり良い結果が出たよ！このモデルをプロジェクトの出発点にできると思う。Hub 上のモデル ID は "lewtun/distillbert-base-uncased-finetuned-squad-d5716d28" だよ。気軽に試してみて :)
+> やあ！Hugging Face コースの [Chapter 7](/course/chapter7/7) のテクニックを使って実験してみたら、SQuAD でかなり良い結果が出たよ！このモデルをプロジェクトの出発点に出来ると思う。Hub 上のモデル ID は "lewtun/distillbert-base-uncased-finetuned-squad-d5716d28" だよ。気軽に試してみて :)
 
-そして、まず思いつくのは、🤗 Transformers の `pipeline` を使ってモデルを読み込むことです。
+そして、先ず思いつくのは、🤗 Transformers の `pipeline` を使ってモデルを読み込むことです。
 
 ```python
 from transformers import pipeline
@@ -77,18 +77,18 @@ OSError: Can't load config for 'lewtun/distillbert-base-uncased-finetuned-squad-
 """
 ```
 
-ああ、何か問題が起きたようです。プログラミングの初心者にとって、この手のエラーは最初は少し不可解に見えるかもしれません（そもそも `OSError` って何でしょう？）。ここに表示されているエラーは、_Python トレースバック_（スタックトレースともいいます）と呼ばれる、はるかに大きなエラーレポートの最後の部分にすぎません。たとえば、このコードを Google Colab で実行していれば、次のスクリーンショットのようなものが表示されるはずです。
+ああ、何か問題が起きたようです。プログラミングの初心者にとって、この手のエラーは最初は少し不可解に見えるかもしれません（そもそも `OSError` って何でしょう？）。ここに表示されているエラーは、_Python トレースバック_（スタックトレースともいいます）と呼ばれる、はるかに大きなエラーレポートの最後の部分に過ぎません。例えば、このコードを Google Colab で実行していれば、次のスクリーンショットのようなものが表示されるはずです。
 
 <div class="flex justify-center">
 <img src="https://huggingface.co/datasets/huggingface-course/documentation-images/resolve/main/en/chapter8/traceback.png" alt="Python のトレースバック。" width="100%"/>
 </div>
 
-これらのレポートには大量の情報が含まれているので、重要な部分を一緒にたどっていきましょう。まず注意すべきは、トレースバックは_下から上へ_読むということです。英語のテキストを上から下へ読むのに慣れていると奇妙に聞こえるかもしれませんが、これは、トレースバックが `pipeline` がモデルとトークナイザをダウンロードするときに行う関数呼び出しの順序を示しているためです（`pipeline` が裏側でどう動くかの詳細は [Chapter 2](/course/chapter2) を参照してください）。
+これらのレポートには大量の情報が含まれているので、重要な部分を一緒にたどっていきましょう。先ず注意すべきは、トレースバックは_下から上へ_読むということです。英語のテキストを上から下へ読むのに慣れていると奇妙に聞こえるかもしれませんが、これは、トレースバックが `pipeline` がモデルとトークナイザをダウンロードする時に行う関数呼び出しの順序を示している為です（`pipeline` が裏側でどう動くかの詳細は [Chapter 2](/course/chapter2) を参照して下さい）。
 
 > [!TIP]
-> 🚨 Google Colab のトレースバックで "6 frames" の周りにある青いボックスが見えますか？これは Colab の特殊な機能で、トレースバックを「フレーム」に圧縮します。エラーの発生源が見つからない場合は、小さな2つの矢印をクリックしてトレースバック全体を展開してください。
+> 🚨 Google Colab のトレースバックで "6 frames" の周りに在る青いボックスが見えますか？これは Colab の特殊な機能で、トレースバックを「フレーム」に圧縮します。エラーの発生源が見つからない場合は、小さな2つの矢印をクリックしてトレースバック全体を展開して下さい。
 
-つまり、トレースバックの最後の行が、最後のエラーメッセージを示し、発生した例外の名前を与えてくれます。今回の場合、例外の種類は `OSError` で、システム関連のエラーを示しています。付随するエラーメッセージを読むと、モデルの *config.json* ファイルに問題があるようで、修正方法として2つの提案が示されています。
+つまり、トレースバックの最後の行が、最後のエラーメッセージを示し、発生した例外の名前を与えてくれます。今回の場合、例外の種類は `OSError` で、システム関連のエラーを示しています。付随するエラーメッセージを読むと、モデルの *config.json* ファイルに問題が有るようで、修正方法として2つの提案が示されています。
 
 ```python out
 """
@@ -101,15 +101,15 @@ Make sure that:
 ```
 
 > [!TIP]
-> 💡 理解しにくいエラーメッセージに遭遇したら、そのメッセージを Google や [Stack Overflow](https://stackoverflow.com/) の検索バーにコピー＆ペーストしてください（本当に、それでよいのです！）。そのエラーに遭遇した最初の人である可能性は低く、これはコミュニティの他の人が投稿した解決策を見つけるよい方法です。たとえば、Stack Overflow で `OSError: Can't load config for` を検索すると、問題解決の出発点として使えそうな[検索結果](https://stackoverflow.com/search?q=OSError%3A+Can%27t+load+config+for+)がいくつか得られます。
+> 理解し難いエラーメッセージに遭遇したら、そのメッセージを Google や [Stack Overflow](https://stackoverflow.com/) の検索バーにコピー＆ペーストして下さい（本当に、それでよいのです！）。そのエラーに遭遇した最初の人である可能性は低く、これはコミュニティの他の人が投稿した解決策を見つけるよい方法です。例えば、Stack Overflow で `OSError: Can't load config for` を検索すると、問題解決の出発点として使えそうな[検索結果](https://stackoverflow.com/search?q=OSError%3A+Can%27t+load+config+for+)がいくつか得られます。
 
-最初の提案は、モデル ID が本当に正しいかどうかを確認することです。そこでまず、その識別子をコピーして Hub の検索バーに貼り付けます。
+最初の提案は、モデル ID が本当に正しいかどうかを確認することです。そこで先ず、その識別子をコピーして Hub の検索バーに貼り付けます。
 
 <div class="flex justify-center">
 <img src="https://huggingface.co/datasets/huggingface-course/documentation-images/resolve/main/en/chapter8/wrong-model-id.png" alt="間違ったモデル名。" width="100%"/>
 </div>
 
-うーん、同僚のモデルはどうやら Hub にないようです……あっ、モデル名にタイプミスがあります。DistilBERT の名前には "l" は1つだけです。修正して、代わりに "lewtun/distilbert-base-uncased-finetuned-squad-d5716d28" を探してみましょう。
+うーん、同僚のモデルはどうやら Hub に無いようです……あっ、モデル名にタイプミスがあります。DistilBERT の名前には "l" は1つだけです。修正して、代わりに "lewtun/distilbert-base-uncased-finetuned-squad-d5716d28" を探してみましょう。
 
 <div class="flex justify-center">
 <img src="https://huggingface.co/datasets/huggingface-course/documentation-images/resolve/main/en/chapter8/true-model-id.png" alt="正しいモデル名。" width="100%"/>
@@ -132,7 +132,7 @@ OSError: Can't load config for 'lewtun/distilbert-base-uncased-finetuned-squad-d
 """
 ```
 
-ああ、また失敗です。機械学習エンジニアの日常へようこそ。モデル ID は修正したので、問題はリポジトリ自体にあるはずです。🤗 Hub 上のリポジトリの内容にすばやくアクセスする方法として、`huggingface_hub` ライブラリの `list_repo_files()` 関数があります。
+ああ、また失敗です。機械学習エンジニアの日常へようこそ。モデル ID は修正したので、問題はリポジトリ自体に在るはずです。🤗 Hub 上のリポジトリの内容にすばやくアクセスする方法として、`huggingface_hub` ライブラリの `list_repo_files()` 関数があります。
 
 ```python
 from huggingface_hub import list_repo_files
@@ -144,7 +144,9 @@ list_repo_files(repo_id=model_checkpoint)
 ['.gitattributes', 'README.md', 'pytorch_model.bin', 'special_tokens_map.json', 'tokenizer_config.json', 'training_args.bin', 'vocab.txt']
 ```
 
-興味深いことに、リポジトリには *config.json* ファイルが見当たりません。`pipeline` がモデルを読み込めなかったのも無理はありません。同僚が、ファインチューニング後にこのファイルを Hub にプッシュし忘れたのでしょう。この場合、問題の修正はかなり単純そうです。同僚にファイルを追加してもらうか、モデル ID から、使用された事前学習済みモデルが [`distilbert-base-uncased`](https://huggingface.co/distilbert-base-uncased) だと分かるので、このモデルの設定をダウンロードして自分のリポジトリにプッシュし、問題が解決するか試すことができます。やってみましょう。[Chapter 2](/course/chapter2) で学んだテクニックを使えば、`AutoConfig` クラスでモデルの設定をダウンロードできます。
+興味深いことに、リポジトリには *config.json* ファイルが見当たりません。`pipeline` がモデルを読み込めなかったのも無理はありません。同僚が、ファインチューニング後にこのファイルを Hub にプッシュし忘れたのでしょう。この場合、問題の修正はかなり単純そうです。
+
+同僚にファイルを追加してもらうか、モデル ID から、使用された事前学習済みモデルが [`distilbert-base-uncased`](https://huggingface.co/distilbert-base-uncased) だと分かるので、このモデルの設定をダウンロードして自分のリポジトリにプッシュし、問題が解決するか試すことが出来ます。やってみましょう。[Chapter 2](/course/chapter2) で学んだテクニックを使えば、`AutoConfig` クラスでモデルの設定をダウンロード出来ます。
 
 ```python
 from transformers import AutoConfig
@@ -154,15 +156,15 @@ config = AutoConfig.from_pretrained(pretrained_checkpoint)
 ```
 
 > [!WARNING]
-> 🚨 ここで取るアプローチは万全ではありません。同僚がファインチューニングの前に `distilbert-base-uncased` の設定を調整していた可能性があるからです。実際には、まず同僚に確認したいところですが、このセクションでは、デフォルトの設定を使ったものと仮定します。
+> 🚨 ここで取るアプローチは万全ではありません。同僚がファインチューニングの前に `distilbert-base-uncased` の設定を調整していた可能性が有るからです。実際には、先ず同僚に確認したいところですが、このセクションでは、デフォルトの設定を使ったものと仮定します。
 
-次に、設定の `push_to_hub()` 関数を使って、これをモデルリポジトリにプッシュできます。
+次に、設定の `push_to_hub()` 関数を使って、これをモデルリポジトリにプッシュ出来ます。
 
 ```python
 config.push_to_hub(model_checkpoint, commit_message="Add config.json")
 ```
 
-これで、`main` ブランチの最新コミットからモデルを読み込んで、うまくいったかどうかをテストできます。
+これで、`main` ブランチの最新コミットからモデルを読み込んで、うまくいったかどうかをテスト出来ます。
 
 ```python
 reader = pipeline("question-answering", model=model_checkpoint, revision="main")
@@ -192,15 +194,15 @@ reader(question=question, context=context)
 やりました、うまくいきました。ここで学んだことをまとめましょう。
 
 - Python のエラーメッセージは_トレースバック_と呼ばれ、下から上へ読みます。エラーメッセージの最後の行には通常、問題の発生源を特定するのに必要な情報が含まれています。
-- 最後の行に十分な情報がない場合は、トレースバックを上にたどって、ソースコードのどこでエラーが起きているか特定できないか見てみましょう。
+- 最後の行に十分な情報が無い場合は、トレースバックを上にたどって、ソースコードのどこでエラーが起きているか特定出来ないか見てみましょう。
 - どのエラーメッセージも問題のデバッグに役立たない場合は、似た問題への解決策をオンラインで探してみましょう。
-- `huggingface_hub` ライブラリには、Hub 上のリポジトリを操作したりデバッグしたりするために使えるツールが一式そろっています。
+- `huggingface_hub` ライブラリには、Hub 上のリポジトリを操作したりデバッグしたりする為に使えるツールが一式そろっています。
 
-pipeline のデバッグ方法が分かったところで、モデル自体のフォワードパスという、より厄介な例を見てみましょう。
+pipeline のデバッグ方法が分かった所で、モデル自体のフォワードパスという、より厄介な例を見てみましょう。
 
 ## モデルのフォワードパスをデバッグする[[debugging-the-forward-pass-of-your-model]]
 
-`pipeline` は、予測を手早く生成したいほとんどの用途には最適ですが、モデルのロジットにアクセスしたい場合もあります（たとえば、適用したいカスタムの後処理がある場合など）。この場合に何がうまくいかないかを見るために、まず `pipeline` からモデルとトークナイザを取り出しましょう。
+`pipeline` は、予測を手早く生成したい殆どの用途には最適ですが、モデルのロジットにアクセスしたい場合もあります（例えば、適用したいカスタムの後処理が有る場合など）。この場合に何がうまくいかないかを見る為に、先ず `pipeline` からモデルとトークナイザを取り出しましょう。
 
 ```python
 tokenizer = reader.tokenizer
@@ -277,7 +279,7 @@ AttributeError: 'list' object has no attribute 'size'
 """
 ```
 
-ああ、コードにバグがあるようです。でも、少しのデバッグは怖くありません。ノートブックでは Python デバッガを使うことができます。
+ああ、コードにバグが有るようです。でも、少しのデバッグは怖くありません。ノートブックでは Python デバッガを使うことが出来ます。
 
 <Youtube id="rSPyvPw0p9k"/>
 
@@ -285,7 +287,7 @@ AttributeError: 'list' object has no attribute 'size'
 
 <Youtube id="5PkZ4rbHL6c"/>
 
-ここでエラーメッセージを読むと、`'list' object has no attribute 'size'` とあり、`model(**inputs)` の問題が発生した行を指す `-->` 矢印が見えます。Python デバッガを使って対話的にデバッグすることもできますが、ここでは単に `inputs` の一部を出力して、中身を見てみましょう。
+ここでエラーメッセージを読むと、`'list' object has no attribute 'size'` とあり、`model(**inputs)` の問題が発生した行を指す `-->` 矢印が見えます。Python デバッガを使って対話的にデバッグすることも出来ますが、ここでは単に `inputs` の一部を出力して、中身を見てみましょう。
 
 ```python
 inputs["input_ids"][:5]
@@ -305,7 +307,7 @@ type(inputs["input_ids"])
 list
 ```
 
-はい、間違いなく Python の `list` です。では、何がうまくいかなかったのでしょう。[Chapter 2](/course/chapter2) で学んだように、🤗 Transformers の `AutoModelForXxx` クラスは_テンソル_（PyTorch か TensorFlow の）を対象に動作し、よくある操作として、たとえば PyTorch では `Tensor.size()` を使ってテンソルの次元を取り出します。トレースバックをもう一度見て、例外を引き起こした行を確認しましょう。
+はい、間違いなく Python の `list` です。では、何がうまくいかなかったのでしょう。[Chapter 2](/course/chapter2) で学んだように、Transformers の `AutoModelForXxx` クラスは_テンソル_（PyTorch か TensorFlow の）を対象に動作し、よくある操作として、例えば PyTorch では `Tensor.size()` を使ってテンソルの次元を取り出します。トレースバックをもう一度見て、例外を引き起こした行を確認しましょう。
 
 ```
 ~/miniconda3/envs/huggingface/lib/python3.8/site-packages/transformers/models/distilbert/modeling_distilbert.py in forward(self, input_ids, attention_mask, head_mask, inputs_embeds, output_attentions, output_hidden_states, return_dict)
@@ -318,7 +320,7 @@ list
 AttributeError: 'list' object has no attribute 'size'
 ```
 
-どうやらコードは `input_ids.size()` を呼び出そうとしたようですが、これはただのコンテナである Python の `list` では明らかにうまくいきません。この問題をどう解決すればよいでしょうか。エラーメッセージを Stack Overflow で検索すると、関連する[検索結果](https://stackoverflow.com/search?q=AttributeError%3A+%27list%27+object+has+no+attribute+%27size%27&s=c15ec54c-63cb-481d-a749-408920073e8f)がかなり得られます。最初のものをクリックすると、私たちのものと似た質問が表示され、回答は下のスクリーンショットのとおりです。
+どうやらコードは `input_ids.size()` を呼び出そうとしたようですが、これはただのコンテナである Python の `list` では明らかにうまくいきません。この問題をどう解決すればよいでしょうか。エラーメッセージを Stack Overflow で検索すると、関連する[検索結果](https://stackoverflow.com/search?q=AttributeError%3A+%27list%27+object+has+no+attribute+%27size%27&s=c15ec54c-63cb-481d-a749-408920073e8f)がかなり得られます。最初のものをクリックすると、私たちのものと似た質問が表示され、回答は下のスクリーンショットの通りです。
 
 <div class="flex justify-center">
 <img src="https://huggingface.co/datasets/huggingface-course/documentation-images/resolve/main/en/chapter8/stack-overflow.png" alt="Stack Overflow の回答。" width="100%"/>
@@ -350,4 +352,6 @@ print(f"回答: {answer}")
 """
 ```
 
-よし、うまくいきました。これは、Stack Overflow がどれほど役立つかを示す良い例です。似た問題を特定できたことで、コミュニティの他の人の経験から恩恵を受けることができました。但し、このような検索で常に関連する答えが得られるとは限りません。その場合はどうすればよいでしょう。幸い、[Hugging Face フォーラム](https://discuss.huggingface.co/)には、質問や相談を温かく受け入れてくれる開発者コミュニティがあります。次のセクションでは、回答が得られやすい、よいフォーラムの質問の作り方を見ていきます。
+よし、うまくいきました。これは、Stack Overflow がどれ程役立つかを示す良い例です。似た問題を特定出来たことで、コミュニティの他の人の経験から恩恵を受けることが出来ました。
+
+但し、このような検索で常に関連する答えが得られるとは限りません。その場合はどうすればよいでしょう。幸い、[Hugging Face フォーラム](https://discuss.huggingface.co/)には、質問や相談を温かく受け入れてくれる開発者コミュニティがあります。次のセクションでは、回答が得られ易い、よいフォーラムの質問の作り方を見ていきます。

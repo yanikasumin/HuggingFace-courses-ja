@@ -22,15 +22,15 @@
 
 {/if}
 
-Model Hub では目的に合ったモデルを簡単に選べます。選んだモデルは、実際のタスクで使う様々なライブラリでも、わずか数行のコードで利用できます。ここからは、モデルの具体的な使い方と、コミュニティに貢献する方法を見ていきましょう。
+Model Hub では目的に合ったモデルを簡単に選べます。選んだモデルは、実際のタスクで使う様々なライブラリでも、わずか数行のコードで利用出来ます。ここからは、モデルの具体的な使い方と、コミュニティに貢献する方法を見ていきましょう。
 
-フランス語に対応し、文章中のマスクされた部分を予測できるモデルを探しているとしましょう。
+フランス語に対応し、文章中のマスクされた部分を予測出来るモデルを探しているとしましょう。
 
 <div class="flex justify-center">
 <img src="https://huggingface.co/datasets/huggingface-course/documentation-images/resolve/main/en/chapter4/camembert.gif" alt="CamemBERT モデルを選択する様子。" width="80%"/>
 </div>
 
-ここでは `camembert-base` チェックポイントを試してみます。使うために必要なのは、モデル識別子として `camembert-base` を指定することだけです。前の章で見たように、`pipeline()` 関数で読み込めます。
+ここでは `camembert-base` チェックポイントを試してみます。使う為に必要なのは、モデル識別子として `camembert-base` を指定することだけです。前の章で見たように、`pipeline()` 関数で読み込めます。
 
 ```py
 from transformers import pipeline
@@ -49,13 +49,19 @@ results = camembert_fill_mask("Le camembert est <mask> :)")
 ]
 ```
 
-このように、パイプラインを使えばモデルを簡単に読み込めます。但し、チェックポイントが目的のタスクに適しているかどうかには注意してください。たとえば、`camembert-base` チェックポイントは `fill-mask` パイプラインでは問題なく使えます。一方、`text-classification` パイプラインで使っても、`camembert-base` のヘッドがテキスト分類に対応していないため、意味のある結果は得られません。適切なチェックポイントを選ぶには、Hugging Face Hub の画面にあるタスクセレクタを使うことをおすすめします。
+（入力文の訳：カマンベールは <mask> です :)。出力の訳：補完された文は「カマンベールは美味しいです :)」「カマンベールは素晴らしいです :)」「カマンベールはとても美味しいです :)」「カマンベールはより良いです :)」「カマンベールは完璧です :)」です）
+
+このように、パイプラインを使えばモデルを簡単に読み込めます。但し、チェックポイントが目的のタスクに適しているかどうかには注意して下さい。
+
+例えば、`camembert-base` チェックポイントは `fill-mask` パイプラインでは問題なく使えます。一方、`text-classification` パイプラインで使っても、`camembert-base` のヘッドがテキスト分類に対応していない為、意味の有る結果は得られません。
+
+適切なチェックポイントを選ぶには、Hugging Face Hub の画面に在るタスクセレクタを使うことをお勧めします。
 
 <div class="flex justify-center">
 <img src="https://huggingface.co/datasets/huggingface-course/documentation-images/resolve/main/en/chapter4/tasks.png" alt="Web インターフェースのタスクセレクタ。" width="80%"/>
 </div>
 
-チェックポイントは、モデルのアーキテクチャを直接使ってインスタンス化することもできます。
+チェックポイントは、モデルのアーキテクチャを直接使ってインスタンス化することも出来ます。
 
 {#if fw === 'pt'}
 ```py
@@ -65,7 +71,7 @@ tokenizer = CamembertTokenizer.from_pretrained("camembert-base")
 model = CamembertForMaskedLM.from_pretrained("camembert-base")
 ```
 
-但し、特定のモデルアーキテクチャに依存しない [`Auto*` クラス](https://huggingface.co/transformers/model_doc/auto?highlight=auto#auto-classes) を使う方がおすすめです。先ほどのコードでは CamemBERT アーキテクチャに対応するチェックポイントしか読み込めませんが、`Auto*` クラスならチェックポイントに応じて適切なクラスが自動で選ばれるため、別のチェックポイントにも簡単に切り替えられます。
+但し、特定のモデルアーキテクチャに依存しない [`Auto*` クラス](https://huggingface.co/transformers/model_doc/auto?highlight=auto#auto-classes) を使う方がお勧めです。先程のコードでは CamemBERT アーキテクチャに対応するチェックポイントしか読み込めませんが、`Auto*` クラスならチェックポイントに応じて適切なクラスが自動で選ばれる為、別のチェックポイントにも簡単に切り替えられます。
 
 ```py
 from transformers import AutoTokenizer, AutoModelForMaskedLM
@@ -81,7 +87,7 @@ tokenizer = CamembertTokenizer.from_pretrained("camembert-base")
 model = TFCamembertForMaskedLM.from_pretrained("camembert-base")
 ```
 
-但し、特定のモデルアーキテクチャに依存しない [`TFAuto*` クラス](https://huggingface.co/transformers/model_doc/auto?highlight=auto#auto-classes) を使う方がおすすめです。先ほどのコードでは CamemBERT アーキテクチャに対応するチェックポイントしか読み込めませんが、`TFAuto*` クラスならチェックポイントに応じて適切なクラスが自動で選ばれるため、別のチェックポイントにも簡単に切り替えられます。
+但し、特定のモデルアーキテクチャに依存しない [`TFAuto*` クラス](https://huggingface.co/transformers/model_doc/auto?highlight=auto#auto-classes) を使う方がお勧めです。先程のコードでは CamemBERT アーキテクチャに対応するチェックポイントしか読み込めませんが、`TFAuto*` クラスならチェックポイントに応じて適切なクラスが自動で選ばれる為、別のチェックポイントにも簡単に切り替えられます。
 
 ```py
 from transformers import AutoTokenizer, TFAutoModelForMaskedLM
@@ -92,4 +98,4 @@ model = TFAutoModelForMaskedLM.from_pretrained("camembert-base")
 {/if}
 
 > [!TIP]
-> 事前学習済みモデルを使うときは、そのモデルがどのように学習され、どのデータセットが使われたか、また、どんな制限やバイアスがあるかを確認してください。こうした情報はモデルカードに記載されているはずです。
+> 事前学習済みモデルを使う時は、そのモデルがどのように学習され、どのデータセットが使われたか、また、どんな制限やバイアスが有るかを確認して下さい。こうした情報はモデルカードに記載されているはずです。
