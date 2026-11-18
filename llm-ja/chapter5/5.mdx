@@ -118,7 +118,7 @@ response.json()
 情報量は膨大です。issue 本体を表す `title`、`body`、`number` のような有用なフィールドに加え、issue を開いた GitHub ユーザーに関する情報も含まれています。
 
 > [!TIP]
-> **やってみよう！** 上の JSON ペイロードに在る URL をいくつかクリックして、それぞれのリンク先で、どのような情報が得られるか確認してみましょう。
+> ✏️ **やってみよう！** 上の JSON ペイロードに在る URL をいくつかクリックして、それぞれのリンク先で、どのような情報が得られるか確認してみましょう。
 
 GitHub の[ドキュメント](https://docs.github.com/en/rest/overview/resources-in-the-rest-api#rate-limiting)によると、認証されていないリクエストは1時間あたり60件までに制限されます。`per_page` クエリパラメータを増やせばリクエスト回数は減らせますが、issue が数千件を超えるリポジトリでは、それでも制限に到達します。対策として、個人アクセストークンを作成します。GitHub の[手順](https://docs.github.com/en/github/authenticating-to-github/creating-a-personal-access-token)に従って作成すれば、制限は1時間あたり5,000リクエストまで引き上がります。トークンは、リクエストヘッダに含めて送ります。
 
@@ -236,7 +236,7 @@ issues_dataset = issues_dataset.map(
 ```
 
 > [!TIP]
-> **やってみよう！** Datasets の issue がクローズされるまでの平均時間を計算してみましょう。プルリクエストとオープンな issue を除外するには `Dataset.filter()` 関数が役立ちます。また、`Dataset.set_format()` 関数を使ってデータセットを `DataFrame` に変換すれば、`created_at` と `closed_at` のタイムスタンプを簡単に操作出来ます。おまけとして、プルリクエストがクローズされるまでの平均時間も計算してみましょう。
+> ✏️ **やってみよう！** Datasets の issue がクローズされるまでの平均時間を計算してみましょう。プルリクエストとオープンな issue を除外するには `Dataset.filter()` 関数が役立ちます。また、`Dataset.set_format()` 関数を使ってデータセットを `DataFrame` に変換すれば、`created_at` と `closed_at` のタイムスタンプを簡単に操作出来ます。おまけとして、プルリクエストがクローズされるまでの平均時間も計算してみましょう。
 
 列の削除や名前の変更で、更にクリーニングを進めることも出来ます。但し、この段階では、データセットを出来るだけ「生」の状態に保つことをお勧めします。様々なアプリケーションで使い回しやすくなる為です。
 
@@ -365,7 +365,7 @@ Dataset({
 データセットを Hub にプッシュ出来ました。他の人も使える状態です。残る重要な作業は1つです。データセットカードの追加です。データセットカードには、コーパスの作成方法と、コミュニティにとって有用な情報を記載します。
 
 > [!TIP]
-> データセットは、`huggingface-cli` と少しの Git の工夫を使って、ターミナルから直接 Hugging Face Hub にアップロードすることも出来ます。方法の詳細は [Datasets ガイド](https://huggingface.co/docs/datasets/share#share-a-dataset-using-the-cli)を参照してください。
+> 💡 データセットは、`huggingface-cli` と少しの Git の工夫を使って、ターミナルから直接 Hugging Face Hub にアップロードすることも出来ます。方法の詳細は [Datasets ガイド](https://huggingface.co/docs/datasets/share#share-a-dataset-using-the-cli)を参照してください。
 
 ## データセットカードの作成[[creating-a-dataset-card]]
 
@@ -388,9 +388,9 @@ Hugging Face Hub では、この情報は各データセットリポジトリの
 </div>
 
 > [!TIP]
-> **やってみよう！** `dataset-tagging` アプリケーションと [Datasets ガイド](https://github.com/huggingface/datasets/blob/master/templates/README_guide.md)を使って、自分の GitHub issues データセットの *README.md* ファイルを完成させてみましょう。
+> ✏️ **やってみよう！** `dataset-tagging` アプリケーションと [Datasets ガイド](https://github.com/huggingface/datasets/blob/master/templates/README_guide.md)を使って、自分の GitHub issues データセットの *README.md* ファイルを完成させてみましょう。
 
 以上です。良いデータセットの作成には、かなりの手間がかかります。一方、アップロードとコミュニティへの共有は難しくありません。次のセクションでは、この新しいデータセットを使い、Datasets でセマンティック検索エンジンを作成します。検索エンジンは、質問に最も関連性の高い issue とコメントを見つけます。
 
 > [!TIP]
-> **やってみよう！** このセクションと同じ手順で、好きなオープンソースライブラリ（勿論 Datasets 以外のものを選んでください！）の GitHub issues のデータセットを作成してみましょう。おまけとして、`labels` フィールドに在るタグを予測するマルチラベル分類器をファインチューニングしてみましょう。
+> ✏️ **やってみよう！** このセクションと同じ手順で、好きなオープンソースライブラリ（勿論 Datasets 以外のものを選んでください！）の GitHub issues のデータセットを作成してみましょう。おまけとして、`labels` フィールドに在るタグを予測するマルチラベル分類器をファインチューニングしてみましょう。

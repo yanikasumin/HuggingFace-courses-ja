@@ -61,7 +61,7 @@ print(type(encoding))
 <class 'transformers.tokenization_utils_base.BatchEncoding'>
 ```
 
-デフォルトでは、`AutoTokenizer` クラスは高速トークナイザを選びます。その為、この `BatchEncoding` オブジェクトが備える追加のメソッドを使えます。トークナイザが高速か低速かを確認する方法は2つあります。まず、`tokenizer` の `is_fast` 属性を確認する方法です。
+既定では、`AutoTokenizer` クラスは高速トークナイザを選びます。その為、この `BatchEncoding` オブジェクトが備える追加のメソッドを使えます。トークナイザが高速か低速かを確認する方法は2つあります。まず、`tokenizer` の `is_fast` 属性を確認する方法です。
 
 ```python
 tokenizer.is_fast
@@ -109,7 +109,7 @@ encoding.word_ids()
 > [!TIP]
 > 「単語」の定義は単純ではありません。例えば、"I'll"（"I will" の短縮形）は、1つの単語でしょうか、2つの単語でしょうか。答えは、トークナイザと、そのトークナイザが行う事前トークン化の内容によって変わります。空白だけで分割するトークナイザは1つの単語と見なします。空白に加えて句読点でも分割するトークナイザは、2つの単語と見なします。
 >
-> **試してみましょう！** `bert-base-cased` と `roberta-base` のチェックポイントからトークナイザを作成し、"81s" をトークン化してみてください。何が観察出来ますか。単語 ID はどうなっていますか。
+> ✏️ **試してみましょう！** `bert-base-cased` と `roberta-base` のチェックポイントからトークナイザを作成し、"81s" をトークン化してみてください。何が観察出来ますか。単語 ID はどうなっていますか。
 
 トークンと文との対応付けには、`sentence_ids()` メソッドを使います。但し、この情報はトークナイザが返す `token_type_ids` からも得られます。
 
@@ -127,7 +127,7 @@ Sylvain
 これらの対応付けは全て、高速トークナイザが、各トークンの由来となったテキストの範囲を*オフセット*のリストとして記録しているからこそ可能です。次に、このオフセットの使い方を示す為、`token-classification` パイプラインの結果を手作業で再現します。
 
 > [!TIP]
-> **試してみましょう！** 自分で例文を作り、どのトークンがどの単語 ID に関連付けられているか、また1つの単語の文字範囲を抽出するにはどうすればよいか理解してみてください。ボーナスとして、2つの文を入力に使って、文 ID が妥当かどうか確認してみましょう。
+> ✏️ **試してみましょう！** 自分で例文を作り、どのトークンがどの単語 ID に関連付けられているか、また1つの単語の文字範囲を抽出するにはどうすればよいか理解してみてください。ボーナスとして、2つの文を入力に使って、文 ID が妥当かどうか確認してみましょう。
 
 ## `token-classification` パイプラインの内部[[inside-the-token-classification-pipeline]]
 
@@ -145,7 +145,7 @@ Sylvain
 
 ### パイプラインで基本的な結果を得る[[getting-the-base-results-with-the-pipeline]]
 
-まず、トークン分類パイプラインを用意し、後で手作業の結果と比べる為の基準にします。このパイプラインがデフォルトで使うモデルは [`dbmdz/bert-large-cased-finetuned-conll03-english`](https://huggingface.co/dbmdz/bert-large-cased-finetuned-conll03-english) で、文に対して NER を実行するモデルです。
+まず、トークン分類パイプラインを用意し、後で手作業の結果と比べる為の基準にします。このパイプラインが既定で使うモデルは [`dbmdz/bert-large-cased-finetuned-conll03-english`](https://huggingface.co/dbmdz/bert-large-cased-finetuned-conll03-english) で、文に対して NER を実行するモデルです。
 
 ```py
 from transformers import pipeline

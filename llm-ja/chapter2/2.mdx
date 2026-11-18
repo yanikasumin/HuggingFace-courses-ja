@@ -53,7 +53,7 @@ classifier(
 
 この前処理は全て、モデルの事前学習時とまったく同じ方法で行う必要があります。そこで、まず必要な情報を [Model Hub](https://huggingface.co/models) からダウンロードします。これには `AutoTokenizer` クラスの `from_pretrained()` メソッドを使います。モデルのチェックポイント名を指定すると、対応するトークナイザのデータが自動的にダウンロードされ、キャッシュに保存されます。以降はキャッシュから読み込まれる為、通常、ダウンロードが必要なのは最初の実行時だけです。
 
-`sentiment-analysis` パイプラインのデフォルトのチェックポイントは `distilbert-base-uncased-finetuned-sst-2-english` です。モデルカードは[このページ](https://huggingface.co/distilbert-base-uncased-finetuned-sst-2-english)で確認出来ます。これを使って、次のコードを実行します。
+`sentiment-analysis` パイプラインの既定のチェックポイントは `distilbert-base-uncased-finetuned-sst-2-english` です。モデルカードは[このページ](https://huggingface.co/distilbert-base-uncased-finetuned-sst-2-english)で確認出来ます。これを使って、次のコードを実行します。
 
 ```python
 from transformers import AutoTokenizer
@@ -164,7 +164,7 @@ Transformers には多種多様なアーキテクチャがあり、それぞれ�
 - `*ForQuestionAnswering`
 - `*ForSequenceClassification`
 - `*ForTokenClassification`
-- 他にも多数
+- 他にも多数 🤗
 
 この例では、文を肯定的か否定的かに分類出来るよう、シーケンス分類ヘッドを持つモデルが必要です。その為、実際には `AutoModel` クラスではなく、`AutoModelForSequenceClassification` を使います。
 
@@ -235,4 +235,4 @@ model.config.id2label
 これで、パイプラインの3つのステップ、つまりトークナイザによる前処理、入力をモデルに通すこと、後処理を、無事に再現出来ました。ここからは、それぞれのステップをもう少し深く掘り下げていきます。
 
 > [!TIP]
-> **試してみましょう！** 自分で選んだ2つ（以上）のテキストを `sentiment-analysis` パイプラインに通してみてください。その上で、ここで見たステップを自分で再現し、同じ結果が得られるかどうか確認してみましょう。
+> ✏️ **試してみましょう！** 自分で選んだ2つ（以上）のテキストを `sentiment-analysis` パイプラインに通してみてください。その上で、ここで見たステップを自分で再現し、同じ結果が得られるかどうか確認してみましょう。

@@ -1,4 +1,4 @@
-# ビッグデータ？🤗 Datasets にお任せ！[[big-data-datasets-to-the-rescue]]
+# ビッグデータ？🤗 Datasets にお任せ[[big-data-datasets-to-the-rescue]]
 
 <CourseFloatingBanner chapter={5}
   classNames="absolute z-10 right-0 top-0"
@@ -47,7 +47,7 @@ Dataset({
 行数は15,518,009行、列は2列です。かなりの規模であることが分かります。
 
 > [!TIP]
-> 既定では、Datasets は読み込みに必要なファイルを解凍します。ハードドライブの空き容量を節約したい場合は、`load_dataset()` の `download_config` 引数に `DownloadConfig(delete_extracted=True)` を渡してください。詳細は[ドキュメント](https://huggingface.co/docs/datasets/package_reference/builder_classes#datasets.DownloadConfig)を参照してください。
+> ✎ 既定では、Datasets は読み込みに必要なファイルを解凍します。ハードドライブの空き容量を節約したい場合は、`load_dataset()` の `download_config` 引数に `DownloadConfig(delete_extracted=True)` を渡してください。詳細は[ドキュメント](https://huggingface.co/docs/datasets/package_reference/builder_classes#datasets.DownloadConfig)を参照してください。
 
 最初のサンプルの内容を確認してみましょう。
 
@@ -101,7 +101,7 @@ print(f"データセットのサイズ（キャッシュファイル）: {size_g
 データセットの大きさは 20 GB 近くあります。それでも、読み込みとアクセスに必要な RAM は、それを大幅に下回ります。
 
 > [!TIP]
-> **やってみよう！** Pile の[サブセット](https://the-eye.eu/public/AI/pile_preliminary_components/)から、自分のノートパソコンやデスクトップの RAM より大きいものを1つ選び、Datasets で読み込んで RAM の使用量を測ってみましょう。正確な測定には、新しいプロセスで実行してください。各サブセットの解凍後のサイズは、[the Pile の論文](https://arxiv.org/abs/2101.00027)の表1に載っています。
+> ✏️ **やってみよう！** Pile の[サブセット](https://the-eye.eu/public/AI/pile_preliminary_components/)から、自分のノートパソコンやデスクトップの RAM より大きいものを1つ選び、Datasets で読み込んで RAM の使用量を測ってみましょう。正確な測定には、新しいプロセスで実行してください。各サブセットの解凍後のサイズは、[the Pile の論文](https://arxiv.org/abs/2101.00027)の表1に載っています。
 
 Pandas に慣れている人には、この結果は意外に映るかもしれません。Wes Kinney の有名な[経験則](https://wesmckinney.com/blog/apache-arrow-pandas-internals/)によれば、必要な RAM は通常、データセットのサイズの5倍から10倍とされるからです。Datasets はこの問題を、メモリ管理の方法で解決しています。各データセットを[メモリマップドファイル](https://en.wikipedia.org/wiki/Memory-mapped_file)として扱うのです。メモリマップドファイルは RAM とファイルシステム上のストレージを対応付ける仕組みです。データセット全体をメモリに読み込まなくても、要素にアクセスして操作出来ます。
 
@@ -132,7 +132,7 @@ print(
 例えば、Pile 全体をダウンロードするには、825 GB の空きディスク容量が必要です。こうしたケースの為に用意されているのが、ストリーミング機能です。データセット全体をダウンロードせず、要素をその都度取得して使えます。次に、その仕組みを見ていきます。
 
 > [!TIP]
-> Jupyter ノートブックでは、[`%%timeit` マジック関数](https://ipython.readthedocs.io/en/stable/interactive/magics.html#magic-timeit)を使ってセルの時間を測ることも出来ます。
+> 💡 Jupyter ノートブックでは、[`%%timeit` マジック関数](https://ipython.readthedocs.io/en/stable/interactive/magics.html#magic-timeit)を使ってセルの時間を測ることも出来ます。
 
 ## データセットのストリーミング[[streaming-datasets]]
 
@@ -171,7 +171,7 @@ next(iter(tokenized_dataset))
 ```
 
 > [!TIP]
-> トークナイズを高速化するには、前のセクションと同様に `batched=True` を渡します。処理はバッチ単位で行われます。バッチサイズの既定値は1,000で、`batch_size` 引数で変更出来ます。
+> 💡 トークナイズを高速化するには、前のセクションと同様に `batched=True` を渡します。処理はバッチ単位で行われます。バッチサイズの既定値は1,000で、`batch_size` 引数で変更出来ます。
 
 シャッフルも可能です。ストリーミングしたデータセットでは `IterableDataset.shuffle()` を使います。但し、`Dataset.shuffle()` とは違い、シャッフルの範囲は `buffer_size` で指定したバッファ内の要素に限られます。
 
@@ -281,6 +281,6 @@ next(iter(pile_dataset["train"]))
 （サンプル文の訳：「完了し、提出されました。『Survival of the Tastiest』は Android とウェブで遊べます…」という途中までです）
 
 > [!TIP]
-> **やってみよう！** [`mc4`](https://huggingface.co/datasets/mc4) や [`oscar`](https://huggingface.co/datasets/oscar) のような大規模な Common Crawl コーパスの1つを使って、選んだ国における各言語の話者比率を反映したストリーミング多言語データセットを作ってみましょう。例えば、スイスにはドイツ語、フランス語、イタリア語、ロマンシュ語という4つの国語（国家言語）があるので、Oscar のサブセットを各言語の話者割合に応じてサンプリングし、スイスのコーパスを作ってみることが出来ます。
+> ✏️ **やってみよう！** [`mc4`](https://huggingface.co/datasets/mc4) や [`oscar`](https://huggingface.co/datasets/oscar) のような大規模な Common Crawl コーパスの1つを使って、選んだ国における各言語の話者比率を反映したストリーミング多言語データセットを作ってみましょう。例えば、スイスにはドイツ語、フランス語、イタリア語、ロマンシュ語という4つの国語（国家言語）があるので、Oscar のサブセットを各言語の話者割合に応じてサンプリングし、スイスのコーパスを作ってみることが出来ます。
 
 これで、形や大きさの異なるあらゆるデータセットを読み込み、処理する手段が揃いました。但し、NLP に取り組む中では、自分でデータセットを作成しなければならない場面が必ず訪れます。よ程幸運な場合を除けば、避けては通れません。それが次のセクションのテーマです。

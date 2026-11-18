@@ -117,7 +117,7 @@ hello how are u?
 
 > [!TIP]
 > **更に深く知るには** Unicode 文字 `u"\u0085"` を含む文字列で先ほどの2つのノーマライザを試すと、両者が完全には等価でないことが分かります。
-> `normalizers.Sequence` を使った版を過度に複雑にしない為、`clean_text` 引数が `True`（デフォルトの動作）のときに `BertNormalizer` が必要とする正規表現による置換は含めていません。但し心配はいりません。便利な `BertNormalizer` を使わなくても、ノーマライザの列に `normalizers.Replace` を2つ追加すれば、まったく同じ正規化が可能です。
+> `normalizers.Sequence` を使った版を過度に複雑にしない為、`clean_text` 引数が `True`（既定の動作）のときに `BertNormalizer` が必要とする正規表現による置換は含めていません。但し心配はいりません。便利な `BertNormalizer` を使わなくても、ノーマライザの列に `normalizers.Replace` を2つ追加すれば、まったく同じ正規化が可能です。
 
 次は事前トークン化のステップです。こちらも、組み立て済みの `BertPreTokenizer` を使うことが出来ます。
 
@@ -308,7 +308,7 @@ wrapped_tokenizer = PreTrainedTokenizerFast(
 )
 ```
 
-特定のトークナイザクラス（`BertTokenizerFast` のようなもの）を使う場合は、デフォルトと異なる特殊トークンだけを指定すれば十分です（ここでは該当なし）。
+特定のトークナイザクラス（`BertTokenizerFast` のようなもの）を使う場合は、既定と異なる特殊トークンだけを指定すれば十分です（ここでは該当なし）。
 
 ```python
 from transformers import BertTokenizerFast
@@ -336,7 +336,7 @@ GPT-2 はノーマライザを使わないので、そのステップは飛ば�
 tokenizer.pre_tokenizer = pre_tokenizers.ByteLevel(add_prefix_space=False)
 ```
 
-ここで `ByteLevel` に指定したオプションは、文の先頭にスペースを加えないというものです（指定しない場合、デフォルトでスペースが加わります）。先ほどと同様に、例のテキストで事前トークン化の結果を見てみます。
+ここで `ByteLevel` に指定したオプションは、文の先頭にスペースを加えないというものです（指定しない場合、既定でスペースが加わります）。先ほどと同様に、例のテキストで事前トークン化の結果を見てみます。
 
 ```python
 tokenizer.pre_tokenizer.pre_tokenize_str("Let's test pre-tokenization!")
@@ -491,7 +491,7 @@ trainer = trainers.UnigramTrainer(
 tokenizer.train_from_iterator(get_training_corpus(), trainer=trainer)
 ```
 
-`UnigramTrainer` で特に重要な引数が `unk_token` です。忘れずに指定してください。Unigram アルゴリズム固有の引数も渡せます。例えば、トークンを取り除く各ステップの `shrinking_factor`（デフォルトは 0.75）や、個々のトークンの最大長を指定する `max_piece_length`（デフォルトは 16）です。
+`UnigramTrainer` で特に重要な引数が `unk_token` です。忘れずに指定してください。Unigram アルゴリズム固有の引数も渡せます。例えば、トークンを取り除く各ステップの `shrinking_factor`（既定は 0.75）や、個々のトークンの最大長を指定する `max_piece_length`（既定は 16）です。
 
 このトークナイザもテキストファイルで学習出来ます。
 

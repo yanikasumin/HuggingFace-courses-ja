@@ -12,7 +12,7 @@
 ここでは、`Trainer` クラスを使わず、PyTorch の学習ループをゼロから実装して、前のセクションと同じ結果を得る方法を見ていきます。書き方は、現在の PyTorch で推奨されている方法に沿います。セクション2のデータ処理は済んでいるものとし、まず必要なものを短いコードでまとめます。
 
 > [!TIP]
-> **学習ループをゼロから実装する**：このセクションは前の内容を前提としています。PyTorch の学習ループと推奨される書き方については、[🤗 Transformers の学習ドキュメント](https://huggingface.co/docs/transformers/main/en/training#train-in-native-pytorch) と [カスタム学習クックブック](https://huggingface.co/learn/cookbook/en/fine_tuning_code_llm_on_single_gpu#model) が参考になります。
+> 🏗️ **学習ループをゼロから実装する**：このセクションは前の内容を前提としています。PyTorch の学習ループと推奨される書き方については、[🤗 Transformers の学習ドキュメント](https://huggingface.co/docs/transformers/main/en/training#train-in-native-pytorch) と [カスタム学習クックブック](https://huggingface.co/learn/cookbook/en/fine_tuning_code_llm_on_single_gpu#model) が参考になります。
 
 ```py
 from datasets import load_dataset
@@ -105,7 +105,7 @@ tensor(0.5441, grad_fn=<NllLossBackward>) torch.Size([8, 2])
 
 Transformers のモデルは全て、`labels` を渡すと損失を返します。併せてロジットも得られます。各入力につき2つずつ出る為、全体ではサイズ 8 x 2 のテンソルです。
 
-学習ループを書く準備はほぼ整いました。残るのはオプティマイザと学習率スケジューラの2つです。ここでは `Trainer` の動きを手作業で再現するので、デフォルトもそれに合わせます。`Trainer` が使うオプティマイザは `AdamW` です。Adam を基に、重み減衰による正則化の工夫を加えたものになります（Ilya Loshchilov と Frank Hutter による ["Decoupled Weight Decay Regularization"](https://arxiv.org/abs/1711.05101) を参照）。
+学習ループを書く準備はほぼ整いました。残るのはオプティマイザと学習率スケジューラの2つです。ここでは `Trainer` の動きを手作業で再現するので、既定もそれに合わせます。`Trainer` が使うオプティマイザは `AdamW` です。Adam を基に、重み減衰による正則化の工夫を加えたものになります（Ilya Loshchilov と Frank Hutter による ["Decoupled Weight Decay Regularization"](https://arxiv.org/abs/1711.05101) を参照）。
 
 ```py
 from torch.optim import AdamW
@@ -114,14 +114,14 @@ optimizer = AdamW(model.parameters(), lr=5e-5)
 ```
 
 > [!TIP]
-> **現代的な最適化のヒント**：更に性能を高めたい場合は、次を試せます。
+> 💡 **現代的な最適化のヒント**：更に性能を高めたい場合は、次を試せます。
 > - **重み減衰ありの AdamW**：`AdamW(model.parameters(), lr=5e-5, weight_decay=0.01)`
 > - **8-bit Adam**：`bitsandbytes` を使ったメモリ効率のよい最適化
 > - **学習率の調整**：大きなモデルでは、低めの学習率（1e-5 〜 3e-5）がうまくいくことが多いです
 >
-> **最適化のリソース**：オプティマイザと学習戦略の詳細は [Transformers 最適化ガイド](https://huggingface.co/docs/transformers/main/en/performance#optimizer) を参照してください。
+> 🚀 **最適化のリソース**：オプティマイザと学習戦略の詳細は [Transformers 最適化ガイド](https://huggingface.co/docs/transformers/main/en/performance#optimizer) を参照してください。
 
-最後に学習率スケジューラです。デフォルトのスケジューラは、学習率を最大値（5e-5）から 0 まで直線的に下げます。これを設定するには学習ステップの総数が要ります。総数は、エポック数に学習用バッチの数（学習用データローダの長さ）を掛けたものです。`Trainer` のデフォルトは3エポックなので、ここでも同じ設定にします。
+最後に学習率スケジューラです。既定のスケジューラは、学習率を最大値（5e-5）から 0 まで直線的に下げます。これを設定するには学習ステップの総数が要ります。総数は、エポック数に学習用バッチの数（学習用データローダの長さ）を掛けたものです。`Trainer` の既定は3エポックなので、ここでも同じ設定にします。
 
 ```py
 from transformers import get_scheduler
@@ -179,14 +179,14 @@ for epoch in range(num_epochs):
 ```
 
 > [!TIP]
-> **現代的な学習の最適化**：学習ループを更に効率化するには、次を検討してください。
+> 💡 **現代的な学習の最適化**：学習ループを更に効率化するには、次を検討してください。
 >
 > - **勾配クリッピング**：`optimizer.step()` の前に `torch.nn.utils.clip_grad_norm_(model.parameters(), max_norm=1.0)` を追加する
 > - **混合精度**：`torch.cuda.amp.autocast()` と `GradScaler` を使って学習を高速化する
 > - **勾配累積**：複数のバッチにわたって勾配を蓄積し、大きなバッチサイズを擬似的に再現する
 > - **チェックポイント保存**：定期的にモデルのチェックポイントを保存し、中断しても再開出来るようにする
 >
-> **実装ガイド**：これらの最適化の詳しい例は、[Transformers の効率的な学習ガイド](https://huggingface.co/docs/transformers/main/en/perf_train_gpu_one) と [オプティマイザの一覧](https://huggingface.co/docs/transformers/main/en/optimizers) を参照してください。
+> 🔧 **実装ガイド**：これらの最適化の詳しい例は、[Transformers の効率的な学習ガイド](https://huggingface.co/docs/transformers/main/en/perf_train_gpu_one) と [オプティマイザの一覧](https://huggingface.co/docs/transformers/main/en/optimizers) を参照してください。
 
 学習ループの中心部分は、入門編で見たものとよく似ています。但し、ここでは学習状況を報告する処理を入れていない為、このループだけではモデルの性能が分かりません。性能を見るには、評価ループを追加します。
 
@@ -196,7 +196,7 @@ for epoch in range(num_epochs):
 評価には、前と同じく Evaluate ライブラリの指標を使います。`metric.compute()` メソッドは既に見ました。これに加え、`add_batch()` メソッドを使うと、予測ループを回しながらバッチごとに予測と正解ラベルを蓄積出来ます。全バッチを蓄積し終えたら、`metric.compute()` で最終結果を得ます。評価ループは次のように実装します。
 
 > [!TIP]
-> **評価のベストプラクティス**：より高度な評価戦略と指標については、[Evaluate のドキュメント](https://huggingface.co/docs/evaluate/) と [包括的な評価クックブック](https://github.com/huggingface/evaluation-guidebook) を参照してください。
+> 📊 **評価のベストプラクティス**：より高度な評価戦略と指標については、[Evaluate のドキュメント](https://huggingface.co/docs/evaluate/) と [包括的な評価クックブック](https://github.com/huggingface/evaluation-guidebook) を参照してください。
 
 ```py
 import evaluate
@@ -222,7 +222,7 @@ metric.compute()
 結果は、実行のたびに少し異なる場合が有ります。モデルヘッドの初期値と、データをシャッフルする順序がランダムに決まる為です。但し、大凡同じくらいの値になるはずです。
 
 > [!TIP]
-> **試してみましょう！** 前の学習ループを変更して、SST-2 データセットでモデルをファインチューニングしてみてください。
+> ✏️ **試してみましょう！** 前の学習ループを変更して、SST-2 データセットでモデルをファインチューニングしてみてください。
 
 ### 🤗 Accelerate で学習ループを強化する[[supercharge-your-training-loop-with-accelerate]]
 
@@ -231,7 +231,7 @@ metric.compute()
 先程定義した学習ループは、単一の CPU や GPU であれば問題なく動きます。これを複数の GPU や TPU による分散学習に対応させるには、[Accelerate](https://github.com/huggingface/accelerate) ライブラリを使えば、わずかな変更で済みます。分散学習や混合精度、デバイス配置といった複雑な処理は、Accelerate が自動で引き受けます。学習用と検証用のデータローダを作る所から、手書きの学習ループは次のようになります。
 
 > [!TIP]
-> **Accelerate の詳細**：分散学習、混合精度、ハードウェア最適化の全ては [Accelerate のドキュメント](https://huggingface.co/docs/accelerate/) で学べます。実践的な例は [Transformers のドキュメント](https://huggingface.co/docs/transformers/main/en/accelerate) にあります。
+> ⚡ **Accelerate の詳細**：分散学習、混合精度、ハードウェア最適化の全ては [Accelerate のドキュメント](https://huggingface.co/docs/accelerate/) で学べます。実践的な例は [Transformers のドキュメント](https://huggingface.co/docs/transformers/main/en/accelerate) にあります。
 
 ```py
 from accelerate import Accelerator
@@ -343,7 +343,7 @@ notebook_launcher(training_function)
 その他の例は [Accelerate リポジトリ](https://github.com/huggingface/accelerate/tree/main/examples) にあります。
 
 > [!TIP]
-> **分散学習**：マルチ GPU・マルチノード学習の包括的な解説は、[Transformers 分散学習ガイド](https://huggingface.co/docs/transformers/main/en/perf_train_gpu_many) と [学習のスケーリングに関するクックブック](https://huggingface.co/docs/transformers/main/en/accelerate) を参照してください。
+> 🌐 **分散学習**：マルチ GPU・マルチノード学習の包括的な解説は、[Transformers 分散学習ガイド](https://huggingface.co/docs/transformers/main/en/perf_train_gpu_many) と [学習のスケーリングに関するクックブック](https://huggingface.co/docs/transformers/main/en/accelerate) を参照してください。
 
 ### 次のステップとベストプラクティス[[next-steps-and-best-practices]]
 
@@ -534,7 +534,7 @@ notebook_launcher(training_function)
 />
 
 > [!TIP]
-> **要点：**
+> 💡 **要点：**
 > - 自分で実装した学習ループでは学習処理を完全に制御出来ますが、各処理の正しい順序（フォワード → バックワード → オプティマイザステップ → スケジューラステップ → 勾配をゼロにする）を理解する必要があります
 > - 重み減衰ありの AdamW が、Transformer モデルに推奨されるオプティマイザです
 > - 評価中は、正しい動作と効率の為に、常に `model.eval()` と `torch.no_grad()` を使ってください

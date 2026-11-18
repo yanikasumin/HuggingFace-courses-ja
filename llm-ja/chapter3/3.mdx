@@ -16,7 +16,7 @@
 定義そのものより手間が掛かるのは、むしろ `Trainer.train()` を動かす環境の準備でしょう。CPU では学習が非常に遅くなる為です。GPU を用意出来ない場合は、[Google Colab](https://colab.research.google.com/) で無料の GPU や TPU を利用出来ます。
 
 > [!TIP]
-> **学習リソース**：学習に入る前に、まず包括的な [Transformers 学習ガイド](https://huggingface.co/docs/transformers/main/en/training) に目を通してください。[ファインチューニングのクックブック](https://huggingface.co/learn/cookbook/en/fine_tuning_code_llm_on_single_gpu) には実践的な例がまとまっています。
+> 📚 **学習リソース**：学習に入る前に、まず包括的な [Transformers 学習ガイド](https://huggingface.co/docs/transformers/main/en/training) に目を通してください。[ファインチューニングのクックブック](https://huggingface.co/learn/cookbook/en/fine_tuning_code_llm_on_single_gpu) には実践的な例がまとまっています。
 
 以下のコード例は、前のセクションの例を既に実行済みであることを前提としています。必要なものは次の通りです。
 
@@ -39,7 +39,7 @@ data_collator = DataCollatorWithPadding(tokenizer=tokenizer)
 
 ### 学習[[training]]
 
-`Trainer` を定義する前の最初のステップは、`TrainingArguments` クラスの定義です。ここには、`Trainer` が学習と評価に使うハイパーパラメータを全てまとめます。必ず渡す必要が有るのは、学習したモデルの保存先ディレクトリだけです。途中のチェックポイントも同じ場所に保存されます。残りの引数はデフォルトのままで構いません。基本的なファインチューニングであれば、それで十分なはずです。
+`Trainer` を定義する前の最初のステップは、`TrainingArguments` クラスの定義です。ここには、`Trainer` が学習と評価に使うハイパーパラメータを全てまとめます。必ず渡す必要が有るのは、学習したモデルの保存先ディレクトリだけです。途中のチェックポイントも同じ場所に保存されます。残りの引数は既定のままで構いません。基本的なファインチューニングであれば、それで十分なはずです。
 
 ```py
 from transformers import TrainingArguments
@@ -50,7 +50,7 @@ training_args = TrainingArguments("test-trainer")
 学習中にモデルを Hub へ自動でアップロードしたい場合は、`TrainingArguments` で `push_to_hub=True` を指定します。この仕組みは [第4章](/course/chapter4/3) で改めて説明します。
 
 > [!TIP]
-> **高度な設定**：指定出来る学習引数の全てと、最適化の進め方を詳しく知りたい場合は、[TrainingArguments ドキュメント](https://huggingface.co/docs/transformers/main/en/main_classes/trainer#transformers.TrainingArguments) と [学習設定のクックブック](https://huggingface.co/learn/cookbook/en/fine_tuning_code_llm_on_single_gpu) を確認してください。
+> 🚀 **高度な設定**：指定出来る学習引数の全てと、最適化の進め方を詳しく知りたい場合は、[TrainingArguments ドキュメント](https://huggingface.co/docs/transformers/main/en/main_classes/trainer#transformers.TrainingArguments) と [学習設定のクックブック](https://huggingface.co/learn/cookbook/en/fine_tuning_code_llm_on_single_gpu) を確認してください。
 
 2つ目のステップではモデルを定義します。[前の章](/course/chapter2) と同じく `AutoModelForSequenceClassification` クラスを使い、ラベルの数は2とします。
 
@@ -80,7 +80,7 @@ trainer = Trainer(
 トークナイザを `processing_class` として渡した場合、`Trainer` が既定で使う `data_collator` は `DataCollatorWithPadding` です。従って `data_collator=data_collator` の行は省略出来ますが、処理の流れの中で重要な部分なので、ここではあえて残しています。
 
 > [!TIP]
-> **更に学ぶ**：`Trainer` クラスとそのパラメータの詳細は [Trainer API ドキュメント](https://huggingface.co/docs/transformers/main/en/main_classes/trainer) に有ります。高度な使い方のパターンは [学習クックブックのレシピ](https://huggingface.co/learn/cookbook/en/fine_tuning_code_llm_on_single_gpu) も参考になります。
+> 📖 **更に学ぶ**：`Trainer` クラスとそのパラメータの詳細は [Trainer API ドキュメント](https://huggingface.co/docs/transformers/main/en/main_classes/trainer) に有ります。高度な使い方のパターンは [学習クックブックのレシピ](https://huggingface.co/learn/cookbook/en/fine_tuning_code_llm_on_single_gpu) も参考になります。
 
 モデルをデータセットでファインチューニングするには、`Trainer` の `train()` メソッドを呼び出すだけです。
 
@@ -197,7 +197,7 @@ training_args = TrainingArguments(
 )
 ```
 
-**学習率スケジューリング**：`Trainer` はデフォルトでは学習率を線形に減衰させますが、この設定は変更出来ます。
+**学習率スケジューリング**：`Trainer` は既定では学習率を線形に減衰させますが、この設定は変更出来ます。
 
 ```py
 training_args = TrainingArguments(
@@ -209,14 +209,14 @@ training_args = TrainingArguments(
 ```
 
 > [!TIP]
-> **パフォーマンスの最適化**：分散学習やメモリの最適化、ハードウェア固有の最適化など、高度な学習テクニックについては [Transformers のパフォーマンスガイド](https://huggingface.co/docs/transformers/main/en/performance) を参照してください。
+> 🎯 **パフォーマンスの最適化**：分散学習やメモリの最適化、ハードウェア固有の最適化など、高度な学習テクニックについては [Transformers のパフォーマンスガイド](https://huggingface.co/docs/transformers/main/en/performance) を参照してください。
 
 `Trainer` は複数の GPU や TPU 上でもそのまま動き、分散学習の選択肢も豊富に用意されています。対応範囲の詳しい説明は第10章で行います。
 
 以上で、`Trainer` API を使ったファインチューニングの入門は終わりです。代表的な NLP タスクへの適用例は [第7章](/course/chapter7) で紹介します。その前に、次は PyTorch だけの学習ループで同じことを行う方法を見ていきます。
 
 > [!TIP]
-> **その他の例**：様々な実行例をまとめた [Transformers のノートブック](https://huggingface.co/docs/transformers/main/en/notebooks) もご覧ください。
+> 📝 **その他の例**：様々な実行例をまとめた [Transformers のノートブック](https://huggingface.co/docs/transformers/main/en/notebooks) もご覧ください。
 
 ## セクションクイズ[[section-quiz]]
 
@@ -367,7 +367,7 @@ Trainer API とファインチューニングの概念について、理解度�
 />
 
 > [!TIP]
-> **重要なポイント：**
+> 💡 **重要なポイント：**
 > - `Trainer` API は、学習に必要な複雑な処理の多くを引き受ける高レベルのインターフェースを提供します
 > - 適切なデータ処理の為に、`processing_class` でトークナイザを指定します
 > - `TrainingArguments` は、学習率、バッチサイズ、評価戦略、最適化など、学習の全ての側面を制御します
