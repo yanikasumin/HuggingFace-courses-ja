@@ -68,7 +68,7 @@ window.MathJax = { tex: { inlineMath: [['$', '$'], ['\\(', '\\)']], displayMath:
 <li><a class="side-link active" href="definition.html">コンピュータビジョンとは</a></li>
 <li><a class="side-link" href="applications.html">コンピュータビジョンの応用</a></li>
 <li><a class="side-link" href="../image_and_imaging/examples-preprocess.html">コンピュータビジョンタスクのための前処理</a></li>
-<li><a class="side-link" href="../feature-extraction/feature_description.html">Feature Description</a></li>
+<li><a class="side-link" href="../feature-extraction/feature_description.html">特徴記述（Feature Description）</a></li>
 <li><a class="side-link" href="../feature-extraction/feature-matching.html">特徴マッチング（Feature Matching）</a></li>
 <li><a class="side-link" href="../feature-extraction/real-world-applications.html">コンピュータビジョンにおける特徴抽出の実社会での応用</a></li>
 </ul>
@@ -80,7 +80,7 @@ window.MathJax = { tex: { inlineMath: [['$', '$'], ['\\(', '\\)']], displayMath:
 <li><a class="side-link" href="../../unit2/cnns/mobilenet.html">MobileNet</a></li>
 <li><a class="side-link" href="../../unit2/cnns/convnext.html">ConvNeXt - 2020年代に向けた ConvNet（2022）</a></li>
 <li><a class="side-link" href="../../unit2/cnns/intro-transfer-learning.html">転移学習</a></li>
-<li><a class="side-link" href="../../unit2/cnns/mobilenetextra.html">事前学習済みの MobileNet モデルを読み込む</a></li>
+<li><a class="side-link" href="../../unit2/cnns/mobilenetextra.html">MobileNet を更に深く掘り下げる</a></li>
 <li><a class="side-link" href="../../unit2/cnns/resnet.html">ResNet（残差ネットワーク）</a></li>
 <li><a class="side-link" href="../../unit2/cnns/yolo.html">YOLO</a></li>
 </ul>
@@ -217,23 +217,27 @@ window.MathJax = { tex: { inlineMath: [['$', '$'], ['\\(', '\\)']], displayMath:
 <p>より頑健なモデルを使う前に、画像の前処理を組み合わせるのが一般的です。逆に、ニューラルネットワークの層がこうしたタスクを自動的に実行し、明示的な前処理を不要にすることも有ります。</p>
 <p>画像分析は、<a class="gloss-link" href="../../../glossary/index.html#term-data-science" data-title="データサイエンス（Data Science）" data-def="データを集めて眺めるだけでは、意思決定に使える知識にはならない。データサイエンスは統計学、コンピュータによる計算、対象分野の専門知識を組み合わせ、データの収集や整理、分析、結果の説明までを通して問題を理解し、役立つ知識を引き出す学問分野および実務の総称である。機械学習はその中で使われる手法の一つに位置づけられる。" data-def-html="データを集めて眺めるだけでは、意思決定に使える知識にはならない。データサイエンスは統計学、コンピュータによる計算、対象分野の専門知識を組み合わせ、データの収集や整理、分析、結果の説明までを通して問題を理解し、役立つ知識を引き出す学問分野および実務の総称である。&lt;a class=&quot;gloss-link&quot; href=&quot;../../../glossary/index.html#term-machine-learning&quot; data-title=&quot;機械学習（Machine Learning）&quot; data-def=&quot;プログラムの手順を人間が一つ一つ書き与える従来の方法では、複雑な判断をすべて書き切ることは難しいため、データから規則性や判断の基準をコンピュータ自身に学ばせる技術を機械学習という。訓練用のデータを用いて学ばせることでモデルはパターンを身に付け、正解の分からない新しいデータに対しても予測や分類ができるようになる。人工知能を実現する主要な方法の一つであり、現在の人工知能の中心的な仕組みになっている。&quot;&gt;機械学習&lt;/a&gt;はその中で使われる手法の一つに位置づけられる。">データサイエンス</a>に馴染みのある人にとっては、最初の探索的データ分析のステップとして機能することも有ります。最後に、古典的な画像分析の手法は、コンピュータビジョンモデルの訓練データの質と多様性を向上させる為の<a class="gloss-link" href="../../../glossary/index.html#term-data-augmentation" data-title="データ拡張（Data Augmentation）" data-def="データ拡張は、手持ちのデータを加工して、学習に使えるデータの量と種類を増やす手法である。画像の回転や反転、明るさの変更、文章の言い換えなどが代表的であり、いずれも正解の意味が変わらない範囲で加工する。データが少ないときに使うと、モデルが特定の例だけを覚えてしまう事態を防ぎやすくなる。" data-def-html="データ拡張は、手持ちのデータを加工して、&lt;a class=&quot;gloss-link&quot; href=&quot;../../../glossary/index.html#term-training&quot; data-title=&quot;学習（訓練）（Training）&quot; data-def=&quot;学習は、機械学習のモデルにデータを与え、そのデータに合うようにモデル内部の数値を調整していく過程である。モデルは予測と正解のずれを手がかりに数値を少しずつ直し、ずれが小さくなる方向へ進んでいく。この過程を繰り返すことで、個々の例を覚えるだけでなく、見たことのないデータに対しても予測できるようになることが期待される。&quot;&gt;学習&lt;/a&gt;に使えるデータの量と種類を増やす手法である。画像の回転や反転、明るさの変更、文章の言い換えなどが代表的であり、いずれも正解の意味が変わらない&lt;a class=&quot;gloss-link&quot; href=&quot;../../../glossary/index.html#term-range&quot; data-title=&quot;範囲（range）&quot; data-def=&quot;データの広がりを最も単純に表す方法が、最大値から最小値を引いた差である範囲を使うことだ。計算は引き算一つで済む一方、決めるのは両端の二つの値だけなので、極端な値が一つ混じるだけで大きく変わってしまう弱点がある。そのため分布全体の散らばりは分散や四分位範囲などと併せて判断する必要があり、機械学習でもデータを0から1の間にそろえる正規化の計算に現れるものの、外れ値の影響を受けやすい点には注意が要る。&quot;&gt;範囲&lt;/a&gt;で加工する。データが少ないときに使うと、モデルが特定の例だけを覚えてしまう事態を防ぎやすくなる。">データ拡張</a>にも使えます。</p>
 <h2>コンピュータビジョンのタスク概要</h2>
-<p>コンピュータは世界の事前知識を持たない為、コンピュータビジョンが本当に難しいことは既に見てきました。先ほどのボールの例を考えてみましょう。私たち人間は、ボールが何か、その動きをどう追うか、物体が空間内をどう動くかを既に知っています。更に、ボールがいつ自分のところに届くか、足がどこに在り、どう動くか、ボールを蹴るにはどれくらいの力が必要かも判断出来ます。これを具体的なコンピュータビジョンのタスクに分解すると、次のようになります。
-  - シーン認識
-  - 物体認識
-  - <a class="gloss-link" href="../../../glossary/index.html#term-object-detection" data-title="物体検出（Object Detection）" data-def="写真の中から探したい物を見つけ、その種類と位置を同時に答えるのが物体検出の役割だ。入力は画像で、出力は物の名前だけにとどまらない。物を取り囲む四角い枠（矩形）の位置までが一緒に示されるため、画像分類のように何が写っているかだけを答える処理とは異なり、何が、どこにあるかまでが分かる。" data-def-html="写真の中から探したい物を見つけ、その種類と位置を同時に答えるのが物体検出の役割だ。入力は画像で、出力は物の名前だけにとどまらない。物を取り囲む四角い枠（矩形）の位置までが一緒に示されるため、画像&lt;a class=&quot;gloss-link&quot; href=&quot;../../../glossary/index.html#term-classification&quot; data-title=&quot;分類（Classification）&quot; data-def=&quot;メールが迷惑メールかどうか、写真に写っているのが犬か猫か――あらかじめ決められた種類のどれに当てはまるかを当てる課題が分類だ。予測する答えが金額のような連続した数値ではなく種類である点が回帰と異なり、教師あり学習の代表的な課題の一つとして、仕分けが必要な場面で広く使われる。&quot;&gt;分類&lt;/a&gt;のように何が写っているかだけを答える処理とは異なり、何が、どこにあるかまでが分かる。">物体検出</a>
-  - セグメンテーション（インスタンス、セマンティック）
-  - 追跡
-  - 動的環境への適応
-  - 経路計画</p>
-<p>コンピュータビジョンの主要なタスクについては、「コンピュータビジョンのタスク」の章で詳しく説明します。しかし、コンピュータビジョンが出来るタスクは他にも沢山あります！以下はその一部です。
-  - 画像キャプション生成
-  - 画像分類
-  - 画像記述
-  - 異常検出
-  - 画像生成
-  - 画像復元
-  - 自律的な探索
-  - 位置推定</p>
+<p>コンピュータは世界の事前知識を持たない為、コンピュータビジョンが本当に難しいことは既に見てきました。先ほどのボールの例を考えてみましょう。私たち人間は、ボールが何か、その動きをどう追うか、物体が空間内をどう動くかを既に知っています。更に、ボールがいつ自分のところに届くか、足がどこに在り、どう動くか、ボールを蹴るにはどれくらいの力が必要かも判断出来ます。これを具体的なコンピュータビジョンのタスクに分解すると、次のようになります。</p>
+<ul>
+<li>シーン認識</li>
+<li>物体認識</li>
+<li><a class="gloss-link" href="../../../glossary/index.html#term-object-detection" data-title="物体検出（Object Detection）" data-def="写真の中から探したい物を見つけ、その種類と位置を同時に答えるのが物体検出の役割だ。入力は画像で、出力は物の名前だけにとどまらない。物を取り囲む四角い枠（矩形）の位置までが一緒に示されるため、画像分類のように何が写っているかだけを答える処理とは異なり、何が、どこにあるかまでが分かる。" data-def-html="写真の中から探したい物を見つけ、その種類と位置を同時に答えるのが物体検出の役割だ。入力は画像で、出力は物の名前だけにとどまらない。物を取り囲む四角い枠（矩形）の位置までが一緒に示されるため、画像&lt;a class=&quot;gloss-link&quot; href=&quot;../../../glossary/index.html#term-classification&quot; data-title=&quot;分類（Classification）&quot; data-def=&quot;メールが迷惑メールかどうか、写真に写っているのが犬か猫か――あらかじめ決められた種類のどれに当てはまるかを当てる課題が分類だ。予測する答えが金額のような連続した数値ではなく種類である点が回帰と異なり、教師あり学習の代表的な課題の一つとして、仕分けが必要な場面で広く使われる。&quot;&gt;分類&lt;/a&gt;のように何が写っているかだけを答える処理とは異なり、何が、どこにあるかまでが分かる。">物体検出</a></li>
+<li>セグメンテーション（インスタンス、セマンティック）</li>
+<li>追跡</li>
+<li>動的環境への適応</li>
+<li>経路計画</li>
+</ul>
+<p>コンピュータビジョンの主要なタスクについては、「コンピュータビジョンのタスク」の章で詳しく説明します。しかし、コンピュータビジョンが出来るタスクは他にも沢山あります！以下はその一部です。</p>
+<ul>
+<li>画像キャプション生成</li>
+<li>画像分類</li>
+<li>画像記述</li>
+<li>異常検出</li>
+<li>画像生成</li>
+<li>画像復元</li>
+<li>自律的な探索</li>
+<li>位置推定</li>
+</ul>
 <h2>タスクの複雑さ</h2>
 <p>画像分析とコンピュータビジョンの領域におけるタスクの複雑さは、その問いやタスクが詳しい人にとってどれほど高尚で難しそうに見えるかだけで決まるものではありません。主には、分析対象の画像やデータの性質に左右されます。</p>
 <p>例えば、画像の中の歩行者を識別するタスクを考えてみましょう。人間の観察者にとっては、私たちは人を見分けるのが得意なので、これは簡単で比較的単純に見えるかもしれません。しかし、計算の観点からは、このタスクの複雑さは、照明条件、遮蔽の有無、画像の解像度、カメラの品質といった要因によって大きく変わります。低照度条件下やピクセル化された画像では、一見基本的な歩行者検出のタスクでさえ、コンピュータビジョンのアルゴリズムにとっては極めて複雑になり、高度な画像強調と機械学習のテクニックが必要になります。</p>

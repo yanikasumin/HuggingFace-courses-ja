@@ -68,7 +68,7 @@ window.MathJax = { tex: { inlineMath: [['$', '$'], ['\\(', '\\)']], displayMath:
 <li><a class="side-link" href="../chapter1/definition.html">コンピュータビジョンとは</a></li>
 <li><a class="side-link" href="../chapter1/applications.html">コンピュータビジョンの応用</a></li>
 <li><a class="side-link" href="../image_and_imaging/examples-preprocess.html">コンピュータビジョンタスクのための前処理</a></li>
-<li><a class="side-link" href="feature_description.html">Feature Description</a></li>
+<li><a class="side-link" href="feature_description.html">特徴記述（Feature Description）</a></li>
 <li><a class="side-link active" href="feature-matching.html">特徴マッチング（Feature Matching）</a></li>
 <li><a class="side-link" href="real-world-applications.html">コンピュータビジョンにおける特徴抽出の実社会での応用</a></li>
 </ul>
@@ -80,7 +80,7 @@ window.MathJax = { tex: { inlineMath: [['$', '$'], ['\\(', '\\)']], displayMath:
 <li><a class="side-link" href="../../unit2/cnns/mobilenet.html">MobileNet</a></li>
 <li><a class="side-link" href="../../unit2/cnns/convnext.html">ConvNeXt - 2020年代に向けた ConvNet（2022）</a></li>
 <li><a class="side-link" href="../../unit2/cnns/intro-transfer-learning.html">転移学習</a></li>
-<li><a class="side-link" href="../../unit2/cnns/mobilenetextra.html">事前学習済みの MobileNet モデルを読み込む</a></li>
+<li><a class="side-link" href="../../unit2/cnns/mobilenetextra.html">MobileNet を更に深く掘り下げる</a></li>
 <li><a class="side-link" href="../../unit2/cnns/resnet.html">ResNet（残差ネットワーク）</a></li>
 <li><a class="side-link" href="../../unit2/cnns/yolo.html">YOLO</a></li>
 </ul>
@@ -191,7 +191,7 @@ window.MathJax = { tex: { inlineMath: [['$', '$'], ['\\(', '\\)']], displayMath:
 <main class="container">
 <p class="course-crumb"><a href="../../index.html">Community CV コース</a></p>
 <p class="official-link"><a class="btn btn-official" href="https://huggingface.co/learn/computer-vision-course/unit1/feature-extraction/feature-matching" target="_blank" rel="noopener">🤗 Hugging Face 公式ページでこの節を読む（英語）</a></p>
-<nav class="page-nav"><a class="nav-link prev" href="feature_description.html">← 前へ: Feature Description</a><a class="nav-link toc-link" href="../../index.html">目次へ</a><a class="nav-link next" href="real-world-applications.html">次へ →: コンピュータビジョンにおける特徴抽出の実社会での応用</a></nav>
+<nav class="page-nav"><a class="nav-link prev" href="feature_description.html">← 前へ: 特徴記述（Feature Description）</a><a class="nav-link toc-link" href="../../index.html">目次へ</a><a class="nav-link next" href="real-world-applications.html">次へ →: コンピュータビジョンにおける特徴抽出の実社会での応用</a></nav>
 <article class="content">
 <h1>特徴マッチング（Feature Matching）</h1>
 <p>検出された特徴を、或る画像から別の画像へどうマッチングすればよいでしょうか？特徴マッチングでは、異なる画像の主要な<a class="gloss-link" href="../../../glossary/index.html#term-attribute" data-title="属性（Attribute）" data-def="対象を説明するときに挙げられる性質や特徴の一つ一つを指す言葉が属性である。機械学習の文脈ではデータの各項目がこれに当たり、身長や年齢や色といった、対象が備えている情報を意味する。モデルが実際に使う数値である特徴量とほぼ同じ意味で使われることも多いが、属性はより広く対象の性質全般を指す言葉として用いられる。" data-def-html="対象を説明するときに挙げられる性質や特徴の一つ一つを指す言葉が属性である。&lt;a class=&quot;gloss-link&quot; href=&quot;../../../glossary/index.html#term-machine-learning&quot; data-title=&quot;機械学習（Machine Learning）&quot; data-def=&quot;プログラムの手順を人間が一つ一つ書き与える従来の方法では、複雑な判断をすべて書き切ることは難しいため、データから規則性や判断の基準をコンピュータ自身に学ばせる技術を機械学習という。訓練用のデータを用いて学ばせることでモデルはパターンを身に付け、正解の分からない新しいデータに対しても予測や分類ができるようになる。人工知能を実現する主要な方法の一つであり、現在の人工知能の中心的な仕組みになっている。&quot;&gt;機械学習&lt;/a&gt;の文脈ではデータの各項目がこれに当たり、身長や年齢や色といった、対象が備えている情報を意味する。モデルが実際に使う数値である&lt;a class=&quot;gloss-link&quot; href=&quot;../../../glossary/index.html#term-feature&quot; data-title=&quot;特徴量（Feature）&quot; data-def=&quot;モデルが分類や予測を行うとき、元の文章や画像をそのまま眺めているわけではなく、判断の手がかりになる部分を数値に置き換えて使っており、その数値を特徴量と呼ぶ。たとえば画像なら明暗の差や輪郭の向き、文章なら特定の語が現れるかどうかといった情報が該当する。どの手がかりを選ぶかで結果の良し悪しが変わるため特徴量は重要であり、従来は人間が取り出し方を設計していたが、深層学習（多層の仕組みで学ぶ方法）ではモデルが学習の中で自動的に獲得するようになっている。&quot;&gt;特徴量&lt;/a&gt;とほぼ同じ意味で使われることも多いが、属性はより広く対象の性質全般を指す言葉として用いられる。">属性</a>を比較して類似点を見つけます。特徴マッチングは、シーン理解、画像スティッチング、物体追跡、パターン認識など、多くの<a class="gloss-link" href="../../../glossary/index.html#term-computer-vision" data-title="コンピュータビジョン（Computer Vision）" data-def="人が目で見て周囲を理解する働きをコンピュータで再現しようとする研究分野がコンピュータビジョンだ。人間なら無意識に行う、写真に何が写っているかを見分ける、物の位置を捉える、領域を区切るといった作業を機械に自動で実行させることを目指しており、画像の分類や物体の検出、領域の分割などが中心的な課題になる。扱う範囲は広く、カメラなどのセンサー（周囲の情報を取り込む検知装置）をはじめとするハードウェアから、画像をどう解釈するかという認識の理論までを含んでいる。" data-def-html="人が目で見て周囲を理解する働きをコンピュータで再現しようとする研究分野がコンピュータビジョンだ。人間なら無意識に行う、写真に何が写っているかを見分ける、物の位置を捉える、領域を区切るといった作業を機械に自動で実行させることを目指しており、画像の&lt;a class=&quot;gloss-link&quot; href=&quot;../../../glossary/index.html#term-classification&quot; data-title=&quot;分類（Classification）&quot; data-def=&quot;メールが迷惑メールかどうか、写真に写っているのが犬か猫か――あらかじめ決められた種類のどれに当てはまるかを当てる課題が分類だ。予測する答えが金額のような連続した数値ではなく種類である点が回帰と異なり、教師あり学習の代表的な課題の一つとして、仕分けが必要な場面で広く使われる。&quot;&gt;分類&lt;/a&gt;や物体の検出、領域の分割などが中心的な課題になる。扱う&lt;a class=&quot;gloss-link&quot; href=&quot;../../../glossary/index.html#term-range&quot; data-title=&quot;範囲（range）&quot; data-def=&quot;データの広がりを最も単純に表す方法が、最大値から最小値を引いた差である範囲を使うことだ。計算は引き算一つで済む一方、決めるのは両端の二つの値だけなので、極端な値が一つ混じるだけで大きく変わってしまう弱点がある。そのため分布全体の散らばりは分散や四分位範囲などと併せて判断する必要があり、機械学習でもデータを0から1の間にそろえる正規化の計算に現れるものの、外れ値の影響を受けやすい点には注意が要る。&quot;&gt;範囲&lt;/a&gt;は広く、カメラなどの&lt;a class=&quot;gloss-link&quot; href=&quot;../../../glossary/index.html#term-sensor&quot; data-title=&quot;センサー（Sensor）&quot; data-def=&quot;温度や光、圧力、距離といった周囲の様子を検知し、人間や機械が扱える信号に変換する装置がセンサーだ。ロボットにとっては目や耳のような役割を果たし、周囲がどうなっているかを知らなければ、体をどう動かすべきか判断できない。センサーが捉えた情報が計測や制御の入力となり、その情報をもとにロボットは次の動きを決めていくため、センサーはロボットが現実の世界で働くための出発点になっている。検知器とも呼ばれる。&quot;&gt;センサー&lt;/a&gt;（周囲の情報を取り込む検知装置）をはじめとするハードウェアから、画像をどう解釈するかという認識の理論までを含んでいる。">コンピュータビジョン</a>応用で役立ちます。</p>
@@ -424,7 +424,7 @@ window.MathJax = { tex: { inlineMath: [['$', '$'], ['\\(', '\\)']], displayMath:
 </ul>
 </article>
 
-<nav class="page-nav"><a class="nav-link prev" href="feature_description.html">← 前へ: Feature Description</a><a class="nav-link toc-link" href="../../index.html">目次へ</a><a class="nav-link next" href="real-world-applications.html">次へ →: コンピュータビジョンにおける特徴抽出の実社会での応用</a></nav>
+<nav class="page-nav"><a class="nav-link prev" href="feature_description.html">← 前へ: 特徴記述（Feature Description）</a><a class="nav-link toc-link" href="../../index.html">目次へ</a><a class="nav-link next" href="real-world-applications.html">次へ →: コンピュータビジョンにおける特徴抽出の実社会での応用</a></nav>
 </main>
 </div>
 <footer class="site-footer">
