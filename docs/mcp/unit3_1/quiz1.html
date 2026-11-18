@@ -112,78 +112,78 @@ window.MathJax = { tex: { inlineMath: [['$', '$'], ['\\(', '\\)']], displayMath:
 <nav class="page-nav"><a class="nav-link prev" href="creating-the-mcp-server.html">← 前へ: MCP サーバーの作成</a><a class="nav-link toc-link" href="../index.html">目次へ</a><a class="nav-link next" href="mcp-client.html">次へ →: MCP クライアント</a></nav>
 <article class="content">
 <h1>クイズ1：MCP サーバーの実装</h1>
-<p><a class="gloss-link" href="../../glossary/index.html#term-t64" data-title="プルリクエストエージェント" data-def="プログラムの変更からプルリクエストの作成までを自動で行うエージェントである。プルリクエストは、変更した内容を元のプログラムへ取り込んでもらうための提案の仕組みを指す。このエージェントは指示を受けてプログラムを読み、変更を加え、内容を説明してプルリクエストとして提出するまでを担い、MCPコースの題材として構築される。" data-def-html="プログラムの変更から&lt;a class=&quot;gloss-link&quot; href=&quot;../../glossary/index.html#term-pull&quot; data-title=&quot;プル（pull）&quot; data-def=&quot;Gitにおいて、リモートリポジトリの変更を取得し、現在のブランチへ統合する操作である。内部的には、取得だけを行うフェッチと、統合を行うマージ（またはリベース）を続けて実行する動作に相当する。共同作業では、自分の変更を共有する前にプルして他者の変更を取り込むことで、履歴の食い違いを抑える。&quot;&gt;プル&lt;/a&gt;リクエストの作成までを自動で行う&lt;a class=&quot;gloss-link&quot; href=&quot;../../glossary/index.html#term-ai&quot; data-title=&quot;エージェント（AIエージェント）&quot; data-def=&quot;大規模言語モデルを中心に置き、外部のツールを使いながら、作業を複数の段階に分けて自分で判断しながら進める仕組みである。状況を受け取り、次に行うことを決めて実行し、その結果を見て次を決める繰り返しで進む。一度の質問に一度答えるだけの仕組みと異なり、手順を要する作業を続けて実行できる。&quot;&gt;エージェント&lt;/a&gt;である。プルリクエストは、変更した内容を元のプログラムへ取り込んでもらうための提案の仕組みを指す。このエージェントは指示を受けてプログラムを読み、変更を加え、内容を説明してプルリクエストとして提出するまでを担い、&lt;a class=&quot;gloss-link&quot; href=&quot;../../glossary/index.html#term-mcp&quot; data-title=&quot;MCP（Model Context Protocol）&quot; data-def=&quot;AIアプリケーションと、外部のツールやデータとを接続するための、公開された通信規約である。Anthropicが2024年に公開した。接続の方法を共通化することで、規約に対応したツールは、規約に対応したどのアプリケーションからでも同じ方法で利用できるようになり、組み合わせごとに接続方法を個別に作る必要がなくなる。&quot;&gt;MCP&lt;/a&gt;コースの題材として構築される。">プルリクエストエージェント</a>で使う <a class="gloss-link" href="../../glossary/index.html#term-mcp" data-title="MCP（Model Context Protocol）" data-def="AIアプリケーションと、外部のツールやデータとを接続するための、公開された通信規約である。Anthropicが2024年に公開した。接続の方法を共通化することで、規約に対応したツールは、規約に対応したどのアプリケーションからでも同じ方法で利用できるようになり、組み合わせごとに接続方法を個別に作る必要がなくなる。" data-def-html="&lt;a class=&quot;gloss-link&quot; href=&quot;../../glossary/index.html#term-aiaas-maas&quot; data-title=&quot;AIaaS／MaaS（AI / Model as a Service）&quot; data-def=&quot;人工知能の機能や学習済みモデルを、インターネット経由のサービスとして提供する形態である。利用者は自分でモデルを学習させたり計算装置を用意したりせず、必要なときに呼び出して結果を受け取ることができる。導入の手間や初期費用を抑えられる一方、提供者の仕様や料金に依存する点に注意が必要である。&quot;&gt;AI&lt;/a&gt;アプリケーションと、外部の&lt;a class=&quot;gloss-link&quot; href=&quot;../../glossary/index.html#term-mcp-tool&quot; data-title=&quot;ツール（MCPのTool）&quot; data-def=&quot;MCPサーバーが公開する、モデルから呼び出すことのできる機能である。検索、計算、ファイルの操作、記録の書き換えなどが、名前と、説明と、入力の形式を定めた関数として定義される。モデルは提示された一覧の中から必要なものを選び、ホストとクライアントを通じて呼び出す。&quot;&gt;ツール&lt;/a&gt;やデータとを接続するための、公開された通信規約である。&lt;a class=&quot;gloss-link&quot; href=&quot;../../glossary/index.html#term-anthropic&quot; data-title=&quot;Anthropic&quot; data-def=&quot;アメリカの人工知能開発企業である。OpenAIの元メンバーらによって設立され、責任あるAIの利用を掲げて安全性の研究を重視する姿勢で知られる。大規模言語モデルのClaude系列を開発しており、ChatGPTなどと並ぶ代表的な対話型AIとして提供されている。&quot;&gt;Anthropic&lt;/a&gt;が2024年に公開した。接続の方法を共通化することで、規約に対応したツールは、規約に対応したどのアプリケーションからでも同じ方法で利用できるようになり、組み合わせごとに接続方法を個別に作る必要がなくなる。">MCP</a> サーバーの概念と実装について、理解度を確認しましょう。</p>
+<p><a class="gloss-link" href="../../glossary/index.html#term-pull-request-agent" data-title="プルリクエストエージェント（Pull Request Agent）" data-def="プログラムの修正を提案する仕組みであるプルリクエスト（変更内容を元のプログラムへ取り込んでもらうための提案）の作成までを自動で担うエージェントを、プルリクエストエージェントという。このエージェントは指示を受け取ると、対象のプログラムを読み、必要な変更を加え、変更内容を説明する文章を添えてプルリクエストとして提出するまでを進める。人間が手作業で行っていた一連の手順をエージェントが引き受ける例として、MCP コースの題材として構築される。" data-def-html="プログラムの修正を提案する仕組みである&lt;a class=&quot;gloss-link&quot; href=&quot;../../glossary/index.html#term-pull&quot; data-title=&quot;プル（pull）&quot; data-def=&quot;他人の変更を取り寄せて自分のブランチへの統合まで一気に済ませる操作がプルだ。内部的には取得だけを行うフェッチと、統合を行うマージまたはリベースを続けて実行する動作に相当する。共同作業では自分の変更を共有する前にプルして他者の変更を取り込んでおくことで、履歴の食い違いを抑え、後の統合で困る事態を減らせる。&quot;&gt;プル&lt;/a&gt;リクエスト（変更内容を元のプログラムへ取り込んでもらうための提案）の作成までを自動で担う&lt;a class=&quot;gloss-link&quot; href=&quot;../../glossary/index.html#term-ai&quot; data-title=&quot;エージェント（AIエージェント）&quot; data-def=&quot;大規模言語モデルを中心に置き、外部のツールを使いながら作業を自分で判断して進めていく仕組みがエージェントだ。一度の質問に一度答えるだけでは手順の多い作業はこなせないため、エージェントは状況を受け取り、次に行うことを決めて実行し、その結果を見て次を決めるという繰り返しで進んでいく。この繰り返しがあるため、調べ物をしたり、複数のツールを使い分けたりするような、段階を要する作業を続けて実行できる。&quot;&gt;エージェント&lt;/a&gt;を、プルリクエストエージェントという。このエージェントは指示を受け取ると、対象のプログラムを読み、必要な変更を加え、変更内容を説明する文章を添えてプルリクエストとして提出するまでを進める。人間が手作業で行っていた一連の手順をエージェントが引き受ける例として、&lt;a class=&quot;gloss-link&quot; href=&quot;../../glossary/index.html#term-mcp&quot; data-title=&quot;MCP（Model Context Protocol）&quot; data-def=&quot;AIアプリケーションと、外部のツールやデータとを接続する方法を共通化するために公開された通信規約がMCP（Model Context Protocol）だ。Anthropicが2024年に公開した。AIが外部のツールを使う場面は増えているが、接続の方法が組み合わせごとにばらばらだと、その都度個別に接続方法を作らなければならず、ツールもアプリケーションも増やしにくい。MCPによって接続の方法が共通化されると、規約に対応したツールは、規約に対応したどのアプリケーションからでも同じ方法で利用できるようになり、個別の作り込みが不要になる。&quot;&gt;MCP&lt;/a&gt; コースの題材として構築される。">プルリクエストエージェント</a>で使う <a class="gloss-link" href="../../glossary/index.html#term-mcp" data-title="MCP（Model Context Protocol）" data-def="AIアプリケーションと、外部のツールやデータとを接続する方法を共通化するために公開された通信規約がMCP（Model Context Protocol）だ。Anthropicが2024年に公開した。AIが外部のツールを使う場面は増えているが、接続の方法が組み合わせごとにばらばらだと、その都度個別に接続方法を作らなければならず、ツールもアプリケーションも増やしにくい。MCPによって接続の方法が共通化されると、規約に対応したツールは、規約に対応したどのアプリケーションからでも同じ方法で利用できるようになり、個別の作り込みが不要になる。" data-def-html="&lt;a class=&quot;gloss-link&quot; href=&quot;../../glossary/index.html#term-aiaas-maas&quot; data-title=&quot;AIaaS／MaaS（AI / Model as a Service）&quot; data-def=&quot;自分でモデルを学習させたり、高性能な計算装置を用意したりしなくてもAIを使えるようにした提供形態が、AIaaS／MaaSである。利用者はインターネット経由で提供される人工知能の機能や学習済みモデルを必要なときに呼び出し、結果を受け取るだけで済むため、導入の手間や初期費用を抑えられる。反面、提供者の仕様や料金に依存することになるため、その点には注意が要る。&quot;&gt;AI&lt;/a&gt;アプリケーションと、外部の&lt;a class=&quot;gloss-link&quot; href=&quot;../../glossary/index.html#term-mcp-tool&quot; data-title=&quot;ツール（MCPのTool）&quot; data-def=&quot;MCPサーバーが外に向けて公開し、モデルから呼び出すことのできる機能をツールと指す。検索や計算、ファイルの操作、記録の書き換えといった作業が、名前と説明と入力の形式を定めた関数（入力を受け取って処理を行う仕組み）として定義されており、モデルは提示された一覧の中から必要なものを選ぶ。選ばれたツールはホストと MCPクライアントを通じて実際に呼び出され、その結果がモデルに戻ることで、モデル単体ではできない作業が可能になる。&quot;&gt;ツール&lt;/a&gt;やデータとを接続する方法を共通化するために公開された通信規約がMCP（Model Context Protocol）だ。&lt;a class=&quot;gloss-link&quot; href=&quot;../../glossary/index.html#term-anthropic&quot; data-title=&quot;Anthropic&quot; data-def=&quot;安全性の研究を重視する姿勢で知られるAnthropicは、OpenAIの元メンバーらによって設立されたアメリカの人工知能開発企業だ。責任あるAIの利用を掲げ、大規模言語モデルのClaude系列を開発している。ClaudeはChatGPTなどと並ぶ代表的な対話型AIとして提供されている。&quot;&gt;Anthropic&lt;/a&gt;が2024年に公開した。AIが外部のツールを使う場面は増えているが、接続の方法が組み合わせごとにばらばらだと、その都度個別に接続方法を作らなければならず、ツールもアプリケーションも増やしにくい。MCPによって接続の方法が共通化されると、規約に対応したツールは、規約に対応したどのアプリケーションからでも同じ方法で利用できるようになり、個別の作り込みが不要になる。">MCP</a> サーバーの概念と実装について、理解度を確認しましょう。</p>
 <h3>Q1：プルリクエストエージェントのアーキテクチャにおいて、MCP サーバーの主な役割は何ですか？</h3>
 <div class="quiz">
 <div class="quiz-choices">
 <button type="button" class="quiz-choice" data-correct="false" data-quiz-idx="0">アプリケーションのユーザーインターフェースをホストすること</button>
-<div class="quiz-explain-src" id="qe-134933355637184-0" hidden>MCP サーバーが提供するのはバックエンドの機能であり、ユーザーインターフェースではありません。</div>
+<div class="quiz-explain-src" id="qe-123494945340672-0" hidden>MCP サーバーが提供するのはバックエンドの機能であり、ユーザーインターフェースではありません。</div>
 <button type="button" class="quiz-choice" data-correct="false" data-quiz-idx="1">AI エージェントが GitHub とやり取りする為に使えるツールやリソースを公開すること</button>
-<div class="quiz-explain-src" id="qe-134933355637184-1" hidden>惜しいですが、このプロジェクトの対象は GitHub ではなく Hugging Face Hub です。</div>
+<div class="quiz-explain-src" id="qe-123494945340672-1" hidden>惜しいですが、このプロジェクトの対象は GitHub ではなく Hugging Face Hub です。</div>
 <button type="button" class="quiz-choice" data-correct="true" data-quiz-idx="2">Hugging Face Hub 上のモデルリポジトリのタグを読み取り、更新する為のツールを公開すること</button>
-<div class="quiz-explain-src" id="qe-134933355637184-2" hidden>正解です！ MCP サーバーは、Hub とのやり取りの為に get_current_tags と add_new_tag というツールを提供します。</div>
+<div class="quiz-explain-src" id="qe-123494945340672-2" hidden>正解です！ MCP サーバーは、Hub とのやり取りの為に get_current_tags と add_new_tag というツールを提供します。</div>
 <button type="button" class="quiz-choice" data-correct="false" data-quiz-idx="3">プルリクエストのデータで AI モデルを訓練すること</button>
-<div class="quiz-explain-src" id="qe-134933355637184-3" hidden>MCP サーバーが提供するのは実行時の機能であり、モデルの訓練機能ではありません。</div>
+<div class="quiz-explain-src" id="qe-123494945340672-3" hidden>MCP サーバーが提供するのは実行時の機能であり、モデルの訓練機能ではありません。</div>
 </div><div class="quiz-feedback" hidden></div></div>
 <h3>Q2：FastMCP の実装では、何故全ての MCP ツール関数は Python オブジェクトではなく文字列を返さなければならないのですか？</h3>
 <div class="quiz">
 <div class="quiz-choices">
 <button type="button" class="quiz-choice" data-correct="false" data-quiz-idx="0">メモリ使用量を減らしてパフォーマンスを改善する為</button>
-<div class="quiz-explain-src" id="qe-134933364769344-0" hidden>文字列のほうがメモリ効率が良い場合もありますが、それが主な理由ではありません。</div>
+<div class="quiz-explain-src" id="qe-123494946691328-0" hidden>文字列のほうがメモリ効率が良い場合もありますが、それが主な理由ではありません。</div>
 <button type="button" class="quiz-choice" data-correct="true" data-quiz-idx="1">MCP サーバーとクライアントの間で確実にデータをやり取り出来るようにする為</button>
-<div class="quiz-explain-src" id="qe-134933364769344-1" hidden>正解です！ MCP プロトコルは文字列の応答を要求する為、json.dumps() を使ってデータをシリアライズします。</div>
+<div class="quiz-explain-src" id="qe-123494946691328-1" hidden>正解です！ MCP プロトコルは文字列の応答を要求する為、json.dumps() を使ってデータをシリアライズします。</div>
 <button type="button" class="quiz-choice" data-correct="false" data-quiz-idx="2">コードをデバッグし易くする為</button>
-<div class="quiz-explain-src" id="qe-134933364769344-2" hidden>JSON 文字列は読み易いものの、それが主な技術的要件ではありません。</div>
+<div class="quiz-explain-src" id="qe-123494946691328-2" hidden>JSON 文字列は読み易いものの、それが主な技術的要件ではありません。</div>
 <button type="button" class="quiz-choice" data-correct="false" data-quiz-idx="3">Hugging Face Hub API の要件に従う為</button>
-<div class="quiz-explain-src" id="qe-134933364769344-3" hidden>これは MCP プロトコルの要件であり、Hub API 固有のものではありません。</div>
+<div class="quiz-explain-src" id="qe-123494946691328-3" hidden>これは MCP プロトコルの要件であり、Hub API 固有のものではありません。</div>
 </div><div class="quiz-feedback" hidden></div></div>
 <h3>Q3：<code>add_new_tag</code> ツールを実装する際、プルリクエストを作成する前にタグが既に存在するか確認する目的は何ですか？</h3>
 <div class="quiz">
 <div class="quiz-choices">
 <button type="button" class="quiz-choice" data-correct="false" data-quiz-idx="0">API 呼び出しを減らしてパフォーマンスを改善すること</button>
-<div class="quiz-explain-src" id="qe-134933355637184-0" hidden>パフォーマンスの改善にはつながりますが、この確認の主な理由ではありません。</div>
+<div class="quiz-explain-src" id="qe-123494945340672-0" hidden>パフォーマンスの改善にはつながりますが、この確認の主な理由ではありません。</div>
 <button type="button" class="quiz-choice" data-correct="true" data-quiz-idx="1">重複したプルリクエストの作成を防ぎ、より良いユーザーフィードバックを提供すること</button>
-<div class="quiz-explain-src" id="qe-134933355637184-1" hidden>正解です！ この検証により不要な PR を防ぎ、意味の有るステータスメッセージを返せます。</div>
+<div class="quiz-explain-src" id="qe-123494945340672-1" hidden>正解です！ この検証により不要な PR を防ぎ、意味の有るステータスメッセージを返せます。</div>
 <button type="button" class="quiz-choice" data-correct="false" data-quiz-idx="2">Hugging Face Hub のレート制限に従うこと</button>
-<div class="quiz-explain-src" id="qe-134933355637184-2" hidden>不要な呼び出しを避けることはレート制限対策にもなりますが、それが主な目的ではありません。</div>
+<div class="quiz-explain-src" id="qe-123494945340672-2" hidden>不要な呼び出しを避けることはレート制限対策にもなりますが、それが主な目的ではありません。</div>
 <button type="button" class="quiz-choice" data-correct="false" data-quiz-idx="3">タグの形式が有効であることを保証すること</button>
-<div class="quiz-explain-src" id="qe-134933355637184-3" hidden>タグの形式の検証は、既に存在するかの確認とは別のものです。</div>
+<div class="quiz-explain-src" id="qe-123494945340672-3" hidden>タグの形式の検証は、既に存在するかの確認とは別のものです。</div>
 </div><div class="quiz-feedback" hidden></div></div>
 <h3>Q4：MCP サーバーの実装では、モデルリポジトリに既存の <code>README.md</code> ファイルが無い場合、何が起きますか？</h3>
 <div class="quiz">
 <div class="quiz-choices">
 <button type="button" class="quiz-choice" data-correct="false" data-quiz-idx="0">add_new_tag ツールがエラーを出して失敗する</button>
-<div class="quiz-explain-src" id="qe-134933364769344-0" hidden>実装はこのケースを適切に処理します。</div>
+<div class="quiz-explain-src" id="qe-123494946691328-0" hidden>実装はこのケースを適切に処理します。</div>
 <button type="button" class="quiz-choice" data-correct="true" data-quiz-idx="1">ツールは ModelCardData を使って新しい ModelCard を作成し、タグの追加を進める</button>
-<div class="quiz-explain-src" id="qe-134933364769344-1" hidden>正解です！ コードは HfHubHTTPError を処理し、モデルカードが存在しない場合は新しいものを作成します。</div>
+<div class="quiz-explain-src" id="qe-123494946691328-1" hidden>正解です！ コードは HfHubHTTPError を処理し、モデルカードが存在しない場合は新しいものを作成します。</div>
 <button type="button" class="quiz-choice" data-correct="false" data-quiz-idx="2">ツールはタグの追加をスキップし、警告を返す</button>
-<div class="quiz-explain-src" id="qe-134933364769344-2" hidden>ツールは処理をスキップせず、必要なものをその場で作成します。</div>
+<div class="quiz-explain-src" id="qe-123494946691328-2" hidden>ツールは処理をスキップせず、必要なものをその場で作成します。</div>
 <button type="button" class="quiz-choice" data-correct="false" data-quiz-idx="3">ツールはプレースホルダーの内容が入ったデフォルトの README を自動で作成する</button>
-<div class="quiz-explain-src" id="qe-134933364769344-3" hidden>作成されるのは最小限のモデルカード構造であり、プレースホルダーの内容ではありません。</div>
+<div class="quiz-explain-src" id="qe-123494946691328-3" hidden>作成されるのは最小限のモデルカード構造であり、プレースホルダーの内容ではありません。</div>
 </div><div class="quiz-feedback" hidden></div></div>
 <h3>Q5：<code>hf_api.create_commit()</code> 関数の呼び出しで <code>create_pr=True</code> を使うことには、どんな意味がありますか？</h3>
 <div class="quiz">
 <div class="quiz-choices">
 <button type="button" class="quiz-choice" data-correct="false" data-quiz-idx="0">main ブランチに直接コミットする</button>
-<div class="quiz-explain-src" id="qe-134933355637184-0" hidden>create_pr=True を設定すると、main への直接コミットではなくプルリクエストが作成されます。</div>
+<div class="quiz-explain-src" id="qe-123494945340672-0" hidden>create_pr=True を設定すると、main への直接コミットではなくプルリクエストが作成されます。</div>
 <button type="button" class="quiz-choice" data-correct="true" data-quiz-idx="1">main ブランチに直接コミットする代わりに、自動でプルリクエストを作成する</button>
-<div class="quiz-explain-src" id="qe-134933355637184-1" hidden>正解です！ これによりレビューのワークフローが可能になり、リポジトリのガバナンス慣行に従えます。</div>
+<div class="quiz-explain-src" id="qe-123494945340672-1" hidden>正解です！ これによりレビューのワークフローが可能になり、リポジトリのガバナンス慣行に従えます。</div>
 <button type="button" class="quiz-choice" data-correct="false" data-quiz-idx="2">リポジトリのオーナーだけが見られるプライベートブランチを作成する</button>
-<div class="quiz-explain-src" id="qe-134933355637184-2" hidden>プルリクエストはリポジトリのコラボレーターに見え、公開される場合もあります。</div>
+<div class="quiz-explain-src" id="qe-123494945340672-2" hidden>プルリクエストはリポジトリのコラボレーターに見え、公開される場合もあります。</div>
 <button type="button" class="quiz-choice" data-correct="false" data-quiz-idx="3">コミットを作成する前に検証する</button>
-<div class="quiz-explain-src" id="qe-134933355637184-3" hidden>検証は create_pr パラメーターに関係なく行われます。</div>
+<div class="quiz-explain-src" id="qe-123494945340672-3" hidden>検証は create_pr パラメーターに関係なく行われます。</div>
 </div><div class="quiz-feedback" hidden></div></div>
 <h3>Q6：MCP サーバーの実装では、何故コード全体を通して絵文字入りの詳細なログを使っているのですか？</h3>
 <div class="quiz">
 <div class="quiz-choices">
 <button type="button" class="quiz-choice" data-correct="false" data-quiz-idx="0">開発者にとってコードをより楽しく魅力的にする為</button>
-<div class="quiz-explain-src" id="qe-134933364769344-0" hidden>絵文字は見た目の魅力はありますが、もっと実用的な理由があります。</div>
+<div class="quiz-explain-src" id="qe-123494946691328-0" hidden>絵文字は見た目の魅力はありますが、もっと実用的な理由があります。</div>
 <button type="button" class="quiz-choice" data-correct="true" data-quiz-idx="1">サーバーが Hub イベントに応答して自律的に動作する時のデバッグと監視を助ける為</button>
-<div class="quiz-explain-src" id="qe-134933364769344-1" hidden>正解です！ エージェントは Webhook に自動で応答する為、詳細なログはトラブルシューティングに欠かせません。</div>
+<div class="quiz-explain-src" id="qe-123494946691328-1" hidden>正解です！ エージェントは Webhook に自動で応答する為、詳細なログはトラブルシューティングに欠かせません。</div>
 <button type="button" class="quiz-choice" data-correct="false" data-quiz-idx="2">FastMCP のログ要件に従う為</button>
-<div class="quiz-explain-src" id="qe-134933364769344-2" hidden>FastMCP は特定のログ形式や絵文字を要求しません。</div>
+<div class="quiz-explain-src" id="qe-123494946691328-2" hidden>FastMCP は特定のログ形式や絵文字を要求しません。</div>
 <button type="button" class="quiz-choice" data-correct="false" data-quiz-idx="3">ログファイルのテキスト量を減らす為</button>
-<div class="quiz-explain-src" id="qe-134933364769344-3" hidden>絵文字でログファイルのサイズが大きく減る訳ではなく、それが主な目的でもありません。</div>
+<div class="quiz-explain-src" id="qe-123494946691328-3" hidden>絵文字でログファイルのサイズが大きく減る訳ではなく、それが主な目的でもありません。</div>
 </div><div class="quiz-feedback" hidden></div></div>
 <p>クイズはこれで終了です。お疲れさまでした！ 復習したい項目があれば、この章に戻って理解を深めましょう。 </p>
 </article>

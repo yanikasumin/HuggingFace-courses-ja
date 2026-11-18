@@ -112,90 +112,90 @@ window.MathJax = { tex: { inlineMath: [['$', '$'], ['\\(', '\\)']], displayMath:
 <nav class="page-nav"><a class="nav-link prev" href="webhook-listener.html">← 前へ: Webhook リスナー</a><a class="nav-link toc-link" href="../index.html">目次へ</a><a class="nav-link next" href="conclusion.html">次へ →: まとめ</a></nav>
 <article class="content">
 <h1>クイズ2：プルリクエストエージェントの統合</h1>
-<p><a class="gloss-link" href="../../glossary/index.html#term-mcp" data-title="MCP（Model Context Protocol）" data-def="AIアプリケーションと、外部のツールやデータとを接続するための、公開された通信規約である。Anthropicが2024年に公開した。接続の方法を共通化することで、規約に対応したツールは、規約に対応したどのアプリケーションからでも同じ方法で利用できるようになり、組み合わせごとに接続方法を個別に作る必要がなくなる。" data-def-html="&lt;a class=&quot;gloss-link&quot; href=&quot;../../glossary/index.html#term-aiaas-maas&quot; data-title=&quot;AIaaS／MaaS（AI / Model as a Service）&quot; data-def=&quot;人工知能の機能や学習済みモデルを、インターネット経由のサービスとして提供する形態である。利用者は自分でモデルを学習させたり計算装置を用意したりせず、必要なときに呼び出して結果を受け取ることができる。導入の手間や初期費用を抑えられる一方、提供者の仕様や料金に依存する点に注意が必要である。&quot;&gt;AI&lt;/a&gt;アプリケーションと、外部の&lt;a class=&quot;gloss-link&quot; href=&quot;../../glossary/index.html#term-mcp-tool&quot; data-title=&quot;ツール（MCPのTool）&quot; data-def=&quot;MCPサーバーが公開する、モデルから呼び出すことのできる機能である。検索、計算、ファイルの操作、記録の書き換えなどが、名前と、説明と、入力の形式を定めた関数として定義される。モデルは提示された一覧の中から必要なものを選び、ホストとクライアントを通じて呼び出す。&quot;&gt;ツール&lt;/a&gt;やデータとを接続するための、公開された通信規約である。&lt;a class=&quot;gloss-link&quot; href=&quot;../../glossary/index.html#term-anthropic&quot; data-title=&quot;Anthropic&quot; data-def=&quot;アメリカの人工知能開発企業である。OpenAIの元メンバーらによって設立され、責任あるAIの利用を掲げて安全性の研究を重視する姿勢で知られる。大規模言語モデルのClaude系列を開発しており、ChatGPTなどと並ぶ代表的な対話型AIとして提供されている。&quot;&gt;Anthropic&lt;/a&gt;が2024年に公開した。接続の方法を共通化することで、規約に対応したツールは、規約に対応したどのアプリケーションからでも同じ方法で利用できるようになり、組み合わせごとに接続方法を個別に作る必要がなくなる。">MCP</a> クライアントの統合や Webhook の処理を初め、<a class="gloss-link" href="../../glossary/index.html#term-t64" data-title="プルリクエストエージェント" data-def="プログラムの変更からプルリクエストの作成までを自動で行うエージェントである。プルリクエストは、変更した内容を元のプログラムへ取り込んでもらうための提案の仕組みを指す。このエージェントは指示を受けてプログラムを読み、変更を加え、内容を説明してプルリクエストとして提出するまでを担い、MCPコースの題材として構築される。" data-def-html="プログラムの変更から&lt;a class=&quot;gloss-link&quot; href=&quot;../../glossary/index.html#term-pull&quot; data-title=&quot;プル（pull）&quot; data-def=&quot;Gitにおいて、リモートリポジトリの変更を取得し、現在のブランチへ統合する操作である。内部的には、取得だけを行うフェッチと、統合を行うマージ（またはリベース）を続けて実行する動作に相当する。共同作業では、自分の変更を共有する前にプルして他者の変更を取り込むことで、履歴の食い違いを抑える。&quot;&gt;プル&lt;/a&gt;リクエストの作成までを自動で行う&lt;a class=&quot;gloss-link&quot; href=&quot;../../glossary/index.html#term-ai&quot; data-title=&quot;エージェント（AIエージェント）&quot; data-def=&quot;大規模言語モデルを中心に置き、外部のツールを使いながら、作業を複数の段階に分けて自分で判断しながら進める仕組みである。状況を受け取り、次に行うことを決めて実行し、その結果を見て次を決める繰り返しで進む。一度の質問に一度答えるだけの仕組みと異なり、手順を要する作業を続けて実行できる。&quot;&gt;エージェント&lt;/a&gt;である。プルリクエストは、変更した内容を元のプログラムへ取り込んでもらうための提案の仕組みを指す。このエージェントは指示を受けてプログラムを読み、変更を加え、内容を説明してプルリクエストとして提出するまでを担い、&lt;a class=&quot;gloss-link&quot; href=&quot;../../glossary/index.html#term-mcp&quot; data-title=&quot;MCP（Model Context Protocol）&quot; data-def=&quot;AIアプリケーションと、外部のツールやデータとを接続するための、公開された通信規約である。Anthropicが2024年に公開した。接続の方法を共通化することで、規約に対応したツールは、規約に対応したどのアプリケーションからでも同じ方法で利用できるようになり、組み合わせごとに接続方法を個別に作る必要がなくなる。&quot;&gt;MCP&lt;/a&gt;コースの題材として構築される。">プルリクエストエージェント</a>のシステム全体について理解度を確認しましょう。</p>
+<p><a class="gloss-link" href="../../glossary/index.html#term-mcp" data-title="MCP（Model Context Protocol）" data-def="AIアプリケーションと、外部のツールやデータとを接続する方法を共通化するために公開された通信規約がMCP（Model Context Protocol）だ。Anthropicが2024年に公開した。AIが外部のツールを使う場面は増えているが、接続の方法が組み合わせごとにばらばらだと、その都度個別に接続方法を作らなければならず、ツールもアプリケーションも増やしにくい。MCPによって接続の方法が共通化されると、規約に対応したツールは、規約に対応したどのアプリケーションからでも同じ方法で利用できるようになり、個別の作り込みが不要になる。" data-def-html="&lt;a class=&quot;gloss-link&quot; href=&quot;../../glossary/index.html#term-aiaas-maas&quot; data-title=&quot;AIaaS／MaaS（AI / Model as a Service）&quot; data-def=&quot;自分でモデルを学習させたり、高性能な計算装置を用意したりしなくてもAIを使えるようにした提供形態が、AIaaS／MaaSである。利用者はインターネット経由で提供される人工知能の機能や学習済みモデルを必要なときに呼び出し、結果を受け取るだけで済むため、導入の手間や初期費用を抑えられる。反面、提供者の仕様や料金に依存することになるため、その点には注意が要る。&quot;&gt;AI&lt;/a&gt;アプリケーションと、外部の&lt;a class=&quot;gloss-link&quot; href=&quot;../../glossary/index.html#term-mcp-tool&quot; data-title=&quot;ツール（MCPのTool）&quot; data-def=&quot;MCPサーバーが外に向けて公開し、モデルから呼び出すことのできる機能をツールと指す。検索や計算、ファイルの操作、記録の書き換えといった作業が、名前と説明と入力の形式を定めた関数（入力を受け取って処理を行う仕組み）として定義されており、モデルは提示された一覧の中から必要なものを選ぶ。選ばれたツールはホストと MCPクライアントを通じて実際に呼び出され、その結果がモデルに戻ることで、モデル単体ではできない作業が可能になる。&quot;&gt;ツール&lt;/a&gt;やデータとを接続する方法を共通化するために公開された通信規約がMCP（Model Context Protocol）だ。&lt;a class=&quot;gloss-link&quot; href=&quot;../../glossary/index.html#term-anthropic&quot; data-title=&quot;Anthropic&quot; data-def=&quot;安全性の研究を重視する姿勢で知られるAnthropicは、OpenAIの元メンバーらによって設立されたアメリカの人工知能開発企業だ。責任あるAIの利用を掲げ、大規模言語モデルのClaude系列を開発している。ClaudeはChatGPTなどと並ぶ代表的な対話型AIとして提供されている。&quot;&gt;Anthropic&lt;/a&gt;が2024年に公開した。AIが外部のツールを使う場面は増えているが、接続の方法が組み合わせごとにばらばらだと、その都度個別に接続方法を作らなければならず、ツールもアプリケーションも増やしにくい。MCPによって接続の方法が共通化されると、規約に対応したツールは、規約に対応したどのアプリケーションからでも同じ方法で利用できるようになり、個別の作り込みが不要になる。">MCP</a> クライアントの統合や Webhook の処理を初め、<a class="gloss-link" href="../../glossary/index.html#term-pull-request-agent" data-title="プルリクエストエージェント（Pull Request Agent）" data-def="プログラムの修正を提案する仕組みであるプルリクエスト（変更内容を元のプログラムへ取り込んでもらうための提案）の作成までを自動で担うエージェントを、プルリクエストエージェントという。このエージェントは指示を受け取ると、対象のプログラムを読み、必要な変更を加え、変更内容を説明する文章を添えてプルリクエストとして提出するまでを進める。人間が手作業で行っていた一連の手順をエージェントが引き受ける例として、MCP コースの題材として構築される。" data-def-html="プログラムの修正を提案する仕組みである&lt;a class=&quot;gloss-link&quot; href=&quot;../../glossary/index.html#term-pull&quot; data-title=&quot;プル（pull）&quot; data-def=&quot;他人の変更を取り寄せて自分のブランチへの統合まで一気に済ませる操作がプルだ。内部的には取得だけを行うフェッチと、統合を行うマージまたはリベースを続けて実行する動作に相当する。共同作業では自分の変更を共有する前にプルして他者の変更を取り込んでおくことで、履歴の食い違いを抑え、後の統合で困る事態を減らせる。&quot;&gt;プル&lt;/a&gt;リクエスト（変更内容を元のプログラムへ取り込んでもらうための提案）の作成までを自動で担う&lt;a class=&quot;gloss-link&quot; href=&quot;../../glossary/index.html#term-ai&quot; data-title=&quot;エージェント（AIエージェント）&quot; data-def=&quot;大規模言語モデルを中心に置き、外部のツールを使いながら作業を自分で判断して進めていく仕組みがエージェントだ。一度の質問に一度答えるだけでは手順の多い作業はこなせないため、エージェントは状況を受け取り、次に行うことを決めて実行し、その結果を見て次を決めるという繰り返しで進んでいく。この繰り返しがあるため、調べ物をしたり、複数のツールを使い分けたりするような、段階を要する作業を続けて実行できる。&quot;&gt;エージェント&lt;/a&gt;を、プルリクエストエージェントという。このエージェントは指示を受け取ると、対象のプログラムを読み、必要な変更を加え、変更内容を説明する文章を添えてプルリクエストとして提出するまでを進める。人間が手作業で行っていた一連の手順をエージェントが引き受ける例として、&lt;a class=&quot;gloss-link&quot; href=&quot;../../glossary/index.html#term-mcp&quot; data-title=&quot;MCP（Model Context Protocol）&quot; data-def=&quot;AIアプリケーションと、外部のツールやデータとを接続する方法を共通化するために公開された通信規約がMCP（Model Context Protocol）だ。Anthropicが2024年に公開した。AIが外部のツールを使う場面は増えているが、接続の方法が組み合わせごとにばらばらだと、その都度個別に接続方法を作らなければならず、ツールもアプリケーションも増やしにくい。MCPによって接続の方法が共通化されると、規約に対応したツールは、規約に対応したどのアプリケーションからでも同じ方法で利用できるようになり、個別の作り込みが不要になる。&quot;&gt;MCP&lt;/a&gt; コースの題材として構築される。">プルリクエストエージェント</a>のシステム全体について理解度を確認しましょう。</p>
 <h3>Q1：プルリクエストエージェントのアーキテクチャにおいて、Webhook リスナーの主な目的は何ですか？</h3>
 <div class="quiz">
 <div class="quiz-choices">
 <button type="button" class="quiz-choice" data-correct="false" data-quiz-idx="0">プルリクエストを管理する為のユーザーインターフェースを提供すること</button>
-<div class="quiz-explain-src" id="qe-134933355855552-0" hidden>Webhook リスナーが扱うのは GitHub のイベントであり、ユーザーインターフェースではありません。</div>
+<div class="quiz-explain-src" id="qe-123494946802816-0" hidden>Webhook リスナーが扱うのは GitHub のイベントであり、ユーザーインターフェースではありません。</div>
 <button type="button" class="quiz-choice" data-correct="true" data-quiz-idx="1">Hugging Face Hub のディスカッションコメントイベントをリアルタイムで受信し処理すること</button>
-<div class="quiz-explain-src" id="qe-134933355855552-1" hidden>正解です！ Webhook リスナーは Hub のディスカッションイベントに応答して、エージェントのアクションを起動します。</div>
+<div class="quiz-explain-src" id="qe-123494946802816-1" hidden>正解です！ Webhook リスナーは Hub のディスカッションイベントに応答して、エージェントのアクションを起動します。</div>
 <button type="button" class="quiz-choice" data-correct="false" data-quiz-idx="2">プルリクエストのデータをデータベースに永続的に保存すること</button>
-<div class="quiz-explain-src" id="qe-134933355855552-2" hidden>PR データを処理することはあっても、主な役割はイベント処理であり、保存ではありません。</div>
+<div class="quiz-explain-src" id="qe-123494946802816-2" hidden>PR データを処理することはあっても、主な役割はイベント処理であり、保存ではありません。</div>
 <button type="button" class="quiz-choice" data-correct="false" data-quiz-idx="3">Hugging Face Hub でユーザーを認証すること</button>
-<div class="quiz-explain-src" id="qe-134933355855552-3" hidden>Webhook リスナーが扱うのはイベントであり、ユーザー認証ではありません。</div>
+<div class="quiz-explain-src" id="qe-123494946802816-3" hidden>Webhook リスナーが扱うのはイベントであり、ユーザー認証ではありません。</div>
 </div><div class="quiz-feedback" hidden></div></div>
 <h3>Q2：エージェントベースの MCP クライアントの実装では、クライアントはどのように MCP サーバーに接続しますか？</h3>
 <div class="quiz">
 <div class="quiz-choices">
 <button type="button" class="quiz-choice" data-correct="false" data-quiz-idx="0">同じプロセス内での直接の関数呼び出しで</button>
-<div class="quiz-explain-src" id="qe-134933356038272-0" hidden>Agent が使うのはサブプロセス通信であり、直接の関数呼び出しではありません。</div>
+<div class="quiz-explain-src" id="qe-123494934057792-0" hidden>Agent が使うのはサブプロセス通信であり、直接の関数呼び出しではありません。</div>
 <button type="button" class="quiz-choice" data-correct="true" data-quiz-idx="1">MCP サーバーをサブプロセスとして起動し、stdio 接続で通信する</button>
-<div class="quiz-explain-src" id="qe-134933356038272-1" hidden>正解です！ Agent は 'python mcp_server.py' で MCP サーバーを起動し、stdin/stdout を通じて通信します。</div>
+<div class="quiz-explain-src" id="qe-123494934057792-1" hidden>正解です！ Agent は 'python mcp_server.py' で MCP サーバーを起動し、stdin/stdout を通じて通信します。</div>
 <button type="button" class="quiz-choice" data-correct="false" data-quiz-idx="2">共有ディレクトリにファイルを書き込むことで</button>
-<div class="quiz-explain-src" id="qe-134933356038272-2" hidden>MCP はリアルタイム通信を使い、ファイルベースの通信は使いません。</div>
+<div class="quiz-explain-src" id="qe-123494934057792-2" hidden>MCP はリアルタイム通信を使い、ファイルベースの通信は使いません。</div>
 <button type="button" class="quiz-choice" data-correct="false" data-quiz-idx="3">HTTP REST API 呼び出しを通じて</button>
-<div class="quiz-explain-src" id="qe-134933356038272-3" hidden>stdio 接続タイプは HTTP を使わず、標準入出力ストリームを使います。</div>
+<div class="quiz-explain-src" id="qe-123494934057792-3" hidden>stdio 接続タイプは HTTP を使わず、標準入出力ストリームを使います。</div>
 </div><div class="quiz-feedback" hidden></div></div>
 <h3>Q3：Webhook ハンドラーは、何故リクエストを同期的に処理せず FastAPI の <code>background_tasks.add_task()</code> を使うのですか？</h3>
 <div class="quiz">
 <div class="quiz-choices">
 <button type="button" class="quiz-choice" data-correct="false" data-quiz-idx="0">サーバーのメモリ使用量を減らす為</button>
-<div class="quiz-explain-src" id="qe-134933355855552-0" hidden>バックグラウンドタスクがメモリ使用量を減らすとは限りません。</div>
+<div class="quiz-explain-src" id="qe-123494946802816-0" hidden>バックグラウンドタスクがメモリ使用量を減らすとは限りません。</div>
 <button type="button" class="quiz-choice" data-correct="false" data-quiz-idx="1">Hugging Face Hub の要件に従う為</button>
-<div class="quiz-explain-src" id="qe-134933355855552-1" hidden>Hub は迅速な応答を期待しますが、これは Hub 固有の要件ではありません。</div>
+<div class="quiz-explain-src" id="qe-123494946802816-1" hidden>Hub は迅速な応答を期待しますが、これは Hub 固有の要件ではありません。</div>
 <button type="button" class="quiz-choice" data-correct="true" data-quiz-idx="2">複雑なタグ処理をバックグラウンドで行いながら、応答を素早く（10秒以内に）返す為</button>
-<div class="quiz-explain-src" id="qe-134933355855552-2" hidden>正解です！ Webhook エンドポイントは素早く応答しなければ、送信側プラットフォームに失敗とみなされます。</div>
+<div class="quiz-explain-src" id="qe-123494946802816-2" hidden>正解です！ Webhook エンドポイントは素早く応答しなければ、送信側プラットフォームに失敗とみなされます。</div>
 <button type="button" class="quiz-choice" data-correct="false" data-quiz-idx="3">複数の Webhook リクエストを並行に処理出来るようにする為</button>
-<div class="quiz-explain-src" id="qe-134933355855552-3" hidden>並行処理も可能になりますが、主な理由は応答時間の要件です。</div>
+<div class="quiz-explain-src" id="qe-123494946802816-3" hidden>並行処理も可能になりますが、主な理由は応答時間の要件です。</div>
 </div><div class="quiz-feedback" hidden></div></div>
 <h3>Q4：Webhook ハンドラーで <code>X-Webhook-Secret</code> ヘッダーを検証する目的は何ですか？</h3>
 <div class="quiz">
 <div class="quiz-choices">
 <button type="button" class="quiz-choice" data-correct="false" data-quiz-idx="0">どのリポジトリが Webhook を送ったかを特定すること</button>
-<div class="quiz-explain-src" id="qe-134933356038272-0" hidden>リポジトリの情報は Webhook のペイロードから得られるもので、シークレットヘッダーからではありません。</div>
+<div class="quiz-explain-src" id="qe-123494934057792-0" hidden>リポジトリの情報は Webhook のペイロードから得られるもので、シークレットヘッダーからではありません。</div>
 <button type="button" class="quiz-choice" data-correct="true" data-quiz-idx="1">不正なリクエストを防ぎ、Webhook が Hugging Face からの正当なものであることを保証すること</button>
-<div class="quiz-explain-src" id="qe-134933356038272-1" hidden>正解です！ 共有シークレットは、Hugging Face とアプリケーションの間の認証として機能します。</div>
+<div class="quiz-explain-src" id="qe-123494934057792-1" hidden>正解です！ 共有シークレットは、Hugging Face とアプリケーションの間の認証として機能します。</div>
 <button type="button" class="quiz-choice" data-correct="false" data-quiz-idx="2">Webhook のペイロードデータをデコードすること</button>
-<div class="quiz-explain-src" id="qe-134933356038272-2" hidden>シークレットは認証の為のもので、ペイロードデータのデコードの為ではありません。</div>
+<div class="quiz-explain-src" id="qe-123494934057792-2" hidden>シークレットは認証の為のもので、ペイロードデータのデコードの為ではありません。</div>
 <button type="button" class="quiz-choice" data-correct="false" data-quiz-idx="3">どの MCP ツールを使うかを決めること</button>
-<div class="quiz-explain-src" id="qe-134933356038272-3" hidden>ツールの選択は Webhook の内容に基づくもので、シークレットヘッダーに基づくものではありません。</div>
+<div class="quiz-explain-src" id="qe-123494934057792-3" hidden>ツールの選択は Webhook の内容に基づくもので、シークレットヘッダーに基づくものではありません。</div>
 </div><div class="quiz-feedback" hidden></div></div>
 <h3>Q5：Agent の実装では、<code>await agent_instance.load_tools()</code> が呼ばれると何が起きますか？</h3>
 <div class="quiz">
 <div class="quiz-choices">
 <button type="button" class="quiz-choice" data-correct="false" data-quiz-idx="0">Hugging Face Hub からツールをダウンロードする</button>
-<div class="quiz-explain-src" id="qe-134933355855552-0" hidden>ツールはローカルの MCP サーバーのものであり、Hub からダウンロードされるものではありません。</div>
+<div class="quiz-explain-src" id="qe-123494946802816-0" hidden>ツールはローカルの MCP サーバーのものであり、Hub からダウンロードされるものではありません。</div>
 <button type="button" class="quiz-choice" data-correct="true" data-quiz-idx="1">接続したサーバーの MCP ツール（get_current_tags と add_new_tag）を発見し、利用可能にする</button>
-<div class="quiz-explain-src" id="qe-134933355855552-1" hidden>正解です！ MCP サーバーが提供するツールを発見し、エージェントの推論エンジンから使えるようにします。</div>
+<div class="quiz-explain-src" id="qe-123494946802816-1" hidden>正解です！ MCP サーバーが提供するツールを発見し、エージェントの推論エンジンから使えるようにします。</div>
 <button type="button" class="quiz-choice" data-correct="false" data-quiz-idx="2">FastAPI の Webhook サーバーを起動する</button>
-<div class="quiz-explain-src" id="qe-134933355855552-2" hidden>load_tools() は MCP ツールの発見専用のもので、Web サーバーの起動とは関係ありません。</div>
+<div class="quiz-explain-src" id="qe-123494946802816-2" hidden>load_tools() は MCP ツールの発見専用のもので、Web サーバーの起動とは関係ありません。</div>
 <button type="button" class="quiz-choice" data-correct="false" data-quiz-idx="3">Hugging Face API で認証を行う</button>
-<div class="quiz-explain-src" id="qe-134933355855552-3" hidden>認証はエージェントの作成時に行われるもので、ツールの読み込み時ではありません。</div>
+<div class="quiz-explain-src" id="qe-123494946802816-3" hidden>認証はエージェントの作成時に行われるもので、ツールの読み込み時ではありません。</div>
 </div><div class="quiz-feedback" hidden></div></div>
 <h3>Q6：自然言語の指示を処理する時、Agent はどのように MCP ツールを賢く使いますか？</h3>
 <div class="quiz">
 <div class="quiz-choices">
 <button type="button" class="quiz-choice" data-correct="false" data-quiz-idx="0">うまくいくまで、利用可能なツールをランダムに呼び出す</button>
-<div class="quiz-explain-src" id="qe-134933356038272-0" hidden>Agent は推論を使って、どのツールをどの順序で呼ぶかを判断します。</div>
+<div class="quiz-explain-src" id="qe-123494934057792-0" hidden>Agent は推論を使って、どのツールをどの順序で呼ぶかを判断します。</div>
 <button type="button" class="quiz-choice" data-correct="false" data-quiz-idx="1">常に最初に get_current_tags を呼び、次に add_new_tag を呼び出す</button>
-<div class="quiz-explain-src" id="qe-134933356038272-1" hidden>よくあるパターンではありますが、Agent は指示に基づいて使うツールを推論します。</div>
+<div class="quiz-explain-src" id="qe-123494934057792-1" hidden>よくあるパターンではありますが、Agent は指示に基づいて使うツールを推論します。</div>
 <button type="button" class="quiz-choice" data-correct="true" data-quiz-idx="2">指示について推論し、どのツールをどの順序で呼ぶかを判断する</button>
-<div class="quiz-explain-src" id="qe-134933356038272-2" hidden>正解です！ Agent は複雑な指示を理解し、ツールの実行計画を自動で立てられます。</div>
+<div class="quiz-explain-src" id="qe-123494934057792-2" hidden>正解です！ Agent は複雑な指示を理解し、ツールの実行計画を自動で立てられます。</div>
 <button type="button" class="quiz-choice" data-correct="false" data-quiz-idx="3">指示の中で明示的な関数呼び出しが指定されている必要が有る</button>
-<div class="quiz-explain-src" id="qe-134933356038272-3" hidden>Agent は、明示的な関数の指定が無い自然言語の指示でも動作します。</div>
+<div class="quiz-explain-src" id="qe-123494934057792-3" hidden>Agent は、明示的な関数の指定が無い自然言語の指示でも動作します。</div>
 </div><div class="quiz-feedback" hidden></div></div>
 <h3>Q7：Webhook イベントがタグ処理を起動すべきかどうかは、どんなフィルタリングロジックで決まりますか？</h3>
 <div class="quiz">
 <div class="quiz-choices">
 <button type="button" class="quiz-choice" data-correct="false" data-quiz-idx="0">全ての Webhook イベントが種類を問わず処理される</button>
-<div class="quiz-explain-src" id="qe-134933355855552-0" hidden>ハンドラーはイベントをフィルタリングし、関連するものだけを処理します。</div>
+<div class="quiz-explain-src" id="qe-123494946802816-0" hidden>ハンドラーはイベントをフィルタリングし、関連するものだけを処理します。</div>
 <button type="button" class="quiz-choice" data-correct="true" data-quiz-idx="1">action='create' 且つ scope='discussion.comment' のイベントのみ</button>
-<div class="quiz-explain-src" id="qe-134933355855552-1" hidden>正解です！ これにより、新しいディスカッションコメントだけを処理し、他の Hub イベントは無視出来ます。</div>
+<div class="quiz-explain-src" id="qe-123494946802816-1" hidden>正解です！ これにより、新しいディスカッションコメントだけを処理し、他の Hub イベントは無視出来ます。</div>
 <button type="button" class="quiz-choice" data-correct="false" data-quiz-idx="2">検証済みのリポジトリオーナーからのイベントのみ</button>
-<div class="quiz-explain-src" id="qe-134933355855552-2" hidden>フィルタリングはイベントの種類に基づくもので、ユーザーの検証ステータスに基づくものではありません。</div>
+<div class="quiz-explain-src" id="qe-123494946802816-2" hidden>フィルタリングはイベントの種類に基づくもので、ユーザーの検証ステータスに基づくものではありません。</div>
 <button type="button" class="quiz-choice" data-correct="false" data-quiz-idx="3">コメントに 'tag' という単語を含むイベントのみ</button>
-<div class="quiz-explain-src" id="qe-134933355855552-3" hidden>イベントのフィルタリングは内容の分析より前に行われます。まずイベントの種類で絞り込みます。</div>
+<div class="quiz-explain-src" id="qe-123494946802816-3" hidden>イベントのフィルタリングは内容の分析より前に行われます。まずイベントの種類で絞り込みます。</div>
 </div><div class="quiz-feedback" hidden></div></div>
 <p>クイズはこれで終了です。お疲れさまでした！ 復習したい項目があれば、この章に戻って理解を深めましょう。 </p>
 </article>
