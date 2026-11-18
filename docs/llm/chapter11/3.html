@@ -3,30 +3,33 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>教師ありファインチューニング | Hugging Face 学習コース日本語版</title>
+<title>教師ありファインチューニング | 第11章 大規模言語モデルのファインチューニング | Hugging Face 学習コース日本語版</title>
 <meta name="description" content="教師ありファインチューニング｜LLM コース（大規模言語モデルと Transformers を学ぶコース）の日本語訳。教師ありファインチューニング（SFT）は、事前学習済みの言語モデルに、指示への追従、対話、特定の出力形式への対応を身につけさせるための手法です。">
 <meta name="robots" content="index, follow">
 <link rel="canonical" href="https://yanikasumin.github.io/HuggingFace-courses-ja/llm/chapter11/3.html">
-<meta property="og:title" content="教師ありファインチューニング | Hugging Face 学習コース日本語版">
+<meta property="og:title" content="教師ありファインチューニング | 第11章 大規模言語モデルのファインチューニング | Hugging Face 学習コース日本語版">
 <meta property="og:description" content="教師ありファインチューニング｜LLM コース（大規模言語モデルと Transformers を学ぶコース）の日本語訳。教師ありファインチューニング（SFT）は、事前学習済みの言語モデルに、指示への追従、対話、特定の出力形式への対応を身につけさせるための手法です。">
 <meta property="og:image" content="https://yanikasumin.github.io/HuggingFace-courses-ja/og-llm.png">
 <meta property="og:image:width" content="1200">
 <meta property="og:image:height" content="630">
-<meta property="og:image:alt" content="教師ありファインチューニング | Hugging Face 学習コース日本語版">
+<meta property="og:image:alt" content="教師ありファインチューニング | 第11章 大規模言語モデルのファインチューニング | Hugging Face 学習コース日本語版">
 <meta name="google-site-verification" content="A8PVY1lQPEN4macCCmGuTad7GqnBmMgMo1SRR3C320c">
 <meta property="og:type" content="article">
 <meta property="og:url" content="https://yanikasumin.github.io/HuggingFace-courses-ja/llm/chapter11/3.html">
 <meta property="og:site_name" content="Hugging Face 学習コース日本語版">
 <meta property="og:locale" content="ja_JP">
 <meta name="twitter:card" content="summary_large_image">
-<meta name="twitter:title" content="教師ありファインチューニング | Hugging Face 学習コース日本語版">
+<meta name="twitter:title" content="教師ありファインチューニング | 第11章 大規模言語モデルのファインチューニング | Hugging Face 学習コース日本語版">
 <meta name="twitter:description" content="教師ありファインチューニング｜LLM コース（大規模言語モデルと Transformers を学ぶコース）の日本語訳。教師ありファインチューニング（SFT）は、事前学習済みの言語モデルに、指示への追従、対話、特定の出力形式への対応を身につけさせるための手法です。">
 <meta name="twitter:image" content="https://yanikasumin.github.io/HuggingFace-courses-ja/og-llm.png">
 <link rel="icon" type="image/svg+xml" href="https://yanikasumin.github.io/HuggingFace-courses-ja/favicon.svg">
+<link rel="icon" type="image/x-icon" href="https://yanikasumin.github.io/HuggingFace-courses-ja/favicon.ico">
+<link rel="icon" type="image/png" sizes="48x48" href="https://yanikasumin.github.io/HuggingFace-courses-ja/favicon-48.png">
 <link rel="icon" type="image/png" sizes="32x32" href="https://yanikasumin.github.io/HuggingFace-courses-ja/favicon-32.png">
 <link rel="apple-touch-icon" sizes="180x180" href="https://yanikasumin.github.io/HuggingFace-courses-ja/apple-touch-icon.png">
 <link rel="manifest" href="https://yanikasumin.github.io/HuggingFace-courses-ja/site.webmanifest">
 <meta name="theme-color" content="#0B0F19">
+<script type="application/ld+json">{"@context": "https://schema.org", "@graph": [{"@type": "BreadcrumbList", "itemListElement": [{"@type": "ListItem", "position": 1, "name": "Hugging Face 学習コース日本語版", "item": "https://yanikasumin.github.io/HuggingFace-courses-ja/"}, {"@type": "ListItem", "position": 2, "name": "LLM コース", "item": "https://yanikasumin.github.io/HuggingFace-courses-ja/llm/"}, {"@type": "ListItem", "position": 3, "name": "教師ありファインチューニング"}]}, {"@type": "LearningResource", "name": "教師ありファインチューニング", "description": "教師ありファインチューニング｜LLM コース（大規模言語モデルと Transformers を学ぶコース）の日本語訳。教師ありファインチューニング（SFT）は、事前学習済みの言語モデルに、指示への追従、対話、特定の出力形式への対応を身につけさせるための手法です。", "url": "https://yanikasumin.github.io/HuggingFace-courses-ja/llm/chapter11/3.html", "inLanguage": "ja", "learningResourceType": "course material", "educationalLevel": "beginner to advanced", "isPartOf": {"@type": "Course", "name": "LLM コース", "url": "https://yanikasumin.github.io/HuggingFace-courses-ja/llm/", "provider": {"@type": "Organization", "name": "Hugging Face", "sameAs": "https://huggingface.co"}}}]}</script>
 <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-1676481412757711" crossorigin="anonymous"></script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -97,14 +100,14 @@ window.MathJax = { tex: { inlineMath: [['$', '$'], ['\\(', '\\)']], displayMath:
 <li><a class="side-link" href="../chapter4/2.html">事前学習済みモデルを使う</a></li>
 <li><a class="side-link" href="../chapter4/3.html">事前学習済みモデルを共有する</a></li>
 <li><a class="side-link" href="../chapter4/4.html">モデルカードを作る</a></li>
-<li><a class="side-link" href="../chapter4/5.html">Part 1 完了！</a></li>
+<li><a class="side-link" href="../chapter4/5.html">Part 1 修了！</a></li>
 <li><a class="side-link" href="../chapter4/6.html">章末クイズ</a></li>
 </ul>
 <p class="side-group">第5章 🤗 Datasets ライブラリ</p>
 <ul class="side-list">
 <li><a class="side-link" href="../chapter5/1.html">はじめに</a></li>
 <li><a class="side-link" href="../chapter5/2.html">データセットが Hub にない場合は？</a></li>
-<li><a class="side-link" href="../chapter5/3.html">切り分けて、加工して</a></li>
+<li><a class="side-link" href="../chapter5/3.html">データを切り分けて加工しよう</a></li>
 <li><a class="side-link" href="../chapter5/4.html">ビッグデータ？🤗 Datasets にお任せ！</a></li>
 <li><a class="side-link" href="../chapter5/5.html">独自のデータセットを作成する</a></li>
 <li><a class="side-link" href="../chapter5/6.html">FAISS によるセマンティック検索</a></li>
@@ -434,51 +437,51 @@ window.MathJax = { tex: { inlineMath: [['$', '$'], ['\\(', '\\)']], displayMath:
 <div class="quiz">
 <div class="quiz-choices">
 <button type="button" class="quiz-choice" data-correct="true" data-quiz-idx="0">num_train_epochs と max_steps</button>
-<div class="quiz-explain-src" id="qe-128814915746752-0" hidden>正解です！これらのパラメータは、エポック数又は総ステップ数によって、モデルがどれだけ長く学習するかを決めます。</div>
+<div class="quiz-explain-src" id="qe-123274692308160-0" hidden>正解です！これらのパラメータは、エポック数又は総ステップ数によって、モデルがどれだけ長く学習するかを決めます。</div>
 <button type="button" class="quiz-choice" data-correct="false" data-quiz-idx="1">batch_size と learning_rate</button>
-<div class="quiz-explain-src" id="qe-128814915746752-1" hidden>これらは学習に影響しますが、学習時間を直接制御するものではありません。</div>
+<div class="quiz-explain-src" id="qe-123274692308160-1" hidden>これらは学習に影響しますが、学習時間を直接制御するものではありません。</div>
 <button type="button" class="quiz-choice" data-correct="false" data-quiz-idx="2">gradient_checkpointing と warmup_ratio</button>
-<div class="quiz-explain-src" id="qe-128814915746752-2" hidden>これらのパラメータは学習の効率と安定性に影響するもので、時間ではありません。</div>
+<div class="quiz-explain-src" id="qe-123274692308160-2" hidden>これらのパラメータは学習の効率と安定性に影響するもので、時間ではありません。</div>
 </div><div class="quiz-feedback" hidden></div></div>
 <h3>2. 損失曲線のどのパターンが過学習の可能性を示しますか？</h3>
 <div class="quiz">
 <div class="quiz-choices">
 <button type="button" class="quiz-choice" data-correct="true" data-quiz-idx="0">検証損失が上がる一方で、学習損失が下がり続けている</button>
-<div class="quiz-explain-src" id="qe-128814912968448-0" hidden>正解です！学習損失と検証損失のこの乖離は、過学習の典型的なサインです。</div>
+<div class="quiz-explain-src" id="qe-123274692309056-0" hidden>正解です！学習損失と検証損失のこの乖離は、過学習の典型的なサインです。</div>
 <button type="button" class="quiz-choice" data-correct="false" data-quiz-idx="1">学習損失と検証損失の両方が着実に下がる</button>
-<div class="quiz-explain-src" id="qe-128814912968448-1" hidden>このパターンは実際には健全な学習を示します。</div>
+<div class="quiz-explain-src" id="qe-123274692309056-1" hidden>このパターンは実際には健全な学習を示します。</div>
 <button type="button" class="quiz-choice" data-correct="false" data-quiz-idx="2">学習損失が一定のままで、検証損失が下がる</button>
-<div class="quiz-explain-src" id="qe-128814912968448-2" hidden>これは珍しいパターンであり、過学習を示すものではありません。</div>
+<div class="quiz-explain-src" id="qe-123274692309056-2" hidden>これは珍しいパターンであり、過学習を示すものではありません。</div>
 </div><div class="quiz-feedback" hidden></div></div>
 <h3>3. gradient_accumulation_steps は何に使われますか？</h3>
 <div class="quiz">
 <div class="quiz-choices">
 <button type="button" class="quiz-choice" data-correct="true" data-quiz-idx="0">メモリ使用量を増やさずに、実効的なバッチサイズを大きくするため</button>
-<div class="quiz-explain-src" id="qe-128814915746752-0" hidden>正解です！複数の順伝播にわたって勾配を累積してから重みを更新します。</div>
+<div class="quiz-explain-src" id="qe-123274692308160-0" hidden>正解です！複数の順伝播にわたって勾配を累積してから重みを更新します。</div>
 <button type="button" class="quiz-choice" data-correct="false" data-quiz-idx="1">学習中にチェックポイントを保存するため</button>
-<div class="quiz-explain-src" id="qe-128814915746752-1" hidden>これは save_steps と save_strategy パラメータが担います。</div>
+<div class="quiz-explain-src" id="qe-123274692308160-1" hidden>これは save_steps と save_strategy パラメータが担います。</div>
 <button type="button" class="quiz-choice" data-correct="false" data-quiz-idx="2">学習率のスケジュールを制御するため</button>
-<div class="quiz-explain-src" id="qe-128814915746752-2" hidden>学習率のスケジュールは learning_rate と warmup_ratio で制御します。</div>
+<div class="quiz-explain-src" id="qe-123274692308160-2" hidden>学習率のスケジュールは learning_rate と warmup_ratio で制御します。</div>
 </div><div class="quiz-feedback" hidden></div></div>
 <h3>4. SFT の学習中に監視すべきなのは何ですか？</h3>
 <div class="quiz">
 <div class="quiz-choices">
 <button type="button" class="quiz-choice" data-correct="true" data-quiz-idx="0">定量的なメトリクスと定性的な出力の両方</button>
-<div class="quiz-explain-src" id="qe-128814912968448-0" hidden>正解です！両方の種類のメトリクスを監視することで、潜在的な問題をすべて捉えられます。</div>
+<div class="quiz-explain-src" id="qe-123274692309056-0" hidden>正解です！両方の種類のメトリクスを監視することで、潜在的な問題をすべて捉えられます。</div>
 <button type="button" class="quiz-choice" data-correct="false" data-quiz-idx="1">学習損失のみ</button>
-<div class="quiz-explain-src" id="qe-128814912968448-1" hidden>学習損失だけでは、モデルの良好な振る舞いを保証するには不十分です。</div>
+<div class="quiz-explain-src" id="qe-123274692309056-1" hidden>学習損失だけでは、モデルの良好な振る舞いを保証するには不十分です。</div>
 <button type="button" class="quiz-choice" data-correct="false" data-quiz-idx="2">モデルの出力の品質のみ</button>
-<div class="quiz-explain-src" id="qe-128814912968448-2" hidden>重要ではありますが、定性的な評価だけでは、学習の進行状況やその変化を十分に把握できません。</div>
+<div class="quiz-explain-src" id="qe-123274692309056-2" hidden>重要ではありますが、定性的な評価だけでは、学習の進行状況やその変化を十分に把握できません。</div>
 </div><div class="quiz-feedback" hidden></div></div>
 <h3>5. 学習中の健全な収束を示すのは何ですか？</h3>
 <div class="quiz">
 <div class="quiz-choices">
 <button type="button" class="quiz-choice" data-correct="true" data-quiz-idx="0">学習損失と検証損失の差が小さいこと</button>
-<div class="quiz-explain-src" id="qe-128814915746752-0" hidden>正解です！これは、モデルが汎化できるパターンを学習していることを示します。</div>
+<div class="quiz-explain-src" id="qe-123274692308160-0" hidden>正解です！これは、モデルが汎化できるパターンを学習していることを示します。</div>
 <button type="button" class="quiz-choice" data-correct="false" data-quiz-idx="1">学習損失がゼロに到達すること</button>
-<div class="quiz-explain-src" id="qe-128814915746752-1" hidden>損失の値が極端に低い場合は、学習ではなく暗記を示している可能性があります。</div>
+<div class="quiz-explain-src" id="qe-123274692308160-1" hidden>損失の値が極端に低い場合は、学習ではなく暗記を示している可能性があります。</div>
 <button type="button" class="quiz-choice" data-correct="false" data-quiz-idx="2">検証損失が学習損失より低いこと</button>
-<div class="quiz-explain-src" id="qe-128814915746752-2" hidden>これは珍しいことであり、検証セットに問題がある可能性を示します。</div>
+<div class="quiz-explain-src" id="qe-123274692308160-2" hidden>これは珍しいことであり、検証セットに問題がある可能性を示します。</div>
 </div><div class="quiz-feedback" hidden></div></div>
 <h2>💐 お疲れさまでした！</h2>
 <p>SFT を使ったモデルのファインチューニングの方法を学びました。学習を続けるには:
