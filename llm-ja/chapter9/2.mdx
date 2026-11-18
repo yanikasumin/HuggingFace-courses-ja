@@ -7,13 +7,13 @@
     {label: "Aws Studio", value: "https://studiolab.sagemaker.aws/import/github/huggingface/notebooks/blob/master/course/en/chapter9/section2.ipynb"},
 ]} />
 
-まずは Gradio をインストールしましょう！Python パッケージなので、次を実行するだけです:
+Gradio は Python パッケージです。インストールは次のコマンドで行います。
 
 `$ pip install gradio `
 
-Gradio はどこでも実行出来ます。お気に入りの Python IDE でも、Jupyter ノートブックでも、Google Colab でも。Python が動く場所ならどこでも、Gradio をインストールして使えます。
+Gradio は、Python が動作する環境であればどこでも実行出来ます。普段使っている Python IDE、Jupyter ノートブック、Google Colab のいずれでも利用出来ます。
 
-Gradio の構文に慣れる為に、シンプルな「Hello World」の例から始めましょう:
+次に、Gradio の構文を確認する為に、シンプルな「Hello World」の例を示します。
 
 ```py
 import gradio as gr
@@ -30,21 +30,19 @@ demo.launch()
 
 上のコードを順に見ていきましょう:
 
-- まず、`greet()` という関数を定義します。ここでは名前の前に "Hello" を付けるだけのシンプルな関数ですが、一般的には *どんな* Python 関数でも構いません。例えば機械学習の応用では、入力に対して *モデルを呼び出して予測を行い*、出力を返す関数になるでしょう。
-- 次に、`fn`、`inputs`、`outputs` の3つの引数で Gradio の `Interface` を作成します。これらの引数で、予測関数と、使いたい入出力コンポーネントの _種類_ を定義します。今回の例では、どちらのコンポーネントもシンプルなテキストボックスです。
+- まず、`greet()` という関数を定義します。この例では名前の前に "Hello" を付けるだけの単純な関数ですが、対象は任意の Python 関数です。例えば、機械学習の応用では、入力を受け取って *モデルを呼び出して予測を行い*、その出力を返す関数になります。
+- 次に、`fn`、`inputs`、`outputs` の3つの引数で Gradio の `Interface` を作成します。これらの引数は、予測関数と、使いたい入出力コンポーネントの _種類_ を定義します。今回の例では、どちらのコンポーネントもシンプルなテキストボックスです。
 - 最後に、作成した `Interface` に対して `launch()` メソッドを呼びます。
 
-このコードを実行すると、Jupyter/Colab のノートブックでは下のようなインターフェースが自動的に表示され、スクリプトから実行した場合はブラウザで **[http://localhost:7860](http://localhost:7860/)** が開きます。
+このコードを実行すると、Jupyter/Colab のノートブックでは下のインターフェースが自動的に表示されます。スクリプトから実行した場合は、ブラウザで **[http://localhost:7860](http://localhost:7860/)** が開きます。
 
 <iframe src="https://course-demos-hello-world.hf.space" frameBorder="0" height="250" title="Gradio アプリ" class="container p-0 flex-grow space-iframe" allow="accelerometer; ambient-light-sensor; autoplay; battery; camera; document-domain; encrypted-media; fullscreen; geolocation; gyroscope; layout-animations; legacy-image-formats; magnetometer; microphone; midi; oversized-images; payment; picture-in-picture; publickey-credentials-get; sync-xhr; usb; vr ; wake-lock; xr-spatial-tracking" sandbox="allow-forms allow-modals allow-popups allow-popups-to-escape-sandbox allow-same-origin allow-scripts allow-downloads"></iframe>
 
-自分の名前や他の入力で、この GUI を今すぐ試してみてください！
+この GUI は、名前などを入力してそのまま試せます。
 
-この GUI では、Gradio が入力パラメータの名前（`name`）を自動で推測し、テキストボックスの上のラベルとして適用していることに気づくでしょう。
+この GUI では、Gradio が入力パラメータの名前（`name`）を自動で推測し、テキストボックスの上のラベルとして適用しています。ラベルを変更する場合や、テキストボックスを他の方法でカスタマイズする場合は、入力コンポーネントに対応するクラスのインスタンスを作成します。
 
-これを変更したい場合はどうすればよいでしょうか？テキストボックスを他の方法でカスタマイズしたい場合は？その場合は、入力コンポーネントに対応するクラスからインスタンスを作成します。
-
-下の例を見てみましょう:
+下の例を示します。
 
 ```py
 import gradio as gr
@@ -64,14 +62,14 @@ gr.Interface(fn=greet, inputs=textbox, outputs="text").launch()
 
 <iframe src="https://course-demos-hello-world-custom.hf.space" frameBorder="0" height="300" title="Gradio アプリ" class="container p-0 flex-grow space-iframe" allow="accelerometer; ambient-light-sensor; autoplay; battery; camera; document-domain; encrypted-media; fullscreen; geolocation; gyroscope; layout-animations; legacy-image-formats; magnetometer; microphone; midi; oversized-images; payment; picture-in-picture; publickey-credentials-get; sync-xhr; usb; vr ; wake-lock; xr-spatial-tracking" sandbox="allow-forms allow-modals allow-popups allow-popups-to-escape-sandbox allow-same-origin allow-scripts allow-downloads"></iframe>
 
-ここでは、ラベル、プレースホルダ、行数を指定した入力テキストボックスを作成しました。出力テキストボックスについても同じことが出来ますが、ここでは省略します。
+この例では、ラベルとプレースホルダと行数を指定して、入力テキストボックスを作成しています。出力テキストボックスも同じ方法で作成出来ますが、ここでは扱いません。
 
-わずか数行のコードで、Gradio を使えばあらゆる種類の入出力を持つ関数にシンプルなインターフェースを付けられることが分かりました。このセクションではシンプルなテキストボックスから始めましたが、次のセクションでは他の種類の入出力を扱います。次は、Gradio アプリケーションに NLP を取り入れてみましょう。
+この様に、わずか数行のコードで、任意の入出力を持つ関数にシンプルなインターフェースを付けられます。このセクションではテキストボックスを扱いました。次のセクションでは、他の種類の入出力を扱います。続いて、Gradio アプリケーションに NLP を取り入れる例を示します。
 
 
 ## モデルの予測を取り入れる[[including-model-predictions]]
 
-ここでは、GPT-2 のような **テキスト生成** モデルのデモが出来る、シンプルなインターフェースを作ります。
+ここでは、GPT-2 の様な **テキスト生成** モデルをデモにする、シンプルなインターフェースを作ります。
 
 モデルは 🤗 Transformers の `pipeline()` 関数を使って読み込みます。手早く復習したい場合は、[Chapter 1 の該当セクション](/course/chapter1/3#text-generation) に戻ってください。
 
@@ -88,7 +86,7 @@ def predict(prompt):
     return completion
 ```
 
-この関数は、与えたプロンプトを補完します。自分の入力プロンプトで実行して、動作を確認してみてください。例はこちらです（補完結果は異なる場合があります）:
+この関数は、与えたプロンプトの続きを生成します。動作は、任意のプロンプトを入力して確認出来ます。実行例は次の通りです（補完結果は異なる場合があります）。
 
 ```
 predict("My favorite programming language is")
@@ -98,7 +96,7 @@ predict("My favorite programming language is")
 >> My favorite programming language is Haskell. I really enjoyed the Haskell language, but it doesn't have all the features that can be applied to any other language. For example, all it does is compile to a byte array.
 ```
 
-予測を生成する関数が出来たら、先ほどと同じ方法で `Interface` を作成して起動出来ます:
+予測を生成する関数が出来たら、先ほどと同じ方法で `Interface` を作成して起動出来ます。
 
 ```py
 import gradio as gr
@@ -107,8 +105,8 @@ gr.Interface(fn=predict, inputs="text", outputs="text").launch()
 ```
 
 
-これだけです！下のように、このインターフェースを使って GPT-2 モデルでテキストを生成出来ます。
+以上で準備は完了です。下のインターフェースで、GPT-2 モデルによるテキスト生成を試せます。
 
 <iframe src="https://course-demos-gpt-2.hf.space" frameBorder="0" height="300" title="Gradio アプリ" class="container p-0 flex-grow space-iframe" allow="accelerometer; ambient-light-sensor; autoplay; battery; camera; document-domain; encrypted-media; fullscreen; geolocation; gyroscope; layout-animations; legacy-image-formats; magnetometer; microphone; midi; oversized-images; payment; picture-in-picture; publickey-credentials-get; sync-xhr; usb; vr ; wake-lock; xr-spatial-tracking" sandbox="allow-forms allow-modals allow-popups allow-popups-to-escape-sandbox allow-same-origin allow-scripts allow-downloads"></iframe>
 
-Gradio で他の種類のデモを作る方法は、このまま読み進めてください！
+Gradio で作れる他の種類のデモは、次節以降で扱います。

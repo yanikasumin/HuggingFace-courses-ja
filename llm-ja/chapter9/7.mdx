@@ -7,29 +7,29 @@
     {label: "Aws Studio", value: "https://studiolab.sagemaker.aws/import/github/huggingface/notebooks/blob/master/course/en/chapter9/section7.ipynb"},
 ]} />
 
-これまでのセクションでは、`Interface` クラスを使ってデモを探索し、作成してきました。このセクションでは、**新しく開発された** 低レベル API、`gradio.Blocks` を紹介します。
+これまでのセクションでは、`Interface` クラスを使ってデモを作成してきました。このセクションでは、**新しく開発された**低レベル API である `gradio.Blocks` を紹介します。
 
-では、`Interface` と `Blocks` の違いは何でしょうか？
+`Interface` と `Blocks` の違いは、次の通りです。
 
-- ⚡ `Interface`：高レベル API。入出力のリストを与えるだけで、本格的な機械学習デモを作成出来ます。
+- ⚡ `Interface`：高レベル API です。入力と出力のリストを与えるだけで、機械学習のデモを作成出来ます。
 
-- 🧱 `Blocks`：低レベル API。アプリケーションのデータフローとレイアウトを完全に制御出来ます。`Blocks`（「積み木」という意味）を使えば、非常に複雑な複数ステップのアプリケーションも構築出来ます。
+- 🧱 `Blocks`：低レベル API です。アプリケーションのデータフローとレイアウトを完全に制御出来ます。`Blocks` は「積み木」を意味し、組み合わせることで非常に複雑な複数ステップのアプリケーションも構築出来ます。
 
 
 ### 何故 Blocks なのか？[[why-blocks-]]
 
-これまでのセクションで見たように、`Interface` クラスを使えば、わずか数行のコードで本格的な機械学習デモを簡単に作れます。`Interface` API は非常に使いやすい一方で、`Blocks` API のような柔軟性はありません。例えば、次のようなことがしたくなるかもしれません:
+`Interface` クラスを使うと、数行のコードで本格的な機械学習デモを作成出来ます。`Interface` API は非常に使いやすい一方で、柔軟性では `Blocks` API に劣ります。例えば、次のようなカスタマイズが必要になる場合があります：
 
-- 関連するデモを、1つの Web アプリケーション内の複数タブとしてまとめる
-- デモのレイアウトを変更する（例：入力と出力の配置場所を指定する）
-- 或るモデルの出力が次のモデルの入力になるような複数ステップのインターフェースや、より柔軟なデータフロー全般
-- ユーザーの入力に応じて、コンポーネントのプロパティ（例：ドロップダウンの選択肢）や表示/非表示を変更する
+- 関連するデモを、1つの Web アプリケーションの中で複数のタブにまとめる
+- デモのレイアウトを変更する。例えば、入力と出力の配置場所を指定する
+- 複数ステップのインターフェースを作る。或るモデルの出力を次のモデルの入力にしたり、データフローを柔軟に設計したりする
+- ユーザーの入力に応じてコンポーネントのプロパティを変更する。例えば、ドロップダウンの選択肢や、コンポーネントの表示と非表示を切り替える
 
-これら全ての概念を、以下で探っていきます。
+以下では、これらの概念を順に説明します。
 
 ### Blocks を使ってシンプルなデモを作る[[creating-a-simple-demo-using-blocks]]
 
-Gradio をインストールしたら、下のコードを Python スクリプト、Jupyter ノートブック、Colab ノートブックのいずれかで実行してください。
+Gradio をインストールした後、下記のコードを Python スクリプト、Jupyter ノートブック、又は Colab ノートブックで実行してください。
 
 ```py
 import gradio as gr
@@ -60,32 +60,32 @@ demo.launch()
 
 <iframe src="https://course-demos-flip-text.hf.space" frameBorder="0" height="400" title="Gradio アプリ" class="container p-0 flex-grow space-iframe" allow="accelerometer; ambient-light-sensor; autoplay; battery; camera; document-domain; encrypted-media; fullscreen; geolocation; gyroscope; layout-animations; legacy-image-formats; magnetometer; microphone; midi; oversized-images; payment; picture-in-picture; publickey-credentials-get; sync-xhr; usb; vr ; wake-lock; xr-spatial-tracking" sandbox="allow-forms allow-modals allow-popups allow-popups-to-escape-sandbox allow-same-origin allow-scripts allow-downloads"></iframe>
 
-上のシンプルな例は、Blocks の基礎となる4つの概念を紹介しています:
+上記の単純な例には、Blocks の基礎となる概念が4つ含まれています：
 
-1. Blocks では、`gr.Blocks()` を使用した with ブロック内でコンポーネントをインスタンス化するだけで、Markdown、HTML、ボタン、インタラクティブなコンポーネントを組み合わせた Web アプリケーションを構築出来ます。
+1. Blocks では、`gr.Blocks()` の with ブロックの中で Python のオブジェクトを作成するだけで、Markdown、HTML、ボタン、操作可能なコンポーネントを組み合わせた Web アプリケーションを構築出来ます。
 > [!TIP]
-> Python の `with` 文に慣れていない場合は、Real Python の優れた[チュートリアル](https://realpython.com/python-with-statement/)を確認することをお勧めします。読んだらここに戻ってきてください
-コンポーネントをインスタンス化する順序は重要です。各要素は作成された順序で Web アプリにレンダリングされます（より複雑なレイアウトは後述します）。
+> Python の `with` 文に慣れていない場合は、Real Python の[チュートリアル](https://realpython.com/python-with-statement/)を参照してください。
+コンポーネントを作成する順序は、そのまま Web アプリへの表示順になります。より複雑なレイアウトは後で説明します。
 
-2. 通常の Python 関数をコード内のどこにでも定義し、`Blocks` を使ってユーザーの入力で実行出来ます。例では入力テキストを「反転」するシンプルな関数を使っていますが、単純な計算から機械学習モデルによる予測処理まで、あらゆる Python 関数を書けます。
+2. 通常の Python 関数は、コードのどこに定義しても構いません。`Blocks` を使うと、その関数をユーザーの入力で実行出来ます。例の関数は入力テキストを反転する単純なものですが、単純な計算から機械学習モデルの予測処理まで、任意の Python 関数を使えます。
 
-3. 任意の `Blocks` コンポーネントにイベントを割り当てられます。コンポーネントがクリックされたり変更されたりした時に、関数が実行されます。イベントを割り当てる際は、3つのパラメータを渡します：`fn`（呼び出す関数）、`inputs`（入力コンポーネント。複数の場合はリストで指定）、`outputs`（出力コンポーネント。複数の場合はリストで指定）です。
+3. `Blocks` コンポーネントには、イベントを割り当てられます。イベントを割り当てると、コンポーネントがクリックされたり値が変更されたりした時に、関数が実行されます。割り当てでは、3つのパラメータを渡します。`fn` は呼び出す関数、`inputs` は入力コンポーネント、`outputs` は出力コンポーネントです。入力や出力が複数の場合は、リストで指定します。
 
-   上の例では、`input` という名前の `Textbox` の値が変わった時に `flip_text()` 関数を実行します。イベントが発生すると、`input` の値が `flip_text()` の引数 `x` に渡されます。関数の戻り値は、2つ目の `Textbox` である `output` に反映されます。
+   上の例では、`input` という名前の `Textbox` の値が変わると、`flip_text()` 関数が実行されます。`input` の値は `flip_text()` の引数 `x` として渡され、関数の戻り値が2つ目の `Textbox` である `output` に反映されます。
 
    各コンポーネントがサポートするイベントの一覧は、Gradio の[ドキュメント](https://www.gradio.app/docs/)を参照してください。
 
-4. Blocks は、定義したイベントトリガーに基づいて、コンポーネントがインタラクティブ（ユーザーの入力を受け付ける）であるべきかどうかを自動で判断します。例では、1つ目のテキストボックスはその値が `flip_text()` 関数に使われる為インタラクティブです。2つ目のテキストボックスは、その値が入力として使われることが無い為、インタラクティブではありません。この判断を上書きしたい場合は、コンポーネントの `interactive` パラメータに真偽値を渡します（例：`gr.Textbox(placeholder="Flip this text", interactive=True)`）。
+4. Blocks は、定義したイベントトリガーに基づいて、コンポーネントがインタラクティブかどうかを自動で判断します。インタラクティブとは、ユーザーの入力を受け付ける状態を指します。上の例では、1つ目のテキストボックスの値は `flip_text()` 関数で使われる為、インタラクティブになります。2つ目のテキストボックスの値は入力として使われない為、インタラクティブにはなりません。この判断を上書きする場合は、コンポーネントの `interactive` パラメータに真偽値を渡します。例えば `gr.Textbox(placeholder="Flip this text", interactive=True)` のように指定します。
 
 ### デモのレイアウトをカスタマイズする[[customizing-the-layout-of-your-demo]]
 
-`Blocks` を使ってデモのレイアウトをカスタマイズするにはどうすればよいでしょうか？デフォルトでは、`Blocks` は作成したコンポーネントを1列に縦に並べてレンダリングします。これを変更するには、`with gradio.Column():` で列を、`with gradio.Row():` で行を追加し、そのコンテキストの中でコンポーネントを作成します。
+`Blocks` でデモのレイアウトをカスタマイズする方法を説明します。デフォルトでは、`Blocks` は作成したコンポーネントを1列に縦に並べます。並べ方を変える場合は、`with gradio.Column():` で列を、`with gradio.Row():` で行を作成し、その中でコンポーネントを作成します。
 
-覚えておくべき点はこちらです：`Column` の下（これがデフォルトでもあります）に作成されたコンポーネントは縦に並びます。`Row` の下に作成されたコンポーネントは、[Web 開発の flexbox モデル](https://developer.mozilla.org/en-US/docs/Web/CSS/CSS_Flexible_Box_Layout/Basic_Concepts_of_Flexbox)と同様に、横に並びます。
+`Column` の中で作成したコンポーネントは縦に並びます。これがデフォルトの配置でもあります。`Row` の中で作成したコンポーネントは、[Web 開発の flexbox モデル](https://developer.mozilla.org/en-US/docs/Web/CSS/CSS_Flexible_Box_Layout/Basic_Concepts_of_Flexbox)と同様に横に並びます。
 
-最後に、`with gradio.Tabs()` コンテキストマネージャを使えば、デモにタブを作成することも出来ます。このコンテキスト内では、`with gradio.TabItem(name_of_tab):` を子として指定することで複数のタブを作成出来ます。`with gradio.TabItem(name_of_tab):` コンテキストの中で作成されたコンポーネントは、そのタブ内に表示されます。
+タブは、`with gradio.Tabs()` コンテキストマネージャで作成出来ます。このコンテキストの中で `with gradio.TabItem(name_of_tab):` を使うと、タブを複数作成出来ます。`with gradio.TabItem(name_of_tab):` の中で作成したコンポーネントは、そのタブの中に表示されます。
 
-では、デモに `flip_image()` 関数を追加し、画像を反転する新しいタブを追加してみましょう。下は、2つのタブを持ち、Row も使った例です:
+次に、デモへ `flip_image()` 関数と、画像を反転するタブを追加します。下記は、2つのタブを持ち、Row も使った例です：
 
 ```py
 import numpy as np
@@ -127,25 +127,23 @@ demo.launch()
 <iframe src="https://course-demos-flip-text-image.hf.space" frameBorder="0" height="450" title="Gradio アプリ" class="container p-0 flex-grow space-iframe" allow="accelerometer; ambient-light-sensor; autoplay; battery; camera; document-domain; encrypted-media; fullscreen; geolocation; gyroscope; layout-animations; legacy-image-formats; magnetometer; microphone; midi; oversized-images; payment; picture-in-picture; publickey-credentials-get; sync-xhr; usb; vr ; wake-lock; xr-spatial-tracking" sandbox="allow-forms allow-modals allow-popups allow-popups-to-escape-sandbox allow-same-origin allow-scripts allow-downloads"></iframe>
 
 
-この例では、各タブに `Button` コンポーネントも作成し、それぞれのボタンにクリックイベントを割り当てていることにも注目してください。これが実際に関数を実行します。
+この例では、各タブに `Button` コンポーネントも作成し、各ボタンにクリックイベントを割り当てています。関数を実行するのは、このクリックイベントです。
 
 ### イベントと状態を探る[[exploring-events-and-state]]
 
-レイアウトを制御出来るのと同様に、`Blocks` では、どのイベントが関数の呼び出しをトリガーするかを細かく制御出来ます。各コンポーネントや多くのレイアウトには、それぞれサポートする固有のイベントがあります。
+`Blocks` では、レイアウトだけでなく、どのイベントで関数を呼び出すかも細かく制御出来ます。各コンポーネントと多くのレイアウトには、それぞれ対応するイベントが用意されています。
 
-例えば、`Textbox` コンポーネントには2つのイベントがあります：`change()`（テキストボックス内の値が変わった時）と `submit()`（テキストボックスにフォーカスした状態でユーザーが Enter キーを押した時）です。より複雑なコンポーネントには、更に多くのイベントがあります。
+例えば、`Textbox` コンポーネントには2つのイベントがあります。`change()` はテキストボックス内の値が変わった時、`submit()` はテキストボックスにフォーカスした状態でユーザーが Enter キーを押した時に発生します。より複雑なコンポーネントには、更に多くのイベントがあります。例えば `Audio` コンポーネントには、音声ファイルの再生、クリア、一時停止など、操作ごとに別のイベントがあります。各コンポーネントが対応するイベントは、ドキュメントを参照してください。
 
-例えば `Audio` コンポーネントには、音声ファイルが再生、クリア、一時停止された時など、それぞれ別のイベントがあります。各コンポーネントがサポートするイベントはドキュメントを参照してください。
+イベントトリガーは、イベントのうち1つに設定しても、複数に設定しても、設定しなくても構いません。イベントトリガーを作成するには、コンポーネントのインスタンスに対して、イベント名を関数のように呼び出します。例えば `textbox.change(...)` や `btn.click(...)` です。
 
-イベントトリガーは、必要に応じて1つ又は複数のイベントに設定出来ます。設定しないイベントがあっても構いません。イベントトリガーは、コンポーネントのインスタンスに対してイベント名を関数として呼び出すことで作成します（例：`textbox.change(...)` や `btn.click(...)`）。
+この関数は、前述の通り3つのパラメータを取ります：
 
-前述の通り、この関数は3つのパラメータを取ります:
+- `fn`：実行する関数です。
+- `inputs`：関数の入力パラメータとして値を渡すコンポーネントです。複数の場合はリストで指定します。各コンポーネントの値は、順番に対応する関数のパラメータへ割り当てられます。関数がパラメータを取らない場合は、None を指定出来ます。
+- `outputs`：関数の戻り値で値を更新するコンポーネントです。複数の場合はリストで指定します。各戻り値は、順番に対応するコンポーネントの値になります。関数が何も返さない場合は、None を指定出来ます。
 
-- `fn`：実行する関数
-- `inputs`：値が関数の入力パラメータとして渡されるコンポーネント。複数の場合はリストで指定します。各コンポーネントの値は、順番に対応する関数のパラメータに割り当てられます。関数がパラメータを取らない場合は None に出来ます。
-- `outputs`：関数の戻り値に基づいて値が更新されるコンポーネント。複数の場合はリストで指定します。各戻り値は、順番に対応するコンポーネントの値を設定します。関数が何も返さない場合は None に出来ます。
-
-入力コンポーネントと出力コンポーネントを同じコンポーネントにすることも出来ます。GPT モデルでテキスト補完を行う次の例がそれです:
+入力と出力に同じコンポーネントを使うことも出来ます。下記は、GPT モデルでテキスト補完を行う例です：
 
 ```py
 import gradio as gr
@@ -173,9 +171,7 @@ demo.launch()
 
 ### 複数ステップのデモを作る[[creating-multi-step-demos]]
 
-場合によっては、或る関数の出力を次の関数の入力として再利用する _複数ステップのデモ_ が欲しくなるかもしれません。これは `Blocks` を使えばとても簡単です。1つのコンポーネントを、或るイベントトリガーの入力でありながら、別のイベントトリガーの出力に出来るからです。下の例のテキストコンポーネントを見てください。
-
-その値は音声認識モデルの結果ですが、感情分析モデルにも渡されます:
+或る関数の出力を次の関数の入力として再利用する、_複数ステップのデモ_ が必要になる場合があります。`Blocks` では、この構成を簡単に作れます。1つのコンポーネントを、或るイベントトリガーの出力でありながら、別のイベントトリガーの入力に出来る為です。下記の例では、テキストコンポーネントがその役割を持ちます。このコンポーネントの値は音声認識モデルの結果であり、同時に感情分析モデルへも渡されます：
 
 ```py
 from transformers import pipeline
@@ -215,9 +211,9 @@ demo.launch()
 
 ### コンポーネントのプロパティを更新する[[updating-component-properties]]
 
-ここまで、イベントを作成して別のコンポーネントの値を更新する方法を見てきました。しかし、テキストボックスの表示/非表示やラジオボタングループの選択肢など、コンポーネントの他のプロパティを変更したい場合はどうすればよいでしょうか？関数から通常の戻り値の代わりに、コンポーネントクラスの `update()` メソッドを呼び出し、その戻り値を返すことで実現出来ます。
+ここまでは、イベントで別のコンポーネントの値を更新する方法を説明しました。値以外のプロパティ、例えばテキストボックスの表示と非表示や、ラジオボタングループの選択肢を変更する場合は、関数から通常の値を返す代わりに、コンポーネントクラスの `update()` メソッドの戻り値を返します。
 
-例で見るのが一番分かり易いでしょう:
+例で示すのが最も分かり易い方法です：
 
 ```py
 import gradio as gr
@@ -246,4 +242,4 @@ with gr.Blocks() as block:
 
 <iframe src="https://course-demos-blocks-update-component-properties.hf.space" frameBorder="0" height="300" title="Gradio アプリ" class="container p-0 flex-grow space-iframe" allow="accelerometer; ambient-light-sensor; autoplay; battery; camera; document-domain; encrypted-media; fullscreen; geolocation; gyroscope; layout-animations; legacy-image-formats; magnetometer; microphone; midi; oversized-images; payment; picture-in-picture; publickey-credentials-get; sync-xhr; usb; vr ; wake-lock; xr-spatial-tracking" sandbox="allow-forms allow-modals allow-popups allow-popups-to-escape-sandbox allow-same-origin allow-scripts allow-downloads"></iframe>
 
-これで `Blocks` の核となる概念を全て見ました！`Interface` と同様に、`launch()` メソッドで `share=True` を使って共有したり、[Hugging Face Spaces](https://huggingface.co/spaces) にデプロイしたり出来る、素敵なデモを作れます。
+以上で、`Blocks` の中心となる概念は全て説明しました。`Interface` と同様に、`launch()` メソッドで `share=True` を指定してデモを共有出来ます。[Hugging Face Spaces](https://huggingface.co/spaces) へデプロイすることも出来ます。

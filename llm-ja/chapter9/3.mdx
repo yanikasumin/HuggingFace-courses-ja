@@ -7,37 +7,37 @@
     {label: "Aws Studio", value: "https://studiolab.sagemaker.aws/import/github/huggingface/notebooks/blob/master/course/en/chapter9/section3.ipynb"},
 ]} />
 
-このセクションでは、`Interface` クラスを詳しく見て、それを作成する為の主要なパラメータを理解します。
+このセクションでは、`Interface` クラスを取り上げ、作成に使う主要なパラメータを説明します。
 
 ## `Interface` の作り方[[how-to-create-an-interface]]
 
-`Interface` クラスには必須パラメータが3つ有ることに気づくでしょう:
+`Interface` クラスには、必須パラメータが3つあります。
 
 `Interface(fn, inputs, outputs, ...)`
 
 各パラメータは次の通りです:
 
-  - `fn`：Gradio インターフェースでラップされる予測関数。この関数は1つ以上のパラメータを取り、1つ以上の値を返すことが出来ます
-  - `inputs`：入力コンポーネントの種類。Gradio には `"image"` や `"mic"` など、多くの組み込みコンポーネントが用意されています。
-  - `outputs`：出力コンポーネントの種類。こちらも `"image"` や `"label"` など、多くの組み込みコンポーネントが用意されています。
+  - `fn`：Gradio インターフェースでラップされる予測関数です。この関数は1つ以上のパラメータを取り、1つ以上の値を返すことが出来ます
+  - `inputs`：入力コンポーネントの種類です。Gradio には `"image"` や `"mic"` 等、多くの組み込みコンポーネントが用意されています。
+  - `outputs`：出力コンポーネントの種類です。こちらも `"image"` や `"label"` 等、多くの組み込みコンポーネントが用意されています。
 
-コンポーネントの完全な一覧は、[Gradio のドキュメント](https://gradio.app/docs) を参照してください。各組み込みコンポーネントは、対応するクラスをインスタンス化することでカスタマイズ出来ます。
+コンポーネントの完全な一覧は、[Gradio のドキュメント](https://gradio.app/docs) を参照してください。各組み込みコンポーネントは、対応するクラスをインスタンス化してカスタマイズ出来ます。
 
-例えば、[前のセクション](/course/chapter9/2) で見たように、`inputs` パラメータに `"textbox"` を渡す代わりに、`Textbox(lines=7, label="Prompt")` コンポーネントを渡せば、7行のテキストボックスにラベルを付けられます。
+例えば、[前のセクション](/course/chapter9/2) で見た様に、`inputs` パラメータに `"textbox"` を渡す代わりに、`Textbox(lines=7, label="Prompt")` コンポーネントを渡すと、7行のテキストボックスにラベルを付けられます。
 
-別の例として、今度は `Audio` コンポーネントを使った例を見てみましょう。
+別の例として、`Audio` コンポーネントを使った例を示します。
 
 ## 音声を使ったシンプルな例[[a-simple-example-with-audio]]
 
-前述の通り、Gradio には様々な入出力が用意されています。音声を扱う `Interface` を作ってみましょう。
+Gradio には様々な入出力が用意されています。ここでは、音声を扱う `Interface` を作ります。
 
-この例では、音声ファイルを受け取って単に逆再生する、音声入力・音声出力の関数を作ります。
+この例では、音声ファイルを受け取って逆再生する関数を作ります。入力も出力も音声です。
 
-入力には `Audio` コンポーネントを使います。`Audio` コンポーネントでは、音声の `source` として、ユーザーがアップロードするファイルか、ユーザーが声を録音するマイクかを指定出来ます。ここでは `"microphone"` に設定しましょう。ついでに、`Audio` に "Speak here..." というラベルも付けてみます。
+入力には `Audio` コンポーネントを使います。`Audio` コンポーネントでは、音声の入力元を `source` で指定します。指定出来るのは、ユーザーがアップロードするファイルと、ユーザーが声を録音するマイクです。ここでは `"microphone"` に設定します。併せて、`Audio` には "Speak here..." というラベルを付けます。
 
-更に、音声を簡単に「逆再生」出来るよう、numpy 配列として受け取りたいので、`"type"` を `"numpy"` に設定します。これにより、入力データは (`sample_rate`, `data`) のタプルとして関数に渡されます。
+音声は、逆再生の処理を行い易い様に numpy 配列として受け取ります。その為、`"type"` を `"numpy"` に設定します。これにより、入力データは (`sample_rate`, `data`) のタプルとして関数に渡されます。
 
-出力にも `Audio` コンポーネントを使います。これは、サンプルレートと numpy 配列のタプルを、再生可能な音声ファイルとして自動的にレンダリングしてくれます。今回はカスタマイズは不要なので、文字列ショートカットの `"audio"` を使います。
+出力にも `Audio` コンポーネントを使います。このコンポーネントは、サンプルレートと numpy 配列のタプルを、再生可能な音声ファイルとして自動的に表示します。今回はカスタマイズが不要な為、文字列ショートカットの `"audio"` を使います。
 
 
 ```py
@@ -59,19 +59,19 @@ gr.Interface(reverse_audio, mic, "audio").launch()
 
 <iframe src="https://course-demos-audio-reverse.hf.space" frameBorder="0" height="250" title="Gradio アプリ" class="container p-0 flex-grow space-iframe" allow="accelerometer; ambient-light-sensor; autoplay; battery; camera; document-domain; encrypted-media; fullscreen; geolocation; gyroscope; layout-animations; legacy-image-formats; magnetometer; microphone; midi; oversized-images; payment; picture-in-picture; publickey-credentials-get; sync-xhr; usb; vr ; wake-lock; xr-spatial-tracking" sandbox="allow-forms allow-modals allow-popups allow-popups-to-escape-sandbox allow-same-origin allow-scripts allow-downloads"></iframe>
 
-これで、自分の声を録音して逆再生で聞けるようになったはずです。不気味ですね！
+このインターフェースでは、自分の声を録音し、逆再生で再生出来ます。
 
 ## 複数の入出力を扱う[[handling-multiple-inputs-and-outputs]]
 
-もっと複雑な、複数の入出力を持つ関数が有るとします。下の例の関数は、ドロップダウンのインデックス、スライダーの値、数値を受け取り、音階の音声サンプルを返します。
+より複雑な関数では、入出力が複数になる場合があります。下の例の関数は、ドロップダウンのインデックスとスライダーの値と数値を受け取り、音階の音声サンプルを返します。
 
-入力コンポーネントと出力コンポーネントのリストをどのように渡しているか見て、何が起きているか追ってみてください。
+ポイントは、入力コンポーネントと出力コンポーネントをリストで渡す点です。
 
 入出力コンポーネントのリストを渡す際は、次の対応関係が重要です。
 * 入力コンポーネントのリストを渡すと、各コンポーネントが順番にパラメータに対応します。
 * 出力コンポーネントのリストを渡すと、各コンポーネントが戻り値に対応します。
 
-下のコードスニペットは、3つの入力コンポーネントが `generate_tone()` 関数の3つの引数にどう対応するかを示しています:
+下のコードは、3つの入力コンポーネントが `generate_tone()` 関数の3つの引数にどの様に対応するかを示しています。
 
 ```py
 import numpy as np
@@ -106,25 +106,25 @@ gr.Interface(
 
 ### `launch()` メソッド[[the-launch-method]]
 
-これまで `launch()` メソッドを使ってインターフェースを起動してきましたが、それが何をするのかはまだ説明していませんでした。
+これまで `launch()` メソッドを使ってインターフェースを起動してきました。ここで、その役割を説明します。
 
-デフォルトでは、`launch()` メソッドはローカルで動作する Web サーバー上でデモを起動します。Jupyter や Colab のノートブックでコードを実行している場合は、Gradio がデモの GUI をノートブック内に埋め込むので、簡単に使えます。
+デフォルトでは、`launch()` メソッドは、ローカルで動作する Web サーバー上でデモを起動します。Jupyter や Colab のノートブックでコードを実行している場合、Gradio はデモの GUI をノートブック内に埋め込みます。
 
-`launch()` の動作は、様々なパラメータでカスタマイズ出来ます:
+`launch()` の動作は、様々なパラメータでカスタマイズ出来ます。
 
   - `inline` - Python ノートブック上にインターフェースをインライン表示するかどうか。
   - `inbrowser` - デフォルトブラウザの新しいタブでインターフェースを自動的に開くかどうか。
-  - `share` - 自分のコンピュータからインターフェースへの公開可能な共有リンクを作成するかどうか。Google ドライブのリンクのようなものです！
+  - `share` - 自分のコンピュータからインターフェースへの公開可能な共有リンクを作成するかどうか。Google ドライブの共有リンクに似た仕組みです。
 
-`share` パラメータについては、次のセクションで詳しく扱います！
+`share` パラメータについては、次のセクションで詳しく扱います。
 
-## 試してみましょう！[[lets-apply-it]]
+## 試してみましょう[[lets-apply-it]]
 
-**音声認識** モデルのデモが出来るインターフェースを作りましょう。面白くする為に、マイク入力とアップロードされたファイルの *どちらでも* 受け付けられるようにします。
+**音声認識** モデルのデモ用インターフェースを作ります。入力は、マイクとアップロードされたファイルの *どちらでも* 受け付けられる様にします。
 
-いつものように、音声認識モデルは 🤗 Transformers の `pipeline()` 関数で読み込みます。手早く復習したい場合は、[Chapter 1 の該当セクション](/course/chapter1/3) に戻ってください。次に、音声を処理して文字起こしを返す `transcribe_audio()` 関数を実装します。最後に、この関数を、入力に `Audio` コンポーネント、出力にテキストだけを使った `Interface` でラップします。
+音声認識モデルは、🤗 Transformers の `pipeline()` 関数で読み込みます。復習が必要な場合は、[Chapter 1 の該当セクション](/course/chapter1/3) を参照してください。次に、音声を処理して文字起こしを返す `transcribe_audio()` 関数を実装します。最後に、入力に `Audio` コンポーネント、出力にテキストのみを指定した `Interface` で、この関数をラップします。
 
-このアプリケーションのコード全体は次の通りです:
+このアプリケーションのコード全体は次の通りです。
 
 ```py
 from transformers import pipeline
@@ -150,6 +150,6 @@ gr.Interface(
 <iframe src="https://course-demos-asr.hf.space" frameBorder="0" height="550" title="Gradio アプリ" class="container p-0 flex-grow space-iframe" allow="accelerometer; ambient-light-sensor; autoplay; battery; camera; document-domain; encrypted-media; fullscreen; geolocation; gyroscope; layout-animations; legacy-image-formats; magnetometer; microphone; midi; oversized-images; payment; picture-in-picture; publickey-credentials-get; sync-xhr; usb; vr ; wake-lock; xr-spatial-tracking" sandbox="allow-forms allow-modals allow-popups allow-popups-to-escape-sandbox allow-same-origin allow-scripts allow-downloads"></iframe>
 
 
-これだけです！このインターフェースで音声を文字起こし出来るようになりました。ここでは `optional` パラメータに `True` を渡すことで、ユーザーがマイクと音声ファイルのどちらかを提供出来るようにしています（どちらも提供しない場合はエラーメッセージが返ります）。
+以上で、このインターフェースで音声を文字起こし出来ます。ここでは `optional` パラメータに `True` を渡し、ユーザーがマイクと音声ファイルのどちらかを提供出来る様にしています（どちらも提供しない場合はエラーメッセージが返ります）。
 
-インターフェースを他の人と共有する方法は、このまま読み進めてください！
+インターフェースを他の人と共有する方法は、次のセクションで扱います。
