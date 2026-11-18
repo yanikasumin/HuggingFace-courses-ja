@@ -9,10 +9,10 @@
 
 <Youtube id="Dh9CL8fyG80"/>
 
-ここでは、`Trainer` クラスを使わずに、現在の PyTorch で推奨されている方法に沿って学習ループをゼロから実装し、前のセクションと同じ結果を得る方法を見ていきます。セクション2のデータ処理は、すでに済んでいるものとします。先ず、必要な処理をまとめた短いコードを示します。
+ここでは、`Trainer` クラスを使わずに、現在の PyTorch で推奨されている方法に沿って学習ループをゼロから実装し、前のセクションと同じ結果を得る方法を見ていきます。セクション2のデータ処理は、すでに済んでいるものとします。まず、必要な処理をまとめた短いコードを示します。
 
 > [!TIP]
-> **学習ループをゼロから実装する**：このセクションは、これまでに学んだ内容を前提としています。PyTorch の学習ループの書き方や推奨される実装方法について詳しく知りたい場合は、[🤗 Transformers の学習ドキュメント](https://huggingface.co/docs/transformers/main/en/training#train-in-native-pytorch) と [カスタム学習クックブック](https://huggingface.co/learn/cookbook/en/fine_tuning_code_llm_on_single_gpu#model) を参照して下さい。
+> **学習ループをゼロから実装する**：このセクションは、これまでに学んだ内容を前提としています。PyTorch の学習ループの書き方や推奨される実装方法について詳しく知りたい場合は、[🤗 Transformers の学習ドキュメント](https://huggingface.co/docs/transformers/main/en/training#train-in-native-pytorch) と [カスタム学習クックブック](https://huggingface.co/learn/cookbook/en/fine_tuning_code_llm_on_single_gpu#model) を参照してください。
 
 ```py
 from datasets import load_dataset
@@ -33,7 +33,7 @@ data_collator = DataCollatorWithPadding(tokenizer=tokenizer)
 
 ### 学習の準備[[prepare-for-training]]
 
-学習ループを書く前に、いくつかのオブジェクトを定義する必要があります。先ずは、データをバッチ単位で順番に取り出す為のデータローダです。その前に、`tokenized_datasets` に少し後処理を加えます。これは、`Trainer` が自動で行っていた処理です。具体的には、次の3つの処理が必要です。
+学習ループを書く前に、いくつかのオブジェクトを定義する必要があります。まずは、データをバッチ単位で順番に取り出す為のデータローダです。その前に、`tokenized_datasets` に少し後処理を加えます。これは、`Trainer` が自動で行っていた処理です。具体的には、次の3つの処理が必要です。
 
 - モデルが受け取らない列（`sentence1` 列や `sentence2` 列など）を削除する
 - 列名 `label` を `labels` に変更する（モデルが受け取る引数名は `labels` の為）
@@ -119,7 +119,7 @@ optimizer = AdamW(model.parameters(), lr=5e-5)
 > - **8-bit Adam**：`bitsandbytes` を使ったメモリ効率のよい最適化
 > - **学習率の調整**：大きなモデルでは、低めの学習率（1e-5 〜 3e-5）がうまくいくことが多い
 >
-> **最適化のリソース**：オプティマイザと学習戦略の詳細は [Transformers 最適化ガイド](https://huggingface.co/docs/transformers/main/en/performance#optimizer) を参照して下さい。
+> **最適化のリソース**：オプティマイザと学習戦略の詳細は [Transformers 最適化ガイド](https://huggingface.co/docs/transformers/main/en/performance#optimizer) を参照してください。
 
 最後に、デフォルトの学習率スケジューラを設定します。このスケジューラは、学習率を最大値（5e-5）から 0 まで直線的に下げるものです。正しく設定するには、学習ステップの総数を知る必要があります。総ステップ数は、実行するエポック数に学習用バッチの数（学習用データローダの長さ）を掛けて求めます。`Trainer` のデフォルトは3エポックなので、ここでも同じ設定を使います。
 
@@ -179,14 +179,14 @@ for epoch in range(num_epochs):
 ```
 
 > [!TIP]
-> **現代的な学習の最適化**：学習ループを更に効率化するには、次を検討して下さい。
+> **現代的な学習の最適化**：学習ループを更に効率化するには、次を検討してください。
 >
 > - **勾配クリッピング**：`optimizer.step()` の前に `torch.nn.utils.clip_grad_norm_(model.parameters(), max_norm=1.0)` を追加する
 > - **混合精度**：`torch.cuda.amp.autocast()` と `GradScaler` を使って学習を高速化する
 > - **勾配累積**：複数のバッチにわたって勾配を蓄積し、大きなバッチサイズを擬似的に再現する
 > - **チェックポイント保存**：定期的にモデルのチェックポイントを保存し、中断しても再開出来るようにする
 >
-> **実装ガイド**：これらの最適化の詳しい例は、[Transformers の効率的な学習ガイド](https://huggingface.co/docs/transformers/main/en/perf_train_gpu_one) と [オプティマイザの一覧](https://huggingface.co/docs/transformers/main/en/optimizers) を参照して下さい。
+> **実装ガイド**：これらの最適化の詳しい例は、[Transformers の効率的な学習ガイド](https://huggingface.co/docs/transformers/main/en/perf_train_gpu_one) と [オプティマイザの一覧](https://huggingface.co/docs/transformers/main/en/optimizers) を参照してください。
 
 学習ループの核となる部分は、入門編で見たものとよく似ていることが分かります。学習状況を報告する処理は追加していない為、この学習ループだけではモデルの性能を把握出来ません。それには評価ループを追加する必要があります。
 
@@ -196,7 +196,7 @@ for epoch in range(num_epochs):
 前と同じく、Evaluate ライブラリが提供する指標を使います。`metric.compute()` メソッドは既に見ましたが、`add_batch()` メソッドを使えば、評価ループの実行中に、指標の計算に必要な予測結果と正解ラベルをバッチごとに蓄積出来ます。全てのバッチを蓄積したら、`metric.compute()` で最終結果が得られます。評価ループでの実装は次の通りです。
 
 > [!TIP]
-> **評価のベストプラクティス**：より高度な評価戦略と指標については、[Evaluate のドキュメント](https://huggingface.co/docs/evaluate/) と [包括的な評価クックブック](https://github.com/huggingface/evaluation-guidebook) を参照して下さい。
+> **評価のベストプラクティス**：より高度な評価戦略と指標については、[Evaluate のドキュメント](https://huggingface.co/docs/evaluate/) と [包括的な評価クックブック](https://github.com/huggingface/evaluation-guidebook) を参照してください。
 
 ```py
 import evaluate
@@ -222,7 +222,7 @@ metric.compute()
 繰り返しになりますが、モデルヘッドの初期値やデータをシャッフルする順序はランダムに決まる為、実行するたびに結果が少し異なる場合があります。但し、おおむね同じくらいの値になるはずです。
 
 > [!TIP]
-> **試してみましょう！** 前の学習ループを変更して、SST-2 データセットでモデルをファインチューニングしてみて下さい。
+> **試してみましょう！** 前の学習ループを変更して、SST-2 データセットでモデルをファインチューニングしてみてください。
 
 ### 🤗 Accelerate で学習ループを強化する[[supercharge-your-training-loop-with-accelerate]]
 
@@ -271,7 +271,7 @@ for epoch in range(num_epochs):
         progress_bar.update(1)
 ```
 
-先ず、必要なライブラリをインポートし、次の行で `Accelerator` オブジェクトを作成します。このオブジェクトが実行環境を確認し、適切な分散学習の設定を初期化します。デバイスへの配置は Accelerate が処理してくれる為、モデルをデバイスに移すコードは削除出来ます（残しておきたい場合は、`device` を `accelerator.device` に変更して下さい）。
+まず、必要なライブラリをインポートし、次の行で `Accelerator` オブジェクトを作成します。このオブジェクトが実行環境を確認し、適切な分散学習の設定を初期化します。デバイスへの配置は Accelerate が処理してくれる為、モデルをデバイスに移すコードは削除出来ます（残しておきたい場合は、`device` を `accelerator.device` に変更してください）。
 
 最も重要なのは、データローダ、モデル、オプティマイザを `accelerator.prepare()` に渡す部分です。この処理で各オブジェクトが分散学習に適した形にラップされ、分散学習が正しく動作するようになります。あとは、バッチを `device` に移すコードを削除し（残す場合は `accelerator.device` を使うように変更します）、`loss.backward()` を `accelerator.backward(loss)` に置き換えるだけです。
 
@@ -318,7 +318,7 @@ for epoch in range(num_epochs):
         progress_bar.update(1)
 ```
 
-このコードを `train.py` に保存すれば、どのような分散学習環境でも実行出来るようになります。実際に試すには、先ず次のコマンドを実行します。
+このコードを `train.py` に保存すれば、どのような分散学習環境でも実行出来るようになります。実際に試すには、まず次のコマンドを実行します。
 
 ```bash
 accelerate config
@@ -343,21 +343,21 @@ notebook_launcher(training_function)
 その他の例は [Accelerate リポジトリ](https://github.com/huggingface/accelerate/tree/main/examples) にあります。
 
 > [!TIP]
-> **分散学習**：マルチ GPU・マルチノード学習の包括的な解説は、[Transformers 分散学習ガイド](https://huggingface.co/docs/transformers/main/en/perf_train_gpu_many) と [学習のスケーリングに関するクックブック](https://huggingface.co/docs/transformers/main/en/accelerate) を参照して下さい。
+> **分散学習**：マルチ GPU・マルチノード学習の包括的な解説は、[Transformers 分散学習ガイド](https://huggingface.co/docs/transformers/main/en/perf_train_gpu_many) と [学習のスケーリングに関するクックブック](https://huggingface.co/docs/transformers/main/en/accelerate) を参照してください。
 
 ### 次のステップとベストプラクティス[[next-steps-and-best-practices]]
 
 学習ループをゼロから実装する方法を学んだ所で、本番環境で使う際に検討しておきたい点をいくつか紹介します。
 
-**モデルの評価**：正解率だけでなく、常に複数の指標でモデルを評価して下さい。包括的な評価には Evaluate ライブラリを使います。
+**モデルの評価**：正解率だけでなく、常に複数の指標でモデルを評価してください。包括的な評価には Evaluate ライブラリを使います。
 
-**ハイパーパラメータ調整**：体系的なハイパーパラメータ最適化には、Optuna や Ray Tune のようなライブラリの利用を検討して下さい。
+**ハイパーパラメータ調整**：体系的なハイパーパラメータ最適化には、Optuna や Ray Tune のようなライブラリの利用を検討してください。
 
-**モデルの監視**：学習中は、学習時の指標や学習曲線、検証データでの性能を継続して記録して下さい。
+**モデルの監視**：学習中は、学習時の指標や学習曲線、検証データでの性能を継続して記録してください。
 
-**モデルの共有**：学習が終わったら、モデルを Hugging Face Hub で共有し、コミュニティが使えるようにして下さい。
+**モデルの共有**：学習が終わったら、モデルを Hugging Face Hub で共有し、コミュニティが使えるようにしてください。
 
-**効率化**：大きなモデルでは、勾配チェックポイント、パラメータ効率のよいファインチューニング（LoRA、AdaLoRA）、量子化といった手法を検討して下さい。
+**効率化**：大きなモデルでは、勾配チェックポイント、パラメータ効率のよいファインチューニング（LoRA、AdaLoRA）、量子化といった手法を検討してください。
 
 カスタム学習ループによるファインチューニングの詳細な解説は以上です。ここで学んだスキルは、学習プロセスを完全に制御したい場合や、`Trainer` API の範囲を超えるカスタム学習ロジックを実装したい場合に役立ちます。
 
@@ -537,7 +537,7 @@ notebook_launcher(training_function)
 > **要点：**
 > - 自分で実装した学習ループでは学習処理を完全に制御出来ますが、各処理の正しい順序（フォワード → バックワード → オプティマイザステップ → スケジューラステップ → 勾配をゼロにする）を理解する必要があります
 > - 重み減衰ありの AdamW が、Transformer モデルに推奨されるオプティマイザです
-> - 評価中は、正しい動作と効率の為に、常に `model.eval()` と `torch.no_grad()` を使って下さい
+> - 評価中は、正しい動作と効率の為に、常に `model.eval()` と `torch.no_grad()` を使ってください
 > - Accelerate を使えば、最小限のコード変更で分散学習が可能になります
 > - デバイス管理（テンソルを CPU または GPU に移動すること）は、PyTorch の演算に不可欠です
 > - 混合精度、勾配累積、勾配クリッピングといった現在よく使われる手法で、学習効率を大きく改善出来ます
