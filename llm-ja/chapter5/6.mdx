@@ -22,15 +22,15 @@
 
 {/if}
 
-[セクション 5](/course/chapter5/5) では、🤗 Datasets の GitHub リポジトリに在る issue とコメントからデータセットを作成しました。このセクションでは、そのデータを使い、ライブラリについて特に気になることの答えを探せる検索エンジンを作ります！
+[セクション 5](/course/chapter5/5) では、🤗 Datasets の GitHub リポジトリの issue とコメントからデータセットを作成しました。このセクションでは、そのデータを使って検索エンジンを作ります。目的は、ライブラリについて特に気になることへの答えを探せるようにすることです。
 
 <Youtube id="OATCgQtNX2o"/>
 
 ## 埋め込みを用いたセマンティック検索[[using-embeddings-for-semantic-search]]
 
-[第1章](/course/chapter1) で見たように、Transformer ベースの言語モデルは、テキストの各トークンを *埋め込みベクトル* で表します。個々の埋め込みベクトルをプーリング（集約）すると、文や段落、場合によってはドキュメント全体も1つのベクトルで表せます。検索したいテキストの埋め込みとコーパス内の各ドキュメントの埋め込みについて、内積による類似度（又は別の類似度指標）を計算し、類似度の高いドキュメントを返すことで、内容が似たドキュメントを探せます。
+[第1章](/course/chapter1) で見たように、Transformer ベースの言語モデルは、テキストの各トークンを *埋め込みベクトル* で表します。個々の埋め込みをプーリング（集約）すると、文や段落を1つのベクトルで表せます。場合によっては、ドキュメント全体も同様に表せます。類似したドキュメントの検索は、この埋め込みを使います。クエリの埋め込みとコーパス内の各ドキュメントの埋め込みについて、内積による類似度（又は別の類似度指標）を計算し、値の大きいドキュメントを返します。
 
-このセクションでは、埋め込みを使ってセマンティック検索エンジンを作ります。セマンティック検索には、クエリに含まれるキーワードとドキュメントを照合する従来の検索方法に比べ、いくつかの利点があります。
+このセクションで作るのは、埋め込みを使うセマンティック検索エンジンです。セマンティック検索には、従来の方法に比べていくつかの利点があります。従来の方法は、クエリに含まれるキーワードとドキュメントを照合する方式です。
 
 <div class="flex justify-center">
 <img class="block dark:hidden" src="https://huggingface.co/datasets/huggingface-course/documentation-images/resolve/main/en/chapter5/semantic-search.svg" alt="セマンティック検索。"/>
@@ -39,7 +39,7 @@
 
 ## データセットの読み込みと準備[[loading-and-preparing-the-dataset]]
 
-まず、GitHub の issue をまとめたデータセットをダウンロードします。いつものように `load_dataset()` 関数を使いましょう。
+まず、GitHub の issue をまとめたデータセットをダウンロードします。いつものように `load_dataset()` 関数を使います。
 
 ```py
 from datasets import load_dataset
@@ -55,7 +55,7 @@ Dataset({
 })
 ```
 
-ここでは `load_dataset()` でデフォルトの `train` 分割を指定した為、`DatasetDict` ではなく `Dataset` が返ります。まず、プルリクエストを除外しましょう。プルリクエストはユーザーの質問に答える際にはあまり役立たず、検索結果にノイズが混じる原因にもなる為です。これまでにも使った `Dataset.filter()` 関数で、該当する行を除外出来ます。ついでに、コメントのない行も除外しましょう。コメントがなければ、ユーザーの質問への答えも得られない為です。
+ここでは `load_dataset()` で既定の `train` 分割を指定しています。その為、戻り値は `DatasetDict` ではなく `Dataset` です。最初に行うのは、プルリクエストの除外です。プルリクエストはユーザーの質問への回答にはあまり使われず、検索結果にノイズを混ぜる原因にもなります。除外には、これまでも使った `Dataset.filter()` 関数を使います。併せて、コメントのない行も除外します。コメントがなければ、ユーザーの質問への答えは得られない為です。
 
 ```py
 issues_dataset = issues_dataset.filter(
@@ -71,7 +71,7 @@ Dataset({
 })
 ```
 
-データセットには多くの列がありますが、その大半は検索エンジンの構築には必要ありません。検索に役立つ情報が特に多いのは `title`、`body`、`comments` の3列です。また、`html_url` からは元の issue にアクセス出来ます。`Dataset.remove_columns()` 関数を使って、残りの列を削除しましょう。
+データセットには多くの列があります。但し、その大半は検索エンジンの構築には不要です。検索で特に重要なのは `title`、`body`、`comments` の3列です。`html_url` は、元の issue へのリンクとして使います。残りの列は `Dataset.remove_columns()` 関数で削除します。
 
 ```py
 columns = issues_dataset.column_names
@@ -88,16 +88,16 @@ Dataset({
 })
 ```
 
-埋め込みを作成する際には、各コメントに issue のタイトルと本文を付け加えます。これらには、コメントを理解する上で役立つ文脈情報が含まれていることが多い為です。現在、`comments` 列には各 issue のコメントがリストとして格納されています。
+埋め込みの作成では、各コメントに issue のタイトルと本文を付け加えます。タイトルと本文には、コメントを理解する上で役立つ文脈情報が含まれていることが多い為です。現在、`comments` 列には、各 issue のコメントがリストとして格納されています。
 
-そこで、この列を展開（explode）し、1行に1件のコメントが入るようにします。これにより、各行が `(html_url, title, body, comment)` の組に対応する形になります。Pandas の [`DataFrame.explode()` 関数](https://pandas.pydata.org/pandas-docs/stable/reference/api/pandas.DataFrame.explode.html)を使えば、リスト形式の列の各要素を別々の行に展開し、他の列の値はそのまま複製出来ます。実際に試す為、まず Pandas の `DataFrame` 形式でデータを取り出しましょう。
+そこで、この列を展開（explode）します。1行に1件のコメントが入る形にする為です。各行は `(html_url, title, body, comment)` の組に対応します。Pandas の [`DataFrame.explode()` 関数](https://pandas.pydata.org/pandas-docs/stable/reference/api/pandas.DataFrame.explode.html)を使うと、リスト形式の列の各要素を別々の行に展開出来ます。他の列の値は、そのまま複製されます。実際に試す為、まず Pandas の `DataFrame` 形式でデータを取り出します。
 
 ```py
 issues_dataset.set_format("pandas")
 df = issues_dataset[:]
 ```
 
-この `DataFrame` の最初の行を見ると、対応する issue には4件のコメントが付いていることが分かります。
+この `DataFrame` の最初の行を確認すると、対応する issue には4件のコメントが付いています。
 
 ```py
 df["comments"][0].tolist()
@@ -112,7 +112,7 @@ df["comments"][0].tolist()
 
 （コメントの訳：2件目は「時々、github.com のウェブサイトからこの種の `ConnectionError` が発生します。通常は、少し待ってから再試行すれば動作するはずです。問題が続くかどうか確認して頂けますか？」です。4件目は「問題なく https://raw.githubusercontent.com/huggingface/datasets/1.7.0/datasets/glue/glue.py にアクセス出来ます…」という途中までです。1件目と3件目は、コードやエラーの報告が中心です）
 
-`df` の `comments` 列を `explode()` で展開すると、コメント1件につき1行になるはずです。実際に確認してみましょう。
+`df` を展開すると、コメント1件につき1行になるはずです。対象は `comments` 列で、使う関数は `explode()` です。実際に確認してみましょう。
 
 ```py
 comments_df = df.explode("comments", ignore_index=True)
@@ -161,7 +161,7 @@ comments_df.head(4)
   </tbody>
 </table>
 
-うまくいきました！行が複製され、`comments` 列にはコメントが1件ずつ入っています。Pandas での作業はこれで終わりです。メモリ上の `DataFrame` を読み込めば、簡単に `Dataset` 形式に戻せます。
+うまくいきました。行が複製され、`comments` 列にはコメントが1件ずつ入っています。Pandas での作業はここまでです。メモリ上の `DataFrame` を読み込めば、`Dataset` 形式に簡単に戻せます。
 
 ```py
 from datasets import Dataset
@@ -183,7 +183,7 @@ Dataset({
 > [!TIP]
 > **やってみよう！** Pandas を使わずに、`Dataset.map()` を使って `issues_dataset` の `comments` 列の各コメントを、1件につき1行となるように展開出来るか試してみましょう。少し手強い課題です。Datasets ドキュメントの[「Batch mapping」](https://huggingface.co/docs/datasets/about_map_batch#batch-mapping)のセクションが役立つかもしれません。
 
-1行に1つのコメントが入ったので、コメントごとの単語数を含む新しい `comments_length` 列を作成しましょう。
+1行に1つのコメントが入りました。次に、コメントごとの単語数を記録する新しい列 `comments_length` を作成します。
 
 ```py
 comments_dataset = comments_dataset.map(
@@ -191,7 +191,7 @@ comments_dataset = comments_dataset.map(
 )
 ```
 
-この新しい列を使えば、短いコメントを除外出来ます。短いコメントには、"cc @lewtun" や "Thanks!" のように、検索には役立たないものが多くあります。何語以下のコメントを除外するかに決まった基準はありませんが、まずは15語程度を目安にするとよさそうです。
+この列を使うと、短いコメントを除外出来ます。短いコメントには、"cc @lewtun" や "Thanks!" のように検索に役立たないものが多く含まれます。除去する境界に決まった基準はありません。まずは15語程度を目安にします。
 
 ```py
 comments_dataset = comments_dataset.filter(lambda x: x["comment_length"] > 15)
@@ -205,7 +205,7 @@ Dataset({
 })
 ```
 
-データセットを少し整えたところで、issue のタイトル、本文、コメントを連結して、新しい `text` 列にまとめましょう。いつものように、`Dataset.map()` に渡せる単純な関数を書きます。
+データセットが少し整いました。次に、issue のタイトル、本文、コメントを連結し、新しい `text` 列にまとめます。いつものように、`Dataset.map()` に渡せる単純な関数を書きます。
 
 ```py
 def concatenate_text(examples):
@@ -221,13 +221,13 @@ def concatenate_text(examples):
 comments_dataset = comments_dataset.map(concatenate_text)
 ```
 
-これでようやく、埋め込みを作成する準備が整いました！見ていきましょう。
+これで、埋め込みを作成する準備が整いました。次に進みます。
 
 ## テキスト埋め込みの作成[[creating-text-embeddings]]
 
-[第2章](/course/chapter2) で見たように、`AutoModel` クラスを使えばトークン埋め込みを取得出来ます。あとは、モデルの読み込みに使う適切なチェックポイントを選ぶだけです。
+[第2章](/course/chapter2) で見たように、トークン埋め込みは `AutoModel` クラスで取得出来ます。必要なのは、モデルの読み込みに使う適切なチェックポイントの選択だけです。
 
-幸い、埋め込みの作成に特化した `sentence-transformers` というライブラリがあります。このライブラリの[ドキュメント](https://www.sbert.net/examples/applications/semantic-search/README.html#symmetric-vs-asymmetric-semantic-search)によると、今回のように短いクエリの答えを issue のコメントなど比較的長いドキュメントから探す処理は、*非対称セマンティック検索* に当たります。また、ドキュメント内の[モデル概要表](https://www.sbert.net/docs/pretrained_models.html#model-overview)では、`multi-qa-mpnet-base-dot-v1` チェックポイントがセマンティック検索で最も高い性能を示している為、これを使います。トークナイザも同じチェックポイントから読み込みます。
+埋め込みの作成に特化したライブラリとして、`sentence-transformers` があります。このライブラリの[ドキュメント](https://www.sbert.net/examples/applications/semantic-search/README.html#symmetric-vs-asymmetric-semantic-search)によると、短いクエリの答えを issue のコメントのような比較的長いドキュメントから探す処理は、*非対称セマンティック検索* に当たります。チェックポイントは、ドキュメント内の[モデル概要表](https://www.sbert.net/docs/pretrained_models.html#model-overview)でセマンティック検索の性能が最も高いとされる `multi-qa-mpnet-base-dot-v1` を使います。トークナイザも、同じチェックポイントから読み込みます。
 
 {#if fw === 'pt'}
 
@@ -239,7 +239,7 @@ tokenizer = AutoTokenizer.from_pretrained(model_ckpt)
 model = AutoModel.from_pretrained(model_ckpt)
 ```
 
-モデルと入力を GPU に置けば、埋め込みの計算を高速化出来ます。ここでその準備をしておきましょう。
+埋め込みの計算を高速化する為、モデルと入力を GPU に置きます。ここで準備しておきます。
 
 ```py
 import torch
@@ -258,18 +258,18 @@ tokenizer = AutoTokenizer.from_pretrained(model_ckpt)
 model = TFAutoModel.from_pretrained(model_ckpt, from_pt=True)
 ```
 
-`from_pretrained()` メソッドの引数として `from_pt=True` を設定していることに注目してください。これは、`multi-qa-mpnet-base-dot-v1` チェックポイントには PyTorch の重みしか無い為で、`from_pt=True` を設定すれば自動的に TensorFlow 形式に変換してくれます。見ての通り、Transformers ではフレームワーク間の切り替えが非常に簡単です！
+`from_pretrained()` メソッドの引数に `from_pt=True` を設定している点に注目してください。理由は、`multi-qa-mpnet-base-dot-v1` チェックポイントに PyTorch の重みしか無い為です。`from_pt=True` を設定すると、TensorFlow 形式への変換が自動で行われます。このように、Transformers ではフレームワーク間の切り替えが非常に簡単です。
 
 {/if}
 
-前に述べたように、GitHub の issue から作ったコーパスの各エントリを1つのベクトルで表したいので、トークン埋め込みを何らかの方法でプーリングする必要があります。平均化もその方法の1つです。よく使われる方法の1つに、モデルの出力に対する *CLS プーリング* があります。これは、特殊トークン `[CLS]` に対応する最終隠れ状態を取り出す方法です。次の関数で実装出来ます。
+前に述べた通り、GitHub の issue から作ったコーパスの各エントリは、1つのベクトルで表す必要があります。その為には、トークン埋め込みを何らかの方法でプーリングします。平均化も方法の1つです。よく使われる方法の1つが、モデルの出力に対する *CLS プーリング* です。これは、特殊トークン `[CLS]` に対応する最終隠れ状態を取り出す方法です。次の関数で実装出来ます。
 
 ```py
 def cls_pooling(model_output):
     return model_output.last_hidden_state[:, 0]
 ```
 
-次に、ドキュメントのリストをトークナイズし、テンソルを GPU に配置して、モデルに入力し、最後に出力に CLS プーリングを適用するヘルパー関数を作成します。
+次に、ヘルパー関数を作成します。この関数は、ドキュメントのリストをトークナイズし、テンソルを GPU に配置してモデルに入力し、最後に出力へ CLS プーリングを適用します。
 
 {#if fw === 'pt'}
 
@@ -283,7 +283,7 @@ def get_embeddings(text_list):
     return cls_pooling(model_output)
 ```
 
-コーパスの最初のテキストを関数に渡し、正しく動くかどうかと、出力の形状を確認しましょう。
+関数が正しく動くか、コーパスの最初のテキストを渡して確認します。出力の形状も併せて確認します。
 
 ```py
 embedding = get_embeddings(comments_dataset["text"][0])
@@ -294,7 +294,7 @@ embedding.shape
 torch.Size([1, 768])
 ```
 
-素晴らしい。コーパスの最初のエントリを768次元のベクトルに変換出来ました！`Dataset.map()` を使って `get_embeddings()` 関数をコーパスの各行に適用出来るので、次のように新しい `embeddings` 列を作成しましょう。
+コーパスの最初のエントリを、768次元のベクトルに変換出来ました。`Dataset.map()` を使えば、`get_embeddings()` 関数をコーパスの各行に適用出来ます。次のように、新しい `embeddings` 列を作成します。
 
 ```py
 embeddings_dataset = comments_dataset.map(
@@ -314,7 +314,7 @@ def get_embeddings(text_list):
     return cls_pooling(model_output)
 ```
 
-コーパスの最初のテキストを関数に渡し、正しく動くかどうかと、出力の形状を確認しましょう。
+関数が正しく動くか、コーパスの最初のテキストを渡して確認します。出力の形状も併せて確認します。
 
 ```py
 embedding = get_embeddings(comments_dataset["text"][0])
@@ -325,7 +325,7 @@ embedding.shape
 TensorShape([1, 768])
 ```
 
-素晴らしい。コーパスの最初のエントリを768次元のベクトルに変換出来ました！`Dataset.map()` を使って `get_embeddings()` 関数をコーパスの各行に適用出来るので、次のように新しい `embeddings` 列を作成しましょう。
+コーパスの最初のエントリを、768次元のベクトルに変換出来ました。`Dataset.map()` を使えば、`get_embeddings()` 関数をコーパスの各行に適用出来ます。次のように、新しい `embeddings` 列を作成します。
 
 ```py
 embeddings_dataset = comments_dataset.map(
@@ -335,20 +335,20 @@ embeddings_dataset = comments_dataset.map(
 
 {/if}
 
-埋め込みを NumPy 配列に変換していることに注目してください。これは、次に行う FAISS によるインデックス化の際に、Datasets がこの形式を要求する為です。
+埋め込みを NumPy 配列に変換している点に注目してください。次に行う FAISS によるインデックス化では、Datasets がこの形式を要求する為です。
 
 
 ## FAISS による効率的な類似検索[[using-faiss-for-efficient-similarity-search]]
 
-埋め込みベクトルを格納したデータセットが出来たので、次はその中から似たベクトルを探す仕組みが必要です。ここでは、Datasets で利用出来る *FAISS インデックス* というデータ構造を使います。[FAISS](https://faiss.ai/)（Facebook AI Similarity Search の略）は、埋め込みベクトルを高速に検索・クラスタリングする為のアルゴリズムを提供するライブラリです。
+埋め込みベクトルのデータセットが出来ました。次に必要なのは、その中から似たベクトルを探す仕組みです。ここでは、Datasets で利用出来る *FAISS インデックス* というデータ構造を使います。[FAISS](https://faiss.ai/)（Facebook AI Similarity Search の略）は、埋め込みベクトルの高速な検索とクラスタリングの為のアルゴリズムを提供するライブラリです。
 
-FAISS の基本的な考え方は、インデックスと呼ばれる特殊なデータ構造を作成し、入力した埋め込みに類似する埋め込みを見つけられるようにすることです。Datasets で FAISS インデックスを作成するのは簡単です。`Dataset.add_faiss_index()` 関数を使い、データセットのどの列をインデックス化するかを指定します。
+FAISS の基本的な考え方は、インデックスと呼ばれる特殊なデータ構造を作ることです。インデックスがあれば、入力した埋め込みに類似する埋め込みを探せます。Datasets での作成は簡単です。`Dataset.add_faiss_index()` 関数を使い、インデックス化する列を指定します。
 
 ```py
 embeddings_dataset.add_faiss_index(column="embeddings")
 ```
 
-これで、`Dataset.get_nearest_examples()` 関数を使って、インデックスから近いベクトルを探す最近傍検索が出来るようになりました。まず、質問文を埋め込みベクトルに変換して試してみましょう。
+これで、`Dataset.get_nearest_examples()` 関数による最近傍検索が出来るようになりました。インデックスから近いベクトルを探す検索です。まず、質問文を埋め込みベクトルに変換して試します。
 
 {#if fw === 'pt'}
 
@@ -378,7 +378,7 @@ question_embedding.shape
 
 （クエリの訳：「データセットをオフラインで読み込むにはどうすればよいですか？」）
 
-ドキュメントと同様に、クエリを表す768次元のベクトルが得られました。これをコーパス全体と比較して、最も類似する埋め込みを見つけることが出来ます。
+ドキュメントと同様に、クエリも768次元のベクトルで表せました。このベクトルをコーパス全体と比較すれば、最も類似する埋め込みが見つかります。
 
 ```py
 scores, samples = embeddings_dataset.get_nearest_examples(
@@ -386,7 +386,7 @@ scores, samples = embeddings_dataset.get_nearest_examples(
 )
 ```
 
-`Dataset.get_nearest_examples()` 関数は、クエリと各ドキュメントの類似度を示すスコアと、それに対応するサンプル（ここでは類似度が高い上位5件）を組にして返します。これらを `pandas.DataFrame` にまとめ、簡単に並べ替えられるようにしましょう。
+`Dataset.get_nearest_examples()` 関数の戻り値は組です。クエリと各ドキュメントの類似度を示すスコアと、対応するサンプルです。ここでのサンプルは、類似度が高い上位5件です。これらを `pandas.DataFrame` にまとめると、並べ替えが簡単になります。
 
 ```py
 import pandas as pd
@@ -396,7 +396,7 @@ samples_df["scores"] = scores
 samples_df.sort_values("scores", ascending=False, inplace=True)
 ```
 
-では、先頭から数行を順に見て、クエリと検索対象のコメントがどのくらい一致しているか確認してみましょう。
+先頭から数行を順に見て、クエリとコメントの一致具合を確認します。
 
 ```py
 for _, row in samples_df.iterrows():
@@ -516,7 +516,7 @@ URL: https://github.com/huggingface/datasets/issues/824
 
 （検索結果の訳：1件目は「オンライン接続が必須なのは、場合によっては致命的です。`transformers` がモデルをオフラインで問題なく読み込むのと同じように、オフライン モードが追加されると素晴らしいと思います」から始まるコメントです。2件目は「ローカル データセット ビルダー（csv、text、json、pandas）は #1726 以降、`datasets` パッケージの一部になりました :) 今ではオフラインでも使えます。新しいリリースを近日中に行います」です）
 
-まずまずの結果です！2番目の検索結果がクエリに合っているようです。
+まずまずの結果です。クエリに合っているのは、2番目の検索結果のようです。
 
 > [!TIP]
 > **やってみよう！** 自分でクエリを作成し、検索で見つかったドキュメントの中に答えが有るか確認してみましょう。より多くの検索結果を調べたい場合は、`Dataset.get_nearest_examples()` の `k` パラメータを大きくするとよいかもしれません。
