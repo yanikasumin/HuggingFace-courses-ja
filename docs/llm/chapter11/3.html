@@ -3,24 +3,24 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>教師ありファインチューニング | その他のセクション（chapter11） | Hugging Face 学習コース日本語版</title>
-<meta name="description" content="教師ありファインチューニング｜LLM コース（大規模言語モデルと Transformers を学ぶコース）の日本語訳。教師あり ファインチューニング （SFT）は、 事前学習 済みの 言語モデル に、指示への追従、対話、特定の出力形式への対応を身につけさせる為の手法です。">
+<title>教師ありファインチューニング | 第11章 大規模言語モデルのファインチューニング | Hugging Face 学習コース日本語版</title>
+<meta name="description" content="教師ありファインチューニング｜LLM コース（大規模言語モデルと Transformers を学ぶコース）の日本語訳。教師あり ファインチューニング （SFT）は、 事前学習 済みの 言語モデル を、指示に従い、対話し、決まった形式で出力出来るモデルへと仕上げる為の手法です。">
 <meta name="robots" content="index, follow">
 <link rel="canonical" href="https://yanikasumin.github.io/HuggingFace-courses-ja/llm/chapter11/3.html">
-<meta property="og:title" content="教師ありファインチューニング | その他のセクション（chapter11） | Hugging Face 学習コース日本語版">
-<meta property="og:description" content="教師ありファインチューニング｜LLM コース（大規模言語モデルと Transformers を学ぶコース）の日本語訳。教師あり ファインチューニング （SFT）は、 事前学習 済みの 言語モデル に、指示への追従、対話、特定の出力形式への対応を身につけさせる為の手法です。">
+<meta property="og:title" content="教師ありファインチューニング | 第11章 大規模言語モデルのファインチューニング | Hugging Face 学習コース日本語版">
+<meta property="og:description" content="教師ありファインチューニング｜LLM コース（大規模言語モデルと Transformers を学ぶコース）の日本語訳。教師あり ファインチューニング （SFT）は、 事前学習 済みの 言語モデル を、指示に従い、対話し、決まった形式で出力出来るモデルへと仕上げる為の手法です。">
 <meta property="og:image" content="https://yanikasumin.github.io/HuggingFace-courses-ja/og-llm.png">
 <meta property="og:image:width" content="1200">
 <meta property="og:image:height" content="630">
-<meta property="og:image:alt" content="教師ありファインチューニング | その他のセクション（chapter11） | Hugging Face 学習コース日本語版">
+<meta property="og:image:alt" content="教師ありファインチューニング | 第11章 大規模言語モデルのファインチューニング | Hugging Face 学習コース日本語版">
 <meta name="google-site-verification" content="A8PVY1lQPEN4macCCmGuTad7GqnBmMgMo1SRR3C320c">
 <meta property="og:type" content="article">
 <meta property="og:url" content="https://yanikasumin.github.io/HuggingFace-courses-ja/llm/chapter11/3.html">
 <meta property="og:site_name" content="Hugging Face 学習コース日本語版">
 <meta property="og:locale" content="ja_JP">
 <meta name="twitter:card" content="summary_large_image">
-<meta name="twitter:title" content="教師ありファインチューニング | その他のセクション（chapter11） | Hugging Face 学習コース日本語版">
-<meta name="twitter:description" content="教師ありファインチューニング｜LLM コース（大規模言語モデルと Transformers を学ぶコース）の日本語訳。教師あり ファインチューニング （SFT）は、 事前学習 済みの 言語モデル に、指示への追従、対話、特定の出力形式への対応を身につけさせる為の手法です。">
+<meta name="twitter:title" content="教師ありファインチューニング | 第11章 大規模言語モデルのファインチューニング | Hugging Face 学習コース日本語版">
+<meta name="twitter:description" content="教師ありファインチューニング｜LLM コース（大規模言語モデルと Transformers を学ぶコース）の日本語訳。教師あり ファインチューニング （SFT）は、 事前学習 済みの 言語モデル を、指示に従い、対話し、決まった形式で出力出来るモデルへと仕上げる為の手法です。">
 <meta name="twitter:image" content="https://yanikasumin.github.io/HuggingFace-courses-ja/og-llm.png">
 <link rel="icon" type="image/svg+xml" href="https://yanikasumin.github.io/HuggingFace-courses-ja/favicon.svg">
 <link rel="icon" type="image/x-icon" href="https://yanikasumin.github.io/HuggingFace-courses-ja/favicon.ico">
@@ -29,7 +29,7 @@
 <link rel="apple-touch-icon" sizes="180x180" href="https://yanikasumin.github.io/HuggingFace-courses-ja/apple-touch-icon.png">
 <link rel="manifest" href="https://yanikasumin.github.io/HuggingFace-courses-ja/site.webmanifest">
 <meta name="theme-color" content="#0B0F19">
-<script type="application/ld+json">{"@context": "https://schema.org", "@graph": [{"@type": "BreadcrumbList", "itemListElement": [{"@type": "ListItem", "position": 1, "name": "Hugging Face 学習コース日本語版", "item": "https://yanikasumin.github.io/HuggingFace-courses-ja/"}, {"@type": "ListItem", "position": 2, "name": "LLM コース", "item": "https://yanikasumin.github.io/HuggingFace-courses-ja/llm/"}, {"@type": "ListItem", "position": 3, "name": "教師ありファインチューニング"}]}, {"@type": "LearningResource", "name": "教師ありファインチューニング", "description": "教師ありファインチューニング｜LLM コース（大規模言語モデルと Transformers を学ぶコース）の日本語訳。教師あり ファインチューニング （SFT）は、 事前学習 済みの 言語モデル に、指示への追従、対話、特定の出力形式への対応を身につけさせる為の手法です。", "url": "https://yanikasumin.github.io/HuggingFace-courses-ja/llm/chapter11/3.html", "inLanguage": "ja", "learningResourceType": "course material", "educationalLevel": "beginner to advanced", "isPartOf": {"@type": "Course", "name": "LLM コース", "url": "https://yanikasumin.github.io/HuggingFace-courses-ja/llm/", "provider": {"@type": "Organization", "name": "Hugging Face", "sameAs": "https://huggingface.co"}}}]}</script>
+<script type="application/ld+json">{"@context": "https://schema.org", "@graph": [{"@type": "BreadcrumbList", "itemListElement": [{"@type": "ListItem", "position": 1, "name": "Hugging Face 学習コース日本語版", "item": "https://yanikasumin.github.io/HuggingFace-courses-ja/"}, {"@type": "ListItem", "position": 2, "name": "LLM コース", "item": "https://yanikasumin.github.io/HuggingFace-courses-ja/llm/"}, {"@type": "ListItem", "position": 3, "name": "教師ありファインチューニング"}]}, {"@type": "LearningResource", "name": "教師ありファインチューニング", "description": "教師ありファインチューニング｜LLM コース（大規模言語モデルと Transformers を学ぶコース）の日本語訳。教師あり ファインチューニング （SFT）は、 事前学習 済みの 言語モデル を、指示に従い、対話し、決まった形式で出力出来るモデルへと仕上げる為の手法です。", "url": "https://yanikasumin.github.io/HuggingFace-courses-ja/llm/chapter11/3.html", "inLanguage": "ja", "learningResourceType": "course material", "educationalLevel": "beginner to advanced", "isPartOf": {"@type": "Course", "name": "LLM コース", "url": "https://yanikasumin.github.io/HuggingFace-courses-ja/llm/", "provider": {"@type": "Organization", "name": "Hugging Face", "sameAs": "https://huggingface.co"}}}]}</script>
 <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-1676481412757711" crossorigin="anonymous"></script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -54,11 +54,11 @@ window.MathJax = { tex: { inlineMath: [['$', '$'], ['\\(', '\\)']], displayMath:
 <div class="layout">
 <aside class="sidebar">
 <div class="sidebar-course"><a href="../index.html">LLM コース</a><br><span class="side-desc">大規模言語モデルと Transformers を学ぶコース</span><br><a class="side-official" href="https://huggingface.co/learn/llm-course" target="_blank" rel="noopener">公式コース（英語）</a></div>
-<p class="side-group">その他のセクション（chapter0）</p>
+<p class="side-group">第0章 セットアップ</p>
 <ul class="side-list">
 <li><a class="side-link" href="../chapter0/1.html">はじめに</a></li>
 </ul>
-<p class="side-group">その他のセクション（chapter1）</p>
+<p class="side-group">第1章 Transformer モデル</p>
 <ul class="side-list">
 <li><a class="side-link" href="../chapter1/1.html">はじめに</a></li>
 <li><a class="side-link" href="../chapter1/2.html">自然言語処理と大規模言語モデル</a></li>
@@ -70,9 +70,9 @@ window.MathJax = { tex: { inlineMath: [['$', '$'], ['\\(', '\\)']], displayMath:
 <li><a class="side-link" href="../chapter1/8.html">LLM のテキスト生成と推論を深く掘り下げる</a></li>
 <li><a class="side-link" href="../chapter1/9.html">バイアスと限界</a></li>
 <li><a class="side-link" href="../chapter1/10.html">まとめ</a></li>
-<li><a class="side-link" href="../chapter1/11.html">テストの時間です！</a></li>
+<li><a class="side-link" href="../chapter1/11.html">テストの時間です</a></li>
 </ul>
-<p class="side-group">その他のセクション（chapter2）</p>
+<p class="side-group">第2章 🤗 Transformers の使い方</p>
 <ul class="side-list">
 <li><a class="side-link" href="../chapter2/1.html">はじめに</a></li>
 <li><a class="side-link" href="../chapter2/2.html">パイプラインの裏側</a></li>
@@ -80,41 +80,41 @@ window.MathJax = { tex: { inlineMath: [['$', '$'], ['\\(', '\\)']], displayMath:
 <li><a class="side-link" href="../chapter2/4.html">トークナイザ</a></li>
 <li><a class="side-link" href="../chapter2/5.html">複数のシーケンスを扱う</a></li>
 <li><a class="side-link" href="../chapter2/6.html">全てを組み合わせる</a></li>
-<li><a class="side-link" href="../chapter2/7.html">基本的な使い方はこれで完了です！</a></li>
+<li><a class="side-link" href="../chapter2/7.html">基本的な使い方はこれで完了です</a></li>
 <li><a class="side-link" href="../chapter2/8.html">推論デプロイの最適化</a></li>
 <li><a class="side-link" href="../chapter2/9.html">章末クイズ</a></li>
 </ul>
-<p class="side-group">その他のセクション（chapter3）</p>
+<p class="side-group">第3章 事前学習済みモデルのファインチューニング</p>
 <ul class="side-list">
 <li><a class="side-link" href="../chapter3/1.html">はじめに</a></li>
 <li><a class="side-link" href="../chapter3/2.html">データを処理する</a></li>
 <li><a class="side-link" href="../chapter3/3.html">Trainer API でモデルをファインチューニングする</a></li>
 <li><a class="side-link" href="../chapter3/4.html">完全な学習ループ</a></li>
 <li><a class="side-link" href="../chapter3/5.html">学習曲線を理解する</a></li>
-<li><a class="side-link" href="../chapter3/6.html">ファインチューニング、チェック！</a></li>
+<li><a class="side-link" href="../chapter3/6.html">ファインチューニング、チェック</a></li>
 <li><a class="side-link" href="../chapter3/7.html">章末の認定証</a></li>
 </ul>
-<p class="side-group">その他のセクション（chapter4）</p>
+<p class="side-group">第4章 モデルとトークナイザの共有</p>
 <ul class="side-list">
 <li><a class="side-link" href="../chapter4/1.html">Hugging Face Hub</a></li>
 <li><a class="side-link" href="../chapter4/2.html">事前学習済みモデルを使う</a></li>
 <li><a class="side-link" href="../chapter4/3.html">事前学習済みモデルを共有する</a></li>
 <li><a class="side-link" href="../chapter4/4.html">モデルカードを作る</a></li>
-<li><a class="side-link" href="../chapter4/5.html">Part 1 修了！</a></li>
+<li><a class="side-link" href="../chapter4/5.html">Part 1 修了</a></li>
 <li><a class="side-link" href="../chapter4/6.html">章末クイズ</a></li>
 </ul>
-<p class="side-group">その他のセクション（chapter5）</p>
+<p class="side-group">第5章 🤗 Datasets ライブラリ</p>
 <ul class="side-list">
 <li><a class="side-link" href="../chapter5/1.html">はじめに</a></li>
 <li><a class="side-link" href="../chapter5/2.html">データセットが Hub にない場合は？</a></li>
 <li><a class="side-link" href="../chapter5/3.html">データを切り分けて加工しよう</a></li>
-<li><a class="side-link" href="../chapter5/4.html">ビッグデータ？🤗 Datasets にお任せ！</a></li>
+<li><a class="side-link" href="../chapter5/4.html">ビッグデータ？🤗 Datasets にお任せ</a></li>
 <li><a class="side-link" href="../chapter5/5.html">独自のデータセットを作成する</a></li>
 <li><a class="side-link" href="../chapter5/6.html">FAISS によるセマンティック検索</a></li>
-<li><a class="side-link" href="../chapter5/7.html">🤗 Datasets、チェック！</a></li>
+<li><a class="side-link" href="../chapter5/7.html">🤗 Datasets、チェック</a></li>
 <li><a class="side-link" href="../chapter5/8.html">章末クイズ</a></li>
 </ul>
-<p class="side-group">その他のセクション（chapter6）</p>
+<p class="side-group">第6章 🤗 Tokenizers ライブラリ</p>
 <ul class="side-list">
 <li><a class="side-link" href="../chapter6/1.html">はじめに</a></li>
 <li><a class="side-link" href="../chapter6/2.html">既存のトークナイザを基に新しいトークナイザを学習する</a></li>
@@ -125,10 +125,10 @@ window.MathJax = { tex: { inlineMath: [['$', '$'], ['\\(', '\\)']], displayMath:
 <li><a class="side-link" href="../chapter6/6.html">WordPiece によるトークン化</a></li>
 <li><a class="side-link" href="../chapter6/7.html">Unigram によるトークン化</a></li>
 <li><a class="side-link" href="../chapter6/8.html">構成要素を組み合わせてトークナイザを構築する</a></li>
-<li><a class="side-link" href="../chapter6/9.html">トークナイザ、チェック！</a></li>
+<li><a class="side-link" href="../chapter6/9.html">トークナイザ、チェック</a></li>
 <li><a class="side-link" href="../chapter6/10.html">章末クイズ</a></li>
 </ul>
-<p class="side-group">その他のセクション（chapter7）</p>
+<p class="side-group">第7章 古典的な NLP タスク</p>
 <ul class="side-list">
 <li><a class="side-link" href="../chapter7/1.html">はじめに</a></li>
 <li><a class="side-link" href="../chapter7/2.html">トークン分類</a></li>
@@ -140,7 +140,7 @@ window.MathJax = { tex: { inlineMath: [['$', '$'], ['\\(', '\\)']], displayMath:
 <li><a class="side-link" href="../chapter7/8.html">LLM を使いこなす</a></li>
 <li><a class="side-link" href="../chapter7/9.html">章末クイズ</a></li>
 </ul>
-<p class="side-group">その他のセクション（chapter8）</p>
+<p class="side-group">第8章 助けを求める方法</p>
 <ul class="side-list">
 <li><a class="side-link" href="../chapter8/1.html">はじめに</a></li>
 <li><a class="side-link" href="../chapter8/2.html">エラーが出たときにすること</a></li>
@@ -148,10 +148,10 @@ window.MathJax = { tex: { inlineMath: [['$', '$'], ['\\(', '\\)']], displayMath:
 <li><a class="side-link" href="../chapter8/4.html">学習パイプラインをデバッグする</a></li>
 <li><a class="side-link" href="../chapter8/4_tf.html">学習パイプラインをデバッグする</a></li>
 <li><a class="side-link" href="../chapter8/5.html">よい Issue の書き方</a></li>
-<li><a class="side-link" href="../chapter8/6.html">パート2 完了！</a></li>
+<li><a class="side-link" href="../chapter8/6.html">パート2 完了</a></li>
 <li><a class="side-link" href="../chapter8/7.html">章末クイズ</a></li>
 </ul>
-<p class="side-group">その他のセクション（chapter9）</p>
+<p class="side-group">第9章 デモの構築と共有</p>
 <ul class="side-list">
 <li><a class="side-link" href="../chapter9/1.html">Gradio 入門</a></li>
 <li><a class="side-link" href="../chapter9/2.html">最初のデモを作る</a></li>
@@ -160,20 +160,20 @@ window.MathJax = { tex: { inlineMath: [['$', '$'], ['\\(', '\\)']], displayMath:
 <li><a class="side-link" href="../chapter9/5.html">Hugging Face Hub との連携</a></li>
 <li><a class="side-link" href="../chapter9/6.html">`Interface` の高度な機能</a></li>
 <li><a class="side-link" href="../chapter9/7.html">Gradio Blocks 入門</a></li>
-<li><a class="side-link" href="../chapter9/8.html">Gradio、チェック！</a></li>
+<li><a class="side-link" href="../chapter9/8.html">Gradio、チェック</a></li>
 <li><a class="side-link" href="../chapter9/9.html">章末クイズ</a></li>
 </ul>
-<p class="side-group">その他のセクション（chapter10）</p>
+<p class="side-group">第10章 高品質なデータセットのキュレーション</p>
 <ul class="side-list">
 <li><a class="side-link" href="../chapter10/1.html">Argilla 入門</a></li>
 <li><a class="side-link" href="../chapter10/2.html">Argilla インスタンスをセットアップする</a></li>
 <li><a class="side-link" href="../chapter10/3.html">データセットを Argilla に読み込む</a></li>
 <li><a class="side-link" href="../chapter10/4.html">データセットにアノテーションを付ける</a></li>
 <li><a class="side-link" href="../chapter10/5.html">アノテーション済みデータセットを使う</a></li>
-<li><a class="side-link" href="../chapter10/6.html">Argilla、チェック！</a></li>
+<li><a class="side-link" href="../chapter10/6.html">Argilla、チェック</a></li>
 <li><a class="side-link" href="../chapter10/7.html">章末クイズ</a></li>
 </ul>
-<p class="side-group">その他のセクション（chapter11）</p>
+<p class="side-group">第11章 大規模言語モデルのファインチューニング</p>
 <ul class="side-list">
 <li><a class="side-link" href="1.html">教師ありファインチューニング</a></li>
 <li><a class="side-link" href="2.html">チャットテンプレート</a></li>
@@ -181,9 +181,9 @@ window.MathJax = { tex: { inlineMath: [['$', '$'], ['\\(', '\\)']], displayMath:
 <li><a class="side-link" href="4.html">LoRA（低ランク適応）</a></li>
 <li><a class="side-link" href="5.html">評価</a></li>
 <li><a class="side-link" href="6.html">まとめ</a></li>
-<li><a class="side-link" href="7.html">テストの時間です！</a></li>
+<li><a class="side-link" href="7.html">テストの時間です</a></li>
 </ul>
-<p class="side-group">その他のセクション（chapter12）</p>
+<p class="side-group">第12章 推論モデルの構築</p>
 <ul class="side-list">
 <li><a class="side-link" href="../chapter12/1.html">学生のための Open R1</a></li>
 <li><a class="side-link" href="../chapter12/2.html">強化学習と LLM におけるその役割の紹介</a></li>
@@ -194,7 +194,7 @@ window.MathJax = { tex: { inlineMath: [['$', '$'], ['\\(', '\\)']], displayMath:
 <li><a class="side-link" href="../chapter12/6.html">実践演習： Unsloth で GRPO</a></li>
 <li><a class="side-link" href="../chapter12/7.html">近日公開...</a></li>
 </ul>
-<p class="side-group">その他のセクション（events）</p>
+<p class="side-group">コースイベント</p>
 <ul class="side-list">
 <li><a class="side-link" href="../events/1.html">ライブセッションとワークショップ</a></li>
 <li><a class="side-link" href="../events/2.html">パート2公開イベント</a></li>
@@ -207,29 +207,33 @@ window.MathJax = { tex: { inlineMath: [['$', '$'], ['\\(', '\\)']], displayMath:
 <nav class="page-nav"><a class="nav-link prev" href="2.html">← 前へ: チャットテンプレート</a><a class="nav-link toc-link" href="../index.html">目次へ</a><a class="nav-link next" href="4.html">次へ →: LoRA（低ランク適応）</a></nav>
 <article class="content">
 <h1>教師ありファインチューニング</h1>
-<p><a class="gloss-link" href="../../glossary/index.html#term-supervised-learning" data-title="教師あり学習（Supervised Learning）" data-def="入力データとそれに対する正解を組にして与え、モデルが正解の付け方を学んでいく仕組みが教師あり学習だ。モデルは自分の予測と正解との違いを見て少しずつ調整を繰り返すため、次第に正解に近い予測ができるようになる。学習が終われば、正解の分からない新しいデータについても同じ基準で予測や分類を行えるようになる。" data-def-html="入力データとそれに対する正解を組にして与え、モデルが正解の付け方を学んでいく仕組みが教師あり学習だ。モデルは自分の予測と正解との違いを見て少しずつ調整を繰り返すため、次第に正解に近い予測ができるようになる。&lt;a class=&quot;gloss-link&quot; href=&quot;../../glossary/index.html#term-training&quot; data-title=&quot;学習（訓練）（Training）&quot; data-def=&quot;学習は、機械学習のモデルにデータを与え、そのデータに合うようにモデル内部の数値を調整していく過程である。モデルは予測と正解のずれを手がかりに数値を少しずつ直し、ずれが小さくなる方向へ進んでいく。この過程を繰り返すことで、個々の例を覚えるだけでなく、見たことのないデータに対しても予測できるようになることが期待される。&quot;&gt;学習&lt;/a&gt;が終われば、正解の分からない新しいデータについても同じ基準で予測や&lt;a class=&quot;gloss-link&quot; href=&quot;../../glossary/index.html#term-classification&quot; data-title=&quot;分類（Classification）&quot; data-def=&quot;メールが迷惑メールかどうか、写真に写っているのが犬か猫か――あらかじめ決められた種類のどれに当てはまるかを当てる課題が分類だ。予測する答えが金額のような連続した数値ではなく種類である点が回帰と異なり、教師あり学習の代表的な課題の一つとして、仕分けが必要な場面で広く使われる。&quot;&gt;分類&lt;/a&gt;を行えるようになる。">教師あり</a><a class="gloss-link" href="../../glossary/index.html#term-fine-tuning" data-title="ファインチューニング（Fine-tuning）" data-def="事前学習で基礎を身に付けたモデルはそのままでは特定の仕事にぴったり合うとは限らないため、その仕事用のデータで追加の学習を行い、振る舞いを目的に合わせて調整するのがファインチューニングだ。ゼロから学ばせる場合と違い、すでに言葉や画像の基本を理解している状態から始めるので、少ないデータと計算でも目的に合った性能が得られやすい。このように一度学んだ知識を別の目的に活かす考え方は転移学習と呼ばれ、ファインチューニングはその代表的なやり方である。" data-def-html="&lt;a class=&quot;gloss-link&quot; href=&quot;../../glossary/index.html#term-t9&quot; data-title=&quot;事前学習（プリトレーニング）&quot; data-def=&quot;いきなり特定の仕事を教えようとしても、モデルには言葉や画像の基本的な仕組みがまだ身に付いていないため、まず大量のデータで基礎を広く学ばせる段階を事前学習という。たとえば言語モデルでは、文章の途中までを読ませて次に来る単語の断片（トークン）を当てさせる練習を繰り返すことで、言葉の並び方や内容同士の結び付きを少しずつ覚えていく。こうして基礎を身に付けたモデルを用意しておけば、後から個別の用途に合わせた調整を少ない手間で進められるため、事前学習はその土台作りにあたる。&quot;&gt;事前学習&lt;/a&gt;で基礎を身に付けたモデルはそのままでは特定の仕事にぴったり合うとは限らないため、その仕事用のデータで追加の&lt;a class=&quot;gloss-link&quot; href=&quot;../../glossary/index.html#term-training&quot; data-title=&quot;学習（訓練）（Training）&quot; data-def=&quot;学習は、機械学習のモデルにデータを与え、そのデータに合うようにモデル内部の数値を調整していく過程である。モデルは予測と正解のずれを手がかりに数値を少しずつ直し、ずれが小さくなる方向へ進んでいく。この過程を繰り返すことで、個々の例を覚えるだけでなく、見たことのないデータに対しても予測できるようになることが期待される。&quot;&gt;学習&lt;/a&gt;を行い、振る舞いを目的に合わせて調整するのがファインチューニングだ。ゼロから学ばせる場合と違い、すでに言葉や画像の基本を理解している状態から始めるので、少ないデータと計算でも目的に合った性能が得られやすい。このように一度学んだ知識を別の目的に活かす考え方は&lt;a class=&quot;gloss-link&quot; href=&quot;../../glossary/index.html#term-transfer-learning&quot; data-title=&quot;転移学習（Transfer Learning）&quot; data-def=&quot;ある課題のために集めたデータや学んだ知識を、似た別の課題にも活かせれば、少ないデータでも学習が成り立つのではないかという考え方を転移学習という。代表的な進め方では、大規模なデータで学習済みのモデルを用意し、それを対象の課題のデータで追加学習させる。基礎がすでに身に付いている状態から始めるため、対象のデータが少ない場合でも一から学ぶより性能が出やすくなる。&quot;&gt;転移学習&lt;/a&gt;と呼ばれ、ファインチューニングはその代表的なやり方である。">ファインチューニング</a>（SFT）は、<a class="gloss-link" href="../../glossary/index.html#term-t9" data-title="事前学習（プリトレーニング）" data-def="いきなり特定の仕事を教えようとしても、モデルには言葉や画像の基本的な仕組みがまだ身に付いていないため、まず大量のデータで基礎を広く学ばせる段階を事前学習という。たとえば言語モデルでは、文章の途中までを読ませて次に来る単語の断片（トークン）を当てさせる練習を繰り返すことで、言葉の並び方や内容同士の結び付きを少しずつ覚えていく。こうして基礎を身に付けたモデルを用意しておけば、後から個別の用途に合わせた調整を少ない手間で進められるため、事前学習はその土台作りにあたる。" data-def-html="いきなり特定の仕事を教えようとしても、モデルには言葉や画像の基本的な仕組みがまだ身に付いていないため、まず大量のデータで基礎を広く学ばせる段階を事前学習という。たとえば&lt;a class=&quot;gloss-link&quot; href=&quot;../../glossary/index.html#term-language-model&quot; data-title=&quot;言語モデル（Language Model）&quot; data-def=&quot;文章中の単語やトークンの並び方の規則を学習し、ある並びの次に来るものを確率で予測できるようにしたモデルが言語モデルだ。人間の言葉には文法や語の使い方、内容のつながりといった決まりがあり、大量の文章を学習させることで、それらを数値として取り込ませることができる。この予測の力が、文章の生成や分類など、多くの言語処理技術の土台になっている。&quot;&gt;言語モデル&lt;/a&gt;では、文章の途中までを読ませて次に来る単語の断片（&lt;a class=&quot;gloss-link has-detail&quot; href=&quot;../../glossary/token.html&quot; data-title=&quot;トークン（Token）&quot; data-def=&quot;トークンは、言語モデルが文章を扱うときに使う最小の単位であり、文章を区切った断片のことである。コンピュータは文章をそのまま計算できないため、まず文章を扱いやすい大きさに分ける必要があり、その分けられた一つひとつがトークンになる。1つのトークンは単語全体のこともあれば、単語の一部や1文字、記号のこともあり、モデルは文章をトークンの並びとして読み取り、答えもトークンの並びとして書き出すことで言葉を処理している。&quot; data-detail=&quot;../../glossary/token.html&quot;&gt;トークン&lt;/a&gt;）を当てさせる練習を繰り返すことで、言葉の並び方や内容同士の結び付きを少しずつ覚えていく。こうして基礎を身に付けたモデルを用意しておけば、後から個別の用途に合わせた調整を少ない手間で進められるため、事前学習はその土台作りにあたる。">事前学習</a>済みの<a class="gloss-link" href="../../glossary/index.html#term-language-model" data-title="言語モデル（Language Model）" data-def="文章中の単語やトークンの並び方の規則を学習し、ある並びの次に来るものを確率で予測できるようにしたモデルが言語モデルだ。人間の言葉には文法や語の使い方、内容のつながりといった決まりがあり、大量の文章を学習させることで、それらを数値として取り込ませることができる。この予測の力が、文章の生成や分類など、多くの言語処理技術の土台になっている。" data-def-html="文章中の単語や&lt;a class=&quot;gloss-link has-detail&quot; href=&quot;../../glossary/token.html&quot; data-title=&quot;トークン（Token）&quot; data-def=&quot;トークンは、言語モデルが文章を扱うときに使う最小の単位であり、文章を区切った断片のことである。コンピュータは文章をそのまま計算できないため、まず文章を扱いやすい大きさに分ける必要があり、その分けられた一つひとつがトークンになる。1つのトークンは単語全体のこともあれば、単語の一部や1文字、記号のこともあり、モデルは文章をトークンの並びとして読み取り、答えもトークンの並びとして書き出すことで言葉を処理している。&quot; data-detail=&quot;../../glossary/token.html&quot;&gt;トークン&lt;/a&gt;の並び方の規則を&lt;a class=&quot;gloss-link&quot; href=&quot;../../glossary/index.html#term-training&quot; data-title=&quot;学習（訓練）（Training）&quot; data-def=&quot;学習は、機械学習のモデルにデータを与え、そのデータに合うようにモデル内部の数値を調整していく過程である。モデルは予測と正解のずれを手がかりに数値を少しずつ直し、ずれが小さくなる方向へ進んでいく。この過程を繰り返すことで、個々の例を覚えるだけでなく、見たことのないデータに対しても予測できるようになることが期待される。&quot;&gt;学習&lt;/a&gt;し、ある並びの次に来るものを確率で予測できるようにしたモデルが言語モデルだ。人間の言葉には文法や語の使い方、内容のつながりといった決まりがあり、大量の文章を学習させることで、それらを数値として取り込ませることができる。この予測の力が、文章の生成や&lt;a class=&quot;gloss-link&quot; href=&quot;../../glossary/index.html#term-classification&quot; data-title=&quot;分類（Classification）&quot; data-def=&quot;メールが迷惑メールかどうか、写真に写っているのが犬か猫か――あらかじめ決められた種類のどれに当てはまるかを当てる課題が分類だ。予測する答えが金額のような連続した数値ではなく種類である点が回帰と異なり、教師あり学習の代表的な課題の一つとして、仕分けが必要な場面で広く使われる。&quot;&gt;分類&lt;/a&gt;など、多くの言語処理技術の土台になっている。">言語モデル</a>に、指示への追従、対話、特定の出力形式への対応を身につけさせる為の手法です。<a class="gloss-link" href="../../glossary/index.html#term-pretrained-model" data-title="事前学習済みモデル（Pretrained Model）" data-def="言語や画像のモデルを一から学習させるには大量のデータと計算が必要で、用途ごとに繰り返すのは効率が悪い。事前学習済みモデルはこの負担を避ける形で、大量のデータであらかじめ学習を済ませてあるモデルを指す。そのまま使うことも、別の用途に合わせて追加の学習を加えることもできるため、一から学習し直す必要がなく、少ないデータや計算でも高い性能を得やすい。現在の言語モデルや画像モデルは、この形で公開・利用されることが多い。" data-def-html="言語や画像のモデルを一から&lt;a class=&quot;gloss-link&quot; href=&quot;../../glossary/index.html#term-training&quot; data-title=&quot;学習（訓練）（Training）&quot; data-def=&quot;学習は、機械学習のモデルにデータを与え、そのデータに合うようにモデル内部の数値を調整していく過程である。モデルは予測と正解のずれを手がかりに数値を少しずつ直し、ずれが小さくなる方向へ進んでいく。この過程を繰り返すことで、個々の例を覚えるだけでなく、見たことのないデータに対しても予測できるようになることが期待される。&quot;&gt;学習&lt;/a&gt;させるには大量のデータと計算が必要で、用途ごとに繰り返すのは効率が悪い。事前学習済みモデルはこの負担を避ける形で、大量のデータであらかじめ学習を済ませてあるモデルを指す。そのまま使うことも、別の用途に合わせて追加の学習を加えることもできるため、一から学習し直す必要がなく、少ないデータや計算でも高い性能を得やすい。現在の&lt;a class=&quot;gloss-link&quot; href=&quot;../../glossary/index.html#term-language-model&quot; data-title=&quot;言語モデル（Language Model）&quot; data-def=&quot;文章中の単語やトークンの並び方の規則を学習し、ある並びの次に来るものを確率で予測できるようにしたモデルが言語モデルだ。人間の言葉には文法や語の使い方、内容のつながりといった決まりがあり、大量の文章を学習させることで、それらを数値として取り込ませることができる。この予測の力が、文章の生成や分類など、多くの言語処理技術の土台になっている。&quot;&gt;言語モデル&lt;/a&gt;や画像モデルは、この形で公開・利用されることが多い。">事前学習済みモデル</a>は優れた汎用能力を持っていますが、SFT によって、ユーザーの<a class="gloss-link" href="../../glossary/index.html#term-prompt" data-title="プロンプト（Prompt）" data-def="プロンプトは、生成モデルに対して入力として与える指示や文章のことである。モデルは与えられたプロンプトを手がかりにして出力の内容や形式を決めるため、同じモデルでもプロンプトの書き方によって答えの質や方向性が大きく変わる。なお、コンピュータ一般の文脈では、入力の受付を示す表示記号を指す意味でもこの言葉が使われる。" data-def-html="&lt;a class=&quot;gloss-link&quot; href=&quot;../../glossary/index.html#term-mcp-prompt&quot; data-title=&quot;プロンプト（MCPのPrompt）&quot; data-def=&quot;よく使う指示を毎回一から書く手間を省くために、MCPサーバー側に登録しておき、一部を差し替えて再利用できる指示文の雛形をプロンプトと呼ぶ。利用者は用意された雛形を選ぶだけで、同じ指示を安定してモデルに与えることができる。指示の書き方によってモデルの出力が大きく変わるため、良い雛形を共有できる形にしておくことは、作業の再現性（同じ条件で同じような結果が得られること）を保つうえでも役立つ。&quot;&gt;プロンプト&lt;/a&gt;は、&lt;a class=&quot;gloss-link&quot; href=&quot;../../glossary/index.html#term-generative-model&quot; data-title=&quot;生成モデル（Generative Model）&quot; data-def=&quot;データがどのような仕組みで生まれたのか自体を学ぶモデルを、まとめてこう呼ぶ。入力と正解の組がどのような確率で現れるかを学ぶため、学習した分布（データの現れ方の傾向）に従って新しいデータを生み出すことができる点が特徴になる。分類に使う場合は、各クラスがどのようなデータを生むかを比べて最も当てはまるクラスを答えとする進め方を取る。文章や画像を生成する人工知能の基盤となる考え方でもある。&quot;&gt;生成モデル&lt;/a&gt;に対して入力として与える指示や文章のことである。モデルは与えられたプロンプトを手がかりにして出力の内容や形式を決めるため、同じモデルでもプロンプトの書き方によって答えの質や方向性が大きく変わる。なお、コンピュータ一般の文脈では、入力の受付を示す表示記号を指す意味でもこの言葉が使われる。">プロンプト</a>をよりよく理解し応答出来るアシスタント型のモデルへと変えることが出来ます。通常は、人間が書いた会話や指示の<a class="gloss-link" href="../../glossary/index.html#term-dataset" data-title="データセット（Dataset）" data-def="モデルに何かを学ばせたり、その出来ばえを確かめたりするには、材料となるデータを一定の形式でまとめておく必要があり、そのまとまりをデータセットと呼ぶ。中身は文章や画像といった入力が中心で、必要に応じて「これは犬の写真である」といった正解の情報も一緒に付けられる。材料の量が少なく質が悪ければ、どんな優れた方法を使っても良いモデルにはなりにくいため、データセットの量と質は最終的な性能を大きく左右する。" data-def-html="モデルに何かを学ばせたり、その出来ばえを確かめたりするには、材料となるデータを一定の形式でまとめておく必要があり、そのまとまりをデータセットと呼ぶ。中身は文章や画像といった入力が中心で、必要に応じて「これは犬の写真である」といった正解の情報も一緒に付けられる。材料の量が少なく質が悪ければ、どんな優れた方法を使っても良いモデルにはなりにくいため、データセットの量と質は最終的な性能を大きく左右する。">データセット</a>で<a class="gloss-link" href="../../glossary/index.html#term-training" data-title="学習（訓練）（Training）" data-def="学習は、機械学習のモデルにデータを与え、そのデータに合うようにモデル内部の数値を調整していく過程である。モデルは予測と正解のずれを手がかりに数値を少しずつ直し、ずれが小さくなる方向へ進んでいく。この過程を繰り返すことで、個々の例を覚えるだけでなく、見たことのないデータに対しても予測できるようになることが期待される。" data-def-html="学習は、&lt;a class=&quot;gloss-link&quot; href=&quot;../../glossary/index.html#term-machine-learning&quot; data-title=&quot;機械学習（Machine Learning）&quot; data-def=&quot;プログラムの手順を人間が一つ一つ書き与える従来の方法では、複雑な判断をすべて書き切ることは難しいため、データから規則性や判断の基準をコンピュータ自身に学ばせる技術を機械学習という。訓練用のデータを用いて学ばせることでモデルはパターンを身に付け、正解の分からない新しいデータに対しても予測や分類ができるようになる。人工知能を実現する主要な方法の一つであり、現在の人工知能の中心的な仕組みになっている。&quot;&gt;機械学習&lt;/a&gt;のモデルにデータを与え、そのデータに合うようにモデル内部の数値を調整していく過程である。モデルは予測と正解のずれを手がかりに数値を少しずつ直し、ずれが小さくなる方向へ進んでいく。この過程を繰り返すことで、個々の例を覚えるだけでなく、見たことのないデータに対しても予測できるようになることが期待される。">学習</a>を行います。</p>
-<p>このページでは、<a href="https://huggingface.co/docs/trl/en/sft_trainer"><code>SFTTrainer</code></a> を使って <a href="https://huggingface.co/deepseek-ai/DeepSeek-R1-Distill-Qwen-1.5B"><code>deepseek-ai/DeepSeek-R1-Distill-Qwen-1.5B</code></a> モデルをファインチューニングする手順をステップごとに解説します。これらの手順に従えば、モデルを特定のタスクでより効果的に動作するよう適応させることが出来ます。 </p>
+<p><a class="gloss-link" href="../../glossary/index.html#term-supervised-learning" data-title="教師あり学習（Supervised Learning）" data-def="入力データとそれに対する正解を組にして与え、モデルが正解の付け方を学んでいく仕組みが教師あり学習だ。モデルは自分の予測と正解との違いを見て少しずつ調整を繰り返すため、次第に正解に近い予測ができるようになる。学習が終われば、正解の分からない新しいデータについても同じ基準で予測や分類を行えるようになる。" data-def-html="入力データとそれに対する正解を組にして与え、モデルが正解の付け方を学んでいく仕組みが教師あり学習だ。モデルは自分の予測と正解との違いを見て少しずつ調整を繰り返すため、次第に正解に近い予測ができるようになる。&lt;a class=&quot;gloss-link&quot; href=&quot;../../glossary/index.html#term-training&quot; data-title=&quot;学習（訓練）（Training）&quot; data-def=&quot;学習は、機械学習のモデルにデータを与え、そのデータに合うようにモデル内部の数値を調整していく過程である。モデルは予測と正解のずれを手がかりに数値を少しずつ直し、ずれが小さくなる方向へ進んでいく。この過程を繰り返すことで、個々の例を覚えるだけでなく、見たことのないデータに対しても予測できるようになることが期待される。&quot;&gt;学習&lt;/a&gt;が終われば、正解の分からない新しいデータについても同じ基準で予測や&lt;a class=&quot;gloss-link&quot; href=&quot;../../glossary/index.html#term-classification&quot; data-title=&quot;分類（Classification）&quot; data-def=&quot;メールが迷惑メールかどうか、写真に写っているのが犬か猫か――あらかじめ決められた種類のどれに当てはまるかを当てる課題が分類だ。予測する答えが金額のような連続した数値ではなく種類である点が回帰と異なり、教師あり学習の代表的な課題の一つとして、仕分けが必要な場面で広く使われる。&quot;&gt;分類&lt;/a&gt;を行えるようになる。">教師あり</a><a class="gloss-link" href="../../glossary/index.html#term-fine-tuning" data-title="ファインチューニング（Fine-tuning）" data-def="事前学習で基礎を身に付けたモデルはそのままでは特定の仕事にぴったり合うとは限らないため、その仕事用のデータで追加の学習を行い、振る舞いを目的に合わせて調整するのがファインチューニングだ。ゼロから学ばせる場合と違い、すでに言葉や画像の基本を理解している状態から始めるので、少ないデータと計算でも目的に合った性能が得られやすい。このように一度学んだ知識を別の目的に活かす考え方は転移学習と呼ばれ、ファインチューニングはその代表的なやり方である。" data-def-html="&lt;a class=&quot;gloss-link&quot; href=&quot;../../glossary/index.html#term-t9&quot; data-title=&quot;事前学習（プリトレーニング）&quot; data-def=&quot;いきなり特定の仕事を教えようとしても、モデルには言葉や画像の基本的な仕組みがまだ身に付いていないため、まず大量のデータで基礎を広く学ばせる段階を事前学習という。たとえば言語モデルでは、文章の途中までを読ませて次に来る単語の断片（トークン）を当てさせる練習を繰り返すことで、言葉の並び方や内容同士の結び付きを少しずつ覚えていく。こうして基礎を身に付けたモデルを用意しておけば、後から個別の用途に合わせた調整を少ない手間で進められるため、事前学習はその土台作りにあたる。&quot;&gt;事前学習&lt;/a&gt;で基礎を身に付けたモデルはそのままでは特定の仕事にぴったり合うとは限らないため、その仕事用のデータで追加の&lt;a class=&quot;gloss-link&quot; href=&quot;../../glossary/index.html#term-training&quot; data-title=&quot;学習（訓練）（Training）&quot; data-def=&quot;学習は、機械学習のモデルにデータを与え、そのデータに合うようにモデル内部の数値を調整していく過程である。モデルは予測と正解のずれを手がかりに数値を少しずつ直し、ずれが小さくなる方向へ進んでいく。この過程を繰り返すことで、個々の例を覚えるだけでなく、見たことのないデータに対しても予測できるようになることが期待される。&quot;&gt;学習&lt;/a&gt;を行い、振る舞いを目的に合わせて調整するのがファインチューニングだ。ゼロから学ばせる場合と違い、すでに言葉や画像の基本を理解している状態から始めるので、少ないデータと計算でも目的に合った性能が得られやすい。このように一度学んだ知識を別の目的に活かす考え方は&lt;a class=&quot;gloss-link&quot; href=&quot;../../glossary/index.html#term-transfer-learning&quot; data-title=&quot;転移学習（Transfer Learning）&quot; data-def=&quot;ある課題のために集めたデータや学んだ知識を、似た別の課題にも活かせれば、少ないデータでも学習が成り立つのではないかという考え方を転移学習という。代表的な進め方では、大規模なデータで学習済みのモデルを用意し、それを対象の課題のデータで追加学習させる。基礎がすでに身に付いている状態から始めるため、対象のデータが少ない場合でも一から学ぶより性能が出やすくなる。&quot;&gt;転移学習&lt;/a&gt;と呼ばれ、ファインチューニングはその代表的なやり方である。">ファインチューニング</a>（SFT）は、<a class="gloss-link" href="../../glossary/index.html#term-t9" data-title="事前学習（プリトレーニング）" data-def="いきなり特定の仕事を教えようとしても、モデルには言葉や画像の基本的な仕組みがまだ身に付いていないため、まず大量のデータで基礎を広く学ばせる段階を事前学習という。たとえば言語モデルでは、文章の途中までを読ませて次に来る単語の断片（トークン）を当てさせる練習を繰り返すことで、言葉の並び方や内容同士の結び付きを少しずつ覚えていく。こうして基礎を身に付けたモデルを用意しておけば、後から個別の用途に合わせた調整を少ない手間で進められるため、事前学習はその土台作りにあたる。" data-def-html="いきなり特定の仕事を教えようとしても、モデルには言葉や画像の基本的な仕組みがまだ身に付いていないため、まず大量のデータで基礎を広く学ばせる段階を事前学習という。たとえば&lt;a class=&quot;gloss-link&quot; href=&quot;../../glossary/index.html#term-language-model&quot; data-title=&quot;言語モデル（Language Model）&quot; data-def=&quot;文章中の単語やトークンの並び方の規則を学習し、ある並びの次に来るものを確率で予測できるようにしたモデルが言語モデルだ。人間の言葉には文法や語の使い方、内容のつながりといった決まりがあり、大量の文章を学習させることで、それらを数値として取り込ませることができる。この予測の力が、文章の生成や分類など、多くの言語処理技術の土台になっている。&quot;&gt;言語モデル&lt;/a&gt;では、文章の途中までを読ませて次に来る単語の断片（&lt;a class=&quot;gloss-link has-detail&quot; href=&quot;../../glossary/token.html&quot; data-title=&quot;トークン（Token）&quot; data-def=&quot;トークンは、言語モデルが文章を扱うときに使う最小の単位であり、文章を区切った断片のことである。コンピュータは文章をそのまま計算できないため、まず文章を扱いやすい大きさに分ける必要があり、その分けられた一つひとつがトークンになる。1つのトークンは単語全体のこともあれば、単語の一部や1文字、記号のこともあり、モデルは文章をトークンの並びとして読み取り、答えもトークンの並びとして書き出すことで言葉を処理している。&quot; data-detail=&quot;../../glossary/token.html&quot;&gt;トークン&lt;/a&gt;）を当てさせる練習を繰り返すことで、言葉の並び方や内容同士の結び付きを少しずつ覚えていく。こうして基礎を身に付けたモデルを用意しておけば、後から個別の用途に合わせた調整を少ない手間で進められるため、事前学習はその土台作りにあたる。">事前学習</a>済みの<a class="gloss-link" href="../../glossary/index.html#term-language-model" data-title="言語モデル（Language Model）" data-def="文章中の単語やトークンの並び方の規則を学習し、ある並びの次に来るものを確率で予測できるようにしたモデルが言語モデルだ。人間の言葉には文法や語の使い方、内容のつながりといった決まりがあり、大量の文章を学習させることで、それらを数値として取り込ませることができる。この予測の力が、文章の生成や分類など、多くの言語処理技術の土台になっている。" data-def-html="文章中の単語や&lt;a class=&quot;gloss-link has-detail&quot; href=&quot;../../glossary/token.html&quot; data-title=&quot;トークン（Token）&quot; data-def=&quot;トークンは、言語モデルが文章を扱うときに使う最小の単位であり、文章を区切った断片のことである。コンピュータは文章をそのまま計算できないため、まず文章を扱いやすい大きさに分ける必要があり、その分けられた一つひとつがトークンになる。1つのトークンは単語全体のこともあれば、単語の一部や1文字、記号のこともあり、モデルは文章をトークンの並びとして読み取り、答えもトークンの並びとして書き出すことで言葉を処理している。&quot; data-detail=&quot;../../glossary/token.html&quot;&gt;トークン&lt;/a&gt;の並び方の規則を&lt;a class=&quot;gloss-link&quot; href=&quot;../../glossary/index.html#term-training&quot; data-title=&quot;学習（訓練）（Training）&quot; data-def=&quot;学習は、機械学習のモデルにデータを与え、そのデータに合うようにモデル内部の数値を調整していく過程である。モデルは予測と正解のずれを手がかりに数値を少しずつ直し、ずれが小さくなる方向へ進んでいく。この過程を繰り返すことで、個々の例を覚えるだけでなく、見たことのないデータに対しても予測できるようになることが期待される。&quot;&gt;学習&lt;/a&gt;し、ある並びの次に来るものを確率で予測できるようにしたモデルが言語モデルだ。人間の言葉には文法や語の使い方、内容のつながりといった決まりがあり、大量の文章を学習させることで、それらを数値として取り込ませることができる。この予測の力が、文章の生成や&lt;a class=&quot;gloss-link&quot; href=&quot;../../glossary/index.html#term-classification&quot; data-title=&quot;分類（Classification）&quot; data-def=&quot;メールが迷惑メールかどうか、写真に写っているのが犬か猫か――あらかじめ決められた種類のどれに当てはまるかを当てる課題が分類だ。予測する答えが金額のような連続した数値ではなく種類である点が回帰と異なり、教師あり学習の代表的な課題の一つとして、仕分けが必要な場面で広く使われる。&quot;&gt;分類&lt;/a&gt;など、多くの言語処理技術の土台になっている。">言語モデル</a>を、指示に従い、対話し、決まった形式で出力出来るモデルへと仕上げる為の手法です。<a class="gloss-link" href="../../glossary/index.html#term-pretrained-model" data-title="事前学習済みモデル（Pretrained Model）" data-def="言語や画像のモデルを一から学習させるには大量のデータと計算が必要で、用途ごとに繰り返すのは効率が悪い。事前学習済みモデルはこの負担を避ける形で、大量のデータであらかじめ学習を済ませてあるモデルを指す。そのまま使うことも、別の用途に合わせて追加の学習を加えることもできるため、一から学習し直す必要がなく、少ないデータや計算でも高い性能を得やすい。現在の言語モデルや画像モデルは、この形で公開・利用されることが多い。" data-def-html="言語や画像のモデルを一から&lt;a class=&quot;gloss-link&quot; href=&quot;../../glossary/index.html#term-training&quot; data-title=&quot;学習（訓練）（Training）&quot; data-def=&quot;学習は、機械学習のモデルにデータを与え、そのデータに合うようにモデル内部の数値を調整していく過程である。モデルは予測と正解のずれを手がかりに数値を少しずつ直し、ずれが小さくなる方向へ進んでいく。この過程を繰り返すことで、個々の例を覚えるだけでなく、見たことのないデータに対しても予測できるようになることが期待される。&quot;&gt;学習&lt;/a&gt;させるには大量のデータと計算が必要で、用途ごとに繰り返すのは効率が悪い。事前学習済みモデルはこの負担を避ける形で、大量のデータであらかじめ学習を済ませてあるモデルを指す。そのまま使うことも、別の用途に合わせて追加の学習を加えることもできるため、一から学習し直す必要がなく、少ないデータや計算でも高い性能を得やすい。現在の&lt;a class=&quot;gloss-link&quot; href=&quot;../../glossary/index.html#term-language-model&quot; data-title=&quot;言語モデル（Language Model）&quot; data-def=&quot;文章中の単語やトークンの並び方の規則を学習し、ある並びの次に来るものを確率で予測できるようにしたモデルが言語モデルだ。人間の言葉には文法や語の使い方、内容のつながりといった決まりがあり、大量の文章を学習させることで、それらを数値として取り込ませることができる。この予測の力が、文章の生成や分類など、多くの言語処理技術の土台になっている。&quot;&gt;言語モデル&lt;/a&gt;や画像モデルは、この形で公開・利用されることが多い。">事前学習済みモデル</a>には既に高い汎用能力がありますが、SFT を施すと、ユーザーの<a class="gloss-link" href="../../glossary/index.html#term-prompt" data-title="プロンプト（Prompt）" data-def="プロンプトは、生成モデルに対して入力として与える指示や文章のことである。モデルは与えられたプロンプトを手がかりにして出力の内容や形式を決めるため、同じモデルでもプロンプトの書き方によって答えの質や方向性が大きく変わる。なお、コンピュータ一般の文脈では、入力の受付を示す表示記号を指す意味でもこの言葉が使われる。" data-def-html="&lt;a class=&quot;gloss-link&quot; href=&quot;../../glossary/index.html#term-mcp-prompt&quot; data-title=&quot;プロンプト（MCPのPrompt）&quot; data-def=&quot;よく使う指示を毎回一から書く手間を省くために、MCPサーバー側に登録しておき、一部を差し替えて再利用できる指示文の雛形をプロンプトと呼ぶ。利用者は用意された雛形を選ぶだけで、同じ指示を安定してモデルに与えることができる。指示の書き方によってモデルの出力が大きく変わるため、良い雛形を共有できる形にしておくことは、作業の再現性（同じ条件で同じような結果が得られること）を保つうえでも役立つ。&quot;&gt;プロンプト&lt;/a&gt;は、&lt;a class=&quot;gloss-link&quot; href=&quot;../../glossary/index.html#term-generative-model&quot; data-title=&quot;生成モデル（Generative Model）&quot; data-def=&quot;データがどのような仕組みで生まれたのか自体を学ぶモデルを、まとめてこう呼ぶ。入力と正解の組がどのような確率で現れるかを学ぶため、学習した分布（データの現れ方の傾向）に従って新しいデータを生み出すことができる点が特徴になる。分類に使う場合は、各クラスがどのようなデータを生むかを比べて最も当てはまるクラスを答えとする進め方を取る。文章や画像を生成する人工知能の基盤となる考え方でもある。&quot;&gt;生成モデル&lt;/a&gt;に対して入力として与える指示や文章のことである。モデルは与えられたプロンプトを手がかりにして出力の内容や形式を決めるため、同じモデルでもプロンプトの書き方によって答えの質や方向性が大きく変わる。なお、コンピュータ一般の文脈では、入力の受付を示す表示記号を指す意味でもこの言葉が使われる。">プロンプト</a>の意図を汲んで応答する、アシスタント型のモデルになります。<a class="gloss-link" href="../../glossary/index.html#term-training" data-title="学習（訓練）（Training）" data-def="学習は、機械学習のモデルにデータを与え、そのデータに合うようにモデル内部の数値を調整していく過程である。モデルは予測と正解のずれを手がかりに数値を少しずつ直し、ずれが小さくなる方向へ進んでいく。この過程を繰り返すことで、個々の例を覚えるだけでなく、見たことのないデータに対しても予測できるようになることが期待される。" data-def-html="学習は、&lt;a class=&quot;gloss-link&quot; href=&quot;../../glossary/index.html#term-machine-learning&quot; data-title=&quot;機械学習（Machine Learning）&quot; data-def=&quot;プログラムの手順を人間が一つ一つ書き与える従来の方法では、複雑な判断をすべて書き切ることは難しいため、データから規則性や判断の基準をコンピュータ自身に学ばせる技術を機械学習という。訓練用のデータを用いて学ばせることでモデルはパターンを身に付け、正解の分からない新しいデータに対しても予測や分類ができるようになる。人工知能を実現する主要な方法の一つであり、現在の人工知能の中心的な仕組みになっている。&quot;&gt;機械学習&lt;/a&gt;のモデルにデータを与え、そのデータに合うようにモデル内部の数値を調整していく過程である。モデルは予測と正解のずれを手がかりに数値を少しずつ直し、ずれが小さくなる方向へ進んでいく。この過程を繰り返すことで、個々の例を覚えるだけでなく、見たことのないデータに対しても予測できるようになることが期待される。">学習</a>には通常、人間が書いた会話や指示を集めた<a class="gloss-link" href="../../glossary/index.html#term-dataset" data-title="データセット（Dataset）" data-def="モデルに何かを学ばせたり、その出来ばえを確かめたりするには、材料となるデータを一定の形式でまとめておく必要があり、そのまとまりをデータセットと呼ぶ。中身は文章や画像といった入力が中心で、必要に応じて「これは犬の写真である」といった正解の情報も一緒に付けられる。材料の量が少なく質が悪ければ、どんな優れた方法を使っても良いモデルにはなりにくいため、データセットの量と質は最終的な性能を大きく左右する。" data-def-html="モデルに何かを学ばせたり、その出来ばえを確かめたりするには、材料となるデータを一定の形式でまとめておく必要があり、そのまとまりをデータセットと呼ぶ。中身は文章や画像といった入力が中心で、必要に応じて「これは犬の写真である」といった正解の情報も一緒に付けられる。材料の量が少なく質が悪ければ、どんな優れた方法を使っても良いモデルにはなりにくいため、データセットの量と質は最終的な性能を大きく左右する。">データセット</a>を使います。</p>
+<p>このページでは、<a href="https://huggingface.co/docs/trl/en/sft_trainer"><code>SFTTrainer</code></a> を使って <a href="https://huggingface.co/deepseek-ai/DeepSeek-R1-Distill-Qwen-1.5B"><code>deepseek-ai/DeepSeek-R1-Distill-Qwen-1.5B</code></a> モデルをファインチューニングする手順を、順を追って解説します。手順どおりに進めれば、モデルを特定のタスクにより適した形へ調整出来ます。 </p>
 <h2>SFT を使うべき場面</h2>
-<p>実装に入る前に、SFT が自分のプロジェクトに適した手法かどうかを判断することが重要です。まずは、既存の<a class="gloss-link" href="../../glossary/index.html#term-instruction-tuning" data-title="指示チューニング（Instruction Tuning）" data-def="言語モデルはもともと文章の続きを予測するように学んでいるため、そのままでは「要約して」と頼んでも頼まれた形で答えるとは限らない。そこで、指示とそれに対する望ましい答えの組を大量に学ばせ、指示に従う力を付けさせるのがこの学習である。学習を経たモデルは、要約や言い換えなど、求められた作業の形に合わせて答えられるようになる。" data-def-html="&lt;a class=&quot;gloss-link&quot; href=&quot;../../glossary/index.html#term-language-model&quot; data-title=&quot;言語モデル（Language Model）&quot; data-def=&quot;文章中の単語やトークンの並び方の規則を学習し、ある並びの次に来るものを確率で予測できるようにしたモデルが言語モデルだ。人間の言葉には文法や語の使い方、内容のつながりといった決まりがあり、大量の文章を学習させることで、それらを数値として取り込ませることができる。この予測の力が、文章の生成や分類など、多くの言語処理技術の土台になっている。&quot;&gt;言語モデル&lt;/a&gt;はもともと文章の続きを予測するように学んでいるため、そのままでは「要約して」と頼んでも頼まれた形で答えるとは限らない。そこで、指示とそれに対する望ましい答えの組を大量に学ばせ、指示に従う力を付けさせるのがこの&lt;a class=&quot;gloss-link&quot; href=&quot;../../glossary/index.html#term-training&quot; data-title=&quot;学習（訓練）（Training）&quot; data-def=&quot;学習は、機械学習のモデルにデータを与え、そのデータに合うようにモデル内部の数値を調整していく過程である。モデルは予測と正解のずれを手がかりに数値を少しずつ直し、ずれが小さくなる方向へ進んでいく。この過程を繰り返すことで、個々の例を覚えるだけでなく、見たことのないデータに対しても予測できるようになることが期待される。&quot;&gt;学習&lt;/a&gt;である。学習を経たモデルは、要約や言い換えなど、求められた作業の形に合わせて答えられるようになる。">指示チューニング</a>済みモデルにプロンプトを工夫して与えるだけで、目的を達成出来ないか検討してください。SFT には多大な計算リソースとエンジニアリングの労力が必要な為、既存のモデルへのプロンプトだけでは不十分だと分かった場合にのみ取り組むべきです。</p>
+<p>実装に入る前に、SFT が自分のプロジェクトに合った手法かどうかを見極めておくことが大切です。まず検討すべきなのは、既存の<a class="gloss-link" href="../../glossary/index.html#term-instruction-tuning" data-title="指示チューニング（Instruction Tuning）" data-def="言語モデルはもともと文章の続きを予測するように学んでいるため、そのままでは「要約して」と頼んでも頼まれた形で答えるとは限らない。そこで、指示とそれに対する望ましい答えの組を大量に学ばせ、指示に従う力を付けさせるのがこの学習である。学習を経たモデルは、要約や言い換えなど、求められた作業の形に合わせて答えられるようになる。" data-def-html="&lt;a class=&quot;gloss-link&quot; href=&quot;../../glossary/index.html#term-language-model&quot; data-title=&quot;言語モデル（Language Model）&quot; data-def=&quot;文章中の単語やトークンの並び方の規則を学習し、ある並びの次に来るものを確率で予測できるようにしたモデルが言語モデルだ。人間の言葉には文法や語の使い方、内容のつながりといった決まりがあり、大量の文章を学習させることで、それらを数値として取り込ませることができる。この予測の力が、文章の生成や分類など、多くの言語処理技術の土台になっている。&quot;&gt;言語モデル&lt;/a&gt;はもともと文章の続きを予測するように学んでいるため、そのままでは「要約して」と頼んでも頼まれた形で答えるとは限らない。そこで、指示とそれに対する望ましい答えの組を大量に学ばせ、指示に従う力を付けさせるのがこの&lt;a class=&quot;gloss-link&quot; href=&quot;../../glossary/index.html#term-training&quot; data-title=&quot;学習（訓練）（Training）&quot; data-def=&quot;学習は、機械学習のモデルにデータを与え、そのデータに合うようにモデル内部の数値を調整していく過程である。モデルは予測と正解のずれを手がかりに数値を少しずつ直し、ずれが小さくなる方向へ進んでいく。この過程を繰り返すことで、個々の例を覚えるだけでなく、見たことのないデータに対しても予測できるようになることが期待される。&quot;&gt;学習&lt;/a&gt;である。学習を経たモデルは、要約や言い換えなど、求められた作業の形に合わせて答えられるようになる。">指示チューニング</a>済みモデルに、工夫したプロンプトを与えるだけで目的を達成出来ないかという点です。SFT には相応の計算リソースと実装の手間が掛かります。既存のモデルへのプロンプトでは不十分だと分かった場合に限って、取り組むべき手法です。</p>
 <div class="callout callout-tip">
 <p class="callout-title">💡 ヒント</p>
 <p>SFT を検討するのは次のような場合だけにしましょう：
 - プロンプトの工夫だけでは達成出来ない性能が必要
-- 大規模な汎用モデルを使うコストが、小規模モデルをファインチューニングするコストを上回る具体的なユースケースが有る
+- 大規模な汎用モデルを使うコストが、小規模なモデルをファインチューニングするコストを上回る具体的な用途が有る
 - 既存のモデルが苦手とする、特殊な出力形式やドメイン固有の知識が必要</p>
 </div>
 <p>SFT が必要だと判断したら、進めるかどうかは主に次の2つの要素で決まります。</p>
-<h3>テンプレートのコントロール</h3>
-<p>SFT を使うと、モデルの出力構造を精密にコントロール出来ます。これは、モデルに次のことを求める場合に特に価値があります。
-1. 特定のチャットテンプレート形式で応答を生成する
-2. 厳密な出力<a class="gloss-link" href="../../glossary/index.html#term-schema" data-title="スキーマ（Schema）" data-def="データをやり取りするとき、項目の名前や値の種類が相手ごとにばらばらでは、誤りが生じやすい。スキーマは、どのような項目があり、それぞれがどのような種類の値を持つかを定めた設計図であり、データの読み書きや検証を一定の規則で行えるようにする。プログラム同士がデータをやり取りする際の約束事として働くため、形式の食い違いによる誤りを防ぐ役割も果たす。" data-def-html="データをやり取りするとき、項目の名前や値の種類が相手ごとにばらばらでは、誤りが生じやすい。スキーマは、どのような項目があり、それぞれがどのような種類の値を持つかを定めた設計図であり、データの読み書きや検証を一定の規則で行えるようにする。プログラム同士がデータをやり取りする際の約束事として働くため、形式の食い違いによる誤りを防ぐ役割も果たす。">スキーマ</a>に従う
-3. 応答全体で一貫したスタイルを保つ</p>
+<h3>テンプレートの制御</h3>
+<p>SFT を使うと、モデルの出力構造を細部まで制御出来ます。次のような応答をモデルに求める場合に、特に有効です。</p>
+<ol>
+<li>特定のチャットテンプレート形式で応答を生成する</li>
+<li>厳密な出力<a class="gloss-link" href="../../glossary/index.html#term-schema" data-title="スキーマ（Schema）" data-def="データをやり取りするとき、項目の名前や値の種類が相手ごとにばらばらでは、誤りが生じやすい。スキーマは、どのような項目があり、それぞれがどのような種類の値を持つかを定めた設計図であり、データの読み書きや検証を一定の規則で行えるようにする。プログラム同士がデータをやり取りする際の約束事として働くため、形式の食い違いによる誤りを防ぐ役割も果たす。" data-def-html="データをやり取りするとき、項目の名前や値の種類が相手ごとにばらばらでは、誤りが生じやすい。スキーマは、どのような項目があり、それぞれがどのような種類の値を持つかを定めた設計図であり、データの読み書きや検証を一定の規則で行えるようにする。プログラム同士がデータをやり取りする際の約束事として働くため、形式の食い違いによる誤りを防ぐ役割も果たす。">スキーマ</a>に従う</li>
+<li>応答全体で一貫したスタイルを保つ</li>
+</ol>
 <h3>ドメインへの適応</h3>
-<p>専門的なドメインで作業する場合、SFT は次のような形でモデルをドメイン固有の要件に合わせる手助けをします。
-1. ドメインの専門用語や概念を教える
-2. 専門職としての基準を守らせる
-3. 技術的な問い合わせに適切に対応させる
-4. 業界固有のガイドラインに従わせる</p>
+<p>専門的なドメインで作業する場合、SFT によって、モデルをドメイン固有の要件に沿うよう調整出来ます。例えば、次のような点です。</p>
+<ol>
+<li>ドメインの専門用語や概念を教える</li>
+<li>専門職としての基準を守らせる</li>
+<li>技術的な問い合わせに適切に対応させる</li>
+<li>業界固有のガイドラインに従わせる</li>
+</ol>
 <div class="callout callout-tip">
 <p class="callout-title">💡 ヒント</p>
 <p>SFT を始める前に、そのユースケースが次を必要とするか<a class="gloss-link" href="../../glossary/index.html#term-evaluation" data-title="評価（Evaluation）" data-def="評価は、学習したモデルの性能を、決められた方法で測ることである。学習に使っていないデータに対して予測を行わせ、正解との一致の程度を評価指標で数値化するのが基本の流れであり、その結果はモデルの採用判断や、改善すべき点の特定に使われる。学習に使ったデータで測ると実力より良く見えるため、データの分け方が重要になる。" data-def-html="評価は、&lt;a class=&quot;gloss-link&quot; href=&quot;../../glossary/index.html#term-training&quot; data-title=&quot;学習（訓練）（Training）&quot; data-def=&quot;学習は、機械学習のモデルにデータを与え、そのデータに合うようにモデル内部の数値を調整していく過程である。モデルは予測と正解のずれを手がかりに数値を少しずつ直し、ずれが小さくなる方向へ進んでいく。この過程を繰り返すことで、個々の例を覚えるだけでなく、見たことのないデータに対しても予測できるようになることが期待される。&quot;&gt;学習&lt;/a&gt;したモデルの性能を、決められた方法で測ることである。学習に使っていないデータに対して予測を行わせ、正解との一致の程度を&lt;a class=&quot;gloss-link&quot; href=&quot;../../glossary/index.html#term-evaluation-metric&quot; data-title=&quot;評価指標（Evaluation Metric）&quot; data-def=&quot;モデルの性能を数値で表すためのものさしが評価指標だ。正解率や適合率のように分類の当たり具合を測るものや、平均二乗誤差のように数値予測のずれを測るものなどがあり、問題の種類に応じて使い分ける。どの指標で測るかによって良いモデルの意味が変わるため、目的に合った指標を選ぶことが重要である。&quot;&gt;評価指標&lt;/a&gt;で数値化するのが基本の流れであり、その結果はモデルの採用判断や、改善すべき点の特定に使われる。学習に使ったデータで測ると実力より良く見えるため、データの分け方が重要になる。">評価</a>してください：
@@ -240,10 +244,12 @@ window.MathJax = { tex: { inlineMath: [['$', '$'], ['\\(', '\\)']], displayMath:
 <p>この評価により、SFT が自分のニーズに合ったアプローチかどうかを判断出来ます。</p>
 </div>
 <h2>データセットの準備</h2>
-<p>教師ありファインチューニングの工程には、入力と出力のペアで構造化された、タスク固有のデータセットが必要です。各ペアは次の要素で構成されます。
-1. 入力プロンプト
-2. 期待されるモデルの応答
-3. 追加の文脈やメタデータ</p>
+<p>教師ありファインチューニングには、タスクに合わせたデータセットが必要です。データセットは、入力と出力のペアで構成します。各ペアには、次の要素を含めます。</p>
+<ol>
+<li>入力プロンプト</li>
+<li>期待されるモデルの応答</li>
+<li>追加の文脈やメタデータ</li>
+</ol>
 <p><a class="gloss-link" href="../../glossary/index.html#term-training-set" data-title="訓練セット／学習データ（Training Set）" data-def="モデルの学習に直接使うデータの集まりを訓練セットと呼ぶ。中には入力とそれに対する正解の組が多数含まれており、モデルはこの組を手本として内部の数値を調整する。ただし、学習に使ったデータで成績を測ると、覚えた内容を答えているだけでも実力より良く見えてしまうため、評価には別のデータを用いる必要がある。" data-def-html="モデルの&lt;a class=&quot;gloss-link&quot; href=&quot;../../glossary/index.html#term-training&quot; data-title=&quot;学習（訓練）（Training）&quot; data-def=&quot;学習は、機械学習のモデルにデータを与え、そのデータに合うようにモデル内部の数値を調整していく過程である。モデルは予測と正解のずれを手がかりに数値を少しずつ直し、ずれが小さくなる方向へ進んでいく。この過程を繰り返すことで、個々の例を覚えるだけでなく、見たことのないデータに対しても予測できるようになることが期待される。&quot;&gt;学習&lt;/a&gt;に直接使うデータの集まりを訓練セットと呼ぶ。中には入力とそれに対する正解の組が多数含まれており、モデルはこの組を手本として内部の数値を調整する。ただし、学習に使ったデータで成績を測ると、覚えた内容を答えているだけでも実力より良く見えてしまうため、&lt;a class=&quot;gloss-link&quot; href=&quot;../../glossary/index.html#term-evaluation&quot; data-title=&quot;評価（Evaluation）&quot; data-def=&quot;評価は、学習したモデルの性能を、決められた方法で測ることである。学習に使っていないデータに対して予測を行わせ、正解との一致の程度を評価指標で数値化するのが基本の流れであり、その結果はモデルの採用判断や、改善すべき点の特定に使われる。学習に使ったデータで測ると実力より良く見えるため、データの分け方が重要になる。&quot;&gt;評価&lt;/a&gt;には別のデータを用いる必要がある。">学習データ</a>の品質は、ファインチューニングを成功させる上で極めて重要です。データセットの準備と検証の方法を見てみましょう。</p>
 <p><iframe
   src="https://huggingface.co/datasets/HuggingFaceTB/smoltalk/embed/viewer/all/train?row=0"
@@ -254,7 +260,7 @@ window.MathJax = { tex: { inlineMath: [['$', '$'], ['\\(', '\\)']], displayMath:
 </p>
 <h2>学習の設定</h2>
 <p>ファインチューニングの成功は、適切な学習<a class="gloss-link" href="../../glossary/index.html#term-parameter" data-title="パラメータ（Parameter）" data-def="モデルが学習で覚えた内容は、内部の数値の集まりとして蓄えられる。その数値の総称がパラメータで、ニューラルネットワークでは入力への重み付けを決める重みと、結果をずらすバイアスがこれにあたる。パラメータが多いモデルほど複雑な関係を表しやすくなる一方、学習に必要なデータや計算も増える。なお、学習率のように学習を始める前に人が決める設定は、学習で決まる値ではないためパラメータには含めない。" data-def-html="モデルが&lt;a class=&quot;gloss-link&quot; href=&quot;../../glossary/index.html#term-training&quot; data-title=&quot;学習（訓練）（Training）&quot; data-def=&quot;学習は、機械学習のモデルにデータを与え、そのデータに合うようにモデル内部の数値を調整していく過程である。モデルは予測と正解のずれを手がかりに数値を少しずつ直し、ずれが小さくなる方向へ進んでいく。この過程を繰り返すことで、個々の例を覚えるだけでなく、見たことのないデータに対しても予測できるようになることが期待される。&quot;&gt;学習&lt;/a&gt;で覚えた内容は、内部の数値の集まりとして蓄えられる。その数値の総称がパラメータで、&lt;a class=&quot;gloss-link&quot; href=&quot;../../glossary/index.html#term-neural-network&quot; data-title=&quot;ニューラルネットワーク（Neural Network）&quot; data-def=&quot;入力された数値を、層状に並んだ小さな計算単位の間を伝わりながら変換し、最後に答えとして出力する仕組みがニューラルネットワークであり、人の脳の神経細胞のつながりをヒントに作られた。単位どうしは重みと呼ばれる数値で結ばれており、学習では出力と正解とのずれが小さくなるように重みを調整することで、データの中の規則を重みの値として覚え込ませる。&quot;&gt;ニューラルネットワーク&lt;/a&gt;では入力への&lt;a class=&quot;gloss-link&quot; href=&quot;../../glossary/index.html#term-weight&quot; data-title=&quot;重み（Weight）&quot; data-def=&quot;重要な入力は強く、そうでない入力は弱く次の計算へ伝えるために、各入力には重みが掛けられる。重みは入力された数値が次の計算にどれだけ強く影響するかを決める数値で、各入力に重みを掛けて合計すると、重視すべき入力ほど結果に大きく反映される仕組みになる。学習ではこの重みが少しずつ調整されていき、モデルがデータから覚えた内容は主に重みの値の中に蓄えられる。&quot;&gt;重み&lt;/a&gt;付けを決める重みと、結果をずらす&lt;a class=&quot;gloss-link&quot; href=&quot;../../glossary/index.html#term-bias&quot; data-title=&quot;バイアス（Bias）&quot; data-def=&quot;入力がすべて0のときでも一定の出力を出せるように、重みを掛けた合計に最後に足し込まれる数値がバイアスにあたる。重みだけでは入力に応じた変化しか表せないが、この項があることで計算結果全体を上や下へずらすことができ、入力の大きさとは独立した調整が可能になる。バイアスも重みと同じく学習によって調整されるパラメータであり、統計や社会問題でいう偏りとは別の用語として区別される。&quot;&gt;バイアス&lt;/a&gt;がこれにあたる。パラメータが多いモデルほど複雑な関係を表しやすくなる一方、学習に必要なデータや計算も増える。なお、&lt;a class=&quot;gloss-link&quot; href=&quot;../../glossary/index.html#term-learning-rate&quot; data-title=&quot;学習率（Learning Rate）&quot; data-def=&quot;勾配降下法でパラメータを1回更新するときにどれだけ大きく動かすかを決める数値が学習率であり、学習の成否を大きく左右する。大きすぎると損失が最小になる位置を通り過ぎて学習が不安定になり、小さすぎると学習に非常に長い時間がかかるため、試行錯誤で調整される代表的なハイパーパラメータ（学習前に人が決める設定値）となっている。&quot;&gt;学習率&lt;/a&gt;のように学習を始める前に人が決める設定は、学習で決まる値ではないためパラメータには含めない。">パラメータ</a>の選択に大きく依存します。重要なパラメータと、それらを効果的に設定する方法を見ていきましょう。</p>
-<p>SFTTrainer の設定では、学習プロセスを制御するいくつかのパラメータを検討する必要があります。各パラメータとその目的を見ていきます。</p>
+<p>SFTTrainer の設定では、学習の進め方を制御するパラメータを幾つか決める必要があります。以下では、各パラメータの役割を順に見ていきます。</p>
 <ol>
 <li>
 <p><strong>学習時間のパラメータ</strong>：
@@ -290,7 +296,7 @@ window.MathJax = { tex: { inlineMath: [['$', '$'], ['\\(', '\\)']], displayMath:
 - 学習が不安定なら学習率を調整する</p>
 </div>
 <h2>TRL での実装</h2>
-<p>主要な要素を理解した所で、適切な検証とモニタリングを備えた学習を実装してみましょう。<code>transformers</code> <a class="gloss-link" href="../../glossary/index.html#term-library" data-title="ライブラリ（Library）" data-def="プログラムでよく使う機能をあらかじめ部品として用意し、必要なときに呼び出して使えるようにしたものがライブラリだ。自分で一から書く代わりに、検証された部品を組み合わせることで、開発の手間と誤りを減らせる。機械学習では、モデルの学習や推論の仕組みを提供するライブラリが土台になっており、目的に合ったライブラリを選ぶことが開発の出発点になる。" data-def-html="プログラムでよく使う機能をあらかじめ部品として用意し、必要なときに呼び出して使えるようにしたものがライブラリだ。自分で一から書く代わりに、検証された部品を組み合わせることで、開発の手間と誤りを減らせる。&lt;a class=&quot;gloss-link&quot; href=&quot;../../glossary/index.html#term-machine-learning&quot; data-title=&quot;機械学習（Machine Learning）&quot; data-def=&quot;プログラムの手順を人間が一つ一つ書き与える従来の方法では、複雑な判断をすべて書き切ることは難しいため、データから規則性や判断の基準をコンピュータ自身に学ばせる技術を機械学習という。訓練用のデータを用いて学ばせることでモデルはパターンを身に付け、正解の分からない新しいデータに対しても予測や分類ができるようになる。人工知能を実現する主要な方法の一つであり、現在の人工知能の中心的な仕組みになっている。&quot;&gt;機械学習&lt;/a&gt;では、モデルの&lt;a class=&quot;gloss-link&quot; href=&quot;../../glossary/index.html#term-training&quot; data-title=&quot;学習（訓練）（Training）&quot; data-def=&quot;学習は、機械学習のモデルにデータを与え、そのデータに合うようにモデル内部の数値を調整していく過程である。モデルは予測と正解のずれを手がかりに数値を少しずつ直し、ずれが小さくなる方向へ進んでいく。この過程を繰り返すことで、個々の例を覚えるだけでなく、見たことのないデータに対しても予測できるようになることが期待される。&quot;&gt;学習&lt;/a&gt;や&lt;a class=&quot;gloss-link&quot; href=&quot;../../glossary/index.html#term-t12&quot; data-title=&quot;推論（インファレンス）&quot; data-def=&quot;学習が終わったモデルを実際に使うときに行われるのが推論であり、新しいデータを入力して予測や文章の生成といった答えを取り出す処理を指す。学習のときと違い、この段階ではモデルの中身は書き換えられず、すでに学んだ内容を使って答えを出すだけだ。私たちが翻訳や対話などの形でモデルを利用する場面は、ほとんどがこの推論にあたる。&quot;&gt;推論&lt;/a&gt;の仕組みを提供するライブラリが土台になっており、目的に合ったライブラリを選ぶことが開発の出発点になる。">ライブラリ</a>の上に構築された <a class="gloss-link" href="../../glossary/index.html#term-transformers" data-title="Transformers" data-def="文章、画像、音声などを扱う学習済みモデルを、名前を指定するだけで取得して試せるようにしたPythonのライブラリを、Hugging FaceがTransformersとして提供している。モデルごとにばらばらになりがちな読み込み、学習、予測の書き方を共通の形にそろえているため、一つのモデルの使い方を覚えれば他のモデルにも応用しやすい。その手軽さから、新しいモデルを試す際の標準的な入り口として広く使われる。" data-def-html="文章、画像、音声などを扱う&lt;a class=&quot;gloss-link&quot; href=&quot;../../glossary/index.html#term-training&quot; data-title=&quot;学習（訓練）（Training）&quot; data-def=&quot;学習は、機械学習のモデルにデータを与え、そのデータに合うようにモデル内部の数値を調整していく過程である。モデルは予測と正解のずれを手がかりに数値を少しずつ直し、ずれが小さくなる方向へ進んでいく。この過程を繰り返すことで、個々の例を覚えるだけでなく、見たことのないデータに対しても予測できるようになることが期待される。&quot;&gt;学習&lt;/a&gt;済みモデルを、名前を指定するだけで取得して試せるようにしたPythonの&lt;a class=&quot;gloss-link&quot; href=&quot;../../glossary/index.html#term-library&quot; data-title=&quot;ライブラリ（Library）&quot; data-def=&quot;プログラムでよく使う機能をあらかじめ部品として用意し、必要なときに呼び出して使えるようにしたものがライブラリだ。自分で一から書く代わりに、検証された部品を組み合わせることで、開発の手間と誤りを減らせる。機械学習では、モデルの学習や推論の仕組みを提供するライブラリが土台になっており、目的に合ったライブラリを選ぶことが開発の出発点になる。&quot;&gt;ライブラリ&lt;/a&gt;を、&lt;a class=&quot;gloss-link&quot; href=&quot;../../glossary/index.html#term-hugging-face&quot; data-title=&quot;Hugging Face（プラットフォーム全体）&quot; data-def=&quot;学習済みのAIモデルやデータセットを世界中の人が公開し、他の人が入手して使える場所がHugging Faceだ。モデルを一から作る負担は大きいため、すでに作られたものを共有できれば開発が進めやすくなり、このプラットフォームがその共通の置き場になっている。モデルをブラウザ上で試せるデモの公開や、モデルを使うためのプログラム向けの部品の提供も行われており、探す、試す、自分のプログラムで使うという流れをここで進められる。&quot;&gt;Hugging Face&lt;/a&gt;がTransformersとして提供している。モデルごとにばらばらになりがちな読み込み、学習、予測の書き方を共通の形にそろえているため、一つのモデルの使い方を覚えれば他のモデルにも応用しやすい。その手軽さから、新しいモデルを試す際の標準的な入り口として広く使われる。">Transformers</a> Reinforcement Learning（<a class="gloss-link" href="../../glossary/index.html#term-trl" data-title="TRL（Transformer Reinforcement Learning）" data-def="言語モデルは土台の学習だけでは望ましい答え方になるとは限らず、学習の後の段階で整える作業が必要になるため、そのための方法を専用の部品としてそろえたライブラリがHugging FaceのTRLだ。手本となる回答で学ばせる方法や、良い回答と悪い回答の組から好ましさを学ばせる方法など、目的ごとの学習の進め方を用意している。土台となるモデル読み込みの仕組みと組み合わせて使うことが前提になっている。" data-def-html="&lt;a class=&quot;gloss-link&quot; href=&quot;../../glossary/index.html#term-language-model&quot; data-title=&quot;言語モデル（Language Model）&quot; data-def=&quot;文章中の単語やトークンの並び方の規則を学習し、ある並びの次に来るものを確率で予測できるようにしたモデルが言語モデルだ。人間の言葉には文法や語の使い方、内容のつながりといった決まりがあり、大量の文章を学習させることで、それらを数値として取り込ませることができる。この予測の力が、文章の生成や分類など、多くの言語処理技術の土台になっている。&quot;&gt;言語モデル&lt;/a&gt;は土台の&lt;a class=&quot;gloss-link&quot; href=&quot;../../glossary/index.html#term-training&quot; data-title=&quot;学習（訓練）（Training）&quot; data-def=&quot;学習は、機械学習のモデルにデータを与え、そのデータに合うようにモデル内部の数値を調整していく過程である。モデルは予測と正解のずれを手がかりに数値を少しずつ直し、ずれが小さくなる方向へ進んでいく。この過程を繰り返すことで、個々の例を覚えるだけでなく、見たことのないデータに対しても予測できるようになることが期待される。&quot;&gt;学習&lt;/a&gt;だけでは望ましい答え方になるとは限らず、学習の後の段階で整える作業が必要になるため、そのための方法を専用の部品としてそろえた&lt;a class=&quot;gloss-link&quot; href=&quot;../../glossary/index.html#term-library&quot; data-title=&quot;ライブラリ（Library）&quot; data-def=&quot;プログラムでよく使う機能をあらかじめ部品として用意し、必要なときに呼び出して使えるようにしたものがライブラリだ。自分で一から書く代わりに、検証された部品を組み合わせることで、開発の手間と誤りを減らせる。機械学習では、モデルの学習や推論の仕組みを提供するライブラリが土台になっており、目的に合ったライブラリを選ぶことが開発の出発点になる。&quot;&gt;ライブラリ&lt;/a&gt;が&lt;a class=&quot;gloss-link&quot; href=&quot;../../glossary/index.html#term-hugging-face&quot; data-title=&quot;Hugging Face（プラットフォーム全体）&quot; data-def=&quot;学習済みのAIモデルやデータセットを世界中の人が公開し、他の人が入手して使える場所がHugging Faceだ。モデルを一から作る負担は大きいため、すでに作られたものを共有できれば開発が進めやすくなり、このプラットフォームがその共通の置き場になっている。モデルをブラウザ上で試せるデモの公開や、モデルを使うためのプログラム向けの部品の提供も行われており、探す、試す、自分のプログラムで使うという流れをここで進められる。&quot;&gt;Hugging Face&lt;/a&gt;のTRLだ。手本となる回答で学ばせる方法や、良い回答と悪い回答の組から好ましさを学ばせる方法など、目的ごとの学習の進め方を用意している。土台となるモデル読み込みの仕組みと組み合わせて使うことが前提になっている。">TRL</a>）ライブラリの <code>SFTTrainer</code> <a class="gloss-link" href="../../glossary/index.html#term-class" data-title="クラス（class）" data-def="同じ性質と振る舞いを持つ対象を、その都度ゼロから作るのではなく、設計図をもとに何度も作れるようにした仕組みがクラスである。オブジェクト指向プログラミング（対象を単位としてプログラムを組み立てる考え方）において、データとそれを扱う処理をひとまとめにした設計図として働き、クラスをもとに具体的な対象を作ることで再利用が可能になる。プログラムを部品に分けて整理し、変更や拡張をしやすくするための基本的な仕組みでもある。" data-def-html="同じ性質と振る舞いを持つ対象を、その都度ゼロから作るのではなく、設計図をもとに何度も作れるようにした仕組みがクラスである。オブジェクト指向プログラミング（対象を単位としてプログラムを組み立てる考え方）において、データとそれを扱う処理をひとまとめにした設計図として働き、クラスをもとに具体的な対象を作ることで再利用が可能になる。プログラムを部品に分けて整理し、変更や拡張をしやすくするための基本的な仕組みでもある。">クラス</a>を使います。TRL ライブラリを使った完全な例がこちらです。</p>
+<p>主要な要素を押さえた所で、検証とモニタリングの仕組みを備えた学習を実装してみましょう。使うのは、<code>transformers</code> <a class="gloss-link" href="../../glossary/index.html#term-library" data-title="ライブラリ（Library）" data-def="プログラムでよく使う機能をあらかじめ部品として用意し、必要なときに呼び出して使えるようにしたものがライブラリだ。自分で一から書く代わりに、検証された部品を組み合わせることで、開発の手間と誤りを減らせる。機械学習では、モデルの学習や推論の仕組みを提供するライブラリが土台になっており、目的に合ったライブラリを選ぶことが開発の出発点になる。" data-def-html="プログラムでよく使う機能をあらかじめ部品として用意し、必要なときに呼び出して使えるようにしたものがライブラリだ。自分で一から書く代わりに、検証された部品を組み合わせることで、開発の手間と誤りを減らせる。&lt;a class=&quot;gloss-link&quot; href=&quot;../../glossary/index.html#term-machine-learning&quot; data-title=&quot;機械学習（Machine Learning）&quot; data-def=&quot;プログラムの手順を人間が一つ一つ書き与える従来の方法では、複雑な判断をすべて書き切ることは難しいため、データから規則性や判断の基準をコンピュータ自身に学ばせる技術を機械学習という。訓練用のデータを用いて学ばせることでモデルはパターンを身に付け、正解の分からない新しいデータに対しても予測や分類ができるようになる。人工知能を実現する主要な方法の一つであり、現在の人工知能の中心的な仕組みになっている。&quot;&gt;機械学習&lt;/a&gt;では、モデルの&lt;a class=&quot;gloss-link&quot; href=&quot;../../glossary/index.html#term-training&quot; data-title=&quot;学習（訓練）（Training）&quot; data-def=&quot;学習は、機械学習のモデルにデータを与え、そのデータに合うようにモデル内部の数値を調整していく過程である。モデルは予測と正解のずれを手がかりに数値を少しずつ直し、ずれが小さくなる方向へ進んでいく。この過程を繰り返すことで、個々の例を覚えるだけでなく、見たことのないデータに対しても予測できるようになることが期待される。&quot;&gt;学習&lt;/a&gt;や&lt;a class=&quot;gloss-link&quot; href=&quot;../../glossary/index.html#term-t12&quot; data-title=&quot;推論（インファレンス）&quot; data-def=&quot;学習が終わったモデルを実際に使うときに行われるのが推論であり、新しいデータを入力して予測や文章の生成といった答えを取り出す処理を指す。学習のときと違い、この段階ではモデルの中身は書き換えられず、すでに学んだ内容を使って答えを出すだけだ。私たちが翻訳や対話などの形でモデルを利用する場面は、ほとんどがこの推論にあたる。&quot;&gt;推論&lt;/a&gt;の仕組みを提供するライブラリが土台になっており、目的に合ったライブラリを選ぶことが開発の出発点になる。">ライブラリ</a>の上に構築された <a class="gloss-link" href="../../glossary/index.html#term-transformers" data-title="Transformers" data-def="文章、画像、音声などを扱う学習済みモデルを、名前を指定するだけで取得して試せるようにしたPythonのライブラリを、Hugging FaceがTransformersとして提供している。モデルごとにばらばらになりがちな読み込み、学習、予測の書き方を共通の形にそろえているため、一つのモデルの使い方を覚えれば他のモデルにも応用しやすい。その手軽さから、新しいモデルを試す際の標準的な入り口として広く使われる。" data-def-html="文章、画像、音声などを扱う&lt;a class=&quot;gloss-link&quot; href=&quot;../../glossary/index.html#term-training&quot; data-title=&quot;学習（訓練）（Training）&quot; data-def=&quot;学習は、機械学習のモデルにデータを与え、そのデータに合うようにモデル内部の数値を調整していく過程である。モデルは予測と正解のずれを手がかりに数値を少しずつ直し、ずれが小さくなる方向へ進んでいく。この過程を繰り返すことで、個々の例を覚えるだけでなく、見たことのないデータに対しても予測できるようになることが期待される。&quot;&gt;学習&lt;/a&gt;済みモデルを、名前を指定するだけで取得して試せるようにしたPythonの&lt;a class=&quot;gloss-link&quot; href=&quot;../../glossary/index.html#term-library&quot; data-title=&quot;ライブラリ（Library）&quot; data-def=&quot;プログラムでよく使う機能をあらかじめ部品として用意し、必要なときに呼び出して使えるようにしたものがライブラリだ。自分で一から書く代わりに、検証された部品を組み合わせることで、開発の手間と誤りを減らせる。機械学習では、モデルの学習や推論の仕組みを提供するライブラリが土台になっており、目的に合ったライブラリを選ぶことが開発の出発点になる。&quot;&gt;ライブラリ&lt;/a&gt;を、&lt;a class=&quot;gloss-link&quot; href=&quot;../../glossary/index.html#term-hugging-face&quot; data-title=&quot;Hugging Face（プラットフォーム全体）&quot; data-def=&quot;学習済みのAIモデルやデータセットを世界中の人が公開し、他の人が入手して使える場所がHugging Faceだ。モデルを一から作る負担は大きいため、すでに作られたものを共有できれば開発が進めやすくなり、このプラットフォームがその共通の置き場になっている。モデルをブラウザ上で試せるデモの公開や、モデルを使うためのプログラム向けの部品の提供も行われており、探す、試す、自分のプログラムで使うという流れをここで進められる。&quot;&gt;Hugging Face&lt;/a&gt;がTransformersとして提供している。モデルごとにばらばらになりがちな読み込み、学習、予測の書き方を共通の形にそろえているため、一つのモデルの使い方を覚えれば他のモデルにも応用しやすい。その手軽さから、新しいモデルを試す際の標準的な入り口として広く使われる。">Transformers</a> Reinforcement Learning（<a class="gloss-link" href="../../glossary/index.html#term-trl" data-title="TRL（Transformer Reinforcement Learning）" data-def="言語モデルは土台の学習だけでは望ましい答え方になるとは限らず、学習の後の段階で整える作業が必要になるため、そのための方法を専用の部品としてそろえたライブラリがHugging FaceのTRLだ。手本となる回答で学ばせる方法や、良い回答と悪い回答の組から好ましさを学ばせる方法など、目的ごとの学習の進め方を用意している。土台となるモデル読み込みの仕組みと組み合わせて使うことが前提になっている。" data-def-html="&lt;a class=&quot;gloss-link&quot; href=&quot;../../glossary/index.html#term-language-model&quot; data-title=&quot;言語モデル（Language Model）&quot; data-def=&quot;文章中の単語やトークンの並び方の規則を学習し、ある並びの次に来るものを確率で予測できるようにしたモデルが言語モデルだ。人間の言葉には文法や語の使い方、内容のつながりといった決まりがあり、大量の文章を学習させることで、それらを数値として取り込ませることができる。この予測の力が、文章の生成や分類など、多くの言語処理技術の土台になっている。&quot;&gt;言語モデル&lt;/a&gt;は土台の&lt;a class=&quot;gloss-link&quot; href=&quot;../../glossary/index.html#term-training&quot; data-title=&quot;学習（訓練）（Training）&quot; data-def=&quot;学習は、機械学習のモデルにデータを与え、そのデータに合うようにモデル内部の数値を調整していく過程である。モデルは予測と正解のずれを手がかりに数値を少しずつ直し、ずれが小さくなる方向へ進んでいく。この過程を繰り返すことで、個々の例を覚えるだけでなく、見たことのないデータに対しても予測できるようになることが期待される。&quot;&gt;学習&lt;/a&gt;だけでは望ましい答え方になるとは限らず、学習の後の段階で整える作業が必要になるため、そのための方法を専用の部品としてそろえた&lt;a class=&quot;gloss-link&quot; href=&quot;../../glossary/index.html#term-library&quot; data-title=&quot;ライブラリ（Library）&quot; data-def=&quot;プログラムでよく使う機能をあらかじめ部品として用意し、必要なときに呼び出して使えるようにしたものがライブラリだ。自分で一から書く代わりに、検証された部品を組み合わせることで、開発の手間と誤りを減らせる。機械学習では、モデルの学習や推論の仕組みを提供するライブラリが土台になっており、目的に合ったライブラリを選ぶことが開発の出発点になる。&quot;&gt;ライブラリ&lt;/a&gt;が&lt;a class=&quot;gloss-link&quot; href=&quot;../../glossary/index.html#term-hugging-face&quot; data-title=&quot;Hugging Face（プラットフォーム全体）&quot; data-def=&quot;学習済みのAIモデルやデータセットを世界中の人が公開し、他の人が入手して使える場所がHugging Faceだ。モデルを一から作る負担は大きいため、すでに作られたものを共有できれば開発が進めやすくなり、このプラットフォームがその共通の置き場になっている。モデルをブラウザ上で試せるデモの公開や、モデルを使うためのプログラム向けの部品の提供も行われており、探す、試す、自分のプログラムで使うという流れをここで進められる。&quot;&gt;Hugging Face&lt;/a&gt;のTRLだ。手本となる回答で学ばせる方法や、良い回答と悪い回答の組から好ましさを学ばせる方法など、目的ごとの学習の進め方を用意している。土台となるモデル読み込みの仕組みと組み合わせて使うことが前提になっている。">TRL</a>）ライブラリの <code>SFTTrainer</code> <a class="gloss-link" href="../../glossary/index.html#term-class" data-title="クラス（class）" data-def="同じ性質と振る舞いを持つ対象を、その都度ゼロから作るのではなく、設計図をもとに何度も作れるようにした仕組みがクラスである。オブジェクト指向プログラミング（対象を単位としてプログラムを組み立てる考え方）において、データとそれを扱う処理をひとまとめにした設計図として働き、クラスをもとに具体的な対象を作ることで再利用が可能になる。プログラムを部品に分けて整理し、変更や拡張をしやすくするための基本的な仕組みでもある。" data-def-html="同じ性質と振る舞いを持つ対象を、その都度ゼロから作るのではなく、設計図をもとに何度も作れるようにした仕組みがクラスである。オブジェクト指向プログラミング（対象を単位としてプログラムを組み立てる考え方）において、データとそれを扱う処理をひとまとめにした設計図として働き、クラスをもとに具体的な対象を作ることで再利用が可能になる。プログラムを部品に分けて整理し、変更や拡張をしやすくするための基本的な仕組みでもある。">クラス</a>です。以下に、TRL を使った一通りの実装例を示します。</p>
 <div class="codehilite"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">datasets</span><span class="w"> </span><span class="kn">import</span> <span class="n">load_dataset</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">trl</span><span class="w"> </span><span class="kn">import</span> <span class="n">SFTConfig</span><span class="p">,</span> <span class="n">SFTTrainer</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">torch</span>
@@ -337,12 +343,12 @@ window.MathJax = { tex: { inlineMath: [['$', '$'], ['\\(', '\\)']], displayMath:
 
 <div class="callout callout-tip">
 <p class="callout-title">💡 ヒント</p>
-<p>上の例のように "messages" フィールドを持つデータセットを使うと、SFTTrainer はモデルのチャットテンプレートを自動的に適用します。テンプレートは <a class="gloss-link" href="../../glossary/index.html#term-hub" data-title="Hub（Hugging Face Hub）" data-def="学習済みモデルやデータセットなどを公開し、共有するために、Hugging FaceがHub（Hugging Face Hub）を運営している。モデルやデータを一から作るのは大きな負担になるため、誰かが作ったものを他の人が再利用できる場があると、開発全体が速く進む。Hubに公開されたものは誰でも入手して自分のプログラムから利用でき、逆に自分で作ったものを公開することもできる。さらに、モデルを実際に試せる見本を公開する仕組みも含まれており、入手する前に動きを確かめることもできる。" data-def-html="&lt;a class=&quot;gloss-link&quot; href=&quot;../../glossary/index.html#term-training&quot; data-title=&quot;学習（訓練）（Training）&quot; data-def=&quot;学習は、機械学習のモデルにデータを与え、そのデータに合うようにモデル内部の数値を調整していく過程である。モデルは予測と正解のずれを手がかりに数値を少しずつ直し、ずれが小さくなる方向へ進んでいく。この過程を繰り返すことで、個々の例を覚えるだけでなく、見たことのないデータに対しても予測できるようになることが期待される。&quot;&gt;学習&lt;/a&gt;済みモデルや&lt;a class=&quot;gloss-link&quot; href=&quot;../../glossary/index.html#term-dataset&quot; data-title=&quot;データセット（Dataset）&quot; data-def=&quot;モデルに何かを学ばせたり、その出来ばえを確かめたりするには、材料となるデータを一定の形式でまとめておく必要があり、そのまとまりをデータセットと呼ぶ。中身は文章や画像といった入力が中心で、必要に応じて「これは犬の写真である」といった正解の情報も一緒に付けられる。材料の量が少なく質が悪ければ、どんな優れた方法を使っても良いモデルにはなりにくいため、データセットの量と質は最終的な性能を大きく左右する。&quot;&gt;データセット&lt;/a&gt;などを公開し、共有するために、&lt;a class=&quot;gloss-link&quot; href=&quot;../../glossary/index.html#term-hugging-face&quot; data-title=&quot;Hugging Face（プラットフォーム全体）&quot; data-def=&quot;学習済みのAIモデルやデータセットを世界中の人が公開し、他の人が入手して使える場所がHugging Faceだ。モデルを一から作る負担は大きいため、すでに作られたものを共有できれば開発が進めやすくなり、このプラットフォームがその共通の置き場になっている。モデルをブラウザ上で試せるデモの公開や、モデルを使うためのプログラム向けの部品の提供も行われており、探す、試す、自分のプログラムで使うという流れをここで進められる。&quot;&gt;Hugging Face&lt;/a&gt;がHub（Hugging Face Hub）を運営している。モデルやデータを一から作るのは大きな負担になるため、誰かが作ったものを他の人が再利用できる場があると、開発全体が速く進む。Hubに公開されたものは誰でも入手して自分のプログラムから利用でき、逆に自分で作ったものを公開することもできる。さらに、モデルを実際に試せる見本を公開する仕組みも含まれており、入手する前に動きを確かめることもできる。">Hub</a> から取得されます。つまり、チャット形式の会話を扱う為の追加の設定は不要です。トレーナーが、モデルの想定するテンプレート形式に従ってメッセージを整形してくれます。</p>
+<p>上の例のように "messages" フィールドを持つデータセットを使う場合、SFTTrainer はモデルのチャットテンプレートを自動で適用します。テンプレートは <a class="gloss-link" href="../../glossary/index.html#term-hub" data-title="Hub（Hugging Face Hub）" data-def="学習済みモデルやデータセットなどを公開し、共有するために、Hugging FaceがHub（Hugging Face Hub）を運営している。モデルやデータを一から作るのは大きな負担になるため、誰かが作ったものを他の人が再利用できる場があると、開発全体が速く進む。Hubに公開されたものは誰でも入手して自分のプログラムから利用でき、逆に自分で作ったものを公開することもできる。さらに、モデルを実際に試せる見本を公開する仕組みも含まれており、入手する前に動きを確かめることもできる。" data-def-html="&lt;a class=&quot;gloss-link&quot; href=&quot;../../glossary/index.html#term-training&quot; data-title=&quot;学習（訓練）（Training）&quot; data-def=&quot;学習は、機械学習のモデルにデータを与え、そのデータに合うようにモデル内部の数値を調整していく過程である。モデルは予測と正解のずれを手がかりに数値を少しずつ直し、ずれが小さくなる方向へ進んでいく。この過程を繰り返すことで、個々の例を覚えるだけでなく、見たことのないデータに対しても予測できるようになることが期待される。&quot;&gt;学習&lt;/a&gt;済みモデルや&lt;a class=&quot;gloss-link&quot; href=&quot;../../glossary/index.html#term-dataset&quot; data-title=&quot;データセット（Dataset）&quot; data-def=&quot;モデルに何かを学ばせたり、その出来ばえを確かめたりするには、材料となるデータを一定の形式でまとめておく必要があり、そのまとまりをデータセットと呼ぶ。中身は文章や画像といった入力が中心で、必要に応じて「これは犬の写真である」といった正解の情報も一緒に付けられる。材料の量が少なく質が悪ければ、どんな優れた方法を使っても良いモデルにはなりにくいため、データセットの量と質は最終的な性能を大きく左右する。&quot;&gt;データセット&lt;/a&gt;などを公開し、共有するために、&lt;a class=&quot;gloss-link&quot; href=&quot;../../glossary/index.html#term-hugging-face&quot; data-title=&quot;Hugging Face（プラットフォーム全体）&quot; data-def=&quot;学習済みのAIモデルやデータセットを世界中の人が公開し、他の人が入手して使える場所がHugging Faceだ。モデルを一から作る負担は大きいため、すでに作られたものを共有できれば開発が進めやすくなり、このプラットフォームがその共通の置き場になっている。モデルをブラウザ上で試せるデモの公開や、モデルを使うためのプログラム向けの部品の提供も行われており、探す、試す、自分のプログラムで使うという流れをここで進められる。&quot;&gt;Hugging Face&lt;/a&gt;がHub（Hugging Face Hub）を運営している。モデルやデータを一から作るのは大きな負担になるため、誰かが作ったものを他の人が再利用できる場があると、開発全体が速く進む。Hubに公開されたものは誰でも入手して自分のプログラムから利用でき、逆に自分で作ったものを公開することもできる。さらに、モデルを実際に試せる見本を公開する仕組みも含まれており、入手する前に動きを確かめることもできる。">Hub</a> から取得される為、チャット形式の会話を扱う為の追加設定は要りません。メッセージは、モデルが想定するテンプレート形式に合わせてトレーナーが整形します。</p>
 </div>
 <h2>データセットのパッキング</h2>
-<p>SFTTrainer は、学習効率を最適化する為のサン<a class="gloss-link" href="../../glossary/index.html#term-pull" data-title="プル（pull）" data-def="他人の変更を取り寄せて自分のブランチへの統合まで一気に済ませる操作がプルだ。内部的には取得だけを行うフェッチと、統合を行うマージまたはリベースを続けて実行する動作に相当する。共同作業では自分の変更を共有する前にプルして他者の変更を取り込んでおくことで、履歴の食い違いを抑え、後の統合で困る事態を減らせる。" data-def-html="他人の変更を取り寄せて自分の&lt;a class=&quot;gloss-link&quot; href=&quot;../../glossary/index.html#term-branch&quot; data-title=&quot;ブランチ（branch）&quot; data-def=&quot;元の変更履歴に触れずに新しい作業を試せるよう、履歴の流れを枝分かれさせたものがGitのブランチだ。実体は特定のコミットを指す軽い目印にすぎないため、気軽に作って作業を分けられる。機能の追加や修正をブランチごとに進め、作業が終われば元の流れへ統合するマージを行うのが基本的な使い方であり、作業中の変更が安定した履歴を壊さない点が利点になる。&quot;&gt;ブランチ&lt;/a&gt;への統合まで一気に済ませる操作がプルだ。内部的には取得だけを行う&lt;a class=&quot;gloss-link&quot; href=&quot;../../glossary/index.html#term-fetch&quot; data-title=&quot;フェッチ（fetch）&quot; data-def=&quot;リモートの進捗を取り寄せても、手元の作業ファイルはすぐには変わらないのがフェッチの特徴だ。リモートリポジトリから新しいコミットやブランチの情報を取得して手元の記録を更新する操作であり、取得した変更を作業へ反映するかどうかはその後の判断に委ねられる。まずフェッチで他者の進捗を確認し、その後にマージやリベースで自分の作業へ取り込む手順を踏むことで、作業中の内容を保ったまま安全に共同作業を進められる。&quot;&gt;フェッチ&lt;/a&gt;と、統合を行う&lt;a class=&quot;gloss-link&quot; href=&quot;../../glossary/index.html#term-merge&quot; data-title=&quot;マージ（merge）&quot; data-def=&quot;別々に進んだ2つのブランチの変更を1つに合わせる操作がマージである。両方のブランチで行われた変更を組み合わせ、通常は統合を表す新しいコミットであるマージコミットが作られる。ただし同じ箇所が両方で異なる形に変更されている場合は自動では統合できず、競合として人手による判断が必要になるため、その箇所はどちらの内容を残すかを決めてから統合を完了させる。&quot;&gt;マージ&lt;/a&gt;または&lt;a class=&quot;gloss-link&quot; href=&quot;../../glossary/index.html#term-rebase&quot; data-title=&quot;リベース（rebase）&quot; data-def=&quot;自分のコミット群を別の地点の後ろに並べ直して履歴を作り替える操作がリベースである。分岐後に積み重ねた自分のコミットを取り込み先の最新コミットの後ろへ順に適用し直すことで、新しいコミットとして並べ直す。マージと違って履歴が一直線に保たれる利点がある反面、既存のコミットの作り直しになるため、他者と共有済みの履歴に対しては使うべきでないとされる。&quot;&gt;リベース&lt;/a&gt;を続けて実行する動作に相当する。共同作業では自分の変更を共有する前にプルして他者の変更を取り込んでおくことで、履歴の食い違いを抑え、後の統合で困る事態を減らせる。">プル</a>のパッキング（example packing）に対応しています。この機能を使うと、複数の短いサンプルを同じ入力<a class="gloss-link" href="../../glossary/index.html#term-sequence" data-title="シーケンス（sequence）" data-def="要素が順序を持って並び、先頭から番号が振られているデータの並びをシーケンスと呼ぶ。番号はインデックスと呼ばれ、これを指定すれば並びの任意の位置にある要素を直接取り出せる。Pythonでは文字列やリスト、タプルなどが該当する。順序が決まっているおかげで、要素を順番にたどる繰り返し処理や、範囲を指定して一部分を切り出す処理も自然に書ける。" data-def-html="要素が順序を持って並び、先頭から番号が振られているデータの並びをシーケンスと呼ぶ。番号は&lt;a class=&quot;gloss-link&quot; href=&quot;../../glossary/index.html#term-index&quot; data-title=&quot;インデックス（index / ステージング）&quot; data-def=&quot;コミットする前に、含めたい変更だけを一時的に集めておく場所がGitのインデックスだ。ステージングエリアとも呼ばれ、手元のファイルの変更のうちコミットに含めたいものだけを選んでここへ登録する操作をステージングという。この段階を挟むことで作業中の変更を取捨選択でき、関係する変更だけを意味のまとまった単位でコミットにまとめられる。&quot;&gt;インデックス&lt;/a&gt;と呼ばれ、これを指定すれば並びの任意の位置にある要素を直接取り出せる。Pythonでは文字列やリスト、タ&lt;a class=&quot;gloss-link&quot; href=&quot;../../glossary/index.html#term-pull&quot; data-title=&quot;プル（pull）&quot; data-def=&quot;他人の変更を取り寄せて自分のブランチへの統合まで一気に済ませる操作がプルだ。内部的には取得だけを行うフェッチと、統合を行うマージまたはリベースを続けて実行する動作に相当する。共同作業では自分の変更を共有する前にプルして他者の変更を取り込んでおくことで、履歴の食い違いを抑え、後の統合で困る事態を減らせる。&quot;&gt;プル&lt;/a&gt;などが該当する。順序が決まっているおかげで、要素を順番にたどる繰り返し処理や、&lt;a class=&quot;gloss-link&quot; href=&quot;../../glossary/index.html#term-range&quot; data-title=&quot;範囲（range）&quot; data-def=&quot;データの広がりを最も単純に表す方法が、最大値から最小値を引いた差である範囲を使うことだ。計算は引き算一つで済む一方、決めるのは両端の二つの値だけなので、極端な値が一つ混じるだけで大きく変わってしまう弱点がある。そのため分布全体の散らばりは分散や四分位範囲などと併せて判断する必要があり、機械学習でもデータを0から1の間にそろえる正規化の計算に現れるものの、外れ値の影響を受けやすい点には注意が要る。&quot;&gt;範囲&lt;/a&gt;を指定して一部分を切り出す処理も自然に書ける。">シーケンス</a>に詰め込むことが出来、学習中の <a class="gloss-link" href="../../glossary/index.html#term-gpu" data-title="GPU（Graphics Processing Unit）" data-def="もともとは画像の描画処理のために作られた計算装置だが、同じ種類の計算を大量に並行して行える構造が、人工知能の学習にも向いていた。GPUはそうした画像処理に特化した計算装置で、中央の計算装置と比べて並列計算の能力が高く、学習で必要になる大量の数値計算を広く担っている。そのため大規模なモデルの学習時間を大きく短縮する役割を持つ。" data-def-html="もともとは画像の描画処理のために作られた計算装置だが、同じ種類の計算を大量に並行して行える構造が、&lt;a class=&quot;gloss-link&quot; href=&quot;../../glossary/index.html#term-artificial-intelligence-ai&quot; data-title=&quot;人工知能（Artificial Intelligence / AI）&quot; data-def=&quot;人間の知的な働きをコンピュータで実現しようとする技術全体を指す言葉が人工知能である。人間が行ってきた学習や推論（手がかりから結論を導くこと）、物事の認識、言葉の理解といった判断や作業を機械にも行わせることを目指しており、その実現方法の中核を占めるのが、データから学ぶ機械学習である。現在使われている人工知能は特定の作業に特化したものが中心であり、人間のように何でもこなせるわけではない。&quot;&gt;人工知能&lt;/a&gt;の&lt;a class=&quot;gloss-link&quot; href=&quot;../../glossary/index.html#term-training&quot; data-title=&quot;学習（訓練）（Training）&quot; data-def=&quot;学習は、機械学習のモデルにデータを与え、そのデータに合うようにモデル内部の数値を調整していく過程である。モデルは予測と正解のずれを手がかりに数値を少しずつ直し、ずれが小さくなる方向へ進んでいく。この過程を繰り返すことで、個々の例を覚えるだけでなく、見たことのないデータに対しても予測できるようになることが期待される。&quot;&gt;学習&lt;/a&gt;にも向いていた。GPUはそうした画像処理に特化した計算装置で、中央の計算装置と比べて並列計算の能力が高く、学習で必要になる大量の数値計算を広く担っている。そのため大規模なモデルの学習時間を大きく短縮する役割を持つ。">GPU</a> 使用率を最大化出来ます。パッキングを有効にするには、SFTConfig のコンストラクタで <code>packing=True</code> を設定するだけです。</p>
-<p>パッキングしたデータセットを <code>max_steps</code> と併用する場合、パッキングの設定によっては想定より多くのエポック学習することになる点に注意してください。サンプルの組み合わせ方は、整形用関数（formatting function）でカスタマイズ出来ます。これは、質疑応答ペアのような複数のフィールドを持つデータセットを扱う場合に特に便利です。</p>
-<p>評価用データセットについては、SFTConfig で <code>eval_packing=False</code> を設定するとパッキングを無効化出来ます。パッキング設定のカスタマイズの基本的な例がこちらです。</p>
+<p>SFTTrainer は、学習効率を高める為のサン<a class="gloss-link" href="../../glossary/index.html#term-pull" data-title="プル（pull）" data-def="他人の変更を取り寄せて自分のブランチへの統合まで一気に済ませる操作がプルだ。内部的には取得だけを行うフェッチと、統合を行うマージまたはリベースを続けて実行する動作に相当する。共同作業では自分の変更を共有する前にプルして他者の変更を取り込んでおくことで、履歴の食い違いを抑え、後の統合で困る事態を減らせる。" data-def-html="他人の変更を取り寄せて自分の&lt;a class=&quot;gloss-link&quot; href=&quot;../../glossary/index.html#term-branch&quot; data-title=&quot;ブランチ（branch）&quot; data-def=&quot;元の変更履歴に触れずに新しい作業を試せるよう、履歴の流れを枝分かれさせたものがGitのブランチだ。実体は特定のコミットを指す軽い目印にすぎないため、気軽に作って作業を分けられる。機能の追加や修正をブランチごとに進め、作業が終われば元の流れへ統合するマージを行うのが基本的な使い方であり、作業中の変更が安定した履歴を壊さない点が利点になる。&quot;&gt;ブランチ&lt;/a&gt;への統合まで一気に済ませる操作がプルだ。内部的には取得だけを行う&lt;a class=&quot;gloss-link&quot; href=&quot;../../glossary/index.html#term-fetch&quot; data-title=&quot;フェッチ（fetch）&quot; data-def=&quot;リモートの進捗を取り寄せても、手元の作業ファイルはすぐには変わらないのがフェッチの特徴だ。リモートリポジトリから新しいコミットやブランチの情報を取得して手元の記録を更新する操作であり、取得した変更を作業へ反映するかどうかはその後の判断に委ねられる。まずフェッチで他者の進捗を確認し、その後にマージやリベースで自分の作業へ取り込む手順を踏むことで、作業中の内容を保ったまま安全に共同作業を進められる。&quot;&gt;フェッチ&lt;/a&gt;と、統合を行う&lt;a class=&quot;gloss-link&quot; href=&quot;../../glossary/index.html#term-merge&quot; data-title=&quot;マージ（merge）&quot; data-def=&quot;別々に進んだ2つのブランチの変更を1つに合わせる操作がマージである。両方のブランチで行われた変更を組み合わせ、通常は統合を表す新しいコミットであるマージコミットが作られる。ただし同じ箇所が両方で異なる形に変更されている場合は自動では統合できず、競合として人手による判断が必要になるため、その箇所はどちらの内容を残すかを決めてから統合を完了させる。&quot;&gt;マージ&lt;/a&gt;または&lt;a class=&quot;gloss-link&quot; href=&quot;../../glossary/index.html#term-rebase&quot; data-title=&quot;リベース（rebase）&quot; data-def=&quot;自分のコミット群を別の地点の後ろに並べ直して履歴を作り替える操作がリベースである。分岐後に積み重ねた自分のコミットを取り込み先の最新コミットの後ろへ順に適用し直すことで、新しいコミットとして並べ直す。マージと違って履歴が一直線に保たれる利点がある反面、既存のコミットの作り直しになるため、他者と共有済みの履歴に対しては使うべきでないとされる。&quot;&gt;リベース&lt;/a&gt;を続けて実行する動作に相当する。共同作業では自分の変更を共有する前にプルして他者の変更を取り込んでおくことで、履歴の食い違いを抑え、後の統合で困る事態を減らせる。">プル</a>のパッキング（example packing）に対応しています。パッキングとは、複数の短いサンプルを同じ入力<a class="gloss-link" href="../../glossary/index.html#term-sequence" data-title="シーケンス（sequence）" data-def="要素が順序を持って並び、先頭から番号が振られているデータの並びをシーケンスと呼ぶ。番号はインデックスと呼ばれ、これを指定すれば並びの任意の位置にある要素を直接取り出せる。Pythonでは文字列やリスト、タプルなどが該当する。順序が決まっているおかげで、要素を順番にたどる繰り返し処理や、範囲を指定して一部分を切り出す処理も自然に書ける。" data-def-html="要素が順序を持って並び、先頭から番号が振られているデータの並びをシーケンスと呼ぶ。番号は&lt;a class=&quot;gloss-link&quot; href=&quot;../../glossary/index.html#term-index&quot; data-title=&quot;インデックス（index / ステージング）&quot; data-def=&quot;コミットする前に、含めたい変更だけを一時的に集めておく場所がGitのインデックスだ。ステージングエリアとも呼ばれ、手元のファイルの変更のうちコミットに含めたいものだけを選んでここへ登録する操作をステージングという。この段階を挟むことで作業中の変更を取捨選択でき、関係する変更だけを意味のまとまった単位でコミットにまとめられる。&quot;&gt;インデックス&lt;/a&gt;と呼ばれ、これを指定すれば並びの任意の位置にある要素を直接取り出せる。Pythonでは文字列やリスト、タ&lt;a class=&quot;gloss-link&quot; href=&quot;../../glossary/index.html#term-pull&quot; data-title=&quot;プル（pull）&quot; data-def=&quot;他人の変更を取り寄せて自分のブランチへの統合まで一気に済ませる操作がプルだ。内部的には取得だけを行うフェッチと、統合を行うマージまたはリベースを続けて実行する動作に相当する。共同作業では自分の変更を共有する前にプルして他者の変更を取り込んでおくことで、履歴の食い違いを抑え、後の統合で困る事態を減らせる。&quot;&gt;プル&lt;/a&gt;などが該当する。順序が決まっているおかげで、要素を順番にたどる繰り返し処理や、&lt;a class=&quot;gloss-link&quot; href=&quot;../../glossary/index.html#term-range&quot; data-title=&quot;範囲（range）&quot; data-def=&quot;データの広がりを最も単純に表す方法が、最大値から最小値を引いた差である範囲を使うことだ。計算は引き算一つで済む一方、決めるのは両端の二つの値だけなので、極端な値が一つ混じるだけで大きく変わってしまう弱点がある。そのため分布全体の散らばりは分散や四分位範囲などと併せて判断する必要があり、機械学習でもデータを0から1の間にそろえる正規化の計算に現れるものの、外れ値の影響を受けやすい点には注意が要る。&quot;&gt;範囲&lt;/a&gt;を指定して一部分を切り出す処理も自然に書ける。">シーケンス</a>に詰め込む仕組みです。これにより、学習中の <a class="gloss-link" href="../../glossary/index.html#term-gpu" data-title="GPU（Graphics Processing Unit）" data-def="もともとは画像の描画処理のために作られた計算装置だが、同じ種類の計算を大量に並行して行える構造が、人工知能の学習にも向いていた。GPUはそうした画像処理に特化した計算装置で、中央の計算装置と比べて並列計算の能力が高く、学習で必要になる大量の数値計算を広く担っている。そのため大規模なモデルの学習時間を大きく短縮する役割を持つ。" data-def-html="もともとは画像の描画処理のために作られた計算装置だが、同じ種類の計算を大量に並行して行える構造が、&lt;a class=&quot;gloss-link&quot; href=&quot;../../glossary/index.html#term-artificial-intelligence-ai&quot; data-title=&quot;人工知能（Artificial Intelligence / AI）&quot; data-def=&quot;人間の知的な働きをコンピュータで実現しようとする技術全体を指す言葉が人工知能である。人間が行ってきた学習や推論（手がかりから結論を導くこと）、物事の認識、言葉の理解といった判断や作業を機械にも行わせることを目指しており、その実現方法の中核を占めるのが、データから学ぶ機械学習である。現在使われている人工知能は特定の作業に特化したものが中心であり、人間のように何でもこなせるわけではない。&quot;&gt;人工知能&lt;/a&gt;の&lt;a class=&quot;gloss-link&quot; href=&quot;../../glossary/index.html#term-training&quot; data-title=&quot;学習（訓練）（Training）&quot; data-def=&quot;学習は、機械学習のモデルにデータを与え、そのデータに合うようにモデル内部の数値を調整していく過程である。モデルは予測と正解のずれを手がかりに数値を少しずつ直し、ずれが小さくなる方向へ進んでいく。この過程を繰り返すことで、個々の例を覚えるだけでなく、見たことのないデータに対しても予測できるようになることが期待される。&quot;&gt;学習&lt;/a&gt;にも向いていた。GPUはそうした画像処理に特化した計算装置で、中央の計算装置と比べて並列計算の能力が高く、学習で必要になる大量の数値計算を広く担っている。そのため大規模なモデルの学習時間を大きく短縮する役割を持つ。">GPU</a> 使用率を高く保てます。有効にするには、SFTConfig のコンストラクタで <code>packing=True</code> を設定します。</p>
+<p>パッキングしたデータセットを <code>max_steps</code> と併用する場合は注意が必要です。パッキングの設定次第では、想定より多くのエポックを学習することになります。サンプルをどう組み合わせるかは、整形用関数（formatting function）でカスタマイズ出来ます。質疑応答ペアのように複数のフィールドを持つデータセットでは、特に便利です。</p>
+<p>評価用データセットでは、SFTConfig で <code>eval_packing=False</code> を設定すればパッキングを無効に出来ます。パッキング設定をカスタマイズする基本的な例を、以下に示します。</p>
 <div class="codehilite"><pre><span></span><code><span class="c1"># パッキングを設定</span>
 <span class="n">training_args</span> <span class="o">=</span> <span class="n">SFTConfig</span><span class="p">(</span><span class="n">packing</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
 
@@ -351,7 +357,7 @@ window.MathJax = { tex: { inlineMath: [['$', '$'], ['\\(', '\\)']], displayMath:
 <span class="n">trainer</span><span class="o">.</span><span class="n">train</span><span class="p">()</span>
 </code></pre></div>
 
-<p>複数のフィールドを持つデータセットをパッキングする場合、カスタムの整形用関数を定義して、フィールドを1つの入力シーケンスに組み合わせることが出来ます。この関数はサンプルのリストを受け取り、パッキングされた入力シーケンスを持つ<a class="gloss-link" href="../../glossary/index.html#term-dictionary" data-title="辞書（dictionary）" data-def="位置ではなく、名前のような目印で値を探したいときに使うのが辞書である。キーと値の組を集めて保持するデータの入れ物で、キーを指定すれば対応する値を素早く取り出すことができ、名前と内容を結び付けて管理する用途に向く。順番に並んだ集まりとは異なり、位置ではなくキーによって要素を区別する点が特徴になる。" data-def-html="位置ではなく、名前のような目印で値を探したいときに使うのが辞書である。キーと値の組を集めて保持するデータの入れ物で、キーを指定すれば対応する値を素早く取り出すことができ、名前と内容を結び付けて管理する用途に向く。順番に並んだ集まりとは異なり、位置ではなくキーによって要素を区別する点が特徴になる。">辞書</a>を返すことが想定されています。カスタム整形用関数の例がこちらです。</p>
+<p>複数のフィールドを持つデータセットをパッキングする場合は、カスタムの整形用関数を定義し、フィールド同士を1つの入力シーケンスに組み合わせます。この関数はサンプルのリストを受け取り、パッキング済みの入力シーケンスを持つ<a class="gloss-link" href="../../glossary/index.html#term-dictionary" data-title="辞書（dictionary）" data-def="位置ではなく、名前のような目印で値を探したいときに使うのが辞書である。キーと値の組を集めて保持するデータの入れ物で、キーを指定すれば対応する値を素早く取り出すことができ、名前と内容を結び付けて管理する用途に向く。順番に並んだ集まりとは異なり、位置ではなくキーによって要素を区別する点が特徴になる。" data-def-html="位置ではなく、名前のような目印で値を探したいときに使うのが辞書である。キーと値の組を集めて保持するデータの入れ物で、キーを指定すれば対応する値を素早く取り出すことができ、名前と内容を結び付けて管理する用途に向く。順番に並んだ集まりとは異なり、位置ではなくキーによって要素を区別する点が特徴になる。">辞書</a>を返す想定です。カスタム整形用関数の例を、以下に示します。</p>
 <div class="codehilite"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">formatting_func</span><span class="p">(</span><span class="n">example</span><span class="p">):</span>
     <span class="n">text</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">"### Question: </span><span class="si">{</span><span class="n">example</span><span class="p">[</span><span class="s1">'question'</span><span class="p">]</span><span class="si">}</span><span class="se">\n</span><span class="s2"> ### Answer: </span><span class="si">{</span><span class="n">example</span><span class="p">[</span><span class="s1">'answer'</span><span class="p">]</span><span class="si">}</span><span class="s2">"</span>
     <span class="k">return</span> <span class="n">text</span>
@@ -370,13 +376,15 @@ window.MathJax = { tex: { inlineMath: [['$', '$'], ['\\(', '\\)']], displayMath:
 <h2>学習状況のモニタリング</h2>
 <p>効果的なモニタリングは、ファインチューニングを成功させる上で極めて重要です。学習中に何に注目すべきかを見ていきましょう。</p>
 <h3>損失パターンの理解</h3>
-<p>学習損失は通常、次の3つの明確なフェーズをたどります。
-1. 初期の急激な低下：新しいデータ分布への急速な適応
-2. 緩やかな安定化：モデルのファインチューニングが進むにつれて学習速度が緩やかになる
-3. <a class="gloss-link" href="../../glossary/index.html#term-convergence" data-title="収束（Convergence）" data-def="学習をいつ止めてよいかを判断する目安になるのが、値の変化が消えていくこの状態である。繰り返し計算を行う学習では、パラメータ（モデル内部の数値）や損失（予測の外れ具合を表す値）が少しずつ変わっていくが、やがてほとんど変化しなくなり、安定したところに落ち着くことがあり、これを収束という。たとえば勾配降下法（損失が減る方向へ少しずつ進む方法）では、損失の小さい位置に近づくにつれて1回の更新で動く幅が小さくなっていくため、変化が見られなくなれば、学習率などの設定が適切だったかを確かめる手がかりにもなる。" data-def-html="&lt;a class=&quot;gloss-link&quot; href=&quot;../../glossary/index.html#term-training&quot; data-title=&quot;学習（訓練）（Training）&quot; data-def=&quot;学習は、機械学習のモデルにデータを与え、そのデータに合うようにモデル内部の数値を調整していく過程である。モデルは予測と正解のずれを手がかりに数値を少しずつ直し、ずれが小さくなる方向へ進んでいく。この過程を繰り返すことで、個々の例を覚えるだけでなく、見たことのないデータに対しても予測できるようになることが期待される。&quot;&gt;学習&lt;/a&gt;をいつ止めてよいかを判断する目安になるのが、値の変化が消えていくこの状態である。繰り返し計算を行う学習では、&lt;a class=&quot;gloss-link&quot; href=&quot;../../glossary/index.html#term-parameter&quot; data-title=&quot;パラメータ（Parameter）&quot; data-def=&quot;モデルが学習で覚えた内容は、内部の数値の集まりとして蓄えられる。その数値の総称がパラメータで、ニューラルネットワークでは入力への重み付けを決める重みと、結果をずらすバイアスがこれにあたる。パラメータが多いモデルほど複雑な関係を表しやすくなる一方、学習に必要なデータや計算も増える。なお、学習率のように学習を始める前に人が決める設定は、学習で決まる値ではないためパラメータには含めない。&quot;&gt;パラメータ&lt;/a&gt;（モデル内部の数値）や損失（予測の外れ具合を表す値）が少しずつ変わっていくが、やがてほとんど変化しなくなり、安定したところに落ち着くことがあり、これを収束という。たとえば&lt;a class=&quot;gloss-link&quot; href=&quot;../../glossary/index.html#term-gradient-descent&quot; data-title=&quot;勾配降下法（Gradient Descent）&quot; data-def=&quot;予測と正解のずれを表す損失を小さくするために、現在の位置での傾きである勾配を調べ、その逆向きへパラメータ（重みなどの調整対象の数値）を少しずつ動かしていく方法が勾配降下法である。損失が減る方向へ一歩進む操作を繰り返すことで損失の小さいパラメータに近づいていき、1回に動く幅は学習率で決まる。&quot;&gt;勾配降下法&lt;/a&gt;（損失が減る方向へ少しずつ進む方法）では、損失の小さい位置に近づくにつれて1回の更新で動く幅が小さくなっていくため、変化が見られなくなれば、&lt;a class=&quot;gloss-link&quot; href=&quot;../../glossary/index.html#term-learning-rate&quot; data-title=&quot;学習率（Learning Rate）&quot; data-def=&quot;勾配降下法でパラメータを1回更新するときにどれだけ大きく動かすかを決める数値が学習率であり、学習の成否を大きく左右する。大きすぎると損失が最小になる位置を通り過ぎて学習が不安定になり、小さすぎると学習に非常に長い時間がかかるため、試行錯誤で調整される代表的なハイパーパラメータ（学習前に人が決める設定値）となっている。&quot;&gt;学習率&lt;/a&gt;などの設定が適切だったかを確かめる手がかりにもなる。">収束</a>：損失の値が安定し、学習の完了を示す</p>
+<p>学習損失は通常、次の3つの明確なフェーズをたどります。</p>
+<ol>
+<li>初期の急激な低下：新しいデータ分布への急速な適応</li>
+<li>緩やかな安定化：モデルのファインチューニングが進むにつれて学習速度が緩やかになる</li>
+<li><a class="gloss-link" href="../../glossary/index.html#term-convergence" data-title="収束（Convergence）" data-def="学習をいつ止めてよいかを判断する目安になるのが、値の変化が消えていくこの状態である。繰り返し計算を行う学習では、パラメータ（モデル内部の数値）や損失（予測の外れ具合を表す値）が少しずつ変わっていくが、やがてほとんど変化しなくなり、安定したところに落ち着くことがあり、これを収束という。たとえば勾配降下法（損失が減る方向へ少しずつ進む方法）では、損失の小さい位置に近づくにつれて1回の更新で動く幅が小さくなっていくため、変化が見られなくなれば、学習率などの設定が適切だったかを確かめる手がかりにもなる。" data-def-html="&lt;a class=&quot;gloss-link&quot; href=&quot;../../glossary/index.html#term-training&quot; data-title=&quot;学習（訓練）（Training）&quot; data-def=&quot;学習は、機械学習のモデルにデータを与え、そのデータに合うようにモデル内部の数値を調整していく過程である。モデルは予測と正解のずれを手がかりに数値を少しずつ直し、ずれが小さくなる方向へ進んでいく。この過程を繰り返すことで、個々の例を覚えるだけでなく、見たことのないデータに対しても予測できるようになることが期待される。&quot;&gt;学習&lt;/a&gt;をいつ止めてよいかを判断する目安になるのが、値の変化が消えていくこの状態である。繰り返し計算を行う学習では、&lt;a class=&quot;gloss-link&quot; href=&quot;../../glossary/index.html#term-parameter&quot; data-title=&quot;パラメータ（Parameter）&quot; data-def=&quot;モデルが学習で覚えた内容は、内部の数値の集まりとして蓄えられる。その数値の総称がパラメータで、ニューラルネットワークでは入力への重み付けを決める重みと、結果をずらすバイアスがこれにあたる。パラメータが多いモデルほど複雑な関係を表しやすくなる一方、学習に必要なデータや計算も増える。なお、学習率のように学習を始める前に人が決める設定は、学習で決まる値ではないためパラメータには含めない。&quot;&gt;パラメータ&lt;/a&gt;（モデル内部の数値）や損失（予測の外れ具合を表す値）が少しずつ変わっていくが、やがてほとんど変化しなくなり、安定したところに落ち着くことがあり、これを収束という。たとえば&lt;a class=&quot;gloss-link&quot; href=&quot;../../glossary/index.html#term-gradient-descent&quot; data-title=&quot;勾配降下法（Gradient Descent）&quot; data-def=&quot;予測と正解のずれを表す損失を小さくするために、現在の位置での傾きである勾配を調べ、その逆向きへパラメータ（重みなどの調整対象の数値）を少しずつ動かしていく方法が勾配降下法である。損失が減る方向へ一歩進む操作を繰り返すことで損失の小さいパラメータに近づいていき、1回に動く幅は学習率で決まる。&quot;&gt;勾配降下法&lt;/a&gt;（損失が減る方向へ少しずつ進む方法）では、損失の小さい位置に近づくにつれて1回の更新で動く幅が小さくなっていくため、変化が見られなくなれば、&lt;a class=&quot;gloss-link&quot; href=&quot;../../glossary/index.html#term-learning-rate&quot; data-title=&quot;学習率（Learning Rate）&quot; data-def=&quot;勾配降下法でパラメータを1回更新するときにどれだけ大きく動かすかを決める数値が学習率であり、学習の成否を大きく左右する。大きすぎると損失が最小になる位置を通り過ぎて学習が不安定になり、小さすぎると学習に非常に長い時間がかかるため、試行錯誤で調整される代表的なハイパーパラメータ（学習前に人が決める設定値）となっている。&quot;&gt;学習率&lt;/a&gt;などの設定が適切だったかを確かめる手がかりにもなる。">収束</a>：損失の値が安定し、学習の完了を示す</li>
+</ol>
 <p><img src="https://huggingface.co/datasets/huggingface/documentation-images/resolve/main/nlp_course_sft_loss_graphic.png" alt="SFTTrainer の学習" /></p>
 <h3>監視すべきメトリクス</h3>
-<p>効果的なモニタリングでは、定量的な指標を追跡するだけでなく、モデルの出力を定性的に評価することも重要です。利用出来るメトリクスは次の通りです。</p>
+<p>効果的なモニタリングでは、定量的な指標を追跡し、あわせて定性的な観点からも評価します。利用出来るメトリクスは次の通りです。</p>
 <ul>
 <li>学習損失</li>
 <li>検証損失</li>
@@ -392,39 +400,45 @@ window.MathJax = { tex: { inlineMath: [['$', '$'], ['\\(', '\\)']], displayMath:
 4. 出力形式が一貫しない（テンプレートの学習に問題）</p>
 </div>
 <h3>収束への道のり</h3>
-<p>学習が進むにつれて、<a class="gloss-link" href="../../glossary/index.html#term-loss-curve" data-title="損失曲線（Loss Curve）" data-def="学習が順調に進んでいるかどうかは、モデルの誤りの大きさを示す値の変化を追うと判断しやすい。損失曲線は、学習の進行に伴ってその値がどう変化したかを描いたグラフで、学習に使ったデータでの値と評価用のデータでの値を並べて見ることで、学習が進んでいるか、学習しすぎていないかを読み取る。値が下がらなくなったり急に跳ね上がったりした場合は、学習の進め方を見直す手がかりになる。" data-def-html="&lt;a class=&quot;gloss-link&quot; href=&quot;../../glossary/index.html#term-training&quot; data-title=&quot;学習（訓練）（Training）&quot; data-def=&quot;学習は、機械学習のモデルにデータを与え、そのデータに合うようにモデル内部の数値を調整していく過程である。モデルは予測と正解のずれを手がかりに数値を少しずつ直し、ずれが小さくなる方向へ進んでいく。この過程を繰り返すことで、個々の例を覚えるだけでなく、見たことのないデータに対しても予測できるようになることが期待される。&quot;&gt;学習&lt;/a&gt;が順調に進んでいるかどうかは、モデルの誤りの大きさを示す値の変化を追うと判断しやすい。損失曲線は、学習の進行に伴ってその値がどう変化したかを描いたグラフで、学習に使ったデータでの値と&lt;a class=&quot;gloss-link&quot; href=&quot;../../glossary/index.html#term-evaluation&quot; data-title=&quot;評価（Evaluation）&quot; data-def=&quot;評価は、学習したモデルの性能を、決められた方法で測ることである。学習に使っていないデータに対して予測を行わせ、正解との一致の程度を評価指標で数値化するのが基本の流れであり、その結果はモデルの採用判断や、改善すべき点の特定に使われる。学習に使ったデータで測ると実力より良く見えるため、データの分け方が重要になる。&quot;&gt;評価&lt;/a&gt;用のデータでの値を並べて見ることで、学習が進んでいるか、学習しすぎていないかを読み取る。値が下がらなくなったり急に跳ね上がったりした場合は、学習の進め方を見直す手がかりになる。">損失曲線</a>は徐々に安定していくはずです。健全な学習の重要な指標は、学習損失と検証損失の差が小さいことです。これは、モデルが特定のサンプルを暗記するのではなく、<a class="gloss-link" href="../../glossary/index.html#term-generalization" data-title="汎化／汎化性能（Generalization）" data-def="学習に使ったデータでだけ当たっても、実際の場面では役に立たない。まだ見たことのない新しいデータに対しても正しく予測できることを汎化といい、その能力の高さを汎化性能と呼ぶ。学習に使っていないデータで性能を測るのは、本当に汎化できているかを確かめるためであり、機械学習の目的はこの汎化にあると言える。" data-def-html="&lt;a class=&quot;gloss-link&quot; href=&quot;../../glossary/index.html#term-training&quot; data-title=&quot;学習（訓練）（Training）&quot; data-def=&quot;学習は、機械学習のモデルにデータを与え、そのデータに合うようにモデル内部の数値を調整していく過程である。モデルは予測と正解のずれを手がかりに数値を少しずつ直し、ずれが小さくなる方向へ進んでいく。この過程を繰り返すことで、個々の例を覚えるだけでなく、見たことのないデータに対しても予測できるようになることが期待される。&quot;&gt;学習&lt;/a&gt;に使ったデータでだけ当たっても、実際の場面では役に立たない。まだ見たことのない新しいデータに対しても正しく予測できることを汎化といい、その能力の高さを汎化性能と呼ぶ。学習に使っていないデータで性能を測るのは、本当に汎化できているかを確かめるためであり、&lt;a class=&quot;gloss-link&quot; href=&quot;../../glossary/index.html#term-machine-learning&quot; data-title=&quot;機械学習（Machine Learning）&quot; data-def=&quot;プログラムの手順を人間が一つ一つ書き与える従来の方法では、複雑な判断をすべて書き切ることは難しいため、データから規則性や判断の基準をコンピュータ自身に学ばせる技術を機械学習という。訓練用のデータを用いて学ばせることでモデルはパターンを身に付け、正解の分からない新しいデータに対しても予測や分類ができるようになる。人工知能を実現する主要な方法の一つであり、現在の人工知能の中心的な仕組みになっている。&quot;&gt;機械学習&lt;/a&gt;の目的はこの汎化にあると言える。">汎化</a>出来るパターンを学習していることを示します。損失の絶対値は、タスクやデータセットによって異なります。</p>
+<p>学習が進むにつれて、<a class="gloss-link" href="../../glossary/index.html#term-loss-curve" data-title="損失曲線（Loss Curve）" data-def="学習が順調に進んでいるかどうかは、モデルの誤りの大きさを示す値の変化を追うと判断しやすい。損失曲線は、学習の進行に伴ってその値がどう変化したかを描いたグラフで、学習に使ったデータでの値と評価用のデータでの値を並べて見ることで、学習が進んでいるか、学習しすぎていないかを読み取る。値が下がらなくなったり急に跳ね上がったりした場合は、学習の進め方を見直す手がかりになる。" data-def-html="&lt;a class=&quot;gloss-link&quot; href=&quot;../../glossary/index.html#term-training&quot; data-title=&quot;学習（訓練）（Training）&quot; data-def=&quot;学習は、機械学習のモデルにデータを与え、そのデータに合うようにモデル内部の数値を調整していく過程である。モデルは予測と正解のずれを手がかりに数値を少しずつ直し、ずれが小さくなる方向へ進んでいく。この過程を繰り返すことで、個々の例を覚えるだけでなく、見たことのないデータに対しても予測できるようになることが期待される。&quot;&gt;学習&lt;/a&gt;が順調に進んでいるかどうかは、モデルの誤りの大きさを示す値の変化を追うと判断しやすい。損失曲線は、学習の進行に伴ってその値がどう変化したかを描いたグラフで、学習に使ったデータでの値と&lt;a class=&quot;gloss-link&quot; href=&quot;../../glossary/index.html#term-evaluation&quot; data-title=&quot;評価（Evaluation）&quot; data-def=&quot;評価は、学習したモデルの性能を、決められた方法で測ることである。学習に使っていないデータに対して予測を行わせ、正解との一致の程度を評価指標で数値化するのが基本の流れであり、その結果はモデルの採用判断や、改善すべき点の特定に使われる。学習に使ったデータで測ると実力より良く見えるため、データの分け方が重要になる。&quot;&gt;評価&lt;/a&gt;用のデータでの値を並べて見ることで、学習が進んでいるか、学習しすぎていないかを読み取る。値が下がらなくなったり急に跳ね上がったりした場合は、学習の進め方を見直す手がかりになる。">損失曲線</a>は徐々に安定していきます。健全に学習出来ているかどうかは、学習損失と検証損失の差が小さいかどうかで判断出来ます。差が小さいということは、モデルが特定のサンプルを暗記しているのではなく、<a class="gloss-link" href="../../glossary/index.html#term-generalization" data-title="汎化／汎化性能（Generalization）" data-def="学習に使ったデータでだけ当たっても、実際の場面では役に立たない。まだ見たことのない新しいデータに対しても正しく予測できることを汎化といい、その能力の高さを汎化性能と呼ぶ。学習に使っていないデータで性能を測るのは、本当に汎化できているかを確かめるためであり、機械学習の目的はこの汎化にあると言える。" data-def-html="&lt;a class=&quot;gloss-link&quot; href=&quot;../../glossary/index.html#term-training&quot; data-title=&quot;学習（訓練）（Training）&quot; data-def=&quot;学習は、機械学習のモデルにデータを与え、そのデータに合うようにモデル内部の数値を調整していく過程である。モデルは予測と正解のずれを手がかりに数値を少しずつ直し、ずれが小さくなる方向へ進んでいく。この過程を繰り返すことで、個々の例を覚えるだけでなく、見たことのないデータに対しても予測できるようになることが期待される。&quot;&gt;学習&lt;/a&gt;に使ったデータでだけ当たっても、実際の場面では役に立たない。まだ見たことのない新しいデータに対しても正しく予測できることを汎化といい、その能力の高さを汎化性能と呼ぶ。学習に使っていないデータで性能を測るのは、本当に汎化できているかを確かめるためであり、&lt;a class=&quot;gloss-link&quot; href=&quot;../../glossary/index.html#term-machine-learning&quot; data-title=&quot;機械学習（Machine Learning）&quot; data-def=&quot;プログラムの手順を人間が一つ一つ書き与える従来の方法では、複雑な判断をすべて書き切ることは難しいため、データから規則性や判断の基準をコンピュータ自身に学ばせる技術を機械学習という。訓練用のデータを用いて学ばせることでモデルはパターンを身に付け、正解の分からない新しいデータに対しても予測や分類ができるようになる。人工知能を実現する主要な方法の一つであり、現在の人工知能の中心的な仕組みになっている。&quot;&gt;機械学習&lt;/a&gt;の目的はこの汎化にあると言える。">汎化</a>出来るパターンを学習している証拠です。なお、損失の絶対値はタスクやデータセットによって異なります。</p>
 <h3>学習状況のモニタリング</h3>
-<p>上のグラフは典型的な学習の推移を示しています。学習損失と検証損失の両方が最初は急激に下がり、その後徐々に落ち着いていく様子に注目してください。このパターンは、モデルが汎化能力を維持しながら効果的に学習していることを示しています。</p>
+<p>上のグラフは、典型的な学習の推移を示したものです。学習損失と検証損失は、どちらも最初は急激に下がり、その後徐々に落ち着いていきます。このパターンは、モデルが汎化能力を保ちながら効果的に学習出来ていることを示します。</p>
 <h3>注意すべき警告サイン</h3>
-<p>損失曲線のいくつかのパターンは、潜在的な問題を示すことがあります。よくある警告サインと、検討出来る対処法を以下に示します。</p>
+<p>損失曲線に現れるパターンの中には、問題の兆候を示すものがあります。以下では、よくある警告サインと、検討出来る対処法を紹介します。</p>
 <p><img src="https://huggingface.co/datasets/huggingface/documentation-images/resolve/main/sft_loss_1.png" alt="SFTTrainer の学習" /></p>
-<p>検証損失の下がり方が学習損失より著しく遅い場合、そのモデルは学習データに過学習している可能性が高いです。次の対処を検討してください。
-- 学習ステップを減らす
-- データセットのサイズを増やす
-- データセットの品質と多様性を検証する</p>
+<p>検証損失の下がり方が学習損失より著しく遅い場合、モデルは学習データに過学習している可能性が高いと考えられます。次の対処を検討してください。</p>
+<ul>
+<li>学習ステップを減らす</li>
+<li>データセットのサイズを増やす</li>
+<li>データセットの品質と多様性を検証する</li>
+</ul>
 <p><img src="https://huggingface.co/datasets/huggingface/documentation-images/resolve/main/sft_loss_2.png" alt="SFTTrainer の学習" /></p>
-<p>損失に大きな改善が見られない場合、モデルは次の状態かもしれません。
-- 学習が遅過ぎる（学習率を上げてみる）
-- タスクに苦戦している（データの品質とタスクの複雑さを確認する）
-- アーキテクチャの限界に当たっている（別のモデルを検討する）</p>
+<p>損失に大きな改善が見られない場合、モデルは次の状態かもしれません。</p>
+<ul>
+<li>学習が遅過ぎる（学習率を上げてみる）</li>
+<li>タスクに苦戦している（データの品質とタスクの複雑さを確認する）</li>
+<li>アーキテクチャの限界に当たっている（別のモデルを検討する）</li>
+</ul>
 <p><img src="https://huggingface.co/datasets/huggingface/documentation-images/resolve/main/sft_loss_3.png" alt="SFTTrainer の学習" /></p>
-<p>損失の値が極端に低い場合は、学習ではなく暗記を示している可能性があります。特に次の場合は懸念されます。
-- 新しい類似のサンプルに対する性能が悪い
-- 出力に多様性が無い
-- 応答が学習サンプルに似過ぎている</p>
+<p>損失の値が極端に低い場合は、学習ではなく暗記を示している可能性があります。特に次の場合は懸念されます。</p>
+<ul>
+<li>新しい類似のサンプルに対する性能が悪い</li>
+<li>出力に多様性が無い</li>
+<li>応答が学習サンプルに似過ぎている</li>
+</ul>
 <div class="callout callout-warning">
 <p class="callout-title">⚠️ 注意</p>
 <p>学習中は、損失の値とモデルの実際の出力の両方を監視してください。損失が良好に見えても、モデルに望ましくない振る舞いが生まれることがあります。モデルの応答を定期的に定性評価することで、メトリクスだけでは見逃しがちな問題を捉えられます。</p>
 </div>
-<p>ここで概説した損失の値の解釈は、最も一般的なケースを想定したものである点に注意してください。実際には、損失の値はモデル、データセット、学習パラメータなどによって様々な振る舞いをします。ここで挙げたパターンについてもっと詳しく知りたい場合は、<a href="https://www.fast.ai/posts/2023-09-04-learning-jumps/">Fast AI</a> のブログ記事も参考にしてください。</p>
+<p>なお、ここで述べた損失の値の解釈は、最も一般的なケースを想定したものです。実際には、損失の値はモデルやデータセット、学習パラメータなどによって様々な振る舞いを見せます。ここで挙げたパターンについて詳しく知りたい場合は、<a href="https://www.fast.ai/posts/2023-09-04-learning-jumps/">Fast AI</a> のブログ記事も参考にしてください。</p>
 <h2>SFT 後の評価</h2>
-<p>セクション <a href="4.html">11.4</a> では、ベンチマークデータセットを使ったモデルの評価方法を学びます。ここでは、モデルの定性評価に焦点を当てます。</p>
-<p>SFT を完了したら、次のフォローアップを検討してください。</p>
+<p>セクション <a href="4.html">11.4</a> では、ベンチマークデータセットを使ってモデルを評価する方法を学びます。本節では、モデルの定性評価に焦点を当てます。</p>
+<p>SFT が完了したら、次の作業を検討してください。</p>
 <ol>
 <li>ホールドアウトした<a class="gloss-link" href="../../glossary/index.html#term-test-data-test-set" data-title="テストデータ／テストセット（Test Data / Test Set）" data-def="テストデータは、学習と調整がすべて終わった後に、モデルの最終的な実力を測るためだけに使うデータである。学習にも検証にも使っていないため、その成績は未知のデータに対する性能の目安になる。一方で、一度テストの結果を見てモデルを直してしまうと、そのデータに合わせたことになって最終評価として使えなくなるため、取り扱いには注意が要る。" data-def-html="テストデータは、&lt;a class=&quot;gloss-link&quot; href=&quot;../../glossary/index.html#term-training&quot; data-title=&quot;学習（訓練）（Training）&quot; data-def=&quot;学習は、機械学習のモデルにデータを与え、そのデータに合うようにモデル内部の数値を調整していく過程である。モデルは予測と正解のずれを手がかりに数値を少しずつ直し、ずれが小さくなる方向へ進んでいく。この過程を繰り返すことで、個々の例を覚えるだけでなく、見たことのないデータに対しても予測できるようになることが期待される。&quot;&gt;学習&lt;/a&gt;と調整がすべて終わった後に、モデルの最終的な実力を測るためだけに使うデータである。学習にも検証にも使っていないため、その成績は未知のデータに対する性能の目安になる。一方で、一度テストの結果を見てモデルを直してしまうと、そのデータに合わせたことになって最終&lt;a class=&quot;gloss-link&quot; href=&quot;../../glossary/index.html#term-evaluation&quot; data-title=&quot;評価（Evaluation）&quot; data-def=&quot;評価は、学習したモデルの性能を、決められた方法で測ることである。学習に使っていないデータに対して予測を行わせ、正解との一致の程度を評価指標で数値化するのが基本の流れであり、その結果はモデルの採用判断や、改善すべき点の特定に使われる。学習に使ったデータで測ると実力より良く見えるため、データの分け方が重要になる。&quot;&gt;評価&lt;/a&gt;として使えなくなるため、取り扱いには注意が要る。">テストデータ</a>でモデルを十分に評価する</li>
 <li>様々な入力でテンプレートへの準拠を検証する</li>
 <li>ドメイン固有の知識が保持されているかをテストする</li>
-<li>実世界での性能メトリクスを監視する</li>
+<li>実際の利用場面での性能メトリクスを監視する</li>
 </ol>
 <div class="callout callout-tip">
 <p class="callout-title">💡 ヒント</p>
@@ -440,57 +454,59 @@ window.MathJax = { tex: { inlineMath: [['$', '$'], ['\\(', '\\)']], displayMath:
 <div class="quiz">
 <div class="quiz-choices">
 <button type="button" class="quiz-choice" data-correct="true" data-quiz-idx="0">num_train_epochs と max_steps</button>
-<div class="quiz-explain-src" id="qe-123494946754432-0" hidden>正解です！これらのパラメータは、エポック数又は総ステップ数によって、モデルがどれだけ長く学習するかを決めます。</div>
+<div class="quiz-explain-src" id="qe-138950925705280-0" hidden>正解です！これらのパラメータは、エポック数又は総ステップ数によって、モデルがどれだけ長く学習するかを決めます。</div>
 <button type="button" class="quiz-choice" data-correct="false" data-quiz-idx="1">batch_size と learning_rate</button>
-<div class="quiz-explain-src" id="qe-123494946754432-1" hidden>これらは学習に影響しますが、学習時間を直接制御するものではありません。</div>
+<div class="quiz-explain-src" id="qe-138950925705280-1" hidden>これらは学習に影響しますが、学習時間を直接制御するものではありません。</div>
 <button type="button" class="quiz-choice" data-correct="false" data-quiz-idx="2">gradient_checkpointing と warmup_ratio</button>
-<div class="quiz-explain-src" id="qe-123494946754432-2" hidden>これらのパラメータは学習の効率と安定性に影響するもので、時間ではありません。</div>
+<div class="quiz-explain-src" id="qe-138950925705280-2" hidden>これらのパラメータは学習の効率と安定性に影響するもので、時間ではありません。</div>
 </div><div class="quiz-feedback" hidden></div></div>
 <h3>2. 損失曲線のどのパターンが過学習の可能性を示しますか？</h3>
 <div class="quiz">
 <div class="quiz-choices">
 <button type="button" class="quiz-choice" data-correct="true" data-quiz-idx="0">検証損失が上がる一方で、学習損失が下がり続けている</button>
-<div class="quiz-explain-src" id="qe-123494946849344-0" hidden>正解です！学習損失と検証損失のこの乖離は、過学習の典型的なサインです。</div>
+<div class="quiz-explain-src" id="qe-138950925711616-0" hidden>正解です！学習損失と検証損失のこの乖離は、過学習の典型的なサインです。</div>
 <button type="button" class="quiz-choice" data-correct="false" data-quiz-idx="1">学習損失と検証損失の両方が着実に下がる</button>
-<div class="quiz-explain-src" id="qe-123494946849344-1" hidden>このパターンは実際には健全な学習を示します。</div>
+<div class="quiz-explain-src" id="qe-138950925711616-1" hidden>このパターンは実際には健全な学習を示します。</div>
 <button type="button" class="quiz-choice" data-correct="false" data-quiz-idx="2">学習損失が一定のままで、検証損失が下がる</button>
-<div class="quiz-explain-src" id="qe-123494946849344-2" hidden>これは珍しいパターンであり、過学習を示すものではありません。</div>
+<div class="quiz-explain-src" id="qe-138950925711616-2" hidden>これは珍しいパターンであり、過学習を示すものではありません。</div>
 </div><div class="quiz-feedback" hidden></div></div>
 <h3>3. gradient_accumulation_steps は何に使われますか？</h3>
 <div class="quiz">
 <div class="quiz-choices">
 <button type="button" class="quiz-choice" data-correct="true" data-quiz-idx="0">メモリ使用量を増やさずに、実効的なバッチサイズを大きくする為</button>
-<div class="quiz-explain-src" id="qe-123494946754432-0" hidden>正解です！複数の順伝播にわたって勾配を累積してから重みを更新します。</div>
+<div class="quiz-explain-src" id="qe-138950925705280-0" hidden>正解です！複数の順伝播にわたって勾配を累積してから重みを更新します。</div>
 <button type="button" class="quiz-choice" data-correct="false" data-quiz-idx="1">学習中にチェックポイントを保存する為</button>
-<div class="quiz-explain-src" id="qe-123494946754432-1" hidden>これは save_steps と save_strategy パラメータが担います。</div>
+<div class="quiz-explain-src" id="qe-138950925705280-1" hidden>これは save_steps と save_strategy パラメータが担います。</div>
 <button type="button" class="quiz-choice" data-correct="false" data-quiz-idx="2">学習率のスケジュールを制御する為</button>
-<div class="quiz-explain-src" id="qe-123494946754432-2" hidden>学習率のスケジュールは learning_rate と warmup_ratio で制御します。</div>
+<div class="quiz-explain-src" id="qe-138950925705280-2" hidden>学習率のスケジュールは learning_rate と warmup_ratio で制御します。</div>
 </div><div class="quiz-feedback" hidden></div></div>
 <h3>4. SFT の学習中に監視すべきなのは何ですか？</h3>
 <div class="quiz">
 <div class="quiz-choices">
 <button type="button" class="quiz-choice" data-correct="true" data-quiz-idx="0">定量的なメトリクスと定性的な出力の両方</button>
-<div class="quiz-explain-src" id="qe-123494946849344-0" hidden>正解です！両方の種類のメトリクスを監視することで、潜在的な問題を全て捉えられます。</div>
+<div class="quiz-explain-src" id="qe-138950925711616-0" hidden>正解です！両方の種類のメトリクスを監視することで、潜在的な問題を全て捉えられます。</div>
 <button type="button" class="quiz-choice" data-correct="false" data-quiz-idx="1">学習損失のみ</button>
-<div class="quiz-explain-src" id="qe-123494946849344-1" hidden>学習損失だけでは、モデルの良好な振る舞いを保証するには不十分です。</div>
+<div class="quiz-explain-src" id="qe-138950925711616-1" hidden>学習損失だけでは、モデルの良好な振る舞いを保証するには不十分です。</div>
 <button type="button" class="quiz-choice" data-correct="false" data-quiz-idx="2">モデルの出力の品質のみ</button>
-<div class="quiz-explain-src" id="qe-123494946849344-2" hidden>重要ではありますが、定性的な評価だけでは、学習の進行状況やその変化を十分に把握出来ません。</div>
+<div class="quiz-explain-src" id="qe-138950925711616-2" hidden>重要ではありますが、定性評価だけでは学習の重要な動きを見逃してしまいます。</div>
 </div><div class="quiz-feedback" hidden></div></div>
 <h3>5. 学習中の健全な収束を示すのは何ですか？</h3>
 <div class="quiz">
 <div class="quiz-choices">
 <button type="button" class="quiz-choice" data-correct="true" data-quiz-idx="0">学習損失と検証損失の差が小さいこと</button>
-<div class="quiz-explain-src" id="qe-123494946754432-0" hidden>正解です！これは、モデルが汎化出来るパターンを学習していることを示します。</div>
+<div class="quiz-explain-src" id="qe-138950925705280-0" hidden>正解です！これは、モデルが汎化出来るパターンを学習していることを示します。</div>
 <button type="button" class="quiz-choice" data-correct="false" data-quiz-idx="1">学習損失がゼロに到達すること</button>
-<div class="quiz-explain-src" id="qe-123494946754432-1" hidden>損失の値が極端に低い場合は、学習ではなく暗記を示している可能性があります。</div>
+<div class="quiz-explain-src" id="qe-138950925705280-1" hidden>損失の値が極端に低い場合は、学習ではなく暗記を示している可能性があります。</div>
 <button type="button" class="quiz-choice" data-correct="false" data-quiz-idx="2">検証損失が学習損失より低いこと</button>
-<div class="quiz-explain-src" id="qe-123494946754432-2" hidden>これは珍しいことであり、検証セットに問題が有る可能性を示します。</div>
+<div class="quiz-explain-src" id="qe-138950925705280-2" hidden>これは珍しいことであり、検証セットに問題が有る可能性を示します。</div>
 </div><div class="quiz-feedback" hidden></div></div>
-<h2>お疲れさまでした！</h2>
-<p>SFT を使ったモデルのファインチューニングの方法を学びました。学習を続けるには：
-1. ノートブックでパラメータを変えて試してみましょう
-2. 他のデータセットでも実験してみましょう
-3. コース教材の改善に貢献しましょう</p>
+<h2>💐 お疲れさまでした</h2>
+<p>SFT を使ったモデルのファインチューニングの方法を学びました。学習を続けるには：</p>
+<ol>
+<li>ノートブックでパラメータを変えて試してみましょう</li>
+<li>他のデータセットでも実験してみましょう</li>
+<li>コース教材の改善に貢献しましょう</li>
+</ol>
 <h2>参考資料</h2>
 <ul>
 <li><a href="https://huggingface.co/docs/trl">TRL Documentation</a></li>
