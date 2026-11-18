@@ -202,13 +202,13 @@ window.MathJax = { tex: { inlineMath: [['$', '$'], ['\\(', '\\)']], displayMath:
 <p>最も単純なカメラ（自分で作ったことが有るかもしれません）は、遮光された箱の片側に小さな穴を開け、反対側にスクリーンや写真フィルムを置いたものです。穴を通った光線は、箱の後壁に上下逆さまの像を結びます。この単純なカメラのモデルは、3Dグラフィックスの応用でよく使われます。</p>
 <h3>カメラ軸の規約</h3>
 <p><img alt="Blender のカメラ軸の規約" src="https://huggingface.co/datasets/hf-vision/course-assets/resolve/main/axes_handedness.png" />
-カメラ軸の方向については、いくつかの異なる規約が有ります。ここでは Blender の規約（図を参照）に従います。カメラは負の Z 軸方向を向き、カメラの X 軸は（カメラから見て）左を向き、カメラの Y 軸は上を向きます。</p>
+カメラ軸の方向については、いくつかの異なる規約が有ります。ここでは <a class="gloss-link" href="../../../glossary/index.html#term-blender-blenderproc" data-title="Blender / BlenderProc" data-def="Blenderは、3次元の造形や映像制作を行うためのオープンソースのソフトウェアである。BlenderProcは、そのBlenderをプログラムから操作し、学習用の画像データを自動で大量に作るための道具である。3次元空間に物体を配置して撮影した画像と、物体の位置などの正解情報をあわせて出力できるため、実写の用意が難しい場面の学習データ作りに使われる。" data-def-html="Blenderは、3次元の造形や映像制作を行うためのオープンソースのソフトウェアである。BlenderProcは、そのBlenderをプログラムから操作し、&lt;a class=&quot;gloss-link&quot; href=&quot;../../../glossary/index.html#term-training&quot; data-title=&quot;学習（訓練）（Training）&quot; data-def=&quot;機械学習のモデルにデータを与え、そのデータに合うようにモデル内部の数値を調整していく過程である。モデルは予測と正解のずれを手がかりに数値を少しずつ直し、ずれが小さくなる方向へ進む。この過程を経ることで、モデルは見たことのないデータに対しても予測できるようになる。&quot;&gt;学習&lt;/a&gt;用の画像データを自動で大量に作るための道具である。3次元空間に物体を配置して撮影した画像と、物体の位置などの正解情報をあわせて出力できるため、実写の用意が難しい場面の学習データ作りに使われる。">Blender</a> の規約（図を参照）に従います。カメラは負の Z 軸方向を向き、カメラの X 軸は（カメラから見て）左を向き、カメラの Y 軸は上を向きます。</p>
 <h3>ピンホールカメラの座標変換</h3>
 <p><img alt="ピンホール変換" src="https://huggingface.co/datasets/hf-vision/course-assets/resolve/main/Pinhole_transform.png" />
-3D空間内の各点は、2D平面上の1つの点に対応します。3D座標と2D座標の間の対応を求めるには、先ずカメラの内部パラメータを知る必要があります。ピンホールカメラの内部パラメータは次の通りです。
+3D空間内の各点は、2D平面上の1つの点に対応します。3D座標と2D座標の間の対応を求めるには、まずカメラの内部<a class="gloss-link" href="../../../glossary/index.html#term-parameter" data-title="パラメータ（Parameter）" data-def="機械学習のモデル内部にあり、学習によって値が決まる数値の総称である。ニューラルネットワークでは重みとバイアスがパラメータにあたる。パラメータの数が多いモデルほど複雑な関係を表しやすくなるが、学習に必要なデータや計算も増える。学習前に人が決める学習率などの設定はパラメータには含めない。" data-def-html="&lt;a class=&quot;gloss-link&quot; href=&quot;../../../glossary/index.html#term-machine-learning&quot; data-title=&quot;機械学習（Machine Learning）&quot; data-def=&quot;データから規則性や判断の基準をコンピュータ自身に学ばせる技術、またはその研究分野である。人間が処理の手順を一つ一つ書き与えるのではなく、訓練データを用いて学ばせ、その結果を使って未知のデータに対する予測や分類を行う。人工知能を実現する主要な方法の一つである。&quot;&gt;機械学習&lt;/a&gt;のモデル内部にあり、&lt;a class=&quot;gloss-link&quot; href=&quot;../../../glossary/index.html#term-training&quot; data-title=&quot;学習（訓練）（Training）&quot; data-def=&quot;機械学習のモデルにデータを与え、そのデータに合うようにモデル内部の数値を調整していく過程である。モデルは予測と正解のずれを手がかりに数値を少しずつ直し、ずれが小さくなる方向へ進む。この過程を経ることで、モデルは見たことのないデータに対しても予測できるようになる。&quot;&gt;学習&lt;/a&gt;によって値が決まる数値の総称である。&lt;a class=&quot;gloss-link&quot; href=&quot;../../../glossary/index.html#term-neural-network&quot; data-title=&quot;ニューラルネットワーク（Neural Network）&quot; data-def=&quot;人の脳にある神経細胞のつながりをまねて作られた計算の仕組みである。値を処理する小さな単位を層状に並べ、単位どうしを重みと呼ばれる数値で結び、入力されたデータを変換して出力を得る。学習では、正解とのずれが小さくなるように重みを調整し、データの中の規則を重みの値として覚え込む。&quot;&gt;ニューラルネットワーク&lt;/a&gt;では&lt;a class=&quot;gloss-link&quot; href=&quot;../../../glossary/index.html#term-weight&quot; data-title=&quot;重み（Weight）&quot; data-def=&quot;ニューラルネットワークの中で、入力された数値が次の計算にどれだけ強く影響するかを決める数値である。各入力に重みを掛けて合計することで、重要な入力は大きく、重要でない入力は小さく反映される。重みは学習によって少しずつ調整され、モデルがデータから覚えた内容は主に重みの値に蓄えられる。&quot;&gt;重み&lt;/a&gt;と&lt;a class=&quot;gloss-link&quot; href=&quot;../../../glossary/index.html#term-bias&quot; data-title=&quot;バイアス（Bias。重みと対になる項。統計・社会のバイアスとは別項目にする）&quot; data-def=&quot;ニューラルネットワークの計算で、入力に重みを掛けて合計した値に加えられる数値である。入力がすべて0でも一定の値を出力できるようにし、計算結果全体を上や下にずらす役割を持つ。バイアスも重みと同じく学習によって調整されるパラメータであり、統計や社会問題でいう偏りとは別の用語である。&quot;&gt;バイアス&lt;/a&gt;がパラメータにあたる。パラメータの数が多いモデルほど複雑な関係を表しやすくなるが、学習に必要なデータや計算も増える。学習前に人が決める&lt;a class=&quot;gloss-link&quot; href=&quot;../../../glossary/index.html#term-learning-rate&quot; data-title=&quot;学習率（Learning Rate）&quot; data-def=&quot;勾配降下法でパラメータを1回更新するときに、どれだけ大きく動かすかを決める数値である。大きすぎると損失が最小になる位置を通り過ぎて学習が不安定になり、小さすぎると学習に非常に長い時間がかかる。学習の成否を左右するため、試行錯誤で調整される代表的なハイパーパラメータである。&quot;&gt;学習率&lt;/a&gt;などの設定はパラメータには含めない。">パラメータ</a>を知る必要があります。ピンホールカメラの内部パラメータは次の通りです。
  - 焦点距離 \(f_x\) と \(f_y\)。
  - 主点の座標 \(c_x\) と \(c_y\)。主点は画像の光学中心であり、光軸が画像平面と交わる点です。</p>
-<p>これらの内部パラメータを使って、カメラ行列を構成します。</p>
+<p>これらの内部パラメータを使って、カメラ<a class="gloss-link" href="../../../glossary/index.html#term-matrix" data-title="行列（Matrix）" data-def="数を縦と横に並べた長方形の表であり、横の並びを行、縦の並びを列と呼ぶ。行列同士の掛け算が定義されており、複数の数をまとめて変換する計算を一つの操作として表すことができる。人工知能の計算の多くは行列の掛け算で表され、大量のデータを一度に処理する土台となる。" data-def-html="数を縦と横に並べた長方形の表であり、横の並びを行、縦の並びを列と呼ぶ。行列同士の掛け算が定義されており、複数の数をまとめて変換する計算を一つの操作として表すことができる。&lt;a class=&quot;gloss-link&quot; href=&quot;../../../glossary/index.html#term-artificial-intelligence-ai&quot; data-title=&quot;人工知能（Artificial Intelligence / AI）&quot; data-def=&quot;人間の知的な働きをコンピュータで実現しようとする技術の総称である。学習、推論、認識、言語の理解など、これまで人間が行ってきた判断や作業を機械に行わせることを目指す。現在の人工知能は特定の作業に特化したものが中心であり、機械学習はその実現方法の中核を占める。&quot;&gt;人工知能&lt;/a&gt;の計算の多くは行列の掛け算で表され、大量のデータを一度に処理する土台となる。">行列</a>を構成します。</p>
 <p>$$
 K = \begin{pmatrix}
 f_x &amp; 0 &amp; c_x  \
@@ -216,7 +216,7 @@ f_x &amp; 0 &amp; c_x  \
 0 &amp; 0 &amp; 1  \
 \end{pmatrix}
 $$</p>
-<p>このカメラ行列を3D空間内の点 \( p=[x,y,z]\) に適用するには、行列 \( K \) と点を表すベクトル \( p \) を掛け合わせます（\( K @ p \)）。すると、新しい 3x1 ベクトル \( [u,v,w]\) が得られます。これは2Dの同次座標で表されたベクトルで、最後の成分は必ずしも1ではありません。画像平面上の位置を求めるには、最初の2つの成分を最後の成分で割り、座標 \([u/w, v/w]\) を得ます。</p>
+<p>このカメラ行列を3D空間内の点 \( p=[x,y,z]\) に適用するには、行列 \( K \) と点を表す<a class="gloss-link" href="../../../glossary/index.html#term-vector" data-title="ベクトル（Vector）" data-def="大きさと向きを併せ持つ量であり、数直線上の数だけでは表せない移動や力を表すために用いる。計算では数を一列に並べた形で表し、並んだ数の個数がそのベクトルの次元を決める。人工知能では文章や画像の特徴を多数の数からなるベクトルで表し、ベクトル同士の近さを比べることで意味の近さを測る。" data-def-html="大きさと向きを併せ持つ量であり、数直線上の数だけでは表せない移動や力を表すために用いる。計算では数を一列に並べた形で表し、並んだ数の個数がそのベクトルの次元を決める。&lt;a class=&quot;gloss-link&quot; href=&quot;../../../glossary/index.html#term-artificial-intelligence-ai&quot; data-title=&quot;人工知能（Artificial Intelligence / AI）&quot; data-def=&quot;人間の知的な働きをコンピュータで実現しようとする技術の総称である。学習、推論、認識、言語の理解など、これまで人間が行ってきた判断や作業を機械に行わせることを目指す。現在の人工知能は特定の作業に特化したものが中心であり、機械学習はその実現方法の中核を占める。&quot;&gt;人工知能&lt;/a&gt;では文章や画像の特徴を多数の数からなるベクトルで表し、ベクトル同士の近さを比べることで意味の近さを測る。">ベクトル</a> \( p \) を掛け合わせます（\( K @ p \)）。すると、新しい 3x1 ベクトル \( [u,v,w]\) が得られます。これは2Dの同次座標で表されたベクトルで、最後の成分は必ずしも1ではありません。画像平面上の位置を求めるには、最初の2つの成分を最後の成分で割り、座標 \([u/w, v/w]\) を得ます。</p>
 <p>これは教科書通りのカメラ行列の定義ですが、Blender のカメラ規約を使うと画像が左右・上下に反転してしまいます（カメラの前方に在る点は負の z 値を持つ為）。これを修正する方法の1つは、カメラ行列の一部の要素の符号を変えることです。</p>
 <p>$$
 K = \begin{pmatrix}
@@ -226,9 +226,9 @@ K = \begin{pmatrix}
 \end{pmatrix}
 $$</p>
 <h3>カメラ変換行列</h3>
-<p>通常、カメラがワールド座標系の原点に在るとは限りません。その為、点の座標をワールド座標系からカメラ座標系へ変換する必要があります。先ず、ワールド座標からカメラ座標への変換行列（world-to-camera matrix）を点に適用し、その後でカメラ行列を適用します。</p>
+<p>通常、カメラがワールド座標系の原点に在るとは限りません。その為、点の座標をワールド座標系からカメラ座標系へ変換する必要があります。まず、ワールド座標からカメラ座標への変換行列（world-to-camera matrix）を点に適用し、その後でカメラ行列を適用します。</p>
 <h3>より複雑なカメラモデル</h3>
-<p>実際のレンズが生む歪みをモデル化した、より複雑なカメラモデルも可能です。こうしたモデルについては、<a href="https://www.robots.ox.ac.uk/~vgg/hzbook/">Multiple View Geometry in Computer Vision</a> を参照して下さい。</p>
+<p>実際のレンズが生む歪みをモデル化した、より複雑なカメラモデルも可能です。こうしたモデルについては、<a href="https://www.robots.ox.ac.uk/~vgg/hzbook/">Multiple View Geometry in Computer Vision</a> を参照してください。</p>
 </article>
 
 <nav class="page-nav"><a class="nav-link prev" href="../introduction/brief_history.html">← 前へ: 3Dビジョンの簡単な歴史</a><a class="nav-link toc-link" href="../../index.html">目次へ</a><a class="nav-link next" href="linear-algebra.html">次へ →: 3Dデータのための線形代数の基礎</a></nav>
