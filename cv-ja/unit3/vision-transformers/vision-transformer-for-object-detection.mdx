@@ -1,6 +1,6 @@
 # Vision Transformers を使った物体検出
 
-このセクションでは、Vision Transformers を使って物体検出タスクを行う方法を説明します。事前学習済みの物体検出モデルを、自分のユースケースに合わせてファインチューニングする方法を理解していきます。始める前に、最終的な出力結果を試せるこちらの Hugging Face Space も確認してみてください。
+このセクションでは、Vision Transformers を使って物体検出タスクを行う方法を説明します。事前学習済みの物体検出モデルを、自分のユースケースに合わせてファインチューニングする方法を理解していきます。始める前に、最終的な出力結果を試せるこちらの Hugging Face Space も確認してみて下さい。
 
 <iframe
 	src="https://hf-vision-finetuning-demo-for-object-detection.hf.space/"
@@ -13,21 +13,21 @@
 
 ![物体検出の例](https://huggingface.co/datasets/hf-vision/course-assets/resolve/main/object_detection_wiki.png)
 
-物体検出は、画像や動画の中にある物体を識別し、その位置を特定するコンピュータビジョンのタスクです。主に次の2つのステップで構成されます。
+物体検出は、画像や動画の中に在る物体を識別し、その位置を特定するコンピュータビジョンのタスクです。主に次の2つのステップで構成されます。
 
-- 1つ目は、車や人、動物など、どんな種類の物体があるかを認識することです。
+- 1つ目は、車や人、動物など、どんな種類の物体が在るかを認識することです。
 - 2つ目は、バウンディングボックスで囲んで、その正確な位置を求めることです。
 
-これらのモデルは通常、画像（静止画や動画のフレーム）を入力として受け取り、各画像には複数の物体が含まれています。たとえば、車や人、自転車など複数の物体を含む画像を考えてみてください。入力を処理すると、モデルは次の情報を表す数値の集合を出力します。
+これらのモデルは通常、画像（静止画や動画のフレーム）を入力として受け取り、各画像には複数の物体が含まれています。例えば、車や人、自転車など複数の物体を含む画像を考えてみて下さい。入力を処理すると、モデルは次の情報を表す数値の集合を出力します。
 
 - 物体の位置（バウンディングボックスの XY 座標）
 - 物体のクラス
 
-物体検出には多くの応用があります。代表的な例が自動運転の分野です。物体検出を使って車の周囲にある歩行者や道路標識、信号機などの物体を検出し、それを意思決定の入力の1つとして使います。
+物体検出には多くの応用があります。代表的な例が自動運転の分野です。物体検出を使って車の周囲に在る歩行者や道路標識、信号機などの物体を検出し、それを意思決定の入力の1つとして使います。
 
-物体検出の仕組みをより深く理解するには、物体検出に関する[専用の章](https://huggingface.co/learn/computer-vision-course/unit6/basic-cv-tasks/object_detection)も確認してみてください 🤗。
+物体検出の仕組みをより深く理解するには、物体検出に関する[専用の章](https://huggingface.co/learn/computer-vision-course/unit6/basic-cv-tasks/object_detection)も確認してみて下さい。
 
-### 物体検出でモデルをファインチューニングする必要性 🤔
+### 物体検出でモデルをファインチューニングする必要性
 
 新しいモデルを作るべきか、それとも既存のモデルを改変すべきか。これはとても良い問いです。物体検出モデルをゼロから学習させるということは、次のようなことを意味します。
 
@@ -35,13 +35,13 @@
 - モデルのコードを繰り返し書いて学習させ、ユースケースごとに別々のリポジトリを維持することになります。
 - 多くの実験が必要になり、リソースも無駄になります。
 
-こうした作業をする代わりに、性能の良い事前学習済みモデル（一般的な特徴の認識が得意なモデル）を用意し、その重み（又は重みの一部）を調整して、自分のユースケースに適応させます。事前学習済みモデルは、画像の中から物体の位置特定と分類に役立つ重要な特徴を抽出する方法を、既に十分に学習していると考えられます。そのため、新しい物体が加わっても、既に学習した特徴と新しい特徴を使って、短時間の学習と少ない計算でその物体を検出できるようになります。
+こうした作業をする代わりに、性能の良い事前学習済みモデル（一般的な特徴の認識が得意なモデル）を用意し、その重み（又は重みの一部）を調整して、自分のユースケースに適応させます。事前学習済みモデルは、画像の中から物体の位置特定と分類に役立つ重要な特徴を抽出する方法を、既に十分に学習していると考えられます。その為、新しい物体が加わっても、既に学習した特徴と新しい特徴を使って、短時間の学習と少ない計算でその物体を検出出来るようになります。
 
 このチュートリアルが終わる頃には、物体検出のユースケースについて、データセットの読み込みからモデルのファインチューニング、推論までを行う一連の pipeline を作れるようになります。
 
 ## 必要なライブラリのインストール
 
-まずはインストールから始めます。以下のセルを実行して、必要なパッケージをインストールしてください。このチュートリアルでは Hugging Face Transformers と PyTorch を使います。
+先ずはインストールから始めます。以下のセルを実行して、必要なパッケージをインストールして下さい。このチュートリアルでは Hugging Face Transformers と PyTorch を使います。
 
 ```bash
 !pip install -U -q datasets transformers[torch] evaluate timm albumentations accelerate
@@ -49,11 +49,11 @@
 
 ## シナリオ
 
-このチュートリアルを面白くするために、実世界の例を考えてみましょう。次のようなシナリオです。建設作業員は、建設現場で作業する際に最大限の安全が求められます。基本的な安全ルールでは、常にヘルメットを着用することになっています。しかし、建設作業員は大勢いるため、全員を常に見守るのは困難です。
+このチュートリアルを面白くする為に、実世界の例を考えてみましょう。次のようなシナリオです。建設作業員は、建設現場で作業する際に最大限の安全が求められます。基本的な安全ルールでは、常にヘルメットを着用することになっています。しかし、建設作業員は大勢いる為、全員を常に見守るのは困難です。
 
-ですが、人物と、その人物がヘルメットを着用しているかどうかをリアルタイムで検出できるカメラシステムがあれば、素晴らしいと思いませんか？
+ですが、人物と、その人物がヘルメットを着用しているかどうかをリアルタイムで検出出来るカメラシステムがあれば、素晴らしいと思いませんか？
 
-そこで、まさにそのための軽量な物体検出モデルをファインチューニングしていきます。さっそく始めましょう。
+そこで、まさにその為の軽量な物体検出モデルをファインチューニングしていきます。早速始めましょう。
 
 ### データセット
 
@@ -81,7 +81,9 @@ DatasetDict({
 })
 ```
 
-上記は [DatasetDict](https://huggingface.co/docs/datasets/v2.17.1/en/package_reference/main_classes#datasets.DatasetDict) です。辞書のように扱える構造で、データセット全体を train スプリットと test スプリットに分けて保持します。各スプリットには `features` と `num_rows` が含まれています。`features` には、[Pillow](https://realpython.com/image-processing-with-the-python-pillow-library/) の画像オブジェクトである `image`、画像IDの `image_id`、画像の幅と高さを示す `width` と `height`、物体の情報を持つ `objects` が定義されています。次に、（train/test セット内の）各データ点がどのようなものかを見てみましょう。そのためには、次の行を実行します。
+上記は [DatasetDict](https://huggingface.co/docs/datasets/v2.17.1/en/package_reference/main_classes#datasets.DatasetDict) です。辞書のように扱える構造で、データセット全体を train スプリットと test スプリットに分けて保持します。各スプリットには `features` と `num_rows` が含まれています。`features` には、[Pillow](https://realpython.com/image-processing-with-the-python-pillow-library/) の画像オブジェクトである `image`、画像IDの `image_id`、画像の幅と高さを示す `width` と `height`、物体の情報を持つ `objects` が定義されています。
+
+次に、（train/test セット内の）各データ点がどのようなものかを見てみましょう。その為には、次の行を実行します。
 
 ```python
 dataset["train"][0]
@@ -100,10 +102,10 @@ dataset["train"][0]
   'category': ['helmet', 'helmet']}}
 ```
 
-見てのとおり、`objects` はもう1つの辞書で、物体の id（ここではクラス id）、物体の面積、バウンディングボックスの座標（`bbox`）、そしてカテゴリ（ラベル）を含んでいます。データ要素の各キーと値について、より詳しく説明します。
+見ての通り、`objects` はもう1つの辞書で、物体の id（ここではクラス id）、物体の面積、バウンディングボックスの座標（`bbox`）、そしてカテゴリ（ラベル）を含んでいます。データ要素の各キーと値について、より詳しく説明します。
 
 
-- `image`：Pillow の Image オブジェクトです。パスから読み込む前でも、画像を直接確認できます。
+- `image`：Pillow の Image オブジェクトです。パスから読み込む前でも、画像を直接確認出来ます。
 - `image_id`：train ファイルの中で何番目の画像かを示します。
 - `width`：画像の幅です。
 - `height`：画像の高さです。
@@ -122,9 +124,9 @@ train_dataset = dataset["train"]
 test_dataset = dataset["test"]
 ```
 
-1つのデータ点に何が含まれているかが分かったので、まずはそのサンプルを描画してみましょう。ここでは、最初に画像を描き、次に対応するバウンディングボックスも描きます。
+1つのデータ点に何が含まれているかが分かったので、先ずはそのサンプルを描画してみましょう。ここでは、最初に画像を描き、次に対応するバウンディングボックスも描きます。
 
-行うことは次のとおりです。
+行うことは次の通りです。
 
 1. 画像と、それに対応する高さと幅を取得します。
 2. 画像上にテキストや線を簡単に描ける描画オブジェクトを作ります。
@@ -166,7 +168,7 @@ def draw_image_from_idx(dataset, idx):
 draw_image_from_idx(dataset=train_dataset, idx=10)
 ```
 
-1枚の画像を描画する関数ができたので、上記の関数を使って複数の画像を描画する簡単な関数を書きましょう。分析に役立ちます。
+1枚の画像を描画する関数が出来たので、上記の関数を使って複数の画像を描画する簡単な関数を書きましょう。分析に役立ちます。
 
 ```python
 import matplotlib.pyplot as plt
@@ -220,7 +222,7 @@ image_processor = AutoImageProcessor.from_pretrained(checkpoint)
 
 画像を `image_processor` に渡す前に、画像とそれに対応するバウンディングボックスに対して、様々な種類のデータ拡張も適用しましょう。
 
-簡単に言うと、データ拡張とは、回転やリサイズなどのランダムな変換の集合です。これらを適用することでサンプル数を増やし、ビジョンモデルを画像の様々な条件に対して頑健にします。これには [albumentations](https://github.com/albumentations-team/albumentations) ライブラリを使います。画像にランダムな変換を作成できるため、学習用のサンプルサイズを増やせます。
+簡単に言うと、データ拡張とは、回転やリサイズなどのランダムな変換の集合です。これらを適用することでサンプル数を増やし、ビジョンモデルを画像の様々な条件に対して頑健にします。これには [albumentations](https://github.com/albumentations-team/albumentations) ライブラリを使います。画像にランダムな変換を作成出来る為、学習用のサンプルサイズを増やせます。
 
 ```python
 import albumentations
@@ -237,7 +239,7 @@ transform = albumentations.Compose(
 )
 ```
 
-すべての変換を初期化したら、アノテーションを決められた形式に整え、そのリストを返す関数を作ります。
+全ての変換を初期化したら、アノテーションを決められた形式に整え、そのリストを返す関数を作ります。
 
 これは、`image_processor` がアノテーションを次の形式で受け取ることを想定しているためです。`{'image_id': int, 'annotations': List[Dict]}` という形式で、各辞書が COCO の物体アノテーションです。
 
@@ -259,7 +261,7 @@ def formatted_anns(image_id, category, area, bbox):
 
 最後に、画像の変換とアノテーションの変換を組み合わせて、データセットのバッチ全体に対して変換を行います。
 
-そのための最終的なコードは次のとおりです。
+その為の最終的なコードは次の通りです。
 
 ```python
 # バッチを変換する
@@ -285,7 +287,7 @@ def transform_aug_ann(examples):
     return image_processor(images=images, annotations=targets, return_tensors="pt")
 ```
 
-最後に、この前処理関数をデータセット全体に適用します。Hugging Face の Datasets ライブラリにある [`with_transform` メソッド](https://huggingface.co/docs/datasets/v2.15.0/en/package_reference/main_classes#datasets.Dataset.with_transform) を使えば実現できます。
+最後に、この前処理関数をデータセット全体に適用します。Hugging Face の Datasets ライブラリに在る [`with_transform` メソッド](https://huggingface.co/docs/datasets/v2.15.0/en/package_reference/main_classes#datasets.Dataset.with_transform) を使えば実現出来ます。
 
 ```python
 # train データセットと test データセットの両方に変換を適用する
@@ -337,7 +339,7 @@ train_dataset_transformed[0]
          [0.7550, 0.4240, 0.0460, 0.0800]]), 'area': tensor([8522.2217, 1916.6666]), 'iscrowd': tensor([0, 0]), 'orig_size': tensor([480, 480])}}
 ```
 
-あと少しです 🚀。最後の前処理ステップとして、カスタムの `collate_fn` を書く必要があります。では、`collate_fn` とは何でしょうか？
+あと少しです。最後の前処理ステップとして、カスタムの `collate_fn` を書く必要があります。では、`collate_fn` とは何でしょうか？
 
 `collate_fn` は、データセットからサンプルのリストを受け取り、モデルの入力形式に適したバッチへ変換する役割を担います。
 
@@ -365,13 +367,13 @@ def collate_fn(batch):
 
 1. 前処理で使ったのと同じチェックポイントを使って、[AutoModelForObjectDetection](https://huggingface.co/docs/transformers/v4.36.0/en/model_doc/auto#transformers.AutoModelForObjectDetection) でベースの（事前学習済みの）モデルを読み込みます。
 
-2. [TrainingArguments](https://huggingface.co/docs/transformers/v4.36.0/en/main_classes/trainer#transformers.TrainingArguments) の中で、すべてのハイパーパラメータと追加の引数を定義します。
+2. [TrainingArguments](https://huggingface.co/docs/transformers/v4.36.0/en/main_classes/trainer#transformers.TrainingArguments) の中で、全てのハイパーパラメータと追加の引数を定義します。
 
-3. 学習用の引数を、モデル、データセット、画像とともに [Hugging Face Trainer](https://huggingface.co/docs/transformers/v4.36.0/en/main_classes/trainer#transformers.Trainer) に渡します。
+3. 学習用の引数を、モデル、データセット、画像と共に [Hugging Face Trainer](https://huggingface.co/docs/transformers/v4.36.0/en/main_classes/trainer#transformers.Trainer) に渡します。
 
 4. `train()` メソッドを呼び出して、モデルをファインチューニングします。
 
-> 前処理で使ったのと同じチェックポイントからモデルを読み込む際は、データセットのメタデータから先に作成した `label2id` と `id2label` のマップを渡すのを忘れないでください。更に、`ignore_mismatched_sizes=True` を指定して、既存の分類ヘッドを新しいものに置き換えます。
+> 前処理で使ったのと同じチェックポイントからモデルを読み込む際は、データセットのメタデータから先に作成した `label2id` と `id2label` のマップを渡すのを忘れないで下さい。更に、`ignore_mismatched_sizes=True` を指定して、既存の分類ヘッドを新しいものに置き換えます。
 
 ```python
 from transformers import AutoModelForObjectDetection
@@ -388,14 +390,14 @@ model = AutoModelForObjectDetection.from_pretrained(
 )
 ```
 
-次に進む前に、Hugging Face Hub にログインして、学習中にモデルをその場でアップロードできるようにしましょう。こうすれば、チェックポイントを扱ったり、どこかに保存したりする必要がなくなります。
+次に進む前に、Hugging Face Hub にログインして、学習中にモデルをその場でアップロード出来るようにしましょう。こうすれば、チェックポイントを扱ったり、どこかに保存したりする必要がなくなります。
 ```python
 from huggingface_hub import notebook_login
 
 notebook_login()
 ```
 
-完了したら、モデルの学習を始めましょう。まず学習用の引数を定義し、それらの引数を使って学習を行う trainer オブジェクトを定義します。次に示すとおりです。
+完了したら、モデルの学習を始めましょう。先ず学習用の引数を定義し、それらの引数を使って学習を行う trainer オブジェクトを定義します。次に示す通りです。
 
 
 ```python
@@ -433,7 +435,7 @@ trainer = Trainer(
 trainer.train()
 ```
 
-学習が終わったら、チェックポイントは既に Hugging Face Hub にアップロードされているため、モデルを削除できます。
+学習が終わったら、チェックポイントは既に Hugging Face Hub にアップロードされている為、モデルを削除出来ます。
 
 ```python
 del model
@@ -446,7 +448,7 @@ torch.cuda.synchronize()
 
 ![物体検出のテストに使う入力画像](https://huggingface.co/datasets/hf-vision/course-assets/resolve/main/test_input_for_od.png)
 
-ここではまず、新しい画像に対して物体検出の推論を行う非常に簡単なコードを書きます。最初は1枚の画像について推論し、その後すべてをまとめて関数にします。
+ここでは先ず、新しい画像に対して物体検出の推論を行う非常に簡単なコードを書きます。最初は1枚の画像について推論し、その後総てをまとめて関数にします。
 
 ```python
 import requests
@@ -501,7 +503,7 @@ plot_results(image, results)
 
 ![物体検出の結果を描画した画像](https://huggingface.co/datasets/hf-vision/course-assets/resolve/main/test_output_for_od.png)
 
-では、すべてをまとめて簡単な関数にしましょう。
+では、総てをまとめて簡単な関数にしましょう。
 
 ```python
 def predict(image, pipeline, threshold=0.7):
@@ -550,4 +552,4 @@ plot_images(test_dataset, range(6))
 
 ![テストデータの複数画像に対する物体検出結果](https://huggingface.co/datasets/hf-vision/course-assets/resolve/main/sample_od_test_set_inference_output.png)
 
-悪くない結果です。更にファインチューニングすれば、結果を改善できます。ファインチューニング済みのこのチェックポイントは[こちら](hf-vision/detr-resnet-50-dc5-harhat-finetuned)で確認できます。
+悪くない結果です。更にファインチューニングすれば、結果を改善出来ます。ファインチューニング済みのこのチェックポイントは[こちら](hf-vision/detr-resnet-50-dc5-harhat-finetuned)で確認出来ます。
